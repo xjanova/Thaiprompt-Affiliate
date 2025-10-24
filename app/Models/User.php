@@ -124,6 +124,16 @@ class User extends Authenticatable
         return $this->hasOne(Cart::class);
     }
 
+    public function adminEmployee()
+    {
+        return $this->hasOne(AdminEmployee::class);
+    }
+
+    public function vendorEmployments()
+    {
+        return $this->hasMany(VendorEmployee::class);
+    }
+
     // Helper Methods
     public function isVendor(): bool
     {
@@ -133,6 +143,16 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->hasRole('admin');
+    }
+
+    public function isAdminEmployee(): bool
+    {
+        return $this->adminEmployee()->where('employment_status', 'active')->exists();
+    }
+
+    public function isVendorEmployee(): bool
+    {
+        return $this->vendorEmployments()->where('employment_status', 'active')->exists();
     }
 
     public function generateReferralCode(): string

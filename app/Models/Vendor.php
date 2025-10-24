@@ -86,6 +86,16 @@ class Vendor extends Model
         return $this->hasOne(ShopVerification::class)->latest();
     }
 
+    public function employees()
+    {
+        return $this->hasMany(VendorEmployee::class);
+    }
+
+    public function activeEmployees()
+    {
+        return $this->hasMany(VendorEmployee::class)->where('employment_status', 'active');
+    }
+
     // Helper Methods
     public function isVerified(): bool
     {
