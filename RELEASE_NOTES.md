@@ -1,8 +1,14 @@
 # Release Notes - ThaiPrompt Affiliate Marketplace
 
-## Version 1.0.0 - Final Release (2024-10-24)
+## Version 1.1.0 - Hotel Management Release (2024-10-24)
 
-### 🎉 Initial Production Release
+### 🏨 Major Update: Hotel Management System
+
+This release adds a comprehensive Hotel Management System as an optional addon for vendors, along with Store Theme customization features.
+
+## Version 1.0.0 - Initial Production Release (2024-10-24)
+
+### 🎉 First Production Release
 
 This is the first production-ready release of ThaiPrompt Affiliate Marketplace, a comprehensive multi-vendor marketplace platform with integrated Multi-Level Marketing (MLM) system.
 
@@ -192,6 +198,89 @@ This is the first production-ready release of ThaiPrompt Affiliate Marketplace, 
 - 🔒 Vendor employee management
 - 🔒 Role-based permissions
 
+### 22. Hotel Management System (v1.1.0) 🆕
+- 🏨 **Complete Hotel & Room Management**
+  - Hotel CRUD operations
+  - Room types with configurations
+  - Individual room management
+  - Room availability tracking
+  - Photo galleries for hotels & rooms
+
+- 🏨 **Advanced Booking System**
+  - Real-time availability checking
+  - Guest information management
+  - Check-in/Check-out processing
+  - Booking confirmation emails
+  - Cancellation handling with policies
+  - Payment integration
+
+- 🏨 **Dynamic Pricing**
+  - Base pricing per room type
+  - Seasonal pricing rules
+  - Day-of-week pricing
+  - Special event pricing
+  - Weekend surcharges
+  - Long-stay discounts
+
+- 🏨 **Promotions & Discounts**
+  - Discount codes
+  - Percentage/Fixed amount discounts
+  - Validity period management
+  - Usage limits
+  - Minimum stay requirements
+  - Room type restrictions
+
+- 🏨 **Hotel Amenities**
+  - Pre-defined amenity types
+  - Custom amenity creation
+  - Icon support
+  - Amenity filtering
+
+- 🏨 **Reviews & Ratings**
+  - Hotel reviews
+  - Rating system (1-5 stars)
+  - Photo uploads in reviews
+  - Verified booking reviews
+  - Response from hotel owners
+
+### 23. Store Theme Customization (v1.1.0) 🆕
+- 🎨 **Theme Marketplace**
+  - Pre-built professional themes
+  - Preview before purchase
+  - One-click theme activation
+  - Theme customization options
+
+- 🎨 **Customization Options**
+  - Color scheme customization
+  - Font selection
+  - Layout options
+  - Header/Footer customization
+  - Custom CSS support
+  - Logo upload
+
+- 🎨 **Theme Features**
+  - Responsive design
+  - Mobile-optimized
+  - SEO-friendly
+  - Fast loading
+  - Cross-browser compatible
+
+### 24. Addon System (v1.1.0) 🆕
+- 🔌 **Addon Management**
+  - Addon marketplace
+  - Purchase management
+  - Subscription tracking
+  - Auto-renewal options
+  - Usage tracking
+  - License management
+
+- 🔌 **Available Addons**
+  - Hotel Management ($49/month or $490/year)
+  - Store Theme Customization ($29/month or $290/year)
+  - Advanced Analytics (Coming soon)
+  - Inventory Management (Coming soon)
+  - Email Marketing (Coming soon)
+
 ---
 
 ## 🛠️ Technology Stack
@@ -303,16 +392,45 @@ None reported for this release.
 
 ---
 
-## 🔜 Future Roadmap (v2.0)
+## ✨ What's New in v1.1.0
 
+### Hotel Management System
+- Complete hotel and room management for vendors
+- Advanced booking system with real-time availability
+- Dynamic pricing with seasonal and day-based rules
+- Promotion codes and discounts
+- Hotel amenities management
+- Review and rating system
+
+### Store Theme System
+- Professional theme marketplace
+- Easy customization interface
+- Preview before purchase
+- Mobile-responsive themes
+
+### Addon Framework
+- Extensible addon system
+- Easy addon installation
+- Subscription management
+- Usage tracking
+
+---
+
+## 🔜 Future Roadmap (v1.2.0 & v2.0)
+
+### v1.2.0 (Next Release)
+- [ ] Advanced Analytics Addon
+- [ ] Inventory Management Addon
+- [ ] Email Marketing Addon
+- [ ] Multi-currency Support
+- [ ] Advanced SEO Tools
+
+### v2.0 (Future)
 - [ ] Mobile App (React Native)
 - [ ] AI-powered Product Recommendations
 - [ ] Multi-language Support
-- [ ] Advanced SEO Tools
 - [ ] Social Media Integration
 - [ ] Live Chat Support
-- [ ] Advanced Reporting Dashboard
-- [ ] Email Marketing Integration
 - [ ] Blockchain Integration
 
 ---
@@ -354,6 +472,25 @@ Special thanks to all contributors and the open-source community for making this
 
 Made with ❤️ by [ThaiPrompt Team](https://github.com/xjanova)
 
+---
+
+## 📅 Release History
+
+### v1.1.0 (October 24, 2024) - Current Release
+- ✅ Hotel Management System
+- ✅ Store Theme Customization
+- ✅ Addon Framework
+- 🆕 24 comprehensive features
+
+### v1.0.0 (October 24, 2024)
+- ✅ Initial production release
+- ✅ 21 core features
+- ✅ Multi-vendor marketplace
+- ✅ MLM system
+- ✅ Complete e-commerce functionality
+
+---
+
+**Current Version**: 1.1.0
 **Release Date**: October 24, 2024
-**Version**: 1.0.0
 **Status**: Production Ready ✅
