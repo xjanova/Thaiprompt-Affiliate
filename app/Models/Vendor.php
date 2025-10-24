@@ -96,6 +96,21 @@ class Vendor extends Model
         return $this->hasMany(VendorEmployee::class)->where('employment_status', 'active');
     }
 
+    public function featurePurchases()
+    {
+        return $this->hasMany(VendorFeaturePurchase::class);
+    }
+
+    public function activeFeatures()
+    {
+        return $this->featurePurchases()->active()->with('feature');
+    }
+
+    public function featureUsageLogs()
+    {
+        return $this->hasMany(VendorFeatureUsageLog::class);
+    }
+
     // Helper Methods
     public function isVerified(): bool
     {
@@ -146,5 +161,23 @@ class Vendor extends Model
     public function calculateCommission(float $amount): float
     {
         return $amount * ($this->commission_rate / 100);
+    }
+
+    public function hasFeature(int $featureId): bool
+    {
+        return $this->featurePurchases()
+            ->where('vendor_feature_id', $featureId)
+            ->active()
+            ->exists();
+    }
+
+    public function hasFeatureBySlug(string $slug): bool
+    {
+        return $this->featurePurchases()
+            ->whereHas('feature', function ($query) use ($slug) {
+                $query->where('slug', $slug);
+            })
+            ->active()
+            ->exists();
     }
 }

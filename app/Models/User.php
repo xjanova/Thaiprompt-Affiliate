@@ -40,7 +40,9 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'kyc_verified_at' => 'datetime',
         'password' => 'hashed',
+        'kyc_required' => 'boolean',
     ];
 
     // Relationships
@@ -134,6 +136,21 @@ class User extends Authenticatable
         return $this->hasMany(VendorEmployee::class);
     }
 
+    public function kycVerification()
+    {
+        return $this->hasOne(UserKycVerification::class);
+    }
+
+    public function lineOaMessages()
+    {
+        return $this->hasMany(LineOaMessage::class);
+    }
+
+    public function withdrawals()
+    {
+        return $this->hasMany(Withdrawal::class);
+    }
+
     // Helper Methods
     public function isVendor(): bool
     {
@@ -168,5 +185,31 @@ class User extends Authenticatable
     public function getDirectReferralsCount(): int
     {
         return $this->referrals()->count();
+    }
+
+    public function isKycVerified(): bool
+    {
+        return $this->kyc_verified_at !== null;
+    }
+
+    public function hasLineConnected(): bool
+    {
+        return !empty($this->line_user_id);
+    }
+
+    public function canWithdraw(float $amount = 0): bool
+    {
+        // Check if KYC is required based on LINE OA config
+        $lineConfig = \App\Models\LineOaConfig::getActive();
+
+        if (!$lineConfig || !$lineConfig->require_kyc_for_withdrawal) {
+            return true;
+        }
+
+        if (!$lineConfig->requiresKycForWithdrawal($amount)) {
+            return true;
+        }
+
+        return $this->isKycVerified();
     }
 }

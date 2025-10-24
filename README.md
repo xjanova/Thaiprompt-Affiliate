@@ -167,6 +167,38 @@
 
 ---
 
+### 12. Vendor Feature Manager 🆕
+- ✅ ฟีเจอร์เสริมสำหรับร้านค้า (Advanced Analytics, Email Marketing, Multi-Channel Selling, etc.)
+- ✅ ซื้อได้ทุกเวลา - รองรับทั้ง One-time, Monthly และ Yearly
+- ✅ Version Tracking - ติดตามเวอร์ชันและประวัติการอัพเดท
+- ✅ Changelog System - ดูรายละเอียดการพัฒนาแต่ละฟีเจอร์
+- ✅ Multiple Payment Methods - ชำระผ่าน Wallet, Stripe หรือ PromptPay
+- ✅ Auto-renewal - ต่ออายุ Subscription อัตโนมัติ
+- ✅ Usage Tracking - บันทึกการใช้งานทุกฟีเจอร์
+- ✅ UI สวยงาม - แสดงผลแบบ Card พร้อมไอคอน
+
+### 13. LINE OA KYC System 🆕
+- ✅ ยืนยันตัวตนผ่าน LINE Official Account อัตโนมัติ
+- ✅ บังคับ KYC สำหรับการถอนเงิน (ตั้งค่าได้)
+- ✅ ตั้งค่าวงเงินขั้นต่ำที่ต้อง KYC
+- ✅ Webhook Integration - รับและประมวลผลข้อความอัตโนมัติ
+- ✅ ส่งการแจ้งเตือนผ่าน LINE (ถอนเงิน, ออเดอร์, โปรโมชั่น)
+- ✅ บันทึกประวัติการสนทนาทั้งหมด
+- ✅ คู่มือการตั้งค่า LINE Developer อย่างละเอียด
+- ✅ รองรับ Rich Menu และ Template Message
+
+### 14. Database Migration & Update System 🆕
+- ✅ Automatic Database Backup - สำรองอัตโนมัติก่อนอัพเดททุกครั้ง
+- ✅ Real-time Progress Tracking - ติดตามความคืบหน้าแบบเรียลไทม์
+- ✅ Maintenance Mode - ปิดระบบชั่วคราวพร้อมข้อความแจ้งผู้ใช้
+- ✅ Rollback Support - ย้อนกลับได้ถ้าเกิดข้อผิดพลาด
+- ✅ Step-by-step Migration Logs - บันทึก Log ทุกขั้นตอน
+- ✅ Health Checks - ตรวจสอบสุขภาพระบบอัตโนมัติ
+- ✅ Super Admin Interface - หน้า UI สวยงามง่ายต่อการใช้งาน
+- ✅ Version Control - ติดตามเวอร์ชันระบบ
+- ✅ Backup Verification - ตรวจสอบความถูกต้องของไฟล์สำรอง
+- ✅ Auto-cleanup - ลบไฟล์สำรองเก่าอัตโนมัติ
+
 ## 🛠️ เทคโนโลยีที่ใช้
 
 ### Backend
@@ -278,10 +310,12 @@ STRIPE_SECRET=your_stripe_secret
 # PromptPay
 PROMPTPAY_MERCHANT_ID=your_merchant_id
 
-# Line OA
+# LINE OA (สำหรับระบบ KYC)
 LINE_CHANNEL_ID=your_line_channel_id
 LINE_CHANNEL_SECRET=your_line_channel_secret
 LINE_CHANNEL_ACCESS_TOKEN=your_line_access_token
+LINE_REQUIRE_KYC_FOR_WITHDRAWAL=true
+LINE_MIN_WITHDRAWAL_WITHOUT_KYC=1000
 
 # MLM Settings
 MLM_TYPE=unilevel
@@ -521,6 +555,53 @@ php artisan test --filter=AuthenticationTest
 
 ---
 
+## 🎯 Roadmap
+
+### Phase 1 (✅ เสร็จสมบูรณ์)
+- [x] ระบบพื้นฐาน Multi-vendor
+- [x] ระบบ MLM (Unilevel/Binary)
+- [x] ระบบ Wallet & Withdrawal
+- [x] ระบบ Payment (Stripe, PromptPay)
+- [x] ระบบ POS
+- [x] **Blade Templates & Views** - UI ครบทุกหน้า (38 files)
+- [x] **NFC Scanner** - สำหรับ Chrome Android
+- [x] **Webhook System** - Stripe, PromptPay, LINE, GitHub
+- [x] **Email Notifications** - 4 Mailable Classes
+- [x] **Admin Dashboard Widgets** - Charts & Analytics
+- [x] **Unit & Feature Tests** - 33 Test Cases
+- [x] **API Documentation** - OpenAPI 3.0 + Markdown
+
+### Phase 2 (✅ เสร็จแล้ว)
+- [x] **Vendor Feature Manager** - ระบบจัดการฟีเจอร์สำหรับร้านค้า
+- [x] **LINE OA KYC System** - ระบบยืนยันตัวตนผ่าน LINE Official Account
+- [x] **Database Migration & Update System** - ระบบอัพเดทฐานข้อมูลแบบมืออาชีพ
+- [x] **System Update Notifications** - แจ้งเตือนอัพเดทระบบอัตโนมัติ
+
+### Phase 3 (🔜 อนาคต)
+- [ ] Mobile App (React Native/Flutter)
+- [ ] Advanced Analytics Dashboard
+- [ ] AI-powered Product Recommendations
+- [ ] Multi-language Support (EN, CN, JP)
+- [ ] Advanced SEO Tools
+- [ ] Social Media Integration (Facebook, Instagram)
+- [ ] Live Chat Support
+- [ ] Advanced Reporting & Export
+- [ ] Vendor Mobile App
+- [ ] Customer Loyalty Program
+- [ ] Blockchain Integration
+- [ ] NFT Marketplace
+- [ ] Cryptocurrency Payment
+
+---
+
+### 📖 คู่มือระบบใหม่ (Phase 2)
+
+- 🚀 [**Feature Manager Guide**](docs/FEATURE_MANAGER_GUIDE.md) - คู่มือระบบจัดการฟีเจอร์สำหรับร้านค้าอย่างละเอียด
+- 📱 [**LINE OA Setup Guide**](docs/LINE_OA_SETUP_GUIDE.md) - คู่มือการตั้งค่า LINE Official Account แบบ Step-by-Step พร้อมภาพประกอบ
+- 🔧 [**System Update Guide**](docs/SYSTEM_UPDATE_GUIDE.md) - คู่มือการอัพเดทระบบและฐานข้อมูลอย่างปลอดภัย
+
+---
+
 ## 🎉 ฟีเจอร์เด่นใน v1.1.0
 
 ### 🎨 Theme Customization - ปรับแต่งธีมของคุณ
@@ -584,45 +665,6 @@ php artisan test --filter=AuthenticationTest
 - ✅ Edge 89+ (Android)
 - ❌ Safari (ยังไม่รองรับ)
 - ❌ Firefox (ยังไม่รองรับ)
-
----
-
-## 🎯 Roadmap
-
-### Phase 1 (✅ เสร็จสมบูรณ์)
-- [x] ระบบพื้นฐาน Multi-vendor
-- [x] ระบบ MLM (Unilevel/Binary)
-- [x] ระบบ Wallet & Withdrawal
-- [x] ระบบ Payment (Stripe, PromptPay)
-- [x] ระบบ POS
-- [x] **Blade Templates & Views** - UI ครบทุกหน้า (38 files)
-- [x] **NFC Scanner** - สำหรับ Chrome Android
-- [x] **Webhook System** - Stripe, PromptPay, LINE, GitHub
-- [x] **Email Notifications** - 4 Mailable Classes
-- [x] **Admin Dashboard Widgets** - Charts & Analytics
-- [x] **Unit & Feature Tests** - 33 Test Cases
-- [x] **API Documentation** - OpenAPI 3.0 + Markdown
-
-### Phase 2 (🔜 กำลังพัฒนา)
-- [ ] **Controllers** - Web & API Controllers (ยังขาด)
-- [ ] Mobile App (React Native/Flutter)
-- [ ] Advanced Analytics Dashboard
-- [ ] AI-powered Product Recommendations
-- [ ] Multi-language Support (EN, CN, JP)
-- [ ] Advanced SEO Tools
-- [ ] Social Media Integration (Facebook, Instagram)
-- [ ] Live Chat Support
-- [ ] Advanced Reporting & Export
-- [ ] Vendor Mobile App
-- [ ] Customer Loyalty Program
-
-### Phase 3 (📋 วางแผน)
-- [ ] Blockchain Integration
-- [ ] NFT Marketplace
-- [ ] Cryptocurrency Payment
-- [ ] AR Product Preview
-- [ ] Voice Shopping
-- [ ] Subscription Management
 
 ---
 
