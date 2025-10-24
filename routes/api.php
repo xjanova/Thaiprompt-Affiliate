@@ -76,6 +76,25 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     });
 });
 
+// NFC Payment API Routes (No Auth - for POS terminals)
+Route::prefix('v1/nfc')->group(function () {
+    Route::post('/process', [\App\Http\Controllers\NfcPaymentController::class, 'processPayment']);
+    Route::post('/check-balance', [\App\Http\Controllers\NfcPaymentController::class, 'checkBalance']);
+    Route::post('/verify', [\App\Http\Controllers\NfcPaymentController::class, 'verifyCard']);
+    Route::post('/card-info', [\App\Http\Controllers\NfcPaymentController::class, 'getCardInfo']);
+});
+
+// Version Check API (Public)
+Route::get('/v1/version', [\App\Http\Controllers\Admin\VersionUpdateController::class, 'apiVersion']);
+Route::get('/v1/version/check', [\App\Http\Controllers\Admin\VersionUpdateController::class, 'apiCheckUpdates']);
+
+// MLM Tree API (Protected)
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+    Route::get('/mlm/tree-data/{userId?}', [\App\Http\Controllers\MlmTreeController::class, 'getTreeData']);
+    Route::get('/mlm/tree/node/{user}', [\App\Http\Controllers\MlmTreeController::class, 'getNodeDetails']);
+    Route::post('/mlm/tree/add-member', [\App\Http\Controllers\MlmTreeController::class, 'addMember']);
+});
+
 // Webhook Routes (No Auth)
 Route::post('/webhooks/stripe', [OrderController::class, 'stripeWebhook']);
 Route::post('/webhooks/promptpay', [OrderController::class, 'promptpayWebhook']);

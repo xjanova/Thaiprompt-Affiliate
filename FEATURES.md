@@ -1,4 +1,12 @@
-# ฟีเจอร์ใหม่ที่เพิ่มเข้ามา - Phase 2
+# Features Documentation - ThaiPrompt Affiliate Marketplace
+
+## Overview
+
+This document describes all features in the Thaiprompt Affiliate Marketplace system, including both Phase 2 and Version 1.1.0 features.
+
+---
+
+## Phase 2 Features
 
 ## 🎨 1. ระบบ Theme Customization (Premium Feature)
 
@@ -250,9 +258,256 @@ GET    /admin/settings/public       - ดึงการตั้งค่าส
 
 ---
 
+## Version 1.1.0 Features
+
+## 🔄 6. Version Update System
+
+### Description
+Automatic version checking system that compares the current installation with the latest version on GitHub and notifies super admin when updates are available.
+
+### Features
+- **Automatic version checking** from GitHub releases
+- **Update notifications** for super admin
+- **Update history** tracking
+- **Manual update process** with step-by-step instructions
+- **Critical update flagging** for security patches
+- **Changelog display** with breaking changes
+
+### Usage
+
+#### For Super Admin:
+1. Navigate to **Admin > Version Management**
+2. Click "Check for Updates" to manually check
+3. System automatically checks every 24 hours
+4. View update details, changelog, and release notes
+5. Follow the instructions to update the system
+
+#### API Endpoints:
+- `GET /api/v1/version` - Get current version info
+- `GET /api/v1/version/check` - Check for updates
+- `POST /admin/version/update/start` - Start update process
+- `POST /admin/version/update/complete` - Mark update as completed
+
+### Technical Details
+- GitHub API integration
+- Semantic versioning support
+- Update logs for audit trail
+- Rollback capability
+
+---
+
+## 💳 7. NFC Payment System
+
+### Description
+Web NFC API integration for contactless card payments, allowing users to pay using NFC cards through supported devices.
+
+### Features
+- **Web NFC API** support for modern browsers
+- **Card registration** and management
+- **User linking** - Link NFC cards to user wallets
+- **Payment processing** via NFC tap
+- **Balance checking** without payment
+- **Transaction logging** for all NFC operations
+- **Multi-device support** - Web and future mobile app ready
+
+### Usage
+
+#### For Customers:
+1. Navigate to **NFC Payment** page
+2. Tap NFC-enabled device with card
+3. Confirm payment amount
+4. Complete transaction
+
+#### For Super Admin:
+1. Navigate to **Admin > NFC Cards**
+2. **Register new cards** by scanning or entering card UID
+3. **Link cards to users** and their wallets
+4. **View transaction history**
+5. **Activate/deactivate** cards as needed
+
+#### For POS Terminals:
+- Use `/nfc/payment` endpoint
+- Scan customer's NFC card
+- Process payment automatically
+
+### Supported Card Types
+- Standard (basic NFC cards)
+- Premium (enhanced features)
+- VIP (priority support)
+
+### Technical Details
+- Web NFC API (Chrome/Android support)
+- Unique card UID identification
+- Encrypted transaction processing
+- Real-time balance updates
+
+### API Endpoints:
+- `POST /api/v1/nfc/process` - Process payment
+- `POST /api/v1/nfc/check-balance` - Check card balance
+- `POST /api/v1/nfc/verify` - Verify card validity
+- `POST /api/v1/nfc/card-info` - Get card information
+
+### Browser Support
+- Chrome 89+ (Android)
+- Chrome 114+ (Desktop with flag)
+- Edge 89+ (Android)
+
+---
+
+## ✅ 8. Shop Verification System
+
+### Description
+Comprehensive KYC (Know Your Customer) system for vendors to verify their shop authenticity with multiple verification levels.
+
+### Features
+- **Document upload** system for verification
+- **Multi-level badges** (Bronze, Silver, Gold, Platinum)
+- **Document types supported:**
+  - Business registration
+  - Tax certificate
+  - Business license
+  - ID card (front/back)
+  - Selfie with ID
+  - Bank statements
+  - Bank book photos
+- **Admin review** interface
+- **Rejection with feedback**
+- **Verification badges** displayed on shop profiles
+
+### Verification Badges
+
+#### 🥉 Bronze - Basic Verification
+- Requirements: ID card verification
+- Benefits: Basic trust badge
+
+#### 🥈 Silver - Full Verification
+- Requirements: ID + Business registration + Tax certificate
+- Benefits: Enhanced visibility in listings
+
+#### 🥇 Gold - Premium Verification
+- Requirements: Silver requirements + Bank verification
+- Benefits: Featured placement, higher trust
+
+#### 💎 Platinum - Ultimate Verification
+- Requirements: Gold requirements + Business license
+- Benefits: Top placement, maximum trust, exclusive features
+
+### Usage
+
+#### For Vendors:
+1. Navigate to **Vendor > Verification**
+2. Fill out verification form
+3. Upload required documents
+4. Submit for review
+5. Wait for admin approval
+6. Receive verification badge
+
+#### For Admin:
+1. Navigate to **Admin > Verification**
+2. Review pending verifications
+3. Check all submitted documents
+4. Approve/Reject with feedback
+5. Assign appropriate badge level
+
+### Technical Details
+- Secure document storage
+- Automatic badge calculation based on documents
+- Verification status tracking
+- Email notifications for status changes
+
+---
+
+## 🌳 9. MLM Network Tree Visualization
+
+### Description
+Modern, interactive organizational tree visualization using D3.js for displaying MLM network structure.
+
+### Features
+- **Interactive tree diagram** with zoom and pan
+- **Real-time data** display
+- **Member details on hover** (tooltip)
+- **Click to view full details**
+- **Add members directly** from tree
+- **Visual indicators:**
+  - 🟢 Green border: KYC verified
+  - 🔴 Red border: Not maintaining minimum sales
+  - ⚫ Gray border: Normal status
+- **Avatar display:**
+  - Default avatar for new users
+  - LINE profile picture after KYC
+  - Custom uploaded avatar support
+- **Rank display** with colored badges
+- **Level-based layout**
+- **Expandable/collapsible** branches
+
+### Usage
+
+#### For Users:
+1. Navigate to **MLM > Network Tree**
+2. View your downline structure
+3. Hover over members for quick info
+4. Click members for detailed view
+5. Use zoom controls to navigate large trees
+
+#### For Admin:
+1. View any user's tree
+2. Add members to downline
+3. Monitor network health
+4. Track inactive members (red border)
+
+### Interactive Features
+- **Zoom:** Scroll wheel or pinch
+- **Pan:** Click and drag
+- **Center:** Double-click background
+- **Details:** Click on member avatar
+- **Add Member:** Click "+" button (admin)
+
+### Technical Details
+- D3.js hierarchy layout
+- SVG rendering for performance
+- Lazy loading for large trees
+- Real-time sales tracking
+- Configurable depth limits
+
+### API Endpoints:
+- `GET /mlm/tree-data/{userId?}` - Get tree structure
+- `GET /mlm/tree/node/{user}` - Get member details
+- `POST /mlm/tree/add-member` - Add new member
+
+---
+
+## 📸 10. Profile Image Management
+
+### Description
+Enhanced profile image system with LINE integration and custom upload support.
+
+### Features
+- **Default avatars** for new users
+- **LINE profile sync** after KYC verification
+- **Custom upload** capability
+- **Automatic source tracking**
+- **Image optimization**
+
+### Usage
+
+#### For Users:
+1. Navigate to **Profile Settings**
+2. Choose image source:
+   - Use LINE profile picture (after KYC)
+   - Upload custom image
+3. Save changes
+
+### Technical Details
+- Image storage in public disk
+- Multiple source support
+- Automatic resizing
+- CDN-ready
+
+---
+
 ## 📦 Database Schema
 
-### ตารางใหม่ที่เพิ่มเข้ามา
+### Phase 2 Tables
 
 #### system_info
 ```sql
@@ -343,138 +598,278 @@ GET    /admin/settings/public       - ดึงการตั้งค่าส
 - timestamps
 ```
 
+### Version 1.1.0 Tables
+
+#### nfc_cards
+```sql
+- id
+- card_uid (unique)
+- card_type (standard, premium, vip)
+- user_id (FK, nullable)
+- wallet_id (FK, nullable)
+- is_active
+- issued_at
+- expires_at
+- last_used_at
+- timestamps
+```
+
+#### nfc_card_transactions
+```sql
+- id
+- nfc_card_id (FK)
+- transaction_type (payment, balance_check, verification)
+- amount
+- status (success, failed, pending)
+- error_message
+- ip_address
+- user_agent
+- timestamps
+```
+
+#### shop_verifications
+```sql
+- id
+- vendor_id (FK, unique)
+- verification_badge (bronze, silver, gold, platinum)
+- status (pending, approved, rejected)
+- documents (JSON)
+- notes
+- reviewed_by (FK, nullable)
+- reviewed_at
+- timestamps
+```
+
+#### system_versions
+```sql
+- id
+- version
+- release_date
+- changelog (JSON)
+- is_critical
+- download_url
+- installed_at
+- installed_by (FK)
+- timestamps
+```
+
 ---
 
-## 🎯 การใช้งาน
+## Installation & Setup
 
-### 1. Setup ครั้งแรก
+### 1. Install Dependencies
+
 ```bash
-# Clone และติดตั้ง
-git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
-cd Thaiprompt-Affiliate
+# Install PHP dependencies
 composer install
-npm install && npm run build
 
-# เริ่ม Server
-php artisan serve
+# Install NPM dependencies
+npm install
 
-# เข้าสู่ Setup Wizard
-# เปิด http://localhost:8000/setup
+# Build assets
+npm run build
 ```
 
-### 2. การสร้าง Backup
-```php
-use App\Services\Backup\BackupService;
+### 2. Run Migrations
 
-$backupService = new BackupService();
-
-// สร้าง Full Backup
-$backup = $backupService->createFullBackup(auth()->id());
-
-// สร้าง Database Backup
-$backup = $backupService->createDatabaseBackup(auth()->id());
-
-// Restore จาก Backup
-$backupService->restoreBackup($backupId);
+```bash
+php artisan migrate
 ```
 
-### 3. การใช้ Theme Customization
-```php
-use App\Services\Theme\ThemeService;
+### 3. Seed Initial Data
 
-$themeService = new ThemeService();
-
-// บันทึกธีม
-$theme = $themeService->saveTheme($vendorId, [
-    'primary_color' => '#4F46E5',
-    'secondary_color' => '#EC4899',
-    'gradient_colors' => ['#FF6B6B', '#FFE66D', '#4ECDC4'],
-]);
-
-// Upload โลโก้
-$url = $themeService->uploadLogo($vendorId, $file);
-
-// สมัครสมาชิก Premium
-$subscription = $themeService->subscribeToPremium($vendorId, 'monthly');
+```bash
+php artisan db:seed
 ```
 
-### 4. การใช้ Settings
-```php
-use App\Models\AppSetting;
+### 4. Set Permissions
 
-// Get Setting
-$appName = AppSetting::get('app_name');
+```bash
+chmod -R 755 storage
+chmod -R 755 bootstrap/cache
+```
 
-// Set Setting
-AppSetting::set('app_name', 'My Store', 'string', 'general');
+### 5. Configure Environment
 
-// Get Public Settings (สำหรับ Frontend)
-$settings = AppSetting::getPublicSettings();
+Add to `.env`:
 
-// Get Settings by Group
-$generalSettings = AppSetting::getByGroup('general');
+```env
+# NFC Configuration
+NFC_ENABLED=true
+NFC_TIMEOUT=30
+
+# Version Update
+GITHUB_REPO=xjanova/Thaiprompt-Affiliate
+VERSION_CHECK_INTERVAL=24
+
+# Verification
+VERIFICATION_DOCUMENT_DISK=public
+MAX_DOCUMENT_SIZE=5120
 ```
 
 ---
 
-## 🔒 Security Features
+## Configuration
 
-1. **Setup Wizard Security**
-   - ป้องกันการเข้าถึง Setup Wizard หลังติดตั้งเสร็จแล้ว
-   - Middleware `RedirectIfSetupCompleted`
+### NFC Settings
+- Card types: standard, premium, vip
+- Transaction timeout: 30 seconds
+- Auto-balance check: enabled
 
-2. **Backup Security**
-   - เฉพาะ Admin เท่านั้นที่สามารถสร้าง/กู้คืน Backup
-   - บันทึก Log ทุกครั้งที่มีการสร้าง/กู้คืน
+### Verification Settings
+- Max document size: 5MB
+- Allowed formats: PDF, JPG, PNG
+- Review turnaround: 48 hours
 
-3. **Premium Features**
-   - ตรวจสอบ Subscription Status
-   - ป้องกันการใช้งาน Premium Feature โดยไม่ได้สมัคร
-
-4. **Settings Security**
-   - แยก Public/Private Settings
-   - ป้องกันการแก้ไข Read-only Settings
-   - Role-based Access Control
+### MLM Tree Settings
+- Max depth: 5 levels
+- Node size: 120x80px
+- Animation duration: 750ms
 
 ---
 
-## 📈 Performance Optimization
+## Security Considerations
 
-1. **Caching**
-   - Settings Cache (1 hour TTL)
-   - Theme CSS Cache
-   - Chart Data Cache
+### Setup Wizard Security
+- ป้องกันการเข้าถึง Setup Wizard หลังติดตั้งเสร็จแล้ว
+- Middleware `RedirectIfSetupCompleted`
 
-2. **Lazy Loading**
-   - Chart.js โหลดเมื่อต้องการใช้งาน
-   - GSAP โหลดแบบ Async
+### Backup Security
+- เฉพาะ Admin เท่านั้นที่สามารถสร้าง/กู้คืน Backup
+- บันทึก Log ทุกครั้งที่มีการสร้าง/กู้คืน
 
-3. **Database Optimization**
-   - Index สำหรับ Frequently Queried Columns
-   - Eager Loading สำหรับ Relationships
+### Premium Features Security
+- ตรวจสอบ Subscription Status
+- ป้องกันการใช้งาน Premium Feature โดยไม่ได้สมัคร
+
+### Settings Security
+- แยก Public/Private Settings
+- ป้องกันการแก้ไข Read-only Settings
+- Role-based Access Control
+
+### NFC Security
+- Card UID encryption
+- Transaction signing
+- IP address logging
+- Rate limiting
+
+### Document Security
+- Encrypted storage
+- Access control
+- Audit logging
+- Auto-deletion after verification
+
+### API Security
+- Token authentication
+- CORS protection
+- Input validation
+- SQL injection prevention
 
 ---
 
-## 🎨 Frontend Technologies
+## Performance Optimization
 
-- **Tailwind CSS 3.x** - Utility-first CSS Framework
-- **Alpine.js 3.x** - Lightweight JavaScript Framework
-- **Chart.js 4.x** - Beautiful Charts
-- **GSAP 3.x** - Professional Animations
-- **Iconify** - Icon Framework
-- **SweetAlert2** - Beautiful Alerts
-- **Vite 4.x** - Fast Build Tool
+### Caching
+- Settings Cache (1 hour TTL)
+- Theme CSS Cache
+- Chart Data Cache
+
+### Lazy Loading
+- Chart.js โหลดเมื่อต้องการใช้งาน
+- GSAP โหลดแบบ Async
+
+### Database Optimization
+- Index สำหรับ Frequently Queried Columns
+- Eager Loading สำหรับ Relationships
 
 ---
 
-## 🚀 What's Next?
+## Browser Compatibility
 
-ฟีเจอร์ที่กำลังพัฒนาใน Phase 3:
-- [ ] Mobile App (React Native)
-- [ ] AI-powered Product Recommendations
-- [ ] Multi-language Support
-- [ ] Advanced SEO Tools
-- [ ] Social Media Integration
-- [ ] Live Chat Support
-- [ ] Advanced Reporting Dashboard
-- [ ] Email Marketing Integration
+### NFC Support
+- ✅ Chrome 89+ (Android)
+- ✅ Chrome 114+ (Desktop with flag)
+- ✅ Edge 89+ (Android)
+- ❌ Safari (not supported)
+- ❌ Firefox (not supported)
+
+### Tree Visualization
+- ✅ All modern browsers
+- ✅ IE11+ (with polyfills)
+- ✅ Mobile browsers
+
+---
+
+## Troubleshooting
+
+### NFC Issues
+1. **"NFC not supported"**: Use Chrome on Android or enable flag on Desktop
+2. **Card not detected**: Check NFC is enabled on device
+3. **Payment failed**: Verify card is linked and has sufficient balance
+
+### Verification Issues
+1. **Upload failed**: Check file size and format
+2. **Status stuck**: Contact admin for review
+3. **Badge not showing**: Clear cache and refresh
+
+### Tree Issues
+1. **Tree not loading**: Check API permissions
+2. **Performance slow**: Reduce depth limit
+3. **Member not showing**: Verify downline relationships
+
+---
+
+## API Documentation
+
+### Authentication
+All protected endpoints require Bearer token:
+
+```http
+Authorization: Bearer {token}
+```
+
+### Rate Limiting
+- Public endpoints: 60 requests/minute
+- Authenticated: 120 requests/minute
+- Admin: Unlimited
+
+### Response Format
+```json
+{
+    "success": true,
+    "data": {},
+    "message": "Success message"
+}
+```
+
+---
+
+## Support
+
+For issues or questions:
+- GitHub Issues: https://github.com/xjanova/Thaiprompt-Affiliate/issues
+- Repository: https://github.com/xjanova/Thaiprompt-Affiliate
+
+---
+
+## Changelog
+
+### Version 1.1.0 (Current)
+- ✨ Added NFC payment system
+- ✨ Added shop verification with badges
+- ✨ Added version update checker
+- ✨ Added MLM tree visualization
+- ✨ Added profile image management
+- ✨ Added web setup wizard
+- ✨ Added theme customization (Premium)
+- ✨ Added backup & version control
+- ✨ Enhanced super admin dashboard
+- ✨ Added centralized settings system
+- 🐛 Bug fixes and improvements
+
+### Version 1.0.0
+- 🎉 Initial release
+- Multi-vendor marketplace
+- MLM system
+- Wallet system
+- POS integration

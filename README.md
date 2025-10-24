@@ -2,6 +2,8 @@
 
 ระบบร้านค้าออนไลน์แบบ Multi-vendor Marketplace พร้อมระบบ MLM (Multi-Level Marketing) ที่ครบครัน พัฒนาด้วย Laravel
 
+## เวอร์ชัน 1.1.0
+
 ## 🌟 คุณสมบัติหลัก
 
 ### 1. Multi-Vendor Marketplace
@@ -106,6 +108,49 @@
 - 🆕 **Backup Management** - จัดการไฟล์สำรองข้อมูล
 - 🆕 **One-Click Restore** - กู้คืนข้อมูลได้ทันที
 
+### 15. 💳 ระบบ NFC Payment (v1.1.0)
+- 🆕 **Web NFC API** - รองรับ NFC บนเว็บไซต์
+- 🆕 สแกนบัตร NFC ผ่านอุปกรณ์ที่รองรับ
+- 🆕 ผูกบัตรกับ Wallet ของ User
+- 🆕 ชำระเงินแบบ Contactless
+- 🆕 เช็คยอดเงินผ่าน NFC
+- 🆕 รองรับการใช้งานผ่าน POS
+- 🆕 เตรียมพร้อมสำหรับ Mobile App
+
+### 16. ✅ ระบบยืนยันตัวตนร้านค้า (v1.1.0)
+- 🆕 **Shop Verification System**
+- 🆕 อัปโหลดเอกสารยืนยันตัวตน
+- 🆕 ระบบ KYC แบบหลายระดับ
+- 🆕 เหรียญตรา 4 ระดับ: 🥉Bronze | 🥈Silver | 🥇Gold | 💎Platinum
+- 🆕 ตรวจสอบและอนุมัติโดย Admin
+- 🆕 แสดงเหรียญยืนยันบนหน้าร้าน
+- 🆕 เพิ่มความน่าเชื่อถือให้ร้านค้า
+
+### 17. 🔄 ระบบอัปเดทอัตโนมัติ (v1.1.0)
+- 🆕 **Auto Version Update System**
+- 🆕 เช็คเวอร์ชันจาก GitHub อัตโนมัติ
+- 🆕 แจ้งเตือน Admin เมื่อมีอัปเดท
+- 🆕 แสดง Changelog และ Release Notes
+- 🆕 ติดตามประวัติการอัปเดท
+- 🆕 คำแนะนำการอัปเดทแบบ Step-by-step
+
+### 18. 🌳 ผังโครงสร้าง MLM แบบ Interactive (v1.1.0)
+- 🆕 **D3.js Tree Visualization**
+- 🆕 ผังองค์กรแบบ Interactive
+- 🆕 Zoom และ Pan ได้อย่างลื่นไหล
+- 🆕 แสดงข้อมูลสมาชิกเมื่อ Hover
+- 🆕 คลิกดูรายละเอียดสมาชิก
+- 🆕 เพิ่มสมาชิกได้จากผังเลย
+- 🆕 **กรอบสีแดง** สำหรับสมาชิกที่ยังไม่รักษายอด
+- 🆕 **กรอบสีเขียว** สำหรับสมาชิกที่ KYC แล้ว
+- 🆕 แสดง Avatar จาก LINE หรือรูปที่อัปโหลด
+
+### 19. 📸 การจัดการรูปโปรไฟล์ (v1.1.0)
+- 🆕 รูป Avatar เริ่มต้นสำหรับผู้ใช้ใหม่
+- 🆕 ดึงรูปจาก LINE หลัง KYC
+- 🆕 อัปโหลดรูปโปรไฟล์เองได้
+- 🆕 ปรับขนาดรูปอัตโนมัติ
+
 ## 🛠️ เทคโนโลยีที่ใช้
 
 ### Backend
@@ -123,6 +168,7 @@
 - **JavaScript**: Alpine.js 3.x
 - **Charts**: Chart.js 4.x
 - **Animations**: GSAP 3.x
+- **Tree Visualization**: D3.js 7.x
 - **Icons**: Iconify
 - **Notifications**: SweetAlert2
 - **Build Tool**: Vite 4.x
@@ -222,6 +268,23 @@ MLM_MAX_DEPTH=10
 COMMISSION_RATE_LEVEL_1=10
 COMMISSION_RATE_LEVEL_2=5
 COMMISSION_RATE_LEVEL_3=3
+
+# NFC Configuration (v1.1.0)
+NFC_ENABLED=true
+NFC_TIMEOUT=30
+
+# Version Update (v1.1.0)
+GITHUB_REPO=xjanova/Thaiprompt-Affiliate
+VERSION_CHECK_INTERVAL=24
+VERSION_AUTO_CHECK=true
+
+# Verification (v1.1.0)
+VERIFICATION_ENABLED=true
+VERIFICATION_DOCUMENT_DISK=public
+MAX_DOCUMENT_SIZE=5120
+
+# MLM Tree (v1.1.0)
+MLM_TREE_MAX_DEPTH=5
 ```
 
 5. **สร้างฐานข้อมูล**
@@ -401,16 +464,22 @@ php artisan test --filter MlmServiceTest
 - [x] ระบบ Payment
 - [x] ระบบ POS
 
-### Phase 2 🆕 (เพิ่มเติมล่าสุด)
+### Phase 2 ✅ (เสร็จสมบูรณ์ - v1.1.0)
 - [x] Web Setup Wizard พร้อม UI สวยงาม
 - [x] ระบบ Backup & Version Control อัตโนมัติ
 - [x] Theme Customization (Premium Feature)
 - [x] Super Admin Dashboard พร้อมกราฟ Real-time
 - [x] ระบบตั้งค่าแบบรวมศูนย์
 - [x] GSAP Animations & Chart.js Integration
+- [x] ระบบ NFC Payment
+- [x] ระบบยืนยันตัวตนร้านค้า (4 ระดับ)
+- [x] ระบบอัปเดทอัตโนมัติ
+- [x] ผังโครงสร้าง MLM แบบ Interactive (D3.js)
+- [x] การจัดการรูปโปรไฟล์
 
 ### Phase 3 (กำลังพัฒนา)
-- [ ] Mobile App (React Native)
+- [ ] Mobile App (React Native) พร้อม NFC
+- [ ] Advanced Analytics
 - [ ] AI-powered Product Recommendations
 - [ ] Multi-language Support
 - [ ] Advanced SEO Tools
@@ -422,10 +491,75 @@ php artisan test --filter MlmServiceTest
 ## 📚 เอกสารเพิ่มเติม
 
 สำหรับข้อมูลเพิ่มเติม กรุณาดูที่:
+- [Features Documentation](FEATURES.md) - อธิบายฟีเจอร์ใหม่ทั้งหมด (v1.1.0)
 - [Installation Guide](docs/installation.md)
 - [User Guide](docs/user-guide.md)
 - [Developer Guide](docs/developer-guide.md)
 - [API Documentation](docs/api.md)
+
+## 🎉 ฟีเจอร์เด่นใน v1.1.0
+
+### 🎨 Theme Customization - ปรับแต่งธีมของคุณ
+ระบบปรับแต่งสีธีมและรูปลักษณ์แบบครบวงจร
+- เปลี่ยนสีหลัก, สีรอง, สีเน้นได้ตามใจชอบ
+- รองรับ Gradient Colors แบบมืออาชีพ
+- อัปโหลดโลโก้และ Favicon ของคุณเอง
+- ระบบ Premium Subscription แบบรายเดือน/ปี/ตลอดชีพ
+
+### 🔧 Web Setup Wizard - ติดตั้งง่ายผ่านเว็บ
+ติดตั้งระบบได้ง่ายๆ ผ่านหน้าเว็บ ไม่ต้องใช้ Command Line
+- ตรวจสอบความพร้อมของระบบอัตโนมัติ
+- ตั้งค่า Database และทดสอบการเชื่อมต่อ
+- สร้างบัญชี Admin ในขั้นตอนการติดตั้ง
+- UI สวยงามพร้อม Animations
+
+### 💾 Backup & Version Control - ปลอดภัยทุกการอัพเดท
+ระบบสำรองข้อมูลอัตโนมัติก่อนทำการอัพเดท
+- Full System Backup (ไฟล์ + ฐานข้อมูล)
+- Database Backup
+- Backup Management และกู้คืนข้อมูลทันที
+- Version Checking ก่อนอัพเดท
+
+### 💳 NFC Payment - ชำระเงินแบบไร้สัมผัส
+ระบบชำระเงินผ่าน NFC ที่ทันสมัย รองรับ Web NFC API สำหรับอุปกรณ์ที่รองรับ (Chrome บน Android)
+- สแกนบัตรผ่านเว็บได้เลย ไม่ต้องติดตั้งแอป
+- ผูกบัตรกับ Wallet ของ User
+- ใช้งานผ่าน POS ได้
+- เตรียมพร้อมสำหรับ Mobile App
+
+### ✅ Shop Verification - ยืนยันตัวตนร้านค้า
+ระบบยืนยันตัวตนแบบหลายระดับ เพิ่มความน่าเชื่อถือให้ร้านค้า
+- 🥉 **Bronze**: ยืนยันบัตรประชาชน
+- 🥈 **Silver**: + ทะเบียนการค้า + ภ.พ.20
+- 🥇 **Gold**: + การยืนยันบัญชีธนาคาร
+- 💎 **Platinum**: + ใบอนุญาตประกอบการ
+
+### 🔄 Auto Update - อัปเดทอัตโนมัติ
+เช็คเวอร์ชันจาก GitHub อัตโนมัติ แจ้งเตือนเมื่อมีอัปเดทใหม่
+- ตรวจสอบอัปเดทอัตโนมัติทุก 24 ชั่วโมง
+- แสดง Changelog และ Release Notes
+- คำแนะนำการอัปเดทแบบละเอียด
+
+### 🌳 MLM Tree - ผังโครงสร้างแบบ Interactive
+ผังองค์กร MLM แบบ Interactive ด้วย D3.js
+- Zoom และ Pan ได้อย่างลื่นไหล
+- แสดงสถานะสมาชิกแบบ Real-time
+- กรอบสีแดงสำหรับสมาชิกที่ยังไม่รักษายอด
+- กรอบสีเขียวสำหรับสมาชิกที่ KYC แล้ว
+- เพิ่มสมาชิกได้จากผังเลย
+
+### 📸 Profile Management - จัดการรูปโปรไฟล์
+- รูป Avatar เริ่มต้นสำหรับผู้ใช้ใหม่
+- ดึงรูปจาก LINE หลัง KYC
+- อัปโหลดรูปโปรไฟล์เองได้
+- ปรับขนาดรูปอัตโนมัติ
+
+### 🔧 Browser Support สำหรับ NFC
+- ✅ Chrome 89+ (Android)
+- ✅ Chrome 114+ (Desktop - ต้องเปิด flag)
+- ✅ Edge 89+ (Android)
+- ❌ Safari (ยังไม่รองรับ)
+- ❌ Firefox (ยังไม่รองรับ)
 
 ---
 

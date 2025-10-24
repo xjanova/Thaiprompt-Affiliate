@@ -18,6 +18,12 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\MlmTreeController;
+use App\Http\Controllers\NfcPaymentController;
+use App\Http\Controllers\Admin\NfcCardController;
+use App\Http\Controllers\Admin\VersionUpdateController;
+use App\Http\Controllers\Admin\ShopVerificationController;
+use App\Http\Controllers\Vendor\VendorVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -86,6 +92,13 @@ Route::middleware(['auth'])->prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/commissions', [MlmDashboardController::class, 'commissions'])->name('commissions');
     Route::get('/referrals', [MlmDashboardController::class, 'referrals'])->name('referrals');
     Route::post('/invite', [MlmDashboardController::class, 'sendInvitation'])->name('invite');
+
+    // MLM Tree Visualization
+    Route::get('/tree', [MlmTreeController::class, 'index'])->name('tree.index');
+    Route::get('/tree/{user}', [MlmTreeController::class, 'show'])->name('tree.show');
+    Route::get('/tree-data/{userId?}', [MlmTreeController::class, 'getTreeData'])->name('tree.data');
+    Route::get('/tree/node/{user}', [MlmTreeController::class, 'getNodeDetails'])->name('tree.node');
+    Route::post('/tree/add-member', [MlmTreeController::class, 'addMember'])->name('tree.add-member');
 });
 
 // Wallet Routes
@@ -107,6 +120,21 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 
     // POS
     Route::get('/pos', [VendorDashboardController::class, 'pos'])->name('pos');
+
+    // Shop Verification
+    Route::get('/verification', [VendorVerificationController::class, 'index'])->name('verification.index');
+    Route::get('/verification/create', [VendorVerificationController::class, 'create'])->name('verification.create');
+    Route::post('/verification', [VendorVerificationController::class, 'store'])->name('verification.store');
+    Route::get('/verification/status', [VendorVerificationController::class, 'show'])->name('verification.show');
+});
+
+// NFC Payment Routes (Public - for POS terminals)
+Route::prefix('nfc')->name('nfc.')->group(function () {
+    Route::get('/payment', [NfcPaymentController::class, 'index'])->name('payment');
+    Route::post('/process', [NfcPaymentController::class, 'processPayment'])->name('process');
+    Route::post('/check-balance', [NfcPaymentController::class, 'checkBalance'])->name('check-balance');
+    Route::post('/verify', [NfcPaymentController::class, 'verifyCard'])->name('verify');
+    Route::post('/card-info', [NfcPaymentController::class, 'getCardInfo'])->name('card-info');
 });
 
 // Admin Routes
@@ -156,5 +184,43 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::post('/{backup}/restore', [BackupController::class, 'restore'])->name('restore');
         Route::delete('/{backup}', [BackupController::class, 'destroy'])->name('destroy');
         Route::post('/clean', [BackupController::class, 'clean'])->name('clean');
+    });
+
+    // NFC Card Management
+    Route::prefix('nfc')->name('nfc.')->group(function () {
+        Route::get('/', [NfcCardController::class, 'index'])->name('index');
+        Route::get('/create', [NfcCardController::class, 'create'])->name('create');
+        Route::post('/', [NfcCardController::class, 'store'])->name('store');
+        Route::get('/scan', [NfcCardController::class, 'scan'])->name('scan');
+        Route::get('/{nfcCard}', [NfcCardController::class, 'show'])->name('show');
+        Route::get('/{nfcCard}/link', [NfcCardController::class, 'linkForm'])->name('link-form');
+        Route::post('/{nfcCard}/link', [NfcCardController::class, 'link'])->name('link');
+        Route::post('/{nfcCard}/unlink', [NfcCardController::class, 'unlink'])->name('unlink');
+        Route::post('/{nfcCard}/activate', [NfcCardController::class, 'activate'])->name('activate');
+        Route::post('/{nfcCard}/deactivate', [NfcCardController::class, 'deactivate'])->name('deactivate');
+        Route::get('/{nfcCard}/transactions', [NfcCardController::class, 'transactions'])->name('transactions');
+        Route::delete('/{nfcCard}', [NfcCardController::class, 'destroy'])->name('destroy');
+    });
+
+    // Version Update Management
+    Route::prefix('version')->name('version.')->group(function () {
+        Route::get('/', [VersionUpdateController::class, 'index'])->name('index');
+        Route::post('/check', [VersionUpdateController::class, 'checkUpdates'])->name('check');
+        Route::get('/update', [VersionUpdateController::class, 'showUpdate'])->name('update');
+        Route::post('/update/start', [VersionUpdateController::class, 'startUpdate'])->name('start');
+        Route::post('/update/complete', [VersionUpdateController::class, 'completeUpdate'])->name('complete');
+        Route::post('/update/fail', [VersionUpdateController::class, 'failUpdate'])->name('fail');
+        Route::get('/history', [VersionUpdateController::class, 'history'])->name('history');
+        Route::get('/releases', [VersionUpdateController::class, 'releases'])->name('releases');
+    });
+
+    // Shop Verification Management
+    Route::prefix('verification')->name('verification.')->group(function () {
+        Route::get('/', [ShopVerificationController::class, 'index'])->name('index');
+        Route::get('/pending', [ShopVerificationController::class, 'pending'])->name('pending');
+        Route::get('/statistics', [ShopVerificationController::class, 'statistics'])->name('statistics');
+        Route::get('/{verification}', [ShopVerificationController::class, 'show'])->name('show');
+        Route::post('/{verification}/approve', [ShopVerificationController::class, 'approve'])->name('approve');
+        Route::post('/{verification}/reject', [ShopVerificationController::class, 'reject'])->name('reject');
     });
 });
