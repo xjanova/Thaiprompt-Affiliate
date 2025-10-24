@@ -79,6 +79,38 @@
 - ✅ รายงานยอดขายแบบละเอียด
 - ✅ ตั้งค่าระบบ
 
+### 12. Vendor Feature Manager 🆕
+- ✅ ฟีเจอร์เสริมสำหรับร้านค้า (Advanced Analytics, Email Marketing, Multi-Channel Selling, etc.)
+- ✅ ซื้อได้ทุกเวลา - รองรับทั้ง One-time, Monthly และ Yearly
+- ✅ Version Tracking - ติดตามเวอร์ชันและประวัติการอัพเดท
+- ✅ Changelog System - ดูรายละเอียดการพัฒนาแต่ละฟีเจอร์
+- ✅ Multiple Payment Methods - ชำระผ่าน Wallet, Stripe หรือ PromptPay
+- ✅ Auto-renewal - ต่ออายุ Subscription อัตโนมัติ
+- ✅ Usage Tracking - บันทึกการใช้งานทุกฟีเจอร์
+- ✅ UI สวยงาม - แสดงผลแบบ Card พร้อมไอคอน
+
+### 13. LINE OA KYC System 🆕
+- ✅ ยืนยันตัวตนผ่าน LINE Official Account อัตโนมัติ
+- ✅ บังคับ KYC สำหรับการถอนเงิน (ตั้งค่าได้)
+- ✅ ตั้งค่าวงเงินขั้นต่ำที่ต้อง KYC
+- ✅ Webhook Integration - รับและประมวลผลข้อความอัตโนมัติ
+- ✅ ส่งการแจ้งเตือนผ่าน LINE (ถอนเงิน, ออเดอร์, โปรโมชั่น)
+- ✅ บันทึกประวัติการสนทนาทั้งหมด
+- ✅ คู่มือการตั้งค่า LINE Developer อย่างละเอียด
+- ✅ รองรับ Rich Menu และ Template Message
+
+### 14. Database Migration & Update System 🆕
+- ✅ Automatic Database Backup - สำรองอัตโนมัติก่อนอัพเดททุกครั้ง
+- ✅ Real-time Progress Tracking - ติดตามความคืบหน้าแบบเรียลไทม์
+- ✅ Maintenance Mode - ปิดระบบชั่วคราวพร้อมข้อความแจ้งผู้ใช้
+- ✅ Rollback Support - ย้อนกลับได้ถ้าเกิดข้อผิดพลาด
+- ✅ Step-by-step Migration Logs - บันทึก Log ทุกขั้นตอน
+- ✅ Health Checks - ตรวจสอบสุขภาพระบบอัตโนมัติ
+- ✅ Super Admin Interface - หน้า UI สวยงามง่ายต่อการใช้งาน
+- ✅ Version Control - ติดตามเวอร์ชันระบบ
+- ✅ Backup Verification - ตรวจสอบความถูกต้องของไฟล์สำรอง
+- ✅ Auto-cleanup - ลบไฟล์สำรองเก่าอัตโนมัติ
+
 ## 🛠️ เทคโนโลยีที่ใช้
 
 - **Backend**: Laravel 10.x (PHP 8.1+)
@@ -136,10 +168,12 @@ STRIPE_SECRET=your_stripe_secret
 # PromptPay
 PROMPTPAY_MERCHANT_ID=your_merchant_id
 
-# Line OA
+# LINE OA (สำหรับระบบ KYC)
 LINE_CHANNEL_ID=your_line_channel_id
 LINE_CHANNEL_SECRET=your_line_channel_secret
 LINE_CHANNEL_ACCESS_TOKEN=your_line_access_token
+LINE_REQUIRE_KYC_FOR_WITHDRAWAL=true
+LINE_MIN_WITHDRAWAL_WITHOUT_KYC=1000
 
 # MLM Settings
 MLM_TYPE=unilevel
@@ -326,9 +360,13 @@ php artisan test --filter MlmServiceTest
 - [x] ระบบ Payment
 - [x] ระบบ POS
 
-### Phase 2 (อนาคต)
+### Phase 2 (เสร็จแล้ว ✅)
+- [x] **Vendor Feature Manager** - ระบบจัดการฟีเจอร์สำหรับร้านค้า
+- [x] **LINE OA KYC System** - ระบบยืนยันตัวตนผ่าน LINE Official Account
+- [x] **Database Migration & Update System** - ระบบอัพเดทฐานข้อมูลแบบมืออาชีพ
+
+### Phase 3 (อนาคต)
 - [ ] Mobile App (React Native)
-- [ ] Advanced Analytics
 - [ ] AI-powered Product Recommendations
 - [ ] Multi-language Support
 - [ ] Advanced SEO Tools
@@ -343,6 +381,12 @@ php artisan test --filter MlmServiceTest
 - [User Guide](docs/user-guide.md)
 - [Developer Guide](docs/developer-guide.md)
 - [API Documentation](docs/api.md)
+
+### 📖 คู่มือระบบใหม่ (Phase 2)
+
+- 🚀 [**Feature Manager Guide**](docs/FEATURE_MANAGER_GUIDE.md) - คู่มือระบบจัดการฟีเจอร์สำหรับร้านค้าอย่างละเอียด
+- 📱 [**LINE OA Setup Guide**](docs/LINE_OA_SETUP_GUIDE.md) - คู่มือการตั้งค่า LINE Official Account แบบ Step-by-Step พร้อมภาพประกอบ
+- 🔧 [**System Update Guide**](docs/SYSTEM_UPDATE_GUIDE.md) - คู่มือการอัพเดทระบบและฐานข้อมูลอย่างปลอดภัย
 
 ---
 
