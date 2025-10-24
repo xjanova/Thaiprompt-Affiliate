@@ -17,11 +17,11 @@ use App\Http\Controllers\Api\VendorController;
 */
 
 // Public API Routes
-Route::prefix('v1')->group(function () {
-    // Authentication
-    Route::post('/register', [AuthController::class, 'register']);
+Route::prefix('v1')->middleware(['sanitize', 'cloudflare'])->group(function () {
+    // Authentication (with spam filtering for registration)
+    Route::post('/register', [AuthController::class, 'register'])->middleware('spam.filter:registration');
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register-with-referral', [AuthController::class, 'registerWithReferral']);
+    Route::post('/register-with-referral', [AuthController::class, 'registerWithReferral'])->middleware('spam.filter:registration');
 
     // Products (Public)
     Route::get('/products', [ProductController::class, 'index']);
@@ -45,10 +45,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/{item}', [CartController::class, 'destroy']);
     Route::delete('/cart', [CartController::class, 'clear']);
 
-    // Orders
+    // Orders (with spam filtering)
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
-    Route::post('/orders', [OrderController::class, 'store']);
+    Route::post('/orders', [OrderController::class, 'store'])->middleware('spam.filter:order');
 
     // Wallet
     Route::get('/wallet', [WalletController::class, 'show']);

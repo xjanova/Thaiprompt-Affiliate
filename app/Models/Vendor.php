@@ -71,6 +71,16 @@ class Vendor extends Model
         return $this->hasMany(Coupon::class);
     }
 
+    public function employees()
+    {
+        return $this->hasMany(VendorEmployee::class);
+    }
+
+    public function activeEmployees()
+    {
+        return $this->hasMany(VendorEmployee::class)->where('employment_status', 'active');
+    }
+
     // Helper Methods
     public function isActive(): bool
     {

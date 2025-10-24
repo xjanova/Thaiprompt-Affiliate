@@ -9,7 +9,10 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Vendor\VendorDashboardController;
 use App\Http\Controllers\Vendor\VendorProductController;
+use App\Http\Controllers\Vendor\VendorEmployeeController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\CloudflareConfigController;
+use App\Http\Controllers\Admin\AdminEmployeeController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\MLM\MlmDashboardController;
 use App\Http\Controllers\Wallet\WalletController;
@@ -87,6 +90,9 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 
     // POS
     Route::get('/pos', [VendorDashboardController::class, 'pos'])->name('pos');
+
+    // Employee Management
+    Route::resource('employees', VendorEmployeeController::class);
 });
 
 // Admin Routes
@@ -107,4 +113,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Withdrawal Management
     Route::post('/withdrawals/{withdrawal}/approve', [AdminDashboardController::class, 'approveWithdrawal'])->name('withdrawals.approve');
     Route::post('/withdrawals/{withdrawal}/reject', [AdminDashboardController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
+
+    // Cloudflare Configuration (Super Admin Only)
+    Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
+        Route::get('/', [CloudflareConfigController::class, 'index'])->name('index');
+        Route::post('/update', [CloudflareConfigController::class, 'update'])->name('update');
+        Route::post('/test', [CloudflareConfigController::class, 'testConnection'])->name('test');
+        Route::get('/statistics', [CloudflareConfigController::class, 'statistics'])->name('statistics');
+        Route::get('/logs', [CloudflareConfigController::class, 'logs'])->name('logs');
+    });
+
+    // Admin Employee Management (Super Admin Only)
+    Route::resource('employees', AdminEmployeeController::class);
 });

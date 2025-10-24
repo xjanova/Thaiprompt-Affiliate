@@ -12,10 +12,19 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Global middleware
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
+        // Middleware aliases
         $middleware->alias([
             'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
+            'sanitize' => \App\Http\Middleware\SanitizeInput::class,
+            'cloudflare' => \App\Http\Middleware\CheckCloudflareChallenge::class,
+            'spam.filter' => \App\Http\Middleware\SpamFilter::class,
+            'admin.employee' => \App\Http\Middleware\CheckAdminEmployeePermission::class,
+            'vendor.employee' => \App\Http\Middleware\CheckVendorEmployeePermission::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
