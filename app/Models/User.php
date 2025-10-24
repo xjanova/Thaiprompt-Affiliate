@@ -151,6 +151,16 @@ class User extends Authenticatable
         return $this->hasMany(Withdrawal::class);
     }
 
+    public function hotelBookings()
+    {
+        return $this->hasMany(HotelBooking::class);
+    }
+
+    public function hotelReviews()
+    {
+        return $this->hasMany(HotelReview::class);
+    }
+
     // Helper Methods
     public function isVendor(): bool
     {

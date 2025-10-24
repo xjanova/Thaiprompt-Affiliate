@@ -9,6 +9,10 @@ use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\MlmController;
 use App\Http\Controllers\Api\VendorController;
+use App\Http\Controllers\Api\AddonController;
+use App\Http\Controllers\Api\ThemeController;
+use App\Http\Controllers\Api\Hotel\HotelController;
+use App\Http\Controllers\Api\Hotel\BookingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,6 +32,24 @@ Route::prefix('v1')->middleware(['sanitize', 'cloudflare'])->group(function () {
     Route::get('/products/{id}', [ProductController::class, 'show']);
     Route::get('/categories', [ProductController::class, 'categories']);
     Route::get('/vendors', [VendorController::class, 'index']);
+
+    // Hotels (Public)
+    Route::get('/hotels', [HotelController::class, 'index']);
+    Route::get('/hotels/{id}', [HotelController::class, 'show']);
+    Route::get('/hotels/{id}/availability', [HotelController::class, 'availability']);
+
+    // Themes (Public)
+    Route::get('/themes', [ThemeController::class, 'index']);
+    Route::get('/themes/featured', [ThemeController::class, 'featured']);
+    Route::get('/themes/free', [ThemeController::class, 'free']);
+    Route::get('/themes/premium', [ThemeController::class, 'premium']);
+    Route::get('/themes/category/{category}', [ThemeController::class, 'byCategory']);
+    Route::get('/themes/{id}', [ThemeController::class, 'show']);
+    Route::get('/vendor/{vendorId}/theme', [ThemeController::class, 'publicTheme']);
+
+    // Addons (Public)
+    Route::get('/addons', [AddonController::class, 'index']);
+    Route::get('/addons/{id}', [AddonController::class, 'show']);
 });
 
 // Protected API Routes
@@ -61,6 +83,26 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::get('/mlm/commissions', [MlmController::class, 'commissions']);
     Route::post('/mlm/invite', [MlmController::class, 'sendInvitation']);
 
+    // Hotel Bookings
+    Route::get('/bookings', [BookingController::class, 'index']);
+    Route::get('/bookings/{id}', [BookingController::class, 'show']);
+    Route::post('/bookings', [BookingController::class, 'store']);
+    Route::post('/bookings/calculate-price', [BookingController::class, 'calculatePrice']);
+    Route::post('/bookings/{id}/payment', [BookingController::class, 'processPayment']);
+    Route::post('/bookings/{id}/cancel', [BookingController::class, 'cancel']);
+
+    // Addons
+    Route::get('/my-addons', [AddonController::class, 'myAddons']);
+    Route::get('/addons/available', [AddonController::class, 'available']);
+    Route::post('/addons/purchase', [AddonController::class, 'purchase']);
+    Route::post('/addons/{purchaseId}/deactivate', [AddonController::class, 'deactivate']);
+
+    // Themes
+    Route::get('/my-theme', [ThemeController::class, 'myTheme']);
+    Route::post('/theme/apply', [ThemeController::class, 'apply']);
+    Route::post('/theme/customize', [ThemeController::class, 'customize']);
+    Route::post('/theme/reset', [ThemeController::class, 'reset']);
+
     // Vendor Routes
     Route::middleware('role:vendor')->prefix('vendor')->group(function () {
         Route::get('/dashboard', [VendorController::class, 'dashboard']);
@@ -73,6 +115,31 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('/pos/session/open', [VendorController::class, 'openPosSession']);
         Route::post('/pos/session/close', [VendorController::class, 'closePosSession']);
         Route::post('/pos/sale', [VendorController::class, 'createPosSale']);
+
+        // Hotels
+        Route::get('/hotels', [HotelController::class, 'vendorHotels']);
+        Route::post('/hotels', [HotelController::class, 'store']);
+        Route::put('/hotels/{id}', [HotelController::class, 'update']);
+        Route::delete('/hotels/{id}', [HotelController::class, 'destroy']);
+        Route::get('/hotels/{id}/stats', [HotelController::class, 'stats']);
+
+        // Hotel Bookings
+        Route::get('/bookings', [BookingController::class, 'vendorBookings']);
+        Route::get('/bookings/stats', [BookingController::class, 'stats']);
+        Route::post('/bookings/{id}/check-in', [BookingController::class, 'checkIn']);
+        Route::post('/bookings/{id}/check-out', [BookingController::class, 'checkOut']);
+    });
+
+    // Admin Routes
+    Route::middleware('role:admin')->prefix('admin')->group(function () {
+        // Addon Management
+        Route::post('/addons', [AddonController::class, 'store']);
+        Route::put('/addons/{id}', [AddonController::class, 'update']);
+        Route::get('/addons/purchases', [AddonController::class, 'purchases']);
+
+        // Theme Management
+        Route::post('/themes', [ThemeController::class, 'store']);
+        Route::put('/themes/{id}', [ThemeController::class, 'update']);
     });
 });
 

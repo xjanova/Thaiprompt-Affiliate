@@ -165,6 +165,30 @@
 - 🆕 อัปโหลดรูปโปรไฟล์เองได้
 - 🆕 ปรับขนาดรูปอัตโนมัติ
 
+### 22. 🏨 ระบบจัดการโรงแรม (Hotel Management System) **[🆕 v1.1.0]**
+- ✅ **Complete Hotel & Room Management** - จัดการโรงแรมและห้องพักครบวงจร
+- ✅ **Advanced Booking System** - ระบบจองห้องพักขั้นสูงพร้อมปฏิทินการจอง
+- ✅ **Dynamic Pricing Rules** - กำหนดกฎราคาแบบยืดหยุ่นตามฤดูกาลและอุปสงค์
+- ✅ **Promotions & Discounts** - โปรโมชั่นและส่วนลดสำหรับห้องพัก
+- ✅ **Hotel Amenities** - จัดการสิ่งอำนวยความสะดวกของโรงแรม
+- ✅ **Reviews & Ratings** - รีวิวและให้คะแนนโรงแรมและห้องพัก
+
+### 23. 🎨 ระบบปรับแต่งธีมร้านค้า (Store Theme Customization) **[🆕 v1.1.0]**
+- ✅ **Customizable Store Themes** - ปรับแต่งธีมร้านค้าได้เองอย่างอิสระ
+- ✅ **Color Schemes** - เลือกชุดสีของร้านจากพาเลตต์หลากหลาย
+- ✅ **Layout Options** - เปลี่ยนรูปแบบการจัดวางหน้าร้าน
+- ✅ **Brand Identity** - สร้างเอกลักษณ์แบรนด์ด้วยโลโก้และสีของคุณ
+- ✅ **Custom Fonts** - เลือกฟอนต์ที่เหมาะกับแบรนด์
+- ✅ **Preview Mode** - ดูตัวอย่างธีมก่อนเผยแพร่
+
+### 24. 🔌 ระบบ Addon (Addon System) **[🆕 v1.1.0]**
+- ✅ **Addon Marketplace** - ตลาดกลาง Addon สำหรับขยายความสามารถ
+- ✅ **Plugin Installation** - ติดตั้ง Plugin เพิ่มเติมได้ง่ายๆ
+- ✅ **Feature Extensions** - ขยายฟีเจอร์ระบบตามความต้องการ
+- ✅ **Third-party Integrations** - เชื่อมต่อบริการภายนอก (Shipping, CRM, etc.)
+- ✅ **Addon Management** - จัดการและอัปเดท Addon ได้จากหน้าแอดมิน
+- ✅ **Developer API** - API สำหรับนักพัฒนาสร้าง Addon
+
 ---
 
 ### 12. Vendor Feature Manager 🆕
@@ -724,6 +748,7 @@ php artisan test --filter=AuthenticationTest
 
 ## 📊 สถิติโปรเจค
 
+- **🌟 Features:** 24 comprehensive features
 - **📁 Total Files:** 200+ files
 - **💻 Lines of Code:** 15,000+ lines
 - **🎨 Blade Views:** 38 templates

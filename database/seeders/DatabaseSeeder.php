@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             VendorFeatureSeeder::class,
             LineOaConfigSeeder::class,
+            AddonSeeder::class,
+            StoreThemeSeeder::class,
+            HotelAmenitySeeder::class,
         ]);
     }
 }
