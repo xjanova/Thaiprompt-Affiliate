@@ -31,13 +31,18 @@ class Vendor extends Model
         'total_revenue',
         'rating',
         'total_reviews',
+        'is_verified',
+        'verification_badge',
+        'verified_at',
     ];
 
     protected $casts = [
         'featured' => 'boolean',
+        'is_verified' => 'boolean',
         'commission_rate' => 'decimal:2',
         'total_revenue' => 'decimal:2',
         'rating' => 'decimal:2',
+        'verified_at' => 'datetime',
     ];
 
     // Relationships
@@ -71,7 +76,78 @@ class Vendor extends Model
         return $this->hasMany(Coupon::class);
     }
 
+    public function verifications()
+    {
+        return $this->hasMany(ShopVerification::class);
+    }
+
+    public function currentVerification()
+    {
+        return $this->hasOne(ShopVerification::class)->latest();
+    }
+
+    public function employees()
+    {
+        return $this->hasMany(VendorEmployee::class);
+    }
+
+    public function activeEmployees()
+    {
+        return $this->hasMany(VendorEmployee::class)->where('employment_status', 'active');
+    }
+
+    public function featurePurchases()
+    {
+        return $this->hasMany(VendorFeaturePurchase::class);
+    }
+
+    public function activeFeatures()
+    {
+        return $this->featurePurchases()->active()->with('feature');
+    }
+
+    public function featureUsageLogs()
+    {
+        return $this->hasMany(VendorFeatureUsageLog::class);
+    }
+
     // Helper Methods
+    public function isVerified(): bool
+    {
+        return $this->is_verified === true;
+    }
+
+    public function getVerificationBadgeIcon(): ?string
+    {
+        if (!$this->verification_badge) {
+            return null;
+        }
+
+        $badges = [
+            'bronze' => '🥉',
+            'silver' => '🥈',
+            'gold' => '🥇',
+            'platinum' => '💎',
+        ];
+
+        return $badges[$this->verification_badge] ?? null;
+    }
+
+    public function getVerificationBadgeColor(): ?string
+    {
+        if (!$this->verification_badge) {
+            return null;
+        }
+
+        $colors = [
+            'bronze' => '#CD7F32',
+            'silver' => '#C0C0C0',
+            'gold' => '#FFD700',
+            'platinum' => '#E5E4E2',
+        ];
+
+        return $colors[$this->verification_badge] ?? null;
+    }
     public function isActive(): bool
     {
         return $this->status === 'active';
@@ -85,5 +161,23 @@ class Vendor extends Model
     public function calculateCommission(float $amount): float
     {
         return $amount * ($this->commission_rate / 100);
+    }
+
+    public function hasFeature(int $featureId): bool
+    {
+        return $this->featurePurchases()
+            ->where('vendor_feature_id', $featureId)
+            ->active()
+            ->exists();
+    }
+
+    public function hasFeatureBySlug(string $slug): bool
+    {
+        return $this->featurePurchases()
+            ->whereHas('feature', function ($query) use ($slug) {
+                $query->where('slug', $slug);
+            })
+            ->active()
+            ->exists();
     }
 }

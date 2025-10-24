@@ -9,16 +9,45 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Vendor\VendorDashboardController;
 use App\Http\Controllers\Vendor\VendorProductController;
+use App\Http\Controllers\Vendor\VendorEmployeeController;
 use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\CloudflareConfigController;
+use App\Http\Controllers\Admin\AdminEmployeeController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\MLM\MlmDashboardController;
 use App\Http\Controllers\Wallet\WalletController;
+use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\BackupController;
+use App\Http\Controllers\MlmTreeController;
+use App\Http\Controllers\NfcPaymentController;
+use App\Http\Controllers\Admin\NfcCardController;
+use App\Http\Controllers\Admin\VersionUpdateController;
+use App\Http\Controllers\Admin\ShopVerificationController;
+use App\Http\Controllers\Vendor\VendorVerificationController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+// Setup Wizard Routes (No authentication required)
+Route::middleware('setup.check')->prefix('setup')->name('setup.')->group(function () {
+    Route::get('/', [SetupController::class, 'index'])->name('index');
+    Route::get('/requirements', [SetupController::class, 'checkRequirements'])->name('requirements');
+    Route::get('/database', [SetupController::class, 'database'])->name('database');
+    Route::post('/database/test', [SetupController::class, 'testDatabase'])->name('database.test');
+    Route::post('/database/save', [SetupController::class, 'saveDatabase'])->name('database.save');
+    Route::post('/migrate', [SetupController::class, 'migrate'])->name('migrate');
+    Route::post('/seed', [SetupController::class, 'seed'])->name('seed');
+    Route::get('/admin', [SetupController::class, 'admin'])->name('admin');
+    Route::post('/admin/create', [SetupController::class, 'createAdmin'])->name('admin.create');
+    Route::post('/complete', [SetupController::class, 'complete'])->name('complete');
+    Route::get('/progress', [SetupController::class, 'progress'])->name('progress');
+});
 
 // Home & Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -66,6 +95,13 @@ Route::middleware(['auth'])->prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/commissions', [MlmDashboardController::class, 'commissions'])->name('commissions');
     Route::get('/referrals', [MlmDashboardController::class, 'referrals'])->name('referrals');
     Route::post('/invite', [MlmDashboardController::class, 'sendInvitation'])->name('invite');
+
+    // MLM Tree Visualization
+    Route::get('/tree', [MlmTreeController::class, 'index'])->name('tree.index');
+    Route::get('/tree/{user}', [MlmTreeController::class, 'show'])->name('tree.show');
+    Route::get('/tree-data/{userId?}', [MlmTreeController::class, 'getTreeData'])->name('tree.data');
+    Route::get('/tree/node/{user}', [MlmTreeController::class, 'getNodeDetails'])->name('tree.node');
+    Route::post('/tree/add-member', [MlmTreeController::class, 'addMember'])->name('tree.add-member');
 });
 
 // Wallet Routes
@@ -87,18 +123,39 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 
     // POS
     Route::get('/pos', [VendorDashboardController::class, 'pos'])->name('pos');
+
+    // Shop Verification
+    Route::get('/verification', [VendorVerificationController::class, 'index'])->name('verification.index');
+    Route::get('/verification/create', [VendorVerificationController::class, 'create'])->name('verification.create');
+    Route::post('/verification', [VendorVerificationController::class, 'store'])->name('verification.store');
+    Route::get('/verification/status', [VendorVerificationController::class, 'show'])->name('verification.show');
+
+    // Employee Management
+    Route::resource('employees', VendorEmployeeController::class);
+});
+
+// NFC Payment Routes (Public - for POS terminals)
+Route::prefix('nfc')->name('nfc.')->group(function () {
+    Route::get('/payment', [NfcPaymentController::class, 'index'])->name('payment');
+    Route::post('/process', [NfcPaymentController::class, 'processPayment'])->name('process');
+    Route::post('/check-balance', [NfcPaymentController::class, 'checkBalance'])->name('check-balance');
+    Route::post('/verify', [NfcPaymentController::class, 'verifyCard'])->name('verify');
+    Route::post('/card-info', [NfcPaymentController::class, 'getCardInfo'])->name('card-info');
 });
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/charts', [DashboardController::class, 'getChartDataApi'])->name('dashboard.charts');
+
+    // Original Admin Routes
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('users');
     Route::get('/vendors', [AdminDashboardController::class, 'vendors'])->name('vendors');
     Route::get('/orders', [AdminDashboardController::class, 'orders'])->name('orders');
     Route::get('/products', [AdminDashboardController::class, 'products'])->name('products');
     Route::get('/commissions', [AdminDashboardController::class, 'commissions'])->name('commissions');
     Route::get('/withdrawals', [AdminDashboardController::class, 'withdrawals'])->name('withdrawals');
-    Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
 
     // Vendor Management
     Route::post('/vendors/{vendor}/approve', [AdminDashboardController::class, 'approveVendor'])->name('vendors.approve');
@@ -107,4 +164,81 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Withdrawal Management
     Route::post('/withdrawals/{withdrawal}/approve', [AdminDashboardController::class, 'approveWithdrawal'])->name('withdrawals.approve');
     Route::post('/withdrawals/{withdrawal}/reject', [AdminDashboardController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
+
+    // Settings
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/logo', [SettingsController::class, 'uploadLogo'])->name('settings.logo');
+    Route::post('/settings/favicon', [SettingsController::class, 'uploadFavicon'])->name('settings.favicon');
+    Route::get('/settings/public', [SettingsController::class, 'getPublicSettings'])->name('settings.public');
+
+    // Theme Customization
+    Route::prefix('theme')->name('theme.')->group(function () {
+        Route::get('/', [ThemeController::class, 'index'])->name('index');
+        Route::post('/', [ThemeController::class, 'update'])->name('update');
+        Route::post('/logo', [ThemeController::class, 'uploadLogo'])->name('logo');
+        Route::post('/favicon', [ThemeController::class, 'uploadFavicon'])->name('favicon');
+        Route::post('/subscribe', [ThemeController::class, 'subscribe'])->name('subscribe');
+        Route::post('/preview', [ThemeController::class, 'preview'])->name('preview');
+    });
+
+    // Backups
+    Route::prefix('backups')->name('backups.')->group(function () {
+        Route::get('/', [BackupController::class, 'index'])->name('index');
+        Route::post('/', [BackupController::class, 'create'])->name('create');
+        Route::get('/{backup}/download', [BackupController::class, 'download'])->name('download');
+        Route::post('/{backup}/restore', [BackupController::class, 'restore'])->name('restore');
+        Route::delete('/{backup}', [BackupController::class, 'destroy'])->name('destroy');
+        Route::post('/clean', [BackupController::class, 'clean'])->name('clean');
+    });
+
+    // NFC Card Management
+    Route::prefix('nfc')->name('nfc.')->group(function () {
+        Route::get('/', [NfcCardController::class, 'index'])->name('index');
+        Route::get('/create', [NfcCardController::class, 'create'])->name('create');
+        Route::post('/', [NfcCardController::class, 'store'])->name('store');
+        Route::get('/scan', [NfcCardController::class, 'scan'])->name('scan');
+        Route::get('/{nfcCard}', [NfcCardController::class, 'show'])->name('show');
+        Route::get('/{nfcCard}/link', [NfcCardController::class, 'linkForm'])->name('link-form');
+        Route::post('/{nfcCard}/link', [NfcCardController::class, 'link'])->name('link');
+        Route::post('/{nfcCard}/unlink', [NfcCardController::class, 'unlink'])->name('unlink');
+        Route::post('/{nfcCard}/activate', [NfcCardController::class, 'activate'])->name('activate');
+        Route::post('/{nfcCard}/deactivate', [NfcCardController::class, 'deactivate'])->name('deactivate');
+        Route::get('/{nfcCard}/transactions', [NfcCardController::class, 'transactions'])->name('transactions');
+        Route::delete('/{nfcCard}', [NfcCardController::class, 'destroy'])->name('destroy');
+    });
+
+    // Version Update Management
+    Route::prefix('version')->name('version.')->group(function () {
+        Route::get('/', [VersionUpdateController::class, 'index'])->name('index');
+        Route::post('/check', [VersionUpdateController::class, 'checkUpdates'])->name('check');
+        Route::get('/update', [VersionUpdateController::class, 'showUpdate'])->name('update');
+        Route::post('/update/start', [VersionUpdateController::class, 'startUpdate'])->name('start');
+        Route::post('/update/complete', [VersionUpdateController::class, 'completeUpdate'])->name('complete');
+        Route::post('/update/fail', [VersionUpdateController::class, 'failUpdate'])->name('fail');
+        Route::get('/history', [VersionUpdateController::class, 'history'])->name('history');
+        Route::get('/releases', [VersionUpdateController::class, 'releases'])->name('releases');
+    });
+
+    // Shop Verification Management
+    Route::prefix('verification')->name('verification.')->group(function () {
+        Route::get('/', [ShopVerificationController::class, 'index'])->name('index');
+        Route::get('/pending', [ShopVerificationController::class, 'pending'])->name('pending');
+        Route::get('/statistics', [ShopVerificationController::class, 'statistics'])->name('statistics');
+        Route::get('/{verification}', [ShopVerificationController::class, 'show'])->name('show');
+        Route::post('/{verification}/approve', [ShopVerificationController::class, 'approve'])->name('approve');
+        Route::post('/{verification}/reject', [ShopVerificationController::class, 'reject'])->name('reject');
+    });
+
+    // Cloudflare Configuration (Super Admin Only)
+    Route::prefix('cloudflare')->name('cloudflare.')->group(function () {
+        Route::get('/', [CloudflareConfigController::class, 'index'])->name('index');
+        Route::post('/update', [CloudflareConfigController::class, 'update'])->name('update');
+        Route::post('/test', [CloudflareConfigController::class, 'testConnection'])->name('test');
+        Route::get('/statistics', [CloudflareConfigController::class, 'statistics'])->name('statistics');
+        Route::get('/logs', [CloudflareConfigController::class, 'logs'])->name('logs');
+    });
+
+    // Admin Employee Management (Super Admin Only)
+    Route::resource('employees', AdminEmployeeController::class);
 });

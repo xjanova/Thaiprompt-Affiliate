@@ -17,11 +17,11 @@ use App\Http\Controllers\Api\VendorController;
 */
 
 // Public API Routes
-Route::prefix('v1')->group(function () {
-    // Authentication
-    Route::post('/register', [AuthController::class, 'register']);
+Route::prefix('v1')->middleware(['sanitize', 'cloudflare'])->group(function () {
+    // Authentication (with spam filtering for registration)
+    Route::post('/register', [AuthController::class, 'register'])->middleware('spam.filter:registration');
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/register-with-referral', [AuthController::class, 'registerWithReferral']);
+    Route::post('/register-with-referral', [AuthController::class, 'registerWithReferral'])->middleware('spam.filter:registration');
 
     // Products (Public)
     Route::get('/products', [ProductController::class, 'index']);
@@ -45,10 +45,10 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     Route::delete('/cart/{item}', [CartController::class, 'destroy']);
     Route::delete('/cart', [CartController::class, 'clear']);
 
-    // Orders
+    // Orders (with spam filtering)
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
-    Route::post('/orders', [OrderController::class, 'store']);
+    Route::post('/orders', [OrderController::class, 'store'])->middleware('spam.filter:order');
 
     // Wallet
     Route::get('/wallet', [WalletController::class, 'show']);
@@ -74,6 +74,25 @@ Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
         Route::post('/pos/session/close', [VendorController::class, 'closePosSession']);
         Route::post('/pos/sale', [VendorController::class, 'createPosSale']);
     });
+});
+
+// NFC Payment API Routes (No Auth - for POS terminals)
+Route::prefix('v1/nfc')->group(function () {
+    Route::post('/process', [\App\Http\Controllers\NfcPaymentController::class, 'processPayment']);
+    Route::post('/check-balance', [\App\Http\Controllers\NfcPaymentController::class, 'checkBalance']);
+    Route::post('/verify', [\App\Http\Controllers\NfcPaymentController::class, 'verifyCard']);
+    Route::post('/card-info', [\App\Http\Controllers\NfcPaymentController::class, 'getCardInfo']);
+});
+
+// Version Check API (Public)
+Route::get('/v1/version', [\App\Http\Controllers\Admin\VersionUpdateController::class, 'apiVersion']);
+Route::get('/v1/version/check', [\App\Http\Controllers\Admin\VersionUpdateController::class, 'apiCheckUpdates']);
+
+// MLM Tree API (Protected)
+Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
+    Route::get('/mlm/tree-data/{userId?}', [\App\Http\Controllers\MlmTreeController::class, 'getTreeData']);
+    Route::get('/mlm/tree/node/{user}', [\App\Http\Controllers\MlmTreeController::class, 'getNodeDetails']);
+    Route::post('/mlm/tree/add-member', [\App\Http\Controllers\MlmTreeController::class, 'addMember']);
 });
 
 // Webhook Routes (No Auth)

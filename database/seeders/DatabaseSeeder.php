@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             CommissionSettingSeeder::class,
             MlmRankSeeder::class,
             CategorySeeder::class,
+            VendorFeatureSeeder::class,
+            LineOaConfigSeeder::class,
         ]);
     }
 }
