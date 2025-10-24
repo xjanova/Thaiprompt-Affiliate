@@ -1,0 +1,945 @@
+openapi: 3.0.3
+info:
+  title: ThaiPrompt Marketplace API
+  description: |
+    Complete API documentation for ThaiPrompt Multi-vendor Marketplace with MLM System.
+
+    ## Authentication
+    This API uses Laravel Sanctum for authentication. Include your Bearer token in the Authorization header:
+    ```
+    Authorization: Bearer {your_token}
+    ```
+
+    ## Rate Limiting
+    - 60 requests per minute for authenticated users
+    - 20 requests per minute for guests
+
+    ## Response Format
+    All responses are in JSON format with the following structure:
+    ```json
+    {
+      "success": true,
+      "data": {},
+      "message": "Success message",
+      "meta": {}
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@thaiprompt.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.thaiprompt.com/api/v1
+    description: Production server
+  - url: http://localhost:8000/api/v1
+    description: Development server
+
+tags:
+  - name: Authentication
+    description: User authentication and registration
+  - name: Products
+    description: Product catalog operations
+  - name: Cart
+    description: Shopping cart management
+  - name: Orders
+    description: Order management
+  - name: MLM
+    description: Multi-Level Marketing operations
+  - name: Wallet
+    description: Wallet and withdrawal management
+  - name: Vendor
+    description: Vendor operations (requires vendor role)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        phone:
+          type: string
+          example: "0812345678"
+        referral_code:
+          type: string
+          example: "JOHN123"
+        mlm_level:
+          type: integer
+          example: 3
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: "iPhone 15 Pro"
+        slug:
+          type: string
+          example: "iphone-15-pro"
+        description:
+          type: string
+        price:
+          type: number
+          format: float
+          example: 45000.00
+        sale_price:
+          type: number
+          format: float
+          example: 42000.00
+        stock_quantity:
+          type: integer
+          example: 50
+        stock_status:
+          type: string
+          enum: [in_stock, out_of_stock, on_backorder]
+        featured_image:
+          type: string
+          format: url
+        vendor:
+          $ref: '#/components/schemas/Vendor'
+        category:
+          $ref: '#/components/schemas/Category'
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        parent_id:
+          type: integer
+          nullable: true
+
+    Vendor:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        logo:
+          type: string
+          format: url
+        status:
+          type: string
+          enum: [pending, active, suspended, rejected]
+
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        product:
+          $ref: '#/components/schemas/Product'
+        quantity:
+          type: integer
+          example: 2
+        subtotal:
+          type: number
+          format: float
+          example: 84000.00
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        order_number:
+          type: string
+          example: "ORD-20250124-001"
+        user_id:
+          type: integer
+        total_amount:
+          type: number
+          format: float
+        status:
+          type: string
+          enum: [pending, processing, shipped, delivered, cancelled, refunded]
+        payment_method:
+          type: string
+          enum: [stripe, promptpay, wallet, cash]
+        payment_status:
+          type: string
+          enum: [pending, paid, failed, refunded]
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        created_at:
+          type: string
+          format: date-time
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        product_id:
+          type: integer
+        product_name:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: number
+          format: float
+        subtotal:
+          type: number
+          format: float
+
+    Commission:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        order_id:
+          type: integer
+        amount:
+          type: number
+          format: float
+        type:
+          type: string
+          enum: [direct_sale, level_commission, rank_bonus, matching_bonus, performance_bonus]
+        status:
+          type: string
+          enum: [pending, approved, paid, cancelled]
+        created_at:
+          type: string
+          format: date-time
+
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        balance:
+          type: number
+          format: float
+          example: 5000.00
+        pending_balance:
+          type: number
+          format: float
+          example: 500.00
+        total_earned:
+          type: number
+          format: float
+          example: 10000.00
+        total_withdrawn:
+          type: number
+          format: float
+          example: 5000.00
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        errors:
+          type: object
+
+paths:
+  /register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: Register a new user account with optional referral code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+                - password
+              properties:
+                name:
+                  type: string
+                  example: "John Doe"
+                email:
+                  type: string
+                  format: email
+                  example: "john@example.com"
+                password:
+                  type: string
+                  format: password
+                  example: "password123"
+                password_confirmation:
+                  type: string
+                  format: password
+                  example: "password123"
+                phone:
+                  type: string
+                  example: "0812345678"
+                referral_code:
+                  type: string
+                  example: "SPONSOR123"
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /login:
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      token:
+                        type: string
+        '401':
+          description: Invalid credentials
+
+  /logout:
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+
+  /products:
+    get:
+      tags:
+        - Products
+      summary: Get all products
+      description: Retrieve paginated list of products with optional filters
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by product name
+        - name: category
+          in: query
+          schema:
+            type: integer
+          description: Filter by category ID
+        - name: min_price
+          in: query
+          schema:
+            type: number
+          description: Minimum price
+        - name: max_price
+          in: query
+          schema:
+            type: number
+          description: Maximum price
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, popular, price_low, price_high]
+          description: Sort order
+        - name: page
+          in: query
+          schema:
+            type: integer
+          description: Page number
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Items per page
+      responses:
+        '200':
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  meta:
+                    type: object
+                    properties:
+                      current_page:
+                        type: integer
+                      total:
+                        type: integer
+                      per_page:
+                        type: integer
+
+  /products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Get product by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Product found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+
+  /cart:
+    get:
+      tags:
+        - Cart
+      summary: Get cart contents
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cart retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CartItem'
+                      total:
+                        type: number
+                        format: float
+    delete:
+      tags:
+        - Cart
+      summary: Clear cart
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Cart cleared
+
+  /cart/add:
+    post:
+      tags:
+        - Cart
+      summary: Add item to cart
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - quantity
+              properties:
+                product_id:
+                  type: integer
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Item added to cart
+        '422':
+          description: Validation error
+
+  /cart/{item_id}:
+    put:
+      tags:
+        - Cart
+      summary: Update cart item quantity
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - quantity
+              properties:
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: Cart item updated
+    delete:
+      tags:
+        - Cart
+      summary: Remove item from cart
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: item_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Item removed
+
+  /orders:
+    get:
+      tags:
+        - Orders
+      summary: Get user orders
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Orders retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Order'
+    post:
+      tags:
+        - Orders
+      summary: Create new order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - payment_method
+                - shipping_address
+              properties:
+                payment_method:
+                  type: string
+                  enum: [stripe, promptpay, wallet, cash]
+                shipping_address:
+                  type: string
+                shipping_city:
+                  type: string
+                shipping_state:
+                  type: string
+                shipping_postal_code:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Order created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Order'
+
+  /orders/{order_id}:
+    get:
+      tags:
+        - Orders
+      summary: Get order details
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Order found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Order'
+
+  /mlm/stats:
+    get:
+      tags:
+        - MLM
+      summary: Get MLM statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: MLM stats retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      level:
+                        type: integer
+                      direct_referrals:
+                        type: integer
+                      total_team:
+                        type: integer
+                      team_sales:
+                        type: number
+                        format: float
+                      total_commissions:
+                        type: number
+                        format: float
+
+  /mlm/network:
+    get:
+      tags:
+        - MLM
+      summary: Get MLM network structure
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: depth
+          in: query
+          schema:
+            type: integer
+            default: 5
+          description: Maximum depth level
+      responses:
+        '200':
+          description: Network structure retrieved
+
+  /mlm/commissions:
+    get:
+      tags:
+        - MLM
+      summary: Get commission history
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Commissions retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Commission'
+
+  /mlm/invite:
+    post:
+      tags:
+        - MLM
+      summary: Send referral invitation
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Invitation sent
+
+  /wallet:
+    get:
+      tags:
+        - Wallet
+      summary: Get wallet information
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Wallet info retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/Wallet'
+
+  /wallet/transactions:
+    get:
+      tags:
+        - Wallet
+      summary: Get wallet transactions
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Transactions retrieved
+
+  /wallet/withdraw:
+    post:
+      tags:
+        - Wallet
+      summary: Request withdrawal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - bank_name
+                - account_number
+                - account_name
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  minimum: 100
+                bank_name:
+                  type: string
+                account_number:
+                  type: string
+                account_name:
+                  type: string
+                method:
+                  type: string
+                  enum: [bank_transfer, promptpay]
+                  default: bank_transfer
+      responses:
+        '201':
+          description: Withdrawal requested
+        '422':
+          description: Insufficient balance or validation error
+
+  /vendor/products:
+    get:
+      tags:
+        - Vendor
+      summary: Get vendor products
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Products retrieved
+    post:
+      tags:
+        - Vendor
+      summary: Create product
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - name
+                - price
+                - category_id
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                price:
+                  type: number
+                  format: float
+                sale_price:
+                  type: number
+                  format: float
+                stock_quantity:
+                  type: integer
+                category_id:
+                  type: integer
+                featured_image:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Product created
+
+  /vendor/products/{product_id}:
+    put:
+      tags:
+        - Vendor
+      summary: Update product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Product updated
+    delete:
+      tags:
+        - Vendor
+      summary: Delete product
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Product deleted
