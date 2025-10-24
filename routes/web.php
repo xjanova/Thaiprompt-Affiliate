@@ -13,12 +13,32 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\MLM\MlmDashboardController;
 use App\Http\Controllers\Wallet\WalletController;
+use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\ThemeController;
+use App\Http\Controllers\Admin\BackupController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
 */
+
+// Setup Wizard Routes (No authentication required)
+Route::middleware('setup.check')->prefix('setup')->name('setup.')->group(function () {
+    Route::get('/', [SetupController::class, 'index'])->name('index');
+    Route::get('/requirements', [SetupController::class, 'checkRequirements'])->name('requirements');
+    Route::get('/database', [SetupController::class, 'database'])->name('database');
+    Route::post('/database/test', [SetupController::class, 'testDatabase'])->name('database.test');
+    Route::post('/database/save', [SetupController::class, 'saveDatabase'])->name('database.save');
+    Route::post('/migrate', [SetupController::class, 'migrate'])->name('migrate');
+    Route::post('/seed', [SetupController::class, 'seed'])->name('seed');
+    Route::get('/admin', [SetupController::class, 'admin'])->name('admin');
+    Route::post('/admin/create', [SetupController::class, 'createAdmin'])->name('admin.create');
+    Route::post('/complete', [SetupController::class, 'complete'])->name('complete');
+    Route::get('/progress', [SetupController::class, 'progress'])->name('progress');
+});
 
 // Home & Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -91,14 +111,17 @@ Route::middleware(['auth', 'role:vendor'])->prefix('vendor')->name('vendor.')->g
 
 // Admin Routes
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
+    // Dashboard
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard/charts', [DashboardController::class, 'getChartDataApi'])->name('dashboard.charts');
+
+    // Original Admin Routes
     Route::get('/users', [AdminDashboardController::class, 'users'])->name('users');
     Route::get('/vendors', [AdminDashboardController::class, 'vendors'])->name('vendors');
     Route::get('/orders', [AdminDashboardController::class, 'orders'])->name('orders');
     Route::get('/products', [AdminDashboardController::class, 'products'])->name('products');
     Route::get('/commissions', [AdminDashboardController::class, 'commissions'])->name('commissions');
     Route::get('/withdrawals', [AdminDashboardController::class, 'withdrawals'])->name('withdrawals');
-    Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
 
     // Vendor Management
     Route::post('/vendors/{vendor}/approve', [AdminDashboardController::class, 'approveVendor'])->name('vendors.approve');
@@ -107,4 +130,31 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Withdrawal Management
     Route::post('/withdrawals/{withdrawal}/approve', [AdminDashboardController::class, 'approveWithdrawal'])->name('withdrawals.approve');
     Route::post('/withdrawals/{withdrawal}/reject', [AdminDashboardController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
+
+    // Settings
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+    Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/logo', [SettingsController::class, 'uploadLogo'])->name('settings.logo');
+    Route::post('/settings/favicon', [SettingsController::class, 'uploadFavicon'])->name('settings.favicon');
+    Route::get('/settings/public', [SettingsController::class, 'getPublicSettings'])->name('settings.public');
+
+    // Theme Customization
+    Route::prefix('theme')->name('theme.')->group(function () {
+        Route::get('/', [ThemeController::class, 'index'])->name('index');
+        Route::post('/', [ThemeController::class, 'update'])->name('update');
+        Route::post('/logo', [ThemeController::class, 'uploadLogo'])->name('logo');
+        Route::post('/favicon', [ThemeController::class, 'uploadFavicon'])->name('favicon');
+        Route::post('/subscribe', [ThemeController::class, 'subscribe'])->name('subscribe');
+        Route::post('/preview', [ThemeController::class, 'preview'])->name('preview');
+    });
+
+    // Backups
+    Route::prefix('backups')->name('backups.')->group(function () {
+        Route::get('/', [BackupController::class, 'index'])->name('index');
+        Route::post('/', [BackupController::class, 'create'])->name('create');
+        Route::get('/{backup}/download', [BackupController::class, 'download'])->name('download');
+        Route::post('/{backup}/restore', [BackupController::class, 'restore'])->name('restore');
+        Route::delete('/{backup}', [BackupController::class, 'destroy'])->name('destroy');
+        Route::post('/clean', [BackupController::class, 'clean'])->name('clean');
+    });
 });

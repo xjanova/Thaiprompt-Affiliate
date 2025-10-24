@@ -15,6 +15,10 @@
         "vite": "^4.5.0"
     },
     "dependencies": {
-        "alpinejs": "^3.13.3"
+        "alpinejs": "^3.13.3",
+        "chart.js": "^4.4.1",
+        "gsap": "^3.12.5",
+        "@iconify/iconify": "^3.1.1",
+        "sweetalert2": "^11.10.5"
     }
 }
