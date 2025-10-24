@@ -71,6 +71,52 @@ class Vendor extends Model
         return $this->hasMany(Coupon::class);
     }
 
+    public function addonPurchases()
+    {
+        return $this->hasMany(AddonPurchase::class);
+    }
+
+    public function hotels()
+    {
+        return $this->hasMany(Hotel::class);
+    }
+
+    public function hotelBookings()
+    {
+        return $this->hasMany(HotelBooking::class);
+    }
+
+    public function vendorTheme()
+    {
+        return $this->hasOne(VendorTheme::class);
+    }
+
+    // Addon Management
+    public function hasAddon($addonType): bool
+    {
+        return $this->addonPurchases()
+            ->valid()
+            ->whereHas('addon', function ($q) use ($addonType) {
+                $q->where('type', $addonType);
+            })
+            ->exists();
+    }
+
+    public function hasHotelManagement(): bool
+    {
+        return $this->hasAddon('hotel_management');
+    }
+
+    public function hasStoreTheme(): bool
+    {
+        return $this->hasAddon('store_theme');
+    }
+
+    public function getActiveAddons()
+    {
+        return $this->addonPurchases()->valid()->with('addon')->get();
+    }
+
     // Helper Methods
     public function isActive(): bool
     {

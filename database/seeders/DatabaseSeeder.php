@@ -17,6 +17,9 @@ class DatabaseSeeder extends Seeder
             CommissionSettingSeeder::class,
             MlmRankSeeder::class,
             CategorySeeder::class,
+            AddonSeeder::class,
+            StoreThemeSeeder::class,
+            HotelAmenitySeeder::class,
         ]);
     }
 }
