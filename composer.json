@@ -1,6 +1,7 @@
 {
     "name": "thaiprompt/affiliate-marketplace",
     "type": "project",
+    "version": "1.0.0",
     "description": "Multi-vendor marketplace with MLM system",
     "keywords": ["laravel", "marketplace", "mlm", "multi-vendor", "ecommerce"],
     "license": "MIT",
