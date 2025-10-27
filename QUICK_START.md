@@ -23,7 +23,7 @@ bash install.sh
 ## 📦 สิ่งที่ต้องมีก่อนติดตั้ง
 
 ### บน Server:
-- ✅ PHP >= 8.1
+- ✅ PHP >= 8.2
 - ✅ MySQL >= 8.0
 - ✅ Composer
 - ✅ Node.js & NPM
@@ -35,11 +35,11 @@ bash install.sh
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install PHP 8.1 and extensions
+# Install PHP 8.2 and extensions
 sudo add-apt-repository ppa:ondrej/php -y
 sudo apt update
-sudo apt install -y php8.1-fpm php8.1-cli php8.1-mysql php8.1-gd \
-  php8.1-mbstring php8.1-curl php8.1-xml php8.1-zip php8.1-bcmath
+sudo apt install -y php8.2-fpm php8.2-cli php8.2-mysql php8.2-gd \
+  php8.2-mbstring php8.2-curl php8.2-xml php8.2-zip php8.2-bcmath
 
 # Install MySQL
 sudo apt install -y mysql-server
@@ -113,7 +113,7 @@ server {
     error_page 404 /index.php;
 
     location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
     }

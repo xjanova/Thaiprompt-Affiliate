@@ -48,5 +48,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $schedule->call(function () {
             app(\App\Services\Version\VersionUpdateService::class)->checkForUpdates();
         })->daily();
+
+        // Process commissions daily
+        $schedule->command('commissions:process')->daily();
+
+        // Update MLM ranks daily
+        $schedule->command('ranks:update')->daily();
+
+        // Process withdrawals hourly
+        $schedule->command('withdrawals:process')->hourly();
     })
     ->create();
