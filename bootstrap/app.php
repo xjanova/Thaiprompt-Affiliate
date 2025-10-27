@@ -16,6 +16,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->append(\App\Http\Middleware\CheckInstalled::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
+        // Web middleware group
+        $middleware->web(append: [
+            \App\Http\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
+
         // Middleware aliases
         $middleware->alias([
             'role' => \Spatie\Permission\Middlewares\RoleMiddleware::class,
@@ -32,4 +42,11 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->withSchedule(function ($schedule) {
+        // Check for version updates daily
+        $schedule->call(function () {
+            app(\App\Services\Version\VersionUpdateService::class)->checkForUpdates();
+        })->daily();
+    })
+    ->create();
