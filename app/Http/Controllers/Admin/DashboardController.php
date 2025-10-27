@@ -9,10 +9,18 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Commission;
 use App\Models\MlmNetwork;
+use App\Services\Version\VersionUpdateService;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
+    protected VersionUpdateService $versionService;
+
+    public function __construct(VersionUpdateService $versionService)
+    {
+        $this->versionService = $versionService;
+    }
+
     /**
      * Show admin dashboard
      */
@@ -24,12 +32,16 @@ class DashboardController extends Controller
         $recentUsers = $this->getRecentUsers();
         $chartData = $this->getChartData();
 
+        // Check for version updates
+        $versionInfo = $this->versionService->getCurrentVersionInfo();
+
         return view('admin.dashboard', compact(
             'stats',
             'recentOrders',
             'topVendors',
             'recentUsers',
-            'chartData'
+            'chartData',
+            'versionInfo'
         ));
     }
 

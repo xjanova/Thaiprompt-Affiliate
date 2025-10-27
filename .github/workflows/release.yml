@@ -1,0 +1,128 @@
+name: Create Release
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ closed ]
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.2.0)'
+        required: true
+        default: '1.2.0'
+
+jobs:
+  create-release:
+    # Only create release on direct push to main OR when PR is merged to main
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true) || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    name: Create GitHub Release
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get version from composer.json
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(grep -oP '"version":\s*"\K[^"]+' composer.json || echo "1.1.0")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Get commit messages since last release
+        id: changelog
+        run: |
+          # Get the last release tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          if [ -z "$LAST_TAG" ]; then
+            # No previous tags, get all commits
+            COMMITS=$(git log --pretty=format:"- %s" --no-merges)
+          else
+            # Get commits since last tag
+            COMMITS=$(git log ${LAST_TAG}..HEAD --pretty=format:"- %s" --no-merges)
+          fi
+
+          # Save to file
+          echo "$COMMITS" > changelog.txt
+
+          # Also save for GitHub output
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo "$COMMITS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Create Release Notes
+        id: release_notes
+        run: |
+          cat > release_notes.md << 'EOF'
+          ## 🚀 What's New in v${{ steps.get_version.outputs.version }}
+
+          ### Changes
+          ${{ steps.changelog.outputs.changelog }}
+
+          ---
+
+          ## 📦 Installation
+
+          ### New Installation
+          1. Download the source code
+          2. Extract to your web server
+          3. Visit your domain - Setup Wizard will guide you through installation
+
+          ### Update from Previous Version
+          1. Login as Admin
+          2. Go to **Admin > Version Update**
+          3. Click "Check for Updates"
+          4. Follow the update instructions
+
+          ---
+
+          ## 📋 System Requirements
+          - PHP >= 8.1
+          - MySQL >= 8.0
+          - Redis (recommended)
+          - Composer
+          - Node.js & NPM
+
+          ## 📚 Documentation
+          - [Installation Guide](./INSTALLATION_GUIDE.md)
+          - [Setup Wizard Guide](./SETUP_WIZARD.md)
+          - [Deployment Guide](./DEPLOYMENT.md)
+          - [Configuration Guide](./CONFIGURATION.md)
+
+          ## 🆘 Support
+          - Email: support@thaiprompt.com
+          - Issues: https://github.com/xjanova/Thaiprompt-Affiliate/issues
+          EOF
+
+      - name: Create Git Tag
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v${{ steps.get_version.outputs.version }}" -m "Release v${{ steps.get_version.outputs.version }}"
+          git push origin "v${{ steps.get_version.outputs.version }}"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: Release v${{ steps.get_version.outputs.version }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release Created
+        run: |
+          echo "✅ Release v${{ steps.get_version.outputs.version }} created successfully!"
+          echo "📦 Users can now see this update in Admin > Version Update"
