@@ -1,0 +1,5 @@
+ทดสอบการเชื่อมต่อกับเซิร์ฟเวอร์
+Test connection to server
+
+สร้างโดย: Claude Code
+เวลา: 2025-10-27
