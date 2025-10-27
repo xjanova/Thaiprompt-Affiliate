@@ -58,13 +58,16 @@ if command -v php &> /dev/null; then
     PHP_VERSION=$(php -v | head -n 1 | cut -d " " -f 2 | cut -d "." -f 1,2)
     print_success "PHP $PHP_VERSION found"
 
-    # Check if PHP >= 8.1
-    if [ "$(printf '%s\n' "8.1" "$PHP_VERSION" | sort -V | head -n1)" != "8.1" ]; then
-        print_error "PHP 8.1 or higher required. You have PHP $PHP_VERSION"
+    # Check if PHP >= 8.2
+    if [ "$(printf '%s\n' "8.2" "$PHP_VERSION" | sort -V | head -n1)" != "8.2" ]; then
+        print_error "PHP 8.2 or higher required. You have PHP $PHP_VERSION"
+        echo ""
+        print_info "Laravel 11 requires PHP 8.2+"
+        print_info "Install with: sudo apt install php8.2-fpm php8.2-cli php8.2-mysql"
         exit 1
     fi
 else
-    print_error "PHP not found. Please install PHP 8.1 or higher"
+    print_error "PHP not found. Please install PHP 8.2 or higher"
     exit 1
 fi
 
