@@ -26,7 +26,7 @@ return [
          * Package Service Providers...
          */
         Spatie\Permission\PermissionServiceProvider::class,
-        Intervention\Image\Laravel\ServiceProvider::class,
+        // Intervention\Image v3 uses auto-discovery, no need to register manually
         Barryvdh\DomPDF\ServiceProvider::class,
         Maatwebsite\Excel\ExcelServiceProvider::class,
 
@@ -40,7 +40,7 @@ return [
     ])->toArray(),
 
     'aliases' => Facade::defaultAliases()->merge([
-        'Image' => Intervention\Image\Laravel\Facades\Image::class,
+        'Image' => Intervention\Image\Facades\Image::class,
         'PDF' => Barryvdh\DomPDF\Facade\Pdf::class,
         'Excel' => Maatwebsite\Excel\Facades\Excel::class,
     ])->toArray(),
