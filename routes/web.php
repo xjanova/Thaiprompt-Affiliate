@@ -16,7 +16,7 @@ use App\Http\Controllers\Admin\AdminEmployeeController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\MLM\MlmDashboardController;
 use App\Http\Controllers\Wallet\WalletController;
-use App\Http\Controllers\Setup\SetupController;
+use App\Http\Controllers\SetupController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\ThemeController;
@@ -35,18 +35,15 @@ use App\Http\Controllers\Vendor\VendorVerificationController;
 */
 
 // Setup Wizard Routes (No authentication required)
-Route::middleware('setup.check')->prefix('setup')->name('setup.')->group(function () {
+Route::prefix('setup')->name('setup.')->group(function () {
     Route::get('/', [SetupController::class, 'index'])->name('index');
-    Route::get('/requirements', [SetupController::class, 'checkRequirements'])->name('requirements');
+    Route::get('/requirements', [SetupController::class, 'requirements'])->name('requirements');
     Route::get('/database', [SetupController::class, 'database'])->name('database');
     Route::post('/database/test', [SetupController::class, 'testDatabase'])->name('database.test');
     Route::post('/database/save', [SetupController::class, 'saveDatabase'])->name('database.save');
-    Route::post('/migrate', [SetupController::class, 'migrate'])->name('migrate');
-    Route::post('/seed', [SetupController::class, 'seed'])->name('seed');
     Route::get('/admin', [SetupController::class, 'admin'])->name('admin');
     Route::post('/admin/create', [SetupController::class, 'createAdmin'])->name('admin.create');
-    Route::post('/complete', [SetupController::class, 'complete'])->name('complete');
-    Route::get('/progress', [SetupController::class, 'progress'])->name('progress');
+    Route::get('/complete', [SetupController::class, 'complete'])->name('complete');
 });
 
 // Home & Public Routes

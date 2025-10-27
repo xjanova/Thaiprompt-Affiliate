@@ -3,10 +3,15 @@ name: Deploy to Production
 on:
   push:
     branches: [ main ]
+  pull_request:
+    types: [ closed ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   deploy:
+    # Only deploy on direct push to main OR when PR is merged to main
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true) || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     name: Deploy to Production Server
 
