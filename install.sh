@@ -103,26 +103,47 @@ fi
 
 print_success "All requirements met!"
 
-# Step 2: Install Composer Dependencies
-print_header "Step 2/6: Installing PHP Dependencies"
+# Step 2: Create Required Directories
+print_header "Step 2/7: Creating Required Directories"
+print_info "Creating Laravel directory structure..."
+
+# Create bootstrap cache directory
+mkdir -p "$INSTALL_DIR/bootstrap/cache"
+
+# Create storage directories
+mkdir -p "$INSTALL_DIR/storage/app/public"
+mkdir -p "$INSTALL_DIR/storage/framework/cache/data"
+mkdir -p "$INSTALL_DIR/storage/framework/sessions"
+mkdir -p "$INSTALL_DIR/storage/framework/testing"
+mkdir -p "$INSTALL_DIR/storage/framework/views"
+mkdir -p "$INSTALL_DIR/storage/logs"
+
+# Set permissions immediately
+chmod -R 775 "$INSTALL_DIR/storage"
+chmod -R 775 "$INSTALL_DIR/bootstrap/cache"
+
+print_success "Directories created and permissions set"
+
+# Step 3: Install Composer Dependencies
+print_header "Step 3/7: Installing PHP Dependencies"
 print_info "This may take a few minutes..."
 composer install --optimize-autoloader --no-interaction
 print_success "PHP dependencies installed"
 
-# Step 3: Install NPM Dependencies
-print_header "Step 3/6: Installing JavaScript Dependencies"
+# Step 4: Install NPM Dependencies
+print_header "Step 4/7: Installing JavaScript Dependencies"
 print_info "This may take a few minutes..."
 npm install
 print_success "JavaScript dependencies installed"
 
-# Step 4: Build Assets
-print_header "Step 4/6: Building Frontend Assets"
+# Step 5: Build Assets
+print_header "Step 5/7: Building Frontend Assets"
 print_info "Building production assets..."
 npm run build
 print_success "Assets built successfully"
 
-# Step 5: Set Permissions
-print_header "Step 5/6: Setting File Permissions"
+# Step 6: Set Ownership
+print_header "Step 6/7: Setting File Ownership"
 print_info "Setting proper permissions..."
 
 # Check if www-data user exists (common for web servers)
@@ -141,16 +162,16 @@ fi
 if [ "$WEB_USER" != "$(whoami)" ]; then
     print_info "Setting ownership to $WEB_USER..."
     sudo chown -R $WEB_USER:$WEB_USER "$INSTALL_DIR"
+
+    # Re-apply permissions after ownership change
+    chmod -R 775 "$INSTALL_DIR/storage"
+    chmod -R 775 "$INSTALL_DIR/bootstrap/cache"
 fi
 
-# Set permissions for storage and cache
-chmod -R 775 "$INSTALL_DIR/storage"
-chmod -R 775 "$INSTALL_DIR/bootstrap/cache"
+print_success "Ownership set successfully"
 
-print_success "Permissions set successfully"
-
-# Step 6: Create .env if doesn't exist
-print_header "Step 6/6: Environment Configuration"
+# Step 7: Environment Configuration
+print_header "Step 7/7: Environment Configuration"
 if [ ! -f "$INSTALL_DIR/.env" ]; then
     print_info "Creating .env file..."
     cp "$INSTALL_DIR/.env.example" "$INSTALL_DIR/.env"
