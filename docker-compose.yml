@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # Application service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: thaiprompt_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - thaiprompt
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - APP_DEBUG=${APP_DEBUG:-true}
+      - DB_HOST=mysql
+      - DB_DATABASE=${DB_DATABASE:-thaiprompt_marketplace}
+      - DB_USERNAME=${DB_USERNAME:-root}
+      - DB_PASSWORD=${DB_PASSWORD:-password}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  # Nginx service
+  nginx:
+    image: nginx:alpine
+    container_name: thaiprompt_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - thaiprompt
+    depends_on:
+      - app
+
+  # MySQL service
+  mysql:
+    image: mysql:8.0
+    container_name: thaiprompt_mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-password}
+      MYSQL_DATABASE: ${DB_DATABASE:-thaiprompt_marketplace}
+      MYSQL_USER: ${DB_USERNAME:-thaiprompt}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - thaiprompt
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Redis service
+  redis:
+    image: redis:7-alpine
+    container_name: thaiprompt_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - thaiprompt
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      timeout: 5s
+      retries: 5
+
+  # Queue worker service
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: thaiprompt_queue
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - thaiprompt
+    depends_on:
+      - mysql
+      - redis
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+
+  # Scheduler service
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: thaiprompt_scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - thaiprompt
+    depends_on:
+      - mysql
+      - redis
+    command: >
+      sh -c "while true; do
+        php artisan schedule:run --verbose --no-interaction &
+        sleep 60
+      done"
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+      - DB_HOST=mysql
+      - REDIS_HOST=redis
+
+# Networks
+networks:
+  thaiprompt:
+    driver: bridge
+
+# Volumes
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local

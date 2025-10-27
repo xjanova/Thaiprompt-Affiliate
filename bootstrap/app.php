@@ -12,7 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Global middleware
+        // Global middleware - Check if system is installed
+        $middleware->append(\App\Http\Middleware\CheckInstalled::class);
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
 
         // Middleware aliases
