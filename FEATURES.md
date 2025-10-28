@@ -54,62 +54,7 @@ POST   /admin/theme/preview         - Preview ธีม
 
 ---
 
-## 🔧 2. ระบบ Setup Wizard
-
-### คุณสมบัติหลัก
-ระบบติดตั้งผ่านหน้าเว็บที่ใช้งานง่าย ไม่ต้องใช้ CLI
-
-#### 2.1 ขั้นตอนการติดตั้ง
-
-**Step 1: ตรวจสอบความพร้อม**
-- ✅ PHP Version (>= 8.1)
-- ✅ PHP Extensions (PDO, mbstring, OpenSSL, etc.)
-- ✅ Directory Permissions (storage/, bootstrap/cache/, public/)
-
-**Step 2: ตั้งค่าฐานข้อมูล**
-- กรอกข้อมูล Database Connection
-- ทดสอบการเชื่อมต่อ
-- บันทึก Configuration ลง .env
-
-**Step 3: ติดตั้งฐานข้อมูล**
-- Generate Application Key
-- Run Migrations
-- Run Seeders
-- Create Storage Link
-
-**Step 4: สร้าง Admin Account**
-- กรอกข้อมูล Super Admin
-- สร้าง Admin Role
-- Assign Permissions
-
-**Step 5: เสร็จสิ้น**
-- สร้าง Backup อัตโนมัติ
-- บันทึก System Info
-- Redirect ไปยัง Dashboard
-
-#### 2.2 UI Features
-- Beautiful Wizard Interface
-- Progress Indicator
-- Smooth Animations (GSAP)
-- Responsive Design
-- Error Handling & Validation
-
-### API Endpoints
-```
-GET    /setup                       - หน้าแรก Setup Wizard
-GET    /setup/requirements          - ตรวจสอบความพร้อม
-POST   /setup/database/test         - ทดสอบ Database Connection
-POST   /setup/database/save         - บันทึก Database Config
-POST   /setup/migrate               - Run Migrations
-POST   /setup/seed                  - Run Seeders
-POST   /setup/admin/create          - สร้าง Admin Account
-POST   /setup/complete              - เสร็จสิ้นการติดตั้ง
-GET    /setup/progress              - ตรวจสอบความคืบหน้า
-```
-
----
-
-## 💾 3. ระบบ Backup & Version Control
+## 💾 2. ระบบ Backup & Version Control
 
 ### คุณสมบัติหลัก
 
