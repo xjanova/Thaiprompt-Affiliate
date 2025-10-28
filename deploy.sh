@@ -140,26 +140,46 @@ print_info "Installing JavaScript dependencies..."
 # Fix node_modules directory permissions before npm install
 if [ -d "node_modules" ]; then
     print_info "Fixing node_modules directory permissions..."
+
+    # Try to fix permissions first
     chmod -R u+w node_modules/ 2>/dev/null || sudo chmod -R u+w node_modules/ 2>/dev/null || print_warning "Could not fix all permissions"
 
-    # Fix .vite cache specifically (common issue)
+    # Remove .vite cache specifically (common permission issue)
     if [ -d "node_modules/.vite" ]; then
-        chmod -R u+w node_modules/.vite 2>/dev/null || sudo chmod -R u+w node_modules/.vite 2>/dev/null || true
+        print_info "Removing problematic .vite cache..."
+        rm -rf node_modules/.vite 2>/dev/null || sudo rm -rf node_modules/.vite 2>/dev/null || print_warning "Could not remove .vite cache"
     fi
 fi
 
 # Run npm install with error handling (use --omit=dev instead of --only=production)
 if ! npm ci --omit=dev 2>&1; then
-    print_warning "NPM install encountered issues"
-    print_info "Attempting to fix by clearing cache and retrying..."
+    print_warning "NPM ci encountered issues, trying fallback solutions..."
 
-    # Clear npm cache
+    # Solution 1: Clear cache and try npm install instead
+    print_info "Clearing npm cache and trying npm install..."
     npm cache clean --force 2>/dev/null || true
 
-    # Try with regular npm install instead of npm ci
-    if ! npm install --omit=dev; then
-        print_error "NPM install failed. You may need to run: ./fix-npm-permissions.sh"
-        exit 1
+    if ! npm install --omit=dev 2>&1; then
+        print_warning "NPM install still failing, attempting clean install..."
+
+        # Solution 2: Remove node_modules and try fresh install
+        print_info "Removing node_modules directory..."
+        if rm -rf node_modules/ 2>/dev/null || sudo rm -rf node_modules/ 2>/dev/null; then
+            print_info "node_modules removed, installing fresh..."
+
+            if ! npm install --omit=dev; then
+                print_error "NPM install failed even after clean install."
+                print_error "Please run: sudo rm -rf node_modules/ && npm install --omit=dev"
+                exit 1
+            fi
+        else
+            print_error "Could not remove node_modules directory."
+            print_error "Please run manually:"
+            print_error "  sudo rm -rf node_modules/"
+            print_error "  npm cache clean --force"
+            print_error "  npm install --omit=dev"
+            exit 1
+        fi
     fi
 fi
 
