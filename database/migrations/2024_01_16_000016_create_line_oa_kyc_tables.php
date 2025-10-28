@@ -15,9 +15,9 @@ return new class extends Migration
         Schema::create('line_oa_configs', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // ชื่อการตั้งค่า
-            $table->string('channel_id')->unique(); // LINE Channel ID
-            $table->string('channel_secret'); // LINE Channel Secret (encrypted)
-            $table->text('channel_access_token'); // LINE Channel Access Token (encrypted)
+            $table->string('channel_id')->nullable()->unique(); // LINE Channel ID
+            $table->text('channel_secret')->nullable(); // LINE Channel Secret (encrypted)
+            $table->text('channel_access_token')->nullable(); // LINE Channel Access Token (encrypted)
             $table->string('webhook_url')->nullable(); // Webhook URL
             $table->boolean('is_active')->default(true); // ใช้งาน/ไม่ใช้งาน
             $table->boolean('require_kyc_for_withdrawal')->default(true); // บังคับ KYC สำหรับถอนเงิน
