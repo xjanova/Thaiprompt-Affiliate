@@ -197,7 +197,28 @@ print_success "NPM dependencies installed"
 # Step 5: Build Frontend Assets
 print_header "Step 5/8: Build Frontend Assets"
 print_info "Building production assets..."
-npm run build
+
+# Clean old build directory to prevent permission issues
+if [ -d "public/build" ]; then
+    print_info "Removing old build directory..."
+    rm -rf public/build/ 2>/dev/null || sudo rm -rf public/build/ 2>/dev/null || print_warning "Could not remove old build"
+fi
+
+# Build assets
+if ! npm run build; then
+    print_error "Failed to build frontend assets"
+    print_error "This might be due to permission issues. Try:"
+    print_error "  sudo rm -rf public/build/"
+    print_error "  npm run build"
+    exit 1
+fi
+
+# Set correct permissions on build directory
+if [ -d "public/build" ]; then
+    print_info "Setting permissions on build directory..."
+    chmod -R 755 public/build/ 2>/dev/null || sudo chmod -R 755 public/build/ 2>/dev/null || print_warning "Could not set build permissions"
+fi
+
 print_success "Frontend assets built"
 
 # Step 6: Run Database Migrations
@@ -233,12 +254,17 @@ print_info "Setting proper file permissions..."
 # Set ownership back to web server user
 if id "$WEB_USER" &>/dev/null; then
     print_info "Changing ownership to $WEB_USER..."
-    sudo chown -R $WEB_USER:$WEB_USER $PROJECT_DIR/storage $PROJECT_DIR/bootstrap/cache 2>/dev/null || print_warning "Could not change ownership (might need sudo access)"
+    sudo chown -R $WEB_USER:$WEB_USER $PROJECT_DIR/storage $PROJECT_DIR/bootstrap/cache $PROJECT_DIR/public/build 2>/dev/null || print_warning "Could not change ownership (might need sudo access)"
 fi
 
 # Set permissions
 chmod -R 775 $PROJECT_DIR/storage
 chmod -R 775 $PROJECT_DIR/bootstrap/cache
+
+# Set permissions for public/build (readable by web server)
+if [ -d "$PROJECT_DIR/public/build" ]; then
+    chmod -R 755 $PROJECT_DIR/public/build
+fi
 
 # Ensure .gitkeep files are writable
 find $PROJECT_DIR/storage -type f -name ".gitkeep" -exec chmod 664 {} \;
