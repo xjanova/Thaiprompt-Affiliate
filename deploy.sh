@@ -82,9 +82,18 @@ fi
 print_header "Step 2/8: Pull Latest Code from GitHub"
 print_info "Fetching updates from remote repository..."
 
-# Get current branch
+# Use claude/Main as the main branch
+MAIN_BRANCH="claude/Main"
 CURRENT_BRANCH=$(git branch --show-current)
 print_info "Current branch: $CURRENT_BRANCH"
+print_info "Deploying from: $MAIN_BRANCH"
+
+# Remove conflicting untracked cache files
+print_info "Cleaning up cache files that might conflict..."
+rm -f bootstrap/cache/packages.php
+rm -f bootstrap/cache/services.php
+rm -f bootstrap/cache/config.php
+print_success "Cache files cleaned"
 
 # Stash local changes if any
 if ! git diff-index --quiet HEAD --; then
@@ -95,17 +104,15 @@ else
     STASHED=false
 fi
 
-# Pull latest changes
-git fetch origin
-git pull origin $CURRENT_BRANCH
+# Pull latest changes from Main branch
+print_info "Pulling from $MAIN_BRANCH branch..."
+git fetch origin $MAIN_BRANCH
 
-# Pop stash if we stashed changes
-if [ "$STASHED" = true ]; then
-    print_info "Applying stashed changes..."
-    git stash pop || print_warning "Could not apply stashed changes"
-fi
+# Force merge to overwrite with Main branch
+git reset --hard origin/$MAIN_BRANCH
+print_success "Code updated from GitHub (Main branch)"
 
-print_success "Code updated from GitHub"
+# Note: Stashed changes are discarded since we're doing hard reset to Main
 
 # Step 3: Install/Update Composer Dependencies
 print_header "Step 3/8: Install Composer Dependencies"
