@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->boolean('is_kyc_verified')->default(false)->after('line_display_name');
-            $table->timestamp('kyc_verified_at')->nullable()->after('is_kyc_verified');
+            // Note: kyc_verified_at is already added in 2024_01_16_000016_create_line_oa_kyc_tables
             $table->string('profile_image_source')->default('default')->after('avatar')->comment('default, line, upload');
             $table->boolean('use_line_avatar')->default(true)->after('profile_image_source');
         });
@@ -27,7 +27,7 @@ return new class extends Migration
         Schema::table('users', function (Blueprint $table) {
             $table->dropColumn([
                 'is_kyc_verified',
-                'kyc_verified_at',
+                // 'kyc_verified_at', // Dropped in 2024_01_16_000016_create_line_oa_kyc_tables
                 'profile_image_source',
                 'use_line_avatar'
             ]);

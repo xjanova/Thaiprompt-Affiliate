@@ -56,15 +56,6 @@ return new class extends Migration
             $table->index(['code', 'is_active']);
             $table->index(['valid_from', 'valid_to']);
         });
-
-        Schema::create('hotel_promotion_usage', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('promotion_id')->constrained('hotel_promotions')->onDelete('cascade');
-            $table->foreignId('booking_id')->constrained('hotel_bookings')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->decimal('discount_amount', 10, 2);
-            $table->timestamps();
-        });
     }
 
     /**
@@ -72,7 +63,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('hotel_promotion_usage');
         Schema::dropIfExists('hotel_promotions');
     }
 };

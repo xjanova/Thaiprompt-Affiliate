@@ -44,8 +44,8 @@ return new class extends Migration
             $table->decimal('total_amount', 10, 2);
             $table->string('currency')->default('THB');
 
-            // Promotion
-            $table->foreignId('promotion_id')->nullable()->constrained('hotel_promotions')->onDelete('set null');
+            // Promotion (without foreign key constraint to avoid circular dependency)
+            $table->unsignedBigInteger('promotion_id')->nullable();
             $table->string('promo_code')->nullable();
 
             // Payment
