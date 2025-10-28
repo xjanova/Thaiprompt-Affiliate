@@ -208,6 +208,142 @@ php artisan optimize
 
 ---
 
+# ปัญหาที่ 3: NPM Permission Error / Problem 3: NPM Permission Error
+
+## ปัญหา / Problem
+
+เมื่อรัน deployment script npm ไม่สามารถลบหรือแก้ไขไฟล์ใน node_modules ได้:
+
+```
+npm error code EACCES
+npm error syscall rmdir
+npm error path /home/admin/.../node_modules/.vite/deps_temp_*
+npm error errno -13
+npm error [Error: EACCES: permission denied, rmdir ...]
+```
+
+## สาเหตุ / Root Cause
+
+NPM พยายามลบหรือแก้ไขไฟล์ใน node_modules (โดยเฉพาะ `.vite` cache) แต่ไม่มีสิทธิ์:
+- File permissions ไม่ถูกต้อง
+- File ownership เป็นของ user อื่น (เช่น root หรือ web server user)
+- Vite cache directories มี read-only permissions
+- npm temporary directories ถูก lock
+
+## วิธีแก้ไข / Solution
+
+### วิธีที่ 1: ใช้ Fix Script (แนะนำ / Recommended)
+
+```bash
+# 1. เข้าไปที่ directory ของโปรเจค
+cd /path/to/your/Thaiprompt-Affiliate
+
+# 2. ดึง fix script มาจาก repository
+git fetch origin claude/fix-503-service-unavailable-011CUa1Nf68Tx2C8JwQ5K6wE
+git checkout origin/claude/fix-503-service-unavailable-011CUa1Nf68Tx2C8JwQ5K6wE -- fix-npm-permissions.sh
+chmod +x fix-npm-permissions.sh
+
+# 3. รัน fix script (จะมี menu ให้เลือก)
+./fix-npm-permissions.sh
+```
+
+Script มี 2 options:
+1. **Fix permissions and retry** - แก้ไข permissions แล้วลอง install ใหม่ (เร็วกว่า)
+2. **Clean install** - ลบ node_modules ทั้งหมดแล้ว install ใหม่ (ปลอดภัยกว่า)
+
+### วิธีที่ 2: แก้ไขด้วยตนเอง / Manual Fix
+
+```bash
+# ขั้นตอนที่ 1: แก้ไข permissions
+sudo chmod -R u+w node_modules/
+sudo chown -R $(whoami):$(whoami) node_modules/
+
+# ขั้นตอนที่ 2: แก้ไข .vite cache โดยเฉพาะ
+sudo chmod -R u+w node_modules/.vite 2>/dev/null || true
+sudo rm -rf node_modules/.vite 2>/dev/null || true
+
+# ขั้นตอนที่ 3: Clear npm cache
+npm cache clean --force
+
+# ขั้นตอนที่ 4: ลองติดตั้งใหม่
+npm install --omit=dev
+
+# ถ้ายังไม่ได้ ให้ลบ node_modules แล้วติดตั้งใหม่
+sudo rm -rf node_modules/
+npm install --omit=dev
+```
+
+### วิธีที่ 3: แก้ไขใน deploy.sh
+
+Deploy script ได้รับการปรับปรุงให้แก้ไข permissions อัตโนมัติแล้ว:
+- ตรวจสอบและแก้ไข node_modules permissions ก่อน npm install
+- แก้ไข .vite cache permissions โดยเฉพาะ
+- มี error handling และ retry mechanism (ลอง npm ci ก่อน แล้วค่อยลอง npm install)
+- แสดง error message ที่ชัดเจนหากมีปัญหา
+
+ดึง version ล่าสุดของ deploy.sh:
+```bash
+git fetch origin claude/fix-503-service-unavailable-011CUa1Nf68Tx2C8JwQ5K6wE
+git checkout origin/claude/fix-503-service-unavailable-011CUa1Nf68Tx2C8JwQ5K6wE -- deploy.sh
+chmod +x deploy.sh
+```
+
+## ป้องกันปัญหาในอนาคต / Prevention
+
+1. **Set correct permissions หลัง deployment:**
+   ```bash
+   chmod -R u+w node_modules/
+   chown -R $USER:$USER node_modules/
+   ```
+
+2. **ใช้ deployment script ที่ปรับปรุงแล้ว** - มีการแก้ไข permissions อัตโนมัติ
+
+3. **Check permissions ก่อน deploy:**
+   ```bash
+   ls -la node_modules/ | head -20
+   ls -la node_modules/.vite 2>/dev/null || echo ".vite cache not found"
+   ```
+
+4. **ลบ cache directories ก่อน deploy:**
+   ```bash
+   rm -rf node_modules/.vite
+   rm -rf public/.vite
+   ```
+
+## ถ้ายังมีปัญหา / If Issues Persist
+
+หากยังคงมีปัญหา ลองวิธีนี้:
+
+```bash
+# 1. Backup package-lock.json
+cp package-lock.json package-lock.json.backup
+
+# 2. ลบ node_modules และ cache ทั้งหมด
+sudo rm -rf node_modules/
+sudo rm -rf node_modules/.cache
+sudo rm -rf node_modules/.vite
+sudo rm -rf public/.vite
+
+# 3. Clear npm cache
+npm cache clean --force
+rm -rf ~/.npm/_cacache
+
+# 4. ติดตั้งใหม่
+npm install --omit=dev
+
+# 5. Build assets
+npm run build
+```
+
+## หมายเหตุสำคัญ / Important Notes
+
+- ใช้ `--omit=dev` แทน `--only=production` (npm แนะนำ)
+- ปัญหามักเกิดกับ `.vite` cache directories
+- ถ้าใช้ vite ให้ลบ cache ก่อน npm install: `rm -rf node_modules/.vite`
+- Vite สร้าง temp directories ระหว่าง build ซึ่งอาจมี permission issues
+
+---
+
 ## ติดต่อ / Contact
 
 หากยังมีปัญหาหรือข้อสงสัย กรุณาติดต่อทีมพัฒนา

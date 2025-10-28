@@ -143,7 +143,33 @@ print_success "Composer dependencies installed"
 # Step 4: Install/Update NPM Dependencies
 print_header "Step 4/8: Install NPM Dependencies"
 print_info "Installing JavaScript dependencies..."
-npm ci --only=production
+
+# Fix node_modules directory permissions before npm install
+if [ -d "node_modules" ]; then
+    print_info "Fixing node_modules directory permissions..."
+    chmod -R u+w node_modules/ 2>/dev/null || sudo chmod -R u+w node_modules/ 2>/dev/null || print_warning "Could not fix all permissions"
+
+    # Fix .vite cache specifically (common issue)
+    if [ -d "node_modules/.vite" ]; then
+        chmod -R u+w node_modules/.vite 2>/dev/null || sudo chmod -R u+w node_modules/.vite 2>/dev/null || true
+    fi
+fi
+
+# Run npm install with error handling (use --omit=dev instead of --only=production)
+if ! npm ci --omit=dev 2>&1; then
+    print_warning "NPM install encountered issues"
+    print_info "Attempting to fix by clearing cache and retrying..."
+
+    # Clear npm cache
+    npm cache clean --force 2>/dev/null || true
+
+    # Try with regular npm install instead of npm ci
+    if ! npm install --omit=dev; then
+        print_error "NPM install failed. You may need to run: ./fix-npm-permissions.sh"
+        exit 1
+    fi
+fi
+
 print_success "NPM dependencies installed"
 
 # Step 5: Build Frontend Assets
