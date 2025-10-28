@@ -341,6 +341,45 @@ redis-cli ping
 
 ---
 
+## ติดตั้ง Git
+
+**สำคัญ:** Git ใช้สำหรับ clone โปรเจคจาก GitHub
+
+### 1. ตรวจสอบว่ามี Git หรือยัง
+
+```bash
+git --version
+```
+
+**ถ้าได้ผลลัพธ์:** `git version 2.x.x` แสดงว่ามี Git แล้ว → **ข้ามขั้นตอนนี้**
+
+**ถ้าได้:** `command not found` → **ต้องติดตั้ง**
+
+### 2. ติดตั้ง Git
+
+```bash
+apt install -y git
+```
+
+### 3. ตรวจสอบอีกครั้ง
+
+```bash
+git --version
+# ควรได้: git version 2.34.1 (หรือใหม่กว่า)
+```
+
+### 4. ตั้งค่า Git (แนะนำ)
+
+```bash
+# ตั้งชื่อ (ใช้ชื่ออะไรก็ได้)
+git config --global user.name "Your Name"
+
+# ตั้งอีเมล (ใช้อีเมลจริงหรืออีเมล GitHub)
+git config --global user.email "your-email@example.com"
+```
+
+---
+
 ## ติดตั้งโปรเจคจาก GitHub
 
 ### เตรียมข้อมูลก่อนเริ่ม
@@ -354,16 +393,21 @@ redis-cli ping
 
 ---
 
-### 1. สร้างโฟลเดอร์สำหรับโปรเจค
+### ขั้นตอนที่ 1: ตรวจสอบโฟลเดอร์ /var/www
 
 ```bash
+# ตรวจสอบว่ามีโฟลเดอร์ /var/www หรือยัง
+ls -la /var/www
+
+# ถ้าไม่มี ให้สร้าง
 mkdir -p /var/www
-cd /var/www
 ```
+
+**หมายเหตุ:** เราจะ clone โปรเจคไปที่ `/var/www/thaiprompt` โดยตรง
 
 ---
 
-### 2. Clone Repository
+### ขั้นตอนที่ 2: Clone Repository
 
 เลือกวิธีที่เหมาะกับคุณ:
 
@@ -388,30 +432,35 @@ cd /var/www
 
 **ขั้นตอนที่ 2: Clone Repository ด้วย Token**
 
+**วิธีที่ 1 - ใส่ Token ในคำสั่ง (แนะนำ):**
+
 ```bash
 # แทนที่ YOUR_TOKEN ด้วย token ที่คัดลอกไว้
-git clone https://YOUR_TOKEN@github.com/xjanova/Thaiprompt-Affiliate.git thaiprompt
+git clone https://YOUR_TOKEN@github.com/xjanova/Thaiprompt-Affiliate.git /var/www/thaiprompt
 
-# ตัวอย่าง:
-# git clone https://ghp_AbCd1234XyZ9876543210@github.com/xjanova/Thaiprompt-Affiliate.git thaiprompt
+# ตัวอย่างจริง:
+# git clone https://ghp_AbCd1234XyZ9876543210@github.com/xjanova/Thaiprompt-Affiliate.git /var/www/thaiprompt
 ```
 
-**หรือจะให้ Git ถามรหัสผ่าน:**
+**วิธีที่ 2 - ให้ Git ถามรหัสผ่าน:**
 
 ```bash
-git clone https://github.com/xjanova/Thaiprompt-Affiliate.git thaiprompt
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git /var/www/thaiprompt
 
 # Git จะถาม:
-# Username: [ชื่อ GitHub ของคุณ]
-# Password: [ใส่ Personal Access Token ที่สร้างไว้]
+# Username: [ใส่ชื่อ GitHub ของคุณ เช่น xjanova]
+# Password: [ใส่ Personal Access Token ที่สร้างไว้ เช่น ghp_xxx...]
 ```
 
 **ตั้งค่าให้จำ Token (ไม่ต้องใส่ทุกครั้ง):**
 
 ```bash
-cd thaiprompt
+cd /var/www/thaiprompt
+
+# จำถาวร (เก็บไว้ในไฟล์)
 git config credential.helper store
-# หรือให้จำเป็นเวลา (เช่น 1 ชั่วโมง)
+
+# หรือให้จำแค่ชั่วคราว (1 ชั่วโมง)
 git config credential.helper 'cache --timeout=3600'
 ```
 
@@ -458,92 +507,140 @@ ssh -T git@github.com
 **ขั้นตอนที่ 4: Clone Repository**
 
 ```bash
-git clone git@github.com:xjanova/Thaiprompt-Affiliate.git thaiprompt
+git clone git@github.com:xjanova/Thaiprompt-Affiliate.git /var/www/thaiprompt
 ```
 
 ---
 
-### 3. เข้าไปในโฟลเดอร์โปรเจค
+### ขั้นตอนที่ 3: เข้าไปในโฟลเดอร์โปรเจคและตรวจสอบ
 
 ```bash
-cd thaiprompt
+# เข้าไปในโฟลเดอร์ที่ clone มา
+cd /var/www/thaiprompt
 ```
 
 **ตรวจสอบว่า Clone สำเร็จ:**
 
 ```bash
+# ดูไฟล์ทั้งหมด
 ls -la
-# ควรเห็นไฟล์ composer.json, artisan, .env.example ฯลฯ
 
-git status
-# ควรเห็น: On branch main (หรือ master)
+# ควรเห็นไฟล์เหล่านี้:
+# - composer.json
+# - artisan
+# - .env.example
+# - app/
+# - public/
+# - resources/
+# ฯลฯ
 ```
+
+**ตรวจสอบ Git status:**
+
+```bash
+git status
+# ควรได้: On branch main (หรือ master)
+# Your branch is up to date with 'origin/main'.
+```
+
+**ถ้าเห็นข้อความแบบนี้ แสดงว่า Clone สำเร็จ!** ✅
 
 ---
 
-### 4. สร้างไฟล์ .env
+### ขั้นตอนที่ 4: สร้างและแก้ไขไฟล์ .env
 
 ```bash
+# คัดลอกไฟล์ตัวอย่าง
 cp .env.example .env
+
+# เปิดแก้ไข
 nano .env
 ```
 
-แก้ไขค่าเหล่านี้:
+**แก้ไขค่าเหล่านี้:**
 
 ```env
+# ชื่อเว็บไซต์
 APP_NAME="ThaiPrompt Marketplace"
+
+# ใช้ production (สำคัญ!)
 APP_ENV=production
+
+# ปิด debug mode (สำคัญ!)
 APP_DEBUG=false
+
+# เปลี่ยนเป็นโดเมนของคุณ
 APP_URL=https://your-domain.com
 
+# ข้อมูล Database (ตรงกับที่สร้างใน MySQL)
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=thaiprompt_marketplace
-DB_USERNAME=thaiprompt
-DB_PASSWORD=YOUR_STRONG_PASSWORD_HERE
+DB_DATABASE=thaiprompt_marketplace          # ชื่อ database ที่สร้างไว้
+DB_USERNAME=thaiprompt                      # username ที่สร้างไว้
+DB_PASSWORD=YOUR_STRONG_PASSWORD_HERE       # เปลี่ยนเป็นรหัสผ่านจริง
 
+# ใช้ Redis สำหรับ Cache
 CACHE_DRIVER=redis
 QUEUE_CONNECTION=redis
 SESSION_DRIVER=redis
 
+# Redis Configuration
 REDIS_HOST=127.0.0.1
 REDIS_PASSWORD=null
 REDIS_PORT=6379
 ```
 
-### 5. ติดตั้ง Dependencies
+**หมายเหตุ:**
+- `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD` → ต้องตรงกับที่สร้างในขั้นตอน "ติดตั้ง MySQL"
+- `APP_URL` → เปลี่ยนเป็นโดเมนจริงของคุณ
+
+**บันทึกไฟล์:**
+- กด `Ctrl + O` → Enter (บันทึก)
+- กด `Ctrl + X` (ออก)
+
+### ขั้นตอนที่ 5: ติดตั้ง Dependencies
+
+**สำคัญ:** Laravel และ dependencies ทั้งหมดอยู่ใน composer.json แล้ว ไม่ต้องติดตั้ง Laravel CLI แยก
 
 ```bash
-# PHP dependencies
+# ติดตั้ง PHP dependencies (รวม Laravel ด้วย)
 composer install --no-interaction --optimize-autoloader --no-dev
 
-# JavaScript dependencies
+# ติดตั้ง JavaScript dependencies
 npm install
 
 # Build frontend assets
 npm run build
 ```
 
-### 6. Generate Application Key
+**รอให้เสร็จ อาจใช้เวลา 5-10 นาที**
+
+### ขั้นตอนที่ 6: Generate Application Key
 
 ```bash
 php artisan key:generate
 ```
 
-### 7. Run Migrations
+**ควรเห็น:** `Application key set successfully.`
+
+### ขั้นตอนที่ 7: Run Migrations
 
 ```bash
 php artisan migrate --force
 ```
 
-### 8. สร้าง Storage Link
+**ควรเห็น:** `Migration table created successfully.` และรายการ migrations ที่รัน
+
+### ขั้นตอนที่ 8: สร้าง Storage Link
 
 ```bash
 php artisan storage:link
 ```
 
-### 9. ตั้งค่า Permissions
+**ควรเห็น:** `The [public/storage] link has been connected to [storage/app/public].`
+
+### ขั้นตอนที่ 9: ตั้งค่า Permissions
 
 ```bash
 chown -R www-data:www-data /var/www/thaiprompt
@@ -551,13 +648,42 @@ chmod -R 755 /var/www/thaiprompt/storage
 chmod -R 755 /var/www/thaiprompt/bootstrap/cache
 ```
 
-### 10. Cache การตั้งค่า
+### ขั้นตอนที่ 10: Cache การตั้งค่า
 
 ```bash
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
+
+**ควรเห็น:** `Configuration cached successfully.` และข้อความอื่นๆ
+
+---
+
+### ✅ สรุป: ติดตั้งโปรเจคเสร็จแล้ว!
+
+**ตรวจสอบว่าทุกอย่างพร้อม:**
+
+```bash
+cd /var/www/thaiprompt
+
+# ตรวจสอบไฟล์
+ls -la | grep -E "(composer.json|artisan|.env)"
+
+# ตรวจสอบ vendor folder
+ls vendor/ | head -5
+
+# ตรวจสอบ node_modules
+ls node_modules/ | head -5
+```
+
+**ถ้าเห็นไฟล์ครบ แสดงว่าพร้อมแล้ว!**
+
+**ขั้นตอนต่อไป:**
+1. ✅ ตั้งค่า Web Server (Nginx หรือ Apache) → ดูด้านล่าง
+2. ✅ ติดตั้ง SSL Certificate
+3. ✅ สร้าง Admin User
+4. ✅ ทดสอบเว็บไซต์
 
 ---
 
