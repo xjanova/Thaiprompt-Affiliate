@@ -117,7 +117,27 @@ print_success "Code updated from GitHub (Main branch)"
 # Step 3: Install/Update Composer Dependencies
 print_header "Step 3/8: Install Composer Dependencies"
 print_info "Installing PHP dependencies..."
-composer install --no-interaction --optimize-autoloader --no-dev
+
+# Fix vendor directory permissions before composer install
+if [ -d "vendor" ]; then
+    print_info "Fixing vendor directory permissions..."
+    chmod -R u+w vendor/ 2>/dev/null || sudo chmod -R u+w vendor/ 2>/dev/null || print_warning "Could not fix all permissions"
+fi
+
+# Run composer install with error handling
+if ! composer install --no-interaction --optimize-autoloader --no-dev 2>&1; then
+    print_warning "Composer install encountered issues"
+    print_info "Attempting to fix by clearing cache and retrying..."
+
+    composer clear-cache
+
+    # Try again
+    if ! composer install --no-interaction --optimize-autoloader --no-dev; then
+        print_error "Composer install failed. You may need to run: ./fix-composer-permissions.sh"
+        exit 1
+    fi
+fi
+
 print_success "Composer dependencies installed"
 
 # Step 4: Install/Update NPM Dependencies
