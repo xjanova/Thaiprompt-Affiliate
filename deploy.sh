@@ -158,15 +158,17 @@ if [ -d "node_modules" ]; then
     fi
 fi
 
-# Run npm install with error handling (use --omit=dev instead of --only=production)
-if ! npm ci --omit=dev 2>&1; then
+# Run npm install with error handling
+# Note: We install ALL dependencies (including dev) because we need vite and other build tools
+# to compile frontend assets. After building, devDependencies can be pruned if needed.
+if ! npm ci 2>&1; then
     print_warning "NPM ci encountered issues, trying fallback solutions..."
 
     # Solution 1: Clear cache and try npm install instead
     print_info "Clearing npm cache and trying npm install..."
     npm cache clean --force 2>/dev/null || true
 
-    if ! npm install --omit=dev 2>&1; then
+    if ! npm install 2>&1; then
         print_warning "NPM install still failing, attempting clean install..."
 
         # Solution 2: Remove node_modules and try fresh install
@@ -174,9 +176,9 @@ if ! npm ci --omit=dev 2>&1; then
         if rm -rf node_modules/ 2>/dev/null || sudo rm -rf node_modules/ 2>/dev/null; then
             print_info "node_modules removed, installing fresh..."
 
-            if ! npm install --omit=dev; then
+            if ! npm install; then
                 print_error "NPM install failed even after clean install."
-                print_error "Please run: sudo rm -rf node_modules/ && npm install --omit=dev"
+                print_error "Please run: sudo rm -rf node_modules/ && npm install"
                 exit 1
             fi
         else
@@ -184,7 +186,7 @@ if ! npm ci --omit=dev 2>&1; then
             print_error "Please run manually:"
             print_error "  sudo rm -rf node_modules/"
             print_error "  npm cache clean --force"
-            print_error "  npm install --omit=dev"
+            print_error "  npm install"
             exit 1
         fi
     fi
