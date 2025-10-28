@@ -38,6 +38,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
 Route::get('/category/{slug}', [ProductController::class, 'category'])->name('category.show');
+Route::get('/vendors', [ProductController::class, 'vendors'])->name('vendors.index');
 Route::get('/vendor/{slug}', [ProductController::class, 'vendor'])->name('vendor.show');
 
 // Authentication Routes
