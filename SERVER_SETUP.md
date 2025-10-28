@@ -343,6 +343,17 @@ redis-cli ping
 
 ## ติดตั้งโปรเจคจาก GitHub
 
+### เตรียมข้อมูลก่อนเริ่ม
+
+**คุณต้องเลือกวิธีการ Clone อย่างใดอย่างหนึ่ง:**
+
+| วิธี | ข้อดี | ข้อเสี | เหมาะกับ |
+|------|-------|--------|----------|
+| **HTTPS** | ง่าย ไม่ต้องตั้งค่าอะไร | ต้องใส่ข้อมูลทุกครั้ง | ผู้เริ่มต้น, ใช้งานครั้งเดียว |
+| **SSH** | ไม่ต้องใส่รหัสผ่าน | ต้องตั้งค่า SSH key | Production server, ใช้งานบ่อย |
+
+---
+
 ### 1. สร้างโฟลเดอร์สำหรับโปรเจค
 
 ```bash
@@ -350,19 +361,127 @@ mkdir -p /var/www
 cd /var/www
 ```
 
+---
+
 ### 2. Clone Repository
 
+เลือกวิธีที่เหมาะกับคุณ:
+
+#### 📌 วิธีที่ 1: Clone ด้วย HTTPS (แนะนำสำหรับผู้เริ่มต้น)
+
+**ขั้นตอนที่ 1: สร้าง Personal Access Token (PAT)**
+
+1. เปิดเว็บ GitHub แล้วเข้าสู่ระบบ
+2. คลิกที่รูปโปรไฟล์ (มุมขวาบน) → **Settings**
+3. เลื่อนลงล่างสุด → **Developer settings**
+4. **Personal access tokens** → **Tokens (classic)**
+5. **Generate new token** → **Generate new token (classic)**
+6. กรอกข้อมูล:
+   - **Note:** `Production Server` (ชื่ออะไรก็ได้)
+   - **Expiration:** `No expiration` หรือตามที่ต้องการ
+   - **Select scopes:**
+     - ✅ **repo** (เลือกทั้งหมดใน repo)
+     - ✅ **workflow** (ถ้าใช้ GitHub Actions)
+7. คลิก **Generate token**
+8. **คัดลอก token ที่ได้** (จะไม่สามารถดูอีกครั้ง!)
+   - ตัวอย่าง: `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+
+**ขั้นตอนที่ 2: Clone Repository ด้วย Token**
+
 ```bash
-# วิธีที่ 1: HTTPS (ต้องใส่ username/password หรือ token)
+# แทนที่ YOUR_TOKEN ด้วย token ที่คัดลอกไว้
+git clone https://YOUR_TOKEN@github.com/xjanova/Thaiprompt-Affiliate.git thaiprompt
+
+# ตัวอย่าง:
+# git clone https://ghp_AbCd1234XyZ9876543210@github.com/xjanova/Thaiprompt-Affiliate.git thaiprompt
+```
+
+**หรือจะให้ Git ถามรหัสผ่าน:**
+
+```bash
 git clone https://github.com/xjanova/Thaiprompt-Affiliate.git thaiprompt
 
-# วิธีที่ 2: SSH (ต้องตั้งค่า SSH key กับ GitHub ก่อน)
-git clone git@github.com:xjanova/Thaiprompt-Affiliate.git thaiprompt
+# Git จะถาม:
+# Username: [ชื่อ GitHub ของคุณ]
+# Password: [ใส่ Personal Access Token ที่สร้างไว้]
+```
 
+**ตั้งค่าให้จำ Token (ไม่ต้องใส่ทุกครั้ง):**
+
+```bash
+cd thaiprompt
+git config credential.helper store
+# หรือให้จำเป็นเวลา (เช่น 1 ชั่วโมง)
+git config credential.helper 'cache --timeout=3600'
+```
+
+---
+
+#### 📌 วิธีที่ 2: Clone ด้วย SSH (แนะนำสำหรับ Production)
+
+**ขั้นตอนที่ 1: สร้าง SSH Key บนเซิร์ฟเวอร์**
+
+```bash
+# สร้าง SSH key (กด Enter ทุกคำถาม)
+ssh-keygen -t ed25519 -C "your-email@example.com"
+
+# ดู Public Key ที่สร้างขึ้น
+cat ~/.ssh/id_ed25519.pub
+```
+
+**คัดลอก output ทั้งหมด** ตัวอย่าง:
+```
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAbCdEfGhIjKlMnOpQrStUvWxYz1234567890 your-email@example.com
+```
+
+**ขั้นตอนที่ 2: เพิ่ม SSH Key เข้า GitHub**
+
+1. เปิดเว็บ GitHub แล้วเข้าสู่ระบบ
+2. คลิกที่รูปโปรไฟล์ (มุมขวาบน) → **Settings**
+3. **SSH and GPG keys**
+4. **New SSH key**
+5. กรอกข้อมูล:
+   - **Title:** `Production Server` (ชื่ออะไรก็ได้)
+   - **Key:** วาง Public Key ที่คัดลอกไว้
+6. **Add SSH key**
+7. ใส่รหัสผ่าน GitHub เพื่อยืนยัน
+
+**ขั้นตอนที่ 3: ทดสอบการเชื่อมต่อ**
+
+```bash
+ssh -T git@github.com
+
+# ถ้าสำเร็จจะได้:
+# Hi xjanova! You've successfully authenticated, but GitHub does not provide shell access.
+```
+
+**ขั้นตอนที่ 4: Clone Repository**
+
+```bash
+git clone git@github.com:xjanova/Thaiprompt-Affiliate.git thaiprompt
+```
+
+---
+
+### 3. เข้าไปในโฟลเดอร์โปรเจค
+
+```bash
 cd thaiprompt
 ```
 
-### 3. สร้างไฟล์ .env
+**ตรวจสอบว่า Clone สำเร็จ:**
+
+```bash
+ls -la
+# ควรเห็นไฟล์ composer.json, artisan, .env.example ฯลฯ
+
+git status
+# ควรเห็น: On branch main (หรือ master)
+```
+
+---
+
+### 4. สร้างไฟล์ .env
 
 ```bash
 cp .env.example .env
@@ -393,7 +512,7 @@ REDIS_PASSWORD=null
 REDIS_PORT=6379
 ```
 
-### 4. ติดตั้ง Dependencies
+### 5. ติดตั้ง Dependencies
 
 ```bash
 # PHP dependencies
@@ -406,25 +525,25 @@ npm install
 npm run build
 ```
 
-### 5. Generate Application Key
+### 6. Generate Application Key
 
 ```bash
 php artisan key:generate
 ```
 
-### 6. Run Migrations
+### 7. Run Migrations
 
 ```bash
 php artisan migrate --force
 ```
 
-### 7. สร้าง Storage Link
+### 8. สร้าง Storage Link
 
 ```bash
 php artisan storage:link
 ```
 
-### 8. ตั้งค่า Permissions
+### 9. ตั้งค่า Permissions
 
 ```bash
 chown -R www-data:www-data /var/www/thaiprompt
@@ -432,7 +551,7 @@ chmod -R 755 /var/www/thaiprompt/storage
 chmod -R 755 /var/www/thaiprompt/bootstrap/cache
 ```
 
-### 9. Cache การตั้งค่า
+### 10. Cache การตั้งค่า
 
 ```bash
 php artisan config:cache
