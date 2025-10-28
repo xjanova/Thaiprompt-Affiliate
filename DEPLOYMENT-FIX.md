@@ -96,6 +96,118 @@ rm -f package-lock.json
 ./deploy.sh
 ```
 
+---
+
+# ปัญหาที่ 2: Composer Permission Error / Problem 2: Composer Permission Error
+
+## ปัญหา / Problem
+
+เมื่อรัน deployment script composer ไม่สามารถลบ development packages ได้:
+
+```
+Could not delete /home/admin/domains/.../vendor/theseer/tokenizer/README.md:
+Uninstall of [package] failed
+```
+
+## สาเหตุ / Root Cause
+
+Composer พยายามลบ development packages (phpunit, faker, mockery, etc.) เพื่อติดตั้งเฉพาะ production packages แต่ไม่มีสิทธิ์ในการลบไฟล์ใน vendor directory เนื่องจาก:
+- File permissions ไม่ถูกต้อง
+- File ownership เป็นของ user อื่น
+- Directory มี read-only permissions
+
+## วิธีแก้ไข / Solution
+
+### วิธีที่ 1: ใช้ Fix Script (แนะนำ / Recommended)
+
+```bash
+# 1. เข้าไปที่ directory ของโปรเจค
+cd /path/to/your/Thaiprompt-Affiliate
+
+# 2. ดึง fix script มาจาก repository
+git fetch origin claude/fix-503-service-unavailable-011CUa1Nf68Tx2C8JwQ5K6wE
+git checkout origin/claude/fix-503-service-unavailable-011CUa1Nf68Tx2C8JwQ5K6wE -- fix-composer-permissions.sh
+chmod +x fix-composer-permissions.sh
+
+# 3. รัน fix script (จะมี menu ให้เลือก)
+./fix-composer-permissions.sh
+```
+
+Script มี 2 options:
+1. **Fix permissions and retry** - แก้ไข permissions แล้วลอง install ใหม่ (เร็วกว่า)
+2. **Clean install** - ลบ vendor ทั้งหมดแล้ว install ใหม่ (ปลอดภัยกว่า)
+
+### วิธีที่ 2: แก้ไขด้วยตนเอง / Manual Fix
+
+```bash
+# ขั้นตอนที่ 1: แก้ไข permissions
+sudo chmod -R u+w vendor/
+sudo chown -R $(whoami):$(whoami) vendor/
+
+# ขั้นตอนที่ 2: Clear cache
+composer clear-cache
+
+# ขั้นตอนที่ 3: ลองติดตั้งใหม่
+composer install --no-dev --optimize-autoloader --no-interaction
+
+# ถ้ายังไม่ได้ ให้ลบ vendor แล้วติดตั้งใหม่
+rm -rf vendor/
+composer install --no-dev --optimize-autoloader --no-interaction
+```
+
+### วิธีที่ 3: แก้ไขใน deploy.sh
+
+Deploy script ได้รับการปรับปรุงให้แก้ไข permissions อัตโนมัติแล้ว:
+- ตรวจสอบและแก้ไข permissions ก่อน composer install
+- มี error handling และ retry mechanism
+- แสดง error message ที่ชัดเจนหากมีปัญหา
+
+ดึง version ล่าสุดของ deploy.sh:
+```bash
+git fetch origin claude/fix-503-service-unavailable-011CUa1Nf68Tx2C8JwQ5K6wE
+git checkout origin/claude/fix-503-service-unavailable-011CUa1Nf68Tx2C8JwQ5K6wE -- deploy.sh
+chmod +x deploy.sh
+```
+
+## ป้องกันปัญหาในอนาคต / Prevention
+
+1. **Set correct permissions หลัง deployment:**
+   ```bash
+   chmod -R u+w vendor/
+   chown -R $USER:$USER vendor/
+   ```
+
+2. **ใช้ deployment script ที่ปรับปรุงแล้ว** - มีการแก้ไข permissions อัตโนมัติ
+
+3. **Check permissions ก่อน deploy:**
+   ```bash
+   ls -la vendor/ | head -20
+   ```
+
+## ถ้ายังมีปัญหา / If Issues Persist
+
+หากยังคงมีปัญหา ลองวิธีนี้:
+
+```bash
+# 1. Backup composer.lock
+cp composer.lock composer.lock.backup
+
+# 2. ลบ vendor directory ทั้งหมด
+sudo rm -rf vendor/
+
+# 3. Clear composer cache
+composer clear-cache
+rm -rf ~/.composer/cache
+
+# 4. ติดตั้งใหม่
+composer install --no-dev --optimize-autoloader --no-interaction
+
+# 5. Optimize Laravel
+php artisan optimize
+```
+
+---
+
 ## ติดต่อ / Contact
 
 หากยังมีปัญหาหรือข้อสงสัย กรุณาติดต่อทีมพัฒนา
