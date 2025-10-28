@@ -228,6 +228,54 @@ ufw enable
 
 ---
 
+## ติดตั้ง Apache (ทางเลือกแทน Nginx)
+
+**หมายเหตุ:** ถ้าคุณติดตั้ง Nginx แล้ว ไม่ต้องติดตั้ง Apache (เลือกอย่างใดอย่างหนึ่ง)
+
+### 1. ติดตั้ง Apache
+
+```bash
+apt install -y apache2
+```
+
+### 2. เริ่มบริการ Apache
+
+```bash
+systemctl start apache2
+systemctl enable apache2
+systemctl status apache2
+```
+
+### 3. เปิดใช้งาน Modules ที่จำเป็น
+
+```bash
+# เปิดใช้งาน mod_rewrite (สำคัญสำหรับ Laravel)
+a2enmod rewrite
+
+# เปิดใช้งาน mod_headers
+a2enmod headers
+
+# เปิดใช้งาน mod_ssl (สำหรับ HTTPS)
+a2enmod ssl
+
+# Restart Apache
+systemctl restart apache2
+```
+
+### 4. ตั้งค่า Firewall (ถ้าใช้ UFW)
+
+```bash
+ufw allow 'Apache Full'
+ufw allow OpenSSH
+ufw enable
+```
+
+### 5. ทดสอบ
+
+เปิดเบราว์เซอร์ไปที่ `http://your-server-ip` ควรเห็นหน้า Apache default
+
+---
+
 ## ติดตั้ง Composer
 
 ```bash
@@ -478,17 +526,102 @@ systemctl restart nginx
 
 ---
 
+## ตั้งค่า Apache (ทางเลือกแทน Nginx)
+
+**หมายเหตุ:** ใช้ส่วนนี้ถ้าคุณเลือกใช้ Apache แทน Nginx
+
+### 1. สร้างไฟล์ Virtual Host
+
+```bash
+nano /etc/apache2/sites-available/thaiprompt.conf
+```
+
+วางโค้ดนี้:
+
+```apache
+<VirtualHost *:80>
+    ServerName your-domain.com
+    ServerAlias www.your-domain.com
+    ServerAdmin admin@your-domain.com
+
+    DocumentRoot /var/www/thaiprompt/public
+
+    <Directory /var/www/thaiprompt/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/thaiprompt-error.log
+    CustomLog ${APACHE_LOG_DIR}/thaiprompt-access.log combined
+
+    # Security Headers
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+
+    # PHP Configuration
+    <FilesMatch \.php$>
+        SetHandler "proxy:unix:/var/run/php/php8.2-fpm.sock|fcgi://localhost"
+    </FilesMatch>
+
+    # Deny access to hidden files
+    <DirectoryMatch "/\.">
+        Require all denied
+    </DirectoryMatch>
+</VirtualHost>
+```
+
+**แก้ไข:** เปลี่ยน `your-domain.com` เป็นโดเมนของคุณ
+
+### 2. เปิดใช้งาน PHP-FPM กับ Apache
+
+```bash
+# เปิดใช้งาน proxy modules
+a2enmod proxy_fcgi
+a2enconf php8.2-fpm
+
+# Restart Apache
+systemctl restart apache2
+```
+
+### 3. เปิดใช้งาน Site
+
+```bash
+# เปิดใช้งาน site ใหม่
+a2ensite thaiprompt.conf
+
+# ปิดใช้งาน default site
+a2dissite 000-default.conf
+
+# ทดสอบ configuration
+apache2ctl configtest
+
+# Restart Apache
+systemctl restart apache2
+```
+
+### 4. ตรวจสอบสถานะ
+
+```bash
+systemctl status apache2
+```
+
+---
+
 ## ตั้งค่า SSL
 
 ### ใช้ Let's Encrypt (ฟรี)
 
-### 1. ติดตั้ง Certbot
+### สำหรับ Nginx
+
+#### 1. ติดตั้ง Certbot
 
 ```bash
 apt install -y certbot python3-certbot-nginx
 ```
 
-### 2. สร้าง SSL Certificate
+#### 2. สร้าง SSL Certificate
 
 ```bash
 certbot --nginx -d your-domain.com -d www.your-domain.com
@@ -500,7 +633,7 @@ certbot --nginx -d your-domain.com -d www.your-domain.com
 - **Share email:** No
 - **Redirect HTTP to HTTPS:** Yes (เลือก 2)
 
-### 3. ทดสอบ Auto-renewal
+#### 3. ทดสอบ Auto-renewal
 
 ```bash
 certbot renew --dry-run
@@ -508,7 +641,48 @@ certbot renew --dry-run
 
 Certificate จะ auto-renew ทุก 90 วัน
 
-### 4. อัพเดท .env
+---
+
+### สำหรับ Apache
+
+#### 1. ติดตั้ง Certbot
+
+```bash
+apt install -y certbot python3-certbot-apache
+```
+
+#### 2. สร้าง SSL Certificate
+
+```bash
+certbot --apache -d your-domain.com -d www.your-domain.com
+```
+
+ตอบคำถาม:
+- **Email:** your-email@example.com
+- **Terms of Service:** Agree
+- **Share email:** No
+- **Redirect HTTP to HTTPS:** Yes (เลือก 2)
+
+Certbot จะแก้ไข Virtual Host Configuration ให้อัตโนมัติ
+
+#### 3. ตรวจสอบ Configuration
+
+```bash
+apache2ctl configtest
+systemctl restart apache2
+```
+
+#### 4. ทดสอบ Auto-renewal
+
+```bash
+certbot renew --dry-run
+```
+
+Certificate จะ auto-renew ทุก 90 วัน
+
+---
+
+### อัพเดท .env (ทั้ง Nginx และ Apache)
 
 ```bash
 nano /var/www/thaiprompt/.env

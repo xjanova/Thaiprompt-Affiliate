@@ -154,7 +154,11 @@ chmod -R 755 /var/www/thaiprompt/storage
 chmod -R 755 /var/www/thaiprompt/bootstrap/cache
 ```
 
-### ขั้นตอนที่ 7: ตั้งค่า Nginx
+### ขั้นตอนที่ 7: ตั้งค่า Web Server
+
+**เลือกอย่างใดอย่างหนึ่ง: Nginx หรือ Apache**
+
+#### สำหรับ Nginx
 
 สร้างไฟล์ `/etc/nginx/sites-available/thaiprompt`:
 
@@ -199,11 +203,59 @@ nginx -t
 systemctl reload nginx
 ```
 
+#### สำหรับ Apache
+
+สร้างไฟล์ `/etc/apache2/sites-available/thaiprompt.conf`:
+
+```apache
+<VirtualHost *:80>
+    ServerName your-domain.com
+    ServerAlias www.your-domain.com
+    DocumentRoot /var/www/thaiprompt/public
+
+    <Directory /var/www/thaiprompt/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog ${APACHE_LOG_DIR}/thaiprompt-error.log
+    CustomLog ${APACHE_LOG_DIR}/thaiprompt-access.log combined
+
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+
+    <FilesMatch \.php$>
+        SetHandler "proxy:unix:/var/run/php/php8.2-fpm.sock|fcgi://localhost"
+    </FilesMatch>
+</VirtualHost>
+```
+
+เปิดใช้งาน:
+
+```bash
+a2enmod rewrite headers proxy_fcgi
+a2enconf php8.2-fpm
+a2ensite thaiprompt.conf
+a2dissite 000-default.conf
+apache2ctl configtest
+systemctl reload apache2
+```
+
 ### ขั้นตอนที่ 8: ติดตั้ง SSL (Let's Encrypt)
+
+**สำหรับ Nginx:**
 
 ```bash
 apt install -y certbot python3-certbot-nginx
 certbot --nginx -d your-domain.com -d www.your-domain.com
+```
+
+**สำหรับ Apache:**
+
+```bash
+apt install -y certbot python3-certbot-apache
+certbot --apache -d your-domain.com -d www.your-domain.com
 ```
 
 อัพเดท .env:
@@ -448,7 +500,10 @@ chmod -R 755 /var/www/thaiprompt/bootstrap/cache
 ```bash
 # ตรวจสอบ logs
 tail -f /var/www/thaiprompt/storage/logs/laravel.log
-tail -f /var/log/nginx/error.log
+
+# Web server logs
+tail -f /var/log/nginx/error.log      # สำหรับ Nginx
+tail -f /var/log/apache2/error.log    # สำหรับ Apache
 
 # Clear cache
 php artisan config:clear
@@ -512,7 +567,9 @@ Restart PHP-FPM:
 systemctl restart php8.2-fpm
 ```
 
-### 2. Optimize Nginx
+### 2. Optimize Web Server
+
+#### สำหรับ Nginx
 
 แก้ไข `/etc/nginx/nginx.conf`:
 
@@ -526,6 +583,49 @@ gzip_comp_level 6;
 gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
 
 client_max_body_size 100M;
+```
+
+Restart Nginx:
+```bash
+systemctl restart nginx
+```
+
+#### สำหรับ Apache
+
+เปิดใช้งาน compression modules:
+
+```bash
+a2enmod deflate
+a2enmod expires
+a2enmod headers
+```
+
+แก้ไข `/etc/apache2/apache2.conf` หรือใน Virtual Host:
+
+```apache
+# Enable compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/json
+</IfModule>
+
+# Enable caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+</IfModule>
+
+# Increase upload size
+LimitRequestBody 104857600
+```
+
+Restart Apache:
+```bash
+systemctl restart apache2
 ```
 
 ### 3. Optimize MySQL
@@ -565,11 +665,20 @@ tail -f /var/www/thaiprompt/storage/logs/laravel.log
 grep "ERROR" /var/www/thaiprompt/storage/logs/laravel.log
 ```
 
-### Nginx Logs
+### Web Server Logs
+
+**Nginx:**
 
 ```bash
 tail -f /var/log/nginx/access.log
 tail -f /var/log/nginx/error.log
+```
+
+**Apache:**
+
+```bash
+tail -f /var/log/apache2/access.log
+tail -f /var/log/apache2/error.log
 ```
 
 ### Queue Workers
