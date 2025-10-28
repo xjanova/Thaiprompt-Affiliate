@@ -52,6 +52,23 @@ print_header "ThaiPrompt Marketplace - Deployment"
 PROJECT_DIR=$(pwd)
 print_info "Project directory: $PROJECT_DIR"
 
+# Detect web server user
+WEB_USER="www-data"
+if id "nginx" &>/dev/null; then
+    WEB_USER="nginx"
+elif id "apache" &>/dev/null; then
+    WEB_USER="apache"
+fi
+print_info "Detected web server user: $WEB_USER"
+
+# Get current user
+CURRENT_USER=$(whoami)
+print_info "Current user: $CURRENT_USER"
+
+# Fix permissions before git operations
+print_info "Fixing permissions for git operations..."
+sudo chown -R $CURRENT_USER:$CURRENT_USER $PROJECT_DIR/storage $PROJECT_DIR/bootstrap/cache 2>/dev/null || print_warning "Could not fix permissions (might need sudo access)"
+
 # Step 1: Enable Maintenance Mode
 print_header "Step 1/8: Enable Maintenance Mode"
 if [ -f "artisan" ]; then
@@ -138,14 +155,19 @@ print_success "Application optimized"
 print_header "Step 8/8: Set Permissions"
 print_info "Setting proper file permissions..."
 
-# Set ownership (if www-data user exists)
-if id "www-data" &>/dev/null; then
-    sudo chown -R www-data:www-data $PROJECT_DIR 2>/dev/null || print_warning "Could not change ownership"
+# Set ownership back to web server user
+if id "$WEB_USER" &>/dev/null; then
+    print_info "Changing ownership to $WEB_USER..."
+    sudo chown -R $WEB_USER:$WEB_USER $PROJECT_DIR/storage $PROJECT_DIR/bootstrap/cache 2>/dev/null || print_warning "Could not change ownership (might need sudo access)"
 fi
 
 # Set permissions
-chmod -R 755 $PROJECT_DIR/storage
-chmod -R 755 $PROJECT_DIR/bootstrap/cache
+chmod -R 775 $PROJECT_DIR/storage
+chmod -R 775 $PROJECT_DIR/bootstrap/cache
+
+# Ensure .gitkeep files are writable
+find $PROJECT_DIR/storage -type f -name ".gitkeep" -exec chmod 664 {} \;
+find $PROJECT_DIR/bootstrap/cache -type f -name ".gitkeep" -exec chmod 664 {} \;
 
 print_success "Permissions set"
 
