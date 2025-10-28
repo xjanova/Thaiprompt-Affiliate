@@ -382,11 +382,22 @@ git config --global user.email "your-email@example.com"
 
 ## ติดตั้งโปรเจคจาก GitHub
 
+### 📌 เลือกวิธีการติดตั้ง
+
+คุณมี **2 ตัวเลือก** สำหรับการติดตั้งโปรเจค:
+
+| วิธี | โครงสร้างโฟลเดอร์ | เหมาะกับ |
+|------|-------------------|----------|
+| **แบบที่ 1** | `/var/www/thaiprompt/` | ติดตั้งทั่วไป, หลายโปรเจค |
+| **แบบที่ 2** | `/var/www/yourdomain.com/` | ติดตั้งตรงบนโดเมน, โฟลเดอร์มีอยู่แล้ว |
+
+---
+
 ### เตรียมข้อมูลก่อนเริ่ม
 
-**คุณต้องเลือกวิธีการ Clone อย่างใดอย่างหนึ่ง:**
+**วิธีการ Clone (เลือก 1 วิธี):**
 
-| วิธี | ข้อดี | ข้อเสี | เหมาะกับ |
+| วิธี | ข้อดี | ข้อเสีย | เหมาะกับ |
 |------|-------|--------|----------|
 | **HTTPS** | ง่าย ไม่ต้องตั้งค่าอะไร | ต้องใส่ข้อมูลทุกครั้ง | ผู้เริ่มต้น, ใช้งานครั้งเดียว |
 | **SSH** | ไม่ต้องใส่รหัสผ่าน | ต้องตั้งค่า SSH key | Production server, ใช้งานบ่อย |
@@ -403,15 +414,29 @@ ls -la /var/www
 mkdir -p /var/www
 ```
 
-**หมายเหตุ:** เราจะ clone โปรเจคไปที่ `/var/www/thaiprompt` โดยตรง
+---
+
+### ขั้นตอนที่ 2: เลือกวิธีการติดตั้ง
+
+#### 🔹 แบบที่ 1: สร้างโฟลเดอร์ `thaiprompt` ใหม่
+
+เราจะ clone โปรเจคไปที่ `/var/www/thaiprompt/`
+
+#### 🔹 แบบที่ 2: Clone ลงในโฟลเดอร์โดเมนที่มีอยู่
+
+เราจะ clone โปรเจคลงในโฟลเดอร์ที่ชื่อตามโดเมน เช่น `/var/www/yourdomain.com/`
+
+**สร้างโฟลเดอร์โดเมน (ถ้ายังไม่มี):**
+```bash
+# แทนที่ yourdomain.com ด้วยโดเมนจริงของคุณ
+mkdir -p /var/www/yourdomain.com
+```
 
 ---
 
-### ขั้นตอนที่ 2: Clone Repository
+### ขั้นตอนที่ 3: Clone Repository
 
-เลือกวิธีที่เหมาะกับคุณ:
-
-#### 📌 วิธีที่ 1: Clone ด้วย HTTPS (แนะนำสำหรับผู้เริ่มต้น)
+#### 📌 A. Clone ด้วย HTTPS (แนะนำสำหรับผู้เริ่มต้น)
 
 **ขั้นตอนที่ 1: สร้าง Personal Access Token (PAT)**
 
@@ -432,7 +457,7 @@ mkdir -p /var/www
 
 **ขั้นตอนที่ 2: Clone Repository ด้วย Token**
 
-**วิธีที่ 1 - ใส่ Token ในคำสั่ง (แนะนำ):**
+**🔹 แบบที่ 1 - Clone ลงโฟลเดอร์ thaiprompt:**
 
 ```bash
 # แทนที่ YOUR_TOKEN ด้วย token ที่คัดลอกไว้
@@ -442,10 +467,24 @@ git clone https://YOUR_TOKEN@github.com/xjanova/Thaiprompt-Affiliate.git /var/ww
 # git clone https://ghp_AbCd1234XyZ9876543210@github.com/xjanova/Thaiprompt-Affiliate.git /var/www/thaiprompt
 ```
 
-**วิธีที่ 2 - ให้ Git ถามรหัสผ่าน:**
+**🔹 แบบที่ 2 - Clone ลงโฟลเดอร์โดเมน (yourdomain.com):**
 
 ```bash
+# แทนที่ YOUR_TOKEN และ yourdomain.com
+git clone https://YOUR_TOKEN@github.com/xjanova/Thaiprompt-Affiliate.git /var/www/yourdomain.com
+
+# ตัวอย่างจริง:
+# git clone https://ghp_AbCd1234XyZ9876543210@github.com/xjanova/Thaiprompt-Affiliate.git /var/www/example.com
+```
+
+**ทางเลือกอื่น - ให้ Git ถามรหัสผ่าน:**
+
+```bash
+# แบบที่ 1 (โฟลเดอร์ thaiprompt)
 git clone https://github.com/xjanova/Thaiprompt-Affiliate.git /var/www/thaiprompt
+
+# แบบที่ 2 (โฟลเดอร์โดเมน)
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git /var/www/yourdomain.com
 
 # Git จะถาม:
 # Username: [ใส่ชื่อ GitHub ของคุณ เช่น xjanova]
@@ -455,7 +494,11 @@ git clone https://github.com/xjanova/Thaiprompt-Affiliate.git /var/www/thaipromp
 **ตั้งค่าให้จำ Token (ไม่ต้องใส่ทุกครั้ง):**
 
 ```bash
+# แบบที่ 1
 cd /var/www/thaiprompt
+
+# แบบที่ 2
+cd /var/www/yourdomain.com
 
 # จำถาวร (เก็บไว้ในไฟล์)
 git config credential.helper store
@@ -466,7 +509,7 @@ git config credential.helper 'cache --timeout=3600'
 
 ---
 
-#### 📌 วิธีที่ 2: Clone ด้วย SSH (แนะนำสำหรับ Production)
+#### 📌 B. Clone ด้วย SSH (แนะนำสำหรับ Production)
 
 **ขั้นตอนที่ 1: สร้าง SSH Key บนเซิร์ฟเวอร์**
 
@@ -506,17 +549,33 @@ ssh -T git@github.com
 
 **ขั้นตอนที่ 4: Clone Repository**
 
+**🔹 แบบที่ 1 - Clone ลงโฟลเดอร์ thaiprompt:**
+
 ```bash
 git clone git@github.com:xjanova/Thaiprompt-Affiliate.git /var/www/thaiprompt
 ```
 
----
-
-### ขั้นตอนที่ 3: เข้าไปในโฟลเดอร์โปรเจคและตรวจสอบ
+**🔹 แบบที่ 2 - Clone ลงโฟลเดอร์โดเมน (yourdomain.com):**
 
 ```bash
-# เข้าไปในโฟลเดอร์ที่ clone มา
+# แทนที่ yourdomain.com ด้วยโดเมนจริงของคุณ
+git clone git@github.com:xjanova/Thaiprompt-Affiliate.git /var/www/yourdomain.com
+```
+
+---
+
+### ขั้นตอนที่ 4: เข้าไปในโฟลเดอร์โปรเจคและตรวจสอบ
+
+**🔹 แบบที่ 1 - โฟลเดอร์ thaiprompt:**
+
+```bash
 cd /var/www/thaiprompt
+```
+
+**🔹 แบบที่ 2 - โฟลเดอร์โดเมน:**
+
+```bash
+cd /var/www/yourdomain.com
 ```
 
 **ตรวจสอบว่า Clone สำเร็จ:**
@@ -547,13 +606,21 @@ git status
 
 ---
 
-### ขั้นตอนที่ 4: สร้างและแก้ไขไฟล์ .env
+### ขั้นตอนที่ 5: สร้างและแก้ไขไฟล์ .env
+
+**🔹 แบบที่ 1 - โฟลเดอร์ thaiprompt:**
 
 ```bash
-# คัดลอกไฟล์ตัวอย่าง
+cd /var/www/thaiprompt
 cp .env.example .env
+nano .env
+```
 
-# เปิดแก้ไข
+**🔹 แบบที่ 2 - โฟลเดอร์โดเมน:**
+
+```bash
+cd /var/www/yourdomain.com
+cp .env.example .env
 nano .env
 ```
 
@@ -599,11 +666,30 @@ REDIS_PORT=6379
 - กด `Ctrl + O` → Enter (บันทึก)
 - กด `Ctrl + X` (ออก)
 
-### ขั้นตอนที่ 5: ติดตั้ง Dependencies
+### ขั้นตอนที่ 6: ติดตั้ง Dependencies
 
 **สำคัญ:** Laravel และ dependencies ทั้งหมดอยู่ใน composer.json แล้ว ไม่ต้องติดตั้ง Laravel CLI แยก
 
+**🔹 แบบที่ 1 - โฟลเดอร์ thaiprompt:**
+
 ```bash
+cd /var/www/thaiprompt
+
+# ติดตั้ง PHP dependencies (รวม Laravel ด้วย)
+composer install --no-interaction --optimize-autoloader --no-dev
+
+# ติดตั้ง JavaScript dependencies
+npm install
+
+# Build frontend assets
+npm run build
+```
+
+**🔹 แบบที่ 2 - โฟลเดอร์โดเมน:**
+
+```bash
+cd /var/www/yourdomain.com
+
 # ติดตั้ง PHP dependencies (รวม Laravel ด้วย)
 composer install --no-interaction --optimize-autoloader --no-dev
 
@@ -616,41 +702,83 @@ npm run build
 
 **รอให้เสร็จ อาจใช้เวลา 5-10 นาที**
 
-### ขั้นตอนที่ 6: Generate Application Key
+### ขั้นตอนที่ 7: Generate Application Key
 
+**🔹 แบบที่ 1:**
 ```bash
+cd /var/www/thaiprompt
+php artisan key:generate
+```
+
+**🔹 แบบที่ 2:**
+```bash
+cd /var/www/yourdomain.com
 php artisan key:generate
 ```
 
 **ควรเห็น:** `Application key set successfully.`
 
-### ขั้นตอนที่ 7: Run Migrations
+### ขั้นตอนที่ 8: Run Migrations
 
+**🔹 แบบที่ 1:**
 ```bash
+cd /var/www/thaiprompt
+php artisan migrate --force
+```
+
+**🔹 แบบที่ 2:**
+```bash
+cd /var/www/yourdomain.com
 php artisan migrate --force
 ```
 
 **ควรเห็น:** `Migration table created successfully.` และรายการ migrations ที่รัน
 
-### ขั้นตอนที่ 8: สร้าง Storage Link
+### ขั้นตอนที่ 9: สร้าง Storage Link
 
+**🔹 แบบที่ 1:**
 ```bash
+cd /var/www/thaiprompt
+php artisan storage:link
+```
+
+**🔹 แบบที่ 2:**
+```bash
+cd /var/www/yourdomain.com
 php artisan storage:link
 ```
 
 **ควรเห็น:** `The [public/storage] link has been connected to [storage/app/public].`
 
-### ขั้นตอนที่ 9: ตั้งค่า Permissions
+### ขั้นตอนที่ 10: ตั้งค่า Permissions
 
+**🔹 แบบที่ 1:**
 ```bash
 chown -R www-data:www-data /var/www/thaiprompt
 chmod -R 755 /var/www/thaiprompt/storage
 chmod -R 755 /var/www/thaiprompt/bootstrap/cache
 ```
 
-### ขั้นตอนที่ 10: Cache การตั้งค่า
-
+**🔹 แบบที่ 2:**
 ```bash
+chown -R www-data:www-data /var/www/yourdomain.com
+chmod -R 755 /var/www/yourdomain.com/storage
+chmod -R 755 /var/www/yourdomain.com/bootstrap/cache
+```
+
+### ขั้นตอนที่ 11: Cache การตั้งค่า
+
+**🔹 แบบที่ 1:**
+```bash
+cd /var/www/thaiprompt
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+```
+
+**🔹 แบบที่ 2:**
+```bash
+cd /var/www/yourdomain.com
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
@@ -664,16 +792,19 @@ php artisan view:cache
 
 **ตรวจสอบว่าทุกอย่างพร้อม:**
 
+**🔹 แบบที่ 1:**
 ```bash
 cd /var/www/thaiprompt
-
-# ตรวจสอบไฟล์
 ls -la | grep -E "(composer.json|artisan|.env)"
-
-# ตรวจสอบ vendor folder
 ls vendor/ | head -5
+ls node_modules/ | head -5
+```
 
-# ตรวจสอบ node_modules
+**🔹 แบบที่ 2:**
+```bash
+cd /var/www/yourdomain.com
+ls -la | grep -E "(composer.json|artisan|.env)"
+ls vendor/ | head -5
 ls node_modules/ | head -5
 ```
 
@@ -690,6 +821,8 @@ ls node_modules/ | head -5
 ## ตั้งค่า Nginx
 
 ### 1. สร้างไฟล์ Configuration
+
+**🔹 แบบที่ 1 - โฟลเดอร์ thaiprompt:**
 
 ```bash
 nano /etc/nginx/sites-available/thaiprompt
@@ -750,10 +883,84 @@ server {
 
 **แก้ไข:** เปลี่ยน `your-domain.com` เป็นโดเมนของคุณ
 
-### 2. เปิดใช้งาน Site
+---
+
+**🔹 แบบที่ 2 - โฟลเดอร์โดเมน:**
 
 ```bash
+nano /etc/nginx/sites-available/yourdomain
+```
+
+วางโค้ดนี้:
+
+```nginx
+server {
+    listen 80;
+    listen [::]:80;
+    server_name your-domain.com www.your-domain.com;
+    root /var/www/yourdomain.com/public;
+
+    add_header X-Frame-Options "SAMEORIGIN";
+    add_header X-Content-Type-Options "nosniff";
+
+    index index.php;
+    charset utf-8;
+
+    # Logs
+    access_log /var/log/nginx/yourdomain-access.log;
+    error_log /var/log/nginx/yourdomain-error.log;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+
+    error_page 404 /index.php;
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_hide_header X-Powered-By;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+
+    # Cache static assets
+    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
+}
+```
+
+**แก้ไข:**
+- เปลี่ยน `your-domain.com` เป็นโดเมนของคุณ
+- เปลี่ยน `yourdomain.com` ในชื่อไฟล์และ path เป็นโดเมนจริงของคุณ
+
+---
+
+### 2. เปิดใช้งาน Site
+
+**🔹 แบบที่ 1:**
+```bash
 ln -s /etc/nginx/sites-available/thaiprompt /etc/nginx/sites-enabled/
+```
+
+**🔹 แบบที่ 2:**
+```bash
+# แทนที่ yourdomain ด้วยชื่อไฟล์ที่คุณใช้
+ln -s /etc/nginx/sites-available/yourdomain /etc/nginx/sites-enabled/
 ```
 
 ### 3. ปิดใช้งาน Default Site
@@ -776,6 +983,8 @@ systemctl restart nginx
 **หมายเหตุ:** ใช้ส่วนนี้ถ้าคุณเลือกใช้ Apache แทน Nginx
 
 ### 1. สร้างไฟล์ Virtual Host
+
+**🔹 แบบที่ 1 - โฟลเดอร์ thaiprompt:**
 
 ```bash
 nano /etc/apache2/sites-available/thaiprompt.conf
@@ -819,6 +1028,56 @@ nano /etc/apache2/sites-available/thaiprompt.conf
 
 **แก้ไข:** เปลี่ยน `your-domain.com` เป็นโดเมนของคุณ
 
+---
+
+**🔹 แบบที่ 2 - โฟลเดอร์โดเมน:**
+
+```bash
+nano /etc/apache2/sites-available/yourdomain.conf
+```
+
+วางโค้ดนี้:
+
+```apache
+<VirtualHost *:80>
+    ServerName your-domain.com
+    ServerAlias www.your-domain.com
+    ServerAdmin admin@your-domain.com
+
+    DocumentRoot /var/www/yourdomain.com/public
+
+    <Directory /var/www/yourdomain.com/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/yourdomain-error.log
+    CustomLog ${APACHE_LOG_DIR}/yourdomain-access.log combined
+
+    # Security Headers
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set X-Content-Type-Options "nosniff"
+
+    # PHP Configuration
+    <FilesMatch \.php$>
+        SetHandler "proxy:unix:/var/run/php/php8.2-fpm.sock|fcgi://localhost"
+    </FilesMatch>
+
+    # Deny access to hidden files
+    <DirectoryMatch "/\.">
+        Require all denied
+    </DirectoryMatch>
+</VirtualHost>
+```
+
+**แก้ไข:**
+- เปลี่ยน `your-domain.com` เป็นโดเมนของคุณ
+- เปลี่ยน `yourdomain.com` ในชื่อไฟล์และ path เป็นโดเมนจริงของคุณ
+
+---
+
 ### 2. เปิดใช้งาน PHP-FPM กับ Apache
 
 ```bash
@@ -832,9 +1091,25 @@ systemctl restart apache2
 
 ### 3. เปิดใช้งาน Site
 
+**🔹 แบบที่ 1:**
 ```bash
 # เปิดใช้งาน site ใหม่
 a2ensite thaiprompt.conf
+
+# ปิดใช้งาน default site
+a2dissite 000-default.conf
+
+# ทดสอบ configuration
+apache2ctl configtest
+
+# Restart Apache
+systemctl restart apache2
+```
+
+**🔹 แบบที่ 2:**
+```bash
+# เปิดใช้งาน site ใหม่ (แทนที่ yourdomain.conf ด้วยชื่อไฟล์ที่คุณใช้)
+a2ensite yourdomain.conf
 
 # ปิดใช้งาน default site
 a2dissite 000-default.conf
@@ -929,6 +1204,7 @@ Certificate จะ auto-renew ทุก 90 วัน
 
 ### อัพเดท .env (ทั้ง Nginx และ Apache)
 
+**🔹 แบบที่ 1:**
 ```bash
 nano /var/www/thaiprompt/.env
 ```
@@ -949,6 +1225,27 @@ php artisan config:cache
 
 ---
 
+**🔹 แบบที่ 2:**
+```bash
+nano /var/www/yourdomain.com/.env
+```
+
+เปลี่ยน:
+
+```env
+APP_URL=https://your-domain.com
+SESSION_SECURE_COOKIE=true
+```
+
+Reload config:
+
+```bash
+cd /var/www/yourdomain.com
+php artisan config:cache
+```
+
+---
+
 ## ตั้งค่า Supervisor
 
 Supervisor ใช้สำหรับรัน Queue Worker แบบถาวร
@@ -960,6 +1257,8 @@ apt install -y supervisor
 ```
 
 ### 2. สร้าง Configuration
+
+**🔹 แบบที่ 1 - โฟลเดอร์ thaiprompt:**
 
 ```bash
 nano /etc/supervisor/conf.d/thaiprompt.conf
@@ -982,12 +1281,46 @@ stdout_logfile=/var/www/thaiprompt/storage/logs/worker.log
 stopwaitsecs=3600
 ```
 
+---
+
+**🔹 แบบที่ 2 - โฟลเดอร์โดเมน:**
+
+```bash
+nano /etc/supervisor/conf.d/yourdomain.conf
+```
+
+วางโค้ดนี้ (แทนที่ yourdomain.com ด้วยโดเมนของคุณ):
+
+```ini
+[program:yourdomain-worker]
+process_name=%(program_name)s_%(process_num)02d
+command=php /var/www/yourdomain.com/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+user=www-data
+numprocs=4
+redirect_stderr=true
+stdout_logfile=/var/www/yourdomain.com/storage/logs/worker.log
+stopwaitsecs=3600
+```
+
 ### 3. โหลด Configuration และเริ่มใช้งาน
 
+**🔹 แบบที่ 1:**
 ```bash
 supervisorctl reread
 supervisorctl update
 supervisorctl start thaiprompt-worker:*
+supervisorctl status
+```
+
+**🔹 แบบที่ 2:**
+```bash
+supervisorctl reread
+supervisorctl update
+supervisorctl start yourdomain-worker:*
 supervisorctl status
 ```
 
@@ -997,10 +1330,16 @@ supervisorctl status
 crontab -e -u www-data
 ```
 
-เพิ่มบรรทัดนี้:
+**🔹 แบบที่ 1 - เพิ่มบรรทัดนี้:**
 
 ```
 * * * * * cd /var/www/thaiprompt && php artisan schedule:run >> /dev/null 2>&1
+```
+
+**🔹 แบบที่ 2 - เพิ่มบรรทัดนี้ (แทนที่ yourdomain.com):**
+
+```
+* * * * * cd /var/www/yourdomain.com && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 ---
@@ -1023,6 +1362,7 @@ supervisorctl status
 
 ### 3. ตรวจสอบ Logs
 
+**🔹 แบบที่ 1:**
 ```bash
 # Laravel logs
 tail -f /var/www/thaiprompt/storage/logs/laravel.log
@@ -1034,6 +1374,18 @@ tail -f /var/log/nginx/thaiprompt-error.log
 tail -f /var/www/thaiprompt/storage/logs/worker.log
 ```
 
+**🔹 แบบที่ 2:**
+```bash
+# Laravel logs
+tail -f /var/www/yourdomain.com/storage/logs/laravel.log
+
+# Nginx logs (แทนที่ yourdomain)
+tail -f /var/log/nginx/yourdomain-error.log
+
+# Worker logs
+tail -f /var/www/yourdomain.com/storage/logs/worker.log
+```
+
 ---
 
 ## 🎉 เสร็จสิ้น!
@@ -1043,11 +1395,19 @@ tail -f /var/www/thaiprompt/storage/logs/worker.log
 ### ขั้นตอนต่อไป
 
 1. **สร้างผู้ดูแลระบบ:**
+
+   **🔹 แบบที่ 1:**
    ```bash
    cd /var/www/thaiprompt
    php artisan tinker
    ```
-   
+
+   **🔹 แบบที่ 2:**
+   ```bash
+   cd /var/www/yourdomain.com
+   php artisan tinker
+   ```
+
    ใน tinker:
    ```php
    $user = new App\Models\User;
@@ -1064,8 +1424,16 @@ tail -f /var/www/thaiprompt/storage/logs/worker.log
    - กำหนดค่าต่างๆ
 
 3. **Deploy อัพเดทใหม่ในอนาคต:**
+
+   **🔹 แบบที่ 1:**
    ```bash
    cd /var/www/thaiprompt
+   ./deploy.sh
+   ```
+
+   **🔹 แบบที่ 2:**
+   ```bash
+   cd /var/www/yourdomain.com
    ./deploy.sh
    ```
 
@@ -1075,6 +1443,7 @@ tail -f /var/www/thaiprompt/storage/logs/worker.log
 
 ### ปัญหา: 500 Internal Server Error
 
+**🔹 แบบที่ 1:**
 ```bash
 # ตรวจสอบ logs
 tail -f /var/www/thaiprompt/storage/logs/laravel.log
@@ -1086,8 +1455,21 @@ chmod -R 755 /var/www/thaiprompt/storage
 chmod -R 755 /var/www/thaiprompt/bootstrap/cache
 ```
 
+**🔹 แบบที่ 2:**
+```bash
+# ตรวจสอบ logs
+tail -f /var/www/yourdomain.com/storage/logs/laravel.log
+tail -f /var/log/nginx/yourdomain-error.log
+
+# ตรวจสอบ permissions
+chown -R www-data:www-data /var/www/yourdomain.com
+chmod -R 755 /var/www/yourdomain.com/storage
+chmod -R 755 /var/www/yourdomain.com/bootstrap/cache
+```
+
 ### ปัญหา: Database Connection Failed
 
+**🔹 แบบที่ 1:**
 ```bash
 # ทดสอบ MySQL
 mysql -u thaiprompt -p
@@ -1096,10 +1478,27 @@ mysql -u thaiprompt -p
 cat /var/www/thaiprompt/.env | grep DB_
 ```
 
+**🔹 แบบที่ 2:**
+```bash
+# ทดสอบ MySQL
+mysql -u thaiprompt -p
+
+# ตรวจสอบ .env
+cat /var/www/yourdomain.com/.env | grep DB_
+```
+
 ### ปัญหา: CSS/JS ไม่โหลด
 
+**🔹 แบบที่ 1:**
 ```bash
 cd /var/www/thaiprompt
+npm run build
+php artisan config:cache
+```
+
+**🔹 แบบที่ 2:**
+```bash
+cd /var/www/yourdomain.com
 npm run build
 php artisan config:cache
 ```
