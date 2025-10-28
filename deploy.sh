@@ -1,23 +1,19 @@
 #!/bin/bash
 
 # ============================================
-# ThaiPrompt Marketplace - Deployment Script
+# ThaiPrompt Marketplace - Production Deployment Script
+# ============================================
+# ใช้ script นี้สำหรับ deploy โปรเจคจาก GitHub
 # ============================================
 
 set -e  # Exit on error
-
-echo "🚀 Starting deployment..."
-echo "================================"
 
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
-
-# Configuration
-PROJECT_DIR="/var/www/thaiprompt"
-BRANCH="main"
 
 # Functions
 print_success() {
@@ -29,117 +25,175 @@ print_error() {
 }
 
 print_info() {
-    echo -e "${YELLOW}ℹ $1${NC}"
+    echo -e "${BLUE}ℹ $1${NC}"
 }
 
-# Check if running as deployer user
-if [ "$USER" != "deployer" ] && [ "$USER" != "root" ]; then
-    print_error "Please run as deployer user or root"
+print_warning() {
+    echo -e "${YELLOW}⚠ $1${NC}"
+}
+
+print_header() {
+    echo ""
+    echo -e "${BLUE}================================${NC}"
+    echo -e "${BLUE}$1${NC}"
+    echo -e "${BLUE}================================${NC}"
+    echo ""
+}
+
+# Check if running from project directory
+if [ ! -f "composer.json" ] || [ ! -f "artisan" ]; then
+    print_error "This script must be run from the project root directory!"
     exit 1
 fi
 
-cd "$PROJECT_DIR" || exit 1
+print_header "ThaiPrompt Marketplace - Deployment"
 
-# 1. Enable maintenance mode
-echo ""
-print_info "Step 1/11: Enabling maintenance mode..."
-php artisan down || print_info "Already in maintenance mode"
-print_success "Maintenance mode enabled"
+# Get current directory
+PROJECT_DIR=$(pwd)
+print_info "Project directory: $PROJECT_DIR"
 
-# 2. Pull latest code
-echo ""
-print_info "Step 2/11: Pulling latest code from $BRANCH..."
+# Step 1: Enable Maintenance Mode
+print_header "Step 1/8: Enable Maintenance Mode"
+if [ -f "artisan" ]; then
+    php artisan down --retry=60 || print_warning "Could not enable maintenance mode"
+    print_success "Maintenance mode enabled"
+else
+    print_warning "artisan not found, skipping maintenance mode"
+fi
+
+# Step 2: Pull Latest Code from GitHub
+print_header "Step 2/8: Pull Latest Code from GitHub"
+print_info "Fetching updates from remote repository..."
+
+# Get current branch
+CURRENT_BRANCH=$(git branch --show-current)
+print_info "Current branch: $CURRENT_BRANCH"
+
+# Stash local changes if any
+if ! git diff-index --quiet HEAD --; then
+    print_warning "Local changes detected, stashing..."
+    git stash
+    STASHED=true
+else
+    STASHED=false
+fi
+
+# Pull latest changes
 git fetch origin
-git reset --hard origin/$BRANCH
-print_success "Code updated"
+git pull origin $CURRENT_BRANCH
 
-# 3. Install composer dependencies
-echo ""
-print_info "Step 3/11: Installing composer dependencies..."
-composer install --optimize-autoloader --no-dev --no-interaction
+# Pop stash if we stashed changes
+if [ "$STASHED" = true ]; then
+    print_info "Applying stashed changes..."
+    git stash pop || print_warning "Could not apply stashed changes"
+fi
+
+print_success "Code updated from GitHub"
+
+# Step 3: Install/Update Composer Dependencies
+print_header "Step 3/8: Install Composer Dependencies"
+print_info "Installing PHP dependencies..."
+composer install --no-interaction --optimize-autoloader --no-dev
 print_success "Composer dependencies installed"
 
-# 4. Install NPM dependencies
-echo ""
-print_info "Step 4/11: Installing NPM dependencies..."
-npm ci --production=false
+# Step 4: Install/Update NPM Dependencies
+print_header "Step 4/8: Install NPM Dependencies"
+print_info "Installing JavaScript dependencies..."
+npm ci --only=production
 print_success "NPM dependencies installed"
 
-# 5. Build assets
-echo ""
-print_info "Step 5/11: Building frontend assets..."
+# Step 5: Build Frontend Assets
+print_header "Step 5/8: Build Frontend Assets"
+print_info "Building production assets..."
 npm run build
-print_success "Assets built"
+print_success "Frontend assets built"
 
-# 6. Run database migrations
-echo ""
-print_info "Step 6/11: Running database migrations..."
+# Step 6: Run Database Migrations
+print_header "Step 6/8: Run Database Migrations"
+print_info "Running database migrations..."
 php artisan migrate --force
-print_success "Migrations completed"
+print_success "Database migrations completed"
 
-# 7. Clear old cache
-echo ""
-print_info "Step 7/11: Clearing old cache..."
+# Step 7: Clear and Cache Configuration
+print_header "Step 7/8: Optimize Application"
+print_info "Clearing old cache..."
+
+# Clear all caches
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 php artisan cache:clear
-print_success "Old cache cleared"
 
-# 8. Cache configuration
-echo ""
-print_info "Step 8/11: Caching configuration..."
+print_info "Caching configuration..."
+
+# Cache everything for production
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 php artisan event:cache
-print_success "Configuration cached"
 
-# 9. Update file permissions
-echo ""
-print_info "Step 9/11: Updating file permissions..."
-chown -R deployer:www-data "$PROJECT_DIR"
-chmod -R 775 "$PROJECT_DIR/storage"
-chmod -R 775 "$PROJECT_DIR/bootstrap/cache"
-print_success "Permissions updated"
+print_success "Application optimized"
 
-# 10. Restart queue workers
-echo ""
-print_info "Step 10/11: Restarting queue workers..."
-if command -v supervisorctl &> /dev/null; then
-    supervisorctl restart thaiprompt-worker:* 2>/dev/null || print_info "Queue workers not configured"
-    print_success "Queue workers restarted"
-else
-    print_info "Supervisor not installed, skipping queue restart"
+# Step 8: Set Permissions
+print_header "Step 8/8: Set Permissions"
+print_info "Setting proper file permissions..."
+
+# Set ownership (if www-data user exists)
+if id "www-data" &>/dev/null; then
+    sudo chown -R www-data:www-data $PROJECT_DIR 2>/dev/null || print_warning "Could not change ownership"
 fi
 
-# 11. Reload PHP-FPM
-echo ""
-print_info "Step 11/11: Reloading PHP-FPM..."
-if command -v systemctl &> /dev/null; then
-    systemctl reload php8.1-fpm || systemctl reload php8.2-fpm || systemctl reload php-fpm
+# Set permissions
+chmod -R 755 $PROJECT_DIR/storage
+chmod -R 755 $PROJECT_DIR/bootstrap/cache
+
+print_success "Permissions set"
+
+# Disable Maintenance Mode
+print_header "Finalizing Deployment"
+if [ -f "artisan" ]; then
+    php artisan up
+    print_success "Maintenance mode disabled"
+fi
+
+# Restart Services (optional)
+print_info "Restarting services..."
+
+# Restart PHP-FPM if running
+if systemctl is-active --quiet php8.2-fpm; then
+    sudo systemctl reload php8.2-fpm
     print_success "PHP-FPM reloaded"
-else
-    print_info "systemctl not available, skipping PHP-FPM reload"
+elif systemctl is-active --quiet php8.1-fpm; then
+    sudo systemctl reload php8.1-fpm
+    print_success "PHP-FPM reloaded"
 fi
 
-# Disable maintenance mode
-echo ""
-print_info "Disabling maintenance mode..."
-php artisan up
-print_success "Application is back online"
+# Restart queue workers if using supervisor
+if command -v supervisorctl &> /dev/null; then
+    sudo supervisorctl restart all 2>/dev/null && print_success "Queue workers restarted" || true
+fi
 
-# Summary
+# Final Summary
+print_header "Deployment Complete!"
+
 echo ""
-echo "================================"
-echo -e "${GREEN}✅ Deployment completed successfully!${NC}"
-echo "================================"
+echo -e "${GREEN}✅ Deployment successful!${NC}"
 echo ""
-echo "Application URL: $(php artisan env:get APP_URL 2>/dev/null || echo 'Check .env')"
-echo "Deployed at: $(date)"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
-print_info "Next steps:"
-echo "  1. Test the application in browser"
+echo -e "${BLUE}📋 Deployment Summary:${NC}"
+echo ""
+echo "  Branch: $CURRENT_BRANCH"
+echo "  Commit: $(git rev-parse --short HEAD)"
+echo "  Date: $(date '+%Y-%m-%d %H:%M:%S')"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo -e "${YELLOW}🔍 Next Steps:${NC}"
+echo ""
+echo "  1. Test your application: http://your-domain.com"
 echo "  2. Check logs: tail -f storage/logs/laravel.log"
-echo "  3. Monitor queue: php artisan queue:work --verbose"
+echo "  3. Monitor queue: php artisan queue:work"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""

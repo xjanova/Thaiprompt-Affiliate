@@ -106,15 +106,7 @@
 - 🆕 **Color Presets** - โทนสีสำเร็จรูปให้เลือกใช้
 - 🆕 **Premium Subscription** - ระบบสมัครสมาชิกแบบรายเดือน/ปี/ตลอดชีพ
 
-### 15. 🔧 ระบบ Setup Wizard
-- 🆕 **Web-based Installation** - ติดตั้งผ่านหน้าเว็บโดยไม่ต้องใช้ CLI
-- 🆕 **ตรวจสอบความพร้อมของระบบ** - PHP version, Extensions, Permissions
-- 🆕 **ตั้งค่า Database** - พร้อมทดสอบการเชื่อมต่อ
-- 🆕 **สร้าง Admin Account** - ในขั้นตอนการติดตั้ง
-- 🆕 **Auto Migration & Seeding** - ติดตั้งฐานข้อมูลอัตโนมัติ
-- 🆕 **Beautiful UI with Animations** - ติดตั้งง่ายด้วย UI ที่สวยงาม
-
-### 16. 💾 ระบบ Backup & Version Control
+### 15. 💾 ระบบ Backup & Version Control
 - 🆕 **Auto Backup** - สำรองข้อมูลอัตโนมัติก่อนอัพเดท
 - 🆕 **Full System Backup** - สำรองทั้งไฟล์และฐานข้อมูล
 - 🆕 **Database Backup** - สำรองเฉพาะฐานข้อมูล
@@ -122,7 +114,7 @@
 - 🆕 **Backup Management** - จัดการไฟล์สำรองข้อมูล
 - 🆕 **One-Click Restore** - กู้คืนข้อมูลได้ทันที
 
-### 17. 💳 ระบบ NFC Payment (v1.1.0)
+### 16. 💳 ระบบ NFC Payment (v1.1.0)
 - 🆕 **Web NFC API** - รองรับ NFC บนเว็บไซต์
 - 🆕 สแกนบัตร NFC ผ่านอุปกรณ์ที่รองรับ
 - 🆕 ผูกบัตรกับ Wallet ของ User
@@ -131,7 +123,7 @@
 - 🆕 รองรับการใช้งานผ่าน POS
 - 🆕 เตรียมพร้อมสำหรับ Mobile App
 
-### 18. ✅ ระบบยืนยันตัวตนร้านค้า (v1.1.0)
+### 17. ✅ ระบบยืนยันตัวตนร้านค้า (v1.1.0)
 - 🆕 **Shop Verification System**
 - 🆕 อัปโหลดเอกสารยืนยันตัวตน
 - 🆕 ระบบ KYC แบบหลายระดับ
@@ -140,7 +132,7 @@
 - 🆕 แสดงเหรียญยืนยันบนหน้าร้าน
 - 🆕 เพิ่มความน่าเชื่อถือให้ร้านค้า
 
-### 19. 🔄 ระบบอัปเดทอัตโนมัติ (v1.1.0)
+### 18. 🔄 ระบบอัปเดทอัตโนมัติ (v1.1.0)
 - 🆕 **Auto Version Update System**
 - 🆕 เช็คเวอร์ชันจาก GitHub อัตโนมัติ
 - 🆕 แจ้งเตือน Admin เมื่อมีอัปเดท
@@ -148,7 +140,7 @@
 - 🆕 ติดตามประวัติการอัปเดท
 - 🆕 คำแนะนำการอัปเดทแบบ Step-by-step
 
-### 20. 🌳 ผังโครงสร้าง MLM แบบ Interactive (v1.1.0)
+### 19. 🌳 ผังโครงสร้าง MLM แบบ Interactive (v1.1.0)
 - 🆕 **D3.js Tree Visualization**
 - 🆕 ผังองค์กรแบบ Interactive
 - 🆕 Zoom และ Pan ได้อย่างลื่นไหล
@@ -159,13 +151,13 @@
 - 🆕 **กรอบสีเขียว** สำหรับสมาชิกที่ KYC แล้ว
 - 🆕 แสดง Avatar จาก LINE หรือรูปที่อัปโหลด
 
-### 21. 📸 การจัดการรูปโปรไฟล์ (v1.1.0)
+### 20. 📸 การจัดการรูปโปรไฟล์ (v1.1.0)
 - 🆕 รูป Avatar เริ่มต้นสำหรับผู้ใช้ใหม่
 - 🆕 ดึงรูปจาก LINE หลัง KYC
 - 🆕 อัปโหลดรูปโปรไฟล์เองได้
 - 🆕 ปรับขนาดรูปอัตโนมัติ
 
-### 22. 🏨 ระบบจัดการโรงแรม (Hotel Management System) **[🆕 v1.1.0]**
+### 21. 🏨 ระบบจัดการโรงแรม (Hotel Management System) **[🆕 v1.1.0]**
 - ✅ **Complete Hotel & Room Management** - จัดการโรงแรมและห้องพักครบวงจร
 - ✅ **Advanced Booking System** - ระบบจองห้องพักขั้นสูงพร้อมปฏิทินการจอง
 - ✅ **Dynamic Pricing Rules** - กำหนดกฎราคาแบบยืดหยุ่นตามฤดูกาลและอุปสงค์
@@ -173,7 +165,7 @@
 - ✅ **Hotel Amenities** - จัดการสิ่งอำนวยความสะดวกของโรงแรม
 - ✅ **Reviews & Ratings** - รีวิวและให้คะแนนโรงแรมและห้องพัก
 
-### 23. 🎨 ระบบปรับแต่งธีมร้านค้า (Store Theme Customization) **[🆕 v1.1.0]**
+### 22. 🎨 ระบบปรับแต่งธีมร้านค้า (Store Theme Customization) **[🆕 v1.1.0]**
 - ✅ **Customizable Store Themes** - ปรับแต่งธีมร้านค้าได้เองอย่างอิสระ
 - ✅ **Color Schemes** - เลือกชุดสีของร้านจากพาเลตต์หลากหลาย
 - ✅ **Layout Options** - เปลี่ยนรูปแบบการจัดวางหน้าร้าน
@@ -181,7 +173,7 @@
 - ✅ **Custom Fonts** - เลือกฟอนต์ที่เหมาะกับแบรนด์
 - ✅ **Preview Mode** - ดูตัวอย่างธีมก่อนเผยแพร่
 
-### 24. 🔌 ระบบ Addon (Addon System) **[🆕 v1.1.0]**
+### 23. 🔌 ระบบ Addon (Addon System) **[🆕 v1.1.0]**
 - ✅ **Addon Marketplace** - ตลาดกลาง Addon สำหรับขยายความสามารถ
 - ✅ **Plugin Installation** - ติดตั้ง Plugin เพิ่มเติมได้ง่ายๆ
 - ✅ **Feature Extensions** - ขยายฟีเจอร์ระบบตามความต้องการ
@@ -260,39 +252,15 @@
 
 ## 🚀 การติดตั้ง
 
-### วิธีที่ 1: ติดตั้งผ่าน Web Setup Wizard (แนะนำ) 🌟
+### สำหรับ Production Server
 
-1. **Clone โปรเจคและติดตั้ง Dependencies**
+**คู่มือละเอียดทั้งหมด:**
+- 📖 [SERVER_SETUP.md](./SERVER_SETUP.md) - คู่มือติดตั้งเซิร์ฟเวอร์ครั้งแรกอย่างละเอียด
+- 🚀 [DEPLOYMENT.md](./DEPLOYMENT.md) - คู่มือการ deploy และอัพเดทโปรเจค
 
-```bash
-git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
-cd Thaiprompt-Affiliate
-composer install
-npm install && npm run build
-```
+### Quick Start (Development)
 
-2. **เริ่มเซิร์ฟเวอร์**
-
-```bash
-php artisan serve
-```
-
-3. **เปิดเบราว์เซอร์และเข้าสู่ Setup Wizard**
-
-```
-http://localhost:8000/setup
-```
-
-4. **ทำตามขั้นตอนใน Setup Wizard**
-   - ✅ ตรวจสอบความพร้อมของระบบ
-   - ✅ ตั้งค่าฐานข้อมูล (พร้อมทดสอบการเชื่อมต่อ)
-   - ✅ ติดตั้งและ Migrate ฐานข้อมูล
-   - ✅ สร้างบัญชี Super Admin
-   - ✅ เสร็จสิ้นการติดตั้ง
-
----
-
-### วิธีที่ 2: ติดตั้งแบบ Manual (สำหรับผู้เชี่ยวชาญ)
+### วิธีที่ 1: ติดตั้งแบบ Manual
 
 1. **Clone โปรเจค**
 
@@ -634,13 +602,6 @@ php artisan test --filter=AuthenticationTest
 - รองรับ Gradient Colors แบบมืออาชีพ
 - อัปโหลดโลโก้และ Favicon ของคุณเอง
 - ระบบ Premium Subscription แบบรายเดือน/ปี/ตลอดชีพ
-
-### 🔧 Web Setup Wizard - ติดตั้งง่ายผ่านเว็บ
-ติดตั้งระบบได้ง่ายๆ ผ่านหน้าเว็บ ไม่ต้องใช้ Command Line
-- ตรวจสอบความพร้อมของระบบอัตโนมัติ
-- ตั้งค่า Database และทดสอบการเชื่อมต่อ
-- สร้างบัญชี Admin ในขั้นตอนการติดตั้ง
-- UI สวยงามพร้อม Animations
 
 ### 💾 Backup & Version Control - ปลอดภัยทุกการอัพเดท
 ระบบสำรองข้อมูลอัตโนมัติก่อนทำการอัพเดท

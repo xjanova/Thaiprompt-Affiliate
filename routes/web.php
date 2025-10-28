@@ -16,7 +16,6 @@ use App\Http\Controllers\Admin\AdminEmployeeController;
 use App\Http\Controllers\Customer\CustomerDashboardController;
 use App\Http\Controllers\MLM\MlmDashboardController;
 use App\Http\Controllers\Wallet\WalletController;
-use App\Http\Controllers\SetupController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\ThemeController;
@@ -33,18 +32,6 @@ use App\Http\Controllers\Vendor\VendorVerificationController;
 | Web Routes
 |--------------------------------------------------------------------------
 */
-
-// Setup Wizard Routes (No authentication required)
-Route::prefix('setup')->name('setup.')->group(function () {
-    Route::get('/', [SetupController::class, 'index'])->name('index');
-    Route::get('/requirements', [SetupController::class, 'requirements'])->name('requirements');
-    Route::get('/database', [SetupController::class, 'database'])->name('database');
-    Route::post('/database/test', [SetupController::class, 'testDatabase'])->name('database.test');
-    Route::post('/database/save', [SetupController::class, 'saveDatabase'])->name('database.save');
-    Route::get('/admin', [SetupController::class, 'admin'])->name('admin');
-    Route::post('/admin/create', [SetupController::class, 'createAdmin'])->name('admin.create');
-    Route::get('/complete', [SetupController::class, 'complete'])->name('complete');
-});
 
 // Home & Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');

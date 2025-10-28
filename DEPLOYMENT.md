@@ -1,266 +1,173 @@
 # 🚀 คู่มือการ Deploy Production
 
-คู่มือนี้แนะนำวิธีการ deploy ThaiPrompt Marketplace ไปยัง production server
+คู่มือนี้แนะนำวิธีการ deploy และอัพเดท ThaiPrompt Marketplace บน production server
 
 ---
 
 ## 📋 สารบัญ
 
-1. [เตรียม Production Server](#เตรียม-production-server)
-2. [ติดตั้ง Web Server](#ติดตั้ง-web-server)
-3. [Deploy โปรเจค](#deploy-โปรเจค)
-4. [การตั้งค่า Production](#การตั้งค่า-production)
-5. [SSL Certificate](#ssl-certificate)
-6. [Performance Optimization](#performance-optimization)
-7. [Monitoring & Logging](#monitoring--logging)
-8. [Backup Strategy](#backup-strategy)
-9. [CI/CD Pipeline](#cicd-pipeline)
-10. [Troubleshooting](#troubleshooting)
+1. [Quick Start](#quick-start)
+2. [การติดตั้งครั้งแรก](#การติดตั้งครั้งแรก)
+3. [การ Deploy อัพเดทใหม่](#การ-deploy-อัพเดทใหม่)
+4. [CI/CD Pipeline](#cicd-pipeline)
+5. [Rollback](#rollback)
+6. [Troubleshooting](#troubleshooting)
 
 ---
 
-## เตรียม Production Server
+## Quick Start
 
-### ความต้องการ Server
-
-**Minimum Requirements:**
-- CPU: 2 cores
-- RAM: 4GB
-- Storage: 50GB SSD
-- Bandwidth: 100Mbps
-
-**Recommended:**
-- CPU: 4 cores
-- RAM: 8GB
-- Storage: 100GB SSD
-- Bandwidth: 1Gbps
-
-### เลือก Server Provider
-
-**แนะนำ:**
-- **AWS** - EC2 t3.medium ขึ้นไป
-- **Digital Ocean** - Droplet $24/month ขึ้นไป
-- **Vultr** - High Frequency $24/month ขึ้นไป
-- **Linode** - Dedicated CPU 4GB ขึ้นไป
-
-### OS แนะนำ
-
-- **Ubuntu 22.04 LTS** (แนะนำ)
-- **Ubuntu 20.04 LTS**
-- **Debian 11**
-
----
-
-## ติดตั้ง Web Server
-
-### 1. อัพเดทระบบ
+### การติดตั้งครั้งแรก
 
 ```bash
-sudo apt update
-sudo apt upgrade -y
-sudo reboot
-```
+# 1. ติดตั้งระบบตามคู่มือ
+# ดูรายละเอียดใน SERVER_SETUP.md
 
-### 2. ติดตั้ง Nginx
-
-```bash
-sudo apt install -y nginx
-sudo systemctl start nginx
-sudo systemctl enable nginx
-```
-
-ทดสอบ: เปิดเบราว์เซอร์ไปที่ IP ของ server
-
-### 3. ติดตั้ง PHP 8.1 และ Extensions
-
-```bash
-sudo add-apt-repository ppa:ondrej/php -y
-sudo apt update
-
-sudo apt install -y php8.1-fpm php8.1-cli php8.1-common \
-  php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring \
-  php8.1-curl php8.1-xml php8.1-bcmath php8.1-intl \
-  php8.1-redis
-```
-
-ตรวจสอบ:
-```bash
-php -v
-```
-
-### 4. ติดตั้ง MySQL
-
-```bash
-sudo apt install -y mysql-server
-sudo mysql_secure_installation
-```
-
-ตั้งค่า MySQL:
-```bash
-sudo mysql
-```
-
-```sql
-CREATE DATABASE thaiprompt_marketplace CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'thaiprompt'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD_HERE';
-GRANT ALL PRIVILEGES ON thaiprompt_marketplace.* TO 'thaiprompt'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
-
-### 5. ติดตั้ง Redis
-
-```bash
-sudo apt install -y redis-server
-sudo systemctl start redis
-sudo systemctl enable redis
-```
-
-ทดสอบ:
-```bash
-redis-cli ping
-# ควรได้: PONG
-```
-
-### 6. ติดตั้ง Composer
-
-```bash
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-sudo chmod +x /usr/local/bin/composer
-```
-
-### 7. ติดตั้ง Node.js
-
-```bash
-curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
-sudo apt install -y nodejs
-```
-
-### 8. ติดตั้ง Git
-
-```bash
-sudo apt install -y git
-```
-
-### 9. สร้าง User สำหรับ Deploy
-
-```bash
-sudo adduser deployer
-sudo usermod -aG www-data deployer
-```
-
----
-
-## Deploy โปรเจค
-
-### 1. Clone Repository
-
-```bash
-sudo mkdir -p /var/www
-sudo chown deployer:www-data /var/www
+# 2. Clone โปรเจคจาก GitHub
 cd /var/www
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git thaiprompt
+cd thaiprompt
 
-# Clone โปรเจค
+# 3. ติดตั้ง dependencies และตั้งค่า
+composer install --no-dev --optimize-autoloader
+npm install
+npm run build
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --force
+
+# 4. ตั้งค่า permissions
+chown -R www-data:www-data /var/www/thaiprompt
+chmod -R 755 storage bootstrap/cache
+```
+
+### การ Deploy อัพเดทใหม่
+
+```bash
+cd /var/www/thaiprompt
+./deploy.sh
+```
+
+**เพียงแค่นี้!** 🎉
+
+---
+
+## การติดตั้งครั้งแรก
+
+### ขั้นตอนที่ 1: เตรียมเซิร์ฟเวอร์
+
+**สำคัญ:** ติดตามทุกขั้นตอนใน [SERVER_SETUP.md](./SERVER_SETUP.md) เพื่อติดตั้ง:
+- ✅ Ubuntu 22.04 LTS หรือใหม่กว่า
+- ✅ PHP 8.2 + Extensions
+- ✅ MySQL 8.0+
+- ✅ Nginx
+- ✅ Composer
+- ✅ Node.js 20 LTS
+- ✅ Redis
+- ✅ Supervisor
+
+### ขั้นตอนที่ 2: Clone Repository
+
+```bash
+cd /var/www
 git clone https://github.com/xjanova/Thaiprompt-Affiliate.git thaiprompt
 cd thaiprompt
 ```
 
-### 2. ติดตั้ง Dependencies
+หรือถ้าใช้ SSH:
 
 ```bash
-# PHP dependencies
-composer install --optimize-autoloader --no-dev
-
-# JavaScript dependencies
-npm install
-npm run build
+git clone git@github.com:xjanova/Thaiprompt-Affiliate.git thaiprompt
 ```
 
-### 3. สร้างไฟล์ .env
+### ขั้นตอนที่ 3: สร้างไฟล์ .env
 
 ```bash
 cp .env.example .env
 nano .env
 ```
 
-แก้ไขค่าต่อไปนี้:
+**แก้ไขค่าสำคัญเหล่านี้:**
 
 ```env
+# Application
 APP_NAME="ThaiPrompt Marketplace"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://yourdomain.com
+APP_URL=https://your-domain.com
 
+# Database
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
+DB_PORT=3306
 DB_DATABASE=thaiprompt_marketplace
 DB_USERNAME=thaiprompt
-DB_PASSWORD=your_strong_password
+DB_PASSWORD=YOUR_STRONG_PASSWORD
 
+# Cache & Queue
 CACHE_DRIVER=redis
 QUEUE_CONNECTION=redis
 SESSION_DRIVER=redis
 
+# Redis
 REDIS_HOST=127.0.0.1
 REDIS_PASSWORD=null
 REDIS_PORT=6379
 ```
 
-### 4. สร้าง Application Key
+### ขั้นตอนที่ 4: ติดตั้ง Dependencies
 
 ```bash
+# Install PHP dependencies
+composer install --no-dev --optimize-autoloader --no-interaction
+
+# Install JavaScript dependencies
+npm ci --only=production
+
+# Build frontend assets
+npm run build
+```
+
+### ขั้นตอนที่ 5: Setup Laravel
+
+```bash
+# Generate application key
 php artisan key:generate
-```
 
-### 5. Run Migrations
-
-```bash
+# Run migrations
 php artisan migrate --force
-```
 
-### 6. ตั้งค่า Permissions
-
-```bash
-sudo chown -R deployer:www-data /var/www/thaiprompt
-sudo chmod -R 775 /var/www/thaiprompt/storage
-sudo chmod -R 775 /var/www/thaiprompt/bootstrap/cache
-```
-
-### 7. สร้าง Storage Link
-
-```bash
+# Create storage link
 php artisan storage:link
-```
 
-### 8. Optimize Application
-
-```bash
+# Cache configuration
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 ```
 
----
+### ขั้นตอนที่ 6: Set Permissions
 
-## การตั้งค่า Production
+```bash
+chown -R www-data:www-data /var/www/thaiprompt
+chmod -R 755 /var/www/thaiprompt/storage
+chmod -R 755 /var/www/thaiprompt/bootstrap/cache
+```
 
-### 1. ตั้งค่า Nginx
+### ขั้นตอนที่ 7: ตั้งค่า Nginx
 
 สร้างไฟล์ `/etc/nginx/sites-available/thaiprompt`:
 
 ```nginx
 server {
     listen 80;
-    listen [::]:80;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name your-domain.com www.your-domain.com;
     root /var/www/thaiprompt/public;
 
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
 
     index index.php;
-
     charset utf-8;
 
     location / {
@@ -273,7 +180,7 @@ server {
     error_page 404 /index.php;
 
     location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.1-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
         fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
         include fastcgi_params;
     }
@@ -281,385 +188,116 @@ server {
     location ~ /\.(?!well-known).* {
         deny all;
     }
-
-    # Cache static assets
-    location ~* \.(jpg|jpeg|png|gif|ico|css|js|svg|woff|woff2|ttf|eot)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Gzip compression
-    gzip on;
-    gzip_vary on;
-    gzip_min_length 1024;
-    gzip_types text/plain text/css text/xml text/javascript application/x-javascript application/xml+rss application/json;
 }
 ```
 
 เปิดใช้งาน:
-```bash
-sudo ln -s /etc/nginx/sites-available/thaiprompt /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl restart nginx
-```
-
-### 2. ตั้งค่า PHP-FPM
-
-แก้ไข `/etc/php/8.1/fpm/pool.d/www.conf`:
-
-```ini
-user = www-data
-group = www-data
-listen = /var/run/php/php8.1-fpm.sock
-listen.owner = www-data
-listen.group = www-data
-pm = dynamic
-pm.max_children = 50
-pm.start_servers = 5
-pm.min_spare_servers = 5
-pm.max_spare_servers = 35
-```
-
-Restart PHP-FPM:
-```bash
-sudo systemctl restart php8.1-fpm
-```
-
-### 3. ตั้งค่า Supervisor (Queue Worker)
-
-สร้างไฟล์ `/etc/supervisor/conf.d/thaiprompt.conf`:
-
-```ini
-[program:thaiprompt-worker]
-process_name=%(program_name)s_%(process_num)02d
-command=php /var/www/thaiprompt/artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
-autostart=true
-autorestart=true
-stopasgroup=true
-killasgroup=true
-user=deployer
-numprocs=8
-redirect_stderr=true
-stdout_logfile=/var/www/thaiprompt/storage/logs/worker.log
-stopwaitsecs=3600
-```
-
-เริ่มใช้งาน:
-```bash
-sudo supervisorctl reread
-sudo supervisorctl update
-sudo supervisorctl start thaiprompt-worker:*
-```
-
-### 4. ตั้งค่า Cron (Task Scheduler)
 
 ```bash
-sudo crontab -e -u deployer
+ln -s /etc/nginx/sites-available/thaiprompt /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
 ```
 
-เพิ่ม:
-```
-* * * * * cd /var/www/thaiprompt && php artisan schedule:run >> /dev/null 2>&1
-```
-
----
-
-## SSL Certificate
-
-### ใช้ Let's Encrypt (ฟรี)
-
-#### 1. ติดตั้ง Certbot
+### ขั้นตอนที่ 8: ติดตั้ง SSL (Let's Encrypt)
 
 ```bash
-sudo apt install -y certbot python3-certbot-nginx
+apt install -y certbot python3-certbot-nginx
+certbot --nginx -d your-domain.com -d www.your-domain.com
 ```
 
-#### 2. สร้าง Certificate
+อัพเดท .env:
 
 ```bash
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
-```
+nano /var/www/thaiprompt/.env
+# เปลี่ยน APP_URL=https://your-domain.com
+# เพิ่ม SESSION_SECURE_COOKIE=true
 
-ตอบคำถาม:
-- Email: your-email@example.com
-- Agree to terms: Y
-- Share email: N (optional)
-- Redirect HTTP to HTTPS: 2 (Yes)
-
-#### 3. ทดสอบ Auto-renewal
-
-```bash
-sudo certbot renew --dry-run
-```
-
-Certificate จะ auto-renew ทุก 90 วัน
-
-#### 4. อัพเดท .env
-
-```env
-APP_URL=https://yourdomain.com
-SESSION_SECURE_COOKIE=true
-```
-
-Reload config:
-```bash
 php artisan config:cache
 ```
 
+### ขั้นตอนที่ 9: สร้าง Admin User
+
+```bash
+cd /var/www/thaiprompt
+php artisan tinker
+```
+
+ใน tinker shell:
+
+```php
+$user = new App\Models\User;
+$user->name = 'Admin';
+$user->email = 'admin@your-domain.com';
+$user->password = bcrypt('your-secure-password');
+$user->role = 'admin';
+$user->save();
+exit
+```
+
+### ✅ เสร็จสิ้น!
+
+เว็บไซต์พร้อมใช้งานที่: `https://your-domain.com`
+
 ---
 
-## Performance Optimization
+## การ Deploy อัพเดทใหม่
 
-### 1. Enable OPcache
+เมื่อมีการอัพเดทโค้ดใน GitHub และต้องการ deploy ไปยัง production:
 
-แก้ไข `/etc/php/8.1/fpm/php.ini`:
-
-```ini
-opcache.enable=1
-opcache.memory_consumption=256
-opcache.interned_strings_buffer=16
-opcache.max_accelerated_files=10000
-opcache.validate_timestamps=0
-opcache.save_comments=1
-opcache.fast_shutdown=1
-```
-
-Restart PHP-FPM:
-```bash
-sudo systemctl restart php8.1-fpm
-```
-
-### 2. MySQL Optimization
-
-แก้ไข `/etc/mysql/mysql.conf.d/mysqld.cnf`:
-
-```ini
-[mysqld]
-innodb_buffer_pool_size = 2G
-innodb_log_file_size = 512M
-innodb_flush_log_at_trx_commit = 2
-innodb_flush_method = O_DIRECT
-query_cache_size = 0
-query_cache_type = 0
-max_connections = 200
-```
-
-Restart MySQL:
-```bash
-sudo systemctl restart mysql
-```
-
-### 3. Redis Configuration
-
-แก้ไข `/etc/redis/redis.conf`:
-
-```ini
-maxmemory 512mb
-maxmemory-policy allkeys-lru
-```
-
-Restart Redis:
-```bash
-sudo systemctl restart redis
-```
-
-### 4. Nginx Optimization
-
-เพิ่มใน `/etc/nginx/nginx.conf`:
-
-```nginx
-worker_processes auto;
-worker_connections 4096;
-
-gzip on;
-gzip_vary on;
-gzip_proxied any;
-gzip_comp_level 6;
-gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss;
-
-client_max_body_size 20M;
-client_body_buffer_size 128k;
-
-fastcgi_buffers 16 16k;
-fastcgi_buffer_size 32k;
-```
-
-### 5. Laravel Optimization
+### วิธีที่ 1: ใช้ deploy.sh (แนะนำ)
 
 ```bash
-# Optimize autoloader
-composer install --optimize-autoloader --no-dev --classmap-authoritative
+cd /var/www/thaiprompt
+./deploy.sh
+```
 
-# Cache everything
+Script จะทำงานดังนี้อัตโนมัติ:
+1. ✅ เปิด Maintenance Mode
+2. ✅ Pull โค้ดล่าสุดจาก GitHub
+3. ✅ ติดตั้ง/อัพเดท Composer dependencies
+4. ✅ ติดตั้ง/อัพเดท NPM dependencies  
+5. ✅ Build frontend assets
+6. ✅ Run database migrations
+7. ✅ Clear และ Cache configuration
+8. ✅ Set permissions
+9. ✅ Restart services
+10. ✅ ปิด Maintenance Mode
+
+### วิธีที่ 2: Manual Deploy
+
+ถ้าต้องการควบคุมแต่ละขั้นตอน:
+
+```bash
+cd /var/www/thaiprompt
+
+# 1. Enable maintenance mode
+php artisan down
+
+# 2. Pull latest code
+git pull origin main
+
+# 3. Update dependencies
+composer install --no-dev --optimize-autoloader
+npm ci --only=production
+npm run build
+
+# 4. Run migrations
+php artisan migrate --force
+
+# 5. Clear and cache
+php artisan config:clear
+php artisan cache:clear
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-php artisan event:cache
 
-# Clear old cache
-php artisan cache:clear
-```
+# 6. Restart services
+sudo systemctl reload php8.2-fpm
+sudo supervisorctl restart all
 
----
-
-## Monitoring & Logging
-
-### 1. Application Logs
-
-```bash
-# ดู logs แบบ real-time
-tail -f /var/www/thaiprompt/storage/logs/laravel.log
-
-# ดู error logs
-grep "ERROR" /var/www/thaiprompt/storage/logs/laravel.log
-```
-
-### 2. Nginx Logs
-
-```bash
-tail -f /var/log/nginx/access.log
-tail -f /var/log/nginx/error.log
-```
-
-### 3. MySQL Slow Query Log
-
-แก้ไข `/etc/mysql/mysql.conf.d/mysqld.cnf`:
-
-```ini
-slow_query_log = 1
-slow_query_log_file = /var/log/mysql/slow-query.log
-long_query_time = 2
-```
-
-### 4. ติดตั้ง Laravel Telescope (Development)
-
-```bash
-composer require laravel/telescope
-php artisan telescope:install
-php artisan migrate
-```
-
-เข้าถึงที่: `https://yourdomain.com/telescope`
-
-### 5. ใช้ External Monitoring
-
-**Uptime Monitoring:**
-- [UptimeRobot](https://uptimerobot.com/) - Free
-- [Pingdom](https://www.pingdom.com/)
-
-**Application Monitoring:**
-- [New Relic](https://newrelic.com/)
-- [Datadog](https://www.datadoghq.com/)
-- [Sentry](https://sentry.io/) - สำหรับ error tracking
-
----
-
-## Backup Strategy
-
-### 1. Database Backup
-
-#### Manual Backup
-
-```bash
-# Backup
-mysqldump -u thaiprompt -p thaiprompt_marketplace > backup_$(date +%Y%m%d).sql
-
-# Restore
-mysql -u thaiprompt -p thaiprompt_marketplace < backup_20250124.sql
-```
-
-#### Automated Backup Script
-
-สร้าง `/usr/local/bin/backup-db.sh`:
-
-```bash
-#!/bin/bash
-BACKUP_DIR="/var/backups/mysql"
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-DB_NAME="thaiprompt_marketplace"
-DB_USER="thaiprompt"
-DB_PASS="your_password"
-
-mkdir -p $BACKUP_DIR
-
-mysqldump -u $DB_USER -p$DB_PASS $DB_NAME | gzip > $BACKUP_DIR/backup_$TIMESTAMP.sql.gz
-
-# ลบ backup เก่าที่เกิน 30 วัน
-find $BACKUP_DIR -name "*.sql.gz" -mtime +30 -delete
-```
-
-ให้สิทธิ์:
-```bash
-sudo chmod +x /usr/local/bin/backup-db.sh
-```
-
-เพิ่มใน crontab:
-```bash
-sudo crontab -e
-```
-
-```
-0 2 * * * /usr/local/bin/backup-db.sh
-```
-
-### 2. File Backup
-
-#### rsync ไป Remote Server
-
-```bash
-rsync -avz --delete /var/www/thaiprompt/storage/ user@backup-server:/backups/thaiprompt/
-```
-
-#### S3 Backup
-
-ติดตั้ง AWS CLI:
-```bash
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install
-```
-
-Configure:
-```bash
-aws configure
-```
-
-Backup script:
-```bash
-aws s3 sync /var/www/thaiprompt/storage/ s3://your-bucket/thaiprompt-backups/
-```
-
-### 3. ใช้ Laravel Backup Package
-
-```bash
-composer require spatie/laravel-backup
-php artisan vendor:publish --provider="Spatie\Backup\BackupServiceProvider"
-```
-
-แก้ไข `config/backup.php`:
-
-```php
-'destination' => [
-    'disks' => [
-        'local',
-        's3',
-    ],
-],
-```
-
-รัน backup:
-```bash
-php artisan backup:run
-```
-
-Schedule ใน `app/Console/Kernel.php`:
-
-```php
-protected function schedule(Schedule $schedule)
-{
-    $schedule->command('backup:clean')->daily()->at('01:00');
-    $schedule->command('backup:run')->daily()->at('02:00');
-}
+# 7. Disable maintenance mode
+php artisan up
 ```
 
 ---
@@ -668,7 +306,7 @@ protected function schedule(Schedule $schedule)
 
 ### GitHub Actions
 
-สร้าง `.github/workflows/deploy.yml`:
+สร้างไฟล์ `.github/workflows/deploy.yml`:
 
 ```yaml
 name: Deploy to Production
@@ -680,73 +318,93 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v2
-
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }}
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /var/www/thaiprompt
-            git pull origin main
-            composer install --optimize-autoloader --no-dev
-            npm install
-            npm run build
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
-            sudo supervisorctl restart thaiprompt-worker:*
+            ./deploy.sh
 ```
 
-### Deploy Script
+ตั้งค่า Secrets ใน GitHub:
+- `SERVER_HOST`: IP address หรือ domain ของเซิร์ฟเวอร์
+- `SERVER_USER`: Username สำหรับ SSH
+- `SSH_PRIVATE_KEY`: Private key สำหรับ SSH
 
-สร้าง `deploy.sh`:
+### Webhook Deployment
+
+ถ้าต้องการ auto-deploy เมื่อมี push:
+
+1. สร้าง deploy endpoint:
 
 ```bash
-#!/bin/bash
-
-echo "🚀 Starting deployment..."
-
-# 1. Pull latest code
-git pull origin main
-
-# 2. Install dependencies
-composer install --optimize-autoloader --no-dev
-npm install
-
-# 3. Build assets
-npm run build
-
-# 4. Run migrations
-php artisan migrate --force
-
-# 5. Clear old cache
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-php artisan cache:clear
-
-# 6. Cache everything
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# 7. Restart queue workers
-sudo supervisorctl restart thaiprompt-worker:*
-
-# 8. Reload PHP-FPM
-sudo systemctl reload php8.1-fpm
-
-echo "✅ Deployment completed!"
+# ในเซิร์ฟเวอร์
+nano /var/www/deploy-webhook.php
 ```
 
-ใช้งาน:
+```php
+<?php
+$secret = 'YOUR_SECRET_KEY';
+$payload = file_get_contents('php://input');
+$signature = hash_hmac('sha256', $payload, $secret);
+
+if (hash_equals('sha256=' . $signature, $_SERVER['HTTP_X_HUB_SIGNATURE_256'])) {
+    shell_exec('cd /var/www/thaiprompt && ./deploy.sh > /tmp/deploy.log 2>&1 &');
+    echo 'Deployment started';
+} else {
+    http_response_code(403);
+    echo 'Invalid signature';
+}
+```
+
+2. ตั้งค่า webhook ใน GitHub:
+   - ไปที่ Repository Settings > Webhooks
+   - Add webhook: `https://your-domain.com/deploy-webhook.php`
+   - Secret: ใส่ค่าเดียวกับในโค้ด
+   - Events: Just the push event
+
+---
+
+## Rollback
+
+### วิธีที่ 1: Rollback ด้วย Git
+
 ```bash
-chmod +x deploy.sh
+cd /var/www/thaiprompt
+
+# ดู commit history
+git log --oneline -10
+
+# Rollback ไปยัง commit ที่ต้องการ
+git reset --hard COMMIT_HASH
+
+# Deploy ใหม่
+./deploy.sh
+```
+
+### วิธีที่ 2: Rollback Database
+
+```bash
+# ถ้า migrate ผิดพลาด
+php artisan migrate:rollback
+
+# Rollback หลาย steps
+php artisan migrate:rollback --step=3
+```
+
+### วิธีที่ 3: ใช้ Git Revert (แนะนำสำหรับ production)
+
+```bash
+# Revert commit ที่มีปัญหา (ปลอดภัยกว่า reset)
+git revert COMMIT_HASH
+git push origin main
+
+# Deploy
 ./deploy.sh
 ```
 
@@ -754,92 +412,221 @@ chmod +x deploy.sh
 
 ## Troubleshooting
 
-### 1. 500 Internal Server Error
+### ปัญหา: deploy.sh ไม่มีสิทธิ์รัน
+
+```bash
+chmod +x deploy.sh
+```
+
+### ปัญหา: Composer install ล้มเหลว
+
+```bash
+# ลบ cache แล้วลองใหม่
+composer clear-cache
+composer install --no-dev --optimize-autoloader
+```
+
+### ปัญหา: NPM build ล้มเหลว
+
+```bash
+# ลบ node_modules แล้วติดตั้งใหม่
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
+
+### ปัญหา: Permission denied
+
+```bash
+chown -R www-data:www-data /var/www/thaiprompt
+chmod -R 755 /var/www/thaiprompt/storage
+chmod -R 755 /var/www/thaiprompt/bootstrap/cache
+```
+
+### ปัญหา: 500 Internal Server Error
 
 ```bash
 # ตรวจสอบ logs
 tail -f /var/www/thaiprompt/storage/logs/laravel.log
 tail -f /var/log/nginx/error.log
 
-# ตรวจสอบ permissions
-sudo chown -R deployer:www-data /var/www/thaiprompt
-sudo chmod -R 775 storage bootstrap/cache
+# Clear cache
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+
+# Cache ใหม่
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
 ```
 
-### 2. Database Connection Failed
+### ปัญหา: Database connection failed
 
 ```bash
-# ทดสอบการเชื่อมต่อ
+# ตรวจสอบ MySQL
+systemctl status mysql
+
+# ทดสอบ connection
+mysql -u thaiprompt -p
+
+# ตรวจสอบ .env
+cat .env | grep DB_
+
+# Test connection จาก Laravel
 php artisan db:show
-
-# ตรวจสอบ MySQL running
-sudo systemctl status mysql
-
-# ตรวจสอบ credentials ใน .env
 ```
 
-### 3. Queue Not Processing
+### ปัญหา: CSS/JS ไม่โหลด
 
 ```bash
-# ตรวจสอบ worker status
-sudo supervisorctl status thaiprompt-worker:*
+# Build ใหม่
+npm run build
 
-# Restart workers
-sudo supervisorctl restart thaiprompt-worker:*
+# Clear cache
+php artisan config:clear
 
-# ดู worker logs
-tail -f /var/www/thaiprompt/storage/logs/worker.log
-```
-
-### 4. High CPU Usage
-
-```bash
-# ตรวจสอบ processes
-top
-htop
-
-# ตรวจสอบ slow queries
-sudo tail -f /var/log/mysql/slow-query.log
-```
-
-### 5. Out of Memory
-
-```bash
-# เช็ค memory usage
-free -h
-
-# เพิ่ม swap space
-sudo fallocate -l 4G /swapfile
-sudo chmod 600 /swapfile
-sudo mkswap /swapfile
-sudo swapon /swapfile
+# ตรวจสอบ permissions
+ls -la public/build/
 ```
 
 ---
 
-## Security Checklist
+## Performance Optimization
 
-- [ ] ใช้ HTTPS (SSL Certificate)
-- [ ] `APP_DEBUG=false`
-- [ ] Strong database passwords
-- [ ] Firewall configured (UFW)
-- [ ] SSH key authentication (disable password login)
-- [ ] Regular security updates
-- [ ] Fail2ban installed
-- [ ] File permissions ถูกต้อง
-- [ ] Environment variables ปลอดภัย
-- [ ] Rate limiting enabled
-- [ ] CSRF protection enabled
-- [ ] XSS protection enabled
-- [ ] SQL injection protection
+### 1. Enable OPcache
+
+แก้ไข `/etc/php/8.2/fpm/php.ini`:
+
+```ini
+opcache.enable=1
+opcache.memory_consumption=256
+opcache.interned_strings_buffer=16
+opcache.max_accelerated_files=10000
+opcache.validate_timestamps=0
+```
+
+Restart PHP-FPM:
+
+```bash
+systemctl restart php8.2-fpm
+```
+
+### 2. Optimize Nginx
+
+แก้ไข `/etc/nginx/nginx.conf`:
+
+```nginx
+worker_processes auto;
+worker_connections 4096;
+
+gzip on;
+gzip_vary on;
+gzip_comp_level 6;
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml;
+
+client_max_body_size 100M;
+```
+
+### 3. Optimize MySQL
+
+แก้ไข `/etc/mysql/mysql.conf.d/mysqld.cnf`:
+
+```ini
+innodb_buffer_pool_size = 2G
+innodb_log_file_size = 512M
+max_connections = 200
+```
+
+### 4. Laravel Optimization
+
+```bash
+# Cache everything
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan event:cache
+
+# Optimize composer autoloader
+composer install --optimize-autoloader --classmap-authoritative --no-dev
+```
+
+---
+
+## Monitoring & Logs
+
+### Application Logs
+
+```bash
+# Real-time monitoring
+tail -f /var/www/thaiprompt/storage/logs/laravel.log
+
+# Search for errors
+grep "ERROR" /var/www/thaiprompt/storage/logs/laravel.log
+```
+
+### Nginx Logs
+
+```bash
+tail -f /var/log/nginx/access.log
+tail -f /var/log/nginx/error.log
+```
+
+### Queue Workers
+
+```bash
+# Check status
+supervisorctl status
+
+# Restart workers
+supervisorctl restart thaiprompt-worker:*
+
+# View worker logs
+tail -f /var/www/thaiprompt/storage/logs/worker.log
+```
+
+---
+
+## Backup & Restore
+
+### Database Backup
+
+```bash
+# Manual backup
+mysqldump -u thaiprompt -p thaiprompt_marketplace > backup_$(date +%Y%m%d).sql
+
+# Restore
+mysql -u thaiprompt -p thaiprompt_marketplace < backup_20250127.sql
+```
+
+### Automated Backup
+
+สร้าง cron job:
+
+```bash
+crontab -e
+```
+
+เพิ่ม:
+
+```
+# Backup database ทุกวันเวลา 02:00
+0 2 * * * mysqldump -u thaiprompt -p'PASSWORD' thaiprompt_marketplace | gzip > /var/backups/db_$(date +\%Y\%m\%d).sql.gz
+
+# ลบ backup เก่าที่เกิน 30 วัน
+0 3 * * * find /var/backups -name "db_*.sql.gz" -mtime +30 -delete
+```
+
+---
+
+## เอกสารเพิ่มเติม
+
+- 📖 [SERVER_SETUP.md](./SERVER_SETUP.md) - คู่มือติดตั้งเซิร์ฟเวอร์ละเอียด
+- 📖 [README.md](./README.md) - ข้อมูลโปรเจคและ features
+- 🐛 [GitHub Issues](https://github.com/xjanova/Thaiprompt-Affiliate/issues) - รายงานปัญหา
 
 ---
 
 **🎉 Deployment สำเร็จ!**
 
-Server พร้อมใช้งานแล้วที่: https://yourdomain.com
-
-สำหรับข้อมูลเพิ่มเติม:
-- [Installation Guide](./INSTALLATION_GUIDE.md)
-- [Configuration Guide](./CONFIGURATION.md)
-- [API Documentation](./API_DOCUMENTATION.md)
+Server พร้อมใช้งานแล้วที่: `https://your-domain.com`
