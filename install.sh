@@ -45,111 +45,85 @@ echo "กำลังตรวจสอบระบบ..."
 echo ""
 
 # Check for required tools
-command -v docker >/dev/null 2>&1 && HAS_DOCKER=true || HAS_DOCKER=false
 command -v php >/dev/null 2>&1 && HAS_PHP=true || HAS_PHP=false
 command -v composer >/dev/null 2>&1 && HAS_COMPOSER=true || HAS_COMPOSER=false
 
-if [ "$HAS_DOCKER" = true ]; then
-    print_success "Docker detected"
-    INSTALL_METHOD="docker"
-elif [ "$HAS_PHP" = true ] && [ "$HAS_COMPOSER" = true ]; then
-    print_success "PHP & Composer detected"
-    INSTALL_METHOD="manual"
-else
-    print_error "ไม่พบ Docker, PHP หรือ Composer"
-    print_info "กรุณาติดตั้งอย่างน้อยหนึ่งใน:"
-    print_info "  1. Docker (แนะนำ)"
-    print_info "  2. PHP 8.1+ และ Composer"
+if [ "$HAS_PHP" = false ] || [ "$HAS_COMPOSER" = false ]; then
+    print_error "ไม่พบ PHP หรือ Composer"
+    print_info "กรุณาติดตั้ง:"
+    print_info "  - PHP 8.1 หรือสูงกว่า"
+    print_info "  - Composer"
     exit 1
 fi
 
-echo ""
-print_info "วิธีการติดตั้ง: $INSTALL_METHOD"
+# Check PHP version
+PHP_VERSION=$(php -r 'echo PHP_VERSION;')
+PHP_MAJOR=$(echo $PHP_VERSION | cut -d. -f1)
+PHP_MINOR=$(echo $PHP_VERSION | cut -d. -f2)
+
+if [ "$PHP_MAJOR" -lt 8 ] || ([ "$PHP_MAJOR" -eq 8 ] && [ "$PHP_MINOR" -lt 1 ]); then
+    print_error "PHP version ต้อง 8.1 หรือสูงกว่า (ปัจจุบัน: $PHP_VERSION)"
+    exit 1
+fi
+
+print_success "PHP $PHP_VERSION detected"
+print_success "Composer detected"
+
 echo ""
 
 # Installation
-if [ "$INSTALL_METHOD" = "docker" ]; then
-    echo "════════════════════════════════════════"
-    echo "  📦 Docker Installation"
-    echo "════════════════════════════════════════"
-    echo ""
+echo "  🔧 Installing TP-Affiliate"
+echo "════════════════════════════════════════"
+echo ""
 
-    print_info "[1/5] Building Docker containers..."
-    docker-compose build --no-cache
-    print_success "Containers built successfully"
+print_info "[1/6] Installing Composer dependencies..."
+composer install --no-interaction --prefer-dist
+print_success "Dependencies installed"
 
-    print_info "[2/5] Starting containers..."
-    docker-compose up -d
-    print_success "Containers started"
-
-    print_info "[3/5] Installing dependencies..."
-    docker-compose exec -T app composer install --no-interaction
-    print_success "Dependencies installed"
-
-    print_info "[4/5] Setting up environment..."
-    docker-compose exec -T app cp .env.example .env
-    docker-compose exec -T app php artisan key:generate
-    print_success "Environment configured"
-
-    print_info "[5/5] Running migrations..."
-    docker-compose exec -T app php artisan migrate --force
-    print_success "Database migrated"
-
-    echo ""
-    echo "════════════════════════════════════════"
-    print_success "Installation Complete! 🎉"
-    echo "════════════════════════════════════════"
-    echo ""
-    print_info "เปิด browser ไปที่: ${BLUE}http://localhost${NC}"
-    print_info "กด Ctrl+C เพื่อหยุดเซิร์ฟเวอร์"
-    echo ""
-
-else
-    echo "════════════════════════════════════════"
-    echo "  🔧 Manual Installation"
-    echo "════════════════════════════════════════"
-    echo ""
-
-    print_info "[1/6] Installing Composer dependencies..."
-    composer install --no-interaction --prefer-dist
-    print_success "Dependencies installed"
-
-    print_info "[2/6] Setting up environment..."
-    if [ ! -f .env ]; then
-        cp .env.example .env
-    fi
+print_info "[2/6] Setting up environment..."
+if [ ! -f .env ]; then
+    cp .env.example .env
     print_success "Environment file created"
+else
+    print_warning ".env file already exists, skipping..."
+fi
 
-    print_info "[3/6] Generating application key..."
-    php artisan key:generate
-    print_success "Key generated"
+print_info "[3/6] Generating application key..."
+php artisan key:generate --force
+print_success "Key generated"
 
-    print_info "[4/6] Creating database..."
+print_info "[4/6] Creating database..."
+if [ ! -f database/database.sqlite ]; then
     mkdir -p database
     touch database/database.sqlite
-    print_success "Database created"
-
-    print_info "[5/6] Running migrations..."
-    php artisan migrate --force
-    print_success "Database migrated"
-
-    print_info "[6/6] Installing NPM packages..."
-    if command -v npm >/dev/null 2>&1; then
-        npm install
-        print_success "NPM packages installed"
-    else
-        print_warning "NPM not found, skipping frontend build"
-    fi
-
-    echo ""
-    echo "════════════════════════════════════════"
-    print_success "Installation Complete! 🎉"
-    echo "════════════════════════════════════════"
-    echo ""
-    print_info "รันเซิร์ฟเวอร์ด้วย: ${BLUE}php artisan serve${NC}"
-    print_info "จากนั้นเปิด browser ไปที่: ${BLUE}http://localhost:8000${NC}"
-    echo ""
+    print_success "Database created (SQLite)"
+else
+    print_warning "Database already exists, skipping..."
 fi
+
+print_info "[5/6] Running migrations..."
+php artisan migrate --force
+print_success "Database migrated"
+
+print_info "[6/6] Setting permissions..."
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+print_success "Permissions set"
+
+echo ""
+echo "════════════════════════════════════════"
+print_success "Installation Complete! 🎉"
+echo "════════════════════════════════════════"
+echo ""
+print_info "รันเซิร์ฟเวอร์ด้วย:"
+echo ""
+echo "  ${BLUE}php artisan serve${NC}"
+echo ""
+print_info "จากนั้นเปิด browser ไปที่:"
+echo ""
+echo "  ${BLUE}http://localhost:8000${NC}"
+echo ""
+print_info "ระบบจะพาคุณไปหน้า Setup Wizard เพื่อสร้าง Super Admin"
+echo ""
 
 echo "📚 อ่านเอกสารเพิ่มเติมได้ที่: README.md"
 echo ""
