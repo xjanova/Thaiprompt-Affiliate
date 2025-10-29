@@ -26,7 +26,8 @@ Route::get('users/{user}/dashboard', [UserController::class, 'viewDashboard'])->
 
 // Affiliate Management
 Route::resource('affiliates', AffiliateController::class);
-Route::get('affiliates/{affiliate}/tree', [AffiliateController::class, 'tree'])->name('affiliates.tree');
+Route::get('affiliates/tree-view', [AffiliateController::class, 'treeView'])->name('affiliates.tree');
+Route::get('affiliates/{affiliate}/tree', [AffiliateController::class, 'tree'])->name('affiliates.tree.single');
 Route::post('affiliates/{affiliate}/move', [AffiliateController::class, 'move'])->name('affiliates.move');
 
 // Commission Management
