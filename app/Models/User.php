@@ -20,6 +20,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'profile_picture',
         'role',
         'is_super_admin',
         'affiliate_id',
@@ -36,6 +37,20 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
+    /**
+     * Get profile picture URL or default avatar
+     */
+    public function getProfilePictureUrlAttribute(): string
+    {
+        if ($this->profile_picture && file_exists(public_path($this->profile_picture))) {
+            return asset($this->profile_picture);
+        }
+
+        // Return default avatar based on first letter of name
+        $initial = strtoupper(substr($this->name, 0, 1));
+        return "https://ui-avatars.com/api/?name={$initial}&background=random&color=fff&size=200";
+    }
 
     /**
      * Get the attributes that should be cast.

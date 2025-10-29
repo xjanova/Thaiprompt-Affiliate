@@ -29,7 +29,17 @@ class SettingsController extends Controller
             'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'multi_level_enabled' => ['nullable', 'boolean'],
             'home_custom_content' => ['nullable', 'string'],
+            // API Settings
+            'google_translate_enabled' => ['nullable', 'boolean'],
+            'google_translate_api_key' => ['nullable', 'string'],
+            'google_translate_project_id' => ['nullable', 'string'],
+            'translate_source_language' => ['nullable', 'string', 'in:th,en'],
+            'translate_cache_enabled' => ['nullable', 'boolean'],
         ]);
+
+        // Handle checkbox values
+        $validated['google_translate_enabled'] = $request->has('google_translate_enabled');
+        $validated['translate_cache_enabled'] = $request->has('translate_cache_enabled');
 
         foreach ($validated as $key => $value) {
             if ($value !== null) {
@@ -38,7 +48,7 @@ class SettingsController extends Controller
             }
         }
 
-        return back()->with('success', 'Settings updated successfully.');
+        return back()->with('success', 'บันทึกการตั้งค่าเรียบร้อยแล้ว');
     }
 
     /**

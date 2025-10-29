@@ -52,6 +52,15 @@
                         เนื้อหาหน้าแรก
                     </span>
                 </button>
+
+                <button @click="activeTab = 'api'"
+                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'api', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'api' }"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
+                    <span class="flex items-center">
+                        <span class="text-lg mr-2">🔑</span>
+                        การตั้งค่า API
+                    </span>
+                </button>
             </nav>
         </div>
 
@@ -292,6 +301,104 @@
                     <div class="flex justify-end mt-6">
                         <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
                             บันทึกเนื้อหา
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- API Settings Tab -->
+            <div x-show="activeTab === 'api'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
+                <form method="POST" action="{{ route('admin.settings.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">การตั้งค่า API Keys</h3>
+                    <p class="text-gray-600 mb-6">จัดการ API Keys สำหรับบริการต่างๆ</p>
+
+                    <!-- Google Translate API -->
+                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                        <div class="flex items-center mb-4">
+                            <span class="text-2xl mr-3">🌐</span>
+                            <h4 class="text-lg font-semibold text-gray-900">Google Translate API</h4>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Enable/Disable -->
+                            <div>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="google_translate_enabled" value="1"
+                                           {{ old('google_translate_enabled', $settings->get('general')->firstWhere('key', 'google_translate_enabled')->value ?? false) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-2 text-sm text-gray-700 font-medium">เปิดใช้งาน Google Translate</span>
+                                </label>
+                            </div>
+
+                            <!-- API Key -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                                <input type="text" name="google_translate_api_key"
+                                       value="{{ old('google_translate_api_key', $settings->get('general')->firstWhere('key', 'google_translate_api_key')->value ?? '') }}"
+                                       placeholder="AIzaSy..."
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">ดูวิธีการสร้าง API Key ได้ที่ <a href="https://console.cloud.google.com" target="_blank" class="text-indigo-600 hover:underline">Google Cloud Console</a></p>
+                            </div>
+
+                            <!-- Project ID -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Project ID (ไม่บังคับ)</label>
+                                <input type="text" name="google_translate_project_id"
+                                       value="{{ old('google_translate_project_id', $settings->get('general')->firstWhere('key', 'google_translate_project_id')->value ?? '') }}"
+                                       placeholder="my-project-id"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+
+                            <!-- Source Language -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ภาษาต้นทาง</label>
+                                <select name="translate_source_language"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    @php
+                                        $currentSource = $settings->get('general')->firstWhere('key', 'translate_source_language')->value ?? 'th';
+                                    @endphp
+                                    <option value="th" {{ $currentSource === 'th' ? 'selected' : '' }}>ไทย (Thai)</option>
+                                    <option value="en" {{ $currentSource === 'en' ? 'selected' : '' }}>English</option>
+                                </select>
+                            </div>
+
+                            <!-- Cache Settings -->
+                            <div>
+                                <label class="flex items-center">
+                                    <input type="checkbox" name="translate_cache_enabled" value="1"
+                                           {{ old('translate_cache_enabled', $settings->get('general')->firstWhere('key', 'translate_cache_enabled')->value ?? true) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-2 text-sm text-gray-700">เปิดใช้งานแคช (ลด API Calls)</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Future API Sections (Placeholder) -->
+                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                        <div class="flex items-center mb-4">
+                            <span class="text-2xl mr-3">💳</span>
+                            <h4 class="text-lg font-semibold text-gray-900">Payment Gateway API</h4>
+                            <span class="ml-3 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">Coming Soon</span>
+                        </div>
+                        <p class="text-sm text-gray-500">การตั้งค่า API สำหรับระบบชำระเงิน (Stripe, PayPal, etc.)</p>
+                    </div>
+
+                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                        <div class="flex items-center mb-4">
+                            <span class="text-2xl mr-3">📧</span>
+                            <h4 class="text-lg font-semibold text-gray-900">Email Service API</h4>
+                            <span class="ml-3 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">Coming Soon</span>
+                        </div>
+                        <p class="text-sm text-gray-500">การตั้งค่า API สำหรับบริการอีเมล (SendGrid, Mailgun, etc.)</p>
+                    </div>
+
+                    <div class="flex justify-end mt-6">
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                            บันทึกการตั้งค่า API
                         </button>
                     </div>
                 </form>
