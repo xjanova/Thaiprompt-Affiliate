@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Disallow admin and user areas
+Disallow: /admin
+Disallow: /user
+Disallow: /login
+Disallow: /register
+
+# Disallow API endpoints
+Disallow: /api/
+
+# Sitemap location
+Sitemap: {{ url('/sitemap.xml') }}

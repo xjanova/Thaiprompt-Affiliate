@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             DemoCommissionsSeeder::class,  // สร้าง commissions
             DemoPagesSeeder::class,        // สร้างหน้าเพจต่างๆ
             DemoHomeSectionsSeeder::class, // สร้าง sections หน้าแรก
+            SeoMetaSeeder::class,          // สร้าง SEO meta data
             TestUsersSeeder::class,        // สร้างผู้ใช้ทดสอบเพิ่มเติม (backward compatibility)
         ]);
 
