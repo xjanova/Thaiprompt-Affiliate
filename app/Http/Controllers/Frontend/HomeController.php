@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Setting;
 use App\Models\Slider;
+use App\Models\HomeSection;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -28,7 +29,16 @@ class HomeController extends Controller
         // Get active sliders
         $sliders = Slider::active()->ordered()->get();
 
-        return view('frontend.home', compact('stats', 'sliders'));
+        // Get active home sections visible to current user
+        $user = auth()->user();
+        $homeSections = HomeSection::active()
+            ->ordered()
+            ->get()
+            ->filter(function($section) use ($user) {
+                return $section->isVisibleFor($user);
+            });
+
+        return view('frontend.home', compact('stats', 'sliders', 'homeSections'));
     }
 
     /**
