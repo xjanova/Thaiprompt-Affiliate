@@ -115,6 +115,7 @@ php artisan migrate
 
 - 📘 [README.md](README.md) - ภาพรวมโปรเจกต์
 - 🚀 [GETTING-STARTED.md](GETTING-STARTED.md) - คู่มือเริ่มต้นใช้งาน
+- 📦 [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) - คู่มือการติดตั้งแบบละเอียดทีละขั้นตอน
 - 💻 [DEVELOPMENT.md](DEVELOPMENT.md) - คู่มือสำหรับนักพัฒนา
 - 🌐 [DEPLOYMENT.md](DEPLOYMENT.md) - คู่มือการ Deploy สู่ Production
 - 🔐 [AUTHENTICATION.md](AUTHENTICATION.md) - คู่มือการ Clone Private Repository
