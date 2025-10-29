@@ -1,26 +1,26 @@
 {
+    "name": "tp-affiliate",
+    "version": "1.0.0",
+    "description": "Thai Prompt Affiliate Marketing Platform",
     "private": true,
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build"
+        "build": "vite build",
+        "preview": "vite preview"
     },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.7",
-        "autoprefixer": "^10.4.16",
-        "axios": "^1.6.0",
-        "laravel-vite-plugin": "^0.8.0",
-        "postcss": "^8.4.31",
-        "tailwindcss": "^3.3.5",
-        "vite": "^4.5.0"
+        "autoprefixer": "^10.4.17",
+        "axios": "^1.6.4",
+        "laravel-vite-plugin": "^1.0.0",
+        "postcss": "^8.4.35",
+        "tailwindcss": "^3.4.1",
+        "vite": "^5.0.0"
     },
     "dependencies": {
-        "alpinejs": "^3.13.3",
+        "alpinejs": "^3.13.5",
         "chart.js": "^4.4.1",
-        "gsap": "^3.12.5",
-        "@iconify/iconify": "^3.1.1",
-        "sweetalert2": "^11.10.5",
-        "d3": "^7.8.5",
-        "d3-hierarchy": "^3.1.2"
+        "gsap": "^3.12.5"
     }
 }
