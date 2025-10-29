@@ -10,6 +10,18 @@ return [
     'timezone' => 'Asia/Bangkok',
     'locale' => 'th',
     'fallback_locale' => 'en',
+
+    /*
+    |--------------------------------------------------------------------------
+    | Supported Locales
+    |--------------------------------------------------------------------------
+    |
+    | List of all supported locales in the application.
+    | You can add more languages here in the future.
+    |
+    */
+    'supported_locales' => ['en', 'th'],
+
     'faker_locale' => 'th_TH',
     'key' => env('APP_KEY'),
     'cipher' => 'AES-256-CBC',
