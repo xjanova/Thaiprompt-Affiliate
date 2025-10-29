@@ -108,6 +108,15 @@ php artisan migrate
 
 ## 📖 คู่มือการใช้งาน
 
+### เอกสารสำคัญ
+
+- 📘 [README.md](README.md) - ภาพรวมโปรเจกต์
+- 🚀 [GETTING-STARTED.md](GETTING-STARTED.md) - คู่มือเริ่มต้นใช้งาน
+- 💻 [DEVELOPMENT.md](DEVELOPMENT.md) - คู่มือสำหรับนักพัฒนา
+- 🌐 [DEPLOYMENT.md](DEPLOYMENT.md) - คู่มือการ Deploy สู่ Production
+
+---
+
 ### การเข้าสู่ระบบครั้งแรก
 
 หลังจากติดตั้งและรัน `php artisan serve`:
@@ -183,6 +192,35 @@ Thaiprompt-Affiliate/
 
 ### Frontend
 *Coming soon...*
+
+---
+
+## 🚀 การ Deploy สู่ Production
+
+### Deploy ในคำสั่งเดียว
+
+```bash
+# วิธีที่ 1: ใช้ Shell Script
+./deploy.sh
+
+# วิธีที่ 2: ใช้ Artisan Command
+php artisan deploy
+
+# วิธีที่ 3: Optimize เท่านั้น
+php artisan app:optimize --clear
+```
+
+### Deploy Checklist
+
+- ✅ ตั้งค่า `APP_ENV=production`
+- ✅ ตั้งค่า `APP_DEBUG=false`
+- ✅ กำหนด `APP_KEY`
+- ✅ ตั้งค่า Database credentials
+- ✅ ตั้งค่า Cache driver (แนะนำ Redis)
+- ✅ ตั้งค่า SSL Certificate
+- ✅ Backup database ก่อน deploy
+
+📖 **อ่านคู่มือฉบับเต็ม:** [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ---
 
