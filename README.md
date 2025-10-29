@@ -48,38 +48,60 @@
 
 ## ⚡ การติดตั้งอย่างรวดเร็ว
 
-### วิธีที่ 1: Docker (แนะนำ)
+### ความต้องการของระบบ
+
+- PHP 8.1 หรือสูงกว่า
+- Composer
+- SQLite หรือ MySQL
+- Node.js & NPM (ถ้าต้องการ build frontend assets)
+
+### การติดตั้ง
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/xjanova/TP-Affiliate.git
-cd TP-Affiliate
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
+cd Thaiprompt-Affiliate
 
-# 2. Run installation script
-./install.sh
-
-# 3. เปิดเบราว์เซอร์
-# http://localhost
-```
-
-### วิธีที่ 2: Manual Installation
-
-```bash
-# 1. Clone และติดตั้ง dependencies
-git clone https://github.com/xjanova/TP-Affiliate.git
-cd TP-Affiliate
+# 2. ติดตั้ง dependencies
 composer install
-npm install
 
-# 2. ตั้งค่า environment
+# 3. ตั้งค่า environment
 cp .env.example .env
 php artisan key:generate
 
-# 3. ติดตั้งระบบ
-php artisan install
+# 4. สร้างฐานข้อมูล (SQLite)
+touch database/database.sqlite
 
-# 4. รันเซิร์ฟเวอร์
+# 5. รัน migrations
+php artisan migrate
+
+# 6. ตั้งค่า permissions
+chmod -R 775 storage bootstrap/cache
+
+# 7. รันเซิร์ฟเวอร์
 php artisan serve
+```
+
+**เปิด browser ไปที่:** `http://localhost:8000`
+
+### การติดตั้งด้วย MySQL (Optional)
+
+ถ้าต้องการใช้ MySQL แทน SQLite:
+
+```bash
+# แก้ไขไฟล์ .env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=thaiprompt_affiliate
+DB_USERNAME=root
+DB_PASSWORD=your_password
+
+# สร้าง database
+mysql -u root -p -e "CREATE DATABASE thaiprompt_affiliate;"
+
+# รัน migrations
+php artisan migrate
 ```
 
 ---
@@ -88,46 +110,68 @@ php artisan serve
 
 ### การเข้าสู่ระบบครั้งแรก
 
-หลังจากติดตั้งเสร็จ:
+หลังจากติดตั้งและรัน `php artisan serve`:
 
-1. เปิด browser ไปที่ `http://localhost`
-2. คลิก "เริ่มต้นใช้งาน" เพื่อสร้าง Super User
-3. กรอกข้อมูล:
-   - ชื่อ
-   - อีเมล
-   - รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)
-4. คลิก "สร้างบัญชี" เพื่อเข้าสู่ระบบ
+1. เปิด browser ไปที่ `http://localhost:8000`
+2. ระบบจะพาไปหน้า **Setup Wizard** อัตโนมัติ
+3. กรอกข้อมูล Super Admin:
+   - **ชื่อ**: ชื่อของคุณ
+   - **อีเมล**: อีเมลสำหรับเข้าสู่ระบบ
+   - **รหัสผ่าน**: อย่างน้อย 8 ตัวอักษร
+   - **ยืนยันรหัสผ่าน**: ใส่รหัสผ่านอีกครั้ง
+4. คลิก **"สร้างบัญชี Super Admin"**
+5. เข้าสู่ระบบสำเร็จ! คุณจะถูกนำไปที่ **Admin Dashboard**
+
+### เส้นทางหลัก
+
+- **หน้าแรก**: `http://localhost:8000`
+- **เข้าสู่ระบบ**: `http://localhost:8000/login`
+- **สมัครสมาชิก**: `http://localhost:8000/register`
+- **Admin Dashboard**: `http://localhost:8000/admin/dashboard`
 
 ### โครงสร้างโปรเจกต์
 
 ```
-TP-Affiliate/
+Thaiprompt-Affiliate/
 ├── app/
+│   ├── Console/              # Artisan Commands
+│   ├── Exceptions/           # Exception Handler
 │   ├── Http/
 │   │   ├── Controllers/
-│   │   │   ├── Admin/          # Admin Controllers
-│   │   │   ├── Frontend/       # Frontend Controllers
-│   │   │   └── Auth/           # Authentication
-│   │   └── Middleware/
-│   └── Models/
-├── resources/
-│   ├── views/
-│   │   ├── admin/              # Admin Views
-│   │   ├── frontend/           # Frontend Views
-│   │   └── layouts/
-│   ├── js/
-│   │   ├── admin.js           # Admin Scripts
-│   │   └── frontend.js         # Frontend Scripts (GSAP)
-│   └── css/
-├── routes/
-│   ├── web.php                 # Web Routes
-│   ├── admin.php               # Admin Routes
-│   └── api.php                 # API Routes
+│   │   │   ├── Admin/        # Admin Controllers
+│   │   │   ├── Frontend/     # Frontend Controllers
+│   │   │   └── Auth/         # Authentication
+│   │   └── Middleware/       # Middlewares
+│   ├── Models/               # Eloquent Models
+│   └── Providers/            # Service Providers
+├── bootstrap/
+│   ├── app.php              # Application Bootstrap
+│   └── cache/               # Cached Files
+├── config/                  # Configuration Files
 ├── database/
-│   ├── migrations/
-│   └── seeders/
-├── public/
-└── docker/
+│   ├── migrations/          # Database Migrations
+│   ├── seeders/             # Database Seeders
+│   └── database.sqlite      # SQLite Database
+├── public/                  # Public Assets
+│   ├── index.php           # Entry Point
+│   └── .htaccess
+├── resources/
+│   └── views/
+│       ├── admin/           # Admin Views
+│       ├── auth/            # Auth Views
+│       ├── frontend/        # Frontend Views
+│       └── layouts/         # Layout Templates
+├── routes/
+│   ├── web.php             # Web Routes
+│   ├── admin.php           # Admin Routes
+│   ├── api.php             # API Routes
+│   └── console.php         # Console Routes
+├── storage/                # Storage Files
+├── .env                    # Environment Config
+├── .env.example           # Example Environment
+├── artisan                # Artisan CLI
+├── composer.json          # Composer Dependencies
+└── README.md             # Documentation
 ```
 
 ---
@@ -168,12 +212,12 @@ TP-Affiliate/
 
 ### Bug Reports
 หากพบบั๊กหรือปัญหา กรุณา:
-1. เปิด [Issue](https://github.com/xjanova/TP-Affiliate/issues)
+1. เปิด [Issue](https://github.com/xjanova/Thaiprompt-Affiliate/issues)
 2. อธิบายปัญหาอย่างละเอียด
 3. แนบ screenshots (ถ้ามี)
 
 ### Feature Requests
-ต้องการฟีเจอร์ใหม่? เปิด [Issue](https://github.com/xjanova/TP-Affiliate/issues) พร้อม label "feature request"
+ต้องการฟีเจอร์ใหม่? เปิด [Issue](https://github.com/xjanova/Thaiprompt-Affiliate/issues) พร้อม label "feature request"
 
 ---
 

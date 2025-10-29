@@ -12,8 +12,8 @@
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/xjanova/TP-Affiliate.git
-cd TP-Affiliate
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
+cd Thaiprompt-Affiliate
 
 # 2. Install dependencies
 composer install
@@ -28,7 +28,10 @@ touch database/database.sqlite
 # 5. Run migrations
 php artisan migrate
 
-# 6. Run development server
+# 6. Set permissions
+chmod -R 775 storage bootstrap/cache
+
+# 7. Run development server
 php artisan serve
 ```
 

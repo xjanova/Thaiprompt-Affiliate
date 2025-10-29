@@ -6,70 +6,64 @@
 
 ## 📋 สิ่งที่ต้องเตรียม
 
-เลือกวิธีใดวิธีหนึ่ง:
-
-### ตัวเลือกที่ 1: Docker (แนะนำ - ง่ายที่สุด)
-- ✅ Docker Desktop
-- ✅ แค่นี้! ไม่ต้องติดตั้งอะไรเพิ่ม
-
-### ตัวเลือกที่ 2: Manual Installation
+### ความต้องการของระบบ
 - ✅ PHP 8.1 หรือสูงกว่า
 - ✅ Composer
+- ✅ SQLite หรือ MySQL
 - ✅ Node.js & NPM (optional - สำหรับ frontend)
 
 ---
 
 ## ⚡ ติดตั้งอย่างรวดเร็ว
 
-### 🐳 Docker Installation (แนะนำ)
+### ขั้นตอนการติดตั้ง
 
 ```bash
 # 1. Clone project
-git clone https://github.com/xjanova/TP-Affiliate.git
-cd TP-Affiliate
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
+cd Thaiprompt-Affiliate
 
-# 2. รัน installation script
-./install.sh
-
-# 3. เสร็จแล้ว! เปิด browser
-http://localhost
-```
-
-### 🔧 Manual Installation
-
-```bash
-# 1. Clone project
-git clone https://github.com/xjanova/TP-Affiliate.git
-cd TP-Affiliate
-
-# 2. รัน installation script
-./install.sh
-
-# หรือทำทีละขั้นตอน:
-
-# 2a. Install dependencies
+# 2. Install dependencies
 composer install
-npm install
 
-# 2b. Setup environment
+# 3. Setup environment
 cp .env.example .env
 php artisan key:generate
 
-# 2c. Create database
-mkdir -p database
+# 4. Create database (SQLite)
 touch database/database.sqlite
 
-# 2d. Run migrations
+# 5. Run migrations
 php artisan migrate
 
-# 2e. Build frontend (optional)
-npm run build
+# 6. Set permissions
+chmod -R 775 storage bootstrap/cache
 
-# 3. Start server
+# 7. Start server
 php artisan serve
+```
 
-# 4. เปิด browser
-http://localhost:8000
+**เปิด browser ไปที่:** `http://localhost:8000`
+
+### ติดตั้งด้วย MySQL (ถ้าต้องการ)
+
+```bash
+# 1. สร้าง database
+mysql -u root -p -e "CREATE DATABASE thaiprompt_affiliate;"
+
+# 2. แก้ไขไฟล์ .env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=thaiprompt_affiliate
+DB_USERNAME=root
+DB_PASSWORD=your_password
+
+# 3. Run migrations
+php artisan migrate
+
+# 4. Start server
+php artisan serve
 ```
 
 ---
@@ -97,7 +91,7 @@ http://localhost:8000
 
 ### Admin Dashboard
 ```
-http://localhost/admin
+http://localhost:8000/admin/dashboard
 ```
 
 คุณสมบัติ:
@@ -109,7 +103,7 @@ http://localhost/admin
 
 ### Frontend (Public Site)
 ```
-http://localhost
+http://localhost:8000
 ```
 
 คุณสมบัติ:
@@ -128,36 +122,17 @@ http://localhost
 # Start development server
 php artisan serve
 
-# Watch for file changes (frontend)
-npm run dev
-
 # Clear all caches
 php artisan optimize:clear
 
-# Create new admin user
-php artisan make:admin
+# Clear specific caches
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
 
 # View logs
 tail -f storage/logs/laravel.log
-```
-
-### Docker Commands
-
-```bash
-# Start containers
-docker-compose up -d
-
-# Stop containers
-docker-compose down
-
-# View logs
-docker-compose logs -f
-
-# Execute command in container
-docker-compose exec app php artisan [command]
-
-# Rebuild containers
-docker-compose build --no-cache
 ```
 
 ---
@@ -165,7 +140,7 @@ docker-compose build --no-cache
 ## 📁 โครงสร้างโปรเจกต์
 
 ```
-TP-Affiliate/
+Thaiprompt-Affiliate/
 │
 ├── app/                      # Application logic
 │   ├── Http/
@@ -280,7 +255,7 @@ lsof -ti:8000 | xargs kill -9
 
 หากมีคำถามหรือต้องการความช่วยเหลือ:
 - 📖 อ่าน [README.md](README.md)
-- 🐛 เปิด [Issue](https://github.com/xjanova/TP-Affiliate/issues)
+- 🐛 เปิด [Issue](https://github.com/xjanova/Thaiprompt-Affiliate/issues)
 - 💬 ติดต่อ: support@thaiprompt.com
 
 **Happy coding! 🚀**
