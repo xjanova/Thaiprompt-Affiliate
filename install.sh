@@ -128,26 +128,49 @@ echo ""
 
 print_info "[5/7] Configuring database connection..."
 
+# Escape special characters for sed
+DB_HOST_ESC=$(echo "$DB_HOST" | sed 's/[\/&]/\\&/g')
+DB_PORT_ESC=$(echo "$DB_PORT" | sed 's/[\/&]/\\&/g')
+DB_DATABASE_ESC=$(echo "$DB_DATABASE" | sed 's/[\/&]/\\&/g')
+DB_USERNAME_ESC=$(echo "$DB_USERNAME" | sed 's/[\/&]/\\&/g')
+DB_PASSWORD_ESC=$(echo "$DB_PASSWORD" | sed 's/[\/&]/\\&/g')
+
 # Update .env file with MySQL settings
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # macOS
-    sed -i '' "s/DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
-    sed -i '' "s/DB_HOST=.*/DB_HOST=$DB_HOST/" .env
-    sed -i '' "s/DB_PORT=.*/DB_PORT=$DB_PORT/" .env
-    sed -i '' "s/DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE/" .env
-    sed -i '' "s/DB_USERNAME=.*/DB_USERNAME=$DB_USERNAME/" .env
-    sed -i '' "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
+    sed -i '' "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
+    sed -i '' "s/^DB_HOST=.*/DB_HOST=$DB_HOST_ESC/" .env
+    sed -i '' "s/^DB_PORT=.*/DB_PORT=$DB_PORT_ESC/" .env
+    sed -i '' "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE_ESC/" .env
+    sed -i '' "s/^DB_USERNAME=.*/DB_USERNAME=$DB_USERNAME_ESC/" .env
+    sed -i '' "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD_ESC/" .env
 else
     # Linux
-    sed -i "s/DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
-    sed -i "s/DB_HOST=.*/DB_HOST=$DB_HOST/" .env
-    sed -i "s/DB_PORT=.*/DB_PORT=$DB_PORT/" .env
-    sed -i "s/DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE/" .env
-    sed -i "s/DB_USERNAME=.*/DB_USERNAME=$DB_USERNAME/" .env
-    sed -i "s/DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD/" .env
+    sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
+    sed -i "s/^DB_HOST=.*/DB_HOST=$DB_HOST_ESC/" .env
+    sed -i "s/^DB_PORT=.*/DB_PORT=$DB_PORT_ESC/" .env
+    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE_ESC/" .env
+    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=$DB_USERNAME_ESC/" .env
+    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD_ESC/" .env
 fi
 
 print_success "Database configuration updated"
+
+# Verify .env was updated correctly
+print_info "ตรวจสอบการตั้งค่า..."
+if grep -q "^DB_CONNECTION=mysql" .env && grep -q "^DB_DATABASE=$DB_DATABASE" .env; then
+    print_success "Database settings verified"
+else
+    print_error "Failed to update .env file"
+    print_info "กรุณาแก้ไข .env ด้วยตนเอง:"
+    print_info "  DB_CONNECTION=mysql"
+    print_info "  DB_HOST=$DB_HOST"
+    print_info "  DB_PORT=$DB_PORT"
+    print_info "  DB_DATABASE=$DB_DATABASE"
+    print_info "  DB_USERNAME=$DB_USERNAME"
+    print_info "  DB_PASSWORD=your_password"
+    exit 1
+fi
 
 # Test MySQL connection (optional, don't fail if can't test)
 print_info "ทดสอบการเชื่อมต่อ MySQL..."
@@ -174,6 +197,11 @@ fi
 
 echo ""
 print_info "[6/7] Running database migrations..."
+
+# Clear any cached config to ensure new database settings are used
+php artisan config:clear --no-interaction 2>/dev/null || true
+
+# Run migrations
 php artisan migrate --force --no-interaction
 print_success "Database migrated successfully"
 
