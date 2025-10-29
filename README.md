@@ -113,12 +113,18 @@ php artisan migrate
 
 ### เอกสารสำคัญ
 
+**สำหรับผู้ใช้งานทั่วไป:**
 - 📘 [README.md](README.md) - ภาพรวมโปรเจกต์
-- 🚀 [GETTING-STARTED.md](GETTING-STARTED.md) - คู่มือเริ่มต้นใช้งาน
-- 📦 [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) - คู่มือการติดตั้งแบบละเอียดทีละขั้นตอน
-- 💻 [DEVELOPMENT.md](DEVELOPMENT.md) - คู่มือสำหรับนักพัฒนา
-- 🌐 [DEPLOYMENT.md](DEPLOYMENT.md) - คู่มือการ Deploy สู่ Production
+- 🚀 [GETTING-STARTED.md](GETTING-STARTED.md) - คู่มือเริ่มต้นใช้งาน (Development)
+- 📦 [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) - คู่มือการติดตั้งแบบละเอียด (Local/Development)
 - 🔐 [AUTHENTICATION.md](AUTHENTICATION.md) - คู่มือการ Clone Private Repository
+
+**สำหรับ Production Server:**
+- 🏭 [PRODUCTION-INSTALL.md](PRODUCTION-INSTALL.md) - **คู่มือติดตั้งบน Production Server** (มี PHP + MySQL พร้อมแล้ว)
+- 🌐 [DEPLOYMENT.md](DEPLOYMENT.md) - คู่มือการ Deploy และ Maintenance
+
+**สำหรับนักพัฒนา:**
+- 💻 [DEVELOPMENT.md](DEVELOPMENT.md) - คู่มือสำหรับนักพัฒนา
 
 ---
 
