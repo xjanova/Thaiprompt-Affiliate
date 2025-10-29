@@ -12,9 +12,46 @@
         </div>
 
         @if($section->content)
-            <div class="prose prose-lg max-w-none">
-                {!! $section->content !!}
-            </div>
+            @php
+                // Try to decode JSON content
+                $testimonials = null;
+                if (is_string($section->content)) {
+                    $decoded = json_decode($section->content, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $testimonials = $decoded;
+                    }
+                }
+            @endphp
+
+            @if($testimonials)
+                <!-- Testimonials from JSON -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    @foreach($testimonials as $testimonial)
+                        <div class="bg-gray-50 p-6 rounded-xl shadow-md hover:shadow-xl transition">
+                            <div class="flex items-center mb-4">
+                                <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                    {{ $testimonial['avatar'] ?? substr($testimonial['name'] ?? 'A', 0, 1) }}
+                                </div>
+                                <div class="ml-4">
+                                    <h4 class="font-semibold text-gray-900">{{ $testimonial['name'] ?? 'ผู้ใช้งาน' }}</h4>
+                                    <p class="text-sm text-gray-600">{{ $testimonial['role'] ?? 'Member' }}</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-700 mb-4">"{{ $testimonial['message'] ?? '' }}"</p>
+                            <div class="text-yellow-400">
+                                @for($i = 0; $i < ($testimonial['rating'] ?? 5); $i++)
+                                    ★
+                                @endfor
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <!-- HTML Content -->
+                <div class="prose prose-lg max-w-none">
+                    {!! $section->content !!}
+                </div>
+            @endif
         @else
             <!-- Default testimonials grid -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
