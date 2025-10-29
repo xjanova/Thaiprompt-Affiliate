@@ -98,7 +98,10 @@
     </section>
     @endif
 
-    <!-- Dynamic Home Sections (ถ้ามี) -->
+    <!-- Premium Landing Page Sections -->
+    <!-- Note: Dynamic home sections are disabled to show the premium landing page -->
+    <!-- To enable dynamic sections, uncomment the @if condition below -->
+    {{--
     @if($homeSections && $homeSections->count() > 0)
         @foreach($homeSections as $section)
             @includeWhen(
@@ -108,6 +111,7 @@
             )
         @endforeach
     @else
+    --}}
         <!-- Premium Landing Page Sections -->
 
         <!-- Hero Section - แบบ Premium อลังการ -->
@@ -565,7 +569,8 @@
                 @endguest
             </div>
         </section>
-    @endif
+    {{-- @endif --}}
+    <!-- End of Premium Landing Page -->
 </div>
 
 @push('scripts')
