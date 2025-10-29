@@ -741,18 +741,72 @@ ERROR 1045 (28000): Access denied for user 'tpadmin'@'localhost'
 
 ### 🐛 ปัญหา: "failed to open stream: Permission denied"
 
-**สาเหตุ:** ไม่มีสิทธิ์เขียนไฟล์
+**สาเหตุ:** ไม่มีสิทธิ์เขียนไฟล์ใน storage/framework/views หรือ storage directory อื่นๆ
 
-**วิธีแก้:**
+**ตัวอย่าง Error:**
+```
+file_put_contents(/path/to/storage/framework/views/xxx.php):
+Failed to open stream: Permission denied
+
+ErrorException in Filesystem.php (line 204)
+```
+
+**วิธีแก้ที่ง่ายที่สุด - ใช้สคริปต์อัตโนมัติ:**
 ```bash
-# ตั้งสิทธิ์โฟลเดอร์
-chmod -R 775 storage bootstrap/cache
+# รันสคริปต์แก้ไข permissions อัตโนมัติ
+./fix-permissions.sh
+```
 
-# ถ้ายังไม่ได้ ให้เปลี่ยน owner
-sudo chown -R $USER:$USER .
+**วิธีแก้แบบ Manual:**
 
-# หรือถ้ารัน web server เป็น www-data
-sudo chown -R www-data:www-data storage bootstrap/cache
+1. **แก้ไขทันที (Quick Fix):**
+   ```bash
+   # ตั้งสิทธิ์โฟลเดอร์และไฟล์
+   chmod -R 775 storage bootstrap/cache
+   find storage -type f -exec chmod 664 {} \;
+   find bootstrap/cache -type f -exec chmod 664 {} \;
+   ```
+
+2. **ตั้งค่า Ownership (แนะนำ):**
+   ```bash
+   # เช็ค web server user
+   ps aux | grep -E 'nginx|apache|php-fpm' | head -1
+
+   # ตั้งค่า ownership ให้ถูกต้อง (แทน www-data ด้วย user ของ web server)
+   sudo chown -R $USER:www-data storage bootstrap/cache
+   sudo chmod -R 775 storage bootstrap/cache
+   ```
+
+3. **ใช้ ACL (Advanced - แนะนำสำหรับ Production):**
+   ```bash
+   # ตั้งค่า ACL ให้ web server user เขียนได้
+   sudo setfacl -R -m u:www-data:rwX storage bootstrap/cache
+   sudo setfacl -R -d -m u:www-data:rwX storage bootstrap/cache
+   ```
+
+4. **ล้าง Cache และทดสอบ:**
+   ```bash
+   php artisan cache:clear
+   php artisan view:clear
+   php artisan config:clear
+
+   # รีสตาร์ท web server
+   sudo systemctl restart php8.2-fpm
+   sudo systemctl restart nginx
+   ```
+
+**ตรวจสอบ Web Server User:**
+```bash
+# สำหรับ Nginx + PHP-FPM
+ps aux | grep php-fpm | head -1
+# จะเห็น user เช่น www-data, nginx, admin
+
+# สำหรับ Apache
+ps aux | grep apache2 | head -1
+# จะเห็น user เช่น www-data, apache
+
+# ใช้ user ที่เจอในคำสั่งด้านบน
+sudo chown -R $USER:[web-server-user] storage bootstrap/cache
 ```
 
 ---

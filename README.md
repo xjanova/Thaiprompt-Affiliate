@@ -78,8 +78,9 @@ touch database/database.sqlite
 # 5. รัน migrations
 php artisan migrate
 
-# 6. ตั้งค่า permissions
-chmod -R 775 storage bootstrap/cache
+# 6. ตั้งค่า permissions (แนะนำให้ใช้สคริปต์)
+./fix-permissions.sh
+# หรือแบบ manual: chmod -R 775 storage bootstrap/cache
 
 # 7. รันเซิร์ฟเวอร์
 php artisan serve
@@ -195,6 +196,10 @@ Thaiprompt-Affiliate/
 ├── .env.example           # Example Environment
 ├── artisan                # Artisan CLI
 ├── composer.json          # Composer Dependencies
+├── install.sh             # Installation Script
+├── deploy.sh              # Deployment Script
+├── rollback.sh            # Rollback Script
+├── fix-permissions.sh     # Permission Fix Script
 └── README.md             # Documentation
 ```
 
@@ -236,6 +241,99 @@ php artisan app:optimize --clear
 - ✅ Backup database ก่อน deploy
 
 📖 **อ่านคู่มือฉบับเต็ม:** [DEPLOYMENT.md](DEPLOYMENT.md)
+
+---
+
+## 🛠️ Utility Scripts
+
+โปรเจกต์นี้มีสคริปต์ช่วยเหลือต่างๆ เพื่อความสะดวกในการจัดการ:
+
+### 📦 install.sh - สคริปต์ติดตั้งอัตโนมัติ
+```bash
+./install.sh
+```
+**คุณสมบัติ:**
+- ✅ ตรวจสอบ PHP และ Composer
+- ✅ ติดตั้ง dependencies อัตโนมัติ
+- ✅ สร้าง .env และ generate APP_KEY
+- ✅ ตั้งค่า MySQL (รองรับการป้อนข้อมูล)
+- ✅ รัน migrations
+- ✅ ตั้งค่า permissions อัตโนมัติ
+- ✅ Cache optimization
+
+### 🔧 fix-permissions.sh - แก้ไขปัญหา Permissions
+```bash
+./fix-permissions.sh
+```
+**ใช้เมื่อ:**
+- ❌ เจอ error: "Permission denied" ใน storage/
+- ❌ Laravel ไม่สามารถเขียนไฟล์ cache ได้
+- ❌ View compilation ล้มเหลว
+
+**คุณสมบัติ:**
+- ✅ ตรวจหา web server user อัตโนมัติ (www-data, nginx, apache, admin)
+- ✅ สร้างโฟลเดอร์ที่จำเป็น
+- ✅ ตั้งค่า permissions: directories (775), files (664)
+- ✅ ตั้งค่า ownership ให้ถูกต้อง
+- ✅ ตั้งค่า ACL (ถ้าระบบรองรับ)
+
+### 🚀 deploy.sh - Deploy อัตโนมัติ
+```bash
+./deploy.sh              # Deploy from main branch
+./deploy.sh develop      # Deploy from develop branch
+```
+**คุณสมบัติ:**
+- ✅ Pre-flight checks (git, .env, uncommitted changes)
+- ✅ Maintenance mode
+- ✅ Database backup อัตโนมัติ
+- ✅ Git pull และ reset
+- ✅ Composer install
+- ✅ Database migrations
+- ✅ Cache optimization
+- ✅ Permissions reset
+- ✅ Service restart
+- ✅ Error handling + auto-rollback
+
+### 🔄 rollback.sh - Rollback ฉุกเฉิน
+```bash
+./rollback.sh
+```
+**ใช้เมื่อ:**
+- ❌ Deploy ล้มเหลว
+- ❌ ต้องการย้อนกลับไปยัง commit เก่า
+- ❌ ระบบทำงานผิดปกติหลัง deploy
+
+---
+
+## 🐛 Troubleshooting
+
+### ปัญหา: "Permission denied" ใน storage/
+**วิธีแก้:**
+```bash
+./fix-permissions.sh
+```
+
+### ปัญหา: "could not find driver"
+**วิธีแก้ (Ubuntu/Debian):**
+```bash
+sudo apt install php8.2-mysql php8.2-sqlite3
+sudo systemctl restart php8.2-fpm
+```
+
+### ปัญหา: "composer: command not found"
+**วิธีแก้:**
+```bash
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+```
+
+### ปัญหา: MySQL connection failed
+**ตรวจสอบ:**
+1. MySQL server รันอยู่: `sudo systemctl status mysql`
+2. Database ถูกสร้างแล้ว: `mysql -u root -p -e "SHOW DATABASES;"`
+3. User มีสิทธิ์: `GRANT ALL ON thaiprompt_affiliate.* TO 'user'@'localhost';`
+
+📖 **Troubleshooting แบบละเอียด:** [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md#troubleshooting)
 
 ---
 
