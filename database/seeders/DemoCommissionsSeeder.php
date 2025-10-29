@@ -28,7 +28,7 @@ class DemoCommissionsSeeder extends Seeder
 
         // สร้างข้อมูล commission ย้อนหลัง 6 เดือน
         $statuses = ['pending', 'approved', 'paid'];
-        $types = ['referral', 'sale', 'bonus'];
+        $types = ['direct', 'indirect', 'bonus']; // ใช้ค่าที่ตรงกับ enum ในตาราง
         $commissionsCreated = 0;
 
         foreach ($affiliates as $affiliate) {
@@ -68,11 +68,11 @@ class DemoCommissionsSeeder extends Seeder
                 // เพิ่ม notes บางครั้ง
                 if (rand(0, 1)) {
                     $notes = [
-                        'Commission from product sale',
-                        'Referral bonus',
+                        'Direct commission from purchase',
+                        'Indirect commission from downline',
                         'Monthly performance bonus',
                         'Special promotion commission',
-                        'First sale bonus',
+                        'Quarterly bonus',
                     ];
                     $commissionData['notes'] = $notes[array_rand($notes)];
                 }
