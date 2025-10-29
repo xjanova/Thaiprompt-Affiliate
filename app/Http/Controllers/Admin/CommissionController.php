@@ -15,17 +15,28 @@ class CommissionController extends Controller
     {
         $query = Commission::with(['affiliate.user', 'user']);
 
+        // Search filter (name, email)
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->whereHas('affiliate.user', function($q) use ($search) {
+                $q->where('name', 'like', '%'.$search.'%')
+                  ->orWhere('email', 'like', '%'.$search.'%');
+            });
+        }
+
         // Filter by status
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            $query->where('status', $request->get('status'));
         }
 
         // Filter by type
         if ($request->filled('type')) {
-            $query->where('type', $request->type);
+            $query->where('type', $request->get('type'));
         }
 
-        $commissions = $query->latest()->paginate(20);
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $commissions = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('admin.commissions.index', compact('commissions'));
     }
