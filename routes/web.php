@@ -33,6 +33,11 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 
+// User Routes (Protected by auth middleware)
+Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+    require __DIR__.'/user.php';
+});
+
 // Admin Routes (Protected by auth middleware)
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     require __DIR__.'/admin.php';

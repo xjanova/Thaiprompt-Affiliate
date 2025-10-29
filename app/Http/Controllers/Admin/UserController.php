@@ -105,4 +105,30 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')
             ->with('success', 'User deleted successfully.');
     }
+
+    /**
+     * Show permissions page for user
+     */
+    public function permissions(User $user)
+    {
+        $availablePermissions = User::availablePermissions();
+        return view('admin.users.permissions', compact('user', 'availablePermissions'));
+    }
+
+    /**
+     * Update user permissions
+     */
+    public function updatePermissions(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'permissions' => ['nullable', 'array'],
+            'permissions.*' => ['string', 'in:' . implode(',', User::availablePermissions())],
+        ]);
+
+        $user->permissions = $validated['permissions'] ?? [];
+        $user->save();
+
+        return redirect()->route('admin.users.index')
+            ->with('success', 'User permissions updated successfully.');
+    }
 }
