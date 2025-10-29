@@ -33,3 +33,7 @@ database/database.sqlite
 
 # Logs
 storage/logs/*.log
+
+# Google Cloud Credentials
+storage/app/google-credentials.json
+google-credentials.json

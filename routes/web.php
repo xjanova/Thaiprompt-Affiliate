@@ -16,6 +16,15 @@ use Illuminate\Support\Facades\Route;
 // Language Switching
 Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');
 
+// Translation API Routes
+Route::prefix('api/translate')->name('api.translate.')->group(function () {
+    Route::post('/', [\App\Http\Controllers\TranslationController::class, 'translate'])->name('text');
+    Route::post('/batch', [\App\Http\Controllers\TranslationController::class, 'translateBatch'])->name('batch');
+    Route::get('/languages', [\App\Http\Controllers\TranslationController::class, 'languages'])->name('languages');
+    Route::post('/detect', [\App\Http\Controllers\TranslationController::class, 'detect'])->name('detect');
+    Route::get('/status', [\App\Http\Controllers\TranslationController::class, 'status'])->name('status');
+});
+
 // Setup Wizard (First time installation)
 Route::get('/setup', [SetupController::class, 'index'])->name('setup.index');
 Route::post('/setup', [SetupController::class, 'store'])->name('setup.store');
