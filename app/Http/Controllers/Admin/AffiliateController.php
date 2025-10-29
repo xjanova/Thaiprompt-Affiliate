@@ -11,11 +11,35 @@ class AffiliateController extends Controller
     /**
      * Display a listing of affiliates
      */
-    public function index()
+    public function index(Request $request)
     {
-        $affiliates = Affiliate::with(['user', 'parent.user'])
-            ->latest()
-            ->paginate(20);
+        $query = Affiliate::with(['user', 'parent.user']);
+
+        // Search filter (name, email, referral_code)
+        if ($request->filled('search')) {
+            $search = $request->get('search');
+            $query->where(function($q) use ($search) {
+                $q->where('referral_code', 'like', '%'.$search.'%')
+                  ->orWhereHas('user', function($q) use ($search) {
+                      $q->where('name', 'like', '%'.$search.'%')
+                        ->orWhere('email', 'like', '%'.$search.'%');
+                  });
+            });
+        }
+
+        // Status filter
+        if ($request->filled('status')) {
+            $query->where('status', $request->get('status'));
+        }
+
+        // Level filter
+        if ($request->filled('level')) {
+            $query->where('level', $request->get('level'));
+        }
+
+        // Pagination
+        $perPage = $request->get('per_page', 10);
+        $affiliates = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('admin.affiliates.index', compact('affiliates'));
     }
