@@ -57,8 +57,11 @@
 
 ### การติดตั้ง
 
+> **⚠️ สำคัญ:** Repository นี้เป็น private คุณต้อง authenticate ก่อน clone
+> 📖 ดูวิธีการ: [AUTHENTICATION.md](AUTHENTICATION.md)
+
 ```bash
-# 1. Clone repository
+# 1. Clone repository (จะถาม username และ Personal Access Token)
 git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
 cd Thaiprompt-Affiliate
 
@@ -114,6 +117,7 @@ php artisan migrate
 - 🚀 [GETTING-STARTED.md](GETTING-STARTED.md) - คู่มือเริ่มต้นใช้งาน
 - 💻 [DEVELOPMENT.md](DEVELOPMENT.md) - คู่มือสำหรับนักพัฒนา
 - 🌐 [DEPLOYMENT.md](DEPLOYMENT.md) - คู่มือการ Deploy สู่ Production
+- 🔐 [AUTHENTICATION.md](AUTHENTICATION.md) - คู่มือการ Clone Private Repository
 
 ---
 

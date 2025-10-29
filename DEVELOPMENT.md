@@ -10,8 +10,11 @@
 
 ### Setup Development Environment
 
+> **⚠️ Note:** This is a private repository. You need to authenticate first.
+> See [AUTHENTICATION.md](AUTHENTICATION.md) for details.
+
 ```bash
-# 1. Clone repository
+# 1. Clone repository (requires authentication)
 git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
 cd Thaiprompt-Affiliate
 
