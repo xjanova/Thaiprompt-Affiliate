@@ -12,9 +12,35 @@
         </div>
 
         @if($section->content)
-            <div class="prose prose-lg max-w-none">
-                {!! $section->content !!}
-            </div>
+            @php
+                // Try to decode JSON content
+                $statistics = null;
+                if (is_string($section->content)) {
+                    $decoded = json_decode($section->content, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                        $statistics = $decoded;
+                    }
+                }
+            @endphp
+
+            @if($statistics)
+                <!-- Statistics from JSON -->
+                <div class="grid grid-cols-1 md:grid-cols-{{ min(count($statistics), 4) }} gap-8 max-w-6xl mx-auto">
+                    @foreach($statistics as $stat)
+                        <div class="bg-white p-8 rounded-xl shadow-md text-center hover:shadow-xl transition">
+                            <div class="text-5xl font-bold {{ $stat['color'] ?? 'text-indigo-600' }} mb-2">
+                                {{ $stat['value'] ?? '0' }}
+                            </div>
+                            <div class="text-gray-600">{{ $stat['label'] ?? '' }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <!-- HTML Content -->
+                <div class="prose prose-lg max-w-none">
+                    {!! $section->content !!}
+                </div>
+            @endif
         @else
             <!-- Default statistics grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
