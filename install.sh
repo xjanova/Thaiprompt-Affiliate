@@ -206,10 +206,53 @@ php artisan migrate --force --no-interaction
 print_success "Database migrated successfully"
 
 print_info "[7/7] Setting permissions..."
+
+# Detect web server user
+WEB_USER=""
+if id -u www-data >/dev/null 2>&1; then
+    WEB_USER="www-data"
+elif id -u nginx >/dev/null 2>&1; then
+    WEB_USER="nginx"
+elif id -u apache >/dev/null 2>&1; then
+    WEB_USER="apache"
+elif id -u admin >/dev/null 2>&1; then
+    WEB_USER="admin"
+fi
+
 # Set proper permissions for web server
-chmod -R 755 storage bootstrap/cache
-find storage -type f -exec chmod 644 {} \;
-find bootstrap/cache -type f -exec chmod 644 {} \;
+chmod -R 775 storage bootstrap/cache
+find storage -type f -exec chmod 664 {} \;
+find bootstrap/cache -type f -exec chmod 664 {} \;
+
+# Set ownership if web server user is detected
+if [ -n "$WEB_USER" ]; then
+    CURRENT_USER=$(whoami)
+    print_info "Setting ownership for web server user: $WEB_USER"
+
+    # Try to set ownership (may need sudo)
+    if chown -R "$CURRENT_USER:$WEB_USER" storage bootstrap/cache 2>/dev/null; then
+        print_success "Ownership set to $CURRENT_USER:$WEB_USER"
+    else
+        print_warning "Cannot set ownership (may need sudo)"
+        print_info "Please run manually:"
+        echo "  sudo chown -R $CURRENT_USER:$WEB_USER storage bootstrap/cache"
+        echo "  sudo chmod -R 775 storage bootstrap/cache"
+    fi
+
+    # Try to use ACL if available (more flexible for multiple users)
+    if command -v setfacl >/dev/null 2>&1; then
+        if setfacl -R -m u:"$WEB_USER":rwX storage bootstrap/cache 2>/dev/null; then
+            setfacl -R -d -m u:"$WEB_USER":rwX storage bootstrap/cache 2>/dev/null || true
+            print_success "ACL permissions set for $WEB_USER"
+        fi
+    fi
+else
+    print_warning "Web server user not detected"
+    print_info "Please set ownership manually:"
+    echo "  sudo chown -R your-user:web-server-group storage bootstrap/cache"
+    echo "  sudo chmod -R 775 storage bootstrap/cache"
+fi
+
 print_success "Permissions configured"
 
 # Optimize for production

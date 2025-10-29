@@ -205,9 +205,42 @@ fi
 
 # Step 9: Set Permissions
 print_info "[8/14] Setting file permissions..."
-chmod -R 755 storage bootstrap/cache 2>/dev/null || true
-find storage -type f -exec chmod 644 {} \; 2>/dev/null || true
-find bootstrap/cache -type f -exec chmod 644 {} \; 2>/dev/null || true
+
+# Detect web server user
+WEB_USER=""
+if id -u www-data >/dev/null 2>&1; then
+    WEB_USER="www-data"
+elif id -u nginx >/dev/null 2>&1; then
+    WEB_USER="nginx"
+elif id -u apache >/dev/null 2>&1; then
+    WEB_USER="apache"
+elif id -u admin >/dev/null 2>&1; then
+    WEB_USER="admin"
+fi
+
+# Set proper permissions
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+find storage -type f -exec chmod 664 {} \; 2>/dev/null || true
+find bootstrap/cache -type f -exec chmod 664 {} \; 2>/dev/null || true
+
+# Set ownership if web server user is detected
+if [ -n "$WEB_USER" ]; then
+    CURRENT_USER=$(whoami)
+
+    # Try to set ownership (may need sudo)
+    if chown -R "$CURRENT_USER:$WEB_USER" storage bootstrap/cache 2>/dev/null; then
+        log "Ownership set to $CURRENT_USER:$WEB_USER"
+    else
+        log "WARNING: Cannot set ownership, may need manual intervention"
+    fi
+
+    # Try to use ACL if available
+    if command -v setfacl >/dev/null 2>&1; then
+        setfacl -R -m u:"$WEB_USER":rwX storage bootstrap/cache 2>/dev/null || true
+        setfacl -R -d -m u:"$WEB_USER":rwX storage bootstrap/cache 2>/dev/null || true
+    fi
+fi
+
 print_success "Permissions set"
 
 # Step 10: Cache Configuration
