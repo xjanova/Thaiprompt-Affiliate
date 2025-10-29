@@ -4,6 +4,114 @@
 
 @section('content')
 <div class="relative overflow-hidden">
+    <!-- Image Slider -->
+    @if($sliders->count() > 0)
+    <section class="relative bg-black" x-data="{
+        currentSlide: 0,
+        slides: {{ $sliders->count() }},
+        autoplay: true,
+        init() {
+            if (this.autoplay) {
+                setInterval(() => {
+                    this.nextSlide();
+                }, 5000);
+            }
+        },
+        nextSlide() {
+            this.currentSlide = (this.currentSlide + 1) % this.slides;
+        },
+        prevSlide() {
+            this.currentSlide = (this.currentSlide - 1 + this.slides) % this.slides;
+        },
+        goToSlide(index) {
+            this.currentSlide = index;
+        }
+    }">
+        <div class="relative max-w-7xl mx-auto">
+            <div class="relative h-96 md:h-[500px] overflow-hidden">
+                @foreach($sliders as $index => $slider)
+                <div x-show="currentSlide === {{ $index }}"
+                     x-transition:enter="transition ease-out duration-500"
+                     x-transition:enter-start="opacity-0 transform translate-x-full"
+                     x-transition:enter-end="opacity-100 transform translate-x-0"
+                     x-transition:leave="transition ease-in duration-500"
+                     x-transition:leave-start="opacity-100 transform translate-x-0"
+                     x-transition:leave-end="opacity-0 transform -translate-x-full"
+                     class="absolute inset-0"
+                     style="display: none;">
+                    @if($slider->link)
+                        <a href="{{ $slider->link }}" target="_blank" class="block w-full h-full">
+                            <img src="{{ asset($slider->image) }}" alt="{{ $slider->title }}" class="w-full h-full object-cover">
+                            @if($slider->title || $slider->description)
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                                    <div class="p-8 text-white">
+                                        @if($slider->title)
+                                            <h2 class="text-3xl font-bold mb-2">{{ $slider->title }}</h2>
+                                        @endif
+                                        @if($slider->description)
+                                            <p class="text-lg">{{ $slider->description }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+                        </a>
+                    @else
+                        <img src="{{ asset($slider->image) }}" alt="{{ $slider->title }}" class="w-full h-full object-cover">
+                        @if($slider->title || $slider->description)
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                                <div class="p-8 text-white">
+                                    @if($slider->title)
+                                        <h2 class="text-3xl font-bold mb-2">{{ $slider->title }}</h2>
+                                    @endif
+                                    @if($slider->description)
+                                        <p class="text-lg">{{ $slider->description }}</p>
+                                    @endif
+                                </div>
+                            </div>
+                        @endif
+                    @endif
+                </div>
+                @endforeach
+            </div>
+
+            @if($sliders->count() > 1)
+            <button @click="prevSlide()" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full backdrop-blur-sm transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+            </button>
+            <button @click="nextSlide()" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full backdrop-blur-sm transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+                @foreach($sliders as $index => $slider)
+                <button @click="goToSlide({{ $index }})"
+                        :class="{ 'bg-white': currentSlide === {{ $index }}, 'bg-white/50': currentSlide !== {{ $index }} }"
+                        class="w-3 h-3 rounded-full transition"></button>
+                @endforeach
+            </div>
+            @endif
+        </div>
+    </section>
+    @endif
+
+    <!-- Custom Content Section -->
+    @php
+        $customContent = \App\Models\Setting::get('home_custom_content');
+    @endphp
+    @if($customContent)
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="prose prose-lg max-w-none">
+                {!! $customContent !!}
+            </div>
+        </div>
+    </section>
+    @endif
+
     <!-- Hero Section -->
     <section class="relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">

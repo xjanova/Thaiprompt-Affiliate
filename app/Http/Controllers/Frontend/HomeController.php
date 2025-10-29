@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Setting;
+use App\Models\Slider;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -24,7 +25,10 @@ class HomeController extends Controller
             'total_affiliates' => \App\Models\Affiliate::count(),
         ];
 
-        return view('frontend.home', compact('stats'));
+        // Get active sliders
+        $sliders = Slider::active()->ordered()->get();
+
+        return view('frontend.home', compact('stats', 'sliders'));
     }
 
     /**

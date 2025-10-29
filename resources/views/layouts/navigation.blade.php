@@ -4,8 +4,15 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('home') }}" class="text-2xl font-bold text-indigo-600">
-                        TP-Affiliate
+                    <a href="{{ route('home') }}" class="flex items-center">
+                        @php
+                            $logo = \App\Models\Setting::get('logo');
+                        @endphp
+                        @if($logo)
+                            <img src="{{ asset($logo) }}" alt="{{ config('app.name') }}" class="h-10 object-contain">
+                        @else
+                            <span class="text-2xl font-bold text-indigo-600">TP-Affiliate</span>
+                        @endif
                     </a>
                 </div>
 
