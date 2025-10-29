@@ -76,11 +76,18 @@ echo "  🔧 Installing TP-Affiliate"
 echo "════════════════════════════════════════"
 echo ""
 
-print_info "[1/6] Installing Composer dependencies..."
+print_info "[1/6] Preparing directories..."
+mkdir -p bootstrap/cache
+mkdir -p storage/{app,framework,logs}
+mkdir -p storage/framework/{cache,sessions,views}
+chmod -R 775 storage bootstrap/cache
+print_success "Directories prepared"
+
+print_info "[2/6] Installing Composer dependencies..."
 composer install --no-interaction --prefer-dist
 print_success "Dependencies installed"
 
-print_info "[2/6] Setting up environment..."
+print_info "[3/6] Setting up environment..."
 if [ ! -f .env ]; then
     cp .env.example .env
     print_success "Environment file created"
@@ -88,11 +95,11 @@ else
     print_warning ".env file already exists, skipping..."
 fi
 
-print_info "[3/6] Generating application key..."
+print_info "[4/6] Generating application key..."
 php artisan key:generate --force
 print_success "Key generated"
 
-print_info "[4/6] Creating database..."
+print_info "[5/6] Creating database..."
 if [ ! -f database/database.sqlite ]; then
     mkdir -p database
     touch database/database.sqlite
@@ -101,13 +108,9 @@ else
     print_warning "Database already exists, skipping..."
 fi
 
-print_info "[5/6] Running migrations..."
+print_info "[6/6] Running migrations..."
 php artisan migrate --force
 print_success "Database migrated"
-
-print_info "[6/6] Setting permissions..."
-chmod -R 775 storage bootstrap/cache 2>/dev/null || true
-print_success "Permissions set"
 
 echo ""
 echo "════════════════════════════════════════"
