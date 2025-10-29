@@ -98,6 +98,20 @@
     </section>
     @endif
 
+    <!-- Custom Content Section -->
+    @php
+        $customContent = \App\Models\Setting::get('home_custom_content');
+    @endphp
+    @if($customContent)
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="prose prose-lg max-w-none">
+                {!! $customContent !!}
+            </div>
+        </div>
+    </section>
+    @endif
+
     <!-- Hero Section -->
     <section class="relative bg-gradient-to-r from-indigo-600 to-purple-600 text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">

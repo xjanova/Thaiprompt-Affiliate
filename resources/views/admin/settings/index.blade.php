@@ -43,6 +43,15 @@
                         สีธีม
                     </span>
                 </button>
+
+                <button @click="activeTab = 'content'"
+                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'content', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'content' }"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
+                    <span class="flex items-center">
+                        <span class="text-lg mr-2">📝</span>
+                        เนื้อหาหน้าแรก
+                    </span>
+                </button>
             </nav>
         </div>
 
@@ -261,7 +270,57 @@
                     </div>
                 </form>
             </div>
+
+            <!-- Custom Content Tab -->
+            <div x-show="activeTab === 'content'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
+                <form method="POST" action="{{ route('admin.settings.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">แก้ไขเนื้อหาหน้าแรก</h3>
+                    <p class="text-gray-600 mb-6">เนื้อหานี้จะแสดงในหน้าแรกหลังจากสไลด์รูปภาพ</p>
+
+                    <div class="space-y-6">
+                        <div>
+                            <label for="home_custom_content" class="block text-sm font-medium text-gray-700 mb-2">เนื้อหา</label>
+                            <textarea id="home_custom_content" name="home_custom_content" rows="15"
+                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">{{ old('home_custom_content', $settings->get('general')->firstWhere('key', 'home_custom_content')->value ?? '') }}</textarea>
+                            <p class="text-xs text-gray-500 mt-2">ใช้ตัวแก้ไขด้านบนเพื่อจัดรูปแบบเนื้อหา รองรับ HTML</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end mt-6">
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                            บันทึกเนื้อหา
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- TinyMCE Editor -->
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    tinymce.init({
+        selector: '#home_custom_content',
+        height: 500,
+        menubar: true,
+        plugins: [
+            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+            'insertdatetime', 'media', 'table', 'help', 'wordcount'
+        ],
+        toolbar: 'undo redo | blocks | ' +
+            'bold italic backcolor | alignleft aligncenter ' +
+            'alignright alignjustify | bullist numlist outdent indent | ' +
+            'removeformat | link image | code | help',
+        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+        branding: false,
+        promotion: false
+    });
+});
+</script>
 @endsection

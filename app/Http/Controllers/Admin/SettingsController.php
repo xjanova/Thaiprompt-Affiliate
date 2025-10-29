@@ -28,6 +28,7 @@ class SettingsController extends Controller
             'app_name' => ['nullable', 'string', 'max:255'],
             'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'multi_level_enabled' => ['nullable', 'boolean'],
+            'home_custom_content' => ['nullable', 'string'],
         ]);
 
         foreach ($validated as $key => $value) {
