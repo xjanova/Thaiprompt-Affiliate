@@ -48,13 +48,31 @@ log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
+# Ensure Laravel essential directories exist
+ensure_laravel_directories() {
+    mkdir -p bootstrap/cache 2>/dev/null || true
+    mkdir -p storage/{app,framework,logs} 2>/dev/null || true
+    mkdir -p storage/framework/{cache,sessions,views} 2>/dev/null || true
+    mkdir -p storage/app/{public,private} 2>/dev/null || true
+    mkdir -p database 2>/dev/null || true
+    chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+}
+
 # Error handler
 error_exit() {
     print_error "Deployment failed: $1"
     log "ERROR: $1"
 
     print_warning "Rolling back changes..."
-    php artisan up 2>/dev/null || true
+
+    # Ensure essential directories exist before running artisan
+    ensure_laravel_directories
+
+    # Try to bring application back up
+    php artisan up 2>/dev/null || {
+        print_error "Could not disable maintenance mode automatically"
+        print_info "Please run manually: php artisan up"
+    }
 
     exit 1
 }
@@ -118,8 +136,12 @@ print_header "📦 Deployment Process"
 
 # Step 1: Enable Maintenance Mode
 print_info "[1/15] Enabling maintenance mode..."
-php artisan down --retry=60 --render="errors::503" || {
-    print_warning "Could not enable maintenance mode (may already be down)"
+
+# Ensure directories exist before running artisan
+ensure_laravel_directories
+
+php artisan down --retry=60 --render="errors::503" 2>/dev/null || {
+    print_warning "Could not enable maintenance mode (may already be down or need manual intervention)"
 }
 print_success "Maintenance mode enabled"
 sleep 2  # Give time for requests to finish
@@ -179,6 +201,11 @@ git reset --hard "origin/$BRANCH" || error_exit "Failed to reset to origin/$BRAN
 # Step 4.4: Clean all untracked files and directories
 print_info "Removing untracked files and directories..."
 git clean -fd || print_warning "Git clean failed (continuing anyway)"
+
+# Step 4.4.1: Recreate essential Laravel directories
+print_info "Recreating essential Laravel directories..."
+ensure_laravel_directories
+print_success "Essential directories created"
 
 # Step 4.5: Verify we're in sync with remote
 LOCAL_COMMIT=$(git rev-parse HEAD)
