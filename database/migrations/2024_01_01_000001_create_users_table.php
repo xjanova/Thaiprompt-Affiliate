@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->string('role')->default('user'); // user, admin, super_admin
             $table->boolean('is_super_admin')->default(false);
-            $table->foreignId('affiliate_id')->nullable()->constrained('affiliates')->onDelete('set null');
+            $table->unsignedBigInteger('affiliate_id')->nullable(); // Foreign key added later
             $table->rememberToken();
             $table->timestamps();
         });
