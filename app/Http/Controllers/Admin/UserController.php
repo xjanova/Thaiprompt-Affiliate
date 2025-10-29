@@ -150,4 +150,40 @@ class UserController extends Controller
         return redirect()->route('admin.users.index')
             ->with('success', 'User permissions updated successfully.');
     }
+
+    /**
+     * View user's dashboard (impersonate user view)
+     */
+    public function viewDashboard(User $user)
+    {
+        // Load user relationships for dashboard
+        $user->load(['affiliate', 'commissions']);
+
+        // Get user statistics
+        $stats = [
+            'total_commissions' => $user->commissions()->count(),
+            'pending_commissions' => $user->commissions()->where('status', 'pending')->count(),
+            'approved_commissions' => $user->commissions()->where('status', 'approved')->count(),
+            'paid_commissions' => $user->commissions()->where('status', 'paid')->count(),
+            'total_earnings' => $user->commissions()->where('status', 'paid')->sum('amount'),
+            'pending_earnings' => $user->commissions()->whereIn('status', ['pending', 'approved'])->sum('amount'),
+        ];
+
+        // Get recent commissions
+        $recentCommissions = $user->commissions()
+            ->with('affiliate')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        // Get commission chart data (last 6 months)
+        $chartData = $user->commissions()
+            ->selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, COUNT(*) as count, SUM(amount) as total')
+            ->where('created_at', '>=', now()->subMonths(6))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get();
+
+        return view('admin.users.dashboard', compact('user', 'stats', 'recentCommissions', 'chartData'));
+    }
 }

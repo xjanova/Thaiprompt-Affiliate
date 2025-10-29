@@ -20,6 +20,7 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 Route::resource('users', UserController::class);
 Route::get('users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
 Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
+Route::get('users/{user}/dashboard', [UserController::class, 'viewDashboard'])->name('users.dashboard');
 
 // Affiliate Management
 Route::resource('affiliates', AffiliateController::class);

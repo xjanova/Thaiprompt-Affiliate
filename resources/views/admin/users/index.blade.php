@@ -98,6 +98,11 @@
                                        title="ดูรายละเอียด">
                                         👁️
                                     </a>
+                                    <a href="{{ route('admin.users.dashboard', $user) }}"
+                                       class="text-purple-600 hover:text-purple-900"
+                                       title="ดูแดชบอร์ดของผู้ใช้">
+                                        📊
+                                    </a>
                                     <a href="{{ route('admin.users.edit', $user) }}"
                                        class="text-blue-600 hover:text-blue-900"
                                        title="แก้ไข">
