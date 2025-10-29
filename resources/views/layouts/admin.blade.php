@@ -94,9 +94,10 @@
 
                 <!-- Collapse Toggle (Desktop only) -->
                 <button @click="sidebarCollapsed = !sidebarCollapsed; localStorage.setItem('sidebarCollapsed', sidebarCollapsed)"
-                        class="hidden md:block absolute -right-3 bg-gray-700 hover:bg-indigo-600 text-white rounded-full p-1 shadow-lg transition-all duration-300">
-                    <svg class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': sidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        class="hidden md:flex absolute -right-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-full p-2.5 shadow-2xl transition-all duration-300 items-center justify-center group hover:scale-110 border-2 border-white"
+                        title="ซ่อน/แสดงเมนู">
+                    <svg class="w-5 h-5 transition-transform duration-300 drop-shadow-lg" :class="{ 'rotate-180': sidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
                     </svg>
                 </button>
             </div>
@@ -104,25 +105,25 @@
             <!-- Navigation -->
             <nav class="mt-8 px-2">
                 <a href="{{ route('admin.dashboard') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.dashboard') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
                 </a>
 
                 <a href="{{ route('admin.users.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.users.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👥</span>
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผู้ใช้</span>
                 </a>
 
                 <a href="{{ route('admin.affiliates.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.affiliates.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌐</span>
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">Affiliates</span>
                 </a>
 
                 <a href="{{ route('admin.commissions.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.commissions.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.commissions.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💰</span>
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คอมมิชชั่น</span>
                 </a>
@@ -133,13 +134,13 @@
                 </div>
 
                 <a href="{{ route('admin.sliders.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.sliders.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.sliders.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🖼️</span>
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สไลด์</span>
                 </a>
 
                 <a href="{{ route('admin.settings.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.settings.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.settings.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ตั้งค่า</span>
                 </a>
@@ -147,14 +148,14 @@
                 <div class="border-t border-gray-700 my-4"></div>
 
                 <a href="{{ route('home') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-600 hover:text-white rounded-lg transition-all group">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏠</span>
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กลับหน้าแรก</span>
                 </a>
 
                 <form method="POST" action="{{ route('logout') }}" class="mt-2">
                     @csrf
-                    <button type="submit" class="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-red-600/50 hover:text-white rounded-lg transition-all group">
+                    <button type="submit" class="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-600 hover:text-white rounded-lg transition-all group">
                         <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🚪</span>
                         <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ออกจากระบบ</span>
                     </button>

@@ -35,6 +35,7 @@ class SettingsController extends Controller
             'google_translate_project_id' => ['nullable', 'string'],
             'translate_source_language' => ['nullable', 'string', 'in:th,en'],
             'translate_cache_enabled' => ['nullable', 'boolean'],
+            'tinymce_api_key' => ['nullable', 'string'],
         ]);
 
         // Handle checkbox values

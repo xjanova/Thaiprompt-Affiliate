@@ -377,6 +377,29 @@
                         </div>
                     </div>
 
+                    <!-- TinyMCE API -->
+                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                        <div class="flex items-center mb-4">
+                            <span class="text-2xl mr-3">✏️</span>
+                            <h4 class="text-lg font-semibold text-gray-900">TinyMCE Editor API</h4>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                                <input type="text" name="tinymce_api_key"
+                                       value="{{ old('tinymce_api_key', $settings->get('general')->firstWhere('key', 'tinymce_api_key')->value ?? '') }}"
+                                       placeholder="your-tinymce-api-key"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">
+                                    สมัครฟรีได้ที่ <a href="https://www.tiny.cloud/auth/signup/" target="_blank" class="text-indigo-600 hover:underline">TinyMCE Cloud</a>
+                                    <br>
+                                    <span class="text-gray-600">📌 หากไม่ใส่ จะใช้ API Key แบบทดสอบ (มีข้อจำกัด)</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Future API Sections (Placeholder) -->
                     <div class="mb-8 p-6 bg-gray-50 rounded-lg">
                         <div class="flex items-center mb-4">
@@ -408,7 +431,10 @@
 </div>
 
 <!-- TinyMCE Editor -->
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+@php
+    $tinymceApiKey = \App\Models\Setting::get('tinymce_api_key') ?: 'no-api-key';
+@endphp
+<script src="https://cdn.tiny.cloud/1/{{ $tinymceApiKey }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     tinymce.init({
