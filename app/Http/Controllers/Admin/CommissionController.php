@@ -1,0 +1,113 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\Commission;
+use Illuminate\Http\Request;
+
+class CommissionController extends Controller
+{
+    /**
+     * Display a listing of commissions
+     */
+    public function index(Request $request)
+    {
+        $query = Commission::with(['affiliate.user', 'user']);
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Filter by type
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+
+        $commissions = $query->latest()->paginate(20);
+
+        return view('admin.commissions.index', compact('commissions'));
+    }
+
+    /**
+     * Display the specified commission
+     */
+    public function show(Commission $commission)
+    {
+        $commission->load(['affiliate.user', 'user']);
+        return view('admin.commissions.show', compact('commission'));
+    }
+
+    /**
+     * Approve a commission
+     */
+    public function approve(Commission $commission)
+    {
+        if ($commission->status !== 'pending') {
+            return back()->with('error', 'Only pending commissions can be approved.');
+        }
+
+        $commission->update([
+            'status' => 'approved',
+            'approved_at' => now(),
+        ]);
+
+        return back()->with('success', 'Commission approved successfully.');
+    }
+
+    /**
+     * Reject a commission
+     */
+    public function reject(Commission $commission)
+    {
+        if ($commission->status !== 'pending') {
+            return back()->with('error', 'Only pending commissions can be rejected.');
+        }
+
+        $commission->update([
+            'status' => 'rejected',
+        ]);
+
+        return back()->with('success', 'Commission rejected successfully.');
+    }
+
+    /**
+     * Show the form for editing the specified commission
+     */
+    public function edit(Commission $commission)
+    {
+        return view('admin.commissions.edit', compact('commission'));
+    }
+
+    /**
+     * Update the specified commission
+     */
+    public function update(Request $request, Commission $commission)
+    {
+        $validated = $request->validate([
+            'status' => ['required', 'in:pending,approved,rejected,paid'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        if ($validated['status'] === 'paid' && $commission->status !== 'paid') {
+            $validated['paid_at'] = now();
+        }
+
+        $commission->update($validated);
+
+        return redirect()->route('admin.commissions.index')
+            ->with('success', 'Commission updated successfully.');
+    }
+
+    /**
+     * Remove the specified commission
+     */
+    public function destroy(Commission $commission)
+    {
+        $commission->delete();
+
+        return redirect()->route('admin.commissions.index')
+            ->with('success', 'Commission deleted successfully.');
+    }
+}
