@@ -9,7 +9,21 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$SCRIPT_DIR/backups"
 LOG_FILE="$SCRIPT_DIR/storage/logs/deployment.log"
-BRANCH="${1:-main}"  # Default to 'main', or use first argument
+
+# Determine branch to deploy
+if [ -n "$1" ]; then
+    # Use specified branch
+    BRANCH="$1"
+else
+    # Use current branch
+    BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")
+    if [ -z "$BRANCH" ] || [ "$BRANCH" = "HEAD" ]; then
+        echo "Error: Could not determine current branch"
+        echo "Usage: $0 [branch-name]"
+        echo "Example: $0 claude/Main"
+        exit 1
+    fi
+fi
 
 # Colors
 RED='\033[0;31m'
@@ -87,14 +101,35 @@ echo "║   🚀 TP-Affiliate Deployment Script             ║"
 echo "║   Safe Production Deployment                     ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
+echo "📋 Deployment Configuration:"
+echo "  Branch:      ${BLUE}$BRANCH${NC}"
+echo "  Directory:   ${BLUE}$SCRIPT_DIR${NC}"
+echo "  User:        ${BLUE}$(whoami)${NC}"
+echo "  Time:        ${BLUE}$(date)${NC}"
+echo ""
 
 log "=== Deployment Started ==="
 log "Branch: $BRANCH"
 log "User: $(whoami)"
 log "Host: $(hostname)"
 
-# Pre-flight checks
+# Verify branch exists on remote
 print_header "🔍 Pre-flight Checks"
+
+print_info "Checking remote branch availability..."
+if ! git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+    print_error "Branch '$BRANCH' does not exist on remote!"
+    echo ""
+    echo "Available branches on remote:"
+    git ls-remote --heads origin | sed 's/.*refs\/heads\//  - /'
+    echo ""
+    echo "Usage: $0 [branch-name]"
+    echo "Example: $0 claude/Main"
+    exit 1
+fi
+print_success "Branch '$BRANCH' exists on remote"
+
+# Pre-flight checks
 
 # Check if .env exists
 if [ ! -f .env ]; then
