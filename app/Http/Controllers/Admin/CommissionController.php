@@ -78,9 +78,27 @@ class CommissionController extends Controller
 
         $commission->update([
             'status' => 'rejected',
+            'rejected_at' => now(),
         ]);
 
         return back()->with('success', 'Commission rejected successfully.');
+    }
+
+    /**
+     * Mark commission as paid
+     */
+    public function pay(Commission $commission)
+    {
+        if ($commission->status !== 'approved') {
+            return back()->with('error', 'Only approved commissions can be marked as paid.');
+        }
+
+        $commission->update([
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+
+        return back()->with('success', 'Commission marked as paid successfully.');
     }
 
     /**

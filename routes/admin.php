@@ -33,6 +33,7 @@ Route::post('affiliates/{affiliate}/move', [AffiliateController::class, 'move'])
 Route::resource('commissions', CommissionController::class);
 Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
 Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
+Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
 
 // Settings
 Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
