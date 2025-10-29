@@ -39,7 +39,7 @@ class DashboardController extends Controller
             ->sum('amount');
 
         $totalReferrals = $affiliate ? $affiliate->children()->count() : 0;
-        $activeReferrals = $affiliate ? $affiliate->children()->where('is_active', true)->count() : 0;
+        $activeReferrals = $affiliate ? $affiliate->children()->where('status', 'active')->count() : 0;
 
         // Monthly revenue for the last 12 months
         $monthlyRevenue = collect();
