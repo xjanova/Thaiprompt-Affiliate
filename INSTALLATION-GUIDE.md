@@ -266,8 +266,29 @@ Package operations: 120 installs, 0 updates, 0 removals
 Application key set successfully.
 ✓ Key generated
 
-ℹ [5/6] Creating database...
-✓ Database created (SQLite)
+════════════════════════════════════════
+  📊 Database Configuration
+════════════════════════════════════════
+
+เลือก Database ที่ต้องการใช้:
+  1) SQLite (แนะนำสำหรับ development)
+  2) MySQL (แนะนำสำหรับ production)
+
+เลือก (1 หรือ 2) [1]: 2
+
+ℹ กรุณากรอกข้อมูล MySQL:
+
+  DB Host [127.0.0.1]: 127.0.0.1
+  DB Port [3306]: 3306
+  Database Name [thaiprompt_affiliate]: thaiprompt_affiliate
+  DB Username [root]: your_username
+  DB Password: ********
+
+ℹ [5/6] Configuring database...
+ℹ ทดสอบการเชื่อมต่อ MySQL...
+✓ MySQL connection successful
+ℹ สร้าง database 'thaiprompt_affiliate'...
+✓ Database configured (MySQL)
 
 ℹ [6/6] Running migrations...
    INFO  Preparing database.
@@ -304,7 +325,82 @@ Application key set successfully.
 ✓ Happy coding! 🚀
 ```
 
-### 2.4 เช็คว่าติดตั้งสำเร็จ
+### 2.4 การเลือก Database
+
+ในระหว่างการติดตั้ง script จะถามให้คุณเลือก database ที่ต้องการใช้:
+
+#### ตัวเลือกที่ 1: SQLite (แนะนำสำหรับ Development)
+
+```bash
+เลือก (1 หรือ 2) [1]: 1
+```
+
+**ข้อดี:**
+- ✅ ติดตั้งง่าย ไม่ต้องตั้งค่าอะไรเพิ่ม
+- ✅ ไม่ต้องมี MySQL Server
+- ✅ เหมาะสำหรับ development และ testing
+
+**ข้อเสีย:**
+- ⚠️ ไม่เหมาะสำหรับ production ที่มี traffic สูง
+- ⚠️ ไม่รองรับ concurrent writes มากนัก
+
+#### ตัวเลือกที่ 2: MySQL (แนะนำสำหรับ Production)
+
+```bash
+เลือก (1 หรือ 2) [1]: 2
+```
+
+**ข้อมูลที่ต้องเตรียม:**
+
+| ข้อมูล | คำอธิบาย | ค่า Default | ตัวอย่าง |
+|--------|----------|-------------|----------|
+| **DB Host** | IP หรือ hostname ของ MySQL server | `127.0.0.1` | `127.0.0.1` หรือ `db.example.com` |
+| **DB Port** | Port ของ MySQL | `3306` | `3306` |
+| **Database Name** | ชื่อ database | `thaiprompt_affiliate` | `thaiprompt_affiliate` |
+| **DB Username** | Username สำหรับเข้าถึง database | `root` | `tpadmin` |
+| **DB Password** | Password (จะไม่แสดงตอนพิมพ์) | ไม่มี | `your_secure_password` |
+
+**วิธีเตรียมข้อมูล MySQL:**
+
+1. **เข้า MySQL:**
+   ```bash
+   mysql -u root -p
+   ```
+
+2. **สร้าง database และ user (optional):**
+   ```sql
+   -- สร้าง database
+   CREATE DATABASE thaiprompt_affiliate CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+   -- สร้าง user เฉพาะสำหรับ application (แนะนำ)
+   CREATE USER 'tpadmin'@'localhost' IDENTIFIED BY 'your_secure_password';
+
+   -- ให้สิทธิ์
+   GRANT ALL PRIVILEGES ON thaiprompt_affiliate.* TO 'tpadmin'@'localhost';
+   FLUSH PRIVILEGES;
+
+   -- ออกจาก MySQL
+   EXIT;
+   ```
+
+3. **กรอกข้อมูลในระหว่างติดตั้ง:**
+   ```bash
+   DB Host [127.0.0.1]: 127.0.0.1          # หรือ IP ของ MySQL server
+   DB Port [3306]: 3306
+   Database Name [thaiprompt_affiliate]: thaiprompt_affiliate
+   DB Username [root]: tpadmin              # ใช้ user ที่สร้างใหม่
+   DB Password: your_secure_password        # จะไม่แสดงตอนพิมพ์
+   ```
+
+**หมายเหตุ:**
+- ✅ Script จะทดสอบการเชื่อมต่อ MySQL อัตโนมัติ
+- ✅ Script จะสร้าง database ให้อัตโนมัติถ้ายังไม่มี
+- ⚠️ ถ้าใช้ remote MySQL (ไม่ใช่ localhost) ต้องแน่ใจว่า firewall อนุญาตการเชื่อมต่อ
+- ⚠️ สำหรับ production ควรใช้ user เฉพาะแทนการใช้ root
+
+---
+
+### 2.5 เช็คว่าติดตั้งสำเร็จ
 
 ```bash
 # เช็คว่าไฟล์สำคัญถูกสร้างแล้ว
@@ -516,9 +612,9 @@ brew reinstall php@8.2
 
 ### 🐛 ปัญหา: "could not find driver"
 
-**สาเหตุ:** ไม่มี SQLite driver
+**สาเหตุ:** ไม่มี SQLite หรือ MySQL driver
 
-**วิธีแก้:**
+**วิธีแก้ (SQLite):**
 ```bash
 # Ubuntu/Debian
 sudo apt install php8.2-sqlite3
@@ -529,6 +625,117 @@ brew install sqlite3
 # ทดสอบ
 php -m | grep -i sqlite
 ```
+
+**วิธีแก้ (MySQL):**
+```bash
+# Ubuntu/Debian
+sudo apt install php8.2-mysql
+
+# macOS (included in PHP)
+brew reinstall php@8.2
+
+# ทดสอบ
+php -m | grep -i mysql
+```
+
+---
+
+### 🐛 ปัญหา: "ไม่สามารถเชื่อมต่อ MySQL ได้"
+
+**สาเหตุ:** MySQL server ไม่รัน หรือ credentials ผิด
+
+**ตัวอย่าง Error:**
+```
+⚠ ไม่สามารถเชื่อมต่อ MySQL ได้ (จะพยายาม migrate ต่อ)
+ℹ กรุณาตรวจสอบว่า:
+  - MySQL Server รันอยู่
+  - Username/Password ถูกต้อง
+  - Database 'thaiprompt_affiliate' ถูกสร้างแล้ว
+```
+
+**วิธีแก้:**
+
+1. **เช็คว่า MySQL รันอยู่:**
+   ```bash
+   # Ubuntu/Debian
+   sudo systemctl status mysql
+   sudo systemctl start mysql
+
+   # macOS
+   brew services list
+   brew services start mysql
+   ```
+
+2. **ทดสอบการเชื่อมต่อ:**
+   ```bash
+   mysql -h 127.0.0.1 -P 3306 -u your_username -p
+   # ถ้าเข้าได้แสดงว่า credentials ถูกต้อง
+   ```
+
+3. **เช็คว่า database มีอยู่:**
+   ```sql
+   mysql -u root -p
+   SHOW DATABASES;
+   -- ถ้าไม่มี ให้สร้าง
+   CREATE DATABASE thaiprompt_affiliate CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+   EXIT;
+   ```
+
+4. **เช็คสิทธิ์ user:**
+   ```sql
+   mysql -u root -p
+   SHOW GRANTS FOR 'your_username'@'localhost';
+   -- ถ้าไม่มีสิทธิ์ ให้เพิ่ม
+   GRANT ALL PRIVILEGES ON thaiprompt_affiliate.* TO 'your_username'@'localhost';
+   FLUSH PRIVILEGES;
+   EXIT;
+   ```
+
+5. **รัน install.sh ใหม่:**
+   ```bash
+   ./install.sh
+   # เลือก MySQL และกรอกข้อมูลใหม่
+   ```
+
+---
+
+### 🐛 ปัญหา: "Access denied for user"
+
+**สาเหตุ:** Username หรือ Password ผิด
+
+**ตัวอย่าง Error:**
+```
+ERROR 1045 (28000): Access denied for user 'tpadmin'@'localhost'
+```
+
+**วิธีแก้:**
+
+1. **รีเซ็ต password:**
+   ```bash
+   mysql -u root -p
+   ```
+   ```sql
+   ALTER USER 'tpadmin'@'localhost' IDENTIFIED BY 'new_password';
+   FLUSH PRIVILEGES;
+   EXIT;
+   ```
+
+2. **แก้ไข .env โดยตรง:**
+   ```bash
+   nano .env
+   # แก้บรรทัดเหล่านี้
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=thaiprompt_affiliate
+   DB_USERNAME=tpadmin
+   DB_PASSWORD=correct_password
+   ```
+
+3. **ทดสอบ migration:**
+   ```bash
+   php artisan migrate
+   ```
 
 ---
 
