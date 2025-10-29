@@ -6,6 +6,8 @@ use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SliderController;
+use App\Http\Controllers\Admin\PageController;
+use App\Http\Controllers\Admin\HomeSectionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -25,6 +27,7 @@ Route::get('users/{user}/dashboard', [UserController::class, 'viewDashboard'])->
 // Affiliate Management
 Route::resource('affiliates', AffiliateController::class);
 Route::get('affiliates/{affiliate}/tree', [AffiliateController::class, 'tree'])->name('affiliates.tree');
+Route::post('affiliates/{affiliate}/move', [AffiliateController::class, 'move'])->name('affiliates.move');
 
 // Commission Management
 Route::resource('commissions', CommissionController::class);
@@ -40,3 +43,12 @@ Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('
 // Slider Management
 Route::resource('sliders', SliderController::class);
 Route::post('sliders/reorder', [SliderController::class, 'reorder'])->name('sliders.reorder');
+
+// Pages Management (CMS)
+Route::resource('pages', PageController::class);
+Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
+
+// Home Sections Management
+Route::resource('home-sections', HomeSectionController::class);
+Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');
+Route::post('home-sections/{homeSection}/toggle', [HomeSectionController::class, 'toggle'])->name('home-sections.toggle');

@@ -95,4 +95,56 @@ class AffiliateController extends Controller
         return redirect()->route('admin.affiliates.index')
             ->with('success', 'Affiliate deleted successfully.');
     }
+
+    /**
+     * Move affiliate to new parent
+     */
+    public function move(Request $request, Affiliate $affiliate)
+    {
+        $validated = $request->validate([
+            'new_parent_id' => ['nullable', 'exists:affiliates,id'],
+        ]);
+
+        $newParentId = $validated['new_parent_id'];
+
+        // Validation: Cannot move to self
+        if ($newParentId == $affiliate->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถย้ายไปยังตัวเองได้'
+            ], 400);
+        }
+
+        // Validation: Cannot move to own descendant
+        if ($newParentId && $this->isDescendant($affiliate->id, $newParentId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่สามารถย้ายไปยังลูกสายของตัวเองได้'
+            ], 400);
+        }
+
+        // Update parent
+        $affiliate->parent_id = $newParentId;
+        $affiliate->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ย้ายสายงานสำเร็จ'
+        ]);
+    }
+
+    /**
+     * Check if target is a descendant of source
+     */
+    private function isDescendant($sourceId, $targetId)
+    {
+        $target = Affiliate::find($targetId);
+        while ($target) {
+            if ($target->parent_id == $sourceId) {
+                return true;
+            }
+            $target = $target->parent;
+        }
+        return false;
+    }
 }
