@@ -18,8 +18,17 @@
 
 ### ขั้นตอนการติดตั้ง
 
+> **⚠️ สำคัญ:** Repository นี้เป็น private คุณต้อง authenticate ก่อน clone
+>
+> **วิธีการ:**
+> 1. สร้าง Personal Access Token: https://github.com/settings/tokens
+> 2. เลือก scope: `repo` (Full control of private repositories)
+> 3. ใช้ token แทนรหัสผ่านเมื่อ git clone
+>
+> 📖 **คู่มือละเอียด:** [AUTHENTICATION.md](AUTHENTICATION.md)
+
 ```bash
-# 1. Clone project
+# 1. Clone project (จะถาม username/token)
 git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
 cd Thaiprompt-Affiliate
 
