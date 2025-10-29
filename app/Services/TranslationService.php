@@ -14,7 +14,8 @@ class TranslationService
 
     public function __construct()
     {
-        $this->enabled = config('translate.google.enabled', false);
+        // Read from database settings first, fallback to config
+        $this->enabled = \App\Models\Setting::get('google_translate_enabled') ?? config('translate.google.enabled', false);
         $this->supportedLanguages = array_keys(config('translate.supported_languages', []));
 
         if ($this->enabled) {
@@ -34,8 +35,10 @@ class TranslationService
     {
         $config = [];
 
-        // Use API Key if provided
-        if ($apiKey = config('translate.google.api_key')) {
+        // Use API Key from database first, fallback to config
+        $apiKey = \App\Models\Setting::get('google_translate_api_key') ?? config('translate.google.api_key');
+
+        if ($apiKey) {
             $config['key'] = $apiKey;
         }
         // Otherwise use service account credentials

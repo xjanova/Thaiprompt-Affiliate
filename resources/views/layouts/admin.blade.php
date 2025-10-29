@@ -56,101 +56,185 @@
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-gray-100">
-    <div class="min-h-screen" x-data="{ sidebarOpen: false }">
+    <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false }">
+        <!-- Overlay for mobile -->
+        <div x-show="sidebarOpen"
+             @click="sidebarOpen = false"
+             x-transition:enter="transition-opacity ease-linear duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-linear duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-600 bg-opacity-75 z-30 md:hidden"
+             style="display: none;"></div>
+
         <!-- Sidebar -->
-        <div class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 shadow-2xl transform transition-transform duration-300 ease-in-out md:translate-x-0"
-             style="box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);"
-             :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
-            <div class="flex items-center justify-center h-16 bg-gradient-primary">
+        <div class="fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 shadow-2xl transform transition-all duration-300 ease-in-out overflow-y-auto"
+             style="box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);"
+             :class="{
+                 '-translate-x-full md:translate-x-0': !sidebarOpen,
+                 'translate-x-0': sidebarOpen,
+                 'w-64': !sidebarCollapsed,
+                 'md:w-20': sidebarCollapsed
+             }">
+            <!-- Logo Section -->
+            <div class="flex items-center justify-center h-16 bg-gradient-primary relative">
                 @php
                     $logo = \App\Models\Setting::get('logo');
                 @endphp
                 @if($logo)
-                    <img src="{{ asset($logo) }}" alt="Logo" class="h-10 object-contain">
+                    <img src="{{ asset($logo) }}" alt="Logo" class="h-10 object-contain" :class="{ 'md:h-8': sidebarCollapsed }">
                 @else
-                    <span class="text-white text-2xl font-bold">TP-Admin</span>
+                    <span class="text-white font-bold transition-all" :class="{ 'text-2xl': !sidebarCollapsed, 'md:text-lg': sidebarCollapsed }">
+                        <span x-show="!sidebarCollapsed">TP-Admin</span>
+                        <span x-show="sidebarCollapsed" class="hidden md:block">TP</span>
+                    </span>
                 @endif
+
+                <!-- Collapse Toggle (Desktop only) -->
+                <button @click="sidebarCollapsed = !sidebarCollapsed; localStorage.setItem('sidebarCollapsed', sidebarCollapsed)"
+                        class="hidden md:block absolute -right-3 bg-gray-700 hover:bg-indigo-600 text-white rounded-full p-1 shadow-lg transition-all duration-300">
+                    <svg class="w-4 h-4 transition-transform duration-300" :class="{ 'rotate-180': sidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
             </div>
 
-            <nav class="mt-8">
-                <a href="{{ route('admin.dashboard') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.dashboard') ? 'bg-gray-800 text-white' : '' }}">
-                    <span class="text-xl mr-3">📊</span>
-                    <span>แดชบอร์ด</span>
+            <!-- Navigation -->
+            <nav class="mt-8 px-2">
+                <a href="{{ route('admin.dashboard') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.dashboard') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
                 </a>
 
-                <a href="{{ route('admin.users.index') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.users.*') ? 'bg-gray-800 text-white' : '' }}">
-                    <span class="text-xl mr-3">👥</span>
-                    <span>ผู้ใช้</span>
+                <a href="{{ route('admin.users.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.users.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👥</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผู้ใช้</span>
                 </a>
 
-                <a href="{{ route('admin.affiliates.index') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.affiliates.*') ? 'bg-gray-800 text-white' : '' }}">
-                    <span class="text-xl mr-3">🌐</span>
-                    <span>Affiliates</span>
+                <a href="{{ route('admin.affiliates.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.affiliates.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌐</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">Affiliates</span>
                 </a>
 
-                <a href="{{ route('admin.commissions.index') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.commissions.*') ? 'bg-gray-800 text-white' : '' }}">
-                    <span class="text-xl mr-3">💰</span>
-                    <span>คอมมิชชั่น</span>
+                <a href="{{ route('admin.commissions.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.commissions.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💰</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คอมมิชชั่น</span>
                 </a>
 
-                <div class="border-t border-gray-800 mt-4 pt-4">
-                    <div class="px-6 py-2 text-xs text-gray-500 uppercase tracking-wider">
-                        จัดการระบบ
-                    </div>
+                <div class="border-t border-gray-700 my-4"></div>
+                <div class="px-4 py-2 text-xs text-gray-500 uppercase tracking-wider" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                    จัดการระบบ
                 </div>
 
-                @if(Auth::user()->is_super_admin || Auth::user()->role === 'admin')
-                <a href="{{ route('admin.users.index') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.users.permissions') ? 'bg-gray-800 text-white' : '' }}">
-                    <span class="text-xl mr-3">🔐</span>
-                    <span>จัดการสิทธิ์</span>
-                </a>
-                @endif
-
-                <a href="{{ route('admin.sliders.index') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.sliders.*') ? 'bg-gray-800 text-white' : '' }}">
-                    <span class="text-xl mr-3">🖼️</span>
-                    <span>สไลด์</span>
+                <a href="{{ route('admin.sliders.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.sliders.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🖼️</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สไลด์</span>
                 </a>
 
-                <a href="{{ route('admin.settings.index') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.settings.*') ? 'bg-gray-800 text-white' : '' }}">
-                    <span class="text-xl mr-3">⚙️</span>
-                    <span>ตั้งค่า</span>
+                <a href="{{ route('admin.settings.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.settings.*') ? 'bg-gray-700 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ตั้งค่า</span>
                 </a>
 
-                <div class="border-t border-gray-800 mt-4 pt-4">
-                    <a href="{{ route('home') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
-                        <span class="text-xl mr-3">🏠</span>
-                        <span>กลับหน้าแรก</span>
-                    </a>
+                <div class="border-t border-gray-700 my-4"></div>
 
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="flex items-center w-full px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition">
-                            <span class="text-xl mr-3">🚪</span>
-                            <span>ออกจากระบบ</span>
-                        </button>
-                    </form>
-                </div>
+                <a href="{{ route('home') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gray-700/50 hover:text-white rounded-lg transition-all group">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏠</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กลับหน้าแรก</span>
+                </a>
+
+                <form method="POST" action="{{ route('logout') }}" class="mt-2">
+                    @csrf
+                    <button type="submit" class="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-red-600/50 hover:text-white rounded-lg transition-all group">
+                        <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🚪</span>
+                        <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ออกจากระบบ</span>
+                    </button>
+                </form>
             </nav>
         </div>
 
         <!-- Main Content -->
-        <div class="md:ml-64">
+        <div class="transition-all duration-300" :class="{ 'md:ml-64': !sidebarCollapsed, 'md:ml-20': sidebarCollapsed }">
             <!-- Top Bar -->
-            <header class="bg-white shadow-sm">
+            <header class="bg-white shadow-sm sticky top-0 z-20">
                 <div class="flex items-center justify-between px-6 py-4">
-                    <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 focus:outline-none md:hidden">
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
+                    <div class="flex items-center">
+                        <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
 
-                    <h1 class="text-2xl font-semibold text-gray-800">@yield('title')</h1>
+                        <h1 class="text-2xl font-semibold text-gray-800">@yield('title')</h1>
+                    </div>
 
                     <div class="flex items-center space-x-4">
                         <!-- Language Switcher -->
-                        @include('components.language-switcher')
+                        <div class="relative z-[60]">
+                            @include('components.language-switcher')
+                        </div>
 
-                        <span class="text-gray-600">{{ Auth::user()->name }}</span>
+                        <!-- Profile Dropdown -->
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" @click.away="open = false"
+                                    class="flex items-center space-x-3 focus:outline-none hover:bg-gray-50 rounded-lg px-3 py-2 transition">
+                                <img src="{{ Auth::user()->profile_picture_url }}"
+                                     alt="{{ Auth::user()->name }}"
+                                     class="h-10 w-10 rounded-full object-cover border-2 border-indigo-500 shadow-md">
+                                <div class="hidden md:block text-left">
+                                    <p class="text-sm font-semibold text-gray-700">{{ Auth::user()->name }}</p>
+                                    <p class="text-xs text-gray-500">{{ ucfirst(Auth::user()->role) }}</p>
+                                </div>
+                                <svg class="h-4 w-4 text-gray-600 transition-transform" :class="{ 'rotate-180': open }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </button>
+
+                            <!-- Dropdown Menu -->
+                            <div x-show="open"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:enter-end="opacity-100 scale-100"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 scale-100"
+                                 x-transition:leave-end="opacity-0 scale-95"
+                                 class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[70]"
+                                 style="display: none;">
+                                <div class="px-4 py-3 border-b border-gray-100">
+                                    <p class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</p>
+                                    <p class="text-sm text-gray-500 truncate">{{ Auth::user()->email }}</p>
+                                </div>
+
+                                <a href="{{ route('user.profile') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
+                                    <span class="text-xl mr-3">👤</span>
+                                    <span>โปรไฟล์</span>
+                                </a>
+
+                                <a href="{{ route('user.dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
+                                    <span class="text-xl mr-3">📊</span>
+                                    <span>แดชบอร์ดผู้ใช้</span>
+                                </a>
+
+                                <div class="border-t border-gray-100 my-1"></div>
+
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition">
+                                        <span class="text-xl mr-3">🚪</span>
+                                        <span>ออกจากระบบ</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -297,7 +381,7 @@
             });
 
             // Animate buttons on hover
-            const buttons = document.querySelectorAll('button, .btn');
+            const buttons = document.querySelectorAll('button:not([type=submit]), .btn');
             buttons.forEach(button => {
                 button.addEventListener('mouseenter', () => {
                     gsap.to(button, { scale: 1.05, duration: 0.2 });
