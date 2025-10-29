@@ -106,6 +106,11 @@
                 </a>
                 @endif
 
+                <a href="{{ route('admin.sliders.index') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.sliders.*') ? 'bg-gray-800 text-white' : '' }}">
+                    <span class="text-xl mr-3">🖼️</span>
+                    <span>สไลด์</span>
+                </a>
+
                 <a href="{{ route('admin.settings.index') }}" class="flex items-center px-6 py-3 text-gray-300 hover:bg-gray-800 hover:text-white transition {{ request()->routeIs('admin.settings.*') ? 'bg-gray-800 text-white' : '' }}">
                     <span class="text-xl mr-3">⚙️</span>
                     <span>ตั้งค่า</span>
