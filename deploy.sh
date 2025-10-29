@@ -121,7 +121,7 @@ mkdir -p "$BACKUP_DIR"
 print_header "📦 Deployment Process"
 
 # Step 1: Enable Maintenance Mode
-print_info "[1/14] Enabling maintenance mode..."
+print_info "[1/15] Enabling maintenance mode..."
 php artisan down --retry=60 --render="errors::503" || {
     print_warning "Could not enable maintenance mode (may already be down)"
 }
@@ -129,7 +129,7 @@ print_success "Maintenance mode enabled"
 sleep 2  # Give time for requests to finish
 
 # Step 2: Backup Database
-print_info "[2/14] Creating database backup..."
+print_info "[2/15] Creating database backup..."
 BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql"
 
 # Get database info from .env
@@ -164,7 +164,7 @@ log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
 # Step 4: Pull Latest Code
-print_info "[3/14] Pulling latest code from git..."
+print_info "[3/15] Pulling latest code from git..."
 git fetch origin "$BRANCH" || error_exit "Failed to fetch from git"
 git reset --hard "origin/$BRANCH" || error_exit "Failed to reset to origin/$BRANCH"
 print_success "Code updated to latest commit"
@@ -173,13 +173,34 @@ NEW_COMMIT=$(git rev-parse HEAD)
 log "New commit: $NEW_COMMIT"
 print_info "New commit: ${NEW_COMMIT:0:8}"
 
+# Step 4.5: Ensure Base Controller Exists
+print_info "[4/15] Ensuring base Controller exists..."
+CONTROLLER_FILE="app/Http/Controllers/Controller.php"
+if [ ! -f "$CONTROLLER_FILE" ]; then
+    print_warning "Base Controller.php not found, creating..."
+    mkdir -p app/Http/Controllers
+    cat > "$CONTROLLER_FILE" << 'CONTROLLER_EOF'
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+CONTROLLER_EOF
+    print_success "Base Controller.php created"
+else
+    print_success "Base Controller.php exists"
+fi
+
 # Step 5: Install/Update Composer Dependencies
-print_info "[4/14] Installing composer dependencies..."
+print_info "[5/15] Installing composer dependencies..."
 composer install --no-dev --optimize-autoloader --no-interaction || error_exit "Composer install failed"
 print_success "Composer dependencies installed"
 
 # Step 6: Clear All Cache
-print_info "[5/14] Clearing all caches..."
+print_info "[6/15] Clearing all caches..."
 php artisan cache:clear 2>/dev/null || true
 php artisan config:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
@@ -188,7 +209,7 @@ php artisan event:clear 2>/dev/null || true
 print_success "All caches cleared"
 
 # Step 7: Run Migrations
-print_info "[6/14] Running database migrations..."
+print_info "[7/15] Running database migrations..."
 php artisan migrate --force || error_exit "Database migration failed"
 print_success "Migrations completed"
 
@@ -196,15 +217,15 @@ print_success "Migrations completed"
 read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
 echo
 if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
-    print_info "[7/14] Running database seeders..."
+    print_info "[8/15] Running database seeders..."
     php artisan db:seed --force || print_warning "Seeding failed (continuing anyway)"
     print_success "Database seeded"
 else
-    print_info "[7/14] Skipping database seeders"
+    print_info "[8/15] Skipping database seeders"
 fi
 
 # Step 9: Set Permissions
-print_info "[8/14] Setting file permissions..."
+print_info "[9/15] Setting file permissions..."
 
 # Detect web server user
 WEB_USER=""
@@ -244,27 +265,27 @@ fi
 print_success "Permissions set"
 
 # Step 10: Cache Configuration
-print_info "[9/14] Caching configuration..."
+print_info "[10/15] Caching configuration..."
 php artisan config:cache || error_exit "Config cache failed"
 print_success "Configuration cached"
 
 # Step 11: Cache Routes
-print_info "[10/14] Caching routes..."
+print_info "[11/15] Caching routes..."
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
 print_success "Routes cached"
 
 # Step 12: Cache Views
-print_info "[11/14] Caching views..."
+print_info "[12/15] Caching views..."
 php artisan view:cache || print_warning "View cache failed (continuing anyway)"
 print_success "Views cached"
 
 # Step 13: Optimize Autoloader
-print_info "[12/14] Optimizing autoloader..."
+print_info "[13/15] Optimizing autoloader..."
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
 # Step 14: Restart Services
-print_info "[13/14] Restarting services..."
+print_info "[14/15] Restarting services..."
 
 # Restart PHP-FPM (if available)
 if command -v systemctl >/dev/null 2>&1; then
@@ -281,7 +302,7 @@ fi
 php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted" || true
 
 # Step 15: Disable Maintenance Mode
-print_info "[14/14] Disabling maintenance mode..."
+print_info "[15/15] Disabling maintenance mode..."
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 

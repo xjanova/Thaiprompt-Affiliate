@@ -78,18 +78,38 @@ echo ""
 # Installation
 print_header "🔧 Laravel Installation"
 
-print_info "[1/7] Preparing Laravel directories..."
+print_info "[1/8] Preparing Laravel directories..."
 mkdir -p bootstrap/cache
 mkdir -p storage/{app,framework,logs}
 mkdir -p storage/framework/{cache,sessions,views}
 mkdir -p database
 print_success "Directories created"
 
-print_info "[2/7] Installing Composer dependencies..."
+print_info "[2/8] Ensuring base Controller exists..."
+CONTROLLER_FILE="app/Http/Controllers/Controller.php"
+if [ ! -f "$CONTROLLER_FILE" ]; then
+    print_warning "Base Controller.php not found, creating..."
+    mkdir -p app/Http/Controllers
+    cat > "$CONTROLLER_FILE" << 'CONTROLLER_EOF'
+<?php
+
+namespace App\Http\Controllers;
+
+abstract class Controller
+{
+    //
+}
+CONTROLLER_EOF
+    print_success "Base Controller.php created"
+else
+    print_success "Base Controller.php exists"
+fi
+
+print_info "[3/8] Installing Composer dependencies..."
 composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
 print_success "Dependencies installed"
 
-print_info "[3/7] Setting up environment file..."
+print_info "[4/8] Setting up environment file..."
 if [ ! -f .env ]; then
     cp .env.example .env
     print_success "Environment file created"
@@ -97,7 +117,7 @@ else
     print_warning ".env already exists, skipping..."
 fi
 
-print_info "[4/7] Generating application key..."
+print_info "[5/8] Generating application key..."
 php artisan key:generate --force --no-interaction
 print_success "Application key generated"
 
@@ -126,7 +146,7 @@ read -sp "  DB Password: " DB_PASSWORD
 echo ""
 echo ""
 
-print_info "[5/7] Configuring database connection..."
+print_info "[6/8] Configuring database connection..."
 
 # Escape special characters for sed
 DB_HOST_ESC=$(echo "$DB_HOST" | sed 's/[\/&]/\\&/g')
@@ -196,7 +216,7 @@ else
 fi
 
 echo ""
-print_info "[6/7] Running database migrations..."
+print_info "[7/8] Running database migrations..."
 
 # Clear any cached config to ensure new database settings are used
 php artisan config:clear --no-interaction 2>/dev/null || true
@@ -205,7 +225,7 @@ php artisan config:clear --no-interaction 2>/dev/null || true
 php artisan migrate --force --no-interaction
 print_success "Database migrated successfully"
 
-print_info "[7/7] Setting permissions..."
+print_info "[8/8] Setting permissions..."
 
 # Detect web server user
 WEB_USER=""
