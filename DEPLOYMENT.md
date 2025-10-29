@@ -2,7 +2,23 @@
 
 ## การ Deploy สู่ Production แบบง่าย
 
-TP-Affiliate มาพร้อมระบบ Deploy ในคำสั่งเดียว!
+TP-Affiliate มาพร้อมระบบ Deploy อัตโนมัติที่ปลอดภัย!
+
+> 📖 **คู่มือฉบับเต็ม**: [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md) - คู่มือการ Deploy แบบละเอียด พร้อม Rollback และ Troubleshooting
+
+### ✨ คุณสมบัติของระบบ Deploy
+
+- ✅ **เข้า Maintenance Mode** อัตโนมัติ
+- ✅ **Backup Database** ก่อน deploy ทุกครั้ง
+- ✅ **Pull Code** จาก GitHub
+- ✅ **อัพเดท Dependencies** (Composer)
+- ✅ **Clear Cache** ทั้งหมด
+- ✅ **Run Migrations** อัตโนมัติ
+- ✅ **Seed Database** (optional)
+- ✅ **Optimize Laravel** สำหรับ production
+- ✅ **Restart Services** (PHP-FPM, Queue)
+- ✅ **Rollback Support** - ย้อนกลับได้ง่าย
+- ✅ **Deployment Logs** - บันทึกทุกครั้งที่ deploy
 
 ---
 
