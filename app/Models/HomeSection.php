@@ -50,6 +50,14 @@ class HomeSection extends Model
     }
 
     /**
+     * Scope for ordered sections by sort_order
+     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('sort_order', 'asc');
+    }
+
+    /**
      * Scope for sections visible now (considering schedule)
      */
     public function scopeVisibleNow($query)
