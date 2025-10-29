@@ -126,6 +126,10 @@ php artisan migrate
 **สำหรับนักพัฒนา:**
 - 💻 [DEVELOPMENT.md](DEVELOPMENT.md) - คู่มือสำหรับนักพัฒนา
 
+**คู่มือเฉพาะทาง:**
+- 🌍 [MULTI-LANGUAGE.md](MULTI-LANGUAGE.md) - **ระบบหลายภาษา** (ไทย/English + วิธีเพิ่มภาษาใหม่)
+- 👑 [SUPER-ADMIN.md](SUPER-ADMIN.md) - **ระบบ Super Admin** (สิทธิ์เข้าถึงและการจัดการ)
+
 ---
 
 ### การเข้าสู่ระบบครั้งแรก
