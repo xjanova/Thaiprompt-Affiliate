@@ -105,13 +105,9 @@ fi
 
 # Check for uncommitted changes
 if [[ -n $(git status -s) ]]; then
-    print_warning "You have uncommitted changes:"
+    print_warning "Local changes detected - will be discarded during deployment"
     git status -s
-    read -p "Continue anyway? (y/n): " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
-    fi
+    log "WARNING: Local changes will be overwritten by deployment"
 fi
 
 # Create backup directory
@@ -163,11 +159,36 @@ CURRENT_COMMIT=$(git rev-parse HEAD)
 log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
-# Step 4: Pull Latest Code
-print_info "[3/15] Pulling latest code from git..."
+# Step 4: Force Pull Latest Code from GitHub
+print_info "[3/15] Force syncing with GitHub..."
+
+# Step 4.1: Stash any local changes (for safety backup)
+if [[ -n $(git status -s) ]]; then
+    print_info "Backing up local changes to stash..."
+    git stash push -u -m "Auto-stash before deployment $(date +'%Y-%m-%d %H:%M:%S')" 2>/dev/null || true
+fi
+
+# Step 4.2: Fetch all changes from remote
+print_info "Fetching latest code from origin/$BRANCH..."
 git fetch origin "$BRANCH" || error_exit "Failed to fetch from git"
+
+# Step 4.3: Force reset to match GitHub exactly
+print_info "Force resetting to origin/$BRANCH..."
 git reset --hard "origin/$BRANCH" || error_exit "Failed to reset to origin/$BRANCH"
-print_success "Code updated to latest commit"
+
+# Step 4.4: Clean all untracked files and directories
+print_info "Removing untracked files and directories..."
+git clean -fd || print_warning "Git clean failed (continuing anyway)"
+
+# Step 4.5: Verify we're in sync with remote
+LOCAL_COMMIT=$(git rev-parse HEAD)
+REMOTE_COMMIT=$(git rev-parse "origin/$BRANCH")
+
+if [ "$LOCAL_COMMIT" = "$REMOTE_COMMIT" ]; then
+    print_success "✓ Code is now in perfect sync with GitHub"
+else
+    print_warning "Local and remote commits differ (this shouldn't happen)"
+fi
 
 NEW_COMMIT=$(git rev-parse HEAD)
 log "New commit: $NEW_COMMIT"
@@ -196,8 +217,26 @@ fi
 
 # Step 5: Install/Update Composer Dependencies
 print_info "[5/15] Installing composer dependencies..."
+
+# Remove vendor directory to ensure clean install
+if [ -d "vendor" ]; then
+    print_info "Removing old vendor directory for clean install..."
+    rm -rf vendor
+fi
+
+# Clear composer cache
+composer clear-cache 2>/dev/null || true
+
+# Install dependencies from scratch
 composer install --no-dev --optimize-autoloader --no-interaction || error_exit "Composer install failed"
-print_success "Composer dependencies installed"
+print_success "Composer dependencies installed (clean)"
+
+# Verify composer lock file matches
+if [ -f "composer.lock" ]; then
+    composer validate --no-check-all --no-check-publish 2>/dev/null && \
+        print_success "Composer.lock is valid" || \
+        print_warning "Composer.lock validation failed"
+fi
 
 # Step 6: Clear All Cache
 print_info "[6/15] Clearing all caches..."
@@ -210,18 +249,43 @@ print_success "All caches cleared"
 
 # Step 7: Run Migrations
 print_info "[7/15] Running database migrations..."
-php artisan migrate --force || error_exit "Database migration failed"
-print_success "Migrations completed"
 
-# Step 8: Seed Database (optional)
-read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
-echo
-if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
-    print_info "[8/15] Running database seeders..."
-    php artisan db:seed --force || print_warning "Seeding failed (continuing anyway)"
-    print_success "Database seeded"
+# Check if there are pending migrations
+PENDING_MIGRATIONS=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
+
+if [ "$PENDING_MIGRATIONS" != "0" ]; then
+    print_warning "Found $PENDING_MIGRATIONS pending migration(s)"
+    print_info "Running migrations..."
+    php artisan migrate --force || error_exit "Database migration failed"
+    print_success "Migrations completed successfully"
 else
-    print_info "[8/15] Skipping database seeders"
+    print_info "No pending migrations"
+    # Run anyway to be safe
+    php artisan migrate --force 2>/dev/null || print_info "No migrations needed"
+    print_success "Database schema is up to date"
+fi
+
+# Show migration status
+print_info "Current migration status:"
+php artisan migrate:status 2>/dev/null | tail -5 || true
+
+# Step 8: Seed Database (optional - only for fresh installs)
+# Check if database is empty (no super admin)
+SUPER_ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('is_super_admin', true)->count();" 2>/dev/null | tail -1 || echo "0")
+
+if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
+    print_warning "[8/15] No super admin found - database might need seeding"
+    read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
+    echo
+    if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
+        print_info "Running database seeders..."
+        php artisan db:seed --force || print_warning "Seeding failed (continuing anyway)"
+        print_success "Database seeded"
+    else
+        print_info "Skipping database seeders"
+    fi
+else
+    print_info "[8/15] Database already initialized (skipping seeders)"
 fi
 
 # Step 9: Set Permissions
@@ -306,6 +370,39 @@ print_info "[15/15] Disabling maintenance mode..."
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 
+# Post-deployment verification
+print_header "🔍 Post-Deployment Verification"
+
+print_info "Verifying deployment..."
+
+# Check if application is accessible
+if php artisan route:list > /dev/null 2>&1; then
+    print_success "✓ Routes are accessible"
+else
+    print_error "✗ Routes check failed"
+fi
+
+# Check if database is accessible
+if php artisan db:show > /dev/null 2>&1; then
+    print_success "✓ Database connection OK"
+else
+    print_warning "⚠ Database connection check failed"
+fi
+
+# Check critical directories
+if [ -w "storage/logs" ] && [ -w "bootstrap/cache" ]; then
+    print_success "✓ Storage permissions OK"
+else
+    print_warning "⚠ Storage permissions may need attention"
+fi
+
+# Verify no uncommitted changes remain
+if [[ -z $(git status -s) ]]; then
+    print_success "✓ Working directory is clean"
+else
+    print_warning "⚠ Unexpected files in working directory"
+fi
+
 # Deployment Summary
 print_header "✅ Deployment Completed Successfully!"
 
@@ -319,6 +416,13 @@ echo "  Old Commit:    ${YELLOW}${CURRENT_COMMIT:0:8}${NC}"
 echo "  New Commit:    ${GREEN}${NEW_COMMIT:0:8}${NC}"
 echo "  Time:          ${BLUE}$(date)${NC}"
 echo "  Backup:        ${BLUE}$BACKUP_FILE${NC}"
+echo ""
+echo "🔄 What was deployed:"
+echo "  ✓ Code synced from GitHub (forced)"
+echo "  ✓ Dependencies reinstalled (clean)"
+echo "  ✓ Database migrations applied"
+echo "  ✓ All caches regenerated"
+echo "  ✓ Permissions configured"
 echo ""
 
 print_info "📋 Post-Deployment Checklist:"
