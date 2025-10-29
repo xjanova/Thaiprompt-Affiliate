@@ -21,9 +21,16 @@ class LanguageController extends Controller
 
         // Store locale in session
         Session::put('locale', $locale);
+        Session::save(); // Force save session
 
-        // Redirect back with success message
-        return redirect()->back()->with('success', __('messages.language_changed'));
+        // Set locale immediately
+        app()->setLocale($locale);
+
+        // Get the URL to redirect to (current page)
+        $redirectUrl = url()->previous();
+
+        // Redirect to current page to reload with new language
+        return redirect($redirectUrl)->with('success', 'Language changed successfully');
     }
 
     /**
