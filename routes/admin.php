@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\HomeSectionController;
+use App\Http\Controllers\Admin\SeoController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -52,3 +53,6 @@ Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.re
 Route::resource('home-sections', HomeSectionController::class);
 Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');
 Route::post('home-sections/{homeSection}/toggle', [HomeSectionController::class, 'toggle'])->name('home-sections.toggle');
+
+// SEO Management
+Route::resource('seo', SeoController::class);

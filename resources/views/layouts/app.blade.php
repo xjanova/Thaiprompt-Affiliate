@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'TP-Affiliate') }} - @yield('title')</title>
+    @php
+        $pageType = $pageType ?? 'home';
+        $seoData = $seoData ?? [];
+    @endphp
+
+    {!! render_seo_meta($pageType, $seoData) !!}
 
     @php
         $favicon = \App\Models\Setting::get('favicon');
@@ -14,8 +19,12 @@
         <link rel="icon" type="image/x-icon" href="{{ asset($favicon) }}">
     @endif
 
-    <!-- Fonts -->
+    <!-- Preconnect to external domains for better performance -->
     <link rel="preconnect" href="https://fonts.bunny.net">
+    <link rel="dns-prefetch" href="https://cdn.tailwindcss.com">
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+    <!-- Fonts -->
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
     <!-- Tailwind CSS -->
@@ -25,6 +34,8 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     @stack('styles')
+
+    @stack('seo')
 </head>
 <body class="font-sans antialiased bg-gray-50">
     <div class="min-h-screen">
