@@ -246,7 +246,10 @@ ls -l install.sh
   🔧 Installing TP-Affiliate
 ════════════════════════════════════════
 
-ℹ [1/6] Installing Composer dependencies...
+ℹ [1/6] Preparing directories...
+✓ Directories prepared
+
+ℹ [2/6] Installing Composer dependencies...
 Loading composer repositories with package information
 Installing dependencies from lock file (including require-dev)
 Package operations: 120 installs, 0 updates, 0 removals
@@ -256,17 +259,17 @@ Package operations: 120 installs, 0 updates, 0 removals
   ...
 ✓ Dependencies installed
 
-ℹ [2/6] Setting up environment...
+ℹ [3/6] Setting up environment...
 ✓ Environment file created
 
-ℹ [3/6] Generating application key...
+ℹ [4/6] Generating application key...
 Application key set successfully.
 ✓ Key generated
 
-ℹ [4/6] Creating database...
+ℹ [5/6] Creating database...
 ✓ Database created (SQLite)
 
-ℹ [5/6] Running migrations...
+ℹ [6/6] Running migrations...
    INFO  Preparing database.
 
   Creating migration table ...................... 26ms DONE
@@ -281,9 +284,6 @@ Application key set successfully.
   2024_01_01_000006_create_jobs_table ........... 9ms DONE
 
 ✓ Database migrated
-
-ℹ [6/6] Setting permissions...
-✓ Permissions set
 
 ════════════════════════════════════════
 ✓ Installation Complete! 🎉
@@ -547,6 +547,40 @@ sudo chown -R $USER:$USER .
 # หรือถ้ารัน web server เป็น www-data
 sudo chown -R www-data:www-data storage bootstrap/cache
 ```
+
+---
+
+### 🐛 ปัญหา: "The bootstrap/cache directory must be present and writable"
+
+**สาเหตุ:** โฟลเดอร์ `bootstrap/cache` ไม่มีหรือไม่สามารถเขียนได้
+
+**ตัวอย่าง Error:**
+```
+In PackageManifest.php line 179:
+  The /path/to/bootstrap/cache directory must be present and writable.
+
+Script @php artisan package:discover --ansi handling the
+post-autoload-dump event returned with error code 1
+```
+
+**วิธีแก้:**
+```bash
+# สร้างโฟลเดอร์ที่จำเป็น
+mkdir -p bootstrap/cache
+mkdir -p storage/{app,framework,logs}
+mkdir -p storage/framework/{cache,sessions,views}
+
+# ตั้งสิทธิ์
+chmod -R 775 storage bootstrap/cache
+
+# ถ้ายังไม่ได้ ให้เปลี่ยน owner
+sudo chown -R $USER:$USER bootstrap/cache storage
+
+# รัน composer install อีกครั้ง
+composer install --no-interaction
+```
+
+**หมายเหตุ:** ตั้งแต่เวอร์ชันใหม่ของ install.sh จะสร้างโฟลเดอร์เหล่านี้อัตโนมัติแล้ว
 
 ---
 
