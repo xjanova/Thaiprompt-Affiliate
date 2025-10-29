@@ -26,13 +26,15 @@ Route::get('users/{user}/dashboard', [UserController::class, 'viewDashboard'])->
 
 // Affiliate Management
 Route::resource('affiliates', AffiliateController::class);
-Route::get('affiliates/{affiliate}/tree', [AffiliateController::class, 'tree'])->name('affiliates.tree');
+Route::get('affiliates/tree-view', [AffiliateController::class, 'treeView'])->name('affiliates.tree');
+Route::get('affiliates/{affiliate}/tree', [AffiliateController::class, 'tree'])->name('affiliates.tree.single');
 Route::post('affiliates/{affiliate}/move', [AffiliateController::class, 'move'])->name('affiliates.move');
 
 // Commission Management
 Route::resource('commissions', CommissionController::class);
 Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
 Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
+Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
 
 // Settings
 Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');

@@ -54,6 +54,19 @@ class AffiliateController extends Controller
     }
 
     /**
+     * Show all affiliates tree view
+     */
+    public function treeView()
+    {
+        // Get root affiliates (no parent)
+        $affiliates = Affiliate::with(['user', 'children.user', 'children.children'])
+            ->whereNull('parent_id')
+            ->get();
+
+        return view('admin.affiliates.tree-all', compact('affiliates'));
+    }
+
+    /**
      * Show affiliate tree
      */
     public function tree(Affiliate $affiliate)
