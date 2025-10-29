@@ -23,7 +23,7 @@ class HomeController extends Controller
 
         // Premium Statistics for Landing Page
         $totalUsers = User::count();
-        $totalAffiliates = \App\Models\Affiliate::where('is_active', true)->count();
+        $totalAffiliates = \App\Models\Affiliate::count();
 
         $totalCommissions = \App\Models\Commission::whereIn('status', ['approved', 'paid'])->count();
 
@@ -58,7 +58,6 @@ class HomeController extends Controller
         // Top performing affiliates (public leaderboard)
         $topAffiliates = \App\Models\Affiliate::with('user')
             ->withCount('children as total_referrals')
-            ->where('is_active', true)
             ->get()
             ->map(function($affiliate) {
                 $affiliate->total_earnings = \App\Models\Commission::where('affiliate_id', $affiliate->id)
