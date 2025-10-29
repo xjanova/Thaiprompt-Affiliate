@@ -17,6 +17,8 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 
 // User Management
 Route::resource('users', UserController::class);
+Route::get('users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
+Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
 
 // Affiliate Management
 Route::resource('affiliates', AffiliateController::class);
@@ -30,3 +32,5 @@ Route::post('commissions/{commission}/reject', [CommissionController::class, 're
 // Settings
 Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
+Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');

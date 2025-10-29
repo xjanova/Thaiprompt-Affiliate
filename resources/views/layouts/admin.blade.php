@@ -7,6 +7,13 @@
 
     <title>@yield('title') - Admin - {{ config('app.name', 'TP-Affiliate') }}</title>
 
+    @php
+        $favicon = \App\Models\Setting::get('favicon');
+    @endphp
+    @if($favicon)
+        <link rel="icon" type="image/x-icon" href="{{ asset($favicon) }}">
+    @endif
+
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -20,6 +27,32 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <!-- GSAP -->
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+    @php
+        $primaryStart = \App\Models\Setting::get('theme_primary_start', '#3B82F6');
+        $primaryEnd = \App\Models\Setting::get('theme_primary_end', '#1D4ED8');
+        $secondaryStart = \App\Models\Setting::get('theme_secondary_start', '#10B981');
+        $secondaryEnd = \App\Models\Setting::get('theme_secondary_end', '#059669');
+    @endphp
+
+    <style>
+        :root {
+            --gradient-primary: linear-gradient(135deg, {{ $primaryStart }}, {{ $primaryEnd }});
+            --gradient-secondary: linear-gradient(135deg, {{ $secondaryStart }}, {{ $secondaryEnd }});
+        }
+
+        .bg-gradient-primary {
+            background: var(--gradient-primary);
+        }
+
+        .bg-gradient-secondary {
+            background: var(--gradient-secondary);
+        }
+    </style>
+
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-gray-100">
@@ -27,8 +60,15 @@
         <!-- Sidebar -->
         <div class="fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 transform transition-transform duration-300 ease-in-out md:translate-x-0"
              :class="{ '-translate-x-full': !sidebarOpen, 'translate-x-0': sidebarOpen }">
-            <div class="flex items-center justify-center h-16 bg-gray-800">
-                <span class="text-white text-2xl font-bold">TP-Admin</span>
+            <div class="flex items-center justify-center h-16 bg-gradient-primary">
+                @php
+                    $logo = \App\Models\Setting::get('logo');
+                @endphp
+                @if($logo)
+                    <img src="{{ asset($logo) }}" alt="Logo" class="h-10 object-contain">
+                @else
+                    <span class="text-white text-2xl font-bold">TP-Admin</span>
+                @endif
             </div>
 
             <nav class="mt-8">
@@ -87,8 +127,11 @@
 
                     <h1 class="text-2xl font-semibold text-gray-800">@yield('title')</h1>
 
-                    <div class="flex items-center">
-                        <span class="text-gray-600 mr-4">{{ Auth::user()->name }}</span>
+                    <div class="flex items-center space-x-4">
+                        <!-- Language Switcher -->
+                        @include('components.language-switcher')
+
+                        <span class="text-gray-600">{{ Auth::user()->name }}</span>
                     </div>
                 </div>
             </header>
@@ -111,6 +154,50 @@
             </main>
         </div>
     </div>
+
+    <script>
+        // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate page entrance
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fade in content
+            gsap.from('main > *', {
+                opacity: 0,
+                y: 20,
+                duration: 0.6,
+                stagger: 0.1,
+                ease: 'power2.out'
+            });
+
+            // Animate cards on scroll
+            const cards = document.querySelectorAll('.bg-white');
+            cards.forEach(card => {
+                gsap.from(card, {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 80%',
+                        toggleActions: 'play none none reverse'
+                    },
+                    opacity: 0,
+                    y: 30,
+                    duration: 0.5,
+                    ease: 'power2.out'
+                });
+            });
+
+            // Animate buttons on hover
+            const buttons = document.querySelectorAll('button, .btn');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    gsap.to(button, { scale: 1.05, duration: 0.2 });
+                });
+                button.addEventListener('mouseleave', () => {
+                    gsap.to(button, { scale: 1, duration: 0.2 });
+                });
+            });
+        });
+    </script>
 
     @stack('scripts')
 </body>
