@@ -218,7 +218,7 @@ mkdir -p "$BACKUP_DIR"
 print_header "📦 Deployment Process"
 
 # Step 1: Enable Maintenance Mode
-print_info "[1/16] Enabling maintenance mode..."
+print_info "[1/17] Enabling maintenance mode..."
 
 # Ensure directories exist before running artisan
 ensure_laravel_directories
@@ -230,7 +230,7 @@ print_success "Maintenance mode enabled"
 sleep 2  # Give time for requests to finish
 
 # Step 2: Backup Database
-print_info "[2/16] Creating database backup..."
+print_info "[2/17] Creating database backup..."
 BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql"
 
 # Get database info from .env
@@ -265,7 +265,7 @@ log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
 # Step 4: Force Pull Latest Code from GitHub
-print_info "[3/16] Force syncing with GitHub..."
+print_info "[3/17] Force syncing with GitHub..."
 
 # Step 4.1: Stash any local changes (for safety backup)
 if [[ -n $(git status -s) ]]; then
@@ -305,7 +305,7 @@ log "New commit: $NEW_COMMIT"
 print_info "New commit: ${NEW_COMMIT:0:8}"
 
 # Step 4.5: Ensure Base Controller Exists
-print_info "[4/16] Ensuring base Controller exists..."
+print_info "[4/17] Ensuring base Controller exists..."
 CONTROLLER_FILE="app/Http/Controllers/Controller.php"
 if [ ! -f "$CONTROLLER_FILE" ]; then
     print_warning "Base Controller.php not found, creating..."
@@ -326,7 +326,7 @@ else
 fi
 
 # Step 5: Install/Update Composer Dependencies
-print_info "[5/16] Installing composer dependencies..."
+print_info "[5/17] Installing composer dependencies..."
 
 # Remove vendor directory to ensure clean install
 if [ -d "vendor" ]; then
@@ -349,12 +349,12 @@ if [ -f "composer.lock" ]; then
 fi
 
 # Step 6: Install/Reinstall Laravel Sanctum
-print_info "[6/15] Installing Laravel Sanctum..."
+print_info "[6/17] Installing Laravel Sanctum..."
 retry_command 3 "php artisan vendor:publish --provider=\"Laravel\\Sanctum\\SanctumServiceProvider\" --force" || error_exit "Sanctum installation failed after 3 attempts"
 print_success "Laravel Sanctum installed and configured"
 
 # Step 7: Clear All Cache
-print_info "[7/15] Clearing all caches..."
+print_info "[7/17] Clearing all caches..."
 php artisan cache:clear 2>/dev/null || true
 php artisan config:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
@@ -363,7 +363,7 @@ php artisan event:clear 2>/dev/null || true
 print_success "All caches cleared"
 
 # Step 8: Run Migrations
-print_info "[8/16] Running database migrations..."
+print_info "[8/17] Running database migrations..."
 
 # Check if there are pending migrations
 PENDING_MIGRATIONS=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
@@ -389,7 +389,7 @@ php artisan migrate:status 2>/dev/null | tail -5 || true
 SUPER_ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('is_super_admin', true)->count();" 2>/dev/null | tail -1 || echo "0")
 
 if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
-    print_warning "[9/16] No super admin found - database might need seeding"
+    print_warning "[9/17] No super admin found - database might need seeding"
     read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
     echo
     if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
@@ -400,11 +400,20 @@ if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
         print_info "Skipping database seeders"
     fi
 else
-    print_info "[9/16] Database already initialized (skipping seeders)"
+    print_info "[9/17] Database already initialized (skipping seeders)"
 fi
 
-# Step 10: Set Permissions
-print_info "[10/16] Setting file permissions..."
+# Step 10: Create Storage Symlink
+print_info "[10/16] Creating storage symlink..."
+php artisan storage:link --force --no-interaction || print_warning "Storage link already exists or failed to create"
+if [ -L "public/storage" ]; then
+    print_success "Storage symlink exists (public/storage → storage/app/public)"
+else
+    print_warning "Storage symlink verification failed"
+fi
+
+# Step 11: Set Permissions
+print_info "[11/16] Setting file permissions..."
 
 # Detect web server user
 WEB_USER=""
@@ -443,28 +452,28 @@ fi
 
 print_success "Permissions set"
 
-# Step 11: Cache Configuration
-print_info "[11/16] Caching configuration..."
+# Step 12: Cache Configuration
+print_info "[12/16] Caching configuration..."
 retry_command 3 "php artisan config:cache" || error_exit "Config cache failed after 3 attempts"
 print_success "Configuration cached"
 
-# Step 12: Cache Routes
-print_info "[12/16] Caching routes..."
+# Step 13: Cache Routes
+print_info "[13/16] Caching routes..."
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
 print_success "Routes cached"
 
-# Step 13: Cache Views
-print_info "[13/16] Caching views..."
+# Step 14: Cache Views
+print_info "[14/16] Caching views..."
 php artisan view:cache || print_warning "View cache failed (continuing anyway)"
 print_success "Views cached"
 
-# Step 14: Optimize Autoloader
-print_info "[14/16] Optimizing autoloader..."
+# Step 15: Optimize Autoloader
+print_info "[15/16] Optimizing autoloader..."
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
-# Step 15: Restart Services
-print_info "[15/16] Restarting services..."
+# Step 16: Restart Services
+print_info "[16/16] Restarting services..."
 
 # Restart PHP-FPM (if available)
 if command -v systemctl >/dev/null 2>&1; then
@@ -480,8 +489,8 @@ fi
 # Restart queue workers (if using)
 php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted" || true
 
-# Step 16: Disable Maintenance Mode
-print_info "[16/16] Disabling maintenance mode..."
+# Step 17: Disable Maintenance Mode
+print_info "[17/17] Disabling maintenance mode..."
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 

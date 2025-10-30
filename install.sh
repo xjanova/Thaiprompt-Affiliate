@@ -121,6 +121,10 @@ print_info "[5/8] Generating application key..."
 php artisan key:generate --force --no-interaction
 print_success "Application key generated"
 
+print_info "[5.5/8] Creating storage symlink..."
+php artisan storage:link --force --no-interaction
+print_success "Storage symlink created (public/storage → storage/app/public)"
+
 # MySQL Configuration
 print_header "📊 MySQL Database Configuration"
 
