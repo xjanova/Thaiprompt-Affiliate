@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\LanguageSetting;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -21,7 +22,8 @@ class SetLocale
         // 1. Query parameter (?lang=en)
         // 2. Session
         // 3. User's preferred language (if authenticated)
-        // 4. Default config
+        // 4. Default language from database
+        // 5. Default config
         $locale = $request->get('lang');
 
         if (!$locale) {
@@ -33,13 +35,29 @@ class SetLocale
         }
 
         if (!$locale) {
-            $locale = config('app.locale');
+            // Try to get default language from database
+            $defaultLang = LanguageSetting::getDefault();
+            if ($defaultLang) {
+                $locale = $defaultLang->code;
+            }
         }
 
-        // Validate locale (only allow supported languages)
-        $supportedLocales = config('app.supported_locales', ['en', 'th']);
+        if (!$locale) {
+            $locale = config('app.locale', 'en');
+        }
+
+        // Validate locale (get from database instead of config)
+        $supportedLocales = LanguageSetting::getEnabledCodes();
+
+        // Fallback to config if database is not available
+        if (empty($supportedLocales)) {
+            $supportedLocales = config('app.supported_locales', ['en', 'th']);
+        }
+
         if (!in_array($locale, $supportedLocales)) {
-            $locale = config('app.fallback_locale', 'en');
+            // Try to use default language from database first
+            $defaultLang = LanguageSetting::getDefault();
+            $locale = $defaultLang ? $defaultLang->code : config('app.fallback_locale', 'en');
         }
 
         // Set application locale

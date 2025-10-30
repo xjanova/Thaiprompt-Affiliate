@@ -32,6 +32,20 @@
         }
     },
 
+    getFlagUrl(lang) {
+        // Map language code to country code for flag CDN
+        const langToCountryMap = {
+            'th': 'th', 'en': 'us', 'zh': 'cn', 'ja': 'jp', 'ko': 'kr',
+            'vi': 'vn', 'es': 'es', 'fr': 'fr', 'de': 'de', 'pt': 'pt',
+            'ru': 'ru', 'ar': 'sa', 'hi': 'in'
+        };
+
+        const countryCode = langToCountryMap[lang.code] || 'un';
+        const sizeParam = this.flagSize <= 20 ? 'w20' : this.flagSize <= 40 ? 'w40' : 'w80';
+
+        return `https://flagcdn.com/${sizeParam}/${countryCode}.png`;
+    },
+
     async switchLanguage(langCode) {
         if (this.translationEnabled) {
             await this.translatePage(langCode);
@@ -96,9 +110,12 @@
             <button @click="open = !open" type="button"
                     class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all">
                 @if($showFlags)
-                    <span x-text="getCurrentLanguage().flag_emoji || '🌐'"
-                          :style="'font-size: ' + flagSize + 'px'"
-                          class="inline-block"></span>
+                    <img :src="getFlagUrl(getCurrentLanguage())"
+                         :alt="getCurrentLanguage().name"
+                         :width="flagSize"
+                         :height="flagSize * 0.75"
+                         class="inline-block rounded object-cover"
+                         style="min-width: 20px; min-height: 15px;">
                 @endif
                 @if($showName)
                     <span class="@if($showFlags) ml-2 @endif" x-text="getCurrentLanguage().native_name"></span>
@@ -136,10 +153,13 @@
                         <button @click="switchLanguage(lang.code)"
                                 class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
                                 :class="{ 'bg-indigo-50 font-semibold text-indigo-700': currentLang === lang.code }">
-                            <span x-show="{{ $showFlags ? 'true' : 'false' }}"
-                                  x-text="lang.flag_emoji || '🌐'"
-                                  :style="'font-size: ' + flagSize + 'px'"
-                                  class="inline-block"></span>
+                            <img x-show="{{ $showFlags ? 'true' : 'false' }}"
+                                 :src="getFlagUrl(lang)"
+                                 :alt="lang.name"
+                                 :width="flagSize"
+                                 :height="flagSize * 0.75"
+                                 class="inline-block rounded object-cover"
+                                 style="min-width: 20px; min-height: 15px;">
                             <span x-show="{{ $showName ? 'true' : 'false' }}"
                                   :class="{ '{{ $showFlags ? 'ml-2' : '' }}': true }"
                                   x-text="lang.native_name"></span>
@@ -159,11 +179,14 @@
                 <button @click="switchLanguage(lang.code)"
                         class="flex items-center space-x-2 px-3 py-2 rounded-lg transition-all hover:bg-gray-100"
                         :class="{ 'bg-indigo-50 ring-2 ring-indigo-500': currentLang === lang.code }">
-                    <span x-show="{{ $showFlags ? 'true' : 'false' }}"
-                          x-text="lang.flag_emoji || '🌐'"
-                          :style="'font-size: ' + flagSize + 'px'"
-                          class="inline-block"
-                          :class="{ 'scale-110': currentLang === lang.code }"></span>
+                    <img x-show="{{ $showFlags ? 'true' : 'false' }}"
+                         :src="getFlagUrl(lang)"
+                         :alt="lang.name"
+                         :width="flagSize"
+                         :height="flagSize * 0.75"
+                         class="inline-block rounded object-cover transition-transform"
+                         :class="{ 'scale-110': currentLang === lang.code }"
+                         style="min-width: 20px; min-height: 15px;">
                     <span x-show="{{ $showName ? 'true' : 'false' }}"
                           class="text-sm font-medium"
                           :class="{ 'text-indigo-700': currentLang === lang.code }"
@@ -180,9 +203,12 @@
                         class="p-2 rounded-lg transition-all hover:scale-110 hover:bg-gray-100"
                         :class="{ 'bg-indigo-50 ring-2 ring-indigo-500 scale-110': currentLang === lang.code }"
                         :title="lang.native_name">
-                    <span x-text="lang.flag_emoji || '🌐'"
-                          :style="'font-size: ' + flagSize + 'px'"
-                          class="inline-block"></span>
+                    <img :src="getFlagUrl(lang)"
+                         :alt="lang.name"
+                         :width="flagSize"
+                         :height="flagSize * 0.75"
+                         class="inline-block rounded object-cover"
+                         style="min-width: 20px; min-height: 15px;">
                 </button>
             </template>
         </div>
