@@ -20,8 +20,8 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 // Language Switching
 Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');
 
-// Translation API Routes
-Route::prefix('api/translate')->name('api.translate.')->group(function () {
+// Translation API Routes (with rate limiting: 60 requests per minute)
+Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,1')->group(function () {
     Route::post('/', [\App\Http\Controllers\TranslationController::class, 'translate'])->name('text');
     Route::post('/batch', [\App\Http\Controllers\TranslationController::class, 'translateBatch'])->name('batch');
     Route::get('/languages', [\App\Http\Controllers\TranslationController::class, 'languages'])->name('languages');
@@ -46,12 +46,17 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 
-// User Routes (Protected by auth middleware)
-Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+// User Routes (Protected by auth middleware and role check)
+Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
     require __DIR__.'/user.php';
 });
 
-// Admin Routes (Protected by auth middleware)
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+// Admin Routes (Protected by auth middleware and role check)
+Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
     require __DIR__.'/admin.php';
+});
+
+// Seller Routes (Protected by auth middleware and role check)
+Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->group(function () {
+    require __DIR__.'/seller.php';
 });

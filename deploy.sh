@@ -1,14 +1,40 @@
 #!/bin/bash
 
 # TP-Affiliate Deployment Script
-# Safe Production Deployment with Rollback Support
+# Safe Production Deployment with Rollback Support and Auto-Retry on Timeout
 
-set -e
+# Disable auto-exit on error (we'll handle errors manually)
+set +e
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$SCRIPT_DIR/backups"
 LOG_FILE="$SCRIPT_DIR/storage/logs/deployment.log"
+MAX_DEPLOYMENT_ATTEMPTS=3
+
+# Track deployment attempts via environment variable
+if [ -z "$DEPLOY_ATTEMPT_COUNT" ]; then
+    export DEPLOY_ATTEMPT_COUNT=1
+else
+    export DEPLOY_ATTEMPT_COUNT=$((DEPLOY_ATTEMPT_COUNT + 1))
+fi
+
+# Check if we've exceeded max attempts
+if [ $DEPLOY_ATTEMPT_COUNT -gt $MAX_DEPLOYMENT_ATTEMPTS ]; then
+    echo ""
+    echo "╔═══════════════════════════════════════════════════════════╗"
+    echo "║  ❌ Deploy ล้มเหลว - ได้ลองครบ $MAX_DEPLOYMENT_ATTEMPTS ครั้งแล้ว              ║"
+    echo "╚═══════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "💡 กรุณาลอง Deploy ใหม่ภายหลัง หรือตรวจสอบปัญหา:"
+    echo "  1. ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"
+    echo "  2. ตรวจสอบว่า GitHub และ Packagist สามารถเข้าถึงได้"
+    echo "  3. ตรวจสอบ logs: tail -f storage/logs/deployment.log"
+    echo "  4. ลองใหม่ภายหลัง 10-15 นาที"
+    echo ""
+    unset DEPLOY_ATTEMPT_COUNT
+    exit 1
+fi
 
 # Determine branch to deploy
 if [ -n "$1" ]; then
@@ -21,6 +47,7 @@ else
         echo "Error: Could not determine current branch"
         echo "Usage: $0 [branch-name]"
         echo "Example: $0 claude/Main"
+        unset DEPLOY_ATTEMPT_COUNT
         exit 1
     fi
 fi
@@ -72,12 +99,28 @@ ensure_laravel_directories() {
     chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 }
 
-# Error handler
-error_exit() {
-    print_error "Deployment failed: $1"
-    log "ERROR: $1"
+# Check if error is timeout-related
+is_timeout_error() {
+    local error_msg="$1"
+    local exit_code="$2"
 
-    print_warning "Rolling back changes..."
+    # Common timeout-related patterns
+    if [[ "$error_msg" =~ (timeout|timed out|Connection timed out|Operation timed out) ]] || \
+       [[ "$error_msg" =~ (could not read|failed to connect|unable to access) ]] || \
+       [[ "$error_msg" =~ (network|DNS|resolution failed|temporary failure) ]] || \
+       [[ "$exit_code" == "124" ]] || [[ "$exit_code" == "143" ]]; then
+        return 0  # Is timeout error
+    fi
+    return 1  # Not timeout error
+}
+
+# Error handler with auto-retry on timeout
+error_exit() {
+    local error_msg="$1"
+    local last_exit_code="${2:-$?}"
+
+    print_error "Deployment failed: $error_msg"
+    log "ERROR: $error_msg (exit code: $last_exit_code)"
 
     # Ensure essential directories exist before running artisan
     ensure_laravel_directories
@@ -88,11 +131,53 @@ error_exit() {
         print_info "Please run manually: php artisan up"
     }
 
+    # Check if it's a timeout error and we haven't exceeded max attempts
+    if is_timeout_error "$error_msg" "$last_exit_code" && [ $DEPLOY_ATTEMPT_COUNT -lt $MAX_DEPLOYMENT_ATTEMPTS ]; then
+        echo ""
+        print_warning "╔═══════════════════════════════════════════════════════════╗"
+        print_warning "║  ⚠️  ตรวจพบ Timeout Error - กำลังเริ่ม Deploy ใหม่...   ║"
+        print_warning "╚═══════════════════════════════════════════════════════════╝"
+        echo ""
+        print_info "📊 ความคืบหน้า: รอบที่ $DEPLOY_ATTEMPT_COUNT/$MAX_DEPLOYMENT_ATTEMPTS"
+        print_info "⏳ รอ 10 วินาทีก่อนเริ่มใหม่..."
+        log "RETRY: Restarting deployment (attempt $DEPLOY_ATTEMPT_COUNT/$MAX_DEPLOYMENT_ATTEMPTS)"
+        sleep 10
+
+        echo ""
+        print_info "🔄 กำลังเริ่มต้น Deploy ใหม่จากตั้งแต่ต้น..."
+        echo ""
+        sleep 2
+
+        # Restart the entire deployment script
+        exec "$0" "$@"
+    fi
+
+    # Final failure - not a timeout or exceeded max attempts
+    echo ""
+    print_error "╔═══════════════════════════════════════════════════════════╗"
+    print_error "║  ❌ การ Deploy ล้มเหลว - กรุณาลองใหม่ภายหลัง            ║"
+    print_error "╚═══════════════════════════════════════════════════════════╝"
+    echo ""
+
+    if [ $DEPLOY_ATTEMPT_COUNT -ge $MAX_DEPLOYMENT_ATTEMPTS ]; then
+        print_error "📍 ได้ลองทำการ Deploy ครบ $MAX_DEPLOYMENT_ATTEMPTS รอบแล้ว แต่ยังไม่สำเร็จ"
+        echo ""
+    fi
+
+    print_info "💡 คำแนะนำในการแก้ไข:"
+    echo "  1. ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"
+    echo "  2. ตรวจสอบว่า GitHub และ Packagist สามารถเข้าถึงได้"
+    echo "  3. ตรวจสอบ logs: tail -f storage/logs/deployment.log"
+    echo "  4. ลอง Deploy ใหม่ภายหลัง 10-15 นาที"
+    echo "  5. หากยังไม่สำเร็จ ติดต่อทีมพัฒนา"
+    echo ""
+
+    unset DEPLOY_ATTEMPT_COUNT
     exit 1
 }
 
-# Trap errors
-trap 'error_exit "An error occurred on line $LINENO"' ERR
+# Trap errors - disable for now to handle errors manually
+# trap 'error_exit "An error occurred on line $LINENO"' ERR
 
 # Header
 echo ""
@@ -101,6 +186,12 @@ echo "║   🚀 TP-Affiliate Deployment Script             ║"
 echo "║   Safe Production Deployment                     ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
+
+if [ $DEPLOY_ATTEMPT_COUNT -gt 1 ]; then
+    echo "🔄 ${YELLOW}กำลังลองใหม่ - รอบที่ $DEPLOY_ATTEMPT_COUNT/$MAX_DEPLOYMENT_ATTEMPTS${NC}"
+    echo ""
+fi
+
 echo "📋 Deployment Configuration:"
 echo "  Branch:      ${BLUE}$BRANCH${NC}"
 echo "  Directory:   ${BLUE}$SCRIPT_DIR${NC}"
@@ -108,7 +199,7 @@ echo "  User:        ${BLUE}$(whoami)${NC}"
 echo "  Time:        ${BLUE}$(date)${NC}"
 echo ""
 
-log "=== Deployment Started ==="
+log "=== Deployment Started (Attempt $DEPLOY_ATTEMPT_COUNT/$MAX_DEPLOYMENT_ATTEMPTS) ==="
 log "Branch: $BRANCH"
 log "User: $(whoami)"
 log "Host: $(hostname)"
@@ -170,7 +261,7 @@ mkdir -p "$BACKUP_DIR"
 print_header "📦 Deployment Process"
 
 # Step 1: Enable Maintenance Mode
-print_info "[1/16] Enabling maintenance mode..."
+print_info "[1/17] Enabling maintenance mode..."
 
 # Ensure directories exist before running artisan
 ensure_laravel_directories
@@ -182,7 +273,7 @@ print_success "Maintenance mode enabled"
 sleep 2  # Give time for requests to finish
 
 # Step 2: Backup Database
-print_info "[2/16] Creating database backup..."
+print_info "[2/17] Creating database backup..."
 BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql"
 
 # Get database info from .env
@@ -217,7 +308,7 @@ log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
 # Step 4: Force Pull Latest Code from GitHub
-print_info "[3/16] Force syncing with GitHub..."
+print_info "[3/17] Force syncing with GitHub..."
 
 # Step 4.1: Stash any local changes (for safety backup)
 if [[ -n $(git status -s) ]]; then
@@ -227,11 +318,15 @@ fi
 
 # Step 4.2: Fetch all changes from remote
 print_info "Fetching latest code from origin/$BRANCH..."
-git fetch origin "$BRANCH" || error_exit "Failed to fetch from git"
+if ! git fetch origin "$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Failed to fetch from git - อาจเป็นปัญหาการเชื่อมต่อ" "$?"
+fi
 
 # Step 4.3: Force reset to match GitHub exactly
 print_info "Force resetting to origin/$BRANCH..."
-git reset --hard "origin/$BRANCH" || error_exit "Failed to reset to origin/$BRANCH"
+if ! git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Failed to reset to origin/$BRANCH" "$?"
+fi
 
 # Step 4.4: Clean all untracked files and directories
 print_info "Removing untracked files and directories..."
@@ -257,7 +352,7 @@ log "New commit: $NEW_COMMIT"
 print_info "New commit: ${NEW_COMMIT:0:8}"
 
 # Step 4.5: Ensure Base Controller Exists
-print_info "[4/16] Ensuring base Controller exists..."
+print_info "[4/17] Ensuring base Controller exists..."
 CONTROLLER_FILE="app/Http/Controllers/Controller.php"
 if [ ! -f "$CONTROLLER_FILE" ]; then
     print_warning "Base Controller.php not found, creating..."
@@ -278,7 +373,7 @@ else
 fi
 
 # Step 5: Install/Update Composer Dependencies
-print_info "[5/16] Installing composer dependencies..."
+print_info "[5/17] Installing composer dependencies..."
 
 # Remove vendor directory to ensure clean install
 if [ -d "vendor" ]; then
@@ -290,7 +385,10 @@ fi
 composer clear-cache 2>/dev/null || true
 
 # Install dependencies from scratch
-composer install --no-dev --optimize-autoloader --no-interaction || error_exit "Composer install failed"
+print_info "Installing composer dependencies..."
+if ! composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Composer install failed - อาจเป็นปัญหา network หรือ Packagist" "$?"
+fi
 print_success "Composer dependencies installed (clean)"
 
 # Verify composer lock file matches
@@ -301,12 +399,14 @@ if [ -f "composer.lock" ]; then
 fi
 
 # Step 6: Install/Reinstall Laravel Sanctum
-print_info "[6/15] Installing Laravel Sanctum..."
-php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force || error_exit "Sanctum installation failed"
+print_info "[6/17] Installing Laravel Sanctum..."
+if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Sanctum installation failed" "$?"
+fi
 print_success "Laravel Sanctum installed and configured"
 
 # Step 7: Clear All Cache
-print_info "[7/15] Clearing all caches..."
+print_info "[7/17] Clearing all caches..."
 php artisan cache:clear 2>/dev/null || true
 php artisan config:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
@@ -315,7 +415,7 @@ php artisan event:clear 2>/dev/null || true
 print_success "All caches cleared"
 
 # Step 8: Run Migrations
-print_info "[8/16] Running database migrations..."
+print_info "[8/17] Running database migrations..."
 
 # Check if there are pending migrations
 PENDING_MIGRATIONS=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
@@ -323,7 +423,9 @@ PENDING_MIGRATIONS=$(php artisan migrate:status --pending 2>/dev/null | grep -c 
 if [ "$PENDING_MIGRATIONS" != "0" ]; then
     print_warning "Found $PENDING_MIGRATIONS pending migration(s)"
     print_info "Running migrations..."
-    php artisan migrate --force || error_exit "Database migration failed"
+    if ! php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
+        error_exit "Database migration failed - ตรวจสอบการเชื่อมต่อ database" "$?"
+    fi
     print_success "Migrations completed successfully"
 else
     print_info "No pending migrations"
@@ -341,7 +443,7 @@ php artisan migrate:status 2>/dev/null | tail -5 || true
 SUPER_ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('is_super_admin', true)->count();" 2>/dev/null | tail -1 || echo "0")
 
 if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
-    print_warning "[9/16] No super admin found - database might need seeding"
+    print_warning "[9/17] No super admin found - database might need seeding"
     read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
     echo
     if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
@@ -352,11 +454,20 @@ if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
         print_info "Skipping database seeders"
     fi
 else
-    print_info "[9/16] Database already initialized (skipping seeders)"
+    print_info "[9/17] Database already initialized (skipping seeders)"
 fi
 
-# Step 10: Set Permissions
-print_info "[10/16] Setting file permissions..."
+# Step 10: Create Storage Symlink
+print_info "[10/17] Creating storage symlink..."
+php artisan storage:link --force --no-interaction || print_warning "Storage link already exists or failed to create"
+if [ -L "public/storage" ]; then
+    print_success "Storage symlink exists (public/storage → storage/app/public)"
+else
+    print_warning "Storage symlink verification failed"
+fi
+
+# Step 11: Set Permissions
+print_info "[11/17] Setting file permissions..."
 
 # Detect web server user
 WEB_USER=""
@@ -395,28 +506,30 @@ fi
 
 print_success "Permissions set"
 
-# Step 11: Cache Configuration
-print_info "[11/16] Caching configuration..."
-php artisan config:cache || error_exit "Config cache failed"
+# Step 12: Cache Configuration
+print_info "[12/17] Caching configuration..."
+if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
+fi
 print_success "Configuration cached"
 
-# Step 12: Cache Routes
-print_info "[12/16] Caching routes..."
+# Step 13: Cache Routes
+print_info "[13/17] Caching routes..."
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
 print_success "Routes cached"
 
-# Step 13: Cache Views
-print_info "[13/16] Caching views..."
+# Step 14: Cache Views
+print_info "[14/17] Caching views..."
 php artisan view:cache || print_warning "View cache failed (continuing anyway)"
 print_success "Views cached"
 
-# Step 14: Optimize Autoloader
-print_info "[14/16] Optimizing autoloader..."
+# Step 15: Optimize Autoloader
+print_info "[15/17] Optimizing autoloader..."
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
-# Step 15: Restart Services
-print_info "[15/16] Restarting services..."
+# Step 16: Restart Services
+print_info "[16/17] Restarting services..."
 
 # Restart PHP-FPM (if available)
 if command -v systemctl >/dev/null 2>&1; then
@@ -432,8 +545,8 @@ fi
 # Restart queue workers (if using)
 php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted" || true
 
-# Step 16: Disable Maintenance Mode
-print_info "[16/16] Disabling maintenance mode..."
+# Step 17: Disable Maintenance Mode
+print_info "[17/17] Disabling maintenance mode..."
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 
@@ -510,3 +623,9 @@ echo ""
 
 print_success "Happy deploying! 🚀"
 echo ""
+
+# Clean up environment variable
+unset DEPLOY_ATTEMPT_COUNT
+
+# Success exit
+exit 0

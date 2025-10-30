@@ -109,7 +109,7 @@
                 <!-- Right Actions -->
                 <div class="flex items-center space-x-2">
                     <!-- Language Switcher -->
-                    <x-language-switcher-pro />
+                    @include('components.language-switcher')
 
                     <!-- Notifications -->
                     <button @click="showNotifications = !showNotifications" class="relative p-2">
@@ -148,35 +148,40 @@
 
             <div class="p-4 bg-gradient-primary text-white">
                 <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-lg">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-cyan-600 font-bold text-lg">
                         {{ substr(Auth::user()->name, 0, 1) }}
                     </div>
                     <div>
                         <p class="font-semibold">{{ Auth::user()->name }}</p>
-                        <p class="text-sm opacity-90">{{ Auth::user()->email }}</p>
+                        <p class="text-sm opacity-90">ผู้ขาย</p>
                     </div>
                 </div>
             </div>
 
             <div class="py-4">
-                <a href="{{ route('user.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.dashboard') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                <a href="{{ route('seller.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.dashboard') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
                     <span class="text-xl mr-3">📊</span>
                     <span>แดชบอร์ด</span>
                 </a>
 
-                <a href="{{ route('user.profile') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.profile') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                <a href="{{ route('seller.products') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.products') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
+                    <span class="text-xl mr-3">📦</span>
+                    <span>สินค้า</span>
+                </a>
+
+                <a href="{{ route('seller.sales') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.sales') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
+                    <span class="text-xl mr-3">🛒</span>
+                    <span>ยอดขาย</span>
+                </a>
+
+                <a href="{{ route('seller.analytics') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.analytics') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
+                    <span class="text-xl mr-3">📈</span>
+                    <span>วิเคราะห์</span>
+                </a>
+
+                <a href="{{ route('seller.profile') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.profile') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
                     <span class="text-xl mr-3">👤</span>
                     <span>โปรไฟล์</span>
-                </a>
-
-                <a href="{{ route('user.commissions') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.commissions') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">💰</span>
-                    <span>คอมมิชชั่น</span>
-                </a>
-
-                <a href="{{ route('user.referrals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.referrals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">👥</span>
-                    <span>ผู้แนะนำ</span>
                 </a>
 
                 <div class="border-t mt-4 pt-4">
@@ -195,35 +200,40 @@
         <aside class="hidden lg:block fixed left-0 top-0 h-screen w-64 bg-white shadow-lg z-30">
             <div class="p-4 bg-gradient-primary text-white">
                 <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-lg">
+                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-cyan-600 font-bold text-lg">
                         {{ substr(Auth::user()->name, 0, 1) }}
                     </div>
                     <div>
                         <p class="font-semibold">{{ Auth::user()->name }}</p>
-                        <p class="text-sm opacity-90">{{ Auth::user()->email }}</p>
+                        <p class="text-sm opacity-90">ผู้ขาย</p>
                     </div>
                 </div>
             </div>
 
             <nav class="py-4">
-                <a href="{{ route('user.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.dashboard') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                <a href="{{ route('seller.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.dashboard') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
                     <span class="text-xl mr-3">📊</span>
                     <span>แดชบอร์ด</span>
                 </a>
 
-                <a href="{{ route('user.profile') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.profile') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                <a href="{{ route('seller.products') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.products') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
+                    <span class="text-xl mr-3">📦</span>
+                    <span>สินค้า</span>
+                </a>
+
+                <a href="{{ route('seller.sales') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.sales') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
+                    <span class="text-xl mr-3">🛒</span>
+                    <span>ยอดขาย</span>
+                </a>
+
+                <a href="{{ route('seller.analytics') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.analytics') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
+                    <span class="text-xl mr-3">📈</span>
+                    <span>วิเคราะห์</span>
+                </a>
+
+                <a href="{{ route('seller.profile') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.profile') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
                     <span class="text-xl mr-3">👤</span>
                     <span>โปรไฟล์</span>
-                </a>
-
-                <a href="{{ route('user.commissions') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.commissions') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">💰</span>
-                    <span>คอมมิชชั่น</span>
-                </a>
-
-                <a href="{{ route('user.referrals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.referrals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">👥</span>
-                    <span>ผู้แนะนำ</span>
                 </a>
 
                 <div class="border-t mt-4 pt-4">
@@ -260,22 +270,22 @@
         <!-- Bottom Navigation (Mobile Only) -->
         <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
             <div class="flex justify-around">
-                <a href="{{ route('user.dashboard') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.dashboard') ? 'text-indigo-600' : 'text-gray-600' }}">
+                <a href="{{ route('seller.dashboard') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('seller.dashboard') ? 'text-cyan-600' : 'text-gray-600' }}">
                     <span class="text-2xl">📊</span>
                     <span class="text-xs mt-1">แดชบอร์ด</span>
                 </a>
 
-                <a href="{{ route('user.commissions') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.commissions') ? 'text-indigo-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">💰</span>
-                    <span class="text-xs mt-1">คอมมิชชั่น</span>
+                <a href="{{ route('seller.products') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('seller.products') ? 'text-cyan-600' : 'text-gray-600' }}">
+                    <span class="text-2xl">📦</span>
+                    <span class="text-xs mt-1">สินค้า</span>
                 </a>
 
-                <a href="{{ route('user.referrals') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.referrals') ? 'text-indigo-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">👥</span>
-                    <span class="text-xs mt-1">ผู้แนะนำ</span>
+                <a href="{{ route('seller.sales') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('seller.sales') ? 'text-cyan-600' : 'text-gray-600' }}">
+                    <span class="text-2xl">🛒</span>
+                    <span class="text-xs mt-1">ยอดขาย</span>
                 </a>
 
-                <a href="{{ route('user.profile') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.profile') ? 'text-indigo-600' : 'text-gray-600' }}">
+                <a href="{{ route('seller.profile') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('seller.profile') ? 'text-cyan-600' : 'text-gray-600' }}">
                     <span class="text-2xl">👤</span>
                     <span class="text-xs mt-1">โปรไฟล์</span>
                 </a>
@@ -296,8 +306,6 @@
             });
         });
     </script>
-
-    {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
     @stack('scripts')
 </body>

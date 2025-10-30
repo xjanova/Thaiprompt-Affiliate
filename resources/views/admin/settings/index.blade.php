@@ -292,9 +292,16 @@
                     <div class="space-y-6">
                         <div>
                             <label for="home_custom_content" class="block text-sm font-medium text-gray-700 mb-2">เนื้อหา</label>
-                            <textarea id="home_custom_content" name="home_custom_content" rows="15"
-                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">{{ old('home_custom_content', $settings->get('general')->firstWhere('key', 'home_custom_content')->value ?? '') }}</textarea>
-                            <p class="text-xs text-gray-500 mt-2">ใช้ตัวแก้ไขด้านบนเพื่อจัดรูปแบบเนื้อหา รองรับ HTML</p>
+
+                            <!-- Quill Editor Container -->
+                            <div id="quill-editor" class="bg-white border border-gray-300 rounded-lg" style="min-height: 400px;"></div>
+
+                            <!-- Hidden textarea to store content -->
+                            <textarea id="home_custom_content" name="home_custom_content" style="display: none;">{{ old('home_custom_content', $settings->get('general')->firstWhere('key', 'home_custom_content')->value ?? '') }}</textarea>
+
+                            <p class="text-xs text-gray-500 mt-2">
+                                ✨ ใช้ตัวแก้ไขด้านบนเพื่อจัดรูปแบบเนื้อหา รองรับ Rich Text และ HTML
+                            </p>
                         </div>
                     </div>
 
@@ -377,29 +384,6 @@
                         </div>
                     </div>
 
-                    <!-- TinyMCE API -->
-                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
-                        <div class="flex items-center mb-4">
-                            <span class="text-2xl mr-3">✏️</span>
-                            <h4 class="text-lg font-semibold text-gray-900">TinyMCE Editor API</h4>
-                        </div>
-
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
-                                <input type="text" name="tinymce_api_key"
-                                       value="{{ old('tinymce_api_key', $settings->get('general')->firstWhere('key', 'tinymce_api_key')->value ?? '') }}"
-                                       placeholder="your-tinymce-api-key"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                <p class="text-xs text-gray-500 mt-1">
-                                    สมัครฟรีได้ที่ <a href="https://www.tiny.cloud/auth/signup/" target="_blank" class="text-indigo-600 hover:underline">TinyMCE Cloud</a>
-                                    <br>
-                                    <span class="text-gray-600">📌 หากไม่ใส่ จะใช้ API Key แบบทดสอบ (มีข้อจำกัด)</span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Future API Sections (Placeholder) -->
                     <div class="mb-8 p-6 bg-gray-50 rounded-lg">
                         <div class="flex items-center mb-4">
@@ -430,30 +414,58 @@
     </div>
 </div>
 
-<!-- TinyMCE Editor -->
-@php
-    $tinymceApiKey = \App\Models\Setting::get('tinymce_api_key') ?: 'no-api-key';
-@endphp
-<script src="https://cdn.tiny.cloud/1/{{ $tinymceApiKey }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+<!-- Quill.js Rich Text Editor -->
+<!-- Include Quill.js stylesheet -->
+<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+
+<!-- Include Quill.js library -->
+<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    tinymce.init({
-        selector: '#home_custom_content',
-        height: 500,
-        menubar: true,
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount'
-        ],
-        toolbar: 'undo redo | blocks | ' +
-            'bold italic backcolor | alignleft aligncenter ' +
-            'alignright alignjustify | bullist numlist outdent indent | ' +
-            'removeformat | link image | code | help',
-        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-        branding: false,
-        promotion: false
+    // Initialize Quill editor
+    var quill = new Quill('#quill-editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                [{ 'font': [] }],
+                [{ 'size': ['small', false, 'large', 'huge'] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'script': 'sub'}, { 'script': 'super' }],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                [{ 'direction': 'rtl' }],
+                [{ 'align': [] }],
+                ['link', 'image', 'video'],
+                ['blockquote', 'code-block'],
+                ['clean']
+            ]
+        },
+        placeholder: 'เริ่มเขียนเนื้อหาที่นี่...'
     });
+
+    // Load existing content
+    var existingContent = document.getElementById('home_custom_content').value;
+    if (existingContent) {
+        quill.root.innerHTML = existingContent;
+    }
+
+    // Update hidden textarea when content changes
+    quill.on('text-change', function() {
+        document.getElementById('home_custom_content').value = quill.root.innerHTML;
+    });
+
+    // Update before form submission
+    var form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            document.getElementById('home_custom_content').value = quill.root.innerHTML;
+        });
+    }
+
+    console.log('✅ Quill.js Editor โหลดสำเร็จ - พร้อมใช้งาน!');
 });
 </script>
 @endsection

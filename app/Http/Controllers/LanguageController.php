@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LanguageSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
@@ -12,8 +13,8 @@ class LanguageController extends Controller
      */
     public function switch(Request $request, $locale)
     {
-        // Validate locale
-        $supportedLocales = config('app.supported_locales', ['en', 'th']);
+        // Get supported locales from database
+        $supportedLocales = LanguageSetting::getEnabledCodes();
 
         if (!in_array($locale, $supportedLocales)) {
             return redirect()->back()->with('error', 'Unsupported language');

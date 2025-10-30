@@ -7,9 +7,10 @@ use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
-use App\Http\Controllers\Admin\HomeSectionController;
+use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\WalletController;
+use App\Http\Controllers\Admin\LanguageSettingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -52,10 +53,11 @@ Route::post('sliders/reorder', [SliderController::class, 'reorder'])->name('slid
 Route::resource('pages', PageController::class);
 Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
 
-// Home Sections Management
-Route::resource('home-sections', HomeSectionController::class);
-Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');
-Route::post('home-sections/{homeSection}/toggle', [HomeSectionController::class, 'toggle'])->name('home-sections.toggle');
+// Premium Landing Page Management
+Route::get('premium-page', [PremiumPageController::class, 'index'])->name('premium-page.index');
+Route::get('premium-page/{section}/edit', [PremiumPageController::class, 'edit'])->name('premium-page.edit');
+Route::put('premium-page/{section}', [PremiumPageController::class, 'update'])->name('premium-page.update');
+Route::post('premium-page/{section}/toggle', [PremiumPageController::class, 'toggle'])->name('premium-page.toggle');
 
 // SEO Management
 Route::resource('seo', SeoController::class);
@@ -72,4 +74,15 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::post('/transfer', [WalletController::class, 'transfer'])->name('transfer');
     Route::post('/lock', [WalletController::class, 'lock'])->name('lock');
     Route::post('/unlock', [WalletController::class, 'unlock'])->name('unlock');
+});
+
+// Language Settings
+Route::prefix('settings')->name('settings.')->group(function () {
+    Route::get('languages', [LanguageSettingController::class, 'index'])->name('languages');
+    Route::post('languages', [LanguageSettingController::class, 'update'])->name('languages.update');
+    Route::post('languages/{code}/toggle', [LanguageSettingController::class, 'toggle'])->name('languages.toggle');
+    Route::put('languages/{code}', [LanguageSettingController::class, 'updateLanguage'])->name('languages.update-single');
+    Route::post('languages/reorder', [LanguageSettingController::class, 'reorder'])->name('languages.reorder');
+    Route::get('languages/switcher', [LanguageSettingController::class, 'getSwitcherSettings'])->name('languages.switcher');
+    Route::put('languages/switcher', [LanguageSettingController::class, 'updateSwitcherSettings'])->name('languages.switcher.update');
 });

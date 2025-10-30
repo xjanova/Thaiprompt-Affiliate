@@ -51,6 +51,8 @@
         @include('layouts.footer')
     </div>
 
+    {{-- Google Translate Widget (Like WordPress Plugins) --}}
+
     @stack('scripts')
 </body>
 </html>
