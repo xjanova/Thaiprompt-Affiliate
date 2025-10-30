@@ -92,6 +92,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the wallet associated with the user
+     */
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
+
+    /**
+     * Get all wallet transactions for the user
+     */
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
+    /**
      * Check if user has specific permission
      */
     public function hasPermission(string $permission): bool

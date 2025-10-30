@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
+use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use Illuminate\Support\Facades\Route;
 
@@ -60,6 +61,20 @@ Route::post('premium-page/{section}/toggle', [PremiumPageController::class, 'tog
 
 // SEO Management
 Route::resource('seo', SeoController::class);
+
+// Wallet Management
+Route::prefix('wallet')->name('wallet.')->group(function () {
+    Route::get('/', [WalletController::class, 'index'])->name('index');
+    Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
+    Route::get('/logs', [WalletController::class, 'logs'])->name('logs');
+    Route::get('/settings', [WalletController::class, 'settings'])->name('settings');
+    Route::post('/set-pin', [WalletController::class, 'setPin'])->name('set-pin');
+    Route::post('/deposit', [WalletController::class, 'deposit'])->name('deposit');
+    Route::post('/withdraw', [WalletController::class, 'withdraw'])->name('withdraw');
+    Route::post('/transfer', [WalletController::class, 'transfer'])->name('transfer');
+    Route::post('/lock', [WalletController::class, 'lock'])->name('lock');
+    Route::post('/unlock', [WalletController::class, 'unlock'])->name('unlock');
+});
 
 // Language Settings
 Route::prefix('settings')->name('settings.')->group(function () {
