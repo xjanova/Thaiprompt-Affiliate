@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\LanguageSetting;
 use Google\Cloud\Translate\V2\TranslateClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -14,9 +15,17 @@ class TranslationService
 
     public function __construct()
     {
-        // Read from database settings first, fallback to config
-        $this->enabled = \App\Models\Setting::get('google_translate_enabled') ?? config('translate.google.enabled', false);
-        $this->supportedLanguages = array_keys(config('translate.supported_languages', []));
+        // Read from database settings first, fallback to config, then env
+        $this->enabled = \App\Models\Setting::get('google_translate_enabled')
+            ?? config('translate.google.enabled', false);
+
+        // Get supported languages from database
+        $this->supportedLanguages = LanguageSetting::getEnabledCodes();
+
+        // Fallback to config if no languages in database
+        if (empty($this->supportedLanguages)) {
+            $this->supportedLanguages = array_keys(config('translate.supported_languages', []));
+        }
 
         if ($this->enabled) {
             try {
@@ -35,21 +44,44 @@ class TranslationService
     {
         $config = [];
 
-        // Use API Key from database first, fallback to config
-        $apiKey = \App\Models\Setting::get('google_translate_api_key') ?? config('translate.google.api_key');
+        // Priority order: Database > Environment > Config
+        $apiKey = \App\Models\Setting::get('google_translate_api_key')
+            ?? env('GOOGLE_TRANSLATE_API_KEY')
+            ?? config('translate.google.api_key');
 
         if ($apiKey) {
             $config['key'] = $apiKey;
+            Log::info('Google Translate initialized with API key');
         }
         // Otherwise use service account credentials
-        elseif ($credentialsPath = config('translate.google.credentials_path')) {
-            if (file_exists($credentialsPath)) {
+        else {
+            $credentialsPath = env('GOOGLE_TRANSLATE_CREDENTIALS')
+                ?? config('translate.google.credentials_path');
+
+            if ($credentialsPath && file_exists($credentialsPath)) {
                 $config['keyFilePath'] = $credentialsPath;
+                Log::info('Google Translate initialized with service account', [
+                    'path' => $credentialsPath
+                ]);
+            } else {
+                Log::warning('Google Translate credentials not found', [
+                    'checked_path' => $credentialsPath
+                ]);
             }
         }
 
         if (!empty($config)) {
-            $this->client = new TranslateClient($config);
+            try {
+                $this->client = new TranslateClient($config);
+            } catch (\Exception $e) {
+                Log::error('Failed to create TranslateClient', [
+                    'error' => $e->getMessage(),
+                    'config_keys' => array_keys($config)
+                ]);
+                throw $e;
+            }
+        } else {
+            throw new \Exception('No valid Google Translate credentials configured');
         }
     }
 
@@ -63,19 +95,33 @@ class TranslationService
      */
     public function translate(string $text, string $targetLang, ?string $sourceLang = null): ?string
     {
+        // Trim whitespace
+        $text = trim($text);
+
+        // Don't translate empty strings
+        if (empty($text)) {
+            return $text;
+        }
+
         // If translation is disabled or not configured, return original text
         if (!$this->enabled || !$this->client) {
+            Log::debug('Translation disabled, returning original text');
             return $text;
         }
 
         // Validate target language
         if (!in_array($targetLang, $this->supportedLanguages)) {
+            Log::warning('Unsupported target language', [
+                'target' => $targetLang,
+                'supported' => $this->supportedLanguages
+            ]);
             return $text;
         }
 
-        // Use source language from config if not provided
+        // Use source language from database setting, fallback to config
         if (!$sourceLang) {
-            $sourceLang = config('translate.source_language', 'th');
+            $sourceLang = \App\Models\Setting::get('translate_source_language')
+                ?? config('translate.source_language', 'th');
         }
 
         // Don't translate if source and target are the same
@@ -84,11 +130,15 @@ class TranslationService
         }
 
         // Check cache first
-        if (config('translate.cache.enabled', true)) {
+        $cacheEnabled = \App\Models\Setting::get('translate_cache_enabled')
+            ?? config('translate.cache.enabled', true);
+
+        if ($cacheEnabled) {
             $cacheKey = $this->getCacheKey($text, $targetLang, $sourceLang);
             $cached = Cache::get($cacheKey);
 
             if ($cached !== null) {
+                Log::debug('Translation cache hit', ['key' => $cacheKey]);
                 return $cached;
             }
         }
@@ -102,15 +152,27 @@ class TranslationService
             $translatedText = $result['text'] ?? $text;
 
             // Cache the result
-            if (config('translate.cache.enabled', true)) {
+            if ($cacheEnabled) {
                 $cacheKey = $this->getCacheKey($text, $targetLang, $sourceLang);
                 $cacheTtl = config('translate.cache.ttl', 86400);
                 Cache::put($cacheKey, $translatedText, $cacheTtl);
+                Log::debug('Translation cached', ['key' => $cacheKey]);
             }
+
+            Log::info('Translation successful', [
+                'source' => $sourceLang,
+                'target' => $targetLang,
+                'length' => strlen($text)
+            ]);
 
             return $translatedText;
         } catch (\Exception $e) {
-            Log::error('Translation failed: ' . $e->getMessage());
+            Log::error('Translation failed', [
+                'error' => $e->getMessage(),
+                'source' => $sourceLang,
+                'target' => $targetLang,
+                'text_length' => strlen($text)
+            ]);
             return $text; // Return original text on error
         }
     }
@@ -141,7 +203,29 @@ class TranslationService
      */
     public function getAvailableLanguages(): array
     {
-        return config('translate.supported_languages', []);
+        $languages = LanguageSetting::getEnabled();
+
+        if ($languages->isEmpty()) {
+            // Fallback to config
+            return config('translate.supported_languages', []);
+        }
+
+        // Get UI preferences
+        $flagSize = (int) (\App\Models\Setting::get('language_switcher_flag_size') ?? 24);
+        $showFlags = filter_var(
+            \App\Models\Setting::get('language_switcher_show_flags') ?? 'true',
+            FILTER_VALIDATE_BOOLEAN
+        );
+        $showName = filter_var(
+            \App\Models\Setting::get('language_switcher_show_name') ?? 'true',
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        return $languages->mapWithKeys(function ($lang) use ($flagSize, $showFlags, $showName) {
+            return [
+                $lang->code => $lang->toApiArray($flagSize, $showFlags, $showName)
+            ];
+        })->toArray();
     }
 
     /**
