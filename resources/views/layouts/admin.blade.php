@@ -132,41 +132,96 @@
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คอมมิชชั่น</span>
                 </a>
 
-                <a href="{{ route('admin.wallet.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.wallet.index') || request()->routeIs('admin.wallet.transactions') || request()->routeIs('admin.wallet.logs') || request()->routeIs('admin.wallet.settings') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👛</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กระเป๋าของฉัน</span>
-                </a>
-
-                @if(auth()->user()->hasPermission('view_all_wallets') || auth()->user()->isSuperAdmin())
-                <a href="{{ route('admin.wallet.all') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.wallet.all') || request()->routeIs('admin.wallet.show') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💼</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กระเป๋าทั้งหมด</span>
-                </a>
-                @endif
-
-                @if(auth()->user()->hasPermission('approve_withdrawals') || auth()->user()->isSuperAdmin())
-                <a href="{{ route('admin.withdrawals.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.withdrawals.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💸</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คำขอถอนเงิน</span>
+                <!-- Wallet Dropdown Menu -->
+                <div x-data="{ walletOpen: false }" @mouseenter="!sidebarCollapsed ? walletOpen = true : null" @mouseleave="walletOpen = false" class="relative">
                     @php
+                        $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*');
                         $pendingCount = \App\Models\WithdrawalRequest::pending()->count();
                     @endphp
-                    @if($pendingCount > 0)
-                        <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $pendingCount }}</span>
-                    @endif
-                </a>
-                @endif
 
-                @if(auth()->user()->hasPermission('manage_wallet_settings') || auth()->user()->isSuperAdmin())
-                <a href="{{ route('admin.wallet-settings.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.wallet-settings.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ตั้งค่า Wallet</span>
-                </a>
-                @endif
+                    <!-- Main Wallet Button -->
+                    <a href="{{ route('admin.wallet.index') }}"
+                       class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}"
+                       @click.prevent="sidebarCollapsed ? null : (walletOpen = !walletOpen)">
+                        <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
+                        <span class="ml-3 transition-all flex-1" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            กระเป๋าเงิน
+                        </span>
+                        @if($pendingCount > 0)
+                            <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 animate-pulse" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $pendingCount }}</span>
+                        @endif
+                        <svg class="w-4 h-4 ml-2 transition-transform" :class="{ 'rotate-180': walletOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="walletOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-2 mb-2 ml-4 space-y-1 bg-gray-800/50 rounded-lg p-2 backdrop-blur-sm border border-gray-700/50"
+                         style="display: none;">
+
+                        <a href="{{ route('admin.wallet.index') }}"
+                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet.index') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">👛</span>
+                            <span>กระเป๋าของฉัน</span>
+                        </a>
+
+                        <a href="{{ route('admin.wallet.transactions') }}"
+                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet.transactions') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">📝</span>
+                            <span>ธุรกรรม</span>
+                        </a>
+
+                        @if(auth()->user()->hasPermission('view_all_wallets') || auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.wallet.all') }}"
+                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet.all') || request()->routeIs('admin.wallet.show') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">💼</span>
+                            <span>กระเป๋าทั้งหมด</span>
+                        </a>
+                        @endif
+
+                        @if(auth()->user()->hasPermission('approve_withdrawals') || auth()->user()->isSuperAdmin())
+                        <div class="border-t border-gray-700/50 my-2"></div>
+
+                        <a href="{{ route('admin.withdrawals.pending') }}"
+                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.withdrawals.pending') ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">⏳</span>
+                            <span class="flex-1">รอดำเนินการ</span>
+                            @if($pendingCount > 0)
+                                <span class="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 animate-pulse">{{ $pendingCount }}</span>
+                            @endif
+                        </a>
+
+                        <a href="{{ route('admin.withdrawals.index') }}"
+                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.withdrawals.index') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">💸</span>
+                            <span>คำขอถอนทั้งหมด</span>
+                        </a>
+                        @endif
+
+                        @if(auth()->user()->hasPermission('manage_wallet_settings') || auth()->user()->isSuperAdmin())
+                        <div class="border-t border-gray-700/50 my-2"></div>
+
+                        <a href="{{ route('admin.wallet-settings.index') }}"
+                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet-settings.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">⚙️</span>
+                            <span>ตั้งค่าระบบ</span>
+                        </a>
+                        @endif
+
+                        <a href="{{ route('admin.wallet.logs') }}"
+                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet.logs') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">🔒</span>
+                            <span>ประวัติความปลอดภัย</span>
+                        </a>
+                    </div>
+                </div>
 
                 <div class="border-t border-gray-700 my-4"></div>
                 <div class="px-4 py-2 text-xs text-gray-500 uppercase tracking-wider" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
