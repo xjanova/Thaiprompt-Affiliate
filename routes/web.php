@@ -46,12 +46,17 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 
-// User Routes (Protected by auth middleware)
-Route::middleware(['auth'])->prefix('user')->name('user.')->group(function () {
+// User Routes (Protected by auth middleware and role check)
+Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
     require __DIR__.'/user.php';
 });
 
-// Admin Routes (Protected by auth middleware)
-Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+// Admin Routes (Protected by auth middleware and role check)
+Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('admin.')->group(function () {
     require __DIR__.'/admin.php';
+});
+
+// Seller Routes (Protected by auth middleware and role check)
+Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->group(function () {
+    require __DIR__.'/seller.php';
 });
