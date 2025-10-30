@@ -74,4 +74,18 @@ return [
         'url' => env('APP_URL') . '/up',
         'timeout' => 30,
     ],
+
+    'retry' => [
+        'enabled' => env('DEPLOY_RETRY_ENABLED', true),
+        'max_attempts' => env('DEPLOY_RETRY_MAX_ATTEMPTS', 3),
+        'delay' => env('DEPLOY_RETRY_DELAY', 2), // seconds
+        'backoff_multiplier' => env('DEPLOY_RETRY_BACKOFF_MULTIPLIER', 2), // exponential backoff
+        'operations' => [
+            'git_fetch' => true,
+            'git_reset' => true,
+            'composer_install' => true,
+            'migrations' => true,
+            'cache_config' => true,
+        ],
+    ],
 ];

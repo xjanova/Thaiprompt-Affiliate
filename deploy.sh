@@ -88,7 +88,55 @@ error_exit() {
         print_info "Please run manually: php artisan up"
     }
 
+    echo ""
+    print_error "╔═══════════════════════════════════════════════════════════╗"
+    print_error "║  การ Deploy ล้มเหลว - กรุณาลองใหม่ภายหลัง                ║"
+    print_error "╚═══════════════════════════════════════════════════════════╝"
+    echo ""
+    print_info "💡 คำแนะนำ:"
+    echo "  1. ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"
+    echo "  2. ตรวจสอบว่า GitHub สามารถเข้าถึงได้"
+    echo "  3. ตรวจสอบ logs: tail -f storage/logs/deployment.log"
+    echo "  4. ลองรัน deploy อีกครั้งภายหลัง 5-10 นาที"
+    echo "  5. หากยังไม่สำเร็จ ติดต่อทีมพัฒนา"
+    echo ""
+
     exit 1
+}
+
+# Retry function with exponential backoff
+# Usage: retry_command <max_attempts> <command> [args...]
+retry_command() {
+    local max_attempts=$1
+    shift
+    local command="$@"
+    local attempt=1
+    local delay=2
+    local exit_code=0
+
+    while [ $attempt -le $max_attempts ]; do
+        # Run the command
+        if eval "$command"; then
+            return 0
+        else
+            exit_code=$?
+
+            if [ $attempt -lt $max_attempts ]; then
+                print_warning "Attempt $attempt/$max_attempts failed. Retrying in ${delay}s..."
+                log "RETRY: Attempt $attempt/$max_attempts failed for command: $command"
+                sleep $delay
+                # Exponential backoff: 2s, 4s, 8s
+                delay=$((delay * 2))
+                attempt=$((attempt + 1))
+            else
+                print_error "All $max_attempts attempts failed for command"
+                log "ERROR: All $max_attempts attempts failed for command: $command"
+                return $exit_code
+            fi
+        fi
+    done
+
+    return $exit_code
 }
 
 # Trap errors
@@ -227,11 +275,11 @@ fi
 
 # Step 4.2: Fetch all changes from remote
 print_info "Fetching latest code from origin/$BRANCH..."
-git fetch origin "$BRANCH" || error_exit "Failed to fetch from git"
+retry_command 3 "git fetch origin \"$BRANCH\"" || error_exit "Failed to fetch from git after 3 attempts"
 
 # Step 4.3: Force reset to match GitHub exactly
 print_info "Force resetting to origin/$BRANCH..."
-git reset --hard "origin/$BRANCH" || error_exit "Failed to reset to origin/$BRANCH"
+retry_command 3 "git reset --hard \"origin/$BRANCH\"" || error_exit "Failed to reset to origin/$BRANCH after 3 attempts"
 
 # Step 4.4: Clean all untracked files and directories
 print_info "Removing untracked files and directories..."
@@ -290,7 +338,7 @@ fi
 composer clear-cache 2>/dev/null || true
 
 # Install dependencies from scratch
-composer install --no-dev --optimize-autoloader --no-interaction || error_exit "Composer install failed"
+retry_command 3 "composer install --no-dev --optimize-autoloader --no-interaction" || error_exit "Composer install failed after 3 attempts"
 print_success "Composer dependencies installed (clean)"
 
 # Verify composer lock file matches
@@ -302,7 +350,7 @@ fi
 
 # Step 6: Install/Reinstall Laravel Sanctum
 print_info "[6/15] Installing Laravel Sanctum..."
-php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force || error_exit "Sanctum installation failed"
+retry_command 3 "php artisan vendor:publish --provider=\"Laravel\\Sanctum\\SanctumServiceProvider\" --force" || error_exit "Sanctum installation failed after 3 attempts"
 print_success "Laravel Sanctum installed and configured"
 
 # Step 7: Clear All Cache
@@ -323,7 +371,7 @@ PENDING_MIGRATIONS=$(php artisan migrate:status --pending 2>/dev/null | grep -c 
 if [ "$PENDING_MIGRATIONS" != "0" ]; then
     print_warning "Found $PENDING_MIGRATIONS pending migration(s)"
     print_info "Running migrations..."
-    php artisan migrate --force || error_exit "Database migration failed"
+    retry_command 3 "php artisan migrate --force" || error_exit "Database migration failed after 3 attempts"
     print_success "Migrations completed successfully"
 else
     print_info "No pending migrations"
@@ -397,7 +445,7 @@ print_success "Permissions set"
 
 # Step 11: Cache Configuration
 print_info "[11/16] Caching configuration..."
-php artisan config:cache || error_exit "Config cache failed"
+retry_command 3 "php artisan config:cache" || error_exit "Config cache failed after 3 attempts"
 print_success "Configuration cached"
 
 # Step 12: Cache Routes
