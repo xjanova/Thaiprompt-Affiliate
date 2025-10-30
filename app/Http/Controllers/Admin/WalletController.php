@@ -19,7 +19,7 @@ class WalletController extends Controller
     }
 
     /**
-     * Display wallet dashboard
+     * Display wallet dashboard (Admin's own wallet)
      */
     public function index()
     {
@@ -39,6 +39,126 @@ class WalletController extends Controller
             ->get();
 
         return view('admin.wallet.index', compact('wallet', 'statistics', 'recentTransactions', 'recentLogs'));
+    }
+
+    /**
+     * Display all wallets in system (Admin only)
+     */
+    public function allWallets(Request $request)
+    {
+        if (!auth()->user()->hasPermission('view_all_wallets')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        }
+
+        $filters = [
+            'user_id' => $request->input('user_id'),
+            'status' => $request->input('status'),
+            'min_balance' => $request->input('min_balance'),
+            'max_balance' => $request->input('max_balance'),
+            'search' => $request->input('search'),
+        ];
+
+        $wallets = $this->walletService->getAllWallets($filters, 20);
+        $systemStats = $this->walletService->getSystemStatistics();
+
+        return view('admin.wallet.all', compact('wallets', 'systemStats', 'filters'));
+    }
+
+    /**
+     * Show specific user's wallet
+     */
+    public function showWallet($id)
+    {
+        if (!auth()->user()->hasPermission('view_all_wallets')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        }
+
+        $wallet = Wallet::with(['user', 'transactions', 'logs'])->findOrFail($id);
+        $statistics = $this->walletService->getWalletStatistics($wallet);
+
+        $recentTransactions = $wallet->transactions()
+            ->with('relatedWallet.user')
+            ->latest()
+            ->take(20)
+            ->get();
+
+        $recentLogs = $wallet->logs()
+            ->latest()
+            ->take(20)
+            ->get();
+
+        return view('admin.wallet.show', compact('wallet', 'statistics', 'recentTransactions', 'recentLogs'));
+    }
+
+    /**
+     * Adjust wallet balance (Admin only)
+     */
+    public function adjustBalance(Request $request, $id)
+    {
+        if (!auth()->user()->isSuperAdmin()) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|not_in:0',
+            'reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            $wallet = Wallet::findOrFail($id);
+
+            $transaction = $this->walletService->adjustBalance(
+                $wallet,
+                $request->amount,
+                $request->reason,
+                auth()->user()
+            );
+
+            $action = $request->amount > 0 ? 'เพิ่ม' : 'หัก';
+            return redirect()->back()->with('success', "{$action}ยอดเงินสำเร็จ: " . number_format(abs($request->amount), 2) . ' บาท');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Lock user's wallet (Admin only)
+     */
+    public function lockUserWallet($id)
+    {
+        if (!auth()->user()->hasPermission('manage_wallets')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        }
+
+        try {
+            $wallet = Wallet::findOrFail($id);
+            $wallet->lockPermanent();
+            $this->walletService->logAction($wallet, 'wallet_locked', 'Wallet locked by admin: ' . auth()->user()->name, 'critical');
+
+            return redirect()->back()->with('success', 'ล็อกกระเป๋าเงินเรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Unlock user's wallet (Admin only)
+     */
+    public function unlockUserWallet($id)
+    {
+        if (!auth()->user()->hasPermission('manage_wallets')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        }
+
+        try {
+            $wallet = Wallet::findOrFail($id);
+            $wallet->unlock();
+            $this->walletService->logAction($wallet, 'wallet_unlocked', 'Wallet unlocked by admin: ' . auth()->user()->name, 'info');
+
+            return redirect()->back()->with('success', 'ปลดล็อกกระเป๋าเงินเรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 
     /**
