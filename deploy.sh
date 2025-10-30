@@ -179,12 +179,82 @@ error_exit() {
 # Trap errors - disable for now to handle errors manually
 # trap 'error_exit "An error occurred on line $LINENO"' ERR
 
-# Header
+# Backup critical files (PREVENT DATA LOSS!)
+backup_critical_files() {
+    local backup_timestamp=$(date +'%Y%m%d_%H%M%S')
+    CRITICAL_BACKUP_DIR="$BACKUP_DIR/critical_$backup_timestamp"
+    mkdir -p "$CRITICAL_BACKUP_DIR"
+
+    # Backup .env files (CRITICAL!)
+    if [ -f ".env" ]; then
+        cp .env "$CRITICAL_BACKUP_DIR/.env" && \
+            print_success "✓ Backed up .env"
+    fi
+
+    if [ -f ".env.production" ]; then
+        cp .env.production "$CRITICAL_BACKUP_DIR/.env.production" 2>/dev/null || true
+    fi
+
+    # Backup uploaded files
+    if [ -d "storage/app/public" ]; then
+        cp -r storage/app/public "$CRITICAL_BACKUP_DIR/storage_public" 2>/dev/null || true
+    fi
+
+    echo "$CRITICAL_BACKUP_DIR" > /tmp/deploy_backup_path_$$
+    log "Critical files backed up to: $CRITICAL_BACKUP_DIR"
+}
+
+# Restore critical files (PREVENT DATA LOSS!)
+restore_critical_files() {
+    if [ -f "/tmp/deploy_backup_path_$$" ]; then
+        local backup_path=$(cat /tmp/deploy_backup_path_$$)
+
+        if [ -d "$backup_path" ]; then
+            # Restore .env (CRITICAL!)
+            if [ -f "$backup_path/.env" ]; then
+                cp "$backup_path/.env" .env && \
+                    print_success "✓ Restored .env"
+            else
+                print_warning "⚠ No .env backup found!"
+                if [ -f "$backup_path/.env.production" ]; then
+                    cp "$backup_path/.env.production" .env && \
+                        print_warning "✓ Created .env from .env.production backup"
+                elif [ -f ".env.production" ]; then
+                    cp .env.production .env && \
+                        print_warning "✓ Created .env from .env.production"
+                elif [ -f ".env.example" ]; then
+                    cp .env.example .env && \
+                        print_error "✗ Created .env from .env.example - UPDATE CREDENTIALS!"
+                else
+                    error_exit "CRITICAL: No .env file available!"
+                fi
+            fi
+
+            # Restore uploaded files
+            if [ -d "$backup_path/storage_public" ]; then
+                mkdir -p storage/app
+                cp -r "$backup_path/storage_public" storage/app/public 2>/dev/null || true
+                print_success "✓ Restored uploaded files"
+            fi
+        fi
+
+        rm -f /tmp/deploy_backup_path_$$
+    fi
+}
+
+# Header with XMAN Logo
 echo ""
-echo "╔══════════════════════════════════════════════════╗"
-echo "║   🚀 TP-Affiliate Deployment Script             ║"
-echo "║   Safe Production Deployment                     ║"
-echo "╚══════════════════════════════════════════════════╝"
+echo -e "${GREEN}╔════════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║${NC}    ${MAGENTA}██╗  ██╗███╗   ███╗ █████╗ ███╗   ██╗${NC}                      ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${MAGENTA}╚██╗██╔╝████╗ ████║██╔══██╗████╗  ██║${NC}                      ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}     ${MAGENTA}╚███╔╝ ██╔████╔██║███████║██╔██╗ ██║${NC}                      ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}     ${MAGENTA}██╔██╗ ██║╚██╔╝██║██╔══██║██║╚██╗██║${NC}                      ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${MAGENTA}██╔╝ ██╗██║ ╚═╝ ██║██║  ██║██║ ╚████║${NC}                      ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${MAGENTA}╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝${NC}                      ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${BLUE}🚀 TP-Affiliate Deployment System v2.0${NC}                      ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${YELLOW}⚡ Safe • Smart • Secure Deployment${NC}                       ${GREEN}║${NC}"
+echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
 if [ $DEPLOY_ATTEMPT_COUNT -gt 1 ]; then
@@ -261,7 +331,7 @@ mkdir -p "$BACKUP_DIR"
 print_header "📦 Deployment Process"
 
 # Step 1: Enable Maintenance Mode
-print_info "[1/17] Enabling maintenance mode..."
+print_info "[1/19] Enabling maintenance mode..."
 
 # Ensure directories exist before running artisan
 ensure_laravel_directories
@@ -273,7 +343,7 @@ print_success "Maintenance mode enabled"
 sleep 2  # Give time for requests to finish
 
 # Step 2: Backup Database
-print_info "[2/17] Creating database backup..."
+print_info "[2/19] Creating database backup..."
 BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql"
 
 # Get database info from .env
@@ -307,8 +377,13 @@ CURRENT_COMMIT=$(git rev-parse HEAD)
 log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
+# Step 3: Backup Critical Files (PREVENT DATA LOSS!)
+print_info "[3/19] Backing up critical files (.env, uploads)..."
+backup_critical_files
+print_success "Critical files backed up safely"
+
 # Step 4: Force Pull Latest Code from GitHub
-print_info "[3/17] Force syncing with GitHub..."
+print_info "[4/19] Force syncing with GitHub..."
 
 # Step 4.1: Stash any local changes (for safety backup)
 if [[ -n $(git status -s) ]]; then
@@ -328,16 +403,22 @@ if ! git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Failed to reset to origin/$BRANCH" "$?"
 fi
 
-# Step 4.4: Clean all untracked files and directories
+# Step 4.4: Clean all untracked files and directories (SAFE - excludes critical files)
 print_info "Removing untracked files and directories..."
-git clean -fd || print_warning "Git clean failed (continuing anyway)"
+# Note: Critical files (.env, uploads) are backed up and will be restored
+git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' || print_warning "Git clean failed (continuing anyway)"
 
-# Step 4.4.1: Recreate essential Laravel directories
+# Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
+print_info "Restoring critical files (.env, uploads)..."
+restore_critical_files
+print_success "Critical files restored successfully"
+
+# Step 4.6: Recreate essential Laravel directories
 print_info "Recreating essential Laravel directories..."
 ensure_laravel_directories
 print_success "Essential directories created"
 
-# Step 4.5: Verify we're in sync with remote
+# Step 5: Verify we're in sync with remote
 LOCAL_COMMIT=$(git rev-parse HEAD)
 REMOTE_COMMIT=$(git rev-parse "origin/$BRANCH")
 
@@ -351,8 +432,8 @@ NEW_COMMIT=$(git rev-parse HEAD)
 log "New commit: $NEW_COMMIT"
 print_info "New commit: ${NEW_COMMIT:0:8}"
 
-# Step 4.5: Ensure Base Controller Exists
-print_info "[4/17] Ensuring base Controller exists..."
+# Step 6: Ensure Base Controller Exists
+print_info "[6/19] Ensuring base Controller exists..."
 CONTROLLER_FILE="app/Http/Controllers/Controller.php"
 if [ ! -f "$CONTROLLER_FILE" ]; then
     print_warning "Base Controller.php not found, creating..."
@@ -372,8 +453,8 @@ else
     print_success "Base Controller.php exists"
 fi
 
-# Step 5: Install/Update Composer Dependencies
-print_info "[5/17] Installing composer dependencies..."
+# Step 7: Install/Update Composer Dependencies
+print_info "[7/19] Installing composer dependencies..."
 
 # Remove vendor directory to ensure clean install
 if [ -d "vendor" ]; then
@@ -398,15 +479,15 @@ if [ -f "composer.lock" ]; then
         print_warning "Composer.lock validation failed"
 fi
 
-# Step 6: Install/Reinstall Laravel Sanctum
-print_info "[6/17] Installing Laravel Sanctum..."
+# Step 8: Install/Reinstall Laravel Sanctum
+print_info "[8/19] Installing Laravel Sanctum..."
 if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Sanctum installation failed" "$?"
 fi
 print_success "Laravel Sanctum installed and configured"
 
-# Step 7: Clear All Cache
-print_info "[7/17] Clearing all caches..."
+# Step 9: Clear All Cache (before migration)
+print_info "[9/19] Clearing all caches..."
 php artisan cache:clear 2>/dev/null || true
 php artisan config:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
@@ -414,36 +495,104 @@ php artisan view:clear 2>/dev/null || true
 php artisan event:clear 2>/dev/null || true
 print_success "All caches cleared"
 
-# Step 8: Run Migrations
-print_info "[8/17] Running database migrations..."
+# Step 10: Smart Database Migration System
+print_info "[10/19] 🎯 Smart Database Migration System..."
+echo ""
 
-# Check if there are pending migrations
-PENDING_MIGRATIONS=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
+# Step 9.1: Verify database connection
+print_info "→ Verifying database connection..."
+if ! php artisan db:show >/dev/null 2>&1; then
+    error_exit "Database connection failed - ตรวจสอบ .env credentials"
+fi
+print_success "✓ Database connection OK"
 
-if [ "$PENDING_MIGRATIONS" != "0" ]; then
-    print_warning "Found $PENDING_MIGRATIONS pending migration(s)"
-    print_info "Running migrations..."
-    if ! php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
-        error_exit "Database migration failed - ตรวจสอบการเชื่อมต่อ database" "$?"
+# Step 9.2: Show current migration status (BEFORE)
+print_info "→ Current migration status (BEFORE):"
+php artisan migrate:status 2>/dev/null | tail -15 || true
+echo ""
+
+# Step 9.3: Check for pending migrations
+PENDING_COUNT=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
+TOTAL_MIGRATIONS=$(php artisan migrate:status 2>/dev/null | grep -c "migration" || echo "0")
+
+print_info "→ Migration Analysis:"
+echo "  • Total migrations: $TOTAL_MIGRATIONS"
+echo "  • Pending migrations: $PENDING_COUNT"
+echo ""
+
+# Step 9.4: Run migrations if needed
+if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
+    print_warning "⚠ Found $PENDING_COUNT pending migration(s) - Will apply now"
+    echo ""
+
+    # Show what will be migrated
+    print_info "→ Migrations to be applied:"
+    php artisan migrate:status --pending 2>/dev/null | grep "Pending" | sed 's/^/  • /' || true
+    echo ""
+
+    # Backup database schema before migration
+    print_info "→ Backing up database schema..."
+    MIGRATION_BACKUP="$BACKUP_DIR/pre_migration_$(date +'%Y%m%d_%H%M%S').sql"
+    if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
+        if [ -z "$DB_PASSWORD" ]; then
+            mysqldump -h "$DB_HOST" -u "$DB_USERNAME" "$DB_DATABASE" > "$MIGRATION_BACKUP" 2>/dev/null || \
+                print_warning "Schema backup failed (continuing anyway)"
+        else
+            mysqldump -h "$DB_HOST" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$MIGRATION_BACKUP" 2>/dev/null || \
+                print_warning "Schema backup failed (continuing anyway)"
+        fi
+        if [ -f "$MIGRATION_BACKUP" ]; then
+            print_success "✓ Schema backed up: $MIGRATION_BACKUP"
+        fi
     fi
-    print_success "Migrations completed successfully"
+    echo ""
+
+    # Run migrations with detailed output
+    print_info "→ Executing migrations..."
+    if ! php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
+        print_error "✗ Migration failed!"
+        echo ""
+        print_warning "→ Rollback information:"
+        echo "  • Backup file: $MIGRATION_BACKUP"
+        echo "  • Rollback command: php artisan migrate:rollback"
+        echo "  • Restore DB: mysql -u $DB_USERNAME -p $DB_DATABASE < $MIGRATION_BACKUP"
+        error_exit "Database migration failed - ตรวจสอบ logs และ backup"
+    fi
+    print_success "✓ Migrations applied successfully!"
+    echo ""
 else
-    print_info "No pending migrations"
-    # Run anyway to be safe
-    php artisan migrate --force 2>/dev/null || print_info "No migrations needed"
-    print_success "Database schema is up to date"
+    print_success "✓ No pending migrations - Database schema is up to date"
+    # Still run migrate to ensure everything is in sync
+    php artisan migrate --force >/dev/null 2>&1 || true
+    echo ""
 fi
 
-# Show migration status
-print_info "Current migration status:"
-php artisan migrate:status 2>/dev/null | tail -5 || true
+# Step 9.5: Show migration status (AFTER)
+print_info "→ Migration status (AFTER):"
+php artisan migrate:status 2>/dev/null | tail -15 || true
+echo ""
 
-# Step 9: Seed Database (optional - only for fresh installs)
+# Step 9.6: Verify migration integrity
+print_info "→ Verifying database integrity..."
+MIGRATED_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+echo "  • Successfully migrated: $MIGRATED_COUNT migrations"
+
+if [ "$PENDING_COUNT" != "0" ]; then
+    NEW_PENDING=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
+    if [ "$NEW_PENDING" = "0" ]; then
+        print_success "✓ All migrations completed successfully!"
+    else
+        print_warning "⚠ Still have $NEW_PENDING pending migrations"
+    fi
+fi
+echo ""
+
+# Step 11: Seed Database (optional - only for fresh installs)
 # Check if database is empty (no super admin)
 SUPER_ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('is_super_admin', true)->count();" 2>/dev/null | tail -1 || echo "0")
 
 if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
-    print_warning "[9/17] No super admin found - database might need seeding"
+    print_warning "[11/19] No super admin found - database might need seeding"
     read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
     echo
     if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
@@ -454,11 +603,11 @@ if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
         print_info "Skipping database seeders"
     fi
 else
-    print_info "[9/17] Database already initialized (skipping seeders)"
+    print_info "[11/19] Database already initialized (skipping seeders)"
 fi
 
-# Step 10: Create Storage Symlink
-print_info "[10/17] Creating storage symlink..."
+# Step 12: Create Storage Symlink
+print_info "[12/19] Creating storage symlink..."
 php artisan storage:link --force --no-interaction || print_warning "Storage link already exists or failed to create"
 if [ -L "public/storage" ]; then
     print_success "Storage symlink exists (public/storage → storage/app/public)"
@@ -466,8 +615,8 @@ else
     print_warning "Storage symlink verification failed"
 fi
 
-# Step 11: Set Permissions
-print_info "[11/17] Setting file permissions..."
+# Step 13: Set Permissions
+print_info "[13/19] Setting file permissions..."
 
 # Detect web server user
 WEB_USER=""
@@ -506,30 +655,30 @@ fi
 
 print_success "Permissions set"
 
-# Step 12: Cache Configuration
-print_info "[12/17] Caching configuration..."
+# Step 14: Cache Configuration
+print_info "[14/19] Caching configuration..."
 if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
 fi
 print_success "Configuration cached"
 
-# Step 13: Cache Routes
-print_info "[13/17] Caching routes..."
+# Step 15: Cache Routes
+print_info "[15/19] Caching routes..."
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
 print_success "Routes cached"
 
-# Step 14: Cache Views
-print_info "[14/17] Caching views..."
+# Step 16: Cache Views
+print_info "[16/19] Caching views..."
 php artisan view:cache || print_warning "View cache failed (continuing anyway)"
 print_success "Views cached"
 
-# Step 15: Optimize Autoloader
-print_info "[15/17] Optimizing autoloader..."
+# Step 17: Optimize Autoloader
+print_info "[17/19] Optimizing autoloader..."
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
-# Step 16: Restart Services
-print_info "[16/17] Restarting services..."
+# Step 18: Restart Services
+print_info "[18/19] Restarting services..."
 
 # Restart PHP-FPM (if available)
 if command -v systemctl >/dev/null 2>&1; then
@@ -545,8 +694,8 @@ fi
 # Restart queue workers (if using)
 php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted" || true
 
-# Step 17: Disable Maintenance Mode
-print_info "[17/17] Disabling maintenance mode..."
+# Step 19: Disable Maintenance Mode
+print_info "[19/19] Disabling maintenance mode..."
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 
