@@ -307,10 +307,24 @@ CURRENT_COMMIT=$(git rev-parse HEAD)
 log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
-# Step 3: Backup User-Uploaded Files
-print_info "[3/18] Backing up user-uploaded files..."
+# Step 3: Backup User-Uploaded Files and Critical Configs
+print_info "[3/18] Backing up user-uploaded files and critical configs..."
 UPLOAD_BACKUP_DIR="$BACKUP_DIR/uploads_backup_$(date +'%Y%m%d_%H%M%S')"
 mkdir -p "$UPLOAD_BACKUP_DIR"
+
+# Backup .env files (CRITICAL - these get deleted by git clean -x)
+print_info "Backing up .env files..."
+if [ -f ".env" ]; then
+    cp .env "$UPLOAD_BACKUP_DIR/.env" 2>/dev/null && print_success "Backed up .env"
+else
+    print_warning ".env file not found (will need to create from .env.production or .env.example)"
+fi
+
+if [ -f ".env.production" ]; then
+    cp .env.production "$UPLOAD_BACKUP_DIR/.env.production" 2>/dev/null && print_success "Backed up .env.production"
+fi
+
+log ".env files backed up to: $UPLOAD_BACKUP_DIR"
 
 # Backup directories that contain user-uploaded files
 UPLOAD_PATHS=("storage/app/public" "public/uploads" "public/storage")
@@ -350,6 +364,8 @@ fi
 # Step 4.4: Clean all untracked files and directories (excluding uploads)
 print_info "Removing untracked files and directories..."
 # Use git clean but exclude user upload directories
+# NOTE: -x flag removes files in .gitignore (including vendor/, node_modules/)
+# We exclude upload directories and will restore .env files after
 git clean -fdx -e 'storage/app/public/*' -e 'public/uploads/*' -e 'public/storage' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.4.1: Recreate essential Laravel directories
@@ -357,7 +373,28 @@ print_info "Recreating essential Laravel directories..."
 ensure_laravel_directories
 print_success "Essential directories created"
 
-# Step 4.5: Restore user-uploaded files
+# Step 4.5: Restore .env files (CRITICAL - restore before anything else)
+print_info "Restoring .env files..."
+if [ -f "$UPLOAD_BACKUP_DIR/.env" ]; then
+    cp "$UPLOAD_BACKUP_DIR/.env" .env 2>/dev/null && print_success "Restored .env"
+elif [ -f "$UPLOAD_BACKUP_DIR/.env.production" ]; then
+    cp "$UPLOAD_BACKUP_DIR/.env.production" .env 2>/dev/null && print_success "Restored .env from .env.production"
+    print_warning "Created .env from .env.production backup"
+elif [ -f ".env.production" ]; then
+    cp .env.production .env 2>/dev/null && print_success "Created .env from .env.production"
+    print_warning "Using existing .env.production as .env"
+elif [ -f ".env.example" ]; then
+    cp .env.example .env 2>/dev/null && print_warning "Created .env from .env.example - PLEASE UPDATE CREDENTIALS!"
+    print_error "CRITICAL: .env was created from example - you must update database credentials!"
+else
+    error_exit ".env file not found and cannot be created - deployment cannot continue"
+fi
+
+if [ -f "$UPLOAD_BACKUP_DIR/.env.production" ] && [ ! -f ".env.production" ]; then
+    cp "$UPLOAD_BACKUP_DIR/.env.production" .env.production 2>/dev/null && print_success "Restored .env.production"
+fi
+
+# Step 4.6: Restore user-uploaded files
 print_info "Restoring user-uploaded files..."
 for path in "${UPLOAD_PATHS[@]}"; do
     if [ -d "$UPLOAD_BACKUP_DIR/$path" ]; then
@@ -369,7 +406,7 @@ for path in "${UPLOAD_PATHS[@]}"; do
 done
 print_success "User-uploaded files restored"
 
-# Step 4.6: Verify we're in sync with remote
+# Step 4.7: Verify we're in sync with remote
 LOCAL_COMMIT=$(git rev-parse HEAD)
 REMOTE_COMMIT=$(git rev-parse "origin/$BRANCH")
 
