@@ -35,17 +35,9 @@
         return `https://flagcdn.com/${sizeParam}/${countryCode}.png`;
     },
 
-    async switchLanguage(langCode) {
-        // Use Google Translate Widget for instant translation (like WordPress plugins)
-        if (typeof window.changeGoogleTranslateLanguage === 'function') {
-            window.changeGoogleTranslateLanguage(langCode);
-        } else {
-            // Fallback to session-based language change
-            window.location.href = '/lang/' + langCode;
-        }
-
-        this.currentLang = langCode;
-        this.open = false;
+    switchLanguage(langCode) {
+        // Session-based language change (no Google Translate - works with Cloudflare blocking)
+        window.location.href = '/lang/' + langCode;
     },
 
     getCurrentLanguage() {
