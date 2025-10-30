@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @php
         $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+        $logo = \App\Models\Setting::get('logo');
+        $logoUrl = $logo ? asset($logo) : asset('images/logo.svg');
     @endphp
     <title>เข้าสู่ระบบ - {{ $appName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -154,9 +156,9 @@
                 <!-- Logo Section -->
                 <div class="text-center mb-8">
                     <div class="flex justify-center mb-6">
-                        <img src="{{ asset('images/logo.svg') }}"
+                        <img src="{{ $logoUrl }}"
                              alt="{{ $appName }} Logo"
-                             class="w-32 h-32 logo-glow float-animation">
+                             class="w-32 h-32 logo-glow float-animation object-contain">
                     </div>
                     <h1 class="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
                         {{ $appName }}
