@@ -24,9 +24,36 @@
     <div class="bg-white rounded-lg shadow-md p-6" x-data="{
         mediaType: '{{ old('media_type', $slider->media_type) }}',
         videoType: '{{ old('video_type', $slider->video_type ?? 'youtube') }}',
-        showOverlay: {{ $textOverlay['text'] ? 'true' : 'false' }}
+        showOverlay: {{ $textOverlay['text'] ? 'true' : 'false' }},
+        imagePreview: null,
+        videoPreview: null,
+        isUploading: false,
+        uploadSuccess: false,
+        handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.imagePreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+        handleVideoUpload(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('video/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.videoPreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+        handleSubmit(event) {
+            this.isUploading = true;
+        }
     }">
-        <form method="POST" action="{{ route('admin.sliders.update', $slider) }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ route('admin.sliders.update', $slider) }}" enctype="multipart/form-data" @submit="handleSubmit">
             @csrf
             @method('PUT')
 
@@ -73,12 +100,20 @@
                 <!-- Image Upload Section -->
                 <div x-show="mediaType === 'image'" x-transition>
                     <label class="block text-sm font-medium text-gray-700 mb-2">รูปภาพใหม่ (ไม่บังคับ)</label>
-                    <input type="file" name="image" accept="image/*"
+                    <input type="file" name="image" accept="image/*" @change="handleImageUpload"
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     <p class="text-xs text-gray-500 mt-1">ขนาดแนะนำ: 1920x600px, สูงสุด 5MB (JPG, PNG, GIF) - เว้นว่างหากไม่ต้องการเปลี่ยน</p>
                     @error('image')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
+
+                    <!-- Image Preview -->
+                    <div x-show="imagePreview" x-transition class="mt-4">
+                        <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่างภาพใหม่:</p>
+                        <div class="relative w-full max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg">
+                            <img :src="imagePreview" alt="Preview" class="w-full h-auto">
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Video Section -->
@@ -127,12 +162,20 @@
                     <!-- Video File Upload -->
                     <div x-show="videoType === 'upload'" class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">ไฟล์วีดีโอใหม่ (ไม่บังคับ)</label>
-                        <input type="file" name="video_file" accept="video/*"
+                        <input type="file" name="video_file" accept="video/*" @change="handleVideoUpload"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">รองรับ MP4, WebM, OGG, สูงสุด 50MB - เว้นว่างหากไม่ต้องการเปลี่ยน</p>
                         @error('video_file')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
+
+                        <!-- Video Preview -->
+                        <div x-show="videoPreview" x-transition class="mt-4">
+                            <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่างวีดีโอใหม่:</p>
+                            <div class="relative w-full max-w-2xl mx-auto rounded-lg overflow-hidden shadow-lg">
+                                <video :src="videoPreview" controls class="w-full h-auto"></video>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Video Settings -->
@@ -296,6 +339,23 @@
                 </a>
             </div>
         </form>
+
+        <!-- Loading Overlay -->
+        <div x-show="isUploading" x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+             style="display: none;">
+            <div class="bg-white rounded-lg p-8 max-w-sm mx-4 text-center shadow-2xl">
+                <div class="mb-4">
+                    <svg class="animate-spin h-16 w-16 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">กำลังอัพโหลด...</h3>
+                <p class="text-gray-600">กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล</p>
+            </div>
+        </div>
     </div>
 </div>
 @endsection
