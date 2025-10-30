@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('wallet_settings')) {
+            return;
+        }
+
         Schema::create('wallet_settings', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique(); // Setting key (e.g., 'withdrawal_fee_percentage')
