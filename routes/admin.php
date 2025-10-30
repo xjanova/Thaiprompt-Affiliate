@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\WalletController;
+use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\TranslationMappingController;
 use Illuminate\Support\Facades\Route;
@@ -75,6 +76,17 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::post('/transfer', [WalletController::class, 'transfer'])->name('transfer');
     Route::post('/lock', [WalletController::class, 'lock'])->name('lock');
     Route::post('/unlock', [WalletController::class, 'unlock'])->name('unlock');
+});
+
+// Withdrawal Management (Admin)
+Route::prefix('withdrawals')->name('withdrawals.')->group(function () {
+    Route::get('/', [WithdrawalController::class, 'index'])->name('index');
+    Route::get('/pending', [WithdrawalController::class, 'pending'])->name('pending');
+    Route::get('/{withdrawal}', [WithdrawalController::class, 'show'])->name('show');
+    Route::post('/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('approve');
+    Route::post('/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('reject');
+    Route::post('/{withdrawal}/complete', [WithdrawalController::class, 'complete'])->name('complete');
+    Route::post('/batch-approve', [WithdrawalController::class, 'batchApprove'])->name('batch-approve');
 });
 
 // Language Settings
