@@ -3,6 +3,24 @@
 @section('title', 'หน้าแรก')
 
 @section('content')
+<!-- Debug Info (ลบออกหลังแก้ปัญหา) -->
+@if(config('app.debug'))
+<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
+    <p class="font-bold">Debug: Slider Information</p>
+    <p>จำนวนสไลด์ทั้งหมด: {{ $sliders->count() }}</p>
+    @if($sliders->count() > 0)
+        @foreach($sliders as $idx => $s)
+            <p class="text-sm mt-1">
+                Slide {{ $idx + 1 }}: Type={{ $s->media_type ?? 'null' }},
+                Image={{ $s->image ?? 'none' }},
+                Video={{ $s->video_url ?? $s->video_file ?? 'none' }},
+                Active={{ $s->is_active ? 'yes' : 'no' }}
+            </p>
+        @endforeach
+    @endif
+</div>
+@endif
+
 <!-- Enhanced Slider with Video Support (ถ้ามี) -->
 @if($sliders->count() > 0)
     <section class="relative bg-black" x-data="{
