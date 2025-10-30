@@ -3,9 +3,8 @@
 @section('title', 'หน้าแรก')
 
 @section('content')
-<div class="relative overflow-hidden">
-    <!-- Enhanced Slider with Video Support (ถ้ามี) -->
-    @if($sliders->count() > 0)
+<!-- Enhanced Slider with Video Support (ถ้ามี) -->
+@if($sliders->count() > 0)
     <section class="relative bg-black" x-data="{
         currentSlide: 0,
         slides: {{ $sliders->count() }},
@@ -108,24 +107,26 @@
                         <div class="relative w-full h-full">
                             @if($slider->video_type === 'youtube' || $slider->video_type === 'vimeo')
                                 <!-- Embedded Video (YouTube/Vimeo) -->
-                                <iframe
-                                    src="{{ $slider->getVideoEmbedUrl() }}"
-                                    class="absolute inset-0 w-full h-full"
-                                    frameborder="0"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                    allowfullscreen
-                                    @if(!($videoSettings['loop'] ?? false))
-                                    onload="this.contentWindow.postMessage(JSON.stringify({event: 'listening'}), '*');
-                                            window.addEventListener('message', (e) => {
-                                                try {
-                                                    const data = JSON.parse(e.data);
-                                                    if (data.event === 'onStateChange' && data.info === 0) {
-                                                        document.dispatchEvent(new CustomEvent('videoEnded'));
-                                                    }
-                                                } catch(ex) {}
-                                            });"
-                                    @endif
-                                    style="object-fit: cover;"></iframe>
+                                <div class="absolute inset-0 w-full h-full overflow-hidden">
+                                    <iframe
+                                        src="{{ $slider->getVideoEmbedUrl() }}"
+                                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                                        style="width: 100vw; height: 56.25vw; min-height: 100vh; min-width: 177.77vh; pointer-events: none;"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen
+                                        @if(!($videoSettings['loop'] ?? false))
+                                        onload="this.contentWindow.postMessage(JSON.stringify({event: 'listening'}), '*');
+                                                window.addEventListener('message', (e) => {
+                                                    try {
+                                                        const data = JSON.parse(e.data);
+                                                        if (data.event === 'onStateChange' && data.info === 0) {
+                                                            document.dispatchEvent(new CustomEvent('videoEnded'));
+                                                        }
+                                                    } catch(ex) {}
+                                                });"
+                                        @endif></iframe>
+                                </div>
                             @elseif($slider->video_type === 'upload' && $slider->video_file)
                                 <!-- Uploaded Video File -->
                                 <video
@@ -794,7 +795,6 @@
         </section>
     @endif
     <!-- End Premium Landing Page -->
-</div>
 
 @push('scripts')
 <script>
