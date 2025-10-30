@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title') - Admin - {{ config('app.name', 'TP-Affiliate') }}</title>
+    <title>@yield('title') - Admin - {{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</title>
 
     @php
         $favicon = \App\Models\Setting::get('favicon');
@@ -86,9 +86,13 @@
                 @if($logo)
                     <img src="{{ asset($logo) }}" alt="Logo" class="h-10 object-contain" :class="{ 'md:h-8': sidebarCollapsed }">
                 @else
+                    @php
+                        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+                        $appNameShort = mb_substr($appName, 0, 2);
+                    @endphp
                     <span class="text-white font-bold transition-all" :class="{ 'text-2xl': !sidebarCollapsed, 'md:text-lg': sidebarCollapsed }">
-                        <span x-show="!sidebarCollapsed">TP-Admin</span>
-                        <span x-show="sidebarCollapsed" class="hidden md:block">TP</span>
+                        <span x-show="!sidebarCollapsed">{{ $appName }}</span>
+                        <span x-show="sidebarCollapsed" class="hidden md:block">{{ $appNameShort }}</span>
                     </span>
                 @endif
 

@@ -9,9 +9,9 @@
                             $logo = \App\Models\Setting::get('logo');
                         @endphp
                         @if($logo)
-                            <img src="{{ asset($logo) }}" alt="{{ config('app.name') }}" class="h-10 object-contain">
+                            <img src="{{ asset($logo) }}" alt="{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}" class="h-10 object-contain">
                         @else
-                            <span class="text-2xl font-bold text-indigo-600">TP-Affiliate</span>
+                            <span class="text-2xl font-bold text-indigo-600">{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</span>
                         @endif
                     </a>
                 </div>

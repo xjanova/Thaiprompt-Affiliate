@@ -2,7 +2,7 @@
     <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div class="col-span-1 md:col-span-2">
-                <h3 class="text-2xl font-bold mb-4">TP-Affiliate</h3>
+                <h3 class="text-2xl font-bold mb-4">{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</h3>
                 <p class="text-gray-300">
                     ระบบ Affiliate Marketing ที่ทันสมัย มืออาชีพ และพร้อมใช้งาน
                 </p>
@@ -29,7 +29,7 @@
 
         <div class="mt-8 border-t border-gray-700 pt-8">
             <p class="text-center text-gray-400 text-sm">
-                &copy; {{ date('Y') }} TP-Affiliate. สงวนลิขสิทธิ์.
+                &copy; {{ date('Y') }} {{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}. สงวนลิขสิทธิ์.
             </p>
         </div>
     </div>
