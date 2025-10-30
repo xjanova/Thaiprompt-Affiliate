@@ -14,23 +14,12 @@
 
 <div class="language-switcher-pro" x-data="{
     open: false,
-    translationEnabled: false,
     currentLang: '{{ $currentLang }}',
     availableLanguages: @js($languages->values()->toArray()),
     style: '{{ $style }}',
     showFlags: {{ $showFlags ? 'true' : 'false' }},
     flagSize: {{ $flagSize }},
     showName: {{ $showName ? 'true' : 'false' }},
-
-    async init() {
-        try {
-            const response = await fetch('/api/translate/status');
-            const data = await response.json();
-            this.translationEnabled = data.enabled;
-        } catch (error) {
-            console.error('Failed to check translation status:', error);
-        }
-    },
 
     getFlagUrl(lang) {
         // Map language code to country code for flag CDN
@@ -47,56 +36,16 @@
     },
 
     async switchLanguage(langCode) {
-        if (this.translationEnabled) {
-            await this.translatePage(langCode);
+        // Use Google Translate Widget for instant translation (like WordPress plugins)
+        if (typeof window.changeGoogleTranslateLanguage === 'function') {
+            window.changeGoogleTranslateLanguage(langCode);
         } else {
+            // Fallback to session-based language change
             window.location.href = '/lang/' + langCode;
         }
+
         this.currentLang = langCode;
         this.open = false;
-    },
-
-    async translatePage(targetLang) {
-        const elements = document.querySelectorAll('[data-translate]');
-        const texts = Array.from(elements).map(el => el.textContent.trim()).filter(t => t.length > 0);
-
-        if (texts.length === 0) {
-            window.location.href = '/lang/' + targetLang;
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/translate/batch', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-                },
-                body: JSON.stringify({
-                    texts: texts,
-                    target_lang: targetLang,
-                    source_lang: this.currentLang
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.translations) {
-                let index = 0;
-                elements.forEach(el => {
-                    const text = el.textContent.trim();
-                    if (text.length > 0 && data.translations[index]) {
-                        el.textContent = data.translations[index];
-                        index++;
-                    }
-                });
-            } else {
-                window.location.href = '/lang/' + targetLang;
-            }
-        } catch (error) {
-            console.error('Translation failed:', error);
-            window.location.href = '/lang/' + targetLang;
-        }
     },
 
     getCurrentLanguage() {
@@ -136,18 +85,6 @@
                  class="absolute right-0 z-50 mt-2 w-56 origin-top-right bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
                  style="display: none;">
                 <div class="py-1">
-                    {{-- Translation Status Badge --}}
-                    <div class="px-4 py-2 text-xs text-gray-500 border-b">
-                        <span x-show="translationEnabled" class="flex items-center">
-                            <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                            Google Translate Active
-                        </span>
-                        <span x-show="!translationEnabled" class="flex items-center">
-                            <span class="w-2 h-2 bg-gray-400 rounded-full mr-2"></span>
-                            Session-based
-                        </span>
-                    </div>
-
                     {{-- Language Options --}}
                     <template x-for="lang in availableLanguages" :key="lang.code">
                         <button @click="switchLanguage(lang.code)"
