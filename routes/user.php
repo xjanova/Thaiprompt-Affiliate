@@ -19,17 +19,33 @@ Route::get('/referrals', [DashboardController::class, 'referrals'])->name('refer
 // Wallet Management (User)
 Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/', [WalletController::class, 'index'])->name('index');
+
+    // Deposit Routes
     Route::get('/deposit', [WalletController::class, 'deposit'])->name('deposit');
+    Route::post('/deposit/promptpay', [WalletController::class, 'depositPromptPay'])->name('deposit.promptpay');
+    Route::post('/deposit/bank-transfer', [WalletController::class, 'depositBankTransfer'])->name('deposit.bank-transfer');
+    Route::post('/deposit/stripe', [WalletController::class, 'depositStripe'])->name('deposit.stripe');
+    Route::post('/deposit/paypal', [WalletController::class, 'depositPayPal'])->name('deposit.paypal');
+    Route::get('/deposit/verify/{reference}', [WalletController::class, 'verifyDeposit'])->name('deposit.verify');
+
+    // Withdrawal Routes
     Route::get('/withdraw', [WalletController::class, 'withdraw'])->name('withdraw');
     Route::post('/withdraw', [WalletController::class, 'submitWithdrawal'])->name('withdraw.submit');
     Route::get('/withdrawals', [WalletController::class, 'withdrawals'])->name('withdrawals');
-    Route::post('/withdrawals/{id}/cancel', [WalletController::class, 'cancelWithdrawal'])->name('withdrawals.cancel');
+    Route::delete('/withdrawal/{id}/cancel', [WalletController::class, 'cancelWithdrawal'])->name('withdrawal.cancel');
+
+    // Transfer Routes
     Route::get('/transfer', [WalletController::class, 'transfer'])->name('transfer');
     Route::post('/transfer', [WalletController::class, 'submitTransfer'])->name('transfer.submit');
+
+    // Transaction Routes
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
+
+    // Payment Methods Routes
     Route::get('/payment-methods', [WalletController::class, 'paymentMethods'])->name('payment-methods');
-    Route::post('/payment-methods', [WalletController::class, 'storePaymentMethod'])->name('payment-methods.store');
-    Route::delete('/payment-methods/{id}', [WalletController::class, 'deletePaymentMethod'])->name('payment-methods.delete');
+    Route::post('/payment-method', [WalletController::class, 'storePaymentMethod'])->name('payment-method.store');
+    Route::post('/payment-method/{id}/set-default', [WalletController::class, 'setDefaultPaymentMethod'])->name('payment-method.set-default');
+    Route::delete('/payment-method/{id}', [WalletController::class, 'deletePaymentMethod'])->name('payment-method.delete');
 });
 
 // Notifications

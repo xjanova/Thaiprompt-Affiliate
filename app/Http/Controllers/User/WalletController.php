@@ -251,4 +251,152 @@ class WalletController extends Controller
 
         return view('user.wallet.transactions', compact('wallet', 'transactions'));
     }
+
+    /**
+     * Process PromptPay deposit
+     */
+    public function depositPromptPay(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1|max:1000000',
+        ]);
+
+        try {
+            $user = auth()->user();
+            $result = $this->paymentGatewayService->processPromptPayDeposit(
+                $user,
+                $request->amount,
+                ['ip_address' => $request->ip()]
+            );
+
+            return view('user.wallet.deposit-promptpay', compact('result'));
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Process Bank Transfer deposit
+     */
+    public function depositBankTransfer(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1|max:1000000',
+            'slip' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $user = auth()->user();
+            $result = $this->paymentGatewayService->processBankTransfer(
+                $user,
+                $request->amount,
+                $request->file('slip'),
+                [
+                    'note' => $request->note,
+                    'ip_address' => $request->ip(),
+                ]
+            );
+
+            return redirect()->route('user.wallet.index')
+                ->with('success', 'อัพโหลดสลิปเรียบร้อยแล้ว รหัสอ้างอิง: ' . $result['reference'] . ' กรุณารอการตรวจสอบจากแอดมิน 1-24 ชั่วโมง');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Process Stripe deposit
+     */
+    public function depositStripe(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1|max:1000000',
+            'payment_method_id' => 'required|string',
+        ]);
+
+        try {
+            $user = auth()->user();
+            $result = $this->paymentGatewayService->processStripePayment(
+                $user,
+                $request->amount,
+                $request->payment_method_id
+            );
+
+            return redirect()->route('user.wallet.index')
+                ->with('success', 'ฝากเงินสำเร็จ จำนวน ฿' . number_format($request->amount, 2) . ' รหัส: ' . $result['transaction_id']);
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Process PayPal deposit
+     */
+    public function depositPayPal(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1|max:1000000',
+            'order_id' => 'required|string',
+        ]);
+
+        try {
+            $user = auth()->user();
+            $result = $this->paymentGatewayService->processPayPalPayment(
+                $user,
+                $request->amount,
+                $request->order_id
+            );
+
+            return redirect()->route('user.wallet.index')
+                ->with('success', 'ฝากเงินสำเร็จ จำนวน ฿' . number_format($request->amount, 2) . ' รหัส: ' . $result['transaction_id']);
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+    /**
+     * Verify deposit payment
+     */
+    public function verifyDeposit($reference)
+    {
+        try {
+            // For PromptPay verification
+            $verified = $this->paymentGatewayService->verifyPromptPayPayment($reference);
+
+            if ($verified) {
+                // Process the deposit
+                // This would typically be called by a webhook in production
+                return redirect()->route('user.wallet.index')
+                    ->with('success', 'ชำระเงินสำเร็จ กำลังดำเนินการเติมเงินเข้ากระเป๋า');
+            }
+
+            return redirect()->route('user.wallet.index')
+                ->with('error', 'ไม่พบการชำระเงิน กรุณาลองใหม่อีกครั้ง');
+        } catch (Exception $e) {
+            return redirect()->route('user.wallet.index')
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Set default payment method
+     */
+    public function setDefaultPaymentMethod($id)
+    {
+        try {
+            $user = auth()->user();
+
+            // Remove default from all payment methods
+            $user->paymentMethods()->update(['is_default' => false]);
+
+            // Set new default
+            $paymentMethod = $user->paymentMethods()->findOrFail($id);
+            $paymentMethod->update(['is_default' => true]);
+
+            return redirect()->back()->with('success', 'ตั้งค่าช่องทางรับเงินเริ่มต้นเรียบร้อยแล้ว');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
 }
