@@ -23,7 +23,8 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ลำดับ</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รูปภาพ</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ภาพ/วีดีโอ</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หัวข้อ</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">คำอธิบาย</th>
                             <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
@@ -37,11 +38,35 @@
                                     {{ $slider->order }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    @if($slider->image)
-                                        <img src="{{ asset($slider->image) }}" alt="{{ $slider->title }}" class="h-16 w-24 object-cover rounded">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-2xl">{{ $slider->getMediaTypeIcon() }}</span>
+                                        <span class="text-sm font-medium text-gray-700">{{ $slider->getMediaTypeLabel() }}</span>
+                                    </div>
+                                    @if($slider->isVideo())
+                                        <div class="text-xs text-gray-500 mt-1">
+                                            {{ ucfirst($slider->video_type ?? '') }}
+                                        </div>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    @php
+                                        $thumbnail = $slider->getThumbnailUrl();
+                                    @endphp
+                                    @if($thumbnail)
+                                        <div class="relative h-16 w-24 rounded overflow-hidden group">
+                                            <img src="{{ asset($thumbnail) }}"
+                                                 alt="{{ $slider->title }}"
+                                                 class="h-full w-full object-cover"
+                                                 onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27100%27 height=%27100%27%3E%3Crect fill=%27%23e5e7eb%27 width=%27100%27 height=%27100%27/%3E%3Ctext fill=%27%239ca3af%27 font-family=%27sans-serif%27 font-size=%2712%27 x=%2750%25%27 y=%2750%25%27 text-anchor=%27middle%27 dy=%27.3em%27%3E{{ $slider->isVideo() ? '🎥' : '🖼️' }}%3C/text%3E%3C/svg%3E';">
+                                            @if($slider->isVideo())
+                                                <div class="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                                                    <span class="text-white text-2xl">▶</span>
+                                                </div>
+                                            @endif
+                                        </div>
                                     @else
                                         <div class="h-16 w-24 bg-gray-200 rounded flex items-center justify-center">
-                                            <span class="text-gray-400 text-xs">ไม่มีรูป</span>
+                                            <span class="text-gray-400 text-xs">{{ $slider->isVideo() ? '🎥' : 'ไม่มีรูป' }}</span>
                                         </div>
                                     @endif
                                 </td>
@@ -51,6 +76,12 @@
                                         <div class="text-sm text-blue-600 truncate max-w-xs">
                                             <a href="{{ $slider->link }}" target="_blank" class="hover:underline">
                                                 {{ $slider->link }}
+                                            </a>
+                                        </div>
+                                    @elseif($slider->isVideo() && $slider->video_url)
+                                        <div class="text-sm text-purple-600 truncate max-w-xs">
+                                            <a href="{{ $slider->video_url }}" target="_blank" class="hover:underline">
+                                                {{ Str::limit($slider->video_url, 30) }}
                                             </a>
                                         </div>
                                     @endif
@@ -105,11 +136,11 @@
                 <h3 class="text-sm font-medium text-blue-800">คำแนะนำ</h3>
                 <div class="mt-2 text-sm text-blue-700">
                     <ul class="list-disc list-inside space-y-1">
-                        <li>แนะนำให้ใช้รูปภาพขนาด 1920x600 พิกเซล</li>
-                        <li>ไฟล์รูปภาพควรมีขนาดไม่เกิน 5 MB</li>
-                        <li>รองรับไฟล์ JPG, PNG, GIF</li>
+                        <li><strong>รูปภาพ:</strong> แนะนำขนาด 1920x600px, สูงสุด 5MB (JPG, PNG, GIF)</li>
+                        <li><strong>วีดีโอ:</strong> รองรับ YouTube, Vimeo, อัพโหลดเอง (MP4, WebM, OGG สูงสุด 50MB)</li>
                         <li>สไลด์จะแสดงตามลำดับที่กำหนด</li>
                         <li>เฉพาะสไลด์ที่เปิดใช้งานเท่านั้นที่จะแสดงในหน้าแรก</li>
+                        <li>วีดีโอจะเล่นจบแล้วสไลด์ต่ออัตโนมัติ (ยกเว้นถ้าเปิด loop)</li>
                     </ul>
                 </div>
             </div>

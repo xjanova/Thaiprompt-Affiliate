@@ -95,7 +95,8 @@ class Slider extends Model
      */
     public function isImage(): bool
     {
-        return $this->media_type === 'image';
+        // Default to image if media_type is null or not set
+        return $this->media_type === 'image' || $this->media_type === null || $this->media_type === '';
     }
 
     /**
@@ -160,5 +161,80 @@ class Slider extends Model
     public function getMergedTextOverlay(): array
     {
         return array_merge($this->getDefaultTextOverlay(), $this->text_overlay ?? []);
+    }
+
+    /**
+     * Get video thumbnail URL
+     */
+    public function getVideoThumbnailUrl(): ?string
+    {
+        if (!$this->isVideo()) {
+            return null;
+        }
+
+        switch ($this->video_type) {
+            case 'youtube':
+                // Extract YouTube video ID
+                preg_match('/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/', $this->video_url ?? '', $matches);
+                if (isset($matches[1])) {
+                    // YouTube thumbnail URL (high quality)
+                    return "https://img.youtube.com/vi/{$matches[1]}/maxresdefault.jpg";
+                }
+                break;
+
+            case 'vimeo':
+                // Extract Vimeo video ID
+                preg_match('/(?:vimeo\.com\/)(\d+)/', $this->video_url ?? '', $matches);
+                if (isset($matches[1])) {
+                    // Vimeo requires API call, but we can use a fallback
+                    // For now, return a placeholder or use oembed
+                    return "https://vumbnail.com/{$matches[1]}.jpg";
+                }
+                break;
+
+            case 'upload':
+                // For uploaded videos, we could generate a thumbnail
+                // For now, return a video icon placeholder
+                return null;
+
+            case 'other':
+                return null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get thumbnail for display (image or video thumbnail)
+     */
+    public function getThumbnailUrl(): ?string
+    {
+        if ($this->isImage()) {
+            return $this->image;
+        }
+
+        return $this->getVideoThumbnailUrl();
+    }
+
+    /**
+     * Get display icon for media type
+     */
+    public function getMediaTypeIcon(): string
+    {
+        if ($this->isVideo()) {
+            return '🎥';
+        }
+        return '🖼️';
+    }
+
+    /**
+     * Get media type label
+     */
+    public function getMediaTypeLabel(): string
+    {
+        if ($this->isVideo()) {
+            return 'วีดีโอ';
+        }
+        return 'รูปภาพ';
     }
 }
