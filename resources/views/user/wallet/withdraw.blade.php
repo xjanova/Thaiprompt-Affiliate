@@ -1,0 +1,164 @@
+@extends('layouts.user')
+
+@section('title', 'ถอนเงิน')
+
+@section('content')
+<div class="space-y-6 pb-20 lg:pb-6">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
+        <div class="relative z-10">
+            <div class="flex items-center gap-3 mb-4">
+                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                    ← กลับ
+                </a>
+                <h1 class="text-3xl md:text-4xl font-bold">💸 ถอนเงิน</h1>
+            </div>
+            <p class="text-red-100">ถอนเงินจากกระเป๋าของคุณ</p>
+
+            <!-- Current Balance -->
+            <div class="mt-6 bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+                <p class="text-red-100 text-sm mb-1">ยอดเงินที่สามารถถอนได้</p>
+                <p class="text-3xl font-bold">฿{{ number_format($wallet->balance, 2) }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdrawal Form -->
+    <div class="bg-white rounded-2xl shadow-xl p-6">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">แบบฟอร์มถอนเงิน</h2>
+
+        @if($paymentMethods->isEmpty())
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                <span class="text-5xl block mb-3">🏦</span>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">ยังไม่มีช่องทางรับเงิน</h3>
+                <p class="text-gray-600 mb-4">กรุณาเพิ่มช่องทางรับเงินก่อนทำการถอน</p>
+                <a href="{{ route('user.wallet.payment-methods') }}"
+                   class="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
+                    เพิ่มช่องทางรับเงิน
+                </a>
+            </div>
+        @else
+            <form method="POST" action="{{ route('user.wallet.withdraw.submit') }}" class="space-y-6">
+                @csrf
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">เลือกช่องทางรับเงิน</label>
+                    <select name="payment_method_id"
+                            required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">-- เลือกช่องทางรับเงิน --</option>
+                        @foreach($paymentMethods as $method)
+                            <option value="{{ $method->id }}">
+                                @if($method->type === 'bank_transfer')
+                                    🏦 {{ $method->bank_name }} - {{ $method->account_name }} ({{ substr($method->account_number, -4) }})
+                                @elseif($method->type === 'promptpay')
+                                    💳 PromptPay - {{ $method->account_name }} ({{ substr($method->account_number, -4) }})
+                                @elseif($method->type === 'paypal')
+                                    💰 PayPal - {{ $method->paypal_email }}
+                                @endif
+                                @if($method->is_default)
+                                    ⭐ (ค่าเริ่มต้น)
+                                @endif
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">จำนวนเงิน (บาท)</label>
+                    <input type="number"
+                           name="amount"
+                           step="0.01"
+                           min="1"
+                           max="{{ $wallet->balance }}"
+                           required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           placeholder="ระบุจำนวนเงินที่ต้องการถอน">
+                    <p class="text-xs text-gray-500 mt-1">ยอดเงินสูงสุดที่ถอนได้: ฿{{ number_format($wallet->balance, 2) }}</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">PIN กระเป๋าเงิน (6 หลัก)</label>
+                    <input type="password"
+                           name="pin"
+                           maxlength="6"
+                           pattern="[0-9]{6}"
+                           required
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           placeholder="ระบุ PIN 6 หลัก">
+                    <p class="text-xs text-gray-500 mt-1">กรอก PIN เพื่อยืนยันการถอนเงิน</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">หมายเหตุ (ถ้ามี)</label>
+                    <textarea name="user_note"
+                              rows="3"
+                              maxlength="500"
+                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              placeholder="หมายเหตุเพิ่มเติม (ไม่เกิน 500 ตัวอักษร)"></textarea>
+                </div>
+
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-semibold text-blue-900 mb-2">📋 เงื่อนไขการถอนเงิน</h4>
+                    <ul class="space-y-1 text-sm text-blue-800">
+                        <li>• จำนวนเงินขั้นต่ำในการถอนคือ 100 บาท</li>
+                        <li>• ระบบจะตรวจสอบและดำเนินการภายใน 1-3 วันทำการ</li>
+                        <li>• กรุณาตรวจสอบข้อมูลบัญชีให้ถูกต้อง</li>
+                        <li>• หากพบปัญหา กรุณาติดต่อฝ่ายสนับสนุน</li>
+                    </ul>
+                </div>
+
+                <div class="flex gap-3">
+                    <a href="{{ route('user.wallet.index') }}"
+                       class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
+                        ยกเลิก
+                    </a>
+                    <button type="submit"
+                            class="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
+                        ยืนยันการถอนเงิน
+                    </button>
+                </div>
+            </form>
+        @endif
+    </div>
+
+    <!-- Recent Withdrawals -->
+    <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900">📋 คำขอถอนเงินล่าสุด</h3>
+            <a href="{{ route('user.wallet.withdrawals') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
+                ดูทั้งหมด →
+            </a>
+        </div>
+
+        <div class="text-center text-gray-500 py-8">
+            <span class="text-4xl block mb-2">💸</span>
+            <p class="text-sm">คลิก "ดูทั้งหมด" เพื่อดูประวัติการถอนเงิน</p>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
+        <h3 class="text-xl font-bold mb-4">💡 คำแนะนำ</h3>
+        <ul class="space-y-2 text-sm">
+            <li class="flex items-start gap-2">
+                <span>✅</span>
+                <span>ตรวจสอบช่องทางรับเงินให้ถูกต้องก่อนถอน</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span>✅</span>
+                <span>กรอกจำนวนเงินที่ต้องการถอนอย่างระมัดระวัง</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span>✅</span>
+                <span>เก็บรักษา PIN ของคุณไว้เป็นความลับ</span>
+            </li>
+            <li class="flex items-start gap-2">
+                <span>✅</span>
+                <span>หากลืม PIN สามารถรีเซ็ตได้ที่หน้าโปรไฟล์</span>
+            </li>
+        </ul>
+    </div>
+</div>
+@endsection
