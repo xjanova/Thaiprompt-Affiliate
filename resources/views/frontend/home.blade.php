@@ -99,20 +99,22 @@
     @endif
 
     <!-- Premium Landing Page Sections -->
-    <!-- Note: Dynamic home sections are disabled to show the premium landing page -->
-    <!-- To enable dynamic sections, uncomment the @if condition below -->
-    {{--
-    @if($homeSections && $homeSections->count() > 0)
-        @foreach($homeSections as $section)
-            @includeWhen(
-                view()->exists("frontend.sections.{$section->type}"),
-                "frontend.sections.{$section->type}",
-                ['section' => $section, 'stats' => $stats]
-            )
-        @endforeach
-    @else
-    --}}
-        <!-- Premium Landing Page Sections -->
+    <!-- Note: Dynamic home sections feature is disabled to always show the premium landing page -->
+    <!-- To enable dynamic sections, modify this section in the blade file -->
+
+    @php
+    // Uncomment below to enable dynamic home sections instead of premium landing page
+    /*
+    if($homeSections && $homeSections->count() > 0) {
+        foreach($homeSections as $section) {
+            if(view()->exists("frontend.sections.{$section->type}")) {
+                echo view("frontend.sections.{$section->type}", compact('section', 'stats'))->render();
+            }
+        }
+        return; // Skip premium landing page
+    }
+    */
+    @endphp
 
         <!-- Hero Section - แบบ Premium อลังการ -->
         <section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
@@ -569,7 +571,6 @@
                 @endguest
             </div>
         </section>
-    {{-- @endif --}}
     <!-- End of Premium Landing Page -->
 </div>
 
