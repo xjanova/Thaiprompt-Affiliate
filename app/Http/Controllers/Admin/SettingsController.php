@@ -64,34 +64,40 @@ class SettingsController extends Controller
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
-            $logoPath = $request->file('logo')->move(
-                public_path('uploads/branding'),
-                'logo_' . time() . '.' . $request->file('logo')->getClientOriginalExtension()
-            );
-            $logoUrl = '/uploads/branding/' . basename($logoPath);
-            Setting::set('logo', $logoUrl, 'string', 'branding');
+            // Store in storage/app/public/branding (persistent across deployments)
+            $logoPath = $request->file('logo')->store('branding', 'public');
+            $logoUrl = '/storage/' . $logoPath;
 
             // Delete old logo if exists
             $oldLogo = Setting::get('logo');
-            if ($oldLogo && file_exists(public_path($oldLogo)) && $oldLogo !== $logoUrl) {
-                @unlink(public_path($oldLogo));
+            if ($oldLogo) {
+                // Extract path from URL (/storage/branding/xxx.png -> branding/xxx.png)
+                $oldPath = str_replace('/storage/', '', $oldLogo);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
             }
+
+            Setting::set('logo', $logoUrl, 'string', 'branding');
         }
 
         // Handle favicon upload
         if ($request->hasFile('favicon')) {
-            $faviconPath = $request->file('favicon')->move(
-                public_path('uploads/branding'),
-                'favicon_' . time() . '.' . $request->file('favicon')->getClientOriginalExtension()
-            );
-            $faviconUrl = '/uploads/branding/' . basename($faviconPath);
-            Setting::set('favicon', $faviconUrl, 'string', 'branding');
+            // Store in storage/app/public/branding (persistent across deployments)
+            $faviconPath = $request->file('favicon')->store('branding', 'public');
+            $faviconUrl = '/storage/' . $faviconPath;
 
             // Delete old favicon if exists
             $oldFavicon = Setting::get('favicon');
-            if ($oldFavicon && file_exists(public_path($oldFavicon)) && $oldFavicon !== $faviconUrl) {
-                @unlink(public_path($oldFavicon));
+            if ($oldFavicon) {
+                // Extract path from URL (/storage/branding/xxx.ico -> branding/xxx.ico)
+                $oldPath = str_replace('/storage/', '', $oldFavicon);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
             }
+
+            Setting::set('favicon', $faviconUrl, 'string', 'branding');
         }
 
         return back()->with('success', 'Branding updated successfully.');

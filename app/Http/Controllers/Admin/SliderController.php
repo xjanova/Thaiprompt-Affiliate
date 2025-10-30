@@ -45,10 +45,9 @@ class SliderController extends Controller
 
         // Handle image upload
         if ($request->hasFile('image')) {
-            $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->move(public_path('uploads/sliders'), $imageName);
-            $data['image'] = 'uploads/sliders/' . $imageName;
+            // Store in storage/app/public/sliders (persistent across deployments)
+            $imagePath = $request->file('image')->store('sliders', 'public');
+            $data['image'] = '/storage/' . $imagePath;
         }
 
         // Set default order if not provided
@@ -89,15 +88,17 @@ class SliderController extends Controller
 
         // Handle image upload
         if ($request->hasFile('image')) {
-            // Delete old image
-            if ($slider->image && file_exists(public_path($slider->image))) {
-                unlink(public_path($slider->image));
+            // Delete old image from storage
+            if ($slider->image) {
+                $oldPath = str_replace('/storage/', '', $slider->image);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
             }
 
-            $image = $request->file('image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->move(public_path('uploads/sliders'), $imageName);
-            $data['image'] = 'uploads/sliders/' . $imageName;
+            // Store new image in storage/app/public/sliders (persistent across deployments)
+            $imagePath = $request->file('image')->store('sliders', 'public');
+            $data['image'] = '/storage/' . $imagePath;
         }
 
         $slider->update($data);
@@ -110,9 +111,12 @@ class SliderController extends Controller
      */
     public function destroy(Slider $slider)
     {
-        // Delete image file
-        if ($slider->image && file_exists(public_path($slider->image))) {
-            unlink(public_path($slider->image));
+        // Delete image file from storage
+        if ($slider->image) {
+            $oldPath = str_replace('/storage/', '', $slider->image);
+            if (Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
         }
 
         $slider->delete();
