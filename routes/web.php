@@ -20,8 +20,8 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap')
 // Language Switching
 Route::get('/lang/{locale}', [LanguageController::class, 'switch'])->name('lang.switch');
 
-// Translation API Routes
-Route::prefix('api/translate')->name('api.translate.')->group(function () {
+// Translation API Routes (with rate limiting: 60 requests per minute)
+Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,1')->group(function () {
     Route::post('/', [\App\Http\Controllers\TranslationController::class, 'translate'])->name('text');
     Route::post('/batch', [\App\Http\Controllers\TranslationController::class, 'translateBatch'])->name('batch');
     Route::get('/languages', [\App\Http\Controllers\TranslationController::class, 'languages'])->name('languages');

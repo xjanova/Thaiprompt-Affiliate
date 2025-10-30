@@ -3,33 +3,94 @@
 @section('title', 'หน้าแรก')
 
 @section('content')
-<div class="relative overflow-hidden">
-    <!-- Image Slider (ถ้ามี) -->
-    @if($sliders->count() > 0)
+<!-- Enhanced Slider with Video Support (ถ้ามี) -->
+@if($sliders->count() > 0)
     <section class="relative bg-black" x-data="{
         currentSlide: 0,
         slides: {{ $sliders->count() }},
         autoplay: true,
+        videoPlayers: {},
         init() {
+            this.setupAutoplay();
+            this.initVideoListeners();
+        },
+        setupAutoplay() {
             if (this.autoplay) {
                 setInterval(() => {
+                    const currentSlideData = this.getSlideData(this.currentSlide);
+                    // ถ้าเป็นวีดีโอและไม่ใช่ loop ให้รอวีดีโอเล่นจบก่อน
+                    if (currentSlideData?.isVideo && !currentSlideData?.isLoop) {
+                        return; // วีดีโอจะจัดการเองผ่าน event listener
+                    }
                     this.nextSlide();
                 }, 5000);
             }
         },
+        initVideoListeners() {
+            // Listen for YouTube API ready
+            window.onYouTubeIframeAPIReady = () => {
+                console.log('YouTube API Ready');
+            };
+        },
         nextSlide() {
+            this.pauseCurrentVideo();
             this.currentSlide = (this.currentSlide + 1) % this.slides;
+            this.playCurrentVideo();
         },
         prevSlide() {
+            this.pauseCurrentVideo();
             this.currentSlide = (this.currentSlide - 1 + this.slides) % this.slides;
+            this.playCurrentVideo();
         },
         goToSlide(index) {
+            this.pauseCurrentVideo();
             this.currentSlide = index;
+            this.playCurrentVideo();
+        },
+        getSlideData(index) {
+            const slidesData = @json($sliders->map(function($s) {
+                return [
+                    'isVideo' => $s->isVideo(),
+                    'videoType' => $s->video_type,
+                    'isLoop' => ($s->video_settings['loop'] ?? false)
+                ];
+            }));
+            return slidesData[index];
+        },
+        pauseCurrentVideo() {
+            const iframe = document.querySelector(`[data-slide-index=&quot;${this.currentSlide}&quot;] iframe`);
+            const video = document.querySelector(`[data-slide-index=&quot;${this.currentSlide}&quot;] video`);
+
+            if (iframe) {
+                // For YouTube/Vimeo
+                iframe.contentWindow.postMessage(JSON.stringify({event: 'command', func: 'pauseVideo'}), '*');
+            }
+            if (video) {
+                video.pause();
+            }
+        },
+        playCurrentVideo() {
+            const iframe = document.querySelector(`[data-slide-index=&quot;${this.currentSlide}&quot;] iframe`);
+            const video = document.querySelector(`[data-slide-index=&quot;${this.currentSlide}&quot;] video`);
+
+            if (iframe) {
+                iframe.contentWindow.postMessage(JSON.stringify({event: 'command', func: 'playVideo'}), '*');
+            }
+            if (video) {
+                video.play().catch(e => console.log('Video autoplay prevented:', e));
+            }
+        },
+        handleVideoEnd() {
+            this.nextSlide();
         }
     }">
         <div class="relative max-w-7xl mx-auto">
             <div class="relative h-96 md:h-[500px] overflow-hidden">
                 @foreach($sliders as $index => $slider)
+                @php
+                    $textOverlay = $slider->getMergedTextOverlay();
+                    $videoSettings = $slider->video_settings ?? [];
+                @endphp
                 <div x-show="currentSlide === {{ $index }}"
                      x-transition:enter="transition ease-out duration-500"
                      x-transition:enter-start="opacity-0 transform translate-x-full"
@@ -38,10 +99,180 @@
                      x-transition:leave-start="opacity-100 transform translate-x-0"
                      x-transition:leave-end="opacity-0 transform -translate-x-full"
                      class="absolute inset-0"
+                     data-slide-index="{{ $index }}"
                      style="display: none;">
-                    @if($slider->link)
-                        <a href="{{ $slider->link }}" target="_blank" class="block w-full h-full">
+
+                    @if($slider->isVideo())
+                        <!-- Video Slide -->
+                        <div class="relative w-full h-full">
+                            @if($slider->video_type === 'youtube' || $slider->video_type === 'vimeo')
+                                <!-- Embedded Video (YouTube/Vimeo) -->
+                                <div class="absolute inset-0 w-full h-full overflow-hidden">
+                                    <iframe
+                                        src="{{ $slider->getVideoEmbedUrl() }}"
+                                        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                                        style="width: 100vw; height: 56.25vw; min-height: 100vh; min-width: 177.77vh; pointer-events: none;"
+                                        frameborder="0"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowfullscreen
+                                        @if(!($videoSettings['loop'] ?? false))
+                                        onload="this.contentWindow.postMessage(JSON.stringify({event: 'listening'}), '*');
+                                                window.addEventListener('message', (e) => {
+                                                    try {
+                                                        const data = JSON.parse(e.data);
+                                                        if (data.event === 'onStateChange' && data.info === 0) {
+                                                            document.dispatchEvent(new CustomEvent('videoEnded'));
+                                                        }
+                                                    } catch(ex) {}
+                                                });"
+                                        @endif></iframe>
+                                </div>
+                            @elseif($slider->video_type === 'upload' && $slider->video_file)
+                                <!-- Uploaded Video File -->
+                                <video
+                                    class="absolute inset-0 w-full h-full object-cover"
+                                    {{ ($videoSettings['autoplay'] ?? true) ? 'autoplay' : '' }}
+                                    {{ ($videoSettings['muted'] ?? true) ? 'muted' : '' }}
+                                    {{ ($videoSettings['loop'] ?? false) ? 'loop' : '' }}
+                                    {{ ($videoSettings['controls'] ?? false) ? 'controls' : '' }}
+                                    playsinline
+                                    @if(!($videoSettings['loop'] ?? false))
+                                    @ended="handleVideoEnd()"
+                                    @endif>
+                                    <source src="{{ asset($slider->video_file) }}" type="video/mp4">
+                                    Your browser does not support the video tag.
+                                </video>
+                            @endif
+
+                            <!-- Text Overlay for Video -->
+                            @if($textOverlay['text'])
+                                @php
+                                    $positionClasses = [
+                                        'top-left' => 'top-8 left-8',
+                                        'top-center' => 'top-8 left-1/2 -translate-x-1/2',
+                                        'top-right' => 'top-8 right-8',
+                                        'center-left' => 'top-1/2 left-8 -translate-y-1/2',
+                                        'center' => 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+                                        'center-right' => 'top-1/2 right-8 -translate-y-1/2',
+                                        'bottom-left' => 'bottom-8 left-8',
+                                        'bottom-center' => 'bottom-8 left-1/2 -translate-x-1/2',
+                                        'bottom-right' => 'bottom-8 right-8',
+                                    ];
+                                    $animationClasses = [
+                                        'fade-in' => 'animate-fade-in',
+                                        'slide-in-left' => 'animate-slide-in-left',
+                                        'slide-in-right' => 'animate-slide-in-right',
+                                        'slide-in-up' => 'animate-slide-in-up',
+                                        'zoom-in' => 'animate-zoom-in',
+                                    ];
+                                @endphp
+                                <div class="absolute {{ $positionClasses[$textOverlay['position']] ?? 'bottom-8 left-8' }} z-10 {{ $animationClasses[$textOverlay['animation']] ?? '' }} max-w-2xl">
+                                    <div class="px-6 py-4 rounded-lg backdrop-blur-md" style="background-color: {{ $textOverlay['backgroundColor'] ?? 'rgba(0, 0, 0, 0.5)' }};">
+                                        <p class="font-bold {{ $textOverlay['fontSize'] ?? 'text-4xl' }}" style="color: {{ $textOverlay['color'] ?? '#ffffff' }};">
+                                            {{ $textOverlay['text'] }}
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+
+                            <!-- Title & Description Overlay for Video -->
+                            @if($slider->title || $slider->description)
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end pointer-events-none">
+                                    <div class="p-8 text-white">
+                                        @if($slider->title)
+                                            <h2 class="text-3xl font-bold mb-2">{{ $slider->title }}</h2>
+                                        @endif
+                                        @if($slider->description)
+                                            <p class="text-lg">{{ $slider->description }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    @else
+                        <!-- Image Slide -->
+                        @if($slider->link)
+                            <a href="{{ $slider->link }}" target="_blank" class="block w-full h-full">
+                                <img src="{{ asset($slider->image) }}" alt="{{ $slider->title }}" class="w-full h-full object-cover">
+
+                                <!-- Text Overlay for Image -->
+                                @if($textOverlay['text'])
+                                    @php
+                                        $positionClasses = [
+                                            'top-left' => 'top-8 left-8',
+                                            'top-center' => 'top-8 left-1/2 -translate-x-1/2',
+                                            'top-right' => 'top-8 right-8',
+                                            'center-left' => 'top-1/2 left-8 -translate-y-1/2',
+                                            'center' => 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+                                            'center-right' => 'top-1/2 right-8 -translate-y-1/2',
+                                            'bottom-left' => 'bottom-8 left-8',
+                                            'bottom-center' => 'bottom-8 left-1/2 -translate-x-1/2',
+                                            'bottom-right' => 'bottom-8 right-8',
+                                        ];
+                                        $animationClasses = [
+                                            'fade-in' => 'animate-fade-in',
+                                            'slide-in-left' => 'animate-slide-in-left',
+                                            'slide-in-right' => 'animate-slide-in-right',
+                                            'slide-in-up' => 'animate-slide-in-up',
+                                            'zoom-in' => 'animate-zoom-in',
+                                        ];
+                                    @endphp
+                                    <div class="absolute {{ $positionClasses[$textOverlay['position']] ?? 'bottom-8 left-8' }} z-10 {{ $animationClasses[$textOverlay['animation']] ?? '' }} max-w-2xl">
+                                        <div class="px-6 py-4 rounded-lg backdrop-blur-md" style="background-color: {{ $textOverlay['backgroundColor'] ?? 'rgba(0, 0, 0, 0.5)' }};">
+                                            <p class="font-bold {{ $textOverlay['fontSize'] ?? 'text-4xl' }}" style="color: {{ $textOverlay['color'] ?? '#ffffff' }};">
+                                                {{ $textOverlay['text'] }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                @endif
+
+                                @if($slider->title || $slider->description)
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
+                                        <div class="p-8 text-white">
+                                            @if($slider->title)
+                                                <h2 class="text-3xl font-bold mb-2">{{ $slider->title }}</h2>
+                                            @endif
+                                            @if($slider->description)
+                                                <p class="text-lg">{{ $slider->description }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                            </a>
+                        @else
                             <img src="{{ asset($slider->image) }}" alt="{{ $slider->title }}" class="w-full h-full object-cover">
+
+                            <!-- Text Overlay for Image -->
+                            @if($textOverlay['text'])
+                                @php
+                                    $positionClasses = [
+                                        'top-left' => 'top-8 left-8',
+                                        'top-center' => 'top-8 left-1/2 -translate-x-1/2',
+                                        'top-right' => 'top-8 right-8',
+                                        'center-left' => 'top-1/2 left-8 -translate-y-1/2',
+                                        'center' => 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+                                        'center-right' => 'top-1/2 right-8 -translate-y-1/2',
+                                        'bottom-left' => 'bottom-8 left-8',
+                                        'bottom-center' => 'bottom-8 left-1/2 -translate-x-1/2',
+                                        'bottom-right' => 'bottom-8 right-8',
+                                    ];
+                                    $animationClasses = [
+                                        'fade-in' => 'animate-fade-in',
+                                        'slide-in-left' => 'animate-slide-in-left',
+                                        'slide-in-right' => 'animate-slide-in-right',
+                                        'slide-in-up' => 'animate-slide-in-up',
+                                        'zoom-in' => 'animate-zoom-in',
+                                    ];
+                                @endphp
+                                <div class="absolute {{ $positionClasses[$textOverlay['position']] ?? 'bottom-8 left-8' }} z-10 {{ $animationClasses[$textOverlay['animation']] ?? '' }} max-w-2xl">
+                                    <div class="px-6 py-4 rounded-lg backdrop-blur-md" style="background-color: {{ $textOverlay['backgroundColor'] ?? 'rgba(0, 0, 0, 0.5)' }};">
+                                        <p class="font-bold {{ $textOverlay['fontSize'] ?? 'text-4xl' }}" style="color: {{ $textOverlay['color'] ?? '#ffffff' }};">
+                                            {{ $textOverlay['text'] }}
+                                        </p>
+                                    </div>
+                                </div>
+                            @endif
+
                             @if($slider->title || $slider->description)
                                 <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
                                     <div class="p-8 text-white">
@@ -54,20 +285,6 @@
                                     </div>
                                 </div>
                             @endif
-                        </a>
-                    @else
-                        <img src="{{ asset($slider->image) }}" alt="{{ $slider->title }}" class="w-full h-full object-cover">
-                        @if($slider->title || $slider->description)
-                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end">
-                                <div class="p-8 text-white">
-                                    @if($slider->title)
-                                        <h2 class="text-3xl font-bold mb-2">{{ $slider->title }}</h2>
-                                    @endif
-                                    @if($slider->description)
-                                        <p class="text-lg">{{ $slider->description }}</p>
-                                    @endif
-                                </div>
-                            </div>
                         @endif
                     @endif
                 </div>
@@ -75,18 +292,18 @@
             </div>
 
             @if($sliders->count() > 1)
-            <button @click="prevSlide()" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full backdrop-blur-sm transition">
+            <button @click="prevSlide()" class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full backdrop-blur-sm transition z-20">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                 </svg>
             </button>
-            <button @click="nextSlide()" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full backdrop-blur-sm transition">
+            <button @click="nextSlide()" class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/30 hover:bg-white/50 text-white p-3 rounded-full backdrop-blur-sm transition z-20">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
             </button>
 
-            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
                 @foreach($sliders as $index => $slider)
                 <button @click="goToSlide({{ $index }})"
                         :class="{ 'bg-white': currentSlide === {{ $index }}, 'bg-white/50': currentSlide !== {{ $index }} }"
@@ -95,24 +312,21 @@
             </div>
             @endif
         </div>
+
+        <!-- Video End Event Listener -->
+        <script>
+            document.addEventListener('videoEnded', function() {
+                const sliderEl = document.querySelector('[x-data]');
+                if (sliderEl) {
+                    Alpine.$data(sliderEl).handleVideoEnd();
+                }
+            });
+        </script>
     </section>
     @endif
 
-    <!-- Dynamic Home Sections -->
-    @php
-    // Use dynamic home sections if available, otherwise show premium landing page
-    $hasDynamicSections = $homeSections && $homeSections->count() > 0;
-    @endphp
-
-    @if($hasDynamicSections)
-        <!-- Show Dynamic Sections -->
-        @foreach($homeSections as $section)
-            @if(view()->exists("frontend.sections.{$section->type}"))
-                @include("frontend.sections.{$section->type}", ['section' => $section, 'stats' => $stats])
-            @endif
-        @endforeach
-    @else
-        <!-- Fallback to Premium Landing Page -->
+    <!-- Premium Landing Page Sections -->
+    @if($premiumSections['hero'])
 
         <!-- Hero Section - แบบ Premium อลังการ -->
         <section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
@@ -185,7 +399,9 @@
                 </svg>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['statistics'])
         <!-- Live Statistics Section - แสดงสถิติแบบ Real-time -->
         <section class="py-20 bg-white relative overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-50"></div>
@@ -271,7 +487,9 @@
                 </div>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['features'])
         <!-- Features Section - คุณสมบัติเด่น -->
         <section class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -339,9 +557,10 @@
                 </div>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['leaderboard'] && $topAffiliates->count() > 0)
         <!-- Top Affiliates Leaderboard -->
-        @if($topAffiliates->count() > 0)
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
@@ -405,8 +624,9 @@
                 </div>
             </div>
         </section>
-        @endif
+    @endif
 
+    @if($premiumSections['how_it_works'])
         <!-- How It Works -->
         <section class="py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -456,7 +676,9 @@
                 </div>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['faq'])
         <!-- FAQ Section -->
         <section class="py-20 bg-white">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -535,7 +757,9 @@
                 </div>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['cta'])
         <!-- Final CTA Section -->
         <section class="relative py-20 overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600"></div>
@@ -569,10 +793,8 @@
                 @endguest
             </div>
         </section>
-        <!-- End of Premium Landing Page -->
     @endif
-    <!-- End Dynamic/Premium Sections -->
-</div>
+    <!-- End Premium Landing Page -->
 
 @push('scripts')
 <script>

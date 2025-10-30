@@ -4,7 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>เข้าสู่ระบบ - TP-Affiliate</title>
+    @php
+        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+    @endphp
+    <title>เข้าสู่ระบบ - {{ $appName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gradient-to-r from-indigo-600 to-purple-600">
@@ -12,7 +15,7 @@
         <div class="max-w-md w-full">
             <div class="bg-white rounded-lg shadow-2xl p-8">
                 <div class="text-center mb-8">
-                    <h1 class="text-4xl font-bold text-indigo-600 mb-2">TP-Affiliate</h1>
+                    <h1 class="text-4xl font-bold text-indigo-600 mb-2">{{ $appName }}</h1>
                     <p class="text-gray-600">เข้าสู่ระบบ</p>
                 </div>
 
