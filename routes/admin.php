@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Admin\LanguageSettingController;
+use App\Http\Controllers\Admin\TranslationMappingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -85,4 +86,17 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('languages/reorder', [LanguageSettingController::class, 'reorder'])->name('languages.reorder');
     Route::get('languages/switcher', [LanguageSettingController::class, 'getSwitcherSettings'])->name('languages.switcher');
     Route::put('languages/switcher', [LanguageSettingController::class, 'updateSwitcherSettings'])->name('languages.switcher.update');
+});
+
+// Translation Mapping Management (Custom Translations)
+Route::prefix('translations')->name('translations.')->group(function () {
+    Route::get('/', [TranslationMappingController::class, 'index'])->name('index');
+    Route::get('/create', [TranslationMappingController::class, 'create'])->name('create');
+    Route::post('/', [TranslationMappingController::class, 'store'])->name('store');
+    Route::get('/{mapping}/edit', [TranslationMappingController::class, 'edit'])->name('edit');
+    Route::put('/{mapping}', [TranslationMappingController::class, 'update'])->name('update');
+    Route::delete('/{mapping}', [TranslationMappingController::class, 'destroy'])->name('destroy');
+    Route::post('/{mapping}/toggle', [TranslationMappingController::class, 'toggle'])->name('toggle');
+    Route::post('/import', [TranslationMappingController::class, 'import'])->name('import');
+    Route::get('/export', [TranslationMappingController::class, 'export'])->name('export');
 });
