@@ -98,21 +98,8 @@
     </section>
     @endif
 
-    <!-- Dynamic Home Sections -->
-    @php
-    // Use dynamic home sections if available, otherwise show premium landing page
-    $hasDynamicSections = $homeSections && $homeSections->count() > 0;
-    @endphp
-
-    @if($hasDynamicSections)
-        <!-- Show Dynamic Sections -->
-        @foreach($homeSections as $section)
-            @if(view()->exists("frontend.sections.{$section->type}"))
-                @include("frontend.sections.{$section->type}", ['section' => $section, 'stats' => $stats])
-            @endif
-        @endforeach
-    @else
-        <!-- Fallback to Premium Landing Page -->
+    <!-- Premium Landing Page Sections -->
+    @if($premiumSections['hero'])
 
         <!-- Hero Section - แบบ Premium อลังการ -->
         <section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
@@ -185,7 +172,9 @@
                 </svg>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['statistics'])
         <!-- Live Statistics Section - แสดงสถิติแบบ Real-time -->
         <section class="py-20 bg-white relative overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-50"></div>
@@ -271,7 +260,9 @@
                 </div>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['features'])
         <!-- Features Section - คุณสมบัติเด่น -->
         <section class="py-20 bg-gray-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -339,9 +330,10 @@
                 </div>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['leaderboard'] && $topAffiliates->count() > 0)
         <!-- Top Affiliates Leaderboard -->
-        @if($topAffiliates->count() > 0)
         <section class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
@@ -405,8 +397,9 @@
                 </div>
             </div>
         </section>
-        @endif
+    @endif
 
+    @if($premiumSections['how_it_works'])
         <!-- How It Works -->
         <section class="py-20 bg-gradient-to-br from-indigo-50 to-purple-50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -456,7 +449,9 @@
                 </div>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['faq'])
         <!-- FAQ Section -->
         <section class="py-20 bg-white">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -535,7 +530,9 @@
                 </div>
             </div>
         </section>
+    @endif
 
+    @if($premiumSections['cta'])
         <!-- Final CTA Section -->
         <section class="relative py-20 overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600"></div>
@@ -569,9 +566,8 @@
                 @endguest
             </div>
         </section>
-        <!-- End of Premium Landing Page -->
     @endif
-    <!-- End Dynamic/Premium Sections -->
+    <!-- End Premium Landing Page -->
 </div>
 
 @push('scripts')

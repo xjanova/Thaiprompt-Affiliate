@@ -7,7 +7,7 @@ use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
-use App\Http\Controllers\Admin\HomeSectionController;
+use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,10 +51,11 @@ Route::post('sliders/reorder', [SliderController::class, 'reorder'])->name('slid
 Route::resource('pages', PageController::class);
 Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
 
-// Home Sections Management
-Route::resource('home-sections', HomeSectionController::class);
-Route::post('home-sections/reorder', [HomeSectionController::class, 'reorder'])->name('home-sections.reorder');
-Route::post('home-sections/{homeSection}/toggle', [HomeSectionController::class, 'toggle'])->name('home-sections.toggle');
+// Premium Landing Page Management
+Route::get('premium-page', [PremiumPageController::class, 'index'])->name('premium-page.index');
+Route::get('premium-page/{section}/edit', [PremiumPageController::class, 'edit'])->name('premium-page.edit');
+Route::put('premium-page/{section}', [PremiumPageController::class, 'update'])->name('premium-page.update');
+Route::post('premium-page/{section}/toggle', [PremiumPageController::class, 'toggle'])->name('premium-page.toggle');
 
 // SEO Management
 Route::resource('seo', SeoController::class);
