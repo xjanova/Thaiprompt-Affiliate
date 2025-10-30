@@ -52,7 +52,7 @@
     </div>
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
-    <x-google-translate-widget />
+    <x-google-translate-widget-simple />
 
     @stack('scripts')
 </body>
