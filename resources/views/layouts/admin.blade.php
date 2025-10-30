@@ -205,7 +205,7 @@
                     <div class="flex items-center space-x-4">
                         <!-- Language Switcher -->
                         <div class="relative z-[60]">
-                            @include('components.language-switcher')
+                            <x-language-switcher-pro />
                         </div>
 
                         <!-- Profile Dropdown -->
