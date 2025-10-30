@@ -24,6 +24,7 @@ class Commission extends Model
         'status',
         'approved_at',
         'paid_at',
+        'rejected_at',
         'notes',
     ];
 
@@ -39,6 +40,7 @@ class Commission extends Model
             'percentage' => 'decimal:2',
             'approved_at' => 'datetime',
             'paid_at' => 'datetime',
+            'rejected_at' => 'datetime',
         ];
     }
 
@@ -80,5 +82,13 @@ class Commission extends Model
     public function scopePaid($query)
     {
         return $query->where('status', 'paid');
+    }
+
+    /**
+     * Get the wallet transaction associated with this commission
+     */
+    public function walletTransaction()
+    {
+        return $this->morphOne(WalletTransaction::class, 'reference');
     }
 }

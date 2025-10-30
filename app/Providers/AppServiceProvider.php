@@ -12,7 +12,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register WalletService as singleton
+        $this->app->singleton(\App\Services\WalletService::class);
     }
 
     /**

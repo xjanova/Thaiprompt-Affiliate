@@ -4,10 +4,19 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Commission;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
+use Exception;
 
 class CommissionController extends Controller
 {
+    protected $walletService;
+
+    public function __construct(WalletService $walletService)
+    {
+        $this->walletService = $walletService;
+    }
+
     /**
      * Display a listing of commissions
      */
@@ -93,12 +102,34 @@ class CommissionController extends Controller
             return back()->with('error', 'Only approved commissions can be marked as paid.');
         }
 
-        $commission->update([
-            'status' => 'paid',
-            'paid_at' => now(),
-        ]);
+        try {
+            // Get wallet for the user who earned the commission
+            $user = $commission->user ?? $commission->affiliate->user;
 
-        return back()->with('success', 'Commission marked as paid successfully.');
+            if (!$user) {
+                return back()->with('error', 'User not found for this commission.');
+            }
+
+            $wallet = $this->walletService->getOrCreateWallet($user);
+
+            // Add commission to wallet
+            $transaction = $this->walletService->addCommission(
+                $wallet,
+                $commission->amount,
+                $commission->id,
+                "Commission #{$commission->id} - {$commission->type}"
+            );
+
+            // Update commission status
+            $commission->update([
+                'status' => 'paid',
+                'paid_at' => now(),
+            ]);
+
+            return back()->with('success', 'Commission paid successfully. Amount added to wallet: ' . number_format($commission->amount, 2) . ' THB');
+        } catch (Exception $e) {
+            return back()->with('error', 'Failed to pay commission: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -119,8 +150,34 @@ class CommissionController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
+        // If changing to paid status, add money to wallet
         if ($validated['status'] === 'paid' && $commission->status !== 'paid') {
-            $validated['paid_at'] = now();
+            try {
+                $user = $commission->user ?? $commission->affiliate->user;
+
+                if (!$user) {
+                    return back()->with('error', 'User not found for this commission.');
+                }
+
+                $wallet = $this->walletService->getOrCreateWallet($user);
+
+                // Add commission to wallet
+                $this->walletService->addCommission(
+                    $wallet,
+                    $commission->amount,
+                    $commission->id,
+                    "Commission #{$commission->id} - {$commission->type}"
+                );
+
+                $validated['paid_at'] = now();
+            } catch (Exception $e) {
+                return back()->with('error', 'Failed to update commission: ' . $e->getMessage());
+            }
+        }
+
+        // If changing to rejected status
+        if ($validated['status'] === 'rejected' && $commission->status !== 'rejected') {
+            $validated['rejected_at'] = now();
         }
 
         $commission->update($validated);
