@@ -1,14 +1,40 @@
 #!/bin/bash
 
 # TP-Affiliate Deployment Script
-# Safe Production Deployment with Rollback Support
+# Safe Production Deployment with Rollback Support and Auto-Retry on Timeout
 
-set -e
+# Disable auto-exit on error (we'll handle errors manually)
+set +e
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKUP_DIR="$SCRIPT_DIR/backups"
 LOG_FILE="$SCRIPT_DIR/storage/logs/deployment.log"
+MAX_DEPLOYMENT_ATTEMPTS=3
+
+# Track deployment attempts via environment variable
+if [ -z "$DEPLOY_ATTEMPT_COUNT" ]; then
+    export DEPLOY_ATTEMPT_COUNT=1
+else
+    export DEPLOY_ATTEMPT_COUNT=$((DEPLOY_ATTEMPT_COUNT + 1))
+fi
+
+# Check if we've exceeded max attempts
+if [ $DEPLOY_ATTEMPT_COUNT -gt $MAX_DEPLOYMENT_ATTEMPTS ]; then
+    echo ""
+    echo "╔═══════════════════════════════════════════════════════════╗"
+    echo "║  ❌ Deploy ล้มเหลว - ได้ลองครบ $MAX_DEPLOYMENT_ATTEMPTS ครั้งแล้ว              ║"
+    echo "╚═══════════════════════════════════════════════════════════╝"
+    echo ""
+    echo "💡 กรุณาลอง Deploy ใหม่ภายหลัง หรือตรวจสอบปัญหา:"
+    echo "  1. ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"
+    echo "  2. ตรวจสอบว่า GitHub และ Packagist สามารถเข้าถึงได้"
+    echo "  3. ตรวจสอบ logs: tail -f storage/logs/deployment.log"
+    echo "  4. ลองใหม่ภายหลัง 10-15 นาที"
+    echo ""
+    unset DEPLOY_ATTEMPT_COUNT
+    exit 1
+fi
 
 # Determine branch to deploy
 if [ -n "$1" ]; then
@@ -21,6 +47,7 @@ else
         echo "Error: Could not determine current branch"
         echo "Usage: $0 [branch-name]"
         echo "Example: $0 claude/Main"
+        unset DEPLOY_ATTEMPT_COUNT
         exit 1
     fi
 fi
@@ -72,12 +99,28 @@ ensure_laravel_directories() {
     chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 }
 
-# Error handler
-error_exit() {
-    print_error "Deployment failed: $1"
-    log "ERROR: $1"
+# Check if error is timeout-related
+is_timeout_error() {
+    local error_msg="$1"
+    local exit_code="$2"
 
-    print_warning "Rolling back changes..."
+    # Common timeout-related patterns
+    if [[ "$error_msg" =~ (timeout|timed out|Connection timed out|Operation timed out) ]] || \
+       [[ "$error_msg" =~ (could not read|failed to connect|unable to access) ]] || \
+       [[ "$error_msg" =~ (network|DNS|resolution failed|temporary failure) ]] || \
+       [[ "$exit_code" == "124" ]] || [[ "$exit_code" == "143" ]]; then
+        return 0  # Is timeout error
+    fi
+    return 1  # Not timeout error
+}
+
+# Error handler with auto-retry on timeout
+error_exit() {
+    local error_msg="$1"
+    local last_exit_code="${2:-$?}"
+
+    print_error "Deployment failed: $error_msg"
+    log "ERROR: $error_msg (exit code: $last_exit_code)"
 
     # Ensure essential directories exist before running artisan
     ensure_laravel_directories
@@ -88,59 +131,53 @@ error_exit() {
         print_info "Please run manually: php artisan up"
     }
 
+    # Check if it's a timeout error and we haven't exceeded max attempts
+    if is_timeout_error "$error_msg" "$last_exit_code" && [ $DEPLOY_ATTEMPT_COUNT -lt $MAX_DEPLOYMENT_ATTEMPTS ]; then
+        echo ""
+        print_warning "╔═══════════════════════════════════════════════════════════╗"
+        print_warning "║  ⚠️  ตรวจพบ Timeout Error - กำลังเริ่ม Deploy ใหม่...   ║"
+        print_warning "╚═══════════════════════════════════════════════════════════╝"
+        echo ""
+        print_info "📊 ความคืบหน้า: รอบที่ $DEPLOY_ATTEMPT_COUNT/$MAX_DEPLOYMENT_ATTEMPTS"
+        print_info "⏳ รอ 10 วินาทีก่อนเริ่มใหม่..."
+        log "RETRY: Restarting deployment (attempt $DEPLOY_ATTEMPT_COUNT/$MAX_DEPLOYMENT_ATTEMPTS)"
+        sleep 10
+
+        echo ""
+        print_info "🔄 กำลังเริ่มต้น Deploy ใหม่จากตั้งแต่ต้น..."
+        echo ""
+        sleep 2
+
+        # Restart the entire deployment script
+        exec "$0" "$@"
+    fi
+
+    # Final failure - not a timeout or exceeded max attempts
     echo ""
     print_error "╔═══════════════════════════════════════════════════════════╗"
-    print_error "║  การ Deploy ล้มเหลว - กรุณาลองใหม่ภายหลัง                ║"
+    print_error "║  ❌ การ Deploy ล้มเหลว - กรุณาลองใหม่ภายหลัง            ║"
     print_error "╚═══════════════════════════════════════════════════════════╝"
     echo ""
-    print_info "💡 คำแนะนำ:"
+
+    if [ $DEPLOY_ATTEMPT_COUNT -ge $MAX_DEPLOYMENT_ATTEMPTS ]; then
+        print_error "📍 ได้ลองทำการ Deploy ครบ $MAX_DEPLOYMENT_ATTEMPTS รอบแล้ว แต่ยังไม่สำเร็จ"
+        echo ""
+    fi
+
+    print_info "💡 คำแนะนำในการแก้ไข:"
     echo "  1. ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต"
-    echo "  2. ตรวจสอบว่า GitHub สามารถเข้าถึงได้"
+    echo "  2. ตรวจสอบว่า GitHub และ Packagist สามารถเข้าถึงได้"
     echo "  3. ตรวจสอบ logs: tail -f storage/logs/deployment.log"
-    echo "  4. ลองรัน deploy อีกครั้งภายหลัง 5-10 นาที"
+    echo "  4. ลอง Deploy ใหม่ภายหลัง 10-15 นาที"
     echo "  5. หากยังไม่สำเร็จ ติดต่อทีมพัฒนา"
     echo ""
 
+    unset DEPLOY_ATTEMPT_COUNT
     exit 1
 }
 
-# Retry function with exponential backoff
-# Usage: retry_command <max_attempts> <command> [args...]
-retry_command() {
-    local max_attempts=$1
-    shift
-    local command="$@"
-    local attempt=1
-    local delay=2
-    local exit_code=0
-
-    while [ $attempt -le $max_attempts ]; do
-        # Run the command
-        if eval "$command"; then
-            return 0
-        else
-            exit_code=$?
-
-            if [ $attempt -lt $max_attempts ]; then
-                print_warning "Attempt $attempt/$max_attempts failed. Retrying in ${delay}s..."
-                log "RETRY: Attempt $attempt/$max_attempts failed for command: $command"
-                sleep $delay
-                # Exponential backoff: 2s, 4s, 8s
-                delay=$((delay * 2))
-                attempt=$((attempt + 1))
-            else
-                print_error "All $max_attempts attempts failed for command"
-                log "ERROR: All $max_attempts attempts failed for command: $command"
-                return $exit_code
-            fi
-        fi
-    done
-
-    return $exit_code
-}
-
-# Trap errors
-trap 'error_exit "An error occurred on line $LINENO"' ERR
+# Trap errors - disable for now to handle errors manually
+# trap 'error_exit "An error occurred on line $LINENO"' ERR
 
 # Header
 echo ""
@@ -149,6 +186,12 @@ echo "║   🚀 TP-Affiliate Deployment Script             ║"
 echo "║   Safe Production Deployment                     ║"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
+
+if [ $DEPLOY_ATTEMPT_COUNT -gt 1 ]; then
+    echo "🔄 ${YELLOW}กำลังลองใหม่ - รอบที่ $DEPLOY_ATTEMPT_COUNT/$MAX_DEPLOYMENT_ATTEMPTS${NC}"
+    echo ""
+fi
+
 echo "📋 Deployment Configuration:"
 echo "  Branch:      ${BLUE}$BRANCH${NC}"
 echo "  Directory:   ${BLUE}$SCRIPT_DIR${NC}"
@@ -156,7 +199,7 @@ echo "  User:        ${BLUE}$(whoami)${NC}"
 echo "  Time:        ${BLUE}$(date)${NC}"
 echo ""
 
-log "=== Deployment Started ==="
+log "=== Deployment Started (Attempt $DEPLOY_ATTEMPT_COUNT/$MAX_DEPLOYMENT_ATTEMPTS) ==="
 log "Branch: $BRANCH"
 log "User: $(whoami)"
 log "Host: $(hostname)"
@@ -275,11 +318,15 @@ fi
 
 # Step 4.2: Fetch all changes from remote
 print_info "Fetching latest code from origin/$BRANCH..."
-retry_command 3 "git fetch origin \"$BRANCH\"" || error_exit "Failed to fetch from git after 3 attempts"
+if ! git fetch origin "$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Failed to fetch from git - อาจเป็นปัญหาการเชื่อมต่อ" "$?"
+fi
 
 # Step 4.3: Force reset to match GitHub exactly
 print_info "Force resetting to origin/$BRANCH..."
-retry_command 3 "git reset --hard \"origin/$BRANCH\"" || error_exit "Failed to reset to origin/$BRANCH after 3 attempts"
+if ! git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Failed to reset to origin/$BRANCH" "$?"
+fi
 
 # Step 4.4: Clean all untracked files and directories
 print_info "Removing untracked files and directories..."
@@ -338,7 +385,10 @@ fi
 composer clear-cache 2>/dev/null || true
 
 # Install dependencies from scratch
-retry_command 3 "composer install --no-dev --optimize-autoloader --no-interaction" || error_exit "Composer install failed after 3 attempts"
+print_info "Installing composer dependencies..."
+if ! composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Composer install failed - อาจเป็นปัญหา network หรือ Packagist" "$?"
+fi
 print_success "Composer dependencies installed (clean)"
 
 # Verify composer lock file matches
@@ -350,7 +400,9 @@ fi
 
 # Step 6: Install/Reinstall Laravel Sanctum
 print_info "[6/15] Installing Laravel Sanctum..."
-retry_command 3 "php artisan vendor:publish --provider=\"Laravel\\Sanctum\\SanctumServiceProvider\" --force" || error_exit "Sanctum installation failed after 3 attempts"
+if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Sanctum installation failed" "$?"
+fi
 print_success "Laravel Sanctum installed and configured"
 
 # Step 7: Clear All Cache
@@ -371,7 +423,9 @@ PENDING_MIGRATIONS=$(php artisan migrate:status --pending 2>/dev/null | grep -c 
 if [ "$PENDING_MIGRATIONS" != "0" ]; then
     print_warning "Found $PENDING_MIGRATIONS pending migration(s)"
     print_info "Running migrations..."
-    retry_command 3 "php artisan migrate --force" || error_exit "Database migration failed after 3 attempts"
+    if ! php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
+        error_exit "Database migration failed - ตรวจสอบการเชื่อมต่อ database" "$?"
+    fi
     print_success "Migrations completed successfully"
 else
     print_info "No pending migrations"
@@ -445,7 +499,9 @@ print_success "Permissions set"
 
 # Step 11: Cache Configuration
 print_info "[11/16] Caching configuration..."
-retry_command 3 "php artisan config:cache" || error_exit "Config cache failed after 3 attempts"
+if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
+    error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
+fi
 print_success "Configuration cached"
 
 # Step 12: Cache Routes
@@ -558,3 +614,9 @@ echo ""
 
 print_success "Happy deploying! 🚀"
 echo ""
+
+# Clean up environment variable
+unset DEPLOY_ATTEMPT_COUNT
+
+# Success exit
+exit 0
