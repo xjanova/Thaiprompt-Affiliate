@@ -341,4 +341,199 @@ class WalletService
             'last_transaction' => $wallet->transactions()->latest()->first(),
         ];
     }
+
+    /**
+     * Get all wallets for admin
+     */
+    public function getAllWallets(array $filters = [], int $perPage = 20)
+    {
+        $query = Wallet::with(['user', 'transactions' => function($q) {
+            $q->latest()->limit(5);
+        }]);
+
+        // Filter by user
+        if (!empty($filters['user_id'])) {
+            $query->where('user_id', $filters['user_id']);
+        }
+
+        // Filter by status
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        // Filter by balance
+        if (!empty($filters['min_balance'])) {
+            $query->where('balance', '>=', $filters['min_balance']);
+        }
+
+        if (!empty($filters['max_balance'])) {
+            $query->where('balance', '<=', $filters['max_balance']);
+        }
+
+        // Search by wallet address or user name
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function($q) use ($search) {
+                $q->where('wallet_address', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        return $query->orderBy('created_at', 'desc')->paginate($perPage);
+    }
+
+    /**
+     * Get system-wide wallet statistics
+     */
+    public function getSystemStatistics(): array
+    {
+        $totalWallets = Wallet::count();
+        $activeWallets = Wallet::where('status', 'active')->count();
+        $totalBalance = Wallet::sum('balance');
+        $totalIncome = Wallet::sum('total_income');
+        $totalExpense = Wallet::sum('total_expense');
+
+        $today = today();
+        $todayTransactions = WalletTransaction::whereDate('created_at', $today)->count();
+        $todayVolume = WalletTransaction::whereDate('created_at', $today)
+            ->where('status', 'completed')
+            ->sum('amount');
+
+        $last30Days = now()->subDays(30);
+        $monthlyTransactions = WalletTransaction::where('created_at', '>=', $last30Days)->count();
+        $monthlyVolume = WalletTransaction::where('created_at', '>=', $last30Days)
+            ->where('status', 'completed')
+            ->sum('amount');
+
+        return [
+            'total_wallets' => $totalWallets,
+            'active_wallets' => $activeWallets,
+            'suspended_wallets' => Wallet::where('status', 'suspended')->count(),
+            'locked_wallets' => Wallet::where('status', 'locked')->count(),
+            'total_balance' => $totalBalance,
+            'total_income' => $totalIncome,
+            'total_expense' => $totalExpense,
+            'today_transactions' => $todayTransactions,
+            'today_volume' => $todayVolume,
+            'monthly_transactions' => $monthlyTransactions,
+            'monthly_volume' => $monthlyVolume,
+            'average_balance' => $totalWallets > 0 ? $totalBalance / $totalWallets : 0,
+        ];
+    }
+
+    /**
+     * Transfer with fee calculation
+     */
+    public function transferWithFee(
+        Wallet $fromWallet,
+        Wallet $toWallet,
+        float $amount,
+        string $pin,
+        string $description = 'Transfer'
+    ): array {
+        // Calculate transfer fee
+        $fee = \App\Models\WalletSetting::calculateTransferFee($amount);
+        $totalAmount = $amount + $fee;
+
+        // Validate amount
+        $errors = \App\Models\WalletSetting::validateTransferAmount($amount);
+        if (!empty($errors)) {
+            throw new Exception(implode(', ', $errors));
+        }
+
+        if ($fromWallet->balance < $totalAmount) {
+            throw new Exception('ยอดเงินไม่เพียงพอ (รวมค่าธรรมเนียม ' . number_format($fee, 2) . ' บาท)');
+        }
+
+        return DB::transaction(function () use ($fromWallet, $toWallet, $amount, $fee, $totalAmount, $pin, $description) {
+            // Transfer main amount
+            $result = $this->transfer($fromWallet, $toWallet, $amount, $pin, $description);
+
+            // Deduct fee if applicable
+            if ($fee > 0) {
+                $feeTransaction = $this->withdraw(
+                    $fromWallet,
+                    $fee,
+                    $pin,
+                    'ค่าธรรมเนียมการโอน',
+                    'transfer_fee',
+                    $result['out_transaction']->id
+                );
+
+                $result['fee_transaction'] = $feeTransaction;
+                $result['total_amount'] = $totalAmount;
+                $result['fee'] = $fee;
+            }
+
+            return $result;
+        });
+    }
+
+    /**
+     * Adjust wallet balance (admin only)
+     */
+    public function adjustBalance(
+        Wallet $wallet,
+        float $amount,
+        string $reason,
+        User $admin
+    ): WalletTransaction {
+        $type = $amount > 0 ? 'deposit' : 'withdrawal';
+        $absAmount = abs($amount);
+
+        if ($amount > 0) {
+            return $this->deposit(
+                $wallet,
+                $absAmount,
+                "การปรับยอดโดยแอดมิน: {$reason}",
+                'admin_adjustment',
+                $admin->id,
+                ['adjusted_by' => $admin->id, 'reason' => $reason]
+            );
+        } else {
+            return DB::transaction(function () use ($wallet, $absAmount, $reason, $admin) {
+                $balanceBefore = $wallet->balance;
+                $balanceAfter = $balanceBefore - $absAmount;
+
+                if ($balanceAfter < 0) {
+                    throw new Exception('Cannot adjust balance below zero');
+                }
+
+                $transaction = WalletTransaction::create([
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'type' => 'fee',
+                    'amount' => $absAmount,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                    'currency' => $wallet->currency,
+                    'description' => "การปรับยอดโดยแอดมิน: {$reason}",
+                    'reference_type' => 'admin_adjustment',
+                    'reference_id' => $admin->id,
+                    'status' => 'completed',
+                    'metadata' => ['adjusted_by' => $admin->id, 'reason' => $reason],
+                    'completed_at' => now(),
+                ]);
+
+                $wallet->update([
+                    'balance' => $balanceAfter,
+                    'total_expense' => $wallet->total_expense + $absAmount,
+                    'last_transaction_at' => now(),
+                ]);
+
+                $this->logAction(
+                    $wallet,
+                    'transaction_success',
+                    "Balance adjusted by admin: {$reason}",
+                    'warning',
+                    ['transaction_id' => $transaction->id, 'admin_id' => $admin->id]
+                );
+
+                return $transaction;
+            });
+        }
+    }
 }

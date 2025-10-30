@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Admin\WithdrawalController;
+use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\TranslationMappingController;
 use Illuminate\Support\Facades\Route;
@@ -66,6 +67,7 @@ Route::resource('seo', SeoController::class);
 
 // Wallet Management
 Route::prefix('wallet')->name('wallet.')->group(function () {
+    // Admin's own wallet
     Route::get('/', [WalletController::class, 'index'])->name('index');
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
     Route::get('/logs', [WalletController::class, 'logs'])->name('logs');
@@ -76,6 +78,13 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::post('/transfer', [WalletController::class, 'transfer'])->name('transfer');
     Route::post('/lock', [WalletController::class, 'lock'])->name('lock');
     Route::post('/unlock', [WalletController::class, 'unlock'])->name('unlock');
+
+    // Manage all wallets (Admin only)
+    Route::get('/all', [WalletController::class, 'allWallets'])->name('all');
+    Route::get('/{id}/show', [WalletController::class, 'showWallet'])->name('show');
+    Route::post('/{id}/adjust-balance', [WalletController::class, 'adjustBalance'])->name('adjust-balance');
+    Route::post('/{id}/lock', [WalletController::class, 'lockUserWallet'])->name('lock-user');
+    Route::post('/{id}/unlock', [WalletController::class, 'unlockUserWallet'])->name('unlock-user');
 });
 
 // Withdrawal Management (Admin)
@@ -87,6 +96,16 @@ Route::prefix('withdrawals')->name('withdrawals.')->group(function () {
     Route::post('/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('reject');
     Route::post('/{withdrawal}/complete', [WithdrawalController::class, 'complete'])->name('complete');
     Route::post('/batch-approve', [WithdrawalController::class, 'batchApprove'])->name('batch-approve');
+});
+
+// Wallet Settings Management
+Route::prefix('wallet-settings')->name('wallet-settings.')->group(function () {
+    Route::get('/', [WalletSettingsController::class, 'index'])->name('index');
+    Route::put('/{key}', [WalletSettingsController::class, 'update'])->name('update');
+    Route::post('/bulk-update', [WalletSettingsController::class, 'bulkUpdate'])->name('bulk-update');
+    Route::post('/{id}/toggle', [WalletSettingsController::class, 'toggle'])->name('toggle');
+    Route::post('/calculate-fee', [WalletSettingsController::class, 'calculateFee'])->name('calculate-fee');
+    Route::post('/reset-defaults', [WalletSettingsController::class, 'resetToDefaults'])->name('reset-defaults');
 });
 
 // Language Settings
