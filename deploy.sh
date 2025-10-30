@@ -261,7 +261,7 @@ mkdir -p "$BACKUP_DIR"
 print_header "📦 Deployment Process"
 
 # Step 1: Enable Maintenance Mode
-print_info "[1/17] Enabling maintenance mode..."
+print_info "[1/18] Enabling maintenance mode..."
 
 # Ensure directories exist before running artisan
 ensure_laravel_directories
@@ -273,7 +273,7 @@ print_success "Maintenance mode enabled"
 sleep 2  # Give time for requests to finish
 
 # Step 2: Backup Database
-print_info "[2/17] Creating database backup..."
+print_info "[2/18] Creating database backup..."
 BACKUP_FILE="$BACKUP_DIR/db_backup_$(date +'%Y%m%d_%H%M%S').sql"
 
 # Get database info from .env
@@ -307,8 +307,27 @@ CURRENT_COMMIT=$(git rev-parse HEAD)
 log "Current commit: $CURRENT_COMMIT"
 print_info "Current commit: ${CURRENT_COMMIT:0:8}"
 
+# Step 3: Backup User-Uploaded Files
+print_info "[3/18] Backing up user-uploaded files..."
+UPLOAD_BACKUP_DIR="$BACKUP_DIR/uploads_backup_$(date +'%Y%m%d_%H%M%S')"
+mkdir -p "$UPLOAD_BACKUP_DIR"
+
+# Backup directories that contain user-uploaded files
+UPLOAD_PATHS=("storage/app/public" "public/uploads" "public/storage")
+
+for path in "${UPLOAD_PATHS[@]}"; do
+    if [ -d "$path" ] && [ "$(ls -A $path 2>/dev/null)" ]; then
+        print_info "Backing up $path..."
+        mkdir -p "$UPLOAD_BACKUP_DIR/$(dirname $path)"
+        cp -r "$path" "$UPLOAD_BACKUP_DIR/$path" 2>/dev/null || print_warning "Failed to backup $path"
+        print_success "Backed up $path"
+    fi
+done
+
+log "Upload files backed up to: $UPLOAD_BACKUP_DIR"
+
 # Step 4: Force Pull Latest Code from GitHub
-print_info "[3/17] Force syncing with GitHub..."
+print_info "[4/18] Force syncing with GitHub..."
 
 # Step 4.1: Stash any local changes (for safety backup)
 if [[ -n $(git status -s) ]]; then
@@ -328,16 +347,29 @@ if ! git reset --hard "origin/$BRANCH" 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Failed to reset to origin/$BRANCH" "$?"
 fi
 
-# Step 4.4: Clean all untracked files and directories
+# Step 4.4: Clean all untracked files and directories (excluding uploads)
 print_info "Removing untracked files and directories..."
-git clean -fd || print_warning "Git clean failed (continuing anyway)"
+# Use git clean but exclude user upload directories
+git clean -fdx -e 'storage/app/public/*' -e 'public/uploads/*' -e 'public/storage' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.4.1: Recreate essential Laravel directories
 print_info "Recreating essential Laravel directories..."
 ensure_laravel_directories
 print_success "Essential directories created"
 
-# Step 4.5: Verify we're in sync with remote
+# Step 4.5: Restore user-uploaded files
+print_info "Restoring user-uploaded files..."
+for path in "${UPLOAD_PATHS[@]}"; do
+    if [ -d "$UPLOAD_BACKUP_DIR/$path" ]; then
+        print_info "Restoring $path..."
+        mkdir -p "$(dirname $path)"
+        cp -r "$UPLOAD_BACKUP_DIR/$path" "$(dirname $path)/" 2>/dev/null || print_warning "Failed to restore $path"
+        print_success "Restored $path"
+    fi
+done
+print_success "User-uploaded files restored"
+
+# Step 4.6: Verify we're in sync with remote
 LOCAL_COMMIT=$(git rev-parse HEAD)
 REMOTE_COMMIT=$(git rev-parse "origin/$BRANCH")
 
@@ -351,8 +383,8 @@ NEW_COMMIT=$(git rev-parse HEAD)
 log "New commit: $NEW_COMMIT"
 print_info "New commit: ${NEW_COMMIT:0:8}"
 
-# Step 4.5: Ensure Base Controller Exists
-print_info "[4/17] Ensuring base Controller exists..."
+# Step 5: Ensure Base Controller Exists
+print_info "[5/18] Ensuring base Controller exists..."
 CONTROLLER_FILE="app/Http/Controllers/Controller.php"
 if [ ! -f "$CONTROLLER_FILE" ]; then
     print_warning "Base Controller.php not found, creating..."
@@ -372,8 +404,8 @@ else
     print_success "Base Controller.php exists"
 fi
 
-# Step 5: Install/Update Composer Dependencies
-print_info "[5/17] Installing composer dependencies..."
+# Step 6: Install/Update Composer Dependencies
+print_info "[6/18] Installing composer dependencies..."
 
 # Remove vendor directory to ensure clean install
 if [ -d "vendor" ]; then
@@ -398,15 +430,15 @@ if [ -f "composer.lock" ]; then
         print_warning "Composer.lock validation failed"
 fi
 
-# Step 6: Install/Reinstall Laravel Sanctum
-print_info "[6/17] Installing Laravel Sanctum..."
+# Step 7: Install/Reinstall Laravel Sanctum
+print_info "[7/18] Installing Laravel Sanctum..."
 if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Sanctum installation failed" "$?"
 fi
 print_success "Laravel Sanctum installed and configured"
 
-# Step 7: Clear All Cache
-print_info "[7/17] Clearing all caches..."
+# Step 8: Clear All Cache
+print_info "[8/18] Clearing all caches..."
 php artisan cache:clear 2>/dev/null || true
 php artisan config:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
@@ -414,8 +446,12 @@ php artisan view:clear 2>/dev/null || true
 php artisan event:clear 2>/dev/null || true
 print_success "All caches cleared"
 
-# Step 8: Run Migrations
-print_info "[8/17] Running database migrations..."
+# Step 9: Run Migrations
+print_info "[9/18] Running database migrations..."
+
+# Show current migration status before
+print_info "Current migration status (before):"
+php artisan migrate:status 2>/dev/null | tail -10 || true
 
 # Check if there are pending migrations
 PENDING_MIGRATIONS=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
@@ -428,37 +464,93 @@ if [ "$PENDING_MIGRATIONS" != "0" ]; then
     fi
     print_success "Migrations completed successfully"
 else
-    print_info "No pending migrations"
-    # Run anyway to be safe
-    php artisan migrate --force 2>/dev/null || print_info "No migrations needed"
-    print_success "Database schema is up to date"
+    print_info "No pending migrations found"
+    # Run anyway to ensure database is in sync
+    if php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
+        print_success "Database schema is up to date"
+    else
+        print_warning "Migration check completed with warnings"
+    fi
 fi
 
-# Show migration status
-print_info "Current migration status:"
-php artisan migrate:status 2>/dev/null | tail -5 || true
+# Show migration status after
+print_info "Current migration status (after):"
+php artisan migrate:status 2>/dev/null | tail -10 || true
 
-# Step 9: Seed Database (optional - only for fresh installs)
+# Verify migration integrity
+print_info "Verifying database integrity..."
+if php artisan db:show 2>/dev/null | grep -q "Connection"; then
+    print_success "Database connection verified"
+else
+    print_warning "Database connection verification incomplete"
+fi
+
+# Step 10: Seed Database (intelligent seeding)
+print_info "[10/18] Checking database seeding requirements..."
+
 # Check if database is empty (no super admin)
-SUPER_ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('is_super_admin', true)->count();" 2>/dev/null | tail -1 || echo "0")
+SUPER_ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('is_super_admin', true)->count();" 2>/dev/null | tail -1 || echo "unknown")
 
-if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
-    print_warning "[9/17] No super admin found - database might need seeding"
-    read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
+# Check if this is a fresh database (no users at all)
+TOTAL_USERS=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tail -1 || echo "0")
+
+print_info "Database status: $TOTAL_USERS users, $SUPER_ADMIN_COUNT super admins"
+
+if [ "$TOTAL_USERS" = "0" ] || [ "$SUPER_ADMIN_COUNT" = "0" ]; then
+    print_warning "Database appears to be empty or missing critical data"
+    echo ""
+    echo "Available seeders:"
+    echo "  1. DatabaseSeeder (main seeder - runs all necessary seeders)"
+    echo "  2. Skip seeding"
+    echo ""
+    read -p "Run DatabaseSeeder? (y/n) [y]: " -n 1 -r RUN_SEEDER
     echo
-    if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
-        print_info "Running database seeders..."
-        php artisan db:seed --force || print_warning "Seeding failed (continuing anyway)"
-        print_success "Database seeded"
+
+    if [[ ! $RUN_SEEDER =~ ^[Nn]$ ]]; then
+        print_info "Running DatabaseSeeder..."
+        if php artisan db:seed --class=DatabaseSeeder --force 2>&1 | tee -a "$LOG_FILE"; then
+            print_success "Database seeded successfully"
+
+            # Verify seeding was successful
+            NEW_USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tail -1 || echo "0")
+            print_info "Database now has $NEW_USER_COUNT users"
+        else
+            print_warning "Seeding encountered issues (check logs)"
+        fi
     else
         print_info "Skipping database seeders"
     fi
 else
-    print_info "[9/17] Database already initialized (skipping seeders)"
+    print_success "Database already initialized with data"
+
+    # Ask if user wants to run specific seeders
+    echo ""
+    print_info "Database has existing data. You can still run specific seeders if needed."
+    read -p "Run any seeders? (y/n) [n]: " -n 1 -r RUN_OPTIONAL_SEEDER
+    echo
+
+    if [[ $RUN_OPTIONAL_SEEDER =~ ^[Yy]$ ]]; then
+        echo ""
+        echo "Available seeders:"
+        ls -1 database/seeders/*.php 2>/dev/null | sed 's|database/seeders/||' | sed 's|.php||' | nl
+        echo ""
+        read -p "Enter seeder class name (e.g., DatabaseSeeder): " SEEDER_CLASS
+
+        if [ -n "$SEEDER_CLASS" ]; then
+            print_info "Running $SEEDER_CLASS..."
+            if php artisan db:seed --class="$SEEDER_CLASS" --force 2>&1 | tee -a "$LOG_FILE"; then
+                print_success "Seeder completed successfully"
+            else
+                print_warning "Seeder encountered issues"
+            fi
+        fi
+    else
+        print_info "Skipping seeders"
+    fi
 fi
 
-# Step 10: Create Storage Symlink
-print_info "[10/17] Creating storage symlink..."
+# Step 11: Create Storage Symlink
+print_info "[11/18] Creating storage symlink..."
 php artisan storage:link --force --no-interaction || print_warning "Storage link already exists or failed to create"
 if [ -L "public/storage" ]; then
     print_success "Storage symlink exists (public/storage → storage/app/public)"
@@ -466,8 +558,8 @@ else
     print_warning "Storage symlink verification failed"
 fi
 
-# Step 11: Set Permissions
-print_info "[11/17] Setting file permissions..."
+# Step 12: Set Permissions
+print_info "[12/18] Setting file permissions..."
 
 # Detect web server user
 WEB_USER=""
@@ -506,30 +598,30 @@ fi
 
 print_success "Permissions set"
 
-# Step 12: Cache Configuration
-print_info "[12/17] Caching configuration..."
+# Step 13: Cache Configuration
+print_info "[13/18] Caching configuration..."
 if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
 fi
 print_success "Configuration cached"
 
-# Step 13: Cache Routes
-print_info "[13/17] Caching routes..."
+# Step 14: Cache Routes
+print_info "[14/18] Caching routes..."
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
 print_success "Routes cached"
 
-# Step 14: Cache Views
-print_info "[14/17] Caching views..."
+# Step 15: Cache Views
+print_info "[15/18] Caching views..."
 php artisan view:cache || print_warning "View cache failed (continuing anyway)"
 print_success "Views cached"
 
-# Step 15: Optimize Autoloader
-print_info "[15/17] Optimizing autoloader..."
+# Step 16: Optimize Autoloader
+print_info "[16/18] Optimizing autoloader..."
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
-# Step 16: Restart Services
-print_info "[16/17] Restarting services..."
+# Step 17: Restart Services
+print_info "[17/18] Restarting services..."
 
 # Restart PHP-FPM (if available)
 if command -v systemctl >/dev/null 2>&1; then
@@ -545,8 +637,8 @@ fi
 # Restart queue workers (if using)
 php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted" || true
 
-# Step 17: Disable Maintenance Mode
-print_info "[17/17] Disabling maintenance mode..."
+# Step 18: Disable Maintenance Mode
+print_info "[18/18] Disabling maintenance mode..."
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 
