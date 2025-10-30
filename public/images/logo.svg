@@ -1,0 +1,76 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Gradient สำหรับพื้นหลัง -->
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Gradient สำหรับตัวอักษร -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ffd89b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#19547b;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Gradient สำหรับไอคอน -->
+    <linearGradient id="iconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f5576c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ffd89b;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity="0.3"/>
+    </filter>
+
+    <!-- Glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- พื้นหลังวงกลม -->
+  <circle cx="100" cy="100" r="95" fill="url(#bgGradient)" filter="url(#shadow)"/>
+
+  <!-- วงกลมด้านใน -->
+  <circle cx="100" cy="100" r="85" fill="none" stroke="white" stroke-width="2" opacity="0.3"/>
+
+  <!-- ไอคอน Affiliate/Network -->
+  <g filter="url(#glow)">
+    <!-- จุดศูนย์กลาง -->
+    <circle cx="100" cy="100" r="12" fill="url(#iconGradient)"/>
+
+    <!-- จุดโหนดรอบ ๆ -->
+    <circle cx="100" cy="55" r="8" fill="white" opacity="0.9"/>
+    <circle cx="145" cy="100" r="8" fill="white" opacity="0.9"/>
+    <circle cx="100" cy="145" r="8" fill="white" opacity="0.9"/>
+    <circle cx="55" cy="100" r="8" fill="white" opacity="0.9"/>
+
+    <!-- เส้นเชื่อม -->
+    <line x1="100" y1="100" x2="100" y2="55" stroke="white" stroke-width="3" opacity="0.6"/>
+    <line x1="100" y1="100" x2="145" y2="100" stroke="white" stroke-width="3" opacity="0.6"/>
+    <line x1="100" y1="100" x2="100" y2="145" stroke="white" stroke-width="3" opacity="0.6"/>
+    <line x1="100" y1="100" x2="55" y2="100" stroke="white" stroke-width="3" opacity="0.6"/>
+
+    <!-- จุดเล็ก ๆ ตรงมุม -->
+    <circle cx="70" cy="70" r="5" fill="#ffd89b" opacity="0.8"/>
+    <circle cx="130" cy="70" r="5" fill="#ffd89b" opacity="0.8"/>
+    <circle cx="130" cy="130" r="5" fill="#ffd89b" opacity="0.8"/>
+    <circle cx="70" cy="130" r="5" fill="#ffd89b" opacity="0.8"/>
+
+    <!-- เส้นเชื่อมมุม -->
+    <line x1="100" y1="100" x2="70" y2="70" stroke="white" stroke-width="2" opacity="0.4"/>
+    <line x1="100" y1="100" x2="130" y2="70" stroke="white" stroke-width="2" opacity="0.4"/>
+    <line x1="100" y1="100" x2="130" y2="130" stroke="white" stroke-width="2" opacity="0.4"/>
+    <line x1="100" y1="100" x2="70" y2="130" stroke="white" stroke-width="2" opacity="0.4"/>
+  </g>
+
+  <!-- ตัวอักษร TP ด้านล่าง -->
+  <text x="100" y="175" font-family="Arial, sans-serif" font-size="24" font-weight="bold"
+        text-anchor="middle" fill="white" opacity="0.95">TP</text>
+</svg>
