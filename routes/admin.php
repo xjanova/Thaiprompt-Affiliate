@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
+use App\Http\Controllers\Admin\LanguageSettingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -59,3 +60,14 @@ Route::post('premium-page/{section}/toggle', [PremiumPageController::class, 'tog
 
 // SEO Management
 Route::resource('seo', SeoController::class);
+
+// Language Settings
+Route::prefix('settings')->name('settings.')->group(function () {
+    Route::get('languages', [LanguageSettingController::class, 'index'])->name('languages');
+    Route::post('languages', [LanguageSettingController::class, 'update'])->name('languages.update');
+    Route::post('languages/{code}/toggle', [LanguageSettingController::class, 'toggle'])->name('languages.toggle');
+    Route::put('languages/{code}', [LanguageSettingController::class, 'updateLanguage'])->name('languages.update-single');
+    Route::post('languages/reorder', [LanguageSettingController::class, 'reorder'])->name('languages.reorder');
+    Route::get('languages/switcher', [LanguageSettingController::class, 'getSwitcherSettings'])->name('languages.switcher');
+    Route::put('languages/switcher', [LanguageSettingController::class, 'updateSwitcherSettings'])->name('languages.switcher.update');
+});

@@ -20,15 +20,27 @@ class TranslationController extends Controller
      */
     public function translate(Request $request): JsonResponse
     {
+        $availableLanguages = \App\Models\LanguageSetting::getEnabledCodes();
+
         $request->validate([
-            'text' => 'required|string',
-            'target_lang' => 'required|string|size:2',
-            'source_lang' => 'nullable|string|size:2',
+            'text' => 'required|string|max:5000',
+            'target_lang' => 'required|string|in:' . implode(',', $availableLanguages),
+            'source_lang' => 'nullable|string|in:' . implode(',', $availableLanguages),
         ]);
 
-        $text = $request->input('text');
+        $text = trim($request->input('text'));
         $targetLang = $request->input('target_lang');
         $sourceLang = $request->input('source_lang');
+
+        // Don't translate empty strings
+        if (empty($text)) {
+            return response()->json([
+                'success' => true,
+                'original' => '',
+                'translated' => '',
+                'target_lang' => $targetLang,
+            ]);
+        }
 
         if (!$this->translationService->isEnabled()) {
             return response()->json([
@@ -54,11 +66,13 @@ class TranslationController extends Controller
      */
     public function translateBatch(Request $request): JsonResponse
     {
+        $availableLanguages = \App\Models\LanguageSetting::getEnabledCodes();
+
         $request->validate([
-            'texts' => 'required|array',
-            'texts.*' => 'string',
-            'target_lang' => 'required|string|size:2',
-            'source_lang' => 'nullable|string|size:2',
+            'texts' => 'required|array|max:50',
+            'texts.*' => 'string|max:5000',
+            'target_lang' => 'required|string|in:' . implode(',', $availableLanguages),
+            'source_lang' => 'nullable|string|in:' . implode(',', $availableLanguages),
         ]);
 
         $texts = $request->input('texts');
@@ -78,6 +92,7 @@ class TranslationController extends Controller
             'success' => true,
             'translations' => $translated,
             'target_lang' => $targetLang,
+            'count' => count($translated),
         ]);
     }
 
