@@ -130,10 +130,38 @@
 
             <!-- Branding Settings Tab -->
             <div x-show="activeTab === 'branding'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
-                <form method="POST" action="{{ route('admin.settings.branding') }}" enctype="multipart/form-data">
-                    @csrf
+                <div x-data="{
+                    logoPreview: null,
+                    faviconPreview: null,
+                    isUploading: false,
+                    handleLogoUpload(event) {
+                        const file = event.target.files[0];
+                        if (file && file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                this.logoPreview = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    },
+                    handleFaviconUpload(event) {
+                        const file = event.target.files[0];
+                        if (file && file.type.startsWith('image/')) {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                this.faviconPreview = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    },
+                    handleSubmit(event) {
+                        this.isUploading = true;
+                    }
+                }">
+                    <form method="POST" action="{{ route('admin.settings.branding') }}" enctype="multipart/form-data" @submit="handleSubmit">
+                        @csrf
 
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่าโลโก้และ Favicon</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่าโลโก้และ Favicon</h3>
 
                     <div class="grid md:grid-cols-2 gap-6">
                         <!-- Logo Upload -->
@@ -144,12 +172,21 @@
                             @endphp
                             @if($logo)
                                 <div class="mb-3">
+                                    <p class="text-xs text-gray-600 mb-1">โลโก้ปัจจุบัน:</p>
                                     <img src="{{ asset($logo) }}" alt="Logo" class="h-20 object-contain border rounded p-2">
                                 </div>
                             @endif
-                            <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml"
+                            <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml" @change="handleLogoUpload"
                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             <p class="text-xs text-gray-500 mt-1">รองรับ PNG, JPG, SVG (สูงสุด 2MB)</p>
+
+                            <!-- Logo Preview -->
+                            <div x-show="logoPreview" x-transition class="mt-4">
+                                <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่างโลโก้ใหม่:</p>
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <img :src="logoPreview" alt="Preview" class="h-20 object-contain">
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Favicon Upload -->
@@ -160,12 +197,21 @@
                             @endphp
                             @if($favicon)
                                 <div class="mb-3">
+                                    <p class="text-xs text-gray-600 mb-1">Favicon ปัจจุบัน:</p>
                                     <img src="{{ asset($favicon) }}" alt="Favicon" class="h-16 w-16 object-contain border rounded p-2">
                                 </div>
                             @endif
-                            <input type="file" name="favicon" accept="image/png,image/jpeg,image/jpg,image/x-icon"
+                            <input type="file" name="favicon" accept="image/png,image/jpeg,image/jpg,image/x-icon" @change="handleFaviconUpload"
                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             <p class="text-xs text-gray-500 mt-1">รองรับ PNG, JPG, ICO (สูงสุด 512KB)</p>
+
+                            <!-- Favicon Preview -->
+                            <div x-show="faviconPreview" x-transition class="mt-4">
+                                <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่าง Favicon ใหม่:</p>
+                                <div class="border rounded-lg p-4 bg-gray-50">
+                                    <img :src="faviconPreview" alt="Preview" class="h-16 w-16 object-contain">
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -175,6 +221,24 @@
                         </button>
                     </div>
                 </form>
+
+                <!-- Loading Overlay -->
+                <div x-show="isUploading" x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                     style="display: none;">
+                    <div class="bg-white rounded-lg p-8 max-w-sm mx-4 text-center shadow-2xl">
+                        <div class="mb-4">
+                            <svg class="animate-spin h-16 w-16 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-2">กำลังอัพโหลด...</h3>
+                        <p class="text-gray-600">กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล</p>
+                    </div>
+                </div>
+                </div>
             </div>
 
             <!-- Theme Colors Tab -->
