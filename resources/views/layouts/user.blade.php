@@ -109,7 +109,7 @@
                 <!-- Right Actions -->
                 <div class="flex items-center space-x-2">
                     <!-- Language Switcher -->
-                    @include('components.language-switcher')
+                    <x-language-switcher-pro />
 
                     <!-- Notifications -->
                     <button @click="showNotifications = !showNotifications" class="relative p-2">
