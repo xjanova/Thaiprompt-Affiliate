@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Affiliate;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -43,8 +44,15 @@ class RegisterController extends Controller
 
         // Create affiliate account
         $parentAffiliate = null;
-        if (!empty($validated['referral_code'])) {
-            $parentAffiliate = Affiliate::where('referral_code', $validated['referral_code'])->first();
+        $referralCode = $validated['referral_code'] ?? null;
+
+        // If no referral code provided, use default sponsor from settings
+        if (empty($referralCode)) {
+            $referralCode = Setting::get('default_sponsor_referral_code');
+        }
+
+        if (!empty($referralCode)) {
+            $parentAffiliate = Affiliate::where('referral_code', $referralCode)->first();
         }
 
         $affiliate = Affiliate::create([

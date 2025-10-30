@@ -117,6 +117,15 @@
                                     <span class="ml-2 text-sm text-gray-700">เปิดใช้งานระบบหลายระดับ</span>
                                 </label>
                             </div>
+
+                            <div class="mb-4">
+                                <label for="default_sponsor_referral_code" class="block text-sm font-medium text-gray-700 mb-2">รหัสแนะนำเริ่มต้น (Default Sponsor ID)</label>
+                                <input type="text" name="default_sponsor_referral_code" id="default_sponsor_referral_code"
+                                       value="{{ old('default_sponsor_referral_code', $settings->get('affiliate')->firstWhere('key', 'default_sponsor_referral_code')->value ?? '') }}"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                       placeholder="กรอกรหัสแนะนำเริ่มต้น">
+                                <p class="text-xs text-gray-500 mt-1">ผู้สมัครที่ไม่มีรหัสแนะนำจะถูกต่อสายงานอัตโนมัติกับรหัสนี้</p>
+                            </div>
                         </div>
 
                         <div class="flex justify-end">

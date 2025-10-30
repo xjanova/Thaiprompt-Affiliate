@@ -28,6 +28,7 @@ class SettingsController extends Controller
             'app_name' => ['nullable', 'string', 'max:255'],
             'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'multi_level_enabled' => ['nullable', 'boolean'],
+            'default_sponsor_referral_code' => ['nullable', 'string', 'exists:affiliates,referral_code'],
             'home_custom_content' => ['nullable', 'string'],
             // API Settings
             'google_translate_enabled' => ['nullable', 'boolean'],
@@ -45,7 +46,8 @@ class SettingsController extends Controller
         foreach ($validated as $key => $value) {
             if ($value !== null) {
                 $type = is_bool($value) ? 'boolean' : (is_numeric($value) ? 'integer' : 'string');
-                Setting::set($key, $value, $type);
+                $group = in_array($key, ['commission_rate', 'multi_level_enabled', 'default_sponsor_referral_code']) ? 'affiliate' : 'general';
+                Setting::set($key, $value, $type, $group);
             }
         }
 
