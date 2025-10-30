@@ -133,10 +133,40 @@
                 </a>
 
                 <a href="{{ route('admin.wallet.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.wallet.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.wallet.index') || request()->routeIs('admin.wallet.transactions') || request()->routeIs('admin.wallet.logs') || request()->routeIs('admin.wallet.settings') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👛</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กระเป๋าเงิน</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กระเป๋าของฉัน</span>
                 </a>
+
+                @if(auth()->user()->hasPermission('view_all_wallets') || auth()->user()->isSuperAdmin())
+                <a href="{{ route('admin.wallet.all') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.wallet.all') || request()->routeIs('admin.wallet.show') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💼</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กระเป๋าทั้งหมด</span>
+                </a>
+                @endif
+
+                @if(auth()->user()->hasPermission('approve_withdrawals') || auth()->user()->isSuperAdmin())
+                <a href="{{ route('admin.withdrawals.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.withdrawals.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💸</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คำขอถอนเงิน</span>
+                    @php
+                        $pendingCount = \App\Models\WithdrawalRequest::pending()->count();
+                    @endphp
+                    @if($pendingCount > 0)
+                        <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $pendingCount }}</span>
+                    @endif
+                </a>
+                @endif
+
+                @if(auth()->user()->hasPermission('manage_wallet_settings') || auth()->user()->isSuperAdmin())
+                <a href="{{ route('admin.wallet-settings.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.wallet-settings.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ตั้งค่า Wallet</span>
+                </a>
+                @endif
 
                 <div class="border-t border-gray-700 my-4"></div>
                 <div class="px-4 py-2 text-xs text-gray-500 uppercase tracking-wider" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
@@ -219,6 +249,9 @@
                     </div>
 
                     <div class="flex items-center space-x-4">
+                        <!-- Notification Bell -->
+                        <x-notification-bell />
+
                         <!-- Language Switcher -->
                         <div class="relative z-[60]">
                             <x-language-switcher-pro />

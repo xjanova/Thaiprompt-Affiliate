@@ -108,16 +108,11 @@
 
                 <!-- Right Actions -->
                 <div class="flex items-center space-x-2">
+                    <!-- Notification Bell -->
+                    <x-notification-bell />
+
                     <!-- Language Switcher -->
                     <x-language-switcher-pro />
-
-                    <!-- Notifications -->
-                    <button @click="showNotifications = !showNotifications" class="relative p-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <span class="absolute top-0 right-0 block h-2 w-2 bg-red-500 rounded-full"></span>
-                    </button>
                 </div>
             </div>
         </header>
@@ -174,6 +169,32 @@
                     <span>คอมมิชชั่น</span>
                 </a>
 
+                <!-- Wallet Menu -->
+                <a href="{{ route('user.wallet.index') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.*') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">💳</span>
+                    <span>กระเป๋าเงิน</span>
+                </a>
+
+                <a href="{{ route('user.wallet.transactions') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.transactions') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">📝</span>
+                    <span>ประวัติธุรกรรม</span>
+                </a>
+
+                <a href="{{ route('user.wallet.withdraw') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.withdraw') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">💸</span>
+                    <span>ถอนเงิน</span>
+                </a>
+
+                <a href="{{ route('user.wallet.withdrawals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.withdrawals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">📋</span>
+                    <span>ประวัติการถอน</span>
+                </a>
+
+                <a href="{{ route('user.wallet.payment-methods') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.payment-methods') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">🏦</span>
+                    <span>ช่องทางรับเงิน</span>
+                </a>
+
                 <a href="{{ route('user.referrals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.referrals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
                     <span class="text-xl mr-3">👥</span>
                     <span>ผู้แนะนำ</span>
@@ -221,6 +242,32 @@
                     <span>คอมมิชชั่น</span>
                 </a>
 
+                <!-- Wallet Menu -->
+                <a href="{{ route('user.wallet.index') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.*') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">💳</span>
+                    <span>กระเป๋าเงิน</span>
+                </a>
+
+                <a href="{{ route('user.wallet.transactions') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.transactions') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">📝</span>
+                    <span>ประวัติธุรกรรม</span>
+                </a>
+
+                <a href="{{ route('user.wallet.withdraw') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.withdraw') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">💸</span>
+                    <span>ถอนเงิน</span>
+                </a>
+
+                <a href="{{ route('user.wallet.withdrawals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.withdrawals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">📋</span>
+                    <span>ประวัติการถอน</span>
+                </a>
+
+                <a href="{{ route('user.wallet.payment-methods') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.payment-methods') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">🏦</span>
+                    <span>ช่องทางรับเงิน</span>
+                </a>
+
                 <a href="{{ route('user.referrals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.referrals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
                     <span class="text-xl mr-3">👥</span>
                     <span>ผู้แนะนำ</span>
@@ -265,14 +312,14 @@
                     <span class="text-xs mt-1">แดชบอร์ด</span>
                 </a>
 
+                <a href="{{ route('user.wallet.index') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.wallet.*') ? 'text-indigo-600' : 'text-gray-600' }}">
+                    <span class="text-2xl">💳</span>
+                    <span class="text-xs mt-1">กระเป๋าเงิน</span>
+                </a>
+
                 <a href="{{ route('user.commissions') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.commissions') ? 'text-indigo-600' : 'text-gray-600' }}">
                     <span class="text-2xl">💰</span>
                     <span class="text-xs mt-1">คอมมิชชั่น</span>
-                </a>
-
-                <a href="{{ route('user.referrals') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.referrals') ? 'text-indigo-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">👥</span>
-                    <span class="text-xs mt-1">ผู้แนะนำ</span>
                 </a>
 
                 <a href="{{ route('user.profile') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.profile') ? 'text-indigo-600' : 'text-gray-600' }}">
