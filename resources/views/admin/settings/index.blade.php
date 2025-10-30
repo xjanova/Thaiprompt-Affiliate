@@ -378,24 +378,52 @@
                     </div>
 
                     <!-- TinyMCE API -->
-                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                    <div class="mb-8 p-6 bg-gray-50 rounded-lg border-2 border-indigo-200">
                         <div class="flex items-center mb-4">
                             <span class="text-2xl mr-3">✏️</span>
                             <h4 class="text-lg font-semibold text-gray-900">TinyMCE Editor API</h4>
+                            @php
+                                $hasTinyMCEKey = !empty($settings->get('general')->firstWhere('key', 'tinymce_api_key')->value ?? '');
+                            @endphp
+                            @if($hasTinyMCEKey)
+                                <span class="ml-3 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✓ กำหนดค่าแล้ว</span>
+                            @else
+                                <span class="ml-3 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">⚠ ยังไม่ได้ตั้งค่า</span>
+                            @endif
                         </div>
+
+                        @if(!$hasTinyMCEKey)
+                        <div class="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-800 text-sm rounded">
+                            <strong>💡 คำแนะนำ:</strong> TinyMCE เป็นตัวแก้ไขข้อความแบบ Rich Text ที่ใช้ในการแก้ไขเนื้อหาหน้าแรก
+                            API Key ฟรีจะช่วยให้ตัวแก้ไขทำงานได้เต็มประสิทธิภาพและไม่แสดงข้อความเตือน
+                        </div>
+                        @endif
 
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    API Key
+                                    <span class="text-xs text-gray-500 font-normal">(ฟรี - ไม่มีค่าใช้จ่าย)</span>
+                                </label>
                                 <input type="text" name="tinymce_api_key"
                                        value="{{ old('tinymce_api_key', $settings->get('general')->firstWhere('key', 'tinymce_api_key')->value ?? '') }}"
-                                       placeholder="your-tinymce-api-key"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                <p class="text-xs text-gray-500 mt-1">
-                                    สมัครฟรีได้ที่ <a href="https://www.tiny.cloud/auth/signup/" target="_blank" class="text-indigo-600 hover:underline">TinyMCE Cloud</a>
-                                    <br>
-                                    <span class="text-gray-600">📌 หากไม่ใส่ จะใช้ API Key แบบทดสอบ (มีข้อจำกัด)</span>
-                                </p>
+                                       placeholder="ใส่ TinyMCE API Key ของคุณที่นี่"
+                                       class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition">
+                                <div class="mt-2 space-y-1">
+                                    <p class="text-xs text-gray-600">
+                                        🔑 <strong>วิธีรับ API Key ฟรี:</strong>
+                                    </p>
+                                    <ol class="text-xs text-gray-600 list-decimal ml-5 space-y-0.5">
+                                        <li>ไปที่ <a href="https://www.tiny.cloud/auth/signup/" target="_blank" class="text-indigo-600 hover:underline font-medium">TinyMCE Cloud</a></li>
+                                        <li>สมัครสมาชิกฟรี (ใช้อีเมลยืนยัน)</li>
+                                        <li>คัดลอก API Key จากแดชบอร์ด</li>
+                                        <li>วางที่นี่และคลิก "บันทึกการตั้งค่า"</li>
+                                    </ol>
+                                    <p class="text-xs text-gray-500 mt-2">
+                                        <span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded">⚠ หมายเหตุ:</span>
+                                        หากไม่ใส่ ตัวแก้ไขจะทำงานในโหมดทดสอบและอาจมีข้อความเตือนสีเหลือง
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -432,28 +460,59 @@
 
 <!-- TinyMCE Editor -->
 @php
-    $tinymceApiKey = \App\Models\Setting::get('tinymce_api_key') ?: 'no-api-key';
+    $tinymceApiKey = \App\Models\Setting::get('tinymce_api_key');
+    $hasValidApiKey = !empty($tinymceApiKey) && $tinymceApiKey !== 'no-api-key';
 @endphp
-<script src="https://cdn.tiny.cloud/1/{{ $tinymceApiKey }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+@if(!$hasValidApiKey)
+<div class="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-lg">
+    <div class="flex items-start">
+        <svg class="w-5 h-5 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <div>
+            <h4 class="font-semibold mb-1">ยังไม่ได้ตั้งค่า TinyMCE API Key</h4>
+            <p class="text-sm">
+                ตัวแก้ไขจะทำงานในโหมดทดสอบและอาจแสดงข้อความเตือน
+                กรุณาตั้งค่า API Key ในแท็บ "API Settings" เพื่อใช้งานเต็มรูปแบบ
+                <a href="https://www.tiny.cloud/auth/signup/" target="_blank" class="underline font-medium">สมัครฟรีที่นี่</a>
+            </p>
+        </div>
+    </div>
+</div>
+@endif
+
+<script src="https://cdn.tiny.cloud/1/{{ $hasValidApiKey ? $tinymceApiKey : 'no-api-key' }}/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    tinymce.init({
-        selector: '#home_custom_content',
-        height: 500,
-        menubar: true,
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'help', 'wordcount'
-        ],
-        toolbar: 'undo redo | blocks | ' +
-            'bold italic backcolor | alignleft aligncenter ' +
-            'alignright alignjustify | bullist numlist outdent indent | ' +
-            'removeformat | link image | code | help',
-        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-        branding: false,
-        promotion: false
-    });
+    // Wait for TinyMCE to be loaded
+    if (typeof tinymce !== 'undefined') {
+        tinymce.init({
+            selector: '#home_custom_content',
+            height: 500,
+            menubar: true,
+            plugins: [
+                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
+                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
+                'insertdatetime', 'media', 'table', 'help', 'wordcount'
+            ],
+            toolbar: 'undo redo | blocks | ' +
+                'bold italic backcolor | alignleft aligncenter ' +
+                'alignright alignjustify | bullist numlist outdent indent | ' +
+                'removeformat | link image | code | help',
+            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+            branding: false,
+            promotion: false,
+            @if(!$hasValidApiKey)
+            // ปิดการแจ้งเตือนบางส่วนเมื่อใช้โหมดทดสอบ
+            init_instance_callback: function (editor) {
+                console.log('TinyMCE กำลังทำงานในโหมดทดสอบ - กรุณาเพิ่ม API Key เพื่อใช้งานเต็มรูปแบบ');
+            }
+            @endif
+        });
+    } else {
+        console.error('TinyMCE ไม่สามารถโหลดได้ - กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+    }
 });
 </script>
 @endsection

@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-    <title>@yield('title') - {{ config('app.name', 'TP-Affiliate') }}</title>
+    <title>@yield('title') - {{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</title>
 
     @php
         $favicon = \App\Models\Setting::get('favicon');
@@ -102,7 +102,7 @@
                     @if($logo)
                         <img src="{{ asset($logo) }}" alt="Logo" class="h-8 object-contain">
                     @else
-                        <span class="text-xl font-bold">TP-Affiliate</span>
+                        <span class="text-xl font-bold">{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</span>
                     @endif
                 </div>
 
