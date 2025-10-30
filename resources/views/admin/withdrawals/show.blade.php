@@ -243,7 +243,7 @@
                     </button>
                 </form>
 
-                <button @click="$dispatch('show-reject-modal')" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+                <button x-on:click="$dispatch('show-reject-modal')" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition">
                     ❌ ปฏิเสธคำขอ
                 </button>
             </div>
@@ -274,13 +274,13 @@
 
 <!-- Reject Modal -->
 <div x-data="{ showModal: false }"
-     @show-reject-modal.window="showModal = true"
+     x-on:show-reject-modal.window="showModal = true"
      x-show="showModal"
      x-cloak
      class="fixed inset-0 z-50 overflow-y-auto"
      style="display: none;">
     <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-black opacity-50" @click="showModal = false"></div>
+        <div class="fixed inset-0 bg-black opacity-50" x-on:click="showModal = false"></div>
 
         <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 class="text-xl font-bold text-gray-900 mb-4">ปฏิเสธคำขอถอนเงิน</h3>
@@ -294,7 +294,7 @@
                 </div>
 
                 <div class="flex space-x-3">
-                    <button type="button" @click="showModal = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
+                    <button type="button" x-on:click="showModal = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
                         ยกเลิก
                     </button>
                     <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">

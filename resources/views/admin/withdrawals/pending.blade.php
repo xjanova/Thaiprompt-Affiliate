@@ -43,8 +43,8 @@
                 <div class="flex items-start space-x-4">
                     <!-- Checkbox -->
                     <input type="checkbox"
-                           :checked="selectedIds.includes({{ $withdrawal->id }})"
-                           @change="if($event.target.checked) { selectedIds.push({{ $withdrawal->id }}) } else { selectedIds = selectedIds.filter(id => id !== {{ $withdrawal->id }}) }"
+                           x-bind:checked="selectedIds.includes({{ $withdrawal->id }})"
+                           x-on:change="if($event.target.checked) { selectedIds.push({{ $withdrawal->id }}) } else { selectedIds = selectedIds.filter(id => id !== {{ $withdrawal->id }}) }"
                            class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
 
                     <!-- Request Info -->
@@ -127,7 +127,7 @@
                             ✅ อนุมัติ
                         </button>
                     </form>
-                    <button @click="$dispatch('show-reject-modal', { id: {{ $withdrawal->id }}, requestId: '{{ $withdrawal->request_id }}' })" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                    <button x-on:click="$dispatch('show-reject-modal', { id: {{ $withdrawal->id }}, requestId: '{{ $withdrawal->request_id }}' })" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">
                         ❌ ปฏิเสธ
                     </button>
                 </div>
@@ -156,19 +156,19 @@
 
 <!-- Reject Modal -->
 <div x-data="{ showModal: false, withdrawalId: null, requestId: '' }"
-     @show-reject-modal.window="showModal = true; withdrawalId = $event.detail.id; requestId = $event.detail.requestId"
+     x-on:show-reject-modal.window="showModal = true; withdrawalId = $event.detail.id; requestId = $event.detail.requestId"
      x-show="showModal"
      x-cloak
      class="fixed inset-0 z-50 overflow-y-auto"
      style="display: none;">
     <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-black opacity-50" @click="showModal = false"></div>
+        <div class="fixed inset-0 bg-black opacity-50" x-on:click="showModal = false"></div>
 
         <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
             <h3 class="text-xl font-bold text-gray-900 mb-4">ปฏิเสธคำขอถอนเงิน</h3>
             <p class="text-sm text-gray-600 mb-4">รหัสคำขอ: <span class="font-bold" x-text="requestId"></span></p>
 
-            <form :action="`{{ route('admin.withdrawals.index') }}/${withdrawalId}/reject`" method="POST">
+            <form x-bind:action="`{{ route('admin.withdrawals.index') }}/${withdrawalId}/reject`" method="POST">
                 @csrf
                 <div class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 mb-2">เหตุผลในการปฏิเสธ <span class="text-red-500">*</span></label>
@@ -176,7 +176,7 @@
                 </div>
 
                 <div class="flex space-x-3">
-                    <button type="button" @click="showModal = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
+                    <button type="button" x-on:click="showModal = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
                         ยกเลิก
                     </button>
                     <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">
