@@ -108,6 +108,46 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all withdrawal requests for the user
+     */
+    public function withdrawalRequests()
+    {
+        return $this->hasMany(WithdrawalRequest::class);
+    }
+
+    /**
+     * Get all payment methods for the user
+     */
+    public function paymentMethods()
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
+
+    /**
+     * Get default payment method
+     */
+    public function defaultPaymentMethod()
+    {
+        return $this->hasOne(PaymentMethod::class)->where('is_default', true);
+    }
+
+    /**
+     * Get all notifications for the user
+     */
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    /**
+     * Get unread notifications count
+     */
+    public function getUnreadNotificationsCountAttribute(): int
+    {
+        return $this->notifications()->unread()->notExpired()->count();
+    }
+
+    /**
      * Check if user has specific permission
      */
     public function hasPermission(string $permission): bool
@@ -173,6 +213,10 @@ class User extends Authenticatable
             'manage_settings',
             'manage_branding',
             'manage_permissions',
+            'manage_wallets',
+            'approve_withdrawals',
+            'view_all_wallets',
+            'manage_wallet_settings',
         ];
     }
 }
