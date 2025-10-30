@@ -139,12 +139,6 @@
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สไลด์</span>
                 </a>
 
-                <a href="{{ route('admin.home-sections.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.home-sections.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏗️</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ส่วนหน้าแรก</span>
-                </a>
-
                 <a href="{{ route('admin.pages.index') }}"
                    class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.pages.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📄</span>
