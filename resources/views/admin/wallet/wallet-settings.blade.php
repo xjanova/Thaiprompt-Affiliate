@@ -128,7 +128,7 @@
             <div class="border border-gray-200 rounded-lg p-4">
                 <h4 class="font-bold text-gray-900 mb-3">รีเซ็ตค่าเริ่มต้น</h4>
                 <p class="text-sm text-gray-600 mb-3">คืนค่าการตั้งค่าทั้งหมดกลับเป็นค่าเริ่มต้นของระบบ</p>
-                <form action="{{ route('admin.wallet-settings.reset') }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือว่าต้องการรีเซ็ตการตั้งค่าทั้งหมด?')">
+                <form action="{{ route('admin.wallet-settings.reset-defaults') }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือว่าต้องการรีเซ็ตการตั้งค่าทั้งหมด?')">
                     @csrf
                     <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 rounded-lg transition">
                         รีเซ็ตทั้งหมด
