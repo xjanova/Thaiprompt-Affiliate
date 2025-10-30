@@ -240,19 +240,23 @@
                 <div class="space-y-3">
                     <div class="flex justify-between items-center py-2">
                         <span class="text-gray-600 text-sm">ธุรกรรมทั้งหมด</span>
-                        <span class="font-bold text-gray-900">{{ number_format($statistics['total_transactions']) }}</span>
+                        <span class="font-bold text-gray-900">{{ number_format($statistics['transactions_count'] ?? 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center py-2 border-t">
-                        <span class="text-gray-600 text-sm">ธุรกรรมเดือนนี้</span>
-                        <span class="font-bold text-gray-900">{{ number_format($statistics['this_month_transactions']) }}</span>
+                        <span class="text-gray-600 text-sm">รายรับ 30 วัน</span>
+                        <span class="font-bold text-green-600">{{ number_format($statistics['last_30_days_income'] ?? 0, 2) }}</span>
                     </div>
                     <div class="flex justify-between items-center py-2 border-t">
-                        <span class="text-gray-600 text-sm">คอมมิชชั่นที่ได้รับ</span>
-                        <span class="font-bold text-green-600">{{ number_format($statistics['total_commission'], 2) }}</span>
+                        <span class="text-gray-600 text-sm">รายจ่าย 30 วัน</span>
+                        <span class="font-bold text-red-600">{{ number_format($statistics['last_30_days_expense'] ?? 0, 2) }}</span>
                     </div>
                     <div class="flex justify-between items-center py-2 border-t">
-                        <span class="text-gray-600 text-sm">จำนวนถอนเงิน</span>
-                        <span class="font-bold text-blue-600">{{ number_format($statistics['total_withdrawals']) }}</span>
+                        <span class="text-gray-600 text-sm">รายรับทั้งหมด</span>
+                        <span class="font-bold text-green-600">{{ number_format($statistics['total_income'] ?? 0, 2) }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-2 border-t">
+                        <span class="text-gray-600 text-sm">รายจ่ายทั้งหมด</span>
+                        <span class="font-bold text-red-600">{{ number_format($statistics['total_expense'] ?? 0, 2) }}</span>
                     </div>
                 </div>
             </div>
