@@ -130,6 +130,7 @@ php artisan migrate
 **คู่มือเฉพาะทาง:**
 - 🌍 [MULTI-LANGUAGE.md](MULTI-LANGUAGE.md) - **ระบบหลายภาษา** (ไทย/English + วิธีเพิ่มภาษาใหม่)
 - 👑 [SUPER-ADMIN.md](SUPER-ADMIN.md) - **ระบบ Super Admin** (สิทธิ์เข้าถึงและการจัดการ)
+- 📌 [VERSIONING.md](VERSIONING.md) - **ระบบเวอร์ชั่น** (การอัปเดตและจัดการเวอร์ชั่น)
 
 ---
 
