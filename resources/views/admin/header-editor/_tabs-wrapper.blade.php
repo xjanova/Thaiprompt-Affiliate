@@ -35,7 +35,7 @@
     <div class="mt-6">
         <!-- Header Settings Tab -->
         <div x-show="activeTab === 'settings'" x-transition>
-            @include('admin.header-editor.index.backup')
+            @include('admin.header-editor._header-settings')
         </div>
 
         <!-- Template Selector Tab -->
