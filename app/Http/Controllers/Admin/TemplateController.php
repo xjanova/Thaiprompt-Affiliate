@@ -20,7 +20,11 @@ class TemplateController extends Controller
             ->withCount('sections')
             ->orderBy('is_default', 'desc')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($template) {
+                $template->is_in_use = $template->isInUse();
+                return $template;
+            });
 
         return view('admin.templates.index', compact('templates'));
     }
