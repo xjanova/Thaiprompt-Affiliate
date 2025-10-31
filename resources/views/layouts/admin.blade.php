@@ -240,6 +240,12 @@
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">จัดการหน้าแรก</span>
                 </a>
 
+                <a href="{{ route('admin.header-editor.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.header-editor.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📐</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แก้ไข Header & Menu</span>
+                </a>
+
                 <a href="{{ route('admin.pages.index') }}"
                    class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.pages.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📄</span>
