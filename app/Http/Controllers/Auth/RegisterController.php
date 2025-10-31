@@ -19,7 +19,20 @@ class RegisterController extends Controller
     public function showRegistrationForm(Request $request)
     {
         $referralCode = $request->query('ref');
-        return view('auth.register', compact('referralCode'));
+
+        // Get default sponsor info
+        $defaultSponsorName = null;
+        if (empty($referralCode)) {
+            $defaultSponsorCode = Setting::get('default_sponsor_referral_code');
+            if (!empty($defaultSponsorCode)) {
+                $defaultSponsor = Affiliate::where('referral_code', $defaultSponsorCode)->with('user')->first();
+                if ($defaultSponsor && $defaultSponsor->user) {
+                    $defaultSponsorName = $defaultSponsor->user->name;
+                }
+            }
+        }
+
+        return view('auth.register', compact('referralCode', 'defaultSponsorName'));
     }
 
     /**
