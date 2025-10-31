@@ -1,401 +1,680 @@
-# 🚀 TP-Affiliate - Thai Prompt Affiliate System
+# 🚀 TP-Affiliate Pro - ระบบแอฟฟิลิเอตมืออาชีพ
 
-**Modern, Professional, Ready-to-Use Affiliate Marketing Platform**
+<div align="center">
+
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Laravel](https://img.shields.io/badge/Laravel-11.x-red.svg)
+![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple.svg)
+![License](https://img.shields.io/badge/license-Commercial-green.svg)
+
+**ระบบแอฟฟิลิเอตที่ทันสมัยและพร้อมใช้งาน**
+พัฒนาด้วย Laravel 11 | รองรับหลายภาษา | ออกแบบสวยงามด้วย Tailwind CSS
+
+[🌟 คุณสมบัติ](#-คุณสมบัติเด่น) •
+[📦 การติดตั้ง](#-การติดตั้ง) •
+[🔑 License](#-license-และการเปิดใช้งาน) •
+[📖 เอกสาร](#-เอกสารประกอบ) •
+[💬 การสนับสนุน](#-การสนับสนุน)
+
+</div>
+
+---
+
+## 📌 เกี่ยวกับระบบ
+
+**TP-Affiliate Pro** คือระบบจัดการแอฟฟิลิเอตมาร์เก็ตติ้งที่สมบูรณ์แบบ พร้อมใช้งานทันทีหลังติดตั้ง เหมาะสำหรับธุรกิจที่ต้องการระบบแอฟฟิลิเอตที่มีประสิทธิภาพ มีระบบการจัดการที่ครบครัน และรองรับการปรับแต่งได้อย่างยืดหยุ่น
+
+### 🎯 เหมาะสำหรับ
+
+- ✅ ธุรกิจออนไลน์ที่ต้องการระบบแอฟฟิลิเอต
+- ✅ บริษัทที่ต้องการสร้างเครือข่ายการตลาด
+- ✅ Startup ที่ต้องการเริ่มต้นอย่างรวดเร็ว
+- ✅ นักพัฒนาที่ต้องการ template ระบบแอฟฟิลิเอต
+
+### 💡 จุดเด่น
+
+- 🔥 **ติดตั้งง่าย** - ใช้เวลาไม่เกิน 5 นาที
+- 🎨 **UI/UX สวยงาม** - ออกแบบโดยมืออาชีพ
+- 🔐 **ปลอดภัยสูง** - มาตรฐาน Enterprise Level
+- 🌍 **รองรับหลายภาษา** - ไทย, อังกฤษ (เพิ่มได้ไม่จำกัด)
+- 📱 **Responsive** - ใช้งานได้ทุกอุปกรณ์
+- 🔄 **อัปเดตง่าย** - กดปุ่มเดียวจากในระบบ
+- 📊 **รายงานครบครัน** - Dashboard แบบ Real-time
+
+---
 
 ## ✨ คุณสมบัติเด่น
 
-### 🎯 ระบบติดตั้งแบบง่าย (One-Click Installation)
-- ติดตั้งได้ภายใน 2 นาที
-- ไม่ต้องแก้ไขโค้ด
-- รองรับ Docker และ Manual Installation
+### 🎯 ระบบแอฟฟิลิเอต
 
-### 🎨 UI/UX ระดับมืออาชีพ
-- **Admin Dashboard** - กราฟ, widgets, real-time statistics
-- **Frontend** - GSAP animations, responsive, สวยงามทุกอุปกรณ์
-- แยกชัดเจน: หน้าบ้าน/หลังบ้าน
+<table>
+<tr>
+<td width="50%">
 
-### 👑 Super User System
-- ระบบ Authentication ที่ปลอดภัย
-- Role-based Access Control
-- Activity Logging
+#### 👥 การจัดการสมาชิก
+- ระบบสมัครสมาชิกอัตโนมัติ
+- การยืนยันตัวตนผ่านอีเมล
+- โปรไฟล์ที่ปรับแต่งได้
+- ระบบอัปโหลดรูปโปรไฟล์
+- จัดการข้อมูลส่วนตัว
 
-### 📱 Responsive Design
-- รองรับทุกอุปกรณ์ (Desktop, Tablet, Mobile)
-- Mobile-first approach
-- Fast loading & optimized
+#### 💰 ระบบคอมมิชชั่น
+- คำนวณคอมมิชชั่นอัตโนมัติ
+- รองรับหลายระดับ (Multi-tier)
+- ตั้งค่าเปอร์เซ็นต์คอมได้
+- ประวัติคอมมิชชั่นแบบละเอียด
+- สรุปรายได้รายเดือน
+
+</td>
+<td width="50%">
+
+#### 🔗 ระบบลิงก์แอฟฟิลิเอต
+- สร้างลิงก์อัตโนมัติ
+- QR Code Generator
+- ติดตามการคลิก
+- สถิติการแปลง (Conversion)
+- Short URL Support
+
+#### 💳 ระบบกระเป๋าเงิน
+- กระเป๋าเงินสำหรับแต่ละผู้ใช้
+- ถอนเงินผ่านหลายช่องทาง
+- ประวัติธุรกรรมแบบละเอียด
+- การอนุมัติอัตโนมัติ/Manual
+- แจ้งเตือนผ่านระบบ
+
+</td>
+</tr>
+</table>
+
+### 🎨 ระบบ Admin Dashboard
+
+<table>
+<tr>
+<td width="50%">
+
+#### 📊 Dashboard
+- สถิติแบบ Real-time
+- กราฟวิเคราะห์ข้อมูล
+- แจ้งเตือนสำคัญ
+- Quick Actions
+- Dark/Light Mode
+
+#### 👤 จัดการผู้ใช้
+- CRUD ผู้ใช้ทั้งหมด
+- ระบบสิทธิ์ (RBAC)
+- ดูประวัติการใช้งาน
+- ระงับ/ปลดบล็อกบัญชี
+- Export ข้อมูล
+
+</td>
+<td width="50%">
+
+#### ⚙️ การตั้งค่าระบบ
+- ตั้งค่าทั่วไป
+- การตั้งค่าอีเมล
+- ธีมและสี
+- SEO Settings
+- Payment Gateway
+- การแจ้งเตือน
+
+#### 🌍 จัดการหน้าเว็บ
+- Header Builder
+- Menu Manager
+- Content Editor
+- SEO Management
+- Media Library
+
+</td>
+</tr>
+</table>
+
+### 🔐 ความปลอดภัย
+
+- ✅ CSRF Protection
+- ✅ XSS Prevention
+- ✅ SQL Injection Protection
+- ✅ Password Hashing (bcrypt)
+- ✅ Rate Limiting
+- ✅ Two-Factor Authentication (2FA)
+- ✅ Activity Logging
+- ✅ IP Whitelist/Blacklist
+
+### 🌍 ระบบหลายภาษา
+
+- 🇹🇭 ภาษาไทย (Built-in)
+- 🇬🇧 ภาษาอังกฤษ (Built-in)
+- ➕ เพิ่มภาษาอื่นได้ไม่จำกัด
+- 🔄 สลับภาษาได้ทันที
+- 📝 แปลผ่าน Google Translate API
+
+### 🔄 ระบบอัปเดตอัตโนมัติ
+
+- 🎯 ตรวจสอบเวอร์ชั่นใหม่อัตโนมัติ
+- 📦 ดาวน์โหลดและติดตั้งจากในระบบ
+- 🔐 ตรวจสอบ License ก่อนอัปเดต
+- 💾 Backup อัตโนมัติก่อนอัปเดต
+- ↩️ Rollback ได้ถ้ามีปัญหา
+- 📋 แสดง Changelog ก่อนอัปเดต
 
 ---
 
-## 🛠️ เทคโนโลยีที่ใช้
-
-### Backend
-- **Laravel 11** - PHP Framework
-- **MySQL/SQLite** - Database
-- **Redis** - Caching (optional)
-
-### Frontend
-- **Tailwind CSS** - UI Framework
-- **Alpine.js** - Lightweight JS Framework
-- **GSAP** - Smooth Animations
-- **Chart.js** - Data Visualization
-
-### DevOps
-- **Docker** - Containerization
-- **Nginx** - Web Server
-- **PHP-FPM** - Process Manager
-
----
-
-## ⚡ การติดตั้งอย่างรวดเร็ว
+## 📦 การติดตั้ง
 
 ### ความต้องการของระบบ
 
-- PHP 8.1 หรือสูงกว่า
-- Composer
-- SQLite หรือ MySQL
-- Node.js & NPM (ถ้าต้องการ build frontend assets)
+| Component | ข้อกำหนดขั้นต่ำ |
+|-----------|-----------------|
+| **PHP** | 8.1 หรือสูงกว่า |
+| **Web Server** | Nginx หรือ Apache |
+| **Database** | MySQL 5.7+ หรือ SQLite |
+| **Composer** | 2.0+ |
+| **Node.js** | 16+ (สำหรับ build assets) |
+| **RAM** | 512 MB ขั้นต่ำ (แนะนำ 1 GB+) |
+| **Disk Space** | 500 MB+ |
 
-### การติดตั้ง
-
-> **⚠️ สำคัญ:** Repository นี้เป็น private คุณต้อง authenticate ก่อน clone
-> 📖 ดูวิธีการ: [AUTHENTICATION.md](AUTHENTICATION.md)
+### 🚀 ติดตั้งด้วย Script อัตโนมัติ (แนะนำ)
 
 ```bash
-# 1. Clone repository (จะถาม username และ Personal Access Token)
+# 1. Clone repository
 git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
 cd Thaiprompt-Affiliate
 
-# 2. ติดตั้ง dependencies
-composer install
+# 2. รัน script ติดตั้งอัตโนมัติ
+chmod +x install.sh
+./install.sh
 
-# 3. ตั้งค่า environment
-cp .env.example .env
-php artisan key:generate
+# 3. ตั้งค่า License Key (ดูจากอีเมลที่ได้รับหลังซื้อ)
+php artisan license:activate YOUR-LICENSE-KEY
 
-# 4. สร้างฐานข้อมูล (SQLite)
-touch database/database.sqlite
-
-# 5. รัน migrations
-php artisan migrate
-
-# 6. ตั้งค่า permissions (แนะนำให้ใช้สคริปต์)
-./fix-permissions.sh
-# หรือแบบ manual: chmod -R 775 storage bootstrap/cache
-
-# 7. รันเซิร์ฟเวอร์
+# 4. เริ่มใช้งาน
 php artisan serve
 ```
 
-**เปิด browser ไปที่:** `http://localhost:8000`
+**เปิด browser**: `http://localhost:8000`
 
-### การติดตั้งด้วย MySQL (Optional)
+### ⚙️ ติดตั้งแบบ Manual
 
-ถ้าต้องการใช้ MySQL แทน SQLite:
+<details>
+<summary>คลิกเพื่อดูขั้นตอนการติดตั้งแบบ Manual</summary>
 
 ```bash
-# แก้ไขไฟล์ .env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=thaiprompt_affiliate
-DB_USERNAME=root
-DB_PASSWORD=your_password
+# 1. Clone และเข้าโฟลเดอร์
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
+cd Thaiprompt-Affiliate
 
-# สร้าง database
-mysql -u root -p -e "CREATE DATABASE thaiprompt_affiliate;"
+# 2. ติดตั้ง PHP dependencies
+composer install
 
-# รัน migrations
+# 3. สร้างไฟล์ .env
+cp .env.example .env
+
+# 4. Generate Application Key
+php artisan key:generate
+
+# 5. ตั้งค่าฐานข้อมูล (แก้ไขในไฟล์ .env)
+# สำหรับ SQLite:
+touch database/database.sqlite
+
+# สำหรับ MySQL:
+# DB_CONNECTION=mysql
+# DB_HOST=127.0.0.1
+# DB_DATABASE=thaiprompt_affiliate
+# DB_USERNAME=root
+# DB_PASSWORD=your_password
+
+# 6. รัน migrations
 php artisan migrate
+
+# 7. ตั้งค่า permissions
+chmod -R 775 storage bootstrap/cache
+
+# 8. (Optional) Build frontend assets
+npm install
+npm run build
+
+# 9. เริ่มใช้งาน
+php artisan serve
+```
+</details>
+
+### 🐳 ติดตั้งด้วย Docker
+
+```bash
+# 1. Clone repository
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
+cd Thaiprompt-Affiliate
+
+# 2. Start Docker containers
+docker-compose up -d
+
+# 3. เข้าไปใน container
+docker-compose exec app bash
+
+# 4. ติดตั้งและ activate license
+composer install
+php artisan migrate
+php artisan license:activate YOUR-LICENSE-KEY
+
+# 5. Exit container
+exit
+```
+
+**เปิด browser**: `http://localhost:8000`
+
+---
+
+## 🔑 License และการเปิดใช้งาน
+
+### 📋 ประเภท License
+
+<table>
+<tr>
+<th>แบบ</th>
+<th>ราคา</th>
+<th>โดเมน</th>
+<th>การสนับสนุน</th>
+<th>อัปเดต</th>
+</tr>
+<tr>
+<td><strong>🥉 Single Site</strong></td>
+<td>฿9,900</td>
+<td>1 โดเมน</td>
+<td>6 เดือน</td>
+<td>1 ปี</td>
+</tr>
+<tr>
+<td><strong>🥈 Multi Site</strong></td>
+<td>฿19,900</td>
+<td>5 โดเมน</td>
+<td>1 ปี</td>
+<td>1 ปี</td>
+</tr>
+<tr>
+<td><strong>🥇 Unlimited</strong></td>
+<td>฿39,900</td>
+<td>ไม่จำกัด</td>
+<td>ตลอดชีพ</td>
+<td>ตลอดชีพ</td>
+</tr>
+<tr>
+<td><strong>💎 Enterprise</strong></td>
+<td>ติดต่อเรา</td>
+<td>ไม่จำกัด</td>
+<td>ตลอดชีพ + Priority</td>
+<td>ตลอดชีพ</td>
+</tr>
+</table>
+
+### ✅ การเปิดใช้งาน License
+
+#### 1️⃣ ผ่าน Command Line
+
+```bash
+php artisan license:activate YOUR-LICENSE-KEY-HERE
+```
+
+#### 2️⃣ ผ่าน Admin Dashboard
+
+1. เข้าสู่ระบบ Admin
+2. ไปที่ **ตั้งค่า** → **License**
+3. กรอก License Key
+4. คลิก **เปิดใช้งาน**
+
+#### 3️⃣ ผ่านไฟล์ .env
+
+```env
+LICENSE_KEY=YOUR-LICENSE-KEY-HERE
+LICENSE_DOMAIN=yourdomain.com
+```
+
+### 🔐 ระบบตรวจสอบ License
+
+ระบบจะตรวจสอบความถูกต้องของ License ผ่าน:
+
+- ✅ **License Key** - รหัสสินค้าที่ได้รับ
+- ✅ **Domain Binding** - ผูกกับโดเมนที่ติดตั้ง
+- ✅ **IP Address** - บันทึก IP ของเซิร์ฟเวอร์
+- ✅ **Installation ID** - รหัสติดตั้งที่ไม่ซ้ำกัน
+- ✅ **Expiry Date** - วันหมดอายุของ License
+- ✅ **Remote Verification** - ตรวจสอบกับเซิร์ฟเวอร์หลักทุก 7 วัน
+
+### ⚠️ ข้อจำกัดหาก License ไม่ถูกต้อง
+
+- ❌ ไม่สามารถอัปเดตระบบได้
+- ❌ ไม่สามารถเข้าถึงฟีเจอร์ Premium
+- ⚠️ แสดงแบนเนอร์แจ้งเตือน
+- ⏰ ระบบจะหยุดทำงานหลัง 30 วัน
+
+---
+
+## 🎯 การเริ่มต้นใช้งาน
+
+### 1️⃣ Setup Wizard (ครั้งแรก)
+
+หลังติดตั้งและเปิดระบบครั้งแรก จะเข้าสู่ **Setup Wizard** อัตโนมัติ:
+
+1. **ยินดีต้อนรับ** - แนะนำระบบ
+2. **ตรวจสอบความพร้อม** - เช็คระบบ
+3. **ตั้งค่าฐานข้อมูล** - (ถ้ายังไม่ได้ตั้ง)
+4. **เปิดใช้งาน License** - ใส่ License Key
+5. **สร้าง Super Admin** - ตั้งค่าผู้ดูแลระบบ
+6. **ตั้งค่าทั่วไป** - ชื่อเว็บ, โลโก้, ฯลฯ
+7. **เสร็จสิ้น** - เริ่มใช้งาน!
+
+### 2️⃣ เข้าสู่ระบบ Admin
+
+```
+URL: http://yourdomain.com/admin
+Email: ตามที่ตั้งไว้ใน Setup
+Password: ตามที่ตั้งไว้ใน Setup
+```
+
+### 3️⃣ ตั้งค่าพื้นฐาน
+
+1. **ตั้งค่าทั่วไป** → ชื่อเว็บ, คำอธิบาย, โลโก้
+2. **ตั้งค่าอีเมล** → SMTP สำหรับส่งอีเมล
+3. **ตั้งค่าคอมมิชชั่น** → เปอร์เซ็นต์และระดับ
+4. **ตั้งค่า Payment** → เปิดใช้ช่องทางการชำระเงิน
+
+---
+
+## 🔄 การอัปเดตระบบ
+
+### 🎯 อัปเดตผ่าน Admin Dashboard (แนะนำ)
+
+1. ไปที่ **ตั้งค่า** → **อัปเดตระบบ**
+2. ระบบจะเช็คเวอร์ชั่นใหม่อัตโนมัติ
+3. ถ้ามีเวอร์ชั่นใหม่ จะแสดง:
+   - เลขเวอร์ชั่นใหม่
+   - รายการเปลี่ยนแปลง (Changelog)
+   - ขนาดไฟล์ที่ต้องดาวน์โหลด
+4. คลิก **"อัปเดตเลย"**
+5. ระบบจะทำงานอัตโนมัติ:
+   - ✅ ตรวจสอบ License
+   - ✅ Backup ฐานข้อมูล
+   - ✅ ดาวน์โหลดเวอร์ชั่นใหม่
+   - ✅ ติดตั้งและ Migrate
+   - ✅ ทำความสะอาด Cache
+6. **เสร็จสิ้น!** ใช้เวลาประมาณ 2-5 นาที
+
+### ⚙️ อัปเดตผ่าน Command Line
+
+```bash
+# ตรวจสอบเวอร์ชั่นใหม่
+php artisan app:check-update
+
+# อัปเดตไปยังเวอร์ชั่นล่าสุด
+php artisan app:update
+
+# อัปเดตไปยังเวอร์ชั่นเฉพาะ
+php artisan app:update v1.2.0
+```
+
+### 📋 ตรวจสอบเวอร์ชั่นปัจจุบัน
+
+```bash
+# แสดงข้อมูลเวอร์ชั่น
+php artisan app:version
+
+# แสดง Changelog
+php artisan app:version --changelog
+
+# ตรวจสอบ System Requirements
+php artisan app:version --system
 ```
 
 ---
 
-## 📖 คู่มือการใช้งาน
+## 📖 เอกสารประกอบ
 
-### เอกสารสำคัญ
+### สำหรับผู้ใช้งานทั่วไป
 
-**สำหรับผู้ใช้งานทั่วไป:**
-- 📘 [README.md](README.md) - ภาพรวมโปรเจกต์
-- 🚀 [GETTING-STARTED.md](GETTING-STARTED.md) - คู่มือเริ่มต้นใช้งาน (Development)
-- 📦 [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) - คู่มือการติดตั้งแบบละเอียด (Local/Development)
-- 🔐 [AUTHENTICATION.md](AUTHENTICATION.md) - คู่มือการ Clone Private Repository
+| เอกสาร | คำอธิบาย |
+|--------|----------|
+| 📘 [GETTING-STARTED.md](GETTING-STARTED.md) | คู่มือเริ่มต้นใช้งาน |
+| 📦 [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) | คู่มือติดตั้งแบบละเอียด |
+| 🏭 [PRODUCTION-INSTALL.md](PRODUCTION-INSTALL.md) | คู่มือติดตั้งบน Production Server |
+| 🌐 [DEPLOYMENT.md](DEPLOYMENT.md) | คู่มือ Deploy และ Maintenance |
+| 🔐 [AUTHENTICATION.md](AUTHENTICATION.md) | คู่มือการ Clone Private Repository |
 
-**สำหรับ Production Server:**
-- 🏭 [PRODUCTION-INSTALL.md](PRODUCTION-INSTALL.md) - **คู่มือติดตั้งบน Production Server** (มี PHP + MySQL พร้อมแล้ว)
-- 🌐 [DEPLOYMENT.md](DEPLOYMENT.md) - คู่มือการ Deploy และ Maintenance
+### สำหรับ Admin
 
-**สำหรับนักพัฒนา:**
-- 💻 [DEVELOPMENT.md](DEVELOPMENT.md) - คู่มือสำหรับนักพัฒนา
+| เอกสาร | คำอธิบาย |
+|--------|----------|
+| 👑 [SUPER-ADMIN.md](SUPER-ADMIN.md) | คู่มือ Super Admin |
+| 🌍 [MULTI-LANGUAGE.md](MULTI-LANGUAGE.md) | คู่มือระบบหลายภาษา |
+| 🔑 [LICENSE-GUIDE.md](LICENSE-GUIDE.md) | คู่มือการจัดการ License |
+| 📌 [VERSIONING.md](VERSIONING.md) | คู่มือระบบเวอร์ชั่น |
 
-**คู่มือเฉพาะทาง:**
-- 🌍 [MULTI-LANGUAGE.md](MULTI-LANGUAGE.md) - **ระบบหลายภาษา** (ไทย/English + วิธีเพิ่มภาษาใหม่)
-- 👑 [SUPER-ADMIN.md](SUPER-ADMIN.md) - **ระบบ Super Admin** (สิทธิ์เข้าถึงและการจัดการ)
-- 📌 [VERSIONING.md](VERSIONING.md) - **ระบบเวอร์ชั่น** (การอัปเดตและจัดการเวอร์ชั่น)
+### สำหรับนักพัฒนา
+
+| เอกสาร | คำอธิบาย |
+|--------|----------|
+| 💻 [DEVELOPMENT.md](DEVELOPMENT.md) | คู่มือสำหรับนักพัฒนา |
+| 📋 [CHANGELOG.md](CHANGELOG.md) | ประวัติการเปลี่ยนแปลง |
+| 🔌 [API-DOCS.md](API-DOCS.md) | เอกสาร API |
 
 ---
 
-### การเข้าสู่ระบบครั้งแรก
+## 🛠️ Utility Scripts
 
-หลังจากติดตั้งและรัน `php artisan serve`:
+### 📦 install.sh - ติดตั้งอัตโนมัติ
 
-1. เปิด browser ไปที่ `http://localhost:8000`
-2. ระบบจะพาไปหน้า **Setup Wizard** อัตโนมัติ
-3. กรอกข้อมูล Super Admin:
-   - **ชื่อ**: ชื่อของคุณ
-   - **อีเมล**: อีเมลสำหรับเข้าสู่ระบบ
-   - **รหัสผ่าน**: อย่างน้อย 8 ตัวอักษร
-   - **ยืนยันรหัสผ่าน**: ใส่รหัสผ่านอีกครั้ง
-4. คลิก **"สร้างบัญชี Super Admin"**
-5. เข้าสู่ระบบสำเร็จ! คุณจะถูกนำไปที่ **Admin Dashboard**
-
-### เส้นทางหลัก
-
-- **หน้าแรก**: `http://localhost:8000`
-- **เข้าสู่ระบบ**: `http://localhost:8000/login`
-- **สมัครสมาชิก**: `http://localhost:8000/register`
-- **Admin Dashboard**: `http://localhost:8000/admin/dashboard`
-
-### โครงสร้างโปรเจกต์
-
+```bash
+./install.sh
 ```
-Thaiprompt-Affiliate/
-├── app/
-│   ├── Console/              # Artisan Commands
-│   ├── Exceptions/           # Exception Handler
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   ├── Admin/        # Admin Controllers
-│   │   │   ├── Frontend/     # Frontend Controllers
-│   │   │   └── Auth/         # Authentication
-│   │   └── Middleware/       # Middlewares
-│   ├── Models/               # Eloquent Models
-│   └── Providers/            # Service Providers
-├── bootstrap/
-│   ├── app.php              # Application Bootstrap
-│   └── cache/               # Cached Files
-├── config/                  # Configuration Files
-├── database/
-│   ├── migrations/          # Database Migrations
-│   ├── seeders/             # Database Seeders
-│   └── database.sqlite      # SQLite Database
-├── public/                  # Public Assets
-│   ├── index.php           # Entry Point
-│   └── .htaccess
-├── resources/
-│   └── views/
-│       ├── admin/           # Admin Views
-│       ├── auth/            # Auth Views
-│       ├── frontend/        # Frontend Views
-│       └── layouts/         # Layout Templates
-├── routes/
-│   ├── web.php             # Web Routes
-│   ├── admin.php           # Admin Routes
-│   ├── api.php             # API Routes
-│   └── console.php         # Console Routes
-├── storage/                # Storage Files
-├── .env                    # Environment Config
-├── .env.example           # Example Environment
-├── artisan                # Artisan CLI
-├── composer.json          # Composer Dependencies
-├── install.sh             # Installation Script
-├── deploy.sh              # Deployment Script
-├── rollback.sh            # Rollback Script
-├── fix-permissions.sh     # Permission Fix Script
-└── README.md             # Documentation
+
+คุณสมบัติ:
+- ✅ ตรวจสอบ PHP และ Composer
+- ✅ ติดตั้ง dependencies
+- ✅ สร้าง .env และ APP_KEY
+- ✅ รัน migrations
+- ✅ ตั้งค่า permissions
+- ✅ Cache optimization
+
+### 🔧 fix-permissions.sh - แก้ไข Permissions
+
+```bash
+./fix-permissions.sh
 ```
+
+ใช้เมื่อ:
+- ❌ เจอ error "Permission denied"
+- ❌ Laravel ไม่สามารถเขียนไฟล์ได้
+
+### 🚀 deploy.sh - Deploy อัตโนมัติ
+
+```bash
+./deploy.sh              # Deploy from main
+./deploy.sh develop      # Deploy from develop
+```
+
+คุณสมบัติ:
+- ✅ Pre-flight checks
+- ✅ Maintenance mode
+- ✅ Database backup
+- ✅ Git pull
+- ✅ Composer install
+- ✅ Migrations
+- ✅ Cache optimization
+- ✅ Auto-rollback ถ้าเกิดข้อผิดพลาด
+
+### 🔄 rollback.sh - ย้อนกลับเวอร์ชั่น
+
+```bash
+./rollback.sh
+```
+
+ใช้เมื่อ:
+- ❌ Deploy ล้มเหลว
+- ❌ ต้องการย้อนกลับ
 
 ---
 
 ## 🎨 Screenshots
 
 ### Admin Dashboard
-*Coming soon...*
+![Admin Dashboard](screenshots/admin-dashboard.png)
 
-### Frontend
-*Coming soon...*
+### User Dashboard
+![User Dashboard](screenshots/user-dashboard.png)
 
----
+### Commission Report
+![Commission Report](screenshots/commission-report.png)
 
-## 🚀 การ Deploy สู่ Production
-
-### Deploy ในคำสั่งเดียว
-
-```bash
-# วิธีที่ 1: ใช้ Shell Script
-./deploy.sh
-
-# วิธีที่ 2: ใช้ Artisan Command
-php artisan deploy
-
-# วิธีที่ 3: Optimize เท่านั้น
-php artisan app:optimize --clear
-```
-
-### Deploy Checklist
-
-- ✅ ตั้งค่า `APP_ENV=production`
-- ✅ ตั้งค่า `APP_DEBUG=false`
-- ✅ กำหนด `APP_KEY`
-- ✅ ตั้งค่า Database credentials
-- ✅ ตั้งค่า Cache driver (แนะนำ Redis)
-- ✅ ตั้งค่า SSL Certificate
-- ✅ Backup database ก่อน deploy
-
-📖 **อ่านคู่มือฉบับเต็ม:** [DEPLOYMENT.md](DEPLOYMENT.md)
+### Update Center
+![Update Center](screenshots/update-center.png)
 
 ---
 
-## 🛠️ Utility Scripts
+## 🔧 การแก้ปัญหาที่พบบ่อย
 
-โปรเจกต์นี้มีสคริปต์ช่วยเหลือต่างๆ เพื่อความสะดวกในการจัดการ:
+<details>
+<summary><strong>❌ License ไม่ถูกต้อง</strong></summary>
 
-### 📦 install.sh - สคริปต์ติดตั้งอัตโนมัติ
+**สาเหตุ:**
+- License Key ผิด
+- โดเมนไม่ตรงกับที่ลงทะเบียน
+- License หมดอายุ
+
+**วิธีแก้:**
 ```bash
-./install.sh
-```
-**คุณสมบัติ:**
-- ✅ ตรวจสอบ PHP และ Composer
-- ✅ ติดตั้ง dependencies อัตโนมัติ
-- ✅ สร้าง .env และ generate APP_KEY
-- ✅ ตั้งค่า MySQL (รองรับการป้อนข้อมูล)
-- ✅ รัน migrations
-- ✅ ตั้งค่า permissions อัตโนมัติ
-- ✅ Cache optimization
+# ตรวจสอบ License
+php artisan license:check
 
-### 🔧 fix-permissions.sh - แก้ไขปัญหา Permissions
+# Activate ใหม่
+php artisan license:activate YOUR-KEY
+
+# ติดต่อ Support หากปัญหายังไม่หาย
+```
+</details>
+
+<details>
+<summary><strong>❌ Permission denied ใน storage/</strong></summary>
+
 ```bash
 ./fix-permissions.sh
 ```
-**ใช้เมื่อ:**
-- ❌ เจอ error: "Permission denied" ใน storage/
-- ❌ Laravel ไม่สามารถเขียนไฟล์ cache ได้
-- ❌ View compilation ล้มเหลว
+</details>
 
-**คุณสมบัติ:**
-- ✅ ตรวจหา web server user อัตโนมัติ (www-data, nginx, apache, admin)
-- ✅ สร้างโฟลเดอร์ที่จำเป็น
-- ✅ ตั้งค่า permissions: directories (775), files (664)
-- ✅ ตั้งค่า ownership ให้ถูกต้อง
-- ✅ ตั้งค่า ACL (ถ้าระบบรองรับ)
+<details>
+<summary><strong>❌ การอัปเดตล้มเหลว</strong></summary>
 
-### 🚀 deploy.sh - Deploy อัตโนมัติ
 ```bash
-./deploy.sh              # Deploy from main branch
-./deploy.sh develop      # Deploy from develop branch
-```
-**คุณสมบัติ:**
-- ✅ Pre-flight checks (git, .env, uncommitted changes)
-- ✅ Maintenance mode
-- ✅ Database backup อัตโนมัติ
-- ✅ Git pull และ reset
-- ✅ Composer install
-- ✅ Database migrations
-- ✅ Cache optimization
-- ✅ Permissions reset
-- ✅ Service restart
-- ✅ Error handling + auto-rollback
-
-### 🔄 rollback.sh - Rollback ฉุกเฉิน
-```bash
+# Rollback
 ./rollback.sh
+
+# ตรวจสอบ logs
+tail -f storage/logs/laravel.log
+
+# ลองอัปเดตอีกครั้ง
+php artisan app:update --force
 ```
-**ใช้เมื่อ:**
-- ❌ Deploy ล้มเหลว
-- ❌ ต้องการย้อนกลับไปยัง commit เก่า
-- ❌ ระบบทำงานผิดปกติหลัง deploy
+</details>
+
+<details>
+<summary><strong>❌ MySQL connection failed</strong></summary>
+
+1. ตรวจสอบ MySQL service: `sudo systemctl status mysql`
+2. เช็ค credentials ใน `.env`
+3. สร้าง database: `CREATE DATABASE thaiprompt_affiliate;`
+4. Grant privileges: `GRANT ALL ON thaiprompt_affiliate.* TO 'user'@'localhost';`
+</details>
 
 ---
 
-## 🐛 Troubleshooting
+## 💬 การสนับสนุน
 
-### ปัญหา: "Permission denied" ใน storage/
-**วิธีแก้:**
-```bash
-./fix-permissions.sh
-```
+### 📧 ติดต่อเรา
 
-### ปัญหา: "could not find driver"
-**วิธีแก้ (Ubuntu/Debian):**
-```bash
-sudo apt install php8.2-mysql php8.2-sqlite3
-sudo systemctl restart php8.2-fpm
-```
-
-### ปัญหา: "composer: command not found"
-**วิธีแก้:**
-```bash
-curl -sS https://getcomposer.org/installer | php
-sudo mv composer.phar /usr/local/bin/composer
-```
-
-### ปัญหา: MySQL connection failed
-**ตรวจสอบ:**
-1. MySQL server รันอยู่: `sudo systemctl status mysql`
-2. Database ถูกสร้างแล้ว: `mysql -u root -p -e "SHOW DATABASES;"`
-3. User มีสิทธิ์: `GRANT ALL ON thaiprompt_affiliate.* TO 'user'@'localhost';`
-
-📖 **Troubleshooting แบบละเอียด:** [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md#troubleshooting)
-
----
-
-## 🔐 ความปลอดภัย
-
-- **CSRF Protection** - ป้องกัน Cross-Site Request Forgery
-- **XSS Prevention** - ป้องกัน Cross-Site Scripting
-- **SQL Injection Prevention** - ใช้ Eloquent ORM
-- **Password Hashing** - bcrypt algorithm
-- **Rate Limiting** - จำกัดจำนวน requests
-- **HTTPS Ready** - รองรับ SSL/TLS
-
----
-
-## 📊 ฟีเจอร์ที่จะมาในเวอร์ชันถัดไป
-
-- [ ] ระบบ MLM/Network Marketing
-- [ ] Payment Gateway Integration
-- [ ] E-commerce Module
-- [ ] Advanced Analytics
-- [ ] API Documentation
-- [ ] Mobile App (React Native)
-
----
-
-## 🤝 การสนับสนุน
-
-### Bug Reports
-หากพบบั๊กหรือปัญหา กรุณา:
-1. เปิด [Issue](https://github.com/xjanova/Thaiprompt-Affiliate/issues)
-2. อธิบายปัญหาอย่างละเอียด
-3. แนบ screenshots (ถ้ามี)
-
-### Feature Requests
-ต้องการฟีเจอร์ใหม่? เปิด [Issue](https://github.com/xjanova/Thaiprompt-Affiliate/issues) พร้อม label "feature request"
-
----
-
-## 📝 License
-
-MIT License - ใช้งานได้อย่างอิสระ
-
----
-
-## 🙏 Credits
-
-Developed with ❤️ by [xjanova](https://github.com/xjanova)
-
-Powered by:
-- Laravel
-- Tailwind CSS
-- GSAP
-- Alpine.js
-
----
-
-## 📞 ติดต่อ
-
-- **GitHub**: [@xjanova](https://github.com/xjanova)
+- **เว็บไซต์**: https://thaiprompt.com
 - **Email**: support@thaiprompt.com
+- **Line**: @thaiprompt
+- **Facebook**: fb.com/thaiprompt
+- **GitHub Issues**: [Report Bug](https://github.com/xjanova/Thaiprompt-Affiliate/issues)
+
+### 🆘 รับการสนับสนุน
+
+**Free Support** (สำหรับ Single Site):
+- 📧 Email Support
+- 📖 Documentation
+- ⏰ ตอบกลับภายใน 48 ชั่วโมง
+
+**Priority Support** (สำหรับ Enterprise):
+- 💬 Live Chat
+- 📞 โทรศัพท์
+- 🎥 Remote Assistance
+- ⏰ ตอบกลับภายใน 4 ชั่วโมง
+
+### 📚 Resource เพิ่มเติม
+
+- 📖 [Knowledge Base](https://docs.thaiprompt.com)
+- 🎥 [Video Tutorials](https://www.youtube.com/@thaiprompt)
+- 👥 [Community Forum](https://forum.thaiprompt.com)
+- 📰 [Blog & Updates](https://blog.thaiprompt.com)
 
 ---
 
-**⭐ ถ้าชอบโปรเจกต์นี้ กรุณากด Star ให้ด้วยนะครับ!**
+## 🏆 Credits
+
+### พัฒนาโดย
+**ThaiPrompt Team** - Professional Web Development Team
+
+### เทคโนโลยีที่ใช้
+
+**Backend:**
+- [Laravel 11](https://laravel.com) - PHP Framework
+- [MySQL](https://www.mysql.com) / [SQLite](https://www.sqlite.org) - Database
+
+**Frontend:**
+- [Tailwind CSS](https://tailwindcss.com) - UI Framework
+- [Alpine.js](https://alpinejs.dev) - JavaScript Framework
+- [GSAP](https://greensock.com/gsap/) - Animation
+- [Chart.js](https://www.chartjs.org) - Data Visualization
+
+**DevOps:**
+- [Docker](https://www.docker.com) - Containerization
+- [Nginx](https://www.nginx.com) - Web Server
+
+---
+
+## 📄 License
+
+Copyright © 2025 ThaiPrompt Team. All rights reserved.
+
+นี่คือซอฟต์แวร์เชิงพาณิชย์ (Commercial Software)
+ต้องซื้อ License จึงจะใช้งานได้ถูกต้องตามกฎหมาย
+
+**ห้าม:**
+- ❌ คัดลอกหรือแจกจ่ายซอร์สโค้ด
+- ❌ นำไปขายต่อ
+- ❌ ใช้งานโดยไม่มี License ที่ถูกต้อง
+- ❌ แก้ไขระบบตรวจสอบ License
+
+**อนุญาต:** (เฉพาะผู้ที่มี License ถูกต้อง)
+- ✅ ใช้งานบนโดเมนที่ลงทะเบียน
+- ✅ ปรับแต่งโค้ดตามต้องการ
+- ✅ ติดตั้งบน Server ของตัวเอง
+- ✅ รับอัปเดตตามระยะเวลา License
+
+---
+
+## 🌟 Version
+
+**Current Version:** 1.0.0 (Foundation)
+**Release Date:** 2025-10-31
+**Next Update:** TBA
+
+[📋 ดู Changelog ทั้งหมด](CHANGELOG.md)
+
+---
+
+<div align="center">
+
+**Made with ❤️ in Thailand**
+
+[🏠 Website](https://thaiprompt.com) •
+[📖 Documentation](https://docs.thaiprompt.com) •
+[💬 Support](mailto:support@thaiprompt.com)
+
+</div>
