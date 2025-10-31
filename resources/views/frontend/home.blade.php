@@ -3,24 +3,6 @@
 @section('title', 'หน้าแรก')
 
 @section('content')
-<!-- Debug Info (ลบออกหลังแก้ปัญหา) -->
-@if(config('app.debug'))
-<div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4" role="alert">
-    <p class="font-bold">Debug: Slider Information</p>
-    <p>จำนวนสไลด์ทั้งหมด: {{ $sliders->count() }}</p>
-    @if($sliders->count() > 0)
-        @foreach($sliders as $idx => $s)
-            <p class="text-sm mt-1">
-                Slide {{ $idx + 1 }}: Type={{ $s->media_type ?? 'null' }},
-                Image={{ $s->image ?? 'none' }},
-                Video={{ $s->video_url ?? $s->video_file ?? 'none' }},
-                Active={{ $s->is_active ? 'yes' : 'no' }}
-            </p>
-        @endforeach
-    @endif
-</div>
-@endif
-
 <!-- Enhanced Slider with Video Support (ถ้ามี) -->
 @if($sliders->count() > 0)
     <section class="relative bg-black" x-data="{
@@ -47,7 +29,7 @@
         initVideoListeners() {
             // Listen for YouTube API ready
             window.onYouTubeIframeAPIReady = () => {
-                console.log('YouTube API Ready');
+                // YouTube API is ready
             };
         },
         nextSlide() {
@@ -95,7 +77,9 @@
                 iframe.contentWindow.postMessage(JSON.stringify({event: 'command', func: 'playVideo'}), '*');
             }
             if (video) {
-                video.play().catch(e => console.log('Video autoplay prevented:', e));
+                video.play().catch(() => {
+                    // Video autoplay prevented
+                });
             }
         },
         handleVideoEnd() {
@@ -211,7 +195,13 @@
                         <!-- Image Slide -->
                         @if($slider->link)
                             <a href="{{ $slider->link }}" target="_blank" class="block w-full h-full">
-                                <img src="{{ asset($slider->image) }}" alt="{{ $slider->title }}" class="w-full h-full object-cover">
+                                @if($slider->image)
+                                    <img src="{{ asset('storage/' . $slider->image) }}" alt="{{ $slider->title ?? 'Slide' }}" class="w-full h-full object-cover">
+                                @else
+                                    <div class="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl">
+                                        <span>ไม่มีรูปภาพ</span>
+                                    </div>
+                                @endif
 
                                 <!-- Text Overlay for Image -->
                                 @if($textOverlay['text'])
@@ -258,7 +248,13 @@
                                 @endif
                             </a>
                         @else
-                            <img src="{{ asset($slider->image) }}" alt="{{ $slider->title }}" class="w-full h-full object-cover">
+                            @if($slider->image)
+                                <img src="{{ asset('storage/' . $slider->image) }}" alt="{{ $slider->title ?? 'Slide' }}" class="w-full h-full object-cover">
+                            @else
+                                <div class="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl">
+                                    <span>ไม่มีรูปภาพ</span>
+                                </div>
+                            @endif
 
                             <!-- Text Overlay for Image -->
                             @if($textOverlay['text'])
