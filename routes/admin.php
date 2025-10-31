@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\TranslationMappingController;
 use App\Http\Controllers\Admin\HeaderEditorController;
+use App\Http\Controllers\Admin\VisualBuilderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -67,6 +68,20 @@ Route::get('premium-page', [PremiumPageController::class, 'index'])->name('premi
 Route::get('premium-page/{section}/edit', [PremiumPageController::class, 'edit'])->name('premium-page.edit');
 Route::put('premium-page/{section}', [PremiumPageController::class, 'update'])->name('premium-page.update');
 Route::post('premium-page/{section}/toggle', [PremiumPageController::class, 'toggle'])->name('premium-page.toggle');
+
+// Visual Builder (Drag & Drop Page Builder)
+Route::prefix('visual-builder')->name('visual-builder.')->group(function () {
+    Route::get('/', [VisualBuilderController::class, 'index'])->name('index');
+    Route::get('/components', [VisualBuilderController::class, 'getComponents'])->name('components');
+    Route::post('/sections', [VisualBuilderController::class, 'store'])->name('sections.store');
+    Route::put('/sections/{section}', [VisualBuilderController::class, 'update'])->name('sections.update');
+    Route::delete('/sections/{section}', [VisualBuilderController::class, 'destroy'])->name('sections.destroy');
+    Route::post('/sections/{section}/duplicate', [VisualBuilderController::class, 'duplicate'])->name('sections.duplicate');
+    Route::post('/sections/{section}/toggle', [VisualBuilderController::class, 'toggle'])->name('sections.toggle');
+    Route::post('/sections/reorder', [VisualBuilderController::class, 'reorder'])->name('sections.reorder');
+    Route::get('/export', [VisualBuilderController::class, 'export'])->name('export');
+    Route::post('/import', [VisualBuilderController::class, 'import'])->name('import');
+});
 
 // SEO Management
 Route::resource('seo', SeoController::class);
