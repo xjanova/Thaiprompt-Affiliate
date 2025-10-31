@@ -379,12 +379,15 @@ class NotificationService
         bool $showImmediately = false,
         ?string $icon = null,
         ?string $color = null,
-        ?array $userIds = null
+        ?array $userIds = null,
+        $scheduledAt = null
     ): int {
         try {
             $users = $userIds
                 ? User::whereIn('id', $userIds)->get()
                 : User::all();
+
+            $isScheduled = $scheduledAt && \Carbon\Carbon::parse($scheduledAt)->isFuture();
 
             $count = 0;
             foreach ($users as $user) {
@@ -402,6 +405,9 @@ class NotificationService
                     'is_broadcast' => true,
                     'icon' => $icon ?? $this->getDefaultIcon($type),
                     'color' => $color ?? $this->getDefaultColor($type),
+                    'scheduled_at' => $scheduledAt,
+                    'is_scheduled' => $isScheduled,
+                    'is_sent' => !$isScheduled,
                 ]);
                 $count++;
             }
