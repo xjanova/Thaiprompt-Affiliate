@@ -480,6 +480,31 @@
                     </button>
                 </form>
 
+                <!-- Version Info -->
+                <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                    <div class="bg-gray-800/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-gray-400">เวอร์ชั่น</span>
+                            <span class="text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 px-2 py-0.5 rounded-full">
+                                {{ config('version.current') }}
+                            </span>
+                        </div>
+                        @if(config('version.name'))
+                            <p class="text-xs text-gray-500 mb-2">{{ config('version.name') }}</p>
+                        @endif
+                        <div class="text-[10px] text-gray-600 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span>Laravel</span>
+                                <span class="text-gray-400">{{ app()->version() }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span>PHP</span>
+                                <span class="text-gray-400">{{ PHP_VERSION }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Spacing at bottom for scrolling -->
                 <div class="h-4"></div>
             </nav>
