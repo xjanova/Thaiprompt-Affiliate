@@ -73,9 +73,53 @@
     </div>
 
     <!-- Notifications List -->
-    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-xl overflow-hidden" x-data="{
+        selectedIds: [],
+        selectAll: false,
+        toggleAll() {
+            this.selectAll = !this.selectAll;
+            if (this.selectAll) {
+                this.selectedIds = Array.from(document.querySelectorAll('.notification-checkbox')).map(cb => parseInt(cb.value));
+            } else {
+                this.selectedIds = [];
+            }
+        }
+    }">
         <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-bold text-gray-900">รายการแจ้งเตือน</h2>
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold text-gray-900">รายการแจ้งเตือน</h2>
+
+                <!-- Bulk Actions -->
+                <div class="flex items-center gap-2" x-show="selectedIds.length > 0">
+                    <span class="text-sm text-gray-600" x-text="'เลือก ' + selectedIds.length + ' รายการ'"></span>
+
+                    <button @click="bulkMarkAsRead()"
+                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        อ่านแล้ว
+                    </button>
+
+                    <button @click="bulkDelete()"
+                            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                        </svg>
+                        ลบ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Select All Checkbox -->
+            @if($notifications->count() > 0)
+            <div class="mt-4">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" x-model="selectAll" @change="toggleAll()" class="w-4 h-4 text-indigo-600 border-gray-300 rounded">
+                    <span class="ml-2 text-sm text-gray-600">เลือกทั้งหมด</span>
+                </label>
+            </div>
+            @endif
         </div>
 
         <div class="divide-y divide-gray-100">
@@ -83,6 +127,14 @@
                 <div class="p-4 hover:bg-gray-50 transition {{ !$notification->is_read ? 'bg-blue-50' : '' }}"
                      x-data="{ showActions: false }">
                     <div class="flex gap-4">
+                        <!-- Checkbox -->
+                        <div class="flex-shrink-0 flex items-start pt-2">
+                            <input type="checkbox"
+                                   class="notification-checkbox w-5 h-5 text-indigo-600 border-gray-300 rounded"
+                                   value="{{ $notification->id }}"
+                                   x-model="selectedIds">
+                        </div>
+
                         <!-- Icon -->
                         <div class="flex-shrink-0">
                             <div class="w-12 h-12 rounded-full flex items-center justify-center text-2xl
@@ -243,3 +295,83 @@
 </script>
 @endpush
 @endsection
+
+@push('scripts')
+<script>
+// Bulk Mark as Read
+function bulkMarkAsRead() {
+    const selectedIds = Alpine.store ? Alpine.store('selectedIds') : this.selectedIds;
+
+    if (!selectedIds || selectedIds.length === 0) {
+        alert('กรุณาเลือกการแจ้งเตือนอย่างน้อย 1 รายการ');
+        return;
+    }
+
+    if (!confirm(`ต้องการทำเครื่องหมายอ่าน ${selectedIds.length} รายการใช่หรือไม่?`)) {
+        return;
+    }
+
+    fetch('{{ route("user.notifications.bulk-mark-as-read") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            notification_ids: selectedIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('เกิดข้อผิดพลาด: ' + (data.message || 'ไม่สามารถดำเนินการได้'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการทำเครื่องหมายอ่าน');
+    });
+}
+
+// Bulk Delete
+function bulkDelete() {
+    const selectedIds = Alpine.store ? Alpine.store('selectedIds') : this.selectedIds;
+
+    if (!selectedIds || selectedIds.length === 0) {
+        alert('กรุณาเลือกการแจ้งเตือนอย่างน้อย 1 รายการ');
+        return;
+    }
+
+    if (!confirm(`ต้องการลบการแจ้งเตือน ${selectedIds.length} รายการใช่หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้`)) {
+        return;
+    }
+
+    fetch('{{ route("user.notifications.bulk-delete") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            notification_ids: selectedIds
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('เกิดข้อผิดพลาด: ' + (data.message || 'ไม่สามารถดำเนินการได้'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการลบ');
+    });
+}
+</script>
+@endpush

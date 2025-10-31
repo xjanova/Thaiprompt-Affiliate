@@ -24,8 +24,11 @@ class Notification extends Model
         'color',
         'priority',
         'is_important',
+        'show_immediately',
+        'is_broadcast',
         'is_read',
         'read_at',
+        'shown_at',
         'is_archived',
         'archived_at',
         'email_sent',
@@ -33,13 +36,19 @@ class Notification extends Model
         'push_sent',
         'push_sent_at',
         'expires_at',
+        'scheduled_at',
+        'is_scheduled',
+        'is_sent',
     ];
 
     protected $casts = [
         'data' => 'array',
         'is_important' => 'boolean',
+        'show_immediately' => 'boolean',
+        'is_broadcast' => 'boolean',
         'is_read' => 'boolean',
         'read_at' => 'datetime',
+        'shown_at' => 'datetime',
         'is_archived' => 'boolean',
         'archived_at' => 'datetime',
         'email_sent' => 'boolean',
@@ -47,6 +56,9 @@ class Notification extends Model
         'push_sent' => 'boolean',
         'push_sent_at' => 'datetime',
         'expires_at' => 'datetime',
+        'scheduled_at' => 'datetime',
+        'is_scheduled' => 'boolean',
+        'is_sent' => 'boolean',
     ];
 
     /**
@@ -230,5 +242,69 @@ class Notification extends Model
     public function scopeByPriority($query, string $priority)
     {
         return $query->where('priority', $priority);
+    }
+
+    /**
+     * Scope for immediate notifications
+     */
+    public function scopeImmediate($query)
+    {
+        return $query->where('show_immediately', true);
+    }
+
+    /**
+     * Scope for broadcast notifications
+     */
+    public function scopeBroadcast($query)
+    {
+        return $query->where('is_broadcast', true);
+    }
+
+    /**
+     * Mark notification as shown
+     */
+    public function markAsShown(): void
+    {
+        if (!$this->shown_at) {
+            $this->update([
+                'shown_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * Scope for scheduled notifications
+     */
+    public function scopeScheduled($query)
+    {
+        return $query->where('is_scheduled', true);
+    }
+
+    /**
+     * Scope for pending scheduled notifications (not yet sent)
+     */
+    public function scopePendingScheduled($query)
+    {
+        return $query->where('is_scheduled', true)
+                    ->where('is_sent', false)
+                    ->where('scheduled_at', '<=', now());
+    }
+
+    /**
+     * Scope for sent notifications
+     */
+    public function scopeSent($query)
+    {
+        return $query->where('is_sent', true);
+    }
+
+    /**
+     * Mark notification as sent
+     */
+    public function markAsSent(): void
+    {
+        $this->update([
+            'is_sent' => true,
+        ]);
     }
 }

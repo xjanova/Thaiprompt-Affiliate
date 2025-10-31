@@ -22,6 +22,7 @@ class NotificationService
         ?string $actionText = null,
         string $priority = 'normal',
         bool $isImportant = false,
+        bool $showImmediately = false,
         ?string $icon = null,
         ?string $color = null
     ): Notification {
@@ -36,6 +37,7 @@ class NotificationService
                 'action_text' => $actionText,
                 'priority' => $priority,
                 'is_important' => $isImportant,
+                'show_immediately' => $showImmediately,
                 'icon' => $icon ?? $this->getDefaultIcon($type),
                 'color' => $color ?? $this->getDefaultColor($type),
             ]);
@@ -360,5 +362,82 @@ class NotificationService
     {
         return Notification::where('expires_at', '<', now())
             ->delete();
+    }
+
+    /**
+     * Broadcast notification to all users
+     */
+    public function broadcast(
+        string $type,
+        string $title,
+        string $message,
+        array $data = [],
+        ?string $actionUrl = null,
+        ?string $actionText = null,
+        string $priority = 'normal',
+        bool $isImportant = false,
+        bool $showImmediately = false,
+        ?string $icon = null,
+        ?string $color = null,
+        ?array $userIds = null,
+        $scheduledAt = null
+    ): int {
+        try {
+            $users = $userIds
+                ? User::whereIn('id', $userIds)->get()
+                : User::all();
+
+            $isScheduled = $scheduledAt && \Carbon\Carbon::parse($scheduledAt)->isFuture();
+
+            $count = 0;
+            foreach ($users as $user) {
+                Notification::create([
+                    'user_id' => $user->id,
+                    'type' => $type,
+                    'title' => $title,
+                    'message' => $message,
+                    'data' => $data,
+                    'action_url' => $actionUrl,
+                    'action_text' => $actionText,
+                    'priority' => $priority,
+                    'is_important' => $isImportant,
+                    'show_immediately' => $showImmediately,
+                    'is_broadcast' => true,
+                    'icon' => $icon ?? $this->getDefaultIcon($type),
+                    'color' => $color ?? $this->getDefaultColor($type),
+                    'scheduled_at' => $scheduledAt,
+                    'is_scheduled' => $isScheduled,
+                    'is_sent' => !$isScheduled,
+                ]);
+                $count++;
+            }
+
+            return $count;
+        } catch (Exception $e) {
+            Log::error('Failed to broadcast notification: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Get immediate notifications for user
+     */
+    public function getImmediateNotifications(User $user)
+    {
+        return $user->notifications()
+            ->immediate()
+            ->unread()
+            ->whereNull('shown_at')
+            ->notExpired()
+            ->orderBy('created_at', 'desc')
+            ->get();
+    }
+
+    /**
+     * Mark notification as shown
+     */
+    public function markAsShown(Notification $notification): void
+    {
+        $notification->markAsShown();
     }
 }

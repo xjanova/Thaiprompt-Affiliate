@@ -14,6 +14,8 @@ use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\TranslationMappingController;
+use App\Http\Controllers\Admin\NotificationManagementController;
+use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\HeaderEditorController;
 use App\Http\Controllers\Admin\VisualBuilderController;
 use Illuminate\Support\Facades\Route;
@@ -151,4 +153,28 @@ Route::prefix('translations')->name('translations.')->group(function () {
     Route::post('/{mapping}/toggle', [TranslationMappingController::class, 'toggle'])->name('toggle');
     Route::post('/import', [TranslationMappingController::class, 'import'])->name('import');
     Route::get('/export', [TranslationMappingController::class, 'export'])->name('export');
+});
+
+// Notification Management
+Route::prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [NotificationManagementController::class, 'index'])->name('index');
+    Route::get('/statistics', [NotificationManagementController::class, 'statistics'])->name('statistics');
+    Route::get('/create', [NotificationManagementController::class, 'create'])->name('create');
+    Route::post('/', [NotificationManagementController::class, 'store'])->name('store');
+    Route::get('/{notification}', [NotificationManagementController::class, 'show'])->name('show');
+    Route::delete('/{notification}', [NotificationManagementController::class, 'destroy'])->name('destroy');
+    Route::post('/bulk-delete', [NotificationManagementController::class, 'bulkDelete'])->name('bulk-delete');
+});
+
+// Notification Templates
+Route::prefix('notification-templates')->name('notification-templates.')->group(function () {
+    Route::get('/', [NotificationTemplateController::class, 'index'])->name('index');
+    Route::get('/create', [NotificationTemplateController::class, 'create'])->name('create');
+    Route::post('/', [NotificationTemplateController::class, 'store'])->name('store');
+    Route::get('/{template}', [NotificationTemplateController::class, 'show'])->name('show');
+    Route::get('/{template}/edit', [NotificationTemplateController::class, 'edit'])->name('edit');
+    Route::put('/{template}', [NotificationTemplateController::class, 'update'])->name('update');
+    Route::delete('/{template}', [NotificationTemplateController::class, 'destroy'])->name('destroy');
+    Route::post('/{template}/toggle', [NotificationTemplateController::class, 'toggleStatus'])->name('toggle');
+    Route::get('/{template}/data', [NotificationTemplateController::class, 'getTemplate'])->name('data');
 });
