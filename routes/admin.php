@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\TranslationMappingController;
+use App\Http\Controllers\Admin\HeaderEditorController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -47,6 +48,11 @@ Route::get('settings', [SettingsController::class, 'index'])->name('settings.ind
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
 Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
+
+// Header Editor
+Route::get('header-editor', [HeaderEditorController::class, 'index'])->name('header-editor.index');
+Route::post('header-editor', [HeaderEditorController::class, 'update'])->name('header-editor.update');
+Route::post('header-editor/reset', [HeaderEditorController::class, 'reset'])->name('header-editor.reset');
 
 // Slider Management
 Route::resource('sliders', SliderController::class);
