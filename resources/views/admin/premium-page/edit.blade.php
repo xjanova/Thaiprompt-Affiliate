@@ -32,6 +32,10 @@
         padding: 2rem;
         border: 2px solid #e5e7eb;
     }
+    .dark .preview-panel {
+        background: #0f172a;
+        border-color: #334155;
+    }
     .form-control {
         transition: all 0.2s;
     }
@@ -44,6 +48,10 @@
         border-radius: 8px;
         padding: 2rem;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .dark .section-preview {
+        background: #1e293b;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.5);
     }
     .tox-tinymce {
         border-radius: 8px !important;
