@@ -271,9 +271,15 @@
                 </a>
 
                 <a href="{{ route('admin.notifications.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.notifications.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.notifications.*') && !request()->routeIs('admin.notification-templates.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
                     <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🔔</span>
                     <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">จัดการการแจ้งเตือน</span>
+                </a>
+
+                <a href="{{ route('admin.notification-templates.index') }}"
+                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.notification-templates.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
+                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📋</span>
+                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">เทมเพลตการแจ้งเตือน</span>
                 </a>
 
                 <a href="{{ route('admin.settings.index') }}"

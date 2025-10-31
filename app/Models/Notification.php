@@ -36,6 +36,9 @@ class Notification extends Model
         'push_sent',
         'push_sent_at',
         'expires_at',
+        'scheduled_at',
+        'is_scheduled',
+        'is_sent',
     ];
 
     protected $casts = [
@@ -53,6 +56,9 @@ class Notification extends Model
         'push_sent' => 'boolean',
         'push_sent_at' => 'datetime',
         'expires_at' => 'datetime',
+        'scheduled_at' => 'datetime',
+        'is_scheduled' => 'boolean',
+        'is_sent' => 'boolean',
     ];
 
     /**
@@ -264,5 +270,41 @@ class Notification extends Model
                 'shown_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * Scope for scheduled notifications
+     */
+    public function scopeScheduled($query)
+    {
+        return $query->where('is_scheduled', true);
+    }
+
+    /**
+     * Scope for pending scheduled notifications (not yet sent)
+     */
+    public function scopePendingScheduled($query)
+    {
+        return $query->where('is_scheduled', true)
+                    ->where('is_sent', false)
+                    ->where('scheduled_at', '<=', now());
+    }
+
+    /**
+     * Scope for sent notifications
+     */
+    public function scopeSent($query)
+    {
+        return $query->where('is_sent', true);
+    }
+
+    /**
+     * Mark notification as sent
+     */
+    public function markAsSent(): void
+    {
+        $this->update([
+            'is_sent' => true,
+        ]);
     }
 }
