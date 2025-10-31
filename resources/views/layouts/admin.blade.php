@@ -51,12 +51,80 @@
         .bg-gradient-secondary {
             background: var(--gradient-secondary);
         }
+
+        /* Dark Mode Variables */
+        .dark {
+            color-scheme: dark;
+        }
+
+        .dark body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .dark .bg-gray-100 {
+            background-color: #1e293b;
+        }
+
+        .dark .bg-white {
+            background-color: #1e293b;
+            color: #e2e8f0;
+        }
+
+        .dark .text-gray-800 {
+            color: #e2e8f0;
+        }
+
+        .dark .text-gray-700 {
+            color: #cbd5e1;
+        }
+
+        .dark .text-gray-600 {
+            color: #94a3b8;
+        }
+
+        .dark .border-gray-200 {
+            border-color: #334155;
+        }
+
+        .dark .shadow-sm {
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+        }
+
+        .dark .shadow-xl {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Smooth transitions */
+        * {
+            transition-property: background-color, border-color, color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 200ms;
+        }
+
+        /* Custom scrollbar for sidebar */
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
     </style>
 
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-gray-100">
-    <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false }">
+    <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false, systemMenuOpen: false }">
         <!-- Overlay for mobile -->
         <div x-show="sidebarOpen"
              @click="sidebarOpen = false"
@@ -70,13 +138,13 @@
              style="display: none;"></div>
 
         <!-- Sidebar -->
-        <div class="fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 shadow-2xl transform transition-all duration-300 ease-in-out overflow-y-auto"
+        <div class="fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 shadow-2xl transform transition-all duration-300 ease-in-out overflow-y-auto sidebar-scroll"
              style="box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);"
              :class="{
                  '-translate-x-full md:translate-x-0': !sidebarOpen,
                  'translate-x-0': sidebarOpen,
-                 'w-64': !sidebarCollapsed,
-                 'md:w-20': sidebarCollapsed
+                 'w-56': !sidebarCollapsed,
+                 'md:w-16': sidebarCollapsed
              }">
             <!-- Logo Section -->
             <div class="flex items-center justify-center h-16 bg-gradient-primary relative">
@@ -107,53 +175,57 @@
             </div>
 
             <!-- Navigation -->
-            <nav class="mt-8 px-2">
+            <nav class="mt-6 px-3">
+                <!-- Dashboard -->
                 <a href="{{ route('admin.dashboard') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
                 </a>
 
+                <!-- Users -->
                 <a href="{{ route('admin.users.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👥</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผู้ใช้</span>
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👥</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผู้ใช้</span>
                 </a>
 
+                <!-- Affiliates -->
                 <a href="{{ route('admin.affiliates.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌐</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">Affiliates</span>
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌐</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">Affiliates</span>
                 </a>
 
+                <!-- Commissions -->
                 <a href="{{ route('admin.commissions.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.commissions.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💰</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คอมมิชชั่น</span>
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.commissions.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💰</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คอมมิชชั่น</span>
                 </a>
 
                 <!-- Wallet Dropdown Menu -->
-                <div x-data="{ walletOpen: false }" @mouseenter="!sidebarCollapsed ? walletOpen = true : null" @mouseleave="walletOpen = false" class="relative">
+                <div x-data="{ walletOpen: false }" @mouseenter="!sidebarCollapsed ? walletOpen = true : null" @mouseleave="walletOpen = false" class="relative mb-1">
                     @php
                         $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*');
                         $pendingCount = \App\Models\WithdrawalRequest::pending()->count();
                     @endphp
 
                     <!-- Main Wallet Button -->
-                    <a href="{{ route('admin.wallet.index') }}"
-                       class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}"
-                       @click.prevent="sidebarCollapsed ? null : (walletOpen = !walletOpen)">
-                        <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
-                        <span class="ml-3 transition-all flex-1" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}"
+                       @click="sidebarCollapsed ? null : (walletOpen = !walletOpen)">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             กระเป๋าเงิน
                         </span>
                         @if($pendingCount > 0)
-                            <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 animate-pulse" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $pendingCount }}</span>
+                            <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 animate-pulse" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $pendingCount }}</span>
                         @endif
-                        <svg class="w-4 h-4 ml-2 transition-transform" :class="{ 'rotate-180': walletOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': walletOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
-                    </a>
+                    </button>
 
                     <!-- Dropdown Submenu -->
                     <div x-show="walletOpen && (!sidebarCollapsed || sidebarOpen)"
@@ -163,150 +235,197 @@
                          x-transition:leave="transition ease-in duration-150"
                          x-transition:leave-start="opacity-100"
                          x-transition:leave-end="opacity-0"
-                         class="mt-2 mb-2 ml-4 space-y-1 bg-gray-800/50 rounded-lg p-2 backdrop-blur-sm border border-gray-700/50"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
                          style="display: none;">
 
                         <a href="{{ route('admin.wallet.index') }}"
-                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet.index') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.wallet.index') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">👛</span>
                             <span>กระเป๋าของฉัน</span>
                         </a>
 
                         <a href="{{ route('admin.wallet.transactions') }}"
-                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet.transactions') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.wallet.transactions') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">📝</span>
                             <span>ธุรกรรม</span>
                         </a>
 
                         @if(auth()->user()->hasPermission('view_all_wallets') || auth()->user()->isSuperAdmin())
                         <a href="{{ route('admin.wallet.all') }}"
-                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet.all') || request()->routeIs('admin.wallet.show') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.wallet.all') || request()->routeIs('admin.wallet.show') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">💼</span>
                             <span>กระเป๋าทั้งหมด</span>
                         </a>
                         @endif
 
                         @if(auth()->user()->hasPermission('approve_withdrawals') || auth()->user()->isSuperAdmin())
-                        <div class="border-t border-gray-700/50 my-2"></div>
+                        <div class="border-t border-gray-700/30 my-1"></div>
 
                         <a href="{{ route('admin.withdrawals.pending') }}"
-                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.withdrawals.pending') ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white' : '' }}">
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.withdrawals.pending') ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white' : '' }}">
                             <span class="mr-2">⏳</span>
                             <span class="flex-1">รอดำเนินการ</span>
                             @if($pendingCount > 0)
-                                <span class="bg-red-500 text-white text-xs rounded-full px-2 py-0.5 animate-pulse">{{ $pendingCount }}</span>
+                                <span class="bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 animate-pulse">{{ $pendingCount }}</span>
                             @endif
                         </a>
 
                         <a href="{{ route('admin.withdrawals.index') }}"
-                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.withdrawals.index') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.withdrawals.index') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">💸</span>
                             <span>คำขอถอนทั้งหมด</span>
                         </a>
                         @endif
 
                         @if(auth()->user()->hasPermission('manage_wallet_settings') || auth()->user()->isSuperAdmin())
-                        <div class="border-t border-gray-700/50 my-2"></div>
+                        <div class="border-t border-gray-700/30 my-1"></div>
 
                         <a href="{{ route('admin.wallet-settings.index') }}"
-                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet-settings.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.wallet-settings.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">⚙️</span>
                             <span>ตั้งค่าระบบ</span>
                         </a>
                         @endif
 
                         <a href="{{ route('admin.wallet.logs') }}"
-                           class="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all {{ request()->routeIs('admin.wallet.logs') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.wallet.logs') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">🔒</span>
                             <span>ประวัติความปลอดภัย</span>
                         </a>
                     </div>
                 </div>
 
-                <div class="border-t border-gray-700 my-4"></div>
-                <div class="px-4 py-2 text-xs text-gray-500 uppercase tracking-wider" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
-                    จัดการระบบ
+                <!-- Divider -->
+                <div class="border-t border-gray-700/50 my-3"></div>
+
+                <!-- System Management Dropdown -->
+                <div x-data="{ systemMenuOpen: false }" @mouseenter="!sidebarCollapsed ? systemMenuOpen = true : null" @mouseleave="systemMenuOpen = false" class="relative mb-1">
+                    @php
+                        $systemActive = request()->routeIs('admin.sliders.*') ||
+                                       request()->routeIs('admin.premium-page.*') ||
+                                       request()->routeIs('admin.header-editor.*') ||
+                                       request()->routeIs('admin.pages.*') ||
+                                       request()->routeIs('admin.seo.*') ||
+                                       request()->routeIs('admin.settings.languages*') ||
+                                       request()->routeIs('admin.translations.*') ||
+                                       request()->routeIs('admin.notifications.*') ||
+                                       request()->routeIs('admin.settings.index');
+                    @endphp
+
+                    <!-- Main System Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-teal-600 hover:text-white rounded-lg transition-all duration-200 group {{ $systemActive ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : '' }}"
+                       @click="sidebarCollapsed ? null : (systemMenuOpen = !systemMenuOpen)">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            จัดการระบบ
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': systemMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="systemMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('admin.sliders.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.sliders.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🖼️</span>
+                            <span>สไลด์</span>
+                        </a>
+
+                        <a href="{{ route('admin.premium-page.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.premium-page.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🎨</span>
+                            <span>จัดการหน้าแรก</span>
+                        </a>
+
+                        <a href="{{ route('admin.header-editor.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.header-editor.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">📐</span>
+                            <span>แก้ไข Header & Menu</span>
+                        </a>
+
+                        <a href="{{ route('admin.pages.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.pages.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">📄</span>
+                            <span>จัดการหน้าเพจ</span>
+                        </a>
+
+                        <a href="{{ route('admin.seo.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.seo.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🔍</span>
+                            <span>จัดการ SEO</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.settings.languages') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.settings.languages*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🌍</span>
+                            <span>จัดการภาษา</span>
+                        </a>
+
+                        <a href="{{ route('admin.translations.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.translations.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">📝</span>
+                            <span>ตั้งค่าการแปล</span>
+                        </a>
+
+                        <a href="{{ route('admin.notifications.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.notifications.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🔔</span>
+                            <span>จัดการการแจ้งเตือน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.settings.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.settings.index') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">⚙️</span>
+                            <span>ตั้งค่าทั่วไป</span>
+                        </a>
+                    </div>
                 </div>
 
-                <a href="{{ route('admin.sliders.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.sliders.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🖼️</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สไลด์</span>
-                </a>
+                <!-- Divider -->
+                <div class="border-t border-gray-700/50 my-3"></div>
 
-                <a href="{{ route('admin.premium-page.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.premium-page.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🎨</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">จัดการหน้าแรก</span>
-                </a>
-
-                <a href="{{ route('admin.header-editor.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.header-editor.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📐</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แก้ไข Header & Menu</span>
-                </a>
-
-                <a href="{{ route('admin.pages.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.pages.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📄</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">จัดการหน้าเพจ</span>
-                </a>
-
-                <a href="{{ route('admin.seo.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.seo.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🔍</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">จัดการ SEO</span>
-                </a>
-
-                <a href="{{ route('admin.settings.languages') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.settings.languages*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌍</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">จัดการภาษา</span>
-                </a>
-
-                <a href="{{ route('admin.translations.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.translations.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📝</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ตั้งค่าการแปล</span>
-                </a>
-
-                <a href="{{ route('admin.notifications.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.notifications.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🔔</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">จัดการการแจ้งเตือน</span>
-                </a>
-
-                <a href="{{ route('admin.settings.index') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all group {{ request()->routeIs('admin.settings.index') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md' : '' }}">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ตั้งค่า</span>
-                </a>
-
-                <div class="border-t border-gray-700 my-4"></div>
-
+                <!-- Quick Actions -->
                 <a href="{{ route('home') }}"
-                   class="flex items-center px-4 py-3 mb-2 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-600 hover:text-white rounded-lg transition-all group">
-                    <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏠</span>
-                    <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กลับหน้าแรก</span>
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-600 hover:text-white rounded-lg transition-all duration-200 group">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏠</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กลับหน้าแรก</span>
                 </a>
 
-                <form method="POST" action="{{ route('logout') }}" class="mt-2">
+                <form method="POST" action="{{ route('logout') }}">
                     @csrf
-                    <button type="submit" class="flex items-center w-full px-4 py-3 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-600 hover:text-white rounded-lg transition-all group">
-                        <span class="text-2xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🚪</span>
-                        <span class="ml-3 transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ออกจากระบบ</span>
+                    <button type="submit" class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🚪</span>
+                        <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ออกจากระบบ</span>
                     </button>
                 </form>
+
+                <!-- Spacing at bottom for scrolling -->
+                <div class="h-4"></div>
             </nav>
         </div>
 
         <!-- Main Content -->
-        <div class="transition-all duration-300" :class="{ 'md:ml-64': !sidebarCollapsed, 'md:ml-20': sidebarCollapsed }">
+        <div class="transition-all duration-300" :class="{ 'md:ml-56': !sidebarCollapsed, 'md:ml-16': sidebarCollapsed }">
             <!-- Top Bar -->
             <header class="bg-white shadow-sm sticky top-0 z-20">
                 <div class="flex items-center justify-between px-6 py-4">
                     <div class="flex items-center">
-                        <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4">
+                        <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4 transition-colors">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
@@ -315,7 +434,10 @@
                         <h1 class="text-2xl font-semibold text-gray-800">@yield('title')</h1>
                     </div>
 
-                    <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-3">
+                        <!-- Theme Toggle -->
+                        <x-theme-toggle />
+
                         <!-- Notification Bell -->
                         <x-notification-bell />
 
