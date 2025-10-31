@@ -98,4 +98,33 @@ class NotificationController extends Controller
 
         return redirect()->back()->with('success', 'ลบการแจ้งเตือนเรียบร้อยแล้ว');
     }
+
+    /**
+     * Get immediate notifications (for popup)
+     */
+    public function immediate()
+    {
+        $notifications = $this->notificationService->getImmediateNotifications(auth()->user());
+
+        // Mark notifications as shown
+        foreach ($notifications as $notification) {
+            $this->notificationService->markAsShown($notification);
+        }
+
+        return response()->json([
+            'notifications' => $notifications->map(function ($notification) {
+                return [
+                    'id' => $notification->id,
+                    'title' => $notification->title,
+                    'message' => $notification->message,
+                    'icon' => $notification->icon,
+                    'color' => $notification->color,
+                    'priority' => $notification->priority,
+                    'action_url' => $notification->action_url,
+                    'action_text' => $notification->action_text,
+                    'created_at' => $notification->created_at->diffForHumans(),
+                ];
+            }),
+        ]);
+    }
 }

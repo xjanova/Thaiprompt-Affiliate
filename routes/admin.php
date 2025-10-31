@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\TranslationMappingController;
+use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\HeaderEditorController;
 use Illuminate\Support\Facades\Route;
 
@@ -136,4 +137,15 @@ Route::prefix('translations')->name('translations.')->group(function () {
     Route::post('/{mapping}/toggle', [TranslationMappingController::class, 'toggle'])->name('toggle');
     Route::post('/import', [TranslationMappingController::class, 'import'])->name('import');
     Route::get('/export', [TranslationMappingController::class, 'export'])->name('export');
+});
+
+// Notification Management
+Route::prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/', [NotificationManagementController::class, 'index'])->name('index');
+    Route::get('/create', [NotificationManagementController::class, 'create'])->name('create');
+    Route::post('/', [NotificationManagementController::class, 'store'])->name('store');
+    Route::get('/{notification}', [NotificationManagementController::class, 'show'])->name('show');
+    Route::delete('/{notification}', [NotificationManagementController::class, 'destroy'])->name('destroy');
+    Route::post('/bulk-delete', [NotificationManagementController::class, 'bulkDelete'])->name('bulk-delete');
+    Route::get('/statistics', [NotificationManagementController::class, 'statistics'])->name('statistics');
 });
