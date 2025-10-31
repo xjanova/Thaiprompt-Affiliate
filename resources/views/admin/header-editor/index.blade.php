@@ -22,6 +22,9 @@
         cursor: pointer;
         transition: all 0.2s;
     }
+    .dark .color-preview {
+        border-color: #475569;
+    }
     .color-preview:hover {
         transform: scale(1.1);
         box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -37,9 +40,18 @@
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         border: 1px solid #e5e7eb;
     }
+    .dark .setting-card {
+        background: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    }
     .setting-card:hover {
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         border-color: #3b82f6;
+    }
+    .dark .setting-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        border-color: #6366f1;
     }
 </style>
 @endpush
