@@ -62,6 +62,41 @@
             background: var(--gradient-accent);
         }
 
+        /* Dark Mode Variables */
+        .dark {
+            color-scheme: dark;
+        }
+
+        .dark body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .dark .bg-gray-50 {
+            background-color: #0f172a;
+        }
+
+        .dark .bg-white {
+            background-color: #1e293b;
+            color: #e2e8f0;
+        }
+
+        .dark .text-gray-700 {
+            color: #cbd5e1;
+        }
+
+        .dark .text-gray-600 {
+            color: #94a3b8;
+        }
+
+        .dark .border-gray-200 {
+            border-color: #334155;
+        }
+
+        .dark .shadow-lg {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        }
+
         /* Mobile-first responsive utilities */
         @media (max-width: 768px) {
             .mobile-padding {
@@ -78,6 +113,13 @@
         button, a {
             min-height: 44px;
             min-width: 44px;
+        }
+
+        /* Smooth transitions */
+        * {
+            transition-property: background-color, border-color, color, fill, stroke;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 200ms;
         }
     </style>
 
@@ -108,6 +150,9 @@
 
                 <!-- Right Actions -->
                 <div class="flex items-center space-x-2">
+                    <!-- Theme Toggle -->
+                    <x-theme-toggle />
+
                     <!-- Notification Bell -->
                     <x-notification-bell />
 
