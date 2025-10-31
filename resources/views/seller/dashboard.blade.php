@@ -156,6 +156,9 @@
 </div>
 
 @push('scripts')
+<script>
+const colors = window.getChartColors();
+const borderColor = window.isDarkMode() ? '#1e293b' : '#fff';
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Revenue Chart
@@ -187,6 +190,7 @@
                 y: {
                     beginAtZero: true,
                     ticks: {
+                        color: colors.textColor,
                         callback: function(value) {
                             return '฿' + value.toLocaleString();
                         }

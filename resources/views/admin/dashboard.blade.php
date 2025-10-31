@@ -210,16 +210,22 @@
         </div>
 
         <!-- Recent Commissions Activity Feed -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="bg-white rounded-2xl shadow-xl p-6" x-data="activityFeed()">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-xl font-bold text-gray-900">🔔 กิจกรรมล่าสุด</h3>
                 <a href="{{ route('admin.commissions.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                     ดูทั้งหมด →
                 </a>
             </div>
-            <div class="space-y-4 max-h-96 overflow-y-auto">
-                @forelse($recentCommissions->take(8) as $commission)
-                    <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition">
+            <div class="space-y-4 max-h-96 overflow-y-auto"
+                 x-ref="scrollContainer"
+                 @scroll="handleScroll()">
+                @forelse($recentCommissions as $index => $commission)
+                    <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition"
+                         x-show="$index < visibleCount"
+                         x-transition:enter="transition ease-out duration-300"
+                         x-transition:enter-start="opacity-0 transform translate-y-4"
+                         x-transition:enter-end="opacity-100 transform translate-y-0">
                         <img src="{{ $commission->affiliate->user->profile_picture_url }}"
                              alt="{{ $commission->affiliate->user->name }}"
                              class="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-200">
@@ -248,6 +254,12 @@
                         <p>ยังไม่มีกิจกรรม</p>
                     </div>
                 @endforelse
+
+                <!-- Loading indicator -->
+                <div x-show="loading" class="text-center py-4">
+                    <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                    <p class="text-xs text-gray-500 mt-2">กำลังโหลด...</p>
+                </div>
             </div>
         </div>
     </div>
@@ -279,9 +291,39 @@
 
 @push('scripts')
 <script>
+// Alpine.js Activity Feed Component with Infinite Scroll
+function activityFeed() {
+    return {
+        visibleCount: 8,
+        loading: false,
+        totalItems: {{ $recentCommissions->count() }},
+
+        handleScroll() {
+            const container = this.$refs.scrollContainer;
+            const scrollPercentage = (container.scrollTop + container.clientHeight) / container.scrollHeight;
+
+            // Load more when scrolled to 80% of the container
+            if (scrollPercentage > 0.8 && !this.loading && this.visibleCount < this.totalItems) {
+                this.loadMore();
+            }
+        },
+
+        loadMore() {
+            this.loading = true;
+
+            // Simulate loading delay for smooth UX
+            setTimeout(() => {
+                this.visibleCount = Math.min(this.visibleCount + 5, this.totalItems);
+                this.loading = false;
+            }, 300);
+        }
+    }
+}
+
 // Revenue Area Chart
 const revenueCtx = document.getElementById('revenueChart');
 if (revenueCtx) {
+    const colors = window.getChartColors();
     new Chart(revenueCtx, {
         type: 'line',
         data: {
@@ -309,7 +351,7 @@ if (revenueCtx) {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: colors.tooltipBg,
                     padding: 12,
                     titleColor: '#fff',
                     bodyColor: '#fff',
@@ -321,9 +363,10 @@ if (revenueCtx) {
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: colors.gridColor
                     },
                     ticks: {
+                        color: colors.textColor,
                         callback: function(value) {
                             return '฿' + value.toLocaleString();
                         }
@@ -332,6 +375,9 @@ if (revenueCtx) {
                 x: {
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        color: colors.textColor
                     }
                 }
             }
@@ -342,6 +388,8 @@ if (revenueCtx) {
 // Status Donut Chart
 const statusCtx = document.getElementById('statusChart');
 if (statusCtx) {
+    const colors = window.getChartColors();
+    const borderColor = window.isDarkMode() ? '#1e293b' : '#fff';
     new Chart(statusCtx, {
         type: 'doughnut',
         data: {
@@ -360,7 +408,7 @@ if (statusCtx) {
                     'rgba(239, 68, 68, 0.8)'
                 ],
                 borderWidth: 2,
-                borderColor: '#fff'
+                borderColor: borderColor
             }]
         },
         options: {
@@ -371,8 +419,10 @@ if (statusCtx) {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12
+                    backgroundColor: colors.tooltipBg,
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff'
                 }
             },
             cutout: '70%'
@@ -383,6 +433,7 @@ if (statusCtx) {
 // Commission Types Bar Chart
 const typesCtx = document.getElementById('typesChart');
 if (typesCtx) {
+    const colors = window.getChartColors();
     new Chart(typesCtx, {
         type: 'bar',
         data: {
@@ -405,18 +456,29 @@ if (typesCtx) {
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    backgroundColor: colors.tooltipBg,
+                    titleColor: '#fff',
+                    bodyColor: '#fff'
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: colors.gridColor
+                    },
+                    ticks: {
+                        color: colors.textColor
                     }
                 },
                 x: {
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        color: colors.textColor
                     }
                 }
             }
@@ -427,6 +489,7 @@ if (typesCtx) {
 // Daily Activity Chart
 const dailyCtx = document.getElementById('dailyChart');
 if (dailyCtx) {
+    const colors = window.getChartColors();
     new Chart(dailyCtx, {
         type: 'line',
         data: {
@@ -448,13 +511,21 @@ if (dailyCtx) {
             plugins: {
                 legend: {
                     display: false
+                },
+                tooltip: {
+                    backgroundColor: colors.tooltipBg,
+                    titleColor: '#fff',
+                    bodyColor: '#fff'
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: colors.gridColor
+                    },
+                    ticks: {
+                        color: colors.textColor
                     }
                 },
                 x: {
@@ -462,6 +533,7 @@ if (dailyCtx) {
                         display: false
                     },
                     ticks: {
+                        color: colors.textColor,
                         maxTicksLimit: 10
                     }
                 }
