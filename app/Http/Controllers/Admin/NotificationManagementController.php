@@ -74,6 +74,7 @@ class NotificationManagementController extends Controller
             'icon' => 'nullable|string|max:50',
             'color' => 'nullable|string|max:50',
             'expires_at' => 'nullable|date',
+            'scheduled_at' => 'nullable|date|after:now',
         ]);
 
         try {
@@ -81,6 +82,9 @@ class NotificationManagementController extends Controller
                 'sent_by_admin' => auth()->id(),
                 'sent_at' => now()->toDateTimeString(),
             ];
+
+            $scheduledAt = $request->scheduled_at ? \Carbon\Carbon::parse($request->scheduled_at) : null;
+            $isScheduled = $scheduledAt && $scheduledAt->isFuture();
 
             if ($request->recipient_type === 'all') {
                 // Send to all users
@@ -95,12 +99,18 @@ class NotificationManagementController extends Controller
                     $request->boolean('is_important'),
                     $request->boolean('show_immediately'),
                     $request->icon,
-                    $request->color
+                    $request->color,
+                    null,
+                    $scheduledAt
                 );
+
+                $message = $isScheduled
+                    ? "กำหนดการส่งการแจ้งเตือนถึง {$count} ผู้ใช้ในวันที่ " . $scheduledAt->format('d/m/Y H:i')
+                    : "ส่งการแจ้งเตือนถึง {$count} ผู้ใช้เรียบร้อยแล้ว";
 
                 return redirect()
                     ->route('admin.notifications.index')
-                    ->with('success', "ส่งการแจ้งเตือนถึง {$count} ผู้ใช้เรียบร้อยแล้ว");
+                    ->with('success', $message);
             } else {
                 // Send to specific users
                 $userIds = $request->user_ids;
@@ -116,12 +126,17 @@ class NotificationManagementController extends Controller
                     $request->boolean('show_immediately'),
                     $request->icon,
                     $request->color,
-                    $userIds
+                    $userIds,
+                    $scheduledAt
                 );
+
+                $message = $isScheduled
+                    ? "กำหนดการส่งการแจ้งเตือนถึง {$count} ผู้ใช้ในวันที่ " . $scheduledAt->format('d/m/Y H:i')
+                    : "ส่งการแจ้งเตือนถึง {$count} ผู้ใช้เรียบร้อยแล้ว";
 
                 return redirect()
                     ->route('admin.notifications.index')
-                    ->with('success', "ส่งการแจ้งเตือนถึง {$count} ผู้ใช้เรียบร้อยแล้ว");
+                    ->with('success', $message);
             }
         } catch (\Exception $e) {
             return redirect()
@@ -187,8 +202,18 @@ class NotificationManagementController extends Controller
             'by_priority' => Notification::selectRaw('priority, COUNT(*) as count')
                 ->groupBy('priority')
                 ->get(),
+            'recent' => Notification::with('user')
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get(),
+            'today' => Notification::whereDate('created_at', today())->count(),
+            'this_week' => Notification::whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])->count(),
+            'this_month' => Notification::whereMonth('created_at', now()->month)->count(),
+            'read_rate' => Notification::count() > 0
+                ? round((Notification::read()->count() / Notification::count()) * 100, 2)
+                : 0,
         ];
 
-        return response()->json($stats);
+        return view('admin.notifications.statistics', compact('stats'));
     }
 }

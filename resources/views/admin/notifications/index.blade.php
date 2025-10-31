@@ -10,10 +10,19 @@
             <h1 class="text-2xl font-bold text-gray-900">จัดการการแจ้งเตือน</h1>
             <p class="text-sm text-gray-600 mt-1">ส่งและจัดการการแจ้งเตือนให้กับสมาชิก</p>
         </div>
-        <a href="{{ route('admin.notifications.create') }}"
-           class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-            + ส่งการแจ้งเตือนใหม่
-        </a>
+        <div class="flex gap-3">
+            <a href="{{ route('admin.notifications.statistics') }}"
+               class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+                ดูสถิติ
+            </a>
+            <a href="{{ route('admin.notifications.create') }}"
+               class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-md hover:shadow-lg transition-all">
+                + ส่งการแจ้งเตือนใหม่
+            </a>
+        </div>
     </div>
 
     <!-- Filters -->
