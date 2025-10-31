@@ -48,22 +48,25 @@ git pull origin main
 # 3. Install dependencies
 composer install --no-dev --optimize-autoloader
 
-# 4. Clear cache
+# 4. Fix storage symlink (สำคัญ! แก้ปัญหาโลโก้/favicon หาย)
+php artisan storage:fix
+
+# 5. Clear cache
 php artisan cache:clear
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 
-# 5. Run migrations
+# 6. Run migrations
 php artisan migrate --force
 
-# 6. Optimize application
+# 7. Optimize application
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 php artisan optimize
 
-# 7. Disable maintenance mode
+# 8. Disable maintenance mode
 php artisan up
 ```
 
@@ -412,6 +415,23 @@ redis-cli ping
 # Restart Redis
 sudo systemctl restart redis
 ```
+
+#### 5. โลโก้/Favicon หายหลัง Deploy
+
+```bash
+# ตรวจสอบ storage symlink
+ls -la public/storage
+
+# แก้ไขด้วย command (แนะนำ)
+php artisan storage:fix
+
+# หรือแก้ไขแบบ manual
+php artisan storage:link
+```
+
+**สาเหตุ:** เมื่อ deploy ใหม่ symlink จาก `public/storage` → `storage/app/public` อาจหาย ทำให้ไฟล์ที่อัพโหลดเข้าถึงไม่ได้
+
+**วิธีป้องกัน:** ระบบจะตรวจสอบและสร้าง symlink อัตโนมัติเมื่อ application boot (ดูที่ `StorageLinkServiceProvider`)
 
 ---
 
