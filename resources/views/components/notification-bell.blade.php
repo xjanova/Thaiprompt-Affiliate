@@ -140,10 +140,34 @@ function notificationBell() {
 
         init() {
             this.loadNotifications();
+            this.checkImmediateNotifications();
+
             // Poll for new notifications every 30 seconds
             setInterval(() => {
                 this.loadNotifications();
+                this.checkImmediateNotifications();
             }, 30000);
+        },
+
+        async checkImmediateNotifications() {
+            try {
+                const response = await fetch('{{ route("user.notifications.immediate") }}', {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                if (data.notifications && data.notifications.length > 0) {
+                    // Dispatch event for immediate notifications popup
+                    window.dispatchEvent(new CustomEvent('show-immediate-notification', {
+                        detail: { notifications: data.notifications }
+                    }));
+                }
+            } catch (error) {
+                console.error('Error checking immediate notifications:', error);
+            }
         },
 
         toggleDropdown() {

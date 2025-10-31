@@ -52,6 +52,7 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
 Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('index');
     Route::get('/unread', [NotificationController::class, 'unread'])->name('unread');
+    Route::get('/immediate', [NotificationController::class, 'immediate'])->name('immediate');
     Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('read');
     Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
     Route::post('/{id}/archive', [NotificationController::class, 'archive'])->name('archive');
