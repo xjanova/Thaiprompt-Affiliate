@@ -304,7 +304,7 @@
                         $systemActive = request()->routeIs('admin.sliders.*') ||
                                        request()->routeIs('admin.premium-page.*') ||
                                        request()->routeIs('admin.header-editor.*') ||
-                                       request()->routeIs('admin.visual-builder.*') ||
+                                       request()->routeIs('admin.templates.*') ||
                                        request()->routeIs('admin.pages.*') ||
                                        request()->routeIs('admin.seo.*') ||
                                        request()->routeIs('admin.settings.languages*') ||
@@ -356,10 +356,10 @@
                             <span>แก้ไข Header & Menu</span>
                         </a>
 
-                        <a href="{{ route('admin.visual-builder.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.visual-builder.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                        <a href="{{ route('admin.templates.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.templates.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
                             <span class="mr-2">🎭</span>
-                            <span>Visual Page Builder</span>
+                            <span>Template Builder</span>
                         </a>
 
                         <a href="{{ route('admin.pages.index') }}"
