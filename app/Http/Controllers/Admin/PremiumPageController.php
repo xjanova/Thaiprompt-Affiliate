@@ -52,6 +52,14 @@ class PremiumPageController extends Controller
             Setting::set($settingKey, $value, is_bool($value) ? 'boolean' : 'string', 'premium_page');
         }
 
+        // Return JSON response if requested via AJAX
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'อัปเดตส่วน ' . $sections[$section]['name'] . ' เรียบร้อยแล้ว'
+            ]);
+        }
+
         return redirect()->route('admin.premium-page.index')
             ->with('success', 'อัปเดตส่วน ' . $sections[$section]['name'] . ' เรียบร้อยแล้ว');
     }
