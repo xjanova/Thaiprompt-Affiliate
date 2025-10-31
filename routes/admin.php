@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\HeaderEditorController;
 use App\Http\Controllers\Admin\VisualBuilderController;
+use App\Http\Controllers\Admin\TemplateController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -56,6 +57,12 @@ Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('
 Route::get('header-editor', [HeaderEditorController::class, 'index'])->name('header-editor.index');
 Route::post('header-editor', [HeaderEditorController::class, 'update'])->name('header-editor.update');
 Route::post('header-editor/reset', [HeaderEditorController::class, 'reset'])->name('header-editor.reset');
+Route::post('header-editor/template', [HeaderEditorController::class, 'updateTemplate'])->name('header-editor.template');
+Route::get('header-editor/menu-items', [HeaderEditorController::class, 'getMenuItems'])->name('header-editor.menu-items.index');
+Route::post('header-editor/menu-items', [HeaderEditorController::class, 'storeMenuItem'])->name('header-editor.menu-items.store');
+Route::put('header-editor/menu-items/{id}', [HeaderEditorController::class, 'updateMenuItem'])->name('header-editor.menu-items.update');
+Route::delete('header-editor/menu-items/{id}', [HeaderEditorController::class, 'deleteMenuItem'])->name('header-editor.menu-items.delete');
+Route::post('header-editor/menu-items/reorder', [HeaderEditorController::class, 'reorderMenuItems'])->name('header-editor.menu-items.reorder');
 
 // Slider Management
 Route::resource('sliders', SliderController::class);
@@ -71,18 +78,36 @@ Route::get('premium-page/{section}/edit', [PremiumPageController::class, 'edit']
 Route::put('premium-page/{section}', [PremiumPageController::class, 'update'])->name('premium-page.update');
 Route::post('premium-page/{section}/toggle', [PremiumPageController::class, 'toggle'])->name('premium-page.toggle');
 
-// Visual Builder (Drag & Drop Page Builder)
+// Visual Builder (Drag & Drop Page Builder) - Now Template Based
+Route::prefix('templates')->name('templates.')->group(function () {
+    // Template Management
+    Route::get('/', [TemplateController::class, 'index'])->name('index');
+    Route::get('/create', [TemplateController::class, 'create'])->name('create');
+    Route::post('/', [TemplateController::class, 'store'])->name('store');
+    Route::get('/{template}', [TemplateController::class, 'show'])->name('show');
+    Route::put('/{template}', [TemplateController::class, 'update'])->name('update');
+    Route::delete('/{template}', [TemplateController::class, 'destroy'])->name('destroy');
+    Route::post('/{template}/duplicate', [TemplateController::class, 'duplicate'])->name('duplicate');
+    Route::post('/{template}/set-default', [TemplateController::class, 'setDefault'])->name('set-default');
+
+    // Section Management within Template
+    Route::get('/{template}/sections', [TemplateController::class, 'getSections'])->name('sections.index');
+    Route::post('/{template}/sections', [TemplateController::class, 'addSection'])->name('sections.store');
+    Route::put('/{template}/sections/{section}', [TemplateController::class, 'updateSection'])->name('sections.update');
+    Route::delete('/{template}/sections/{section}', [TemplateController::class, 'deleteSection'])->name('sections.destroy');
+    Route::post('/{template}/sections/{section}/duplicate', [TemplateController::class, 'duplicateSection'])->name('sections.duplicate');
+    Route::post('/{template}/sections/reorder', [TemplateController::class, 'reorderSections'])->name('sections.reorder');
+
+    // Import/Export
+    Route::get('/{template}/export', [TemplateController::class, 'export'])->name('export');
+    Route::post('/import', [TemplateController::class, 'import'])->name('import');
+});
+
+// Keep old Visual Builder route for backward compatibility (redirect to templates)
 Route::prefix('visual-builder')->name('visual-builder.')->group(function () {
-    Route::get('/', [VisualBuilderController::class, 'index'])->name('index');
-    Route::get('/components', [VisualBuilderController::class, 'getComponents'])->name('components');
-    Route::post('/sections', [VisualBuilderController::class, 'store'])->name('sections.store');
-    Route::put('/sections/{section}', [VisualBuilderController::class, 'update'])->name('sections.update');
-    Route::delete('/sections/{section}', [VisualBuilderController::class, 'destroy'])->name('sections.destroy');
-    Route::post('/sections/{section}/duplicate', [VisualBuilderController::class, 'duplicate'])->name('sections.duplicate');
-    Route::post('/sections/{section}/toggle', [VisualBuilderController::class, 'toggle'])->name('sections.toggle');
-    Route::post('/sections/reorder', [VisualBuilderController::class, 'reorder'])->name('sections.reorder');
-    Route::get('/export', [VisualBuilderController::class, 'export'])->name('export');
-    Route::post('/import', [VisualBuilderController::class, 'import'])->name('import');
+    Route::get('/', function () {
+        return redirect()->route('admin.templates.index');
+    })->name('index');
 });
 
 // SEO Management

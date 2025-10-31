@@ -10,6 +10,7 @@ class PageSection extends Model
     use HasFactory;
 
     protected $fillable = [
+        'template_id',
         'page',
         'component_type',
         'name',
@@ -29,6 +30,14 @@ class PageSection extends Model
     ];
 
     /**
+     * Get the template this section belongs to.
+     */
+    public function template()
+    {
+        return $this->belongsTo(PageTemplate::class, 'template_id');
+    }
+
+    /**
      * Scope for active sections
      */
     public function scopeActive($query)
@@ -45,6 +54,14 @@ class PageSection extends Model
     }
 
     /**
+     * Scope for specific template
+     */
+    public function scopeForTemplate($query, $templateId)
+    {
+        return $query->where('template_id', $templateId);
+    }
+
+    /**
      * Scope ordered by order field
      */
     public function scopeOrdered($query)
@@ -58,6 +75,20 @@ class PageSection extends Model
     public static function getPageSections($page = 'home', $activeOnly = true)
     {
         $query = static::forPage($page)->ordered();
+
+        if ($activeOnly) {
+            $query->active();
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Get sections for a specific template
+     */
+    public static function getTemplateSections($templateId, $activeOnly = true)
+    {
+        $query = static::forTemplate($templateId)->ordered();
 
         if ($activeOnly) {
             $query->active();

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Models\PageTemplate;
+use App\Models\MenuItem;
 use Illuminate\Http\Request;
 
 class HeaderEditorController extends Controller
@@ -63,7 +65,14 @@ class HeaderEditorController extends Controller
             'header_gradient_direction' => Setting::get('header_gradient_direction', 'to-r'),
         ];
 
-        return view('admin.header-editor.index', compact('headerSettings'));
+        // Get templates for selector
+        $templates = PageTemplate::active()->orderBy('is_default', 'desc')->get();
+        $currentTemplateId = Setting::get('home_template_id');
+
+        // Get menu items
+        $menuItems = MenuItem::getForLocation('header');
+
+        return view('admin.header-editor.index', compact('headerSettings', 'templates', 'currentTemplateId', 'menuItems'));
     }
 
     /**
@@ -179,6 +188,125 @@ class HeaderEditorController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'รีเซ็ตการตั้งค่า Header เป็นค่าเริ่มต้นแล้ว!'
+        ]);
+    }
+
+    /**
+     * Update homepage template
+     */
+    public function updateTemplate(Request $request)
+    {
+        $validated = $request->validate([
+            'template_id' => 'required|integer|exists:page_templates,id',
+        ]);
+
+        Setting::set('home_template_id', $validated['template_id'], 'integer', 'system');
+
+        $template = PageTemplate::find($validated['template_id']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ตั้งค่าเทมเพลตหน้าแรกเป็น "' . $template->name . '" แล้ว!'
+        ]);
+    }
+
+    /**
+     * Get menu items
+     */
+    public function getMenuItems()
+    {
+        $menuItems = MenuItem::getForLocation('header');
+
+        return response()->json([
+            'success' => true,
+            'items' => $menuItems
+        ]);
+    }
+
+    /**
+     * Store new menu item
+     */
+    public function storeMenuItem(Request $request)
+    {
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'url' => 'nullable|string|max:500',
+            'route' => 'nullable|string|max:255',
+            'target' => 'required|string|in:_self,_blank',
+            'icon' => 'nullable|string|max:100',
+            'parent_id' => 'nullable|integer|exists:menu_items,id',
+            'is_active' => 'boolean',
+            'conditions' => 'nullable|array',
+        ]);
+
+        $validated['menu_location'] = 'header';
+        $validated['order'] = MenuItem::forLocation('header')->max('order') + 1;
+        $validated['is_active'] = $validated['is_active'] ?? true;
+
+        $menuItem = MenuItem::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'เพิ่มเมนูสำเร็จ!',
+            'item' => $menuItem->load('children')
+        ]);
+    }
+
+    /**
+     * Update menu item
+     */
+    public function updateMenuItem(Request $request, $id)
+    {
+        $menuItem = MenuItem::findOrFail($id);
+
+        $validated = $request->validate([
+            'title' => 'sometimes|string|max:255',
+            'url' => 'nullable|string|max:500',
+            'route' => 'nullable|string|max:255',
+            'target' => 'sometimes|string|in:_self,_blank',
+            'icon' => 'nullable|string|max:100',
+            'parent_id' => 'nullable|integer|exists:menu_items,id',
+            'is_active' => 'sometimes|boolean',
+            'conditions' => 'nullable|array',
+        ]);
+
+        $menuItem->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อัปเดตเมนูสำเร็จ!',
+            'item' => $menuItem->load('children')
+        ]);
+    }
+
+    /**
+     * Delete menu item
+     */
+    public function deleteMenuItem($id)
+    {
+        $menuItem = MenuItem::findOrFail($id);
+        $menuItem->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ลบเมนูสำเร็จ!'
+        ]);
+    }
+
+    /**
+     * Reorder menu items
+     */
+    public function reorderMenuItems(Request $request)
+    {
+        $validated = $request->validate([
+            'items' => 'required|array',
+        ]);
+
+        MenuItem::reorderForLocation('header', $validated['items']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'จัดเรียงเมนูสำเร็จ!'
         ]);
     }
 }
