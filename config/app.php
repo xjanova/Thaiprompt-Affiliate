@@ -55,6 +55,7 @@ return [
 
         // Application Service Providers
         App\Providers\AppServiceProvider::class,
+        App\Providers\StorageLinkServiceProvider::class, // Auto-fix storage symlink
     ],
     'aliases' => Facade::defaultAliases()->merge([
         // Custom aliases...

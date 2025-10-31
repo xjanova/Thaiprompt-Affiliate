@@ -59,6 +59,13 @@ class SettingsController extends Controller
      */
     public function updateBranding(Request $request)
     {
+        // ตรวจสอบ storage symlink ก่อนอัพโหลด
+        if (!$this->checkStorageLink()) {
+            return back()->withErrors([
+                'storage' => 'ไม่พบ storage symlink กรุณารันคำสั่ง "php artisan storage:fix" ก่อนอัพโหลดไฟล์'
+            ]);
+        }
+
         $validated = $request->validate([
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,svg', 'max:2048'],
             'favicon' => ['nullable', 'image', 'mimes:png,jpg,jpeg,ico', 'max:512'],
@@ -126,5 +133,21 @@ class SettingsController extends Controller
         }
 
         return back()->with('success', 'Theme colors updated successfully.');
+    }
+
+    /**
+     * ตรวจสอบว่า storage symlink มีอยู่หรือไม่
+     */
+    protected function checkStorageLink(): bool
+    {
+        $link = public_path('storage');
+
+        // ตรวจสอบว่ามี symlink และชี้ไปยัง storage/app/public
+        if (is_link($link)) {
+            $target = storage_path('app/public');
+            return readlink($link) === $target;
+        }
+
+        return false;
     }
 }
