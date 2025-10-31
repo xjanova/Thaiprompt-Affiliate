@@ -400,6 +400,9 @@
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
+    {{-- Immediate Notification Popup --}}
+    <x-immediate-notification-popup />
+
     @stack('scripts')
 </body>
 </html>

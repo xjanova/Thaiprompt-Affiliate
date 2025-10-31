@@ -15,6 +15,62 @@
         </div>
     </div>
 
+    <!-- Templates Section -->
+    <div class="bg-white rounded-lg shadow-md p-6" x-data="{ selectedTemplate: null }">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">📋 เทมเพลตสำเร็จรูป</h3>
+        <p class="text-sm text-gray-600 mb-4">เลือกเทมเพลตเพื่อกรอกข้อมูลอัตโนมัติ</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Template 1: System Update -->
+            <button type="button" @click="useTemplate('system_update')"
+                    class="p-4 border-2 border-gray-300 hover:border-indigo-500 rounded-lg text-left transition">
+                <div class="text-3xl mb-2">⚙️</div>
+                <h4 class="font-semibold text-gray-900">อัปเดตระบบ</h4>
+                <p class="text-sm text-gray-600 mt-1">แจ้งเตือนการอัปเดตระบบ</p>
+            </button>
+
+            <!-- Template 2: Promotion -->
+            <button type="button" @click="useTemplate('promotion')"
+                    class="p-4 border-2 border-gray-300 hover:border-indigo-500 rounded-lg text-left transition">
+                <div class="text-3xl mb-2">🎉</div>
+                <h4 class="font-semibold text-gray-900">โปรโมชั่น</h4>
+                <p class="text-sm text-gray-600 mt-1">ประกาศโปรโมชั่นพิเศษ</p>
+            </button>
+
+            <!-- Template 3: Maintenance -->
+            <button type="button" @click="useTemplate('maintenance')"
+                    class="p-4 border-2 border-gray-300 hover:border-indigo-500 rounded-lg text-left transition">
+                <div class="text-3xl mb-2">🔧</div>
+                <h4 class="font-semibold text-gray-900">ปรับปรุงระบบ</h4>
+                <p class="text-sm text-gray-600 mt-1">แจ้งปิดปรับปรุงระบบ</p>
+            </button>
+
+            <!-- Template 4: Welcome -->
+            <button type="button" @click="useTemplate('welcome')"
+                    class="p-4 border-2 border-gray-300 hover:border-indigo-500 rounded-lg text-left transition">
+                <div class="text-3xl mb-2">👋</div>
+                <h4 class="font-semibold text-gray-900">ต้อนรับสมาชิกใหม่</h4>
+                <p class="text-sm text-gray-600 mt-1">ข้อความต้อนรับ</p>
+            </button>
+
+            <!-- Template 5: Payment Success -->
+            <button type="button" @click="useTemplate('payment_success')"
+                    class="p-4 border-2 border-gray-300 hover:border-indigo-500 rounded-lg text-left transition">
+                <div class="text-3xl mb-2">💰</div>
+                <h4 class="font-semibold text-gray-900">การเงินสำเร็จ</h4>
+                <p class="text-sm text-gray-600 mt-1">แจ้งเตือนธุรกรรมสำเร็จ</p>
+            </button>
+
+            <!-- Template 6: Important Alert -->
+            <button type="button" @click="useTemplate('important_alert')"
+                    class="p-4 border-2 border-gray-300 hover:border-indigo-500 rounded-lg text-left transition">
+                <div class="text-3xl mb-2">⚠️</div>
+                <h4 class="font-semibold text-gray-900">แจ้งเตือนสำคัญ</h4>
+                <p class="text-sm text-gray-600 mt-1">ข้อความสำคัญเร่งด่วน</p>
+            </button>
+        </div>
+    </div>
+
     <!-- Form -->
     <form action="{{ route('admin.notifications.store') }}" method="POST" class="bg-white rounded-lg shadow-md p-6" id="notificationForm">
         @csrf
@@ -261,6 +317,98 @@ function updateIcon() {
     if (icons[type] && !iconInput.value) {
         iconInput.value = icons[type];
     }
+}
+
+function useTemplate(templateName) {
+    const templates = {
+        'system_update': {
+            type: 'system',
+            title: '🎉 อัปเดตระบบใหม่',
+            message: 'เราได้อัปเดตระบบเพื่อให้คุณได้รับประสบการณ์ที่ดีขึ้น ตรวจสอบฟีเจอร์ใหม่ได้เลยตอนนี้!',
+            priority: 'normal',
+            icon: '⚙️',
+            color: 'blue',
+            is_important: false,
+            show_immediately: true
+        },
+        'promotion': {
+            type: 'announcement',
+            title: '🎁 โปรโมชั่นพิเศษ!',
+            message: 'รับส่วนลดพิเศษสูงสุด 50%! โปรโมชั่นจำกัดเวลา อย่าพลาดโอกาสดีๆ แบบนี้',
+            action_text: 'ดูโปรโมชั่น',
+            priority: 'high',
+            icon: '🎉',
+            color: 'green',
+            is_important: true,
+            show_immediately: true
+        },
+        'maintenance': {
+            type: 'alert',
+            title: '🔧 ปิดปรับปรุงระบบชั่วคราว',
+            message: 'ระบบจะปิดปรับปรุงในวันที่ XX/XX/XXXX เวลา XX:XX - XX:XX น. เพื่อพัฒนาประสิทธิภาพให้ดียิ่งขึ้น ขออภัยในความไม่สะดวก',
+            priority: 'urgent',
+            icon: '🔧',
+            color: 'orange',
+            is_important: true,
+            show_immediately: true
+        },
+        'welcome': {
+            type: 'system',
+            title: '👋 ยินดีต้อนรับสู่ระบบ!',
+            message: 'ขอบคุณที่เข้าร่วมกับเรา! เรายินดีที่จะช่วยเหลือคุณในทุกขั้นตอน หากมีคำถามสามารถติดต่อเราได้ทันที',
+            action_text: 'เริ่มต้นใช้งาน',
+            priority: 'normal',
+            icon: '👋',
+            color: 'purple',
+            is_important: false,
+            show_immediately: true
+        },
+        'payment_success': {
+            type: 'wallet',
+            title: '💰 ธุรกรรมสำเร็จ',
+            message: 'ธุรกรรมของคุณได้รับการดำเนินการเรียบร้อยแล้ว สามารถตรวจสอบรายละเอียดได้ในกระเป๋าเงินของคุณ',
+            action_url: '/user/wallet/transactions',
+            action_text: 'ดูธุรกรรม',
+            priority: 'high',
+            icon: '💰',
+            color: 'green',
+            is_important: true,
+            show_immediately: false
+        },
+        'important_alert': {
+            type: 'alert',
+            title: '⚠️ แจ้งเตือนสำคัญ',
+            message: 'กรุณาอ่านข้อความนี้โดยด่วน! มีเรื่องสำคัญที่ต้องการแจ้งให้คุณทราบ',
+            priority: 'urgent',
+            icon: '⚠️',
+            color: 'red',
+            is_important: true,
+            show_immediately: true
+        }
+    };
+
+    const template = templates[templateName];
+    if (!template) return;
+
+    // Fill form fields
+    document.querySelector('select[name="type"]').value = template.type;
+    document.querySelector('input[name="title"]').value = template.title;
+    document.querySelector('textarea[name="message"]').value = template.message;
+    document.querySelector('select[name="priority"]').value = template.priority;
+    document.getElementById('iconInput').value = template.icon;
+    document.querySelector('select[name="color"]').value = template.color;
+    document.getElementById('is_important').checked = template.is_important;
+    document.getElementById('show_immediately').checked = template.show_immediately;
+
+    if (template.action_url) {
+        document.querySelector('input[name="action_url"]').value = template.action_url;
+    }
+    if (template.action_text) {
+        document.querySelector('input[name="action_text"]').value = template.action_text;
+    }
+
+    // Scroll to form
+    document.getElementById('notificationForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Initialize
