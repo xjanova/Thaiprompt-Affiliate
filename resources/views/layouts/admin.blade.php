@@ -66,6 +66,10 @@
             background-color: #1e293b;
         }
 
+        .dark .bg-gray-50 {
+            background-color: #1e293b;
+        }
+
         .dark .bg-white {
             background-color: #1e293b;
             color: #e2e8f0;
@@ -73,6 +77,10 @@
 
         .dark .text-gray-800 {
             color: #e2e8f0;
+        }
+
+        .dark .text-gray-900 {
+            color: #f1f5f9;
         }
 
         .dark .text-gray-700 {
@@ -83,7 +91,15 @@
             color: #94a3b8;
         }
 
+        .dark .text-gray-500 {
+            color: #94a3b8;
+        }
+
         .dark .border-gray-200 {
+            border-color: #334155;
+        }
+
+        .dark .divide-gray-200 {
             border-color: #334155;
         }
 
@@ -91,8 +107,44 @@
             box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
         }
 
+        .dark .shadow-md {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+        }
+
         .dark .shadow-xl {
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+        }
+
+        .dark .hover\:bg-gray-50:hover {
+            background-color: #334155;
+        }
+
+        .dark .bg-gray-100 {
+            background-color: #1e293b;
+        }
+
+        /* Dark mode for tables */
+        .dark table thead {
+            background-color: #0f172a;
+        }
+
+        .dark table tbody tr:hover {
+            background-color: #334155;
+        }
+
+        .dark input,
+        .dark select,
+        .dark textarea {
+            background-color: #1e293b;
+            border-color: #334155;
+            color: #e2e8f0;
+        }
+
+        .dark input:focus,
+        .dark select:focus,
+        .dark textarea:focus {
+            border-color: #6366f1;
+            background-color: #1e293b;
         }
 
         /* Smooth transitions */
@@ -627,6 +679,22 @@
     </div>
 
     <script>
+        // Chart.js Dark Mode Helpers
+        window.isDarkMode = function() {
+            return document.documentElement.classList.contains('dark');
+        };
+
+        window.getChartColors = function() {
+            const isDark = window.isDarkMode();
+            return {
+                textColor: isDark ? '#e2e8f0' : '#374151',
+                gridColor: isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                tooltipBg: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.8)',
+                borderColor: isDark ? '#475569' : '#e5e7eb',
+                chartBorderColor: isDark ? '#1e293b' : '#fff'
+            };
+        };
+
         // GSAP Animations
         gsap.registerPlugin(ScrollTrigger);
 

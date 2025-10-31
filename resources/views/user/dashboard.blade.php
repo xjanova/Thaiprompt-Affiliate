@@ -420,6 +420,10 @@ const qrcode = new QRCode(document.getElementById("qrcode"), {
 });
 @endif
 
+// Get Chart Colors based on theme
+const colors = window.getChartColors();
+const borderColor = window.isDarkMode() ? '#1e293b' : '#fff';
+
 // Revenue Area Chart
 const revenueCtx = document.getElementById('revenueChart');
 if (revenueCtx) {
@@ -450,7 +454,7 @@ if (revenueCtx) {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: colors.tooltipBg,
                     padding: 12,
                     titleColor: '#fff',
                     bodyColor: '#fff',
@@ -467,9 +471,10 @@ if (revenueCtx) {
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: colors.gridColor
                     },
                     ticks: {
+                        color: colors.textColor,
                         callback: function(value) {
                             return '฿' + value.toLocaleString();
                         }
@@ -478,6 +483,9 @@ if (revenueCtx) {
                 x: {
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        color: colors.textColor
                     }
                 }
             }
@@ -506,7 +514,7 @@ if (statusCtx) {
                     'rgba(239, 68, 68, 0.8)'
                 ],
                 borderWidth: 2,
-                borderColor: '#fff'
+                borderColor: borderColor
             }]
         },
         options: {
@@ -517,8 +525,10 @@ if (statusCtx) {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12
+                    backgroundColor: colors.tooltipBg,
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff'
                 }
             },
             cutout: '70%'
@@ -553,6 +563,9 @@ if (typesCtx) {
                     display: false
                 },
                 tooltip: {
+                    backgroundColor: colors.tooltipBg,
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
                     callbacks: {
                         label: function(context) {
                             return 'จำนวน: ฿' + context.parsed.y.toLocaleString();
@@ -564,9 +577,10 @@ if (typesCtx) {
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: colors.gridColor
                     },
                     ticks: {
+                        color: colors.textColor,
                         callback: function(value) {
                             return '฿' + value.toLocaleString();
                         }
@@ -575,6 +589,9 @@ if (typesCtx) {
                 x: {
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        color: colors.textColor
                     }
                 }
             }
@@ -611,17 +628,20 @@ if (dailyCtx) {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12
+                    backgroundColor: colors.tooltipBg,
+                    padding: 12,
+                    titleColor: '#fff',
+                    bodyColor: '#fff'
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)'
+                        color: colors.gridColor
                     },
                     ticks: {
+                        color: colors.textColor,
                         stepSize: 1
                     }
                 },
@@ -630,6 +650,7 @@ if (dailyCtx) {
                         display: false
                     },
                     ticks: {
+                        color: colors.textColor,
                         maxTicksLimit: 10
                     }
                 }

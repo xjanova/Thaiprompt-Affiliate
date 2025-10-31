@@ -336,6 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 y: {
                     beginAtZero: true,
                     ticks: {
+                        color: colors.textColor,
                         stepSize: 1
                     }
                 }

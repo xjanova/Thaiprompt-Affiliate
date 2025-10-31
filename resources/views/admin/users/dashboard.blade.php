@@ -211,6 +211,7 @@
                 y: {
                     beginAtZero: true,
                     ticks: {
+                        color: colors.textColor,
                         callback: function(value) {
                             return '฿' + value.toLocaleString();
                         }
