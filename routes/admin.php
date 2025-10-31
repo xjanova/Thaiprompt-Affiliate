@@ -57,6 +57,12 @@ Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('
 Route::get('header-editor', [HeaderEditorController::class, 'index'])->name('header-editor.index');
 Route::post('header-editor', [HeaderEditorController::class, 'update'])->name('header-editor.update');
 Route::post('header-editor/reset', [HeaderEditorController::class, 'reset'])->name('header-editor.reset');
+Route::post('header-editor/template', [HeaderEditorController::class, 'updateTemplate'])->name('header-editor.template');
+Route::get('header-editor/menu-items', [HeaderEditorController::class, 'getMenuItems'])->name('header-editor.menu-items.index');
+Route::post('header-editor/menu-items', [HeaderEditorController::class, 'storeMenuItem'])->name('header-editor.menu-items.store');
+Route::put('header-editor/menu-items/{id}', [HeaderEditorController::class, 'updateMenuItem'])->name('header-editor.menu-items.update');
+Route::delete('header-editor/menu-items/{id}', [HeaderEditorController::class, 'deleteMenuItem'])->name('header-editor.menu-items.delete');
+Route::post('header-editor/menu-items/reorder', [HeaderEditorController::class, 'reorderMenuItems'])->name('header-editor.menu-items.reorder');
 
 // Slider Management
 Route::resource('sliders', SliderController::class);
