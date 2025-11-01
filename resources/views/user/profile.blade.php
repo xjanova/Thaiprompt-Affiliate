@@ -72,6 +72,67 @@
         </div>
     </div>
 
+    <!-- Change Password -->
+    <div id="change-password" class="bg-white rounded-xl shadow-md p-6" x-data="{ showPasswordForm: false }">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h2 class="text-xl font-bold text-gray-900">เปลี่ยนรหัสผ่าน</h2>
+                <p class="text-sm text-gray-600 mt-1">อัปเดตรหัสผ่านของคุณเพื่อความปลอดภัย</p>
+            </div>
+            <button @click="showPasswordForm = !showPasswordForm"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                <span x-show="!showPasswordForm">เปลี่ยนรหัสผ่าน</span>
+                <span x-show="showPasswordForm">ยกเลิก</span>
+            </button>
+        </div>
+
+        <div x-show="showPasswordForm"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 transform -translate-y-2"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             style="display: none;">
+            <form method="POST" action="{{ route('user.profile.update-password') }}" class="space-y-4">
+                @csrf
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่านปัจจุบัน</label>
+                    <input type="password" name="current_password" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    @error('current_password')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่านใหม่</label>
+                    <input type="password" name="new_password" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <p class="mt-1 text-xs text-gray-500">รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข</p>
+                    @error('new_password')
+                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ยืนยันรหัสผ่านใหม่</label>
+                    <input type="password" name="new_password_confirmation" required
+                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="submit"
+                            class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                        บันทึกรหัสผ่านใหม่
+                    </button>
+                    <button type="button" @click="showPasswordForm = false"
+                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                        ยกเลิก
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Account Statistics -->
     <div class="bg-white rounded-xl shadow-md p-6">
         <h2 class="text-xl font-bold text-gray-900 mb-4">สถิติบัญชี</h2>
