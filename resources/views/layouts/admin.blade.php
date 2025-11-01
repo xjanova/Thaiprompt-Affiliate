@@ -349,6 +349,16 @@
                     </div>
                 </div>
 
+                <!-- Retention System (Marketing Section) -->
+                <a href="{{ route('admin.retention.index') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-rose-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.retention.*') ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💖</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                        ระบบรักษายอด
+                        <span class="block text-[10px] opacity-75 -mt-0.5">Membership Retention</span>
+                    </span>
+                </a>
+
                 <!-- Divider -->
                 <div class="border-t border-gray-700/50 my-3"></div>
 

@@ -359,6 +359,64 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผังสายงาน</span>
                 </a>
 
+                <!-- Marketing Section Divider -->
+                <div class="border-t border-gray-700/50 my-2" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen"></div>
+
+                <!-- Marketing Header -->
+                <div class="px-3 py-2" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                    <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">การตลาด</span>
+                </div>
+
+                <!-- Retention Dropdown Menu -->
+                <div x-data="{ retentionOpen: false }" class="relative mb-1">
+                    @php
+                        $retentionActive = request()->routeIs('user.retention.*');
+                    @endphp
+
+                    <!-- Main Retention Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ $retentionActive ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg' : '' }}"
+                       @click="retentionOpen = !retentionOpen">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💖</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            รักษายอด
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': retentionOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="retentionOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('user.retention.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-red-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.retention.index') ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">💗</span>
+                            <span>สถานะพลังชีวิต</span>
+                        </a>
+
+                        <a href="{{ route('user.retention.repair') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-red-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.retention.repair') ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">🔧</span>
+                            <span>ซ่อมสิทธิ์</span>
+                        </a>
+
+                        <a href="{{ route('user.retention.advance-renewal') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-red-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.retention.advance-renewal') ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">⏰</span>
+                            <span>เติมวันล่วงหน้า</span>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Version Info -->
                 <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                     <div class="bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30 dark:border-gray-600/30">
