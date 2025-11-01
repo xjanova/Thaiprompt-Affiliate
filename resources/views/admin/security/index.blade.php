@@ -472,6 +472,221 @@
                 </form>
             </div>
 
+            <!-- Auto-Ban Settings Tab -->
+            <div x-show="activeTab === 'autoban'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <form method="POST" action="{{ route('admin.security.auto-ban.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="space-y-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่า Auto-Ban System</h3>
+
+                        <!-- Enable Auto-Ban -->
+                        <div class="flex items-center">
+                            <input type="checkbox" name="auto_ban_enabled" id="auto_ban_enabled"
+                                   {{ config('autoban.enabled') ? 'checked' : '' }}
+                                   class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                            <label for="auto_ban_enabled" class="ml-2 text-sm font-medium text-gray-700">
+                                เปิดใช้งาน Auto-Ban System
+                            </label>
+                        </div>
+
+                        <!-- Failed Login Auto-Ban -->
+                        <div class="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <span class="text-2xl mr-3">🔒</span>
+                                <h4 class="text-md font-semibold text-gray-900">Failed Login Auto-Ban</h4>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="auto_ban_failed_login_enabled" id="auto_ban_failed_login_enabled"
+                                           {{ config('autoban.failed_login.enabled') ? 'checked' : '' }}
+                                           class="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
+                                    <label for="auto_ban_failed_login_enabled" class="ml-2 text-sm font-medium text-gray-700">
+                                        เปิดใช้งาน
+                                    </label>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">จำนวนครั้ง (Threshold)</label>
+                                        <input type="number" name="auto_ban_failed_login_threshold"
+                                               value="{{ old('auto_ban_failed_login_threshold', config('autoban.failed_login.threshold')) }}"
+                                               min="1" max="100"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                        <p class="mt-1 text-xs text-gray-500">ครั้ง</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา (Time Window)</label>
+                                        <input type="number" name="auto_ban_failed_login_time_window"
+                                               value="{{ old('auto_ban_failed_login_time_window', config('autoban.failed_login.time_window')) }}"
+                                               min="1" max="1440"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                        <p class="mt-1 text-xs text-gray-500">นาที</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ระยะเวลาแบน (Ban Duration)</label>
+                                        <input type="number" name="auto_ban_failed_login_ban_duration"
+                                               value="{{ old('auto_ban_failed_login_ban_duration', config('autoban.failed_login.ban_duration')) }}"
+                                               min="1" max="10080"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                        <p class="mt-1 text-xs text-gray-500">นาที ({{ round(config('autoban.failed_login.ban_duration') / 60, 1) }} ชม.)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Turnstile Failure Auto-Ban -->
+                        <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <span class="text-2xl mr-3">🤖</span>
+                                <h4 class="text-md font-semibold text-gray-900">Turnstile Failure Auto-Ban</h4>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="auto_ban_turnstile_enabled" id="auto_ban_turnstile_enabled"
+                                           {{ config('autoban.turnstile_failure.enabled') ? 'checked' : '' }}
+                                           class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="auto_ban_turnstile_enabled" class="ml-2 text-sm font-medium text-gray-700">
+                                        เปิดใช้งาน
+                                    </label>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">จำนวนครั้ง</label>
+                                        <input type="number" name="auto_ban_turnstile_threshold"
+                                               value="{{ old('auto_ban_turnstile_threshold', config('autoban.turnstile_failure.threshold')) }}"
+                                               min="1" max="100"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา (นาที)</label>
+                                        <input type="number" name="auto_ban_turnstile_time_window"
+                                               value="{{ old('auto_ban_turnstile_time_window', config('autoban.turnstile_failure.time_window')) }}"
+                                               min="1" max="1440"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ระยะเวลาแบน (นาที)</label>
+                                        <input type="number" name="auto_ban_turnstile_ban_duration"
+                                               value="{{ old('auto_ban_turnstile_ban_duration', config('autoban.turnstile_failure.ban_duration')) }}"
+                                               min="1" max="10080"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <p class="mt-1 text-xs text-gray-500">{{ round(config('autoban.turnstile_failure.ban_duration') / 60, 1) }} ชม.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rate Limit Auto-Ban -->
+                        <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <span class="text-2xl mr-3">⏱️</span>
+                                <h4 class="text-md font-semibold text-gray-900">Rate Limit Auto-Ban</h4>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="auto_ban_rate_limit_enabled" id="auto_ban_rate_limit_enabled"
+                                           {{ config('autoban.rate_limit.enabled') ? 'checked' : '' }}
+                                           class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                                    <label for="auto_ban_rate_limit_enabled" class="ml-2 text-sm font-medium text-gray-700">
+                                        เปิดใช้งาน
+                                    </label>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">จำนวนครั้ง</label>
+                                        <input type="number" name="auto_ban_rate_limit_threshold"
+                                               value="{{ old('auto_ban_rate_limit_threshold', config('autoban.rate_limit.threshold')) }}"
+                                               min="1" max="100"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา (นาที)</label>
+                                        <input type="number" name="auto_ban_rate_limit_time_window"
+                                               value="{{ old('auto_ban_rate_limit_time_window', config('autoban.rate_limit.time_window')) }}"
+                                               min="1" max="1440"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ระยะเวลาแบน (นาที)</label>
+                                        <input type="number" name="auto_ban_rate_limit_ban_duration"
+                                               value="{{ old('auto_ban_rate_limit_ban_duration', config('autoban.rate_limit.ban_duration')) }}"
+                                               min="1" max="10080"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                        <p class="mt-1 text-xs text-gray-500">{{ round(config('autoban.rate_limit.ban_duration') / 60, 1) }} ชม.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Email Notifications -->
+                        <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-6">
+                            <div class="flex items-center mb-4">
+                                <span class="text-2xl mr-3">📧</span>
+                                <h4 class="text-md font-semibold text-gray-900">Email Notifications</h4>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="auto_ban_notifications_enabled" id="auto_ban_notifications_enabled"
+                                           {{ config('autoban.notifications.enabled') ? 'checked' : '' }}
+                                           class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                                    <label for="auto_ban_notifications_enabled" class="ml-2 text-sm font-medium text-gray-700">
+                                        เปิดใช้งานการแจ้งเตือน
+                                    </label>
+                                </div>
+
+                                <div class="flex items-center">
+                                    <input type="checkbox" name="auto_ban_email_enabled" id="auto_ban_email_enabled"
+                                           {{ config('autoban.notifications.email.enabled') ? 'checked' : '' }}
+                                           class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                                    <label for="auto_ban_email_enabled" class="ml-2 text-sm font-medium text-gray-700">
+                                        ส่งอีเมล
+                                    </label>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">อีเมลผู้รับ (คั่นด้วย comma)</label>
+                                    <input type="text" name="auto_ban_email_recipients"
+                                           value="{{ old('auto_ban_email_recipients', config('autoban.notifications.email.recipients')) }}"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                                           placeholder="admin@example.com, security@example.com">
+                                    <p class="mt-1 text-xs text-gray-500">อีเมลที่จะได้รับการแจ้งเตือนเมื่อมี IP ถูก Auto-Ban</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Info Box -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <span class="text-2xl mr-3">💡</span>
+                                <div>
+                                    <h5 class="font-semibold text-yellow-900 mb-2">คำอธิบาย Auto-Ban System</h5>
+                                    <ul class="text-sm text-yellow-800 space-y-1 list-disc list-inside">
+                                        <li><strong>Threshold:</strong> จำนวนครั้งที่ล้มเหลวก่อนแบน IP</li>
+                                        <li><strong>Time Window:</strong> ช่วงเวลาที่นับจำนวนครั้ง (นาที)</li>
+                                        <li><strong>Ban Duration:</strong> ระยะเวลาที่แบน IP (นาที)</li>
+                                        <li>ตัวอย่าง: 10 ครั้ง / 30 นาที → แบน 1440 นาที (24 ชม.) หมายความว่า ถ้า Login ล้มเหลว 10 ครั้งใน 30 นาที จะถูกแบน IP เป็นเวลา 24 ชั่วโมง</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                                บันทึกการตั้งค่า Auto-Ban
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
             <!-- IP Management Tab -->
             <div x-show="activeTab === 'ipmanagement'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                 <div class="space-y-6">
