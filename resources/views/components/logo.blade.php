@@ -25,9 +25,7 @@
                 src="{{ asset($logo) }}"
                 alt="{{ $appName }}"
                 class="object-contain transition-all duration-300 ease-in-out {{ $heightClass }}"
-                @if($shrinkOnScroll)
-                :class="{ 'h-8': scrolled }"
-                @endif
+                {!! $shrinkOnScroll ? ':class="{ \'h-8\': scrolled }"' : '' !!}
                 @error="logoError = true; $el.style.display = 'none';"
                 onerror="this.style.display='none'; this.parentElement.parentElement.querySelector('[x-cloak]').style.display='flex';"
                 style="max-height: {{ $maxHeight }}; width: auto;"
@@ -53,9 +51,7 @@
             </div>
             @if($showText)
                 <span class="text-xl md:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent transition-all duration-300"
-                    @if($shrinkOnScroll)
-                    :class="{ 'text-lg md:text-xl': scrolled }"
-                    @endif
+                    {!! $shrinkOnScroll ? ':class="{ \'text-lg md:text-xl\': scrolled }"' : '' !!}
                 >
                     {{ $appName }}
                 </span>
