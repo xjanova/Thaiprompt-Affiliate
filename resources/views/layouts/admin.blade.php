@@ -526,6 +526,9 @@
                     </div>
 
                     <div class="flex items-center space-x-3">
+                        <!-- Dashboard Switcher -->
+                        <x-dashboard-switcher />
+
                         <!-- Theme Toggle -->
                         <x-theme-toggle />
 

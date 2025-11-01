@@ -228,6 +228,9 @@
 
                 <!-- Right Actions -->
                 <div class="flex items-center space-x-2">
+                    <!-- Dashboard Switcher -->
+                    <x-dashboard-switcher />
+
                     <!-- Language Switcher -->
                     @include('components.language-switcher')
 
