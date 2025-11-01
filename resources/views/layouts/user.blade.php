@@ -358,6 +358,52 @@
                     <span>ผังสายงาน</span>
                 </a>
 
+                <!-- Marketing Section -->
+                <div class="border-t mt-2 pt-2">
+                    <div class="px-6 py-2">
+                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">การตลาด</span>
+                    </div>
+
+                    <!-- Retention Dropdown Menu -->
+                    <div x-data="{ retentionOpen: false }" class="relative">
+                        <!-- Main Retention Button -->
+                        <button @click="retentionOpen = !retentionOpen" class="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.retention.*') ? 'bg-gray-100 border-l-4 border-red-500' : '' }}">
+                            <span class="text-xl mr-3">💖</span>
+                            <span class="flex-1 text-left">รักษายอด</span>
+                            <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': retentionOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown Submenu -->
+                        <div x-show="retentionOpen"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 transform -translate-y-2"
+                             x-transition:enter-end="opacity-100 transform translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0"
+                             class="mt-2 mb-2 ml-6 space-y-1 bg-gray-50 rounded-lg p-2 border-l-2 border-red-200"
+                             style="display: none;">
+
+                            <a href="{{ route('user.retention.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 rounded-md {{ request()->routeIs('user.retention.index') ? 'bg-red-100 text-red-700 font-semibold' : '' }}">
+                                <span class="mr-2">💗</span>
+                                <span>สถานะพลังชีวิต</span>
+                            </a>
+
+                            <a href="{{ route('user.retention.repair') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 rounded-md {{ request()->routeIs('user.retention.repair') ? 'bg-red-100 text-red-700 font-semibold' : '' }}">
+                                <span class="mr-2">🔧</span>
+                                <span>ซ่อมสิทธิ์</span>
+                            </a>
+
+                            <a href="{{ route('user.retention.advance-renewal') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 rounded-md {{ request()->routeIs('user.retention.advance-renewal') ? 'bg-red-100 text-red-700 font-semibold' : '' }}">
+                                <span class="mr-2">⏰</span>
+                                <span>เติมวันล่วงหน้า</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="border-t mt-4 pt-4">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -478,6 +524,52 @@
                     <span class="text-xl mr-3">🌳</span>
                     <span>ผังสายงาน</span>
                 </a>
+
+                <!-- Marketing Section -->
+                <div class="border-t mt-2 pt-2">
+                    <div class="px-6 py-2">
+                        <span class="text-xs font-semibold text-gray-500 uppercase tracking-wider">การตลาด</span>
+                    </div>
+
+                    <!-- Retention Dropdown Menu -->
+                    <div x-data="{ retentionOpen: false }" class="relative">
+                        <!-- Main Retention Button -->
+                        <button @click="retentionOpen = !retentionOpen" class="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.retention.*') ? 'bg-gray-100 border-l-4 border-red-500' : '' }}">
+                            <span class="text-xl mr-3">💖</span>
+                            <span class="flex-1 text-left">รักษายอด</span>
+                            <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': retentionOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        <!-- Dropdown Submenu -->
+                        <div x-show="retentionOpen"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 transform -translate-y-2"
+                             x-transition:enter-end="opacity-100 transform translate-y-0"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0"
+                             class="mt-2 mb-2 ml-6 space-y-1 bg-gray-50 rounded-lg p-2 border-l-2 border-red-200"
+                             style="display: none;">
+
+                            <a href="{{ route('user.retention.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 rounded-md {{ request()->routeIs('user.retention.index') ? 'bg-red-100 text-red-700 font-semibold' : '' }}">
+                                <span class="mr-2">💗</span>
+                                <span>สถานะพลังชีวิต</span>
+                            </a>
+
+                            <a href="{{ route('user.retention.repair') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 rounded-md {{ request()->routeIs('user.retention.repair') ? 'bg-red-100 text-red-700 font-semibold' : '' }}">
+                                <span class="mr-2">🔧</span>
+                                <span>ซ่อมสิทธิ์</span>
+                            </a>
+
+                            <a href="{{ route('user.retention.advance-renewal') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-red-50 rounded-md {{ request()->routeIs('user.retention.advance-renewal') ? 'bg-red-100 text-red-700 font-semibold' : '' }}">
+                                <span class="mr-2">⏰</span>
+                                <span>เติมวันล่วงหน้า</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="border-t mt-4 pt-4">
                     <form method="POST" action="{{ route('logout') }}">
