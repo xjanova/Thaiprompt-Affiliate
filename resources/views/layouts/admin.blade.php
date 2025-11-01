@@ -360,8 +360,7 @@
                 <!-- System Management Dropdown -->
                 <div x-data="{ systemMenuOpen: false }" @mouseenter="!sidebarCollapsed ? systemMenuOpen = true : null" @mouseleave="systemMenuOpen = false" class="relative mb-1">
                     @php
-                        $systemActive = request()->routeIs('admin.sliders.*') ||
-                                       request()->routeIs('admin.premium-page.*') ||
+                        $systemActive = request()->routeIs('admin.premium-page.*') ||
                                        request()->routeIs('admin.header-editor.*') ||
                                        request()->routeIs('admin.templates.*') ||
                                        request()->routeIs('admin.pages.*') ||
@@ -396,12 +395,6 @@
                          x-transition:leave-end="opacity-0"
                          class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
                          style="display: none;">
-
-                        <a href="{{ route('admin.sliders.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.sliders.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
-                            <span class="mr-2">🖼️</span>
-                            <span>สไลด์</span>
-                        </a>
 
                         <a href="{{ route('admin.premium-page.index') }}"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.premium-page.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">

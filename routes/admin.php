@@ -6,7 +6,6 @@ use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SecurityController;
-use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
@@ -80,10 +79,6 @@ Route::post('header-editor/menu-items', [HeaderEditorController::class, 'storeMe
 Route::put('header-editor/menu-items/{id}', [HeaderEditorController::class, 'updateMenuItem'])->name('header-editor.menu-items.update');
 Route::delete('header-editor/menu-items/{id}', [HeaderEditorController::class, 'deleteMenuItem'])->name('header-editor.menu-items.delete');
 Route::post('header-editor/menu-items/reorder', [HeaderEditorController::class, 'reorderMenuItems'])->name('header-editor.menu-items.reorder');
-
-// Slider Management
-Route::resource('sliders', SliderController::class);
-Route::post('sliders/reorder', [SliderController::class, 'reorder'])->name('sliders.reorder');
 
 // Pages Management (CMS)
 Route::resource('pages', PageController::class);
