@@ -23,7 +23,7 @@
     <!-- Premium Stats Cards with Growth Indicators -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Lifetime Earnings -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300">
+        <a href="{{ route('user.commissions') }}" class="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -38,12 +38,12 @@
                 </div>
                 <p class="text-white text-opacity-80 text-sm mb-1">รายได้ตลอดชีพ</p>
                 <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($lifetimeEarnings, 0) }}</p>
-                <p class="text-xs text-white text-opacity-70 mt-2">เทียบเดือนที่แล้ว</p>
+                <p class="text-xs text-white text-opacity-70 mt-2">เทียบเดือนที่แล้ว · คลิกเพื่อดูรายละเอียด</p>
             </div>
-        </div>
+        </a>
 
         <!-- Approved Earnings -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300">
+        <a href="{{ route('user.commissions', ['status' => 'approved']) }}" class="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -56,12 +56,12 @@
                 </div>
                 <p class="text-white text-opacity-80 text-sm mb-1">รายได้ที่อนุมัติ</p>
                 <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($totalEarnings, 0) }}</p>
-                <p class="text-xs text-white text-opacity-70 mt-2">พร้อมถอนได้</p>
+                <p class="text-xs text-white text-opacity-70 mt-2">พร้อมถอนได้ · คลิกเพื่อดูรายละเอียด</p>
             </div>
-        </div>
+        </a>
 
         <!-- Pending Earnings -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300">
+        <a href="{{ route('user.commissions', ['status' => 'pending']) }}" class="relative overflow-hidden bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -74,12 +74,12 @@
                 </div>
                 <p class="text-white text-opacity-80 text-sm mb-1">รอการอนุมัติ</p>
                 <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($pendingEarnings, 0) }}</p>
-                <p class="text-xs text-white text-opacity-70 mt-2">กำลังตรวจสอบ</p>
+                <p class="text-xs text-white text-opacity-70 mt-2">กำลังตรวจสอบ · คลิกเพื่อดูรายละเอียด</p>
             </div>
-        </div>
+        </a>
 
         <!-- Total Referrals -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300">
+        <a href="{{ route('user.referrals') }}" class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -92,14 +92,14 @@
                 </div>
                 <p class="text-white text-opacity-80 text-sm mb-1">ผู้แนะนำทั้งหมด</p>
                 <p class="text-3xl md:text-4xl font-bold">{{ number_format($totalReferrals) }}</p>
-                <p class="text-xs text-white text-opacity-70 mt-2">{{ $maxLevel }} ระดับ</p>
+                <p class="text-xs text-white text-opacity-70 mt-2">{{ $maxLevel }} ระดับ · คลิกเพื่อดูรายละเอียด</p>
             </div>
-        </div>
+        </a>
     </div>
 
     <!-- Performance Metrics -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition">
+        <a href="{{ route('user.commissions') }}" class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition cursor-pointer block">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">📊</div>
                 <div>
@@ -107,9 +107,9 @@
                     <p class="text-xl font-bold text-gray-800">฿{{ number_format($avgCommission, 2) }}</p>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition">
+        <a href="{{ route('user.commissions') }}" class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition cursor-pointer block">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">📈</div>
                 <div>
@@ -117,9 +117,9 @@
                     <p class="text-xl font-bold text-gray-800">{{ number_format($thisMonthCommissions) }}</p>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition">
+        <a href="{{ route('user.referrals') }}" class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition cursor-pointer block">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">🎯</div>
                 <div>
@@ -127,9 +127,9 @@
                     <p class="text-xl font-bold text-gray-800">{{ number_format($conversionRate, 1) }}%</p>
                 </div>
             </div>
-        </div>
+        </a>
 
-        <div class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition">
+        <a href="{{ route('user.commissions', ['status' => 'paid']) }}" class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition cursor-pointer block">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">💸</div>
                 <div>
@@ -137,7 +137,7 @@
                     <p class="text-xl font-bold text-gray-800">฿{{ number_format($paidEarnings, 0) }}</p>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <!-- Charts Section -->
