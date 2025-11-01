@@ -14,6 +14,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register WalletService as singleton
         $this->app->singleton(\App\Services\WalletService::class);
+
+        // Register MembershipRetentionService as singleton
+        $this->app->singleton(\App\Services\MembershipRetentionService::class);
     }
 
     /**
@@ -23,5 +26,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Use Tailwind pagination views
         Paginator::useTailwind();
+
+        // Register Commission Observer for Retention System
+        \App\Models\Commission::observe(\App\Observers\CommissionObserver::class);
     }
 }

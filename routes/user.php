@@ -3,6 +3,7 @@
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\WalletController;
 use App\Http\Controllers\User\RankController;
+use App\Http\Controllers\User\MembershipRetentionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -86,4 +87,20 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::put('/preferences', [EmailPreferenceController::class, 'update'])->name('preferences.update');
     Route::post('/preferences/disable-all', [EmailPreferenceController::class, 'disableAll'])->name('preferences.disable-all');
     Route::post('/preferences/enable-all', [EmailPreferenceController::class, 'enableAll'])->name('preferences.enable-all');
+});
+
+// Membership Retention
+Route::prefix('retention')->name('retention.')->group(function () {
+    Route::get('/', [MembershipRetentionController::class, 'index'])->name('index');
+    Route::get('/status', [MembershipRetentionController::class, 'getStatus'])->name('status');
+    Route::get('/history', [MembershipRetentionController::class, 'history'])->name('history');
+    Route::get('/widget-data', [MembershipRetentionController::class, 'getWidgetData'])->name('widget-data');
+
+    // Repair Routes
+    Route::get('/repair', [MembershipRetentionController::class, 'showRepair'])->name('repair');
+    Route::post('/repair', [MembershipRetentionController::class, 'processRepair'])->name('repair.process');
+
+    // Advance Renewal Routes
+    Route::get('/advance-renewal', [MembershipRetentionController::class, 'showAdvanceRenewal'])->name('advance-renewal');
+    Route::post('/advance-renewal', [MembershipRetentionController::class, 'processAdvanceRenewal'])->name('advance-renewal.process');
 });

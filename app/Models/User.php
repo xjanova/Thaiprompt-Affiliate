@@ -144,6 +144,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Get membership retention status
+     */
+    public function retentionStatus()
+    {
+        return $this->hasOne(MembershipRetentionStatus::class);
+    }
+
+    /**
+     * Get membership retention history
+     */
+    public function retentionHistory()
+    {
+        return $this->hasMany(MembershipRetentionHistory::class);
+    }
+
+    /**
+     * Get membership retention transactions
+     */
+    public function retentionTransactions()
+    {
+        return $this->hasMany(MembershipRetentionTransaction::class);
+    }
+
+    /**
      * Get unread notifications count
      */
     public function getUnreadNotificationsCountAttribute(): int
