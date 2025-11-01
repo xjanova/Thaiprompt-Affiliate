@@ -1,4 +1,18 @@
-<div class="relative" x-data="notificationBell()" x-init="init()">
+@php
+    // Detect current route prefix (user/seller/admin)
+    $routePrefix = '';
+    if (request()->is('user/*') || request()->is('user')) {
+        $routePrefix = 'user';
+    } elseif (request()->is('seller/*') || request()->is('seller')) {
+        $routePrefix = 'seller';
+    } elseif (request()->is('admin/*') || request()->is('admin')) {
+        $routePrefix = 'admin';
+    } else {
+        $routePrefix = 'user'; // default
+    }
+@endphp
+
+<div class="relative" x-data="notificationBell('{{ $routePrefix }}')" x-init="init()">
     <!-- Bell Icon -->
     <button
         @click="toggleDropdown()"
@@ -121,7 +135,7 @@
         <!-- Footer -->
         <div class="px-4 py-3 bg-gray-50 dark:bg-gray-700/50 border-t dark:border-gray-700">
             <a
-                href="{{ route('user.notifications.index') }}"
+                :href="`/${routePrefix}/notifications`"
                 class="block text-center text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
             >
                 ดูการแจ้งเตือนทั้งหมด
@@ -131,12 +145,13 @@
 </div>
 
 <script>
-function notificationBell() {
+function notificationBell(routePrefix = 'user') {
     return {
         isOpen: false,
         loading: false,
         notifications: [],
         unreadCount: 0,
+        routePrefix: routePrefix,
 
         init() {
             this.loadNotifications();
@@ -151,7 +166,7 @@ function notificationBell() {
 
         async checkImmediateNotifications() {
             try {
-                const response = await fetch('{{ route("user.notifications.immediate") }}', {
+                const response = await fetch(`/${this.routePrefix}/notifications/immediate`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
@@ -183,7 +198,7 @@ function notificationBell() {
 
         async loadNotifications() {
             try {
-                const response = await fetch('{{ route("user.notifications.unread") }}', {
+                const response = await fetch(`/${this.routePrefix}/notifications/unread`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest',
                         'Accept': 'application/json',
@@ -200,7 +215,7 @@ function notificationBell() {
 
         async markAsRead(notificationId) {
             try {
-                await fetch(`/user/notifications/${notificationId}/read`, {
+                await fetch(`/${this.routePrefix}/notifications/${notificationId}/read`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -218,7 +233,7 @@ function notificationBell() {
 
         async markAllAsRead() {
             try {
-                await fetch('{{ route("user.notifications.read-all") }}', {
+                await fetch(`/${this.routePrefix}/notifications/read-all`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,

@@ -176,6 +176,8 @@
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-gray-100">
+    <!-- Page Loader -->
+    <x-page-loader />
     <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false, systemMenuOpen: false }">
         <!-- Overlay for mobile -->
         <div x-show="sidebarOpen"
