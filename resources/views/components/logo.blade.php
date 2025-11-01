@@ -1,6 +1,7 @@
 @props(['height' => 'h-10', 'class' => '', 'showText' => true, 'shrinkOnScroll' => false])
 
 @php
+    // Logo component with fallback support
     $logo = \App\Models\Setting::get('logo');
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
     $appNameShort = mb_substr($appName, 0, 2);
