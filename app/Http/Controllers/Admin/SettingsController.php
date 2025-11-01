@@ -37,21 +37,109 @@ class SettingsController extends Controller
             'translate_source_language' => ['nullable', 'string', 'in:th,en'],
             'translate_cache_enabled' => ['nullable', 'boolean'],
             'tinymce_api_key' => ['nullable', 'string'],
+            // Cloudflare Turnstile Settings
+            'turnstile_enabled' => ['nullable', 'boolean'],
+            'turnstile_site_key' => ['nullable', 'string'],
+            'turnstile_secret_key' => ['nullable', 'string'],
+            'turnstile_bypass_admin' => ['nullable', 'boolean'],
+            'turnstile_theme' => ['nullable', 'string', 'in:auto,light,dark'],
+            'turnstile_size' => ['nullable', 'string', 'in:normal,compact'],
+            // Turnstile Protection Points
+            'turnstile_login' => ['nullable', 'boolean'],
+            'turnstile_register' => ['nullable', 'boolean'],
+            'turnstile_password_change' => ['nullable', 'boolean'],
+            'turnstile_profile_update' => ['nullable', 'boolean'],
+            'turnstile_withdrawal' => ['nullable', 'boolean'],
+            'turnstile_affiliate_app' => ['nullable', 'boolean'],
         ]);
 
         // Handle checkbox values
         $validated['google_translate_enabled'] = $request->has('google_translate_enabled');
         $validated['translate_cache_enabled'] = $request->has('translate_cache_enabled');
 
+        // Handle Turnstile checkbox values
+        $validated['turnstile_enabled'] = $request->has('turnstile_enabled');
+        $validated['turnstile_bypass_admin'] = $request->has('turnstile_bypass_admin');
+        $validated['turnstile_login'] = $request->has('turnstile_login');
+        $validated['turnstile_register'] = $request->has('turnstile_register');
+        $validated['turnstile_password_change'] = $request->has('turnstile_password_change');
+        $validated['turnstile_profile_update'] = $request->has('turnstile_profile_update');
+        $validated['turnstile_withdrawal'] = $request->has('turnstile_withdrawal');
+        $validated['turnstile_affiliate_app'] = $request->has('turnstile_affiliate_app');
+
         foreach ($validated as $key => $value) {
             if ($value !== null) {
                 $type = is_bool($value) ? 'boolean' : (is_numeric($value) ? 'integer' : 'string');
-                $group = in_array($key, ['commission_rate', 'multi_level_enabled', 'default_sponsor_referral_code']) ? 'affiliate' : 'general';
+
+                // Determine group
+                if (in_array($key, ['commission_rate', 'multi_level_enabled', 'default_sponsor_referral_code'])) {
+                    $group = 'affiliate';
+                } elseif (str_starts_with($key, 'turnstile_')) {
+                    $group = 'security';
+                } else {
+                    $group = 'general';
+                }
+
                 Setting::set($key, $value, $type, $group);
             }
         }
 
+        // Update config cache if Turnstile settings changed
+        if ($request->hasAny(['turnstile_enabled', 'turnstile_site_key', 'turnstile_secret_key', 'turnstile_bypass_admin',
+                              'turnstile_theme', 'turnstile_size', 'turnstile_login', 'turnstile_register',
+                              'turnstile_password_change', 'turnstile_profile_update', 'turnstile_withdrawal', 'turnstile_affiliate_app'])) {
+            // Update .env file
+            $this->updateEnvFile($request);
+        }
+
         return back()->with('success', 'บันทึกการตั้งค่าเรียบร้อยแล้ว');
+    }
+
+    /**
+     * Update .env file with Turnstile settings
+     */
+    protected function updateEnvFile(Request $request)
+    {
+        $envPath = base_path('.env');
+
+        if (!file_exists($envPath)) {
+            return;
+        }
+
+        $envContent = file_get_contents($envPath);
+
+        // Turnstile settings to update
+        $envSettings = [
+            'CLOUDFLARE_TURNSTILE_ENABLED' => $request->has('turnstile_enabled') ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_SITE_KEY' => $request->input('turnstile_site_key', ''),
+            'CLOUDFLARE_TURNSTILE_SECRET_KEY' => $request->input('turnstile_secret_key', ''),
+            'CLOUDFLARE_TURNSTILE_BYPASS_ADMIN' => $request->has('turnstile_bypass_admin') ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_THEME' => $request->input('turnstile_theme', 'auto'),
+            'CLOUDFLARE_TURNSTILE_SIZE' => $request->input('turnstile_size', 'normal'),
+            'CLOUDFLARE_TURNSTILE_LOGIN' => $request->has('turnstile_login') ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_REGISTER' => $request->has('turnstile_register') ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_PASSWORD_CHANGE' => $request->has('turnstile_password_change') ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_PROFILE_UPDATE' => $request->has('turnstile_profile_update') ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_WITHDRAWAL' => $request->has('turnstile_withdrawal') ? 'true' : 'false',
+            'CLOUDFLARE_TURNSTILE_AFFILIATE_APP' => $request->has('turnstile_affiliate_app') ? 'true' : 'false',
+        ];
+
+        foreach ($envSettings as $key => $value) {
+            // Check if key exists in .env
+            if (preg_match("/^{$key}=/m", $envContent)) {
+                // Update existing value
+                $envContent = preg_replace(
+                    "/^{$key}=.*/m",
+                    "{$key}={$value}",
+                    $envContent
+                );
+            } else {
+                // Append new key
+                $envContent .= "\n{$key}={$value}";
+            }
+        }
+
+        file_put_contents($envPath, $envContent);
     }
 
     /**

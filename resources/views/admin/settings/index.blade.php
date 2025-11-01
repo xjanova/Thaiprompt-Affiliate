@@ -61,6 +61,15 @@
                         การตั้งค่า API
                     </span>
                 </button>
+
+                <button @click="activeTab = 'security'"
+                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'security', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'security' }"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
+                    <span class="flex items-center">
+                        <span class="text-lg mr-2">🛡️</span>
+                        ความปลอดภัย
+                    </span>
+                </button>
             </nav>
         </div>
 
@@ -479,6 +488,192 @@
                     <div class="flex justify-end mt-6">
                         <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
                             บันทึกการตั้งค่า API
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Security Settings Tab -->
+            <div x-show="activeTab === 'security'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
+                <form method="POST" action="{{ route('admin.settings.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">การตั้งค่าความปลอดภัย</h3>
+                    <p class="text-gray-600 mb-6">จัดการระบบรักษาความปลอดภัยของแอปพลิเคชัน</p>
+
+                    <!-- Cloudflare Turnstile -->
+                    <div class="mb-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-indigo-200">
+                        <div class="flex items-center mb-4">
+                            <span class="text-2xl mr-3">☁️</span>
+                            <h4 class="text-lg font-semibold text-gray-900">Cloudflare Turnstile</h4>
+                            <a href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" class="ml-3 text-xs text-indigo-600 hover:underline">
+                                ดูคีย์ของคุณ →
+                            </a>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Enable/Disable Turnstile -->
+                            <div class="bg-white p-4 rounded-lg">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="turnstile_enabled" value="1"
+                                           {{ old('turnstile_enabled', config('turnstile.enabled')) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 w-5 h-5">
+                                    <span class="ml-3 text-sm text-gray-700 font-semibold">เปิดใช้งาน Cloudflare Turnstile</span>
+                                </label>
+                                <p class="text-xs text-gray-500 mt-2 ml-8">ป้องกันบอท และการโจมตีแบบอัตโนมัติ (ทดแทน reCAPTCHA)</p>
+                            </div>
+
+                            <!-- Site Key -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Site Key (Public)</label>
+                                <input type="text" name="turnstile_site_key"
+                                       value="{{ old('turnstile_site_key', config('turnstile.site_key')) }}"
+                                       placeholder="0x4AAA..."
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm">
+                                <p class="text-xs text-gray-500 mt-1">คีย์สาธารณะสำหรับแสดง Turnstile widget</p>
+                            </div>
+
+                            <!-- Secret Key -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Secret Key (Private)</label>
+                                <input type="password" name="turnstile_secret_key"
+                                       value="{{ old('turnstile_secret_key', config('turnstile.secret_key')) }}"
+                                       placeholder="0x4AAA..."
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm">
+                                <p class="text-xs text-gray-500 mt-1">คีย์ลับสำหรับตรวจสอบกับ Cloudflare API (เก็บเป็นความลับ)</p>
+                            </div>
+
+                            <!-- Admin Bypass -->
+                            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="turnstile_bypass_admin" value="1"
+                                           {{ old('turnstile_bypass_admin', config('turnstile.bypass_admin')) ? 'checked' : '' }}
+                                           class="rounded border-yellow-400 text-yellow-600 focus:ring-yellow-500 w-5 h-5">
+                                    <span class="ml-3 text-sm text-gray-700 font-semibold">ข้าม Turnstile สำหรับแอดมิน</span>
+                                </label>
+                                <p class="text-xs text-gray-600 mt-2 ml-8">⚠️ แอดมินจะไม่ต้องผ่าน Turnstile verification (ระวังการโดนแฮก)</p>
+                            </div>
+
+                            <!-- Turnstile Theme -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ธีม (Theme)</label>
+                                <select name="turnstile_theme"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    @php
+                                        $currentTheme = config('turnstile.theme', 'auto');
+                                    @endphp
+                                    <option value="auto" {{ $currentTheme === 'auto' ? 'selected' : '' }}>อัตโนมัติ (Auto)</option>
+                                    <option value="light" {{ $currentTheme === 'light' ? 'selected' : '' }}>สว่าง (Light)</option>
+                                    <option value="dark" {{ $currentTheme === 'dark' ? 'selected' : '' }}>มืด (Dark)</option>
+                                </select>
+                            </div>
+
+                            <!-- Turnstile Size -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ขนาด (Size)</label>
+                                <select name="turnstile_size"
+                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    @php
+                                        $currentSize = config('turnstile.size', 'normal');
+                                    @endphp
+                                    <option value="normal" {{ $currentSize === 'normal' ? 'selected' : '' }}>ปกติ (Normal)</option>
+                                    <option value="compact" {{ $currentSize === 'compact' ? 'selected' : '' }}>กะทัดรัด (Compact)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Turnstile Protection Points -->
+                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                        <div class="flex items-center mb-4">
+                            <span class="text-2xl mr-3">🎯</span>
+                            <h4 class="text-lg font-semibold text-gray-900">จุดป้องกัน (Protection Points)</h4>
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">เลือกว่าจะเปิดใช้งาน Turnstile ที่ไหนบ้าง</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Login -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="turnstile_login" value="1"
+                                           {{ old('turnstile_login', config('turnstile.points.login')) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-3 text-sm text-gray-700 font-medium">🔐 Login (เข้าสู่ระบบ)</span>
+                                </label>
+                            </div>
+
+                            <!-- Register -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="turnstile_register" value="1"
+                                           {{ old('turnstile_register', config('turnstile.points.register')) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-3 text-sm text-gray-700 font-medium">📝 Register (สมัครสมาชิก)</span>
+                                </label>
+                            </div>
+
+                            <!-- Password Change -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="turnstile_password_change" value="1"
+                                           {{ old('turnstile_password_change', config('turnstile.points.password_change')) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-3 text-sm text-gray-700 font-medium">🔑 เปลี่ยนรหัสผ่าน</span>
+                                </label>
+                            </div>
+
+                            <!-- Profile Update -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="turnstile_profile_update" value="1"
+                                           {{ old('turnstile_profile_update', config('turnstile.points.profile_update')) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-3 text-sm text-gray-700 font-medium">👤 แก้ไขโปรไฟล์</span>
+                                </label>
+                            </div>
+
+                            <!-- Withdrawal Request -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="turnstile_withdrawal" value="1"
+                                           {{ old('turnstile_withdrawal', config('turnstile.points.withdrawal_request')) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-3 text-sm text-gray-700 font-medium">💰 ขอถอนเงิน</span>
+                                </label>
+                            </div>
+
+                            <!-- Affiliate Application -->
+                            <div class="bg-white p-4 rounded-lg border border-gray-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="turnstile_affiliate_app" value="1"
+                                           {{ old('turnstile_affiliate_app', config('turnstile.points.affiliate_application')) ? 'checked' : '' }}
+                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-3 text-sm text-gray-700 font-medium">🤝 สมัคร Affiliate</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Box -->
+                    <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-start">
+                            <span class="text-2xl mr-3">💡</span>
+                            <div>
+                                <h5 class="font-semibold text-blue-900 mb-2">วิธีการตั้งค่า Cloudflare Turnstile</h5>
+                                <ol class="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                                    <li>ไปที่ <a href="https://dash.cloudflare.com" target="_blank" class="underline">Cloudflare Dashboard</a></li>
+                                    <li>เลือก Turnstile จากเมนู</li>
+                                    <li>สร้าง Site ใหม่ และรับ Site Key & Secret Key</li>
+                                    <li>กรอก Keys ที่ด้านบนและบันทึกการตั้งค่า</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end">
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                            💾 บันทึกการตั้งค่าความปลอดภัย
                         </button>
                     </div>
                 </form>
