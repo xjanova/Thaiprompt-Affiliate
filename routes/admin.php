@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\HeaderEditorController;
 use App\Http\Controllers\Admin\VisualBuilderController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\EmailController;
+use App\Http\Controllers\Admin\MembershipRetentionController as AdminRetentionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -251,4 +252,23 @@ Route::prefix('email')->name('email.')->group(function () {
 
     // Send Test Email
     Route::post('/test', [EmailController::class, 'sendTest'])->name('test');
+});
+
+// Membership Retention Management
+Route::prefix('retention')->name('retention.')->group(function () {
+    Route::get('/', [AdminRetentionController::class, 'index'])->name('index');
+    Route::get('/users', [AdminRetentionController::class, 'users'])->name('users');
+    Route::get('/users/{userId}', [AdminRetentionController::class, 'showUser'])->name('users.show');
+    
+    // Settings
+    Route::put('/settings', [AdminRetentionController::class, 'updateSettings'])->name('settings.update');
+    
+    // Manual Operations
+    Route::post('/initialize-user', [AdminRetentionController::class, 'initializeUser'])->name('initialize-user');
+    Route::post('/process-renewal', [AdminRetentionController::class, 'processRenewal'])->name('process-renewal');
+    Route::post('/expire-users', [AdminRetentionController::class, 'expireUsers'])->name('expire-users');
+    
+    // Reports
+    Route::get('/expiring-users', [AdminRetentionController::class, 'getExpiringUsers'])->name('expiring-users');
+    Route::get('/export-report', [AdminRetentionController::class, 'exportReport'])->name('export-report');
 });
