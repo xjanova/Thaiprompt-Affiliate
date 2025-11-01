@@ -1,55 +1,8 @@
-@extends('layouts.admin')
-
-@section('title', 'แก้ไข Header & Menu')
-
-@push('styles')
-<style>
-    .color-input-wrapper {
-        position: relative;
-    }
-    .color-input-wrapper input[type="color"] {
-        position: absolute;
-        opacity: 0;
-        width: 100%;
-        height: 100%;
-        cursor: pointer;
-    }
-    .color-preview {
-        width: 48px;
-        height: 48px;
-        border-radius: 8px;
-        border: 2px solid #e5e7eb;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    .color-preview:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    }
-    .preview-header {
-        transition: all 0.3s ease;
-    }
-    .setting-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        border: 1px solid #e5e7eb;
-    }
-    .setting-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        border-color: #3b82f6;
-    }
-</style>
-@endpush
-
-@section('content')
 <div class="p-6" x-data="headerEditor()">
     <!-- Header -->
     <div class="mb-6">
-        <h1 class="text-3xl font-bold text-gray-900">แก้ไข Header & Menu</h1>
-        <p class="text-gray-600 mt-2">ปรับแต่ง Header ให้ดูเป็นมืออาชีพ พร้อม Live Preview แบบเรียลไทม์</p>
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">แก้ไข Header & Menu</h1>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">ปรับแต่ง Header ให้ดูเป็นมืออาชีพ พร้อม Live Preview แบบเรียลไทม์</p>
     </div>
 
     <!-- Main Layout: Split Screen -->
@@ -60,7 +13,7 @@
 
             <!-- Layout & Position -->
             <div class="setting-card">
-                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                     </svg>
@@ -69,8 +22,8 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">รูปแบบ Header</label>
-                        <select x-model="settings.header_layout" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบ Header</label>
+                        <select x-model="settings.header_layout" @change="updatePreview" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             <option value="default">ปกติ (Default)</option>
                             <option value="floating">ลอยอิสระ (Floating)</option>
                             <option value="sticky">ติดด้านบน (Sticky)</option>
@@ -78,8 +31,8 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ตำแหน่ง</label>
-                        <select x-model="settings.header_position" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่ง</label>
+                        <select x-model="settings.header_position" @change="updatePreview" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             <option value="relative">Relative</option>
                             <option value="fixed">Fixed (ติดด้านบนเสมอ)</option>
                             <option value="absolute">Absolute</option>
@@ -87,20 +40,20 @@
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">พื้นหลังโปร่งใส</label>
-                        <button @click="settings.header_transparent = !settings.header_transparent"
-                                :class="settings.header_transparent ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">พื้นหลังโปร่งใส</label>
+                        <button @click="settings.header_transparent = !settings.header_transparent; updatePreview()"
+                                :class="settings.header_transparent ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_transparent ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">โปร่งใสเมื่อเลื่อน (Scroll)</label>
-                        <button @click="settings.header_transparent_on_scroll = !settings.header_transparent_on_scroll"
-                                :class="settings.header_transparent_on_scroll ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">โปร่งใสเมื่อเลื่อน (Scroll)</label>
+                        <button @click="settings.header_transparent_on_scroll = !settings.header_transparent_on_scroll; updatePreview()"
+                                :class="settings.header_transparent_on_scroll ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_transparent_on_scroll ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
@@ -110,7 +63,7 @@
 
             <!-- Scroll Behavior -->
             <div class="setting-card">
-                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
                     </svg>
@@ -119,30 +72,30 @@
 
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">ติดตามเมื่อเลื่อน (Sticky)</label>
-                        <button @click="settings.header_sticky_scroll = !settings.header_sticky_scroll"
-                                :class="settings.header_sticky_scroll ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">ติดตามเมื่อเลื่อน (Sticky)</label>
+                        <button @click="settings.header_sticky_scroll = !settings.header_sticky_scroll; updatePreview()"
+                                :class="settings.header_sticky_scroll ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_sticky_scroll ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">ซ่อนเมื่อเลื่อนลง</label>
-                        <button @click="settings.header_hide_on_scroll = !settings.header_hide_on_scroll"
-                                :class="settings.header_hide_on_scroll ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">ซ่อนเมื่อเลื่อนลง</label>
+                        <button @click="settings.header_hide_on_scroll = !settings.header_hide_on_scroll; updatePreview()"
+                                :class="settings.header_hide_on_scroll ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_hide_on_scroll ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">หดเล็กลงเมื่อเลื่อน</label>
-                        <button @click="settings.header_shrink_on_scroll = !settings.header_shrink_on_scroll"
-                                :class="settings.header_shrink_on_scroll ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">หดเล็กลงเมื่อเลื่อน</label>
+                        <button @click="settings.header_shrink_on_scroll = !settings.header_shrink_on_scroll; updatePreview()"
+                                :class="settings.header_shrink_on_scroll ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_shrink_on_scroll ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
@@ -152,7 +105,7 @@
 
             <!-- Background & Colors -->
             <div class="setting-card">
-                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                     </svg>
@@ -161,57 +114,57 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">สีพื้นหลัง</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีพื้นหลัง</label>
                         <div class="flex items-center space-x-3">
                             <div class="color-input-wrapper">
                                 <div class="color-preview" :style="{ backgroundColor: settings.header_bg_color }"></div>
-                                <input type="color" x-model="settings.header_bg_color">
+                                <input type="color" x-model="settings.header_bg_color" @change="updatePreview">
                             </div>
-                            <input type="text" x-model="settings.header_bg_color" class="flex-1 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <input type="text" x-model="settings.header_bg_color" @input="updatePreview" class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-blue-500 focus:ring-blue-500">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ความทึบแสง: <span x-text="settings.header_bg_opacity + '%'"></span></label>
-                        <input type="range" x-model="settings.header_bg_opacity" min="0" max="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความทึบแสง: <span x-text="settings.header_bg_opacity + '%'"></span></label>
+                        <input type="range" x-model="settings.header_bg_opacity" @input="updatePreview" min="0" max="100" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">ใช้ไล่สี (Gradient)</label>
-                        <button @click="settings.header_gradient = !settings.header_gradient"
-                                :class="settings.header_gradient ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">ใช้ไล่สี (Gradient)</label>
+                        <button @click="settings.header_gradient = !settings.header_gradient; updatePreview()"
+                                :class="settings.header_gradient ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_gradient ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
                     </div>
 
-                    <div x-show="settings.header_gradient" class="space-y-3 pl-4 border-l-2 border-blue-200">
+                    <div x-show="settings.header_gradient" class="space-y-3 pl-4 border-l-2 border-blue-200 dark:border-blue-700">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">สีเริ่มต้น</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีเริ่มต้น</label>
                             <div class="flex items-center space-x-3">
                                 <div class="color-input-wrapper">
                                     <div class="color-preview" :style="{ backgroundColor: settings.header_gradient_from }"></div>
-                                    <input type="color" x-model="settings.header_gradient_from">
+                                    <input type="color" x-model="settings.header_gradient_from" @change="updatePreview">
                                 </div>
-                                <input type="text" x-model="settings.header_gradient_from" class="flex-1 rounded-lg border-gray-300 shadow-sm">
+                                <input type="text" x-model="settings.header_gradient_from" @input="updatePreview" class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm">
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">สีปลายทาง</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีปลายทาง</label>
                             <div class="flex items-center space-x-3">
                                 <div class="color-input-wrapper">
                                     <div class="color-preview" :style="{ backgroundColor: settings.header_gradient_to }"></div>
-                                    <input type="color" x-model="settings.header_gradient_to">
+                                    <input type="color" x-model="settings.header_gradient_to" @change="updatePreview">
                                 </div>
-                                <input type="text" x-model="settings.header_gradient_to" class="flex-1 rounded-lg border-gray-300 shadow-sm">
+                                <input type="text" x-model="settings.header_gradient_to" @input="updatePreview" class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm">
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">ทิศทางไล่สี</label>
-                            <select x-model="settings.header_gradient_direction" class="w-full rounded-lg border-gray-300 shadow-sm">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ทิศทางไล่สี</label>
+                            <select x-model="settings.header_gradient_direction" @change="updatePreview" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm">
                                 <option value="to-r">ซ้าย → ขวา</option>
                                 <option value="to-l">ขวา → ซ้าย</option>
                                 <option value="to-b">บน → ล่าง</option>
@@ -223,24 +176,24 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">สีข้อความ</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีข้อความ</label>
                         <div class="flex items-center space-x-3">
                             <div class="color-input-wrapper">
                                 <div class="color-preview" :style="{ backgroundColor: settings.header_text_color }"></div>
-                                <input type="color" x-model="settings.header_text_color">
+                                <input type="color" x-model="settings.header_text_color" @change="updatePreview">
                             </div>
-                            <input type="text" x-model="settings.header_text_color" class="flex-1 rounded-lg border-gray-300 shadow-sm">
+                            <input type="text" x-model="settings.header_text_color" @input="updatePreview" class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm">
                         </div>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">สีข้อความเมื่อ Hover</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีข้อความเมื่อ Hover</label>
                         <div class="flex items-center space-x-3">
                             <div class="color-input-wrapper">
                                 <div class="color-preview" :style="{ backgroundColor: settings.header_hover_color }"></div>
-                                <input type="color" x-model="settings.header_hover_color">
+                                <input type="color" x-model="settings.header_hover_color" @change="updatePreview">
                             </div>
-                            <input type="text" x-model="settings.header_hover_color" class="flex-1 rounded-lg border-gray-300 shadow-sm">
+                            <input type="text" x-model="settings.header_hover_color" @input="updatePreview" class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm">
                         </div>
                     </div>
                 </div>
@@ -248,7 +201,7 @@
 
             <!-- Effects & Shadow -->
             <div class="setting-card">
-                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                     </svg>
@@ -257,8 +210,8 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">เงา (Shadow)</label>
-                        <select x-model="settings.header_shadow" class="w-full rounded-lg border-gray-300 shadow-sm">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เงา (Shadow)</label>
+                        <select x-model="settings.header_shadow" @change="updatePreview" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm">
                             <option value="none">ไม่มีเงา</option>
                             <option value="sm">เล็ก (Small)</option>
                             <option value="md">กลาง (Medium)</option>
@@ -269,35 +222,35 @@
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">เงาเมื่อเลื่อน</label>
-                        <button @click="settings.header_shadow_on_scroll = !settings.header_shadow_on_scroll"
-                                :class="settings.header_shadow_on_scroll ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">เงาเมื่อเลื่อน</label>
+                        <button @click="settings.header_shadow_on_scroll = !settings.header_shadow_on_scroll; updatePreview()"
+                                :class="settings.header_shadow_on_scroll ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_shadow_on_scroll ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
                     </div>
 
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">เบลอพื้นหลัง (Blur)</label>
-                        <button @click="settings.header_blur = !settings.header_blur"
-                                :class="settings.header_blur ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">เบลอพื้นหลัง (Blur)</label>
+                        <button @click="settings.header_blur = !settings.header_blur; updatePreview()"
+                                :class="settings.header_blur ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_blur ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
                     </div>
 
                     <div x-show="settings.header_blur">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ระดับเบลอ: <span x-text="settings.header_blur_amount + 'px'"></span></label>
-                        <input type="range" x-model="settings.header_blur_amount" min="0" max="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ระดับเบลอ: <span x-text="settings.header_blur_amount + 'px'"></span></label>
+                        <input type="range" x-model="settings.header_blur_amount" @input="updatePreview" min="0" max="50" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
                 </div>
             </div>
 
             <!-- Dimensions -->
             <div class="setting-card">
-                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
                     </svg>
@@ -306,35 +259,35 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ความสูง Header: <span x-text="settings.header_height + 'px'"></span></label>
-                        <input type="range" x-model="settings.header_height" min="40" max="200" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูง Header: <span x-text="settings.header_height + 'px'"></span></label>
+                        <input type="range" x-model="settings.header_height" @input="updatePreview" min="40" max="200" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
 
                     <div x-show="settings.header_shrink_on_scroll">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ความสูงเมื่อเลื่อน: <span x-text="settings.header_height_scrolled + 'px'"></span></label>
-                        <input type="range" x-model="settings.header_height_scrolled" min="40" max="200" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูงเมื่อเลื่อน: <span x-text="settings.header_height_scrolled + 'px'"></span></label>
+                        <input type="range" x-model="settings.header_height_scrolled" @input="updatePreview" min="40" max="200" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Padding ซ้าย-ขวา: <span x-text="settings.header_padding_x + 'px'"></span></label>
-                        <input type="range" x-model="settings.header_padding_x" min="0" max="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Padding ซ้าย-ขวา: <span x-text="settings.header_padding_x + 'px'"></span></label>
+                        <input type="range" x-model="settings.header_padding_x" @input="updatePreview" min="0" max="100" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ความสูงโลโก้: <span x-text="settings.header_logo_height + 'px'"></span></label>
-                        <input type="range" x-model="settings.header_logo_height" min="20" max="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูงโลโก้: <span x-text="settings.header_logo_height + 'px'"></span></label>
+                        <input type="range" x-model="settings.header_logo_height" @input="updatePreview" min="20" max="100" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
 
                     <div x-show="settings.header_shrink_on_scroll">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ความสูงโลโก้เมื่อเลื่อน: <span x-text="settings.header_logo_height_scrolled + 'px'"></span></label>
-                        <input type="range" x-model="settings.header_logo_height_scrolled" min="20" max="100" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูงโลโก้เมื่อเลื่อน: <span x-text="settings.header_logo_height_scrolled + 'px'"></span></label>
+                        <input type="range" x-model="settings.header_logo_height_scrolled" @input="updatePreview" min="20" max="100" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
                 </div>
             </div>
 
             <!-- Border -->
             <div class="setting-card">
-                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                     </svg>
@@ -343,36 +296,36 @@
 
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
-                        <label class="text-sm font-medium text-gray-700">เส้นขอบด้านล่าง</label>
-                        <button @click="settings.header_border_bottom = !settings.header_border_bottom"
-                                :class="settings.header_border_bottom ? 'bg-blue-600' : 'bg-gray-300'"
-                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">เส้นขอบด้านล่าง</label>
+                        <button @click="settings.header_border_bottom = !settings.header_border_bottom; updatePreview()"
+                                :class="settings.header_border_bottom ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'"
+                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
                             <span :class="settings.header_border_bottom ? 'translate-x-6' : 'translate-x-1'"
                                   class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"></span>
                         </button>
                     </div>
 
                     <div x-show="settings.header_border_bottom">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">สีเส้นขอบ</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีเส้นขอบ</label>
                         <div class="flex items-center space-x-3">
                             <div class="color-input-wrapper">
                                 <div class="color-preview" :style="{ backgroundColor: settings.header_border_color }"></div>
-                                <input type="color" x-model="settings.header_border_color">
+                                <input type="color" x-model="settings.header_border_color" @change="updatePreview">
                             </div>
-                            <input type="text" x-model="settings.header_border_color" class="flex-1 rounded-lg border-gray-300 shadow-sm">
+                            <input type="text" x-model="settings.header_border_color" @input="updatePreview" class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm">
                         </div>
                     </div>
 
                     <div x-show="settings.header_border_bottom">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ความหนา: <span x-text="settings.header_border_width + 'px'"></span></label>
-                        <input type="range" x-model="settings.header_border_width" min="0" max="10" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความหนา: <span x-text="settings.header_border_width + 'px'"></span></label>
+                        <input type="range" x-model="settings.header_border_width" @input="updatePreview" min="0" max="10" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
                 </div>
             </div>
 
             <!-- Animation -->
             <div class="setting-card">
-                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
@@ -381,13 +334,13 @@
 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">ระยะเวลา: <span x-text="settings.header_animation_duration + 'ms'"></span></label>
-                        <input type="range" x-model="settings.header_animation_duration" min="100" max="1000" step="50" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ระยะเวลา: <span x-text="settings.header_animation_duration + 'ms'"></span></label>
+                        <input type="range" x-model="settings.header_animation_duration" @input="updatePreview" min="100" max="1000" step="50" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer slider-thumb">
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Easing</label>
-                        <select x-model="settings.header_animation_easing" class="w-full rounded-lg border-gray-300 shadow-sm">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Easing</label>
+                        <select x-model="settings.header_animation_easing" @change="updatePreview" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm">
                             <option value="linear">Linear</option>
                             <option value="ease">Ease</option>
                             <option value="ease-in">Ease In</option>
@@ -399,8 +352,8 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex space-x-4 sticky bottom-0 bg-gray-100 py-4 border-t">
-                <button @click="saveSettings" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl">
+            <div class="flex space-x-4 sticky bottom-0 bg-white dark:bg-gray-800 py-4 border-t border-gray-200 dark:border-gray-700">
+                <button @click="saveSettings" :disabled="saving" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed">
                     <span x-show="!saving">💾 บันทึกการตั้งค่า</span>
                     <span x-show="saving">⏳ กำลังบันทึก...</span>
                 </button>
@@ -414,7 +367,7 @@
         <!-- RIGHT SIDE: Live Preview -->
         <div class="sticky top-6" style="height: calc(100vh - 160px);">
             <div class="setting-card h-full flex flex-col">
-                <h3 class="text-lg font-semibold mb-4 flex items-center">
+                <h3 class="text-lg font-semibold mb-4 flex items-center text-gray-900 dark:text-white">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -422,7 +375,7 @@
                     ดูตัวอย่าง (Live Preview)
                 </h3>
 
-                <div class="flex-1 bg-gray-50 rounded-lg overflow-hidden relative border-2 border-gray-200">
+                <div class="flex-1 bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden relative border-2 border-gray-200 dark:border-gray-700">
                     <!-- Preview Content with simulated scrolling -->
                     <div class="h-full overflow-y-auto" x-ref="previewScroll">
                         <!-- Simulated Header -->
@@ -482,14 +435,14 @@
                                     Hero Section
                                 </div>
                                 <div class="grid grid-cols-3 gap-4">
-                                    <div class="h-32 bg-gray-300 rounded-lg"></div>
-                                    <div class="h-32 bg-gray-300 rounded-lg"></div>
-                                    <div class="h-32 bg-gray-300 rounded-lg"></div>
+                                    <div class="h-32 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                                    <div class="h-32 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
+                                    <div class="h-32 bg-gray-300 dark:bg-gray-700 rounded-lg"></div>
                                 </div>
-                                <div class="h-48 bg-gray-200 rounded-lg"></div>
-                                <div class="h-48 bg-gray-200 rounded-lg"></div>
-                                <div class="h-48 bg-gray-200 rounded-lg"></div>
-                                <div class="text-center text-gray-500 py-8">
+                                <div class="h-48 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+                                <div class="h-48 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+                                <div class="h-48 bg-gray-200 dark:bg-gray-800 rounded-lg"></div>
+                                <div class="text-center text-gray-500 dark:text-gray-400 py-8">
                                     เลื่อนดูพฤติกรรมของ Header 👆
                                 </div>
                             </div>
@@ -517,6 +470,16 @@ function headerEditor() {
             });
         },
 
+        updatePreview() {
+            // This function is called on every change to trigger reactivity
+            this.$nextTick(() => {
+                // Force update
+                this.$el.querySelectorAll('.preview-header').forEach(el => {
+                    el.style.transition = `all ${this.settings.header_animation_duration}ms ${this.settings.header_animation_easing}`;
+                });
+            });
+        },
+
         hexToRgba(hex, opacity) {
             const r = parseInt(hex.slice(1, 3), 16);
             const g = parseInt(hex.slice(3, 5), 16);
@@ -540,14 +503,24 @@ function headerEditor() {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('✅ ' + data.message);
+                    // Show success notification
+                    const notification = document.createElement('div');
+                    notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2';
+                    notification.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg><span>' + data.message + '</span>';
+                    document.body.appendChild(notification);
+                    setTimeout(() => notification.remove(), 3000);
+
                     this.originalSettings = { ...this.settings };
                 } else {
-                    alert('❌ เกิดข้อผิดพลาด: ' + (data.message || 'ไม่สามารถบันทึกได้'));
+                    throw new Error(data.message || 'ไม่สามารถบันทึกได้');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('❌ เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center space-x-2';
+                notification.innerHTML = '<svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg><span>เกิดข้อผิดพลาด: ' + error.message + '</span>';
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
             } finally {
                 this.saving = false;
             }
@@ -570,10 +543,9 @@ function headerEditor() {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('✅ ' + data.message);
                     location.reload();
                 } else {
-                    alert('❌ เกิดข้อผิดพลาด');
+                    throw new Error('ไม่สามารถรีเซ็ตได้');
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -583,6 +555,45 @@ function headerEditor() {
     }
 }
 </script>
-@endpush
 
-@endsection
+<style>
+/* Custom Slider Thumb for Dark Mode */
+.slider-thumb::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-thumb::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.slider-thumb::-webkit-slider-thumb:hover {
+    background: #2563eb;
+}
+
+.slider-thumb::-moz-range-thumb:hover {
+    background: #2563eb;
+}
+
+/* Dark mode slider track */
+.dark .slider-thumb::-webkit-slider-runnable-track {
+    background: #374151;
+}
+
+.dark .slider-thumb::-moz-range-track {
+    background: #374151;
+}
+</style>
+@endpush
