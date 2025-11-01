@@ -4,6 +4,7 @@ use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\WalletController;
 use App\Http\Controllers\User\RankController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -77,4 +78,12 @@ Route::prefix('ranks')->name('ranks.')->group(function () {
     Route::get('/progress', [RankController::class, 'progress'])->name('progress');
     Route::get('/leaderboard', [RankController::class, 'leaderboard'])->name('leaderboard');
     Route::post('/request-promotion', [RankController::class, 'requestPromotion'])->name('request-promotion');
+});
+
+// Email Preferences
+Route::prefix('email')->name('email.')->group(function () {
+    Route::get('/preferences', [EmailPreferenceController::class, 'index'])->name('preferences');
+    Route::put('/preferences', [EmailPreferenceController::class, 'update'])->name('preferences.update');
+    Route::post('/preferences/disable-all', [EmailPreferenceController::class, 'disableAll'])->name('preferences.disable-all');
+    Route::post('/preferences/enable-all', [EmailPreferenceController::class, 'enableAll'])->name('preferences.enable-all');
 });

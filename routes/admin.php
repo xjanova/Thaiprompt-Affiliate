@@ -6,7 +6,6 @@ use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SecurityController;
-use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
@@ -21,6 +20,7 @@ use App\Http\Controllers\Admin\HeaderEditorController;
 use App\Http\Controllers\Admin\VisualBuilderController;
 use App\Http\Controllers\Admin\TemplateController;
 use App\Http\Controllers\Admin\RankController;
+use App\Http\Controllers\Admin\EmailController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -80,10 +80,6 @@ Route::post('header-editor/menu-items', [HeaderEditorController::class, 'storeMe
 Route::put('header-editor/menu-items/{id}', [HeaderEditorController::class, 'updateMenuItem'])->name('header-editor.menu-items.update');
 Route::delete('header-editor/menu-items/{id}', [HeaderEditorController::class, 'deleteMenuItem'])->name('header-editor.menu-items.delete');
 Route::post('header-editor/menu-items/reorder', [HeaderEditorController::class, 'reorderMenuItems'])->name('header-editor.menu-items.reorder');
-
-// Slider Management
-Route::resource('sliders', SliderController::class);
-Route::post('sliders/reorder', [SliderController::class, 'reorder'])->name('sliders.reorder');
 
 // Pages Management (CMS)
 Route::resource('pages', PageController::class);
@@ -234,4 +230,36 @@ Route::prefix('ranks')->name('ranks.')->group(function () {
     Route::get('/promotions', [RankController::class, 'promotions'])->name('promotions.index');
     Route::post('/promotions/{promotion}/approve', [RankController::class, 'approvePromotion'])->name('promotions.approve');
     Route::post('/promotions/{promotion}/reject', [RankController::class, 'rejectPromotion'])->name('promotions.reject');
+});
+
+// Email Management (Email Delivery System)
+Route::prefix('email')->name('email.')->group(function () {
+    // Dashboard
+    Route::get('/', [EmailController::class, 'index'])->name('index');
+    Route::get('/statistics', [EmailController::class, 'statistics'])->name('statistics');
+
+    // Email Logs
+    Route::get('/logs', [EmailController::class, 'logs'])->name('logs');
+    Route::get('/logs/{log}', [EmailController::class, 'showLog'])->name('logs.show');
+
+    // Email Providers
+    Route::get('/providers', [EmailController::class, 'providers'])->name('providers');
+    Route::get('/providers/create', [EmailController::class, 'createProvider'])->name('providers.create');
+    Route::post('/providers', [EmailController::class, 'storeProvider'])->name('providers.store');
+    Route::get('/providers/{provider}/edit', [EmailController::class, 'editProvider'])->name('providers.edit');
+    Route::put('/providers/{provider}', [EmailController::class, 'updateProvider'])->name('providers.update');
+    Route::delete('/providers/{provider}', [EmailController::class, 'destroyProvider'])->name('providers.destroy');
+    Route::post('/providers/{provider}/test', [EmailController::class, 'testProvider'])->name('providers.test');
+    Route::post('/providers/{provider}/set-default', [EmailController::class, 'setDefaultProvider'])->name('providers.set-default');
+
+    // Email Templates
+    Route::get('/templates', [EmailController::class, 'templates'])->name('templates');
+    Route::get('/templates/create', [EmailController::class, 'createTemplate'])->name('templates.create');
+    Route::post('/templates', [EmailController::class, 'storeTemplate'])->name('templates.store');
+    Route::get('/templates/{template}/edit', [EmailController::class, 'editTemplate'])->name('templates.edit');
+    Route::put('/templates/{template}', [EmailController::class, 'updateTemplate'])->name('templates.update');
+    Route::delete('/templates/{template}', [EmailController::class, 'destroyTemplate'])->name('templates.destroy');
+
+    // Send Test Email
+    Route::post('/test', [EmailController::class, 'sendTest'])->name('test');
 });

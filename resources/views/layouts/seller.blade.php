@@ -164,6 +164,24 @@
             transition-duration: 200ms;
         }
 
+        /* Custom scrollbar for sidebar */
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+
         /* Mobile-first responsive utilities */
         @media (max-width: 768px) {
             .mobile-padding {
@@ -203,229 +221,275 @@
         };
     </script>
 </head>
-<body class="font-sans antialiased bg-gray-50">
-    <div class="min-h-screen" x-data="{ mobileMenuOpen: false, showNotifications: false }">
-        <!-- Mobile Header -->
-        <header class="bg-gradient-primary text-white sticky top-0 z-40 shadow-lg">
-            <div class="flex items-center justify-between px-4 py-3">
-                <!-- Logo -->
-                <div class="flex items-center space-x-3">
-                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
-
-                    @php
-                        $logo = \App\Models\Setting::get('logo');
-                    @endphp
-                    @if($logo)
-                        <img src="{{ asset($logo) }}" alt="Logo" class="h-8 object-contain">
-                    @else
-                        <span class="text-xl font-bold">{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</span>
-                    @endif
-                </div>
-
-                <!-- Right Actions -->
-                <div class="flex items-center space-x-2">
-                    <!-- Dashboard Switcher -->
-                    <x-dashboard-switcher />
-
-                    <!-- Language Switcher -->
-                    @include('components.language-switcher')
-
-                    <!-- Notifications -->
-                    <button @click="showNotifications = !showNotifications" class="relative p-2">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                        <span class="absolute top-0 right-0 block h-2 w-2 bg-red-500 rounded-full"></span>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <!-- Mobile Menu Overlay -->
-        <div x-show="mobileMenuOpen"
-             x-transition:enter="transition ease-out duration-200"
+<body class="font-sans antialiased bg-gray-100">
+    <!-- Page Loader -->
+    <x-page-loader />
+    <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false }">
+        <!-- Overlay for mobile -->
+        <div x-show="sidebarOpen"
+             @click="sidebarOpen = false"
+             x-transition:enter="transition-opacity ease-linear duration-300"
              x-transition:enter-start="opacity-0"
              x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave="transition-opacity ease-linear duration-300"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             @click="mobileMenuOpen = false"
-             class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-             style="display: none;">
+             class="fixed inset-0 bg-gray-600 bg-opacity-75 z-30 md:hidden"
+             style="display: none;"></div>
+
+        <!-- Sidebar -->
+        <div class="fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 shadow-2xl transform transition-all duration-300 ease-in-out overflow-y-auto sidebar-scroll"
+             style="box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);"
+             :class="{
+                 '-translate-x-full md:translate-x-0': !sidebarOpen,
+                 'translate-x-0': sidebarOpen,
+                 'w-56': !sidebarCollapsed,
+                 'md:w-16': sidebarCollapsed
+             }">
+            <!-- Logo Section -->
+            <div class="flex items-center justify-center h-16 bg-gradient-primary relative">
+                @php
+                    $logo = \App\Models\Setting::get('logo');
+                @endphp
+                @if($logo)
+                    <img src="{{ asset($logo) }}" alt="Logo" class="h-10 object-contain" :class="{ 'md:h-8': sidebarCollapsed }">
+                @else
+                    @php
+                        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+                        $appNameShort = mb_substr($appName, 0, 2);
+                    @endphp
+                    <span class="text-white font-bold transition-all" :class="{ 'text-2xl': !sidebarCollapsed, 'md:text-lg': sidebarCollapsed }">
+                        <span x-show="!sidebarCollapsed">{{ $appName }}</span>
+                        <span x-show="sidebarCollapsed" class="hidden md:block">{{ $appNameShort }}</span>
+                    </span>
+                @endif
+
+                <!-- Collapse Toggle (Desktop only) -->
+                <button @click="sidebarCollapsed = !sidebarCollapsed; localStorage.setItem('sidebarCollapsed', sidebarCollapsed)"
+                        class="hidden md:flex absolute -right-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-full p-2.5 shadow-2xl transition-all duration-300 items-center justify-center group hover:scale-110 border-2 border-white"
+                        title="ซ่อน/แสดงเมนู">
+                    <svg class="w-5 h-5 transition-transform duration-300 drop-shadow-lg" :class="{ 'rotate-180': sidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="mt-6 px-3">
+                <!-- Dashboard -->
+                <a href="{{ route('seller.dashboard') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.dashboard') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
+                </a>
+
+                <!-- Products -->
+                <a href="{{ route('seller.products') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.products') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📦</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สินค้า</span>
+                </a>
+
+                <!-- Sales -->
+                <a href="{{ route('seller.sales') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.sales') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🛒</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ยอดขาย</span>
+                </a>
+
+                <!-- Analytics -->
+                <a href="{{ route('seller.analytics') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.analytics') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📈</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">วิเคราะห์</span>
+                </a>
+
+                <!-- Profile -->
+                <a href="{{ route('seller.profile') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.profile') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👤</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">โปรไฟล์</span>
+                </a>
+
+                <!-- Version Info -->
+                <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                    <div class="bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30 dark:border-gray-600/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-gray-400 dark:text-gray-300">เวอร์ชั่น</span>
+                            <span class="text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-500 px-2 py-0.5 rounded-full">
+                                {{ config('version.current') }}
+                            </span>
+                        </div>
+                        @if(config('version.name'))
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ config('version.name') }}</p>
+                        @endif
+                        <div class="text-[10px] text-gray-600 dark:text-gray-400 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span>Laravel</span>
+                                <span class="text-gray-400 dark:text-gray-300">{{ app()->version() }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span>PHP</span>
+                                <span class="text-gray-400 dark:text-gray-300">{{ PHP_VERSION }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spacing at bottom for scrolling -->
+                <div class="h-4"></div>
+            </nav>
         </div>
 
-        <!-- Mobile Menu -->
-        <nav x-show="mobileMenuOpen"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="-translate-x-full"
-             x-transition:enter-end="translate-x-0"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="translate-x-0"
-             x-transition:leave-end="-translate-x-full"
-             class="fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50 transform lg:hidden"
-             style="display: none;">
-
-            <div class="p-4 bg-gradient-primary text-white">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-cyan-600 font-bold text-lg">
-                        {{ substr(Auth::user()->name, 0, 1) }}
-                    </div>
-                    <div>
-                        <p class="font-semibold">{{ Auth::user()->name }}</p>
-                        <p class="text-sm opacity-90">ผู้ขาย</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="py-4">
-                <a href="{{ route('seller.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.dashboard') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">📊</span>
-                    <span>แดชบอร์ด</span>
-                </a>
-
-                <a href="{{ route('seller.products') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.products') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">📦</span>
-                    <span>สินค้า</span>
-                </a>
-
-                <a href="{{ route('seller.sales') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.sales') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">🛒</span>
-                    <span>ยอดขาย</span>
-                </a>
-
-                <a href="{{ route('seller.analytics') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.analytics') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">📈</span>
-                    <span>วิเคราะห์</span>
-                </a>
-
-                <a href="{{ route('seller.profile') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.profile') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">👤</span>
-                    <span>โปรไฟล์</span>
-                </a>
-
-                <div class="border-t mt-4 pt-4">
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100">
-                            <span class="text-xl mr-3">🚪</span>
-                            <span>ออกจากระบบ</span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Desktop Sidebar -->
-        <aside class="hidden lg:block fixed left-0 top-0 h-screen w-64 bg-white shadow-lg z-30">
-            <div class="p-4 bg-gradient-primary text-white">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-cyan-600 font-bold text-lg">
-                        {{ substr(Auth::user()->name, 0, 1) }}
-                    </div>
-                    <div>
-                        <p class="font-semibold">{{ Auth::user()->name }}</p>
-                        <p class="text-sm opacity-90">ผู้ขาย</p>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="py-4">
-                <a href="{{ route('seller.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.dashboard') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">📊</span>
-                    <span>แดชบอร์ด</span>
-                </a>
-
-                <a href="{{ route('seller.products') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.products') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">📦</span>
-                    <span>สินค้า</span>
-                </a>
-
-                <a href="{{ route('seller.sales') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.sales') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">🛒</span>
-                    <span>ยอดขาย</span>
-                </a>
-
-                <a href="{{ route('seller.analytics') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.analytics') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">📈</span>
-                    <span>วิเคราะห์</span>
-                </a>
-
-                <a href="{{ route('seller.profile') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('seller.profile') ? 'bg-gray-100 border-l-4 border-cyan-600' : '' }}">
-                    <span class="text-xl mr-3">👤</span>
-                    <span>โปรไฟล์</span>
-                </a>
-
-                <div class="border-t mt-4 pt-4">
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100">
-                            <span class="text-xl mr-3">🚪</span>
-                            <span>ออกจากระบบ</span>
-                        </button>
-                    </form>
-                </div>
-            </nav>
-        </aside>
-
         <!-- Main Content -->
-        <main class="lg:ml-64 min-h-screen">
-            <div class="p-4 lg:p-6">
-                @if (session('success'))
-                    <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
-                        {{ session('success') }}
-                    </div>
-                @endif
+        <div class="transition-all duration-300" :class="{ 'md:ml-56': !sidebarCollapsed, 'md:ml-16': sidebarCollapsed }">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm sticky top-0 z-20">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div class="flex items-center">
+                        <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4 transition-colors">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
 
-                @if (session('error'))
-                    <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-                        {{ session('error') }}
+                        <h1 class="text-2xl font-semibold text-gray-800">@yield('title')</h1>
                     </div>
-                @endif
 
+                    <div class="flex items-center space-x-3">
+                        <!-- Dashboard Switcher -->
+                        <x-dashboard-switcher />
+
+                        <!-- Theme Toggle -->
+                        <x-theme-toggle />
+
+                        <!-- Notification Bell -->
+                        <x-notification-bell />
+
+                        <!-- Language Switcher -->
+                        <div class="relative z-[60]">
+                            <x-language-switcher-pro />
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="p-6">
                 @yield('content')
+            </main>
+        </div>
+    </div>
+
+    <!-- Fixed Floating Toast Notifications -->
+    <div class="fixed top-4 right-4 z-[9999] space-y-3 max-w-md">
+        @if (session('success'))
+            <div x-data="{ show: true }"
+                 x-show="show"
+                 x-init="setTimeout(() => show = false, 5000)"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-x-full"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform translate-x-0"
+                 x-transition:leave-end="opacity-0 transform translate-x-full"
+                 class="bg-green-100 border-l-4 border-green-500 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-start justify-between min-w-[320px]">
+                <div class="flex items-start">
+                    <svg class="h-6 w-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="font-medium">{{ session('success') }}</span>
+                </div>
+                <button @click="show = false" class="ml-4 text-green-700 hover:text-green-900 flex-shrink-0">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
-        </main>
+        @endif
 
-        <!-- Bottom Navigation (Mobile Only) -->
-        <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
-            <div class="flex justify-around">
-                <a href="{{ route('seller.dashboard') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('seller.dashboard') ? 'text-cyan-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">📊</span>
-                    <span class="text-xs mt-1">แดชบอร์ด</span>
-                </a>
-
-                <a href="{{ route('seller.products') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('seller.products') ? 'text-cyan-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">📦</span>
-                    <span class="text-xs mt-1">สินค้า</span>
-                </a>
-
-                <a href="{{ route('seller.sales') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('seller.sales') ? 'text-cyan-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">🛒</span>
-                    <span class="text-xs mt-1">ยอดขาย</span>
-                </a>
-
-                <a href="{{ route('seller.profile') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('seller.profile') ? 'text-cyan-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">👤</span>
-                    <span class="text-xs mt-1">โปรไฟล์</span>
-                </a>
+        @if (session('error'))
+            <div x-data="{ show: true }"
+                 x-show="show"
+                 x-init="setTimeout(() => show = false, 5000)"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-x-full"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform translate-x-0"
+                 x-transition:leave-end="opacity-0 transform translate-x-full"
+                 class="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-start justify-between min-w-[320px]">
+                <div class="flex items-start">
+                    <svg class="h-6 w-6 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="font-medium">{{ session('error') }}</span>
+                </div>
+                <button @click="show = false" class="ml-4 text-red-700 hover:text-red-900 flex-shrink-0">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
-        </nav>
+        @endif
     </div>
 
     <script>
+        // Chart.js Dark Mode Helpers
+        window.isDarkMode = function() {
+            return document.documentElement.classList.contains('dark');
+        };
+
+        window.getChartColors = function() {
+            const isDark = window.isDarkMode();
+            return {
+                textColor: isDark ? '#e2e8f0' : '#374151',
+                gridColor: isDark ? 'rgba(148, 163, 184, 0.1)' : 'rgba(0, 0, 0, 0.05)',
+                tooltipBg: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(0, 0, 0, 0.8)',
+                borderColor: isDark ? '#475569' : '#e5e7eb',
+                chartBorderColor: isDark ? '#1e293b' : '#fff'
+            };
+        };
+
         // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate page entrance
         document.addEventListener('DOMContentLoaded', function() {
             // Fade in content
-            gsap.from('main > div > *', {
+            gsap.from('main > *', {
                 opacity: 0,
                 y: 20,
-                duration: 0.5,
+                duration: 0.6,
                 stagger: 0.1,
                 ease: 'power2.out'
+            });
+
+            // Animate cards on scroll
+            const cards = document.querySelectorAll('.bg-white');
+            cards.forEach(card => {
+                gsap.from(card, {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 80%',
+                        toggleActions: 'play none none reverse'
+                    },
+                    opacity: 0,
+                    y: 30,
+                    duration: 0.5,
+                    ease: 'power2.out'
+                });
+            });
+
+            // Animate buttons on hover
+            const buttons = document.querySelectorAll('button:not([type=submit]), .btn');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    gsap.to(button, { scale: 1.05, duration: 0.2 });
+                });
+                button.addEventListener('mouseleave', () => {
+                    gsap.to(button, { scale: 1, duration: 0.2 });
+                });
             });
         });
     </script>

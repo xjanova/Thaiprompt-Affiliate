@@ -58,8 +58,8 @@
 
 @section('content')
 <div class="mb-6">
-    <h1 class="text-3xl font-bold text-gray-900">📐 Header & Page Management</h1>
-    <p class="mt-1 text-sm text-gray-600">จัดการ Header, เลือกเทมเพลตหน้าแรก และสร้างเมนู</p>
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white">📐 Header & Page Management</h1>
+    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">จัดการ Header, เลือกเทมเพลตหน้าแรก และสร้างเมนู</p>
 </div>
 
 @include('admin.header-editor._tabs-wrapper')

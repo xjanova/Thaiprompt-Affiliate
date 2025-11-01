@@ -44,21 +44,21 @@
                     </span>
                 </button>
 
-                <button @click="activeTab = 'content'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'content', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'content' }"
-                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
-                    <span class="flex items-center">
-                        <span class="text-lg mr-2">📝</span>
-                        เนื้อหาหน้าแรก
-                    </span>
-                </button>
-
                 <button @click="activeTab = 'api'"
                         :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'api', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'api' }"
                         class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
                     <span class="flex items-center">
                         <span class="text-lg mr-2">🔑</span>
                         การตั้งค่า API
+                    </span>
+                </button>
+
+                <button @click="activeTab = 'pageloader'"
+                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'pageloader', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'pageloader' }"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
+                    <span class="flex items-center">
+                        <span class="text-lg mr-2">⏳</span>
+                        อนิเมชั่นโหลดหน้า
                     </span>
                 </button>
             </nav>
@@ -353,39 +353,6 @@
                 </form>
             </div>
 
-            <!-- Custom Content Tab -->
-            <div x-show="activeTab === 'content'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
-                <form method="POST" action="{{ route('admin.settings.update') }}">
-                    @csrf
-                    @method('PUT')
-
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">แก้ไขเนื้อหาหน้าแรก</h3>
-                    <p class="text-gray-600 mb-6">เนื้อหานี้จะแสดงในหน้าแรกหลังจากสไลด์รูปภาพ</p>
-
-                    <div class="space-y-6">
-                        <div>
-                            <label for="home_custom_content" class="block text-sm font-medium text-gray-700 mb-2">เนื้อหา</label>
-
-                            <!-- Quill Editor Container -->
-                            <div id="quill-editor" class="bg-white border border-gray-300 rounded-lg" style="min-height: 400px;"></div>
-
-                            <!-- Hidden textarea to store content -->
-                            <textarea id="home_custom_content" name="home_custom_content" style="display: none;">{{ old('home_custom_content', $settings->get('general')->firstWhere('key', 'home_custom_content')->value ?? '') }}</textarea>
-
-                            <p class="text-xs text-gray-500 mt-2">
-                                ✨ ใช้ตัวแก้ไขด้านบนเพื่อจัดรูปแบบเนื้อหา รองรับ Rich Text และ HTML
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end mt-6">
-                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                            บันทึกเนื้อหา
-                        </button>
-                    </div>
-                </form>
-            </div>
-
             <!-- API Settings Tab -->
             <div x-show="activeTab === 'api'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
                 <form method="POST" action="{{ route('admin.settings.update') }}">
@@ -483,62 +450,89 @@
                     </div>
                 </form>
             </div>
+
+            <!-- Page Loader Settings Tab -->
+            <div x-show="activeTab === 'pageloader'" style="display: none;">
+                <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-6">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="mb-8">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">การตั้งค่าอนิเมชั่นโหลดหน้า</h3>
+                        <p class="text-gray-600 mb-6">กำหนดรูปแบบและการแสดงผลของอนิเมชั่นโหลดหน้า</p>
+
+                        <!-- Enable/Disable -->
+                        <div class="mb-6 p-6 bg-gray-50 rounded-lg">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="checkbox" name="page_loader_enabled" value="1"
+                                       {{ \App\Models\Setting::get('page_loader_enabled', true) ? 'checked' : '' }}
+                                       class="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500 transition">
+                                <span class="ml-3 text-gray-700 font-medium">เปิดใช้งานอนิเมชั่นโหลดหน้า</span>
+                            </label>
+                            <p class="ml-8 mt-2 text-sm text-gray-500">แสดงอนิเมชั่นขณะโหลดหน้าเว็บ</p>
+                        </div>
+
+                        <!-- Loader Type -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">รูปแบบอนิเมชั่น</label>
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                @php
+                                    $currentType = \App\Models\Setting::get('page_loader_type', 'spinner');
+                                    $types = [
+                                        'spinner' => ['name' => 'วงล้อหมุน', 'icon' => '🔄'],
+                                        'dots' => ['name' => 'จุดกระโดด', 'icon' => '⚫'],
+                                        'pulse' => ['name' => 'พัลส์', 'icon' => '💫'],
+                                        'progress' => ['name' => 'แถบความคืบหน้า', 'icon' => '📊']
+                                    ];
+                                @endphp
+
+                                @foreach($types as $type => $info)
+                                <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all
+                                              {{ $currentType === $type ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300' }}">
+                                    <input type="radio" name="page_loader_type" value="{{ $type }}"
+                                           {{ $currentType === $type ? 'checked' : '' }}
+                                           class="form-radio h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="ml-3 flex items-center">
+                                        <span class="text-2xl mr-2">{{ $info['icon'] }}</span>
+                                        <span class="font-medium text-gray-700">{{ $info['name'] }}</span>
+                                    </span>
+                                </label>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- Loader Color -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-3">สีอนิเมชั่น</label>
+                            <div class="flex items-center space-x-4">
+                                <input type="color" name="page_loader_color"
+                                       value="{{ \App\Models\Setting::get('page_loader_color', '#6366f1') }}"
+                                       class="h-12 w-24 rounded cursor-pointer">
+                                <input type="text" name="page_loader_color_hex"
+                                       value="{{ \App\Models\Setting::get('page_loader_color', '#6366f1') }}"
+                                       placeholder="#6366f1"
+                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500">เลือกสีที่ต้องการสำหรับอนิเมชั่นโหลดหน้า</p>
+                        </div>
+
+                        <!-- Preview Section -->
+                        <div class="mb-6 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
+                            <h4 class="text-sm font-medium text-gray-700 mb-4">ตัวอย่างอนิเมชั่น</h4>
+                            <div class="flex items-center justify-center h-40 bg-white rounded-lg">
+                                <p class="text-gray-500">ตัวอย่างจะแสดงตามการตั้งค่าที่เลือก</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end mt-6">
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                            บันทึกการตั้งค่า
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Quill.js Rich Text Editor -->
-<!-- Include Quill.js stylesheet -->
-<link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
-
-<!-- Include Quill.js library -->
-<script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Quill editor
-    var quill = new Quill('#quill-editor', {
-        theme: 'snow',
-        modules: {
-            toolbar: [
-                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                [{ 'font': [] }],
-                [{ 'size': ['small', false, 'large', 'huge'] }],
-                ['bold', 'italic', 'underline', 'strike'],
-                [{ 'color': [] }, { 'background': [] }],
-                [{ 'script': 'sub'}, { 'script': 'super' }],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                [{ 'direction': 'rtl' }],
-                [{ 'align': [] }],
-                ['link', 'image', 'video'],
-                ['blockquote', 'code-block'],
-                ['clean']
-            ]
-        },
-        placeholder: 'เริ่มเขียนเนื้อหาที่นี่...'
-    });
-
-    // Load existing content
-    var existingContent = document.getElementById('home_custom_content').value;
-    if (existingContent) {
-        quill.root.innerHTML = existingContent;
-    }
-
-    // Update hidden textarea when content changes
-    quill.on('text-change', function() {
-        document.getElementById('home_custom_content').value = quill.root.innerHTML;
-    });
-
-    // Update before form submission
-    var form = document.querySelector('form');
-    if (form) {
-        form.addEventListener('submit', function() {
-            document.getElementById('home_custom_content').value = quill.root.innerHTML;
-        });
-    }
-
-    console.log('✅ Quill.js Editor โหลดสำเร็จ - พร้อมใช้งาน!');
-});
-</script>
 @endsection

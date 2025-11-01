@@ -52,7 +52,6 @@ class ResetDemoData extends Command
             $this->info('Clearing tables...');
 
             $tables = [
-                'home_sections',
                 'pages',
                 'commissions',
                 'affiliates',

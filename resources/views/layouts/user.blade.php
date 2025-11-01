@@ -181,9 +181,306 @@
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
             transition-duration: 200ms;
         }
+
+        /* Custom scrollbar for sidebar */
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
     </style>
 
     @stack('styles')
+
+<body class="font-sans antialiased bg-gray-100">
+    <!-- Page Loader -->
+    <x-page-loader />
+    <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false }">
+        <!-- Overlay for mobile -->
+        <div x-show="sidebarOpen"
+             @click="sidebarOpen = false"
+             x-transition:enter="transition-opacity ease-linear duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-linear duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-600 bg-opacity-75 z-30 md:hidden"
+             style="display: none;"></div>
+
+        <!-- Sidebar -->
+        <div class="fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 shadow-2xl transform transition-all duration-300 ease-in-out overflow-y-auto sidebar-scroll"
+             style="box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);"
+             :class="{
+                 '-translate-x-full md:translate-x-0': !sidebarOpen,
+                 'translate-x-0': sidebarOpen,
+                 'w-56': !sidebarCollapsed,
+                 'md:w-16': sidebarCollapsed
+             }">
+            <!-- Logo Section -->
+            <div class="flex items-center justify-center h-16 bg-gradient-primary relative">
+                @php
+                    $logo = \App\Models\Setting::get('logo');
+                @endphp
+                @if($logo)
+                    <img src="{{ asset($logo) }}" alt="Logo" class="h-10 object-contain" :class="{ 'md:h-8': sidebarCollapsed }">
+                @else
+                    @php
+                        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+                        $appNameShort = mb_substr($appName, 0, 2);
+                    @endphp
+                    <span class="text-white font-bold transition-all" :class="{ 'text-2xl': !sidebarCollapsed, 'md:text-lg': sidebarCollapsed }">
+                        <span x-show="!sidebarCollapsed">{{ $appName }}</span>
+                        <span x-show="sidebarCollapsed" class="hidden md:block">{{ $appNameShort }}</span>
+                    </span>
+                @endif
+
+                <!-- Collapse Toggle (Desktop only) -->
+                <button @click="sidebarCollapsed = !sidebarCollapsed; localStorage.setItem('sidebarCollapsed', sidebarCollapsed)"
+                        class="hidden md:flex absolute -right-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-full p-2.5 shadow-2xl transition-all duration-300 items-center justify-center group hover:scale-110 border-2 border-white"
+                        title="ซ่อน/แสดงเมนู">
+                    <svg class="w-5 h-5 transition-transform duration-300 drop-shadow-lg" :class="{ 'rotate-180': sidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="mt-6 px-3">
+                <!-- Dashboard -->
+                <a href="{{ route('user.dashboard') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.dashboard') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
+                </a>
+
+                <!-- Profile -->
+                <a href="{{ route('user.profile') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.profile') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👤</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">โปรไฟล์</span>
+                </a>
+
+                <!-- Commissions -->
+                <a href="{{ route('user.commissions') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.commissions') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💰</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คอมมิชชั่น</span>
+                </a>
+
+                <!-- Wallet Dropdown Menu -->
+                <div x-data="{ walletOpen: false }" @mouseenter="!sidebarCollapsed ? walletOpen = true : null" @mouseleave="walletOpen = false" class="relative mb-1">
+                    @php
+                        $walletActive = request()->routeIs('user.wallet.*');
+                    @endphp
+
+                    <!-- Main Wallet Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}"
+                       @click="sidebarCollapsed ? null : (walletOpen = !walletOpen)">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            กระเป๋าเงิน
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': walletOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="walletOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('user.wallet.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.wallet.index') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">👛</span>
+                            <span>กระเป๋าของฉัน</span>
+                        </a>
+
+                        <a href="{{ route('user.wallet.transactions') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.wallet.transactions') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">📝</span>
+                            <span>ประวัติธุรกรรม</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('user.wallet.withdraw') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.wallet.withdraw') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">💸</span>
+                            <span>ถอนเงิน</span>
+                        </a>
+
+                        <a href="{{ route('user.wallet.withdrawals') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.wallet.withdrawals') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">📋</span>
+                            <span>ประวัติการถอน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('user.wallet.payment-methods') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.wallet.payment-methods') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
+                            <span class="mr-2">🏦</span>
+                            <span>ช่องทางรับเงิน</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Referrals -->
+                <a href="{{ route('user.referrals') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.referrals') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👥</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผู้แนะนำ</span>
+                </a>
+
+                <!-- Organization -->
+                <a href="{{ route('user.organization') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.organization') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌳</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผังสายงาน</span>
+                </a>
+
+                <!-- Version Info -->
+                <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                    <div class="bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30 dark:border-gray-600/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs text-gray-400 dark:text-gray-300">เวอร์ชั่น</span>
+                            <span class="text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 px-2 py-0.5 rounded-full">
+                                {{ config('version.current') }}
+                            </span>
+                        </div>
+                        @if(config('version.name'))
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ config('version.name') }}</p>
+                        @endif
+                        <div class="text-[10px] text-gray-600 dark:text-gray-400 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span>Laravel</span>
+                                <span class="text-gray-400 dark:text-gray-300">{{ app()->version() }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span>PHP</span>
+                                <span class="text-gray-400 dark:text-gray-300">{{ PHP_VERSION }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Spacing at bottom for scrolling -->
+                <div class="h-4"></div>
+            </nav>
+        </div>
+
+        <!-- Main Content -->
+        <div class="transition-all duration-300" :class="{ 'md:ml-56': !sidebarCollapsed, 'md:ml-16': sidebarCollapsed }">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm sticky top-0 z-20">
+                <div class="flex items-center justify-between px-6 py-4">
+                    <div class="flex items-center">
+                        <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4 transition-colors">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+
+                        <h1 class="text-2xl font-semibold text-gray-800">@yield('title')</h1>
+                    </div>
+
+                    <div class="flex items-center space-x-3">
+                        <!-- Dashboard Switcher -->
+                        <x-dashboard-switcher />
+
+                        <!-- Theme Toggle -->
+                        <x-theme-toggle />
+
+                        <!-- Notification Bell -->
+                        <x-notification-bell />
+
+                        <!-- Language Switcher -->
+                        <div class="relative z-[60]">
+                            <x-language-switcher-pro />
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="p-6">
+                @yield('content')
+            </main>
+        </div>
+    </div>
+
+    <!-- Fixed Floating Toast Notifications -->
+    <div class="fixed top-4 right-4 z-[9999] space-y-3 max-w-md">
+        @if (session('success'))
+            <div x-data="{ show: true }"
+                 x-show="show"
+                 x-init="setTimeout(() => show = false, 5000)"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-x-full"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform translate-x-0"
+                 x-transition:leave-end="opacity-0 transform translate-x-full"
+                 class="bg-green-100 border-l-4 border-green-500 text-green-700 px-4 py-3 rounded-lg shadow-lg flex items-start justify-between min-w-[320px]">
+                <div class="flex items-start">
+                    <svg class="h-6 w-6 text-green-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="font-medium">{{ session('success') }}</span>
+                </div>
+                <button @click="show = false" class="ml-4 text-green-700 hover:text-green-900 flex-shrink-0">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        @endif
+
+        @if (session('error'))
+            <div x-data="{ show: true }"
+                 x-show="show"
+                 x-init="setTimeout(() => show = false, 5000)"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform translate-x-full"
+                 x-transition:enter-end="opacity-100 transform translate-x-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform translate-x-0"
+                 x-transition:leave-end="opacity-0 transform translate-x-full"
+                 class="bg-red-100 border-l-4 border-red-500 text-red-700 px-4 py-3 rounded-lg shadow-lg flex items-start justify-between min-w-[320px]">
+                <div class="flex items-start">
+                    <svg class="h-6 w-6 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="font-medium">{{ session('error') }}</span>
+                </div>
+                <button @click="show = false" class="ml-4 text-red-700 hover:text-red-900 flex-shrink-0">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        @endif
+    </div>
 
     <script>
         // Chart.js Dark Mode Helpers
@@ -201,367 +498,46 @@
                 chartBorderColor: isDark ? '#1e293b' : '#fff'
             };
         };
-    </script>
-</head>
-<body class="font-sans antialiased bg-gray-50">
-    <div class="min-h-screen" x-data="{ mobileMenuOpen: false, showNotifications: false }">
-        <!-- Mobile Header -->
-        <header class="bg-gradient-primary text-white sticky top-0 z-40 shadow-lg">
-            <div class="flex items-center justify-between px-4 py-3">
-                <!-- Logo -->
-                <div class="flex items-center space-x-3">
-                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="lg:hidden">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        </svg>
-                    </button>
 
-                    @php
-                        $logo = \App\Models\Setting::get('logo');
-                    @endphp
-                    @if($logo)
-                        <img src="{{ asset($logo) }}" alt="Logo" class="h-8 object-contain">
-                    @else
-                        <span class="text-xl font-bold">{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</span>
-                    @endif
-                </div>
-
-                <!-- Right Actions -->
-                <div class="flex items-center space-x-2">
-                    <!-- Dashboard Switcher -->
-                    <x-dashboard-switcher />
-
-                    <!-- Theme Toggle -->
-                    <x-theme-toggle />
-
-                    <!-- Notification Bell -->
-                    <x-notification-bell />
-
-                    <!-- Language Switcher -->
-                    <x-language-switcher-pro />
-                </div>
-            </div>
-        </header>
-
-        <!-- Mobile Menu Overlay -->
-        <div x-show="mobileMenuOpen"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             @click="mobileMenuOpen = false"
-             class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-             style="display: none;">
-        </div>
-
-        <!-- Mobile Menu -->
-        <nav x-show="mobileMenuOpen"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="-translate-x-full"
-             x-transition:enter-end="translate-x-0"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="translate-x-0"
-             x-transition:leave-end="-translate-x-full"
-             class="fixed inset-y-0 left-0 w-64 bg-white shadow-xl z-50 transform lg:hidden"
-             style="display: none;">
-
-            <div class="p-4 bg-gradient-primary text-white">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-lg">
-                        {{ substr(Auth::user()->name, 0, 1) }}
-                    </div>
-                    <div>
-                        <p class="font-semibold">{{ Auth::user()->name }}</p>
-                        <p class="text-sm opacity-90">{{ Auth::user()->email }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="py-4">
-                <a href="{{ route('user.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.dashboard') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">📊</span>
-                    <span>แดชบอร์ด</span>
-                </a>
-
-                <a href="{{ route('user.profile') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.profile') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">👤</span>
-                    <span>โปรไฟล์</span>
-                </a>
-
-                <a href="{{ route('user.commissions') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.commissions') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">💰</span>
-                    <span>คอมมิชชั่น</span>
-                </a>
-
-                <!-- Wallet Dropdown Menu -->
-                <div x-data="{ walletOpen: false }" class="relative">
-                    <!-- Main Wallet Button -->
-                    <button @click="walletOpen = !walletOpen" class="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.*') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                        <span class="text-xl mr-3">💳</span>
-                        <span class="flex-1 text-left">กระเป๋าเงิน</span>
-                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': walletOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-
-                    <!-- Dropdown Submenu -->
-                    <div x-show="walletOpen"
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 transform -translate-y-2"
-                         x-transition:enter-end="opacity-100 transform translate-y-0"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100"
-                         x-transition:leave-end="opacity-0"
-                         class="mt-2 mb-2 ml-6 space-y-1 bg-gray-50 rounded-lg p-2 border-l-2 border-indigo-200"
-                         style="display: none;">
-
-                        <a href="{{ route('user.wallet.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.index') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">👛</span>
-                            <span>กระเป๋าของฉัน</span>
-                        </a>
-
-                        <a href="{{ route('user.wallet.transactions') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.transactions') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">📝</span>
-                            <span>ประวัติธุรกรรม</span>
-                        </a>
-
-                        <div class="border-t border-gray-300 my-2"></div>
-
-                        <a href="{{ route('user.wallet.withdraw') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.withdraw') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">💸</span>
-                            <span>ถอนเงิน</span>
-                        </a>
-
-                        <a href="{{ route('user.wallet.withdrawals') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.withdrawals') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">📋</span>
-                            <span>ประวัติการถอน</span>
-                        </a>
-
-                        <div class="border-t border-gray-300 my-2"></div>
-
-                        <a href="{{ route('user.wallet.payment-methods') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.payment-methods') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">🏦</span>
-                            <span>ช่องทางรับเงิน</span>
-                        </a>
-                    </div>
-                </div>
-
-                <a href="{{ route('user.referrals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.referrals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">👥</span>
-                    <span>ผู้แนะนำ</span>
-                </a>
-
-                <a href="{{ route('user.organization') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.organization') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">🌳</span>
-                    <span>ผังสายงาน</span>
-                </a>
-
-                <div class="border-t mt-4 pt-4">
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100">
-                            <span class="text-xl mr-3">🚪</span>
-                            <span>ออกจากระบบ</span>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Version Info (Mobile) -->
-                <div class="mt-4 px-6 pb-4">
-                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs text-gray-600 dark:text-gray-300">เวอร์ชั่น</span>
-                            <span class="text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 px-2 py-0.5 rounded-full">
-                                {{ config('version.current') }}
-                            </span>
-                        </div>
-                        <div class="text-[10px] text-gray-600 dark:text-gray-400">
-                            <p>พัฒนาโดย</p>
-                            <p class="font-semibold text-gray-800 dark:text-gray-200">Xman enterprise.co.ltd.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Desktop Sidebar -->
-        <aside class="hidden lg:block fixed left-0 top-0 h-screen w-64 bg-white shadow-lg z-30">
-            <div class="p-4 bg-gradient-primary text-white">
-                <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-white rounded-full flex items-center justify-center text-indigo-600 font-bold text-lg">
-                        {{ substr(Auth::user()->name, 0, 1) }}
-                    </div>
-                    <div>
-                        <p class="font-semibold">{{ Auth::user()->name }}</p>
-                        <p class="text-sm opacity-90">{{ Auth::user()->email }}</p>
-                    </div>
-                </div>
-            </div>
-
-            <nav class="py-4">
-                <a href="{{ route('user.dashboard') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.dashboard') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">📊</span>
-                    <span>แดชบอร์ด</span>
-                </a>
-
-                <a href="{{ route('user.profile') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.profile') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">👤</span>
-                    <span>โปรไฟล์</span>
-                </a>
-
-                <a href="{{ route('user.commissions') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.commissions') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">💰</span>
-                    <span>คอมมิชชั่น</span>
-                </a>
-
-                <!-- Wallet Dropdown Menu -->
-                <div x-data="{ walletOpen: false }" class="relative">
-                    <!-- Main Wallet Button -->
-                    <button @click="walletOpen = !walletOpen" class="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.wallet.*') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                        <span class="text-xl mr-3">💳</span>
-                        <span class="flex-1 text-left">กระเป๋าเงิน</span>
-                        <svg class="w-4 h-4 transition-transform" :class="{ 'rotate-180': walletOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-
-                    <!-- Dropdown Submenu -->
-                    <div x-show="walletOpen"
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 transform -translate-y-2"
-                         x-transition:enter-end="opacity-100 transform translate-y-0"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100"
-                         x-transition:leave-end="opacity-0"
-                         class="mt-2 mb-2 ml-6 space-y-1 bg-gray-50 rounded-lg p-2 border-l-2 border-indigo-200"
-                         style="display: none;">
-
-                        <a href="{{ route('user.wallet.index') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.index') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">👛</span>
-                            <span>กระเป๋าของฉัน</span>
-                        </a>
-
-                        <a href="{{ route('user.wallet.transactions') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.transactions') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">📝</span>
-                            <span>ประวัติธุรกรรม</span>
-                        </a>
-
-                        <div class="border-t border-gray-300 my-2"></div>
-
-                        <a href="{{ route('user.wallet.withdraw') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.withdraw') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">💸</span>
-                            <span>ถอนเงิน</span>
-                        </a>
-
-                        <a href="{{ route('user.wallet.withdrawals') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.withdrawals') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">📋</span>
-                            <span>ประวัติการถอน</span>
-                        </a>
-
-                        <div class="border-t border-gray-300 my-2"></div>
-
-                        <a href="{{ route('user.wallet.payment-methods') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 rounded-md {{ request()->routeIs('user.wallet.payment-methods') ? 'bg-indigo-100 text-indigo-700 font-semibold' : '' }}">
-                            <span class="mr-2">🏦</span>
-                            <span>ช่องทางรับเงิน</span>
-                        </a>
-                    </div>
-                </div>
-
-                <a href="{{ route('user.referrals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.referrals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">👥</span>
-                    <span>ผู้แนะนำ</span>
-                </a>
-
-                <a href="{{ route('user.organization') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.organization') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
-                    <span class="text-xl mr-3">🌳</span>
-                    <span>ผังสายงาน</span>
-                </a>
-
-                <div class="border-t mt-4 pt-4">
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="flex items-center w-full px-6 py-3 text-gray-700 hover:bg-gray-100">
-                            <span class="text-xl mr-3">🚪</span>
-                            <span>ออกจากระบบ</span>
-                        </button>
-                    </form>
-                </div>
-
-                <!-- Version Info -->
-                <div class="mt-4 px-6">
-                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs text-gray-600 dark:text-gray-300">เวอร์ชั่น</span>
-                            <span class="text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 px-2 py-0.5 rounded-full">
-                                {{ config('version.current') }}
-                            </span>
-                        </div>
-                        <div class="text-[10px] text-gray-600 dark:text-gray-400">
-                            <p>พัฒนาโดย</p>
-                            <p class="font-semibold text-gray-800 dark:text-gray-200">Xman enterprise.co.ltd.</p>
-                        </div>
-                    </div>
-                </div>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="lg:ml-64 min-h-screen">
-            <div class="p-4 lg:p-6">
-                @if (session('success'))
-                    <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg">
-                        {{ session('success') }}
-                    </div>
-                @endif
-
-                @if (session('error'))
-                    <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
-                        {{ session('error') }}
-                    </div>
-                @endif
-
-                @yield('content')
-            </div>
-        </main>
-
-        <!-- Bottom Navigation (Mobile Only) -->
-        <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30">
-            <div class="flex justify-around">
-                <a href="{{ route('user.dashboard') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.dashboard') ? 'text-indigo-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">📊</span>
-                    <span class="text-xs mt-1">แดชบอร์ด</span>
-                </a>
-
-                <a href="{{ route('user.wallet.index') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.wallet.*') ? 'text-indigo-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">💳</span>
-                    <span class="text-xs mt-1">กระเป๋าเงิน</span>
-                </a>
-
-                <a href="{{ route('user.commissions') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.commissions') ? 'text-indigo-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">💰</span>
-                    <span class="text-xs mt-1">คอมมิชชั่น</span>
-                </a>
-
-                <a href="{{ route('user.profile') }}" class="flex flex-col items-center py-2 px-3 {{ request()->routeIs('user.profile') ? 'text-indigo-600' : 'text-gray-600' }}">
-                    <span class="text-2xl">👤</span>
-                    <span class="text-xs mt-1">โปรไฟล์</span>
-                </a>
-            </div>
-        </nav>
-    </div>
-
-    <script>
         // GSAP Animations
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate page entrance
         document.addEventListener('DOMContentLoaded', function() {
             // Fade in content
-            gsap.from('main > div > *', {
+            gsap.from('main > *', {
                 opacity: 0,
                 y: 20,
-                duration: 0.5,
+                duration: 0.6,
                 stagger: 0.1,
                 ease: 'power2.out'
+            });
+
+            // Animate cards on scroll
+            const cards = document.querySelectorAll('.bg-white');
+            cards.forEach(card => {
+                gsap.from(card, {
+                    scrollTrigger: {
+                        trigger: card,
+                        start: 'top 80%',
+                        toggleActions: 'play none none reverse'
+                    },
+                    opacity: 0,
+                    y: 30,
+                    duration: 0.5,
+                    ease: 'power2.out'
+                });
+            });
+
+            // Animate buttons on hover
+            const buttons = document.querySelectorAll('button:not([type=submit]), .btn');
+            buttons.forEach(button => {
+                button.addEventListener('mouseenter', () => {
+                    gsap.to(button, { scale: 1.05, duration: 0.2 });
+                });
+                button.addEventListener('mouseleave', () => {
+                    gsap.to(button, { scale: 1, duration: 0.2 });
+                });
             });
         });
     </script>
