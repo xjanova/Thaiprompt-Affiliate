@@ -60,6 +60,6 @@ Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('ad
 });
 
 // Seller Routes (Protected by auth middleware and role check)
-Route::middleware(['auth', 'role:seller'])->prefix('seller')->name('seller.')->group(function () {
+Route::middleware(['auth', 'role:seller,super_admin'])->prefix('seller')->name('seller.')->group(function () {
     require __DIR__.'/seller.php';
 });

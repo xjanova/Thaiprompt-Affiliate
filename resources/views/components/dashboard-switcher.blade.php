@@ -9,7 +9,7 @@
 
     // Check user roles
     $hasAdminAccess = in_array($user->role, ['admin', 'super_admin']);
-    $hasSellerAccess = $user->role === 'seller';
+    $hasSellerAccess = in_array($user->role, ['seller', 'super_admin']);
     $hasUserAccess = $user->role === 'user' || $hasAdminAccess || $hasSellerAccess;
 
     // Count available dashboards
