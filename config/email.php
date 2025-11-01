@@ -106,7 +106,7 @@ return [
         'user_email' => env('GMAIL_API_USER_EMAIL'),
         'access_token' => env('GMAIL_API_ACCESS_TOKEN'),
         'refresh_token' => env('GMAIL_API_REFRESH_TOKEN'),
-        'redirect_uri' => env('GMAIL_API_REDIRECT_URI', url('/admin/email/gmail/callback')),
+        'redirect_uri' => env('GMAIL_API_REDIRECT_URI'),
         'from_email' => env('GMAIL_API_FROM_EMAIL'),
         'from_name' => env('GMAIL_API_FROM_NAME', config('app.name')),
         'daily_limit' => env('GMAIL_API_DAILY_LIMIT', 500), // Gmail API free tier limit

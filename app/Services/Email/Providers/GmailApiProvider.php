@@ -209,7 +209,11 @@ class GmailApiProvider implements EmailProviderInterface
      */
     public function getAuthorizationUrl(): string
     {
-        $this->client->setRedirectUri($this->config['redirect_uri'] ?? url('/admin/email/gmail/callback'));
+        // Get redirect URI from config or build from APP_URL
+        $redirectUri = $this->config['redirect_uri']
+            ?? rtrim(config('app.url'), '/') . '/admin/email/gmail/callback';
+
+        $this->client->setRedirectUri($redirectUri);
         return $this->client->createAuthUrl();
     }
 
