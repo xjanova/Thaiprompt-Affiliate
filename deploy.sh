@@ -587,23 +587,19 @@ if [ "$PENDING_COUNT" != "0" ]; then
 fi
 echo ""
 
-# Step 11: Seed Database (optional - only for fresh installs)
-# Check if database is empty (no super admin)
-SUPER_ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('is_super_admin', true)->count();" 2>/dev/null | tail -1 || echo "0")
-
-if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
-    print_warning "[11/19] No super admin found - database might need seeding"
-    read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
-    echo
-    if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
-        print_info "Running database seeders..."
-        php artisan db:seed --force || print_warning "Seeding failed (continuing anyway)"
-        print_success "Database seeded"
+# Step 11: Seed Database
+print_info "[11/19] Database seeding..."
+read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
+echo
+if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
+    print_info "Running database seeders..."
+    if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
+        print_warning "Seeding failed (continuing anyway)"
     else
-        print_info "Skipping database seeders"
+        print_success "Database seeded successfully"
     fi
 else
-    print_info "[11/19] Database already initialized (skipping seeders)"
+    print_info "Skipping database seeders"
 fi
 
 # Step 12: Create Storage Symlink
