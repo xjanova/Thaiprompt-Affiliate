@@ -3,6 +3,7 @@
 use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\WalletController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -68,4 +69,12 @@ Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::post('/bulk-delete', [NotificationController::class, 'bulkDelete'])->name('bulk-delete');
     Route::post('/bulk-mark-as-read', [NotificationController::class, 'bulkMarkAsRead'])->name('bulk-mark-as-read');
     Route::delete('/delete-all-read', [NotificationController::class, 'deleteAllRead'])->name('delete-all-read');
+});
+
+// Email Preferences
+Route::prefix('email')->name('email.')->group(function () {
+    Route::get('/preferences', [EmailPreferenceController::class, 'index'])->name('preferences');
+    Route::put('/preferences', [EmailPreferenceController::class, 'update'])->name('preferences.update');
+    Route::post('/preferences/disable-all', [EmailPreferenceController::class, 'disableAll'])->name('preferences.disable-all');
+    Route::post('/preferences/enable-all', [EmailPreferenceController::class, 'enableAll'])->name('preferences.enable-all');
 });
