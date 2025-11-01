@@ -176,6 +176,8 @@
     @stack('styles')
 </head>
 <body class="font-sans antialiased bg-gray-100">
+    <!-- Page Loader -->
+    <x-page-loader />
     <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false, systemMenuOpen: false }">
         <!-- Overlay for mobile -->
         <div x-show="sidebarOpen"
@@ -257,7 +259,7 @@
                 </a>
 
                 <!-- Wallet Dropdown Menu -->
-                <div x-data="{ walletOpen: false }" @mouseenter="!sidebarCollapsed ? walletOpen = true : null" @mouseleave="walletOpen = false" class="relative mb-1">
+                <div x-data="{ walletOpen: false }" class="relative mb-1">
                     @php
                         $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*');
                         $pendingCount = \App\Models\WithdrawalRequest::pending()->count();
@@ -266,7 +268,7 @@
                     <!-- Main Wallet Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}"
-                       @click="sidebarCollapsed ? null : (walletOpen = !walletOpen)">
+                       @click="walletOpen = !walletOpen">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             กระเป๋าเงิน
@@ -367,11 +369,68 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ความปลอดภัย</span>
                 </a>
 
-                <!-- System Management Dropdown -->
-                <div x-data="{ systemMenuOpen: false }" @mouseenter="!sidebarCollapsed ? systemMenuOpen = true : null" @mouseleave="systemMenuOpen = false" class="relative mb-1">
+                <!-- Email Management Dropdown -->
+                <div x-data="{ emailMenuOpen: false }" class="relative mb-1">
                     @php
-                        $systemActive = request()->routeIs('admin.sliders.*') ||
-                                       request()->routeIs('admin.premium-page.*') ||
+                        $emailActive = request()->routeIs('admin.email.*');
+                    @endphp
+
+                    <!-- Main Email Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-600 hover:text-white rounded-lg transition-all duration-200 group {{ $emailActive ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : '' }}"
+                       @click="emailMenuOpen = !emailMenuOpen">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📧</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            จัดการอีเมล
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': emailMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="emailMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('admin.email.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.email.index') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>แดชบอร์ด</span>
+                        </a>
+
+                        <a href="{{ route('admin.email.logs') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.email.logs') || request()->routeIs('admin.email.logs.show') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📝</span>
+                            <span>ประวัติการส่ง</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.email.providers') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.email.providers*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">🔌</span>
+                            <span>Email Providers</span>
+                        </a>
+
+                        <a href="{{ route('admin.email.templates') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.email.templates*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📋</span>
+                            <span>Email Templates</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- System Management Dropdown -->
+                <div x-data="{ systemMenuOpen: false }" class="relative mb-1">
+                    @php
+                        $systemActive = request()->routeIs('admin.premium-page.*') ||
                                        request()->routeIs('admin.header-editor.*') ||
                                        request()->routeIs('admin.templates.*') ||
                                        request()->routeIs('admin.pages.*') ||
@@ -386,7 +445,7 @@
                     <!-- Main System Menu Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-teal-600 hover:text-white rounded-lg transition-all duration-200 group {{ $systemActive ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : '' }}"
-                       @click="sidebarCollapsed ? null : (systemMenuOpen = !systemMenuOpen)">
+                       @click="systemMenuOpen = !systemMenuOpen">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             จัดการระบบ
@@ -406,12 +465,6 @@
                          x-transition:leave-end="opacity-0"
                          class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
                          style="display: none;">
-
-                        <a href="{{ route('admin.sliders.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.sliders.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
-                            <span class="mr-2">🖼️</span>
-                            <span>สไลด์</span>
-                        </a>
 
                         <a href="{{ route('admin.premium-page.index') }}"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.premium-page.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">

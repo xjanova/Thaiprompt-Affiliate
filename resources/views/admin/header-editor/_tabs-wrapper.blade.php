@@ -1,10 +1,10 @@
 <div x-data="{ activeTab: 'settings' }" class="mb-6">
     <!-- Tabs Header -->
-    <div class="border-b border-gray-200">
+    <div class="border-b border-gray-200 dark:border-gray-700">
         <nav class="-mb-px flex space-x-8">
             <button @click="activeTab = 'settings'"
                     class="py-4 px-1 border-b-2 font-medium text-sm transition-colors"
-                    :class="activeTab === 'settings' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+                    :class="activeTab === 'settings' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'">
                 <span class="flex items-center gap-2">
                     <span class="text-xl">🎨</span>
                     <span>การตั้งค่า Header</span>
@@ -13,7 +13,7 @@
 
             <button @click="activeTab = 'template'"
                     class="py-4 px-1 border-b-2 font-medium text-sm transition-colors"
-                    :class="activeTab === 'template' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+                    :class="activeTab === 'template' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'">
                 <span class="flex items-center gap-2">
                     <span class="text-xl">📄</span>
                     <span>เทมเพลตหน้าแรก</span>
@@ -22,7 +22,7 @@
 
             <button @click="activeTab = 'menu'"
                     class="py-4 px-1 border-b-2 font-medium text-sm transition-colors"
-                    :class="activeTab === 'menu' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'">
+                    :class="activeTab === 'menu' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'">
                 <span class="flex items-center gap-2">
                     <span class="text-xl">🍔</span>
                     <span>จัดการเมนู</span>

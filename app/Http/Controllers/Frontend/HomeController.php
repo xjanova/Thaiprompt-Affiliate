@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Frontend;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Setting;
-use App\Models\Slider;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -105,9 +104,6 @@ class HomeController extends Controller
             'total_referrals' => $totalReferrals,
         ];
 
-        // Get active sliders
-        $sliders = Slider::active()->ordered()->get();
-
         // Get premium page sections configuration
         $premiumSections = [
             'hero' => Setting::get('premium_page_hero_enabled', true),
@@ -121,7 +117,6 @@ class HomeController extends Controller
 
         return view('frontend.home', compact(
             'stats',
-            'sliders',
             'premiumSections',
             'topAffiliates',
             'recentSuccesses'

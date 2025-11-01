@@ -107,17 +107,19 @@ class EmailController extends Controller
             'name' => 'required|string|unique:email_providers',
             'display_name' => 'required|string',
             'type' => 'required|in:smtp,api',
-            'is_active' => 'boolean',
-            'is_default' => 'boolean',
             'priority' => 'integer|min:0|max:100',
             'daily_limit' => 'nullable|integer|min:1',
             'hourly_limit' => 'nullable|integer|min:1',
             'configuration' => 'required|array',
         ]);
 
+        // Handle checkboxes
+        $validated['is_active'] = $request->has('is_active');
+        $validated['is_default'] = $request->has('is_default');
+
         $provider = EmailProvider::create($validated);
 
-        if ($validated['is_default'] ?? false) {
+        if ($validated['is_default']) {
             $provider->setAsDefault();
         }
 
@@ -141,17 +143,19 @@ class EmailController extends Controller
     {
         $validated = $request->validate([
             'display_name' => 'required|string',
-            'is_active' => 'boolean',
-            'is_default' => 'boolean',
             'priority' => 'integer|min:0|max:100',
             'daily_limit' => 'nullable|integer|min:1',
             'hourly_limit' => 'nullable|integer|min:1',
             'configuration' => 'required|array',
         ]);
 
+        // Handle checkboxes
+        $validated['is_active'] = $request->has('is_active');
+        $validated['is_default'] = $request->has('is_default');
+
         $provider->update($validated);
 
-        if ($validated['is_default'] ?? false) {
+        if ($validated['is_default']) {
             $provider->setAsDefault();
         }
 
@@ -227,11 +231,19 @@ class EmailController extends Controller
             'body_html' => 'required|string',
             'body_text' => 'nullable|string',
             'category' => 'required|in:system,marketing,transactional',
-            'variables' => 'nullable|array',
+            'variables' => 'nullable|string',
             'is_active' => 'boolean',
             'language' => 'required|string|max:10',
             'description' => 'nullable|string',
         ]);
+
+        // Convert comma-separated string to array
+        if (!empty($validated['variables'])) {
+            $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
+        }
+
+        // Set is_active default
+        $validated['is_active'] = $request->has('is_active');
 
         EmailTemplate::create($validated);
 
@@ -258,10 +270,18 @@ class EmailController extends Controller
             'body_html' => 'required|string',
             'body_text' => 'nullable|string',
             'category' => 'required|in:system,marketing,transactional',
-            'variables' => 'nullable|array',
+            'variables' => 'nullable|string',
             'is_active' => 'boolean',
             'description' => 'nullable|string',
         ]);
+
+        // Convert comma-separated string to array
+        if (!empty($validated['variables'])) {
+            $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
+        }
+
+        // Set is_active
+        $validated['is_active'] = $request->has('is_active');
 
         $template->update($validated);
 

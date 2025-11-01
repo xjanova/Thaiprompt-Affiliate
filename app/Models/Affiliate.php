@@ -22,6 +22,10 @@ class Affiliate extends Model
         'total_referrals',
         'total_earnings',
         'status',
+        'rank_id',
+        'rank_points',
+        'monthly_sales',
+        'team_sales',
     ];
 
     /**
@@ -33,6 +37,8 @@ class Affiliate extends Model
     {
         return [
             'total_earnings' => 'decimal:2',
+            'monthly_sales' => 'decimal:2',
+            'team_sales' => 'decimal:2',
         ];
     }
 
@@ -66,6 +72,14 @@ class Affiliate extends Model
     public function commissions()
     {
         return $this->hasMany(Commission::class);
+    }
+
+    /**
+     * Get the rank
+     */
+    public function rank()
+    {
+        return $this->belongsTo(Rank::class);
     }
 
     /**

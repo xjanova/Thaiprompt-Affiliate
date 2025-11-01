@@ -6,7 +6,6 @@ use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SecurityController;
-use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PremiumPageController;
 use App\Http\Controllers\Admin\SeoController;
@@ -20,6 +19,7 @@ use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\HeaderEditorController;
 use App\Http\Controllers\Admin\VisualBuilderController;
 use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\Admin\RankController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\MembershipRetentionController as AdminRetentionController;
 use Illuminate\Support\Facades\Route;
@@ -81,10 +81,6 @@ Route::post('header-editor/menu-items', [HeaderEditorController::class, 'storeMe
 Route::put('header-editor/menu-items/{id}', [HeaderEditorController::class, 'updateMenuItem'])->name('header-editor.menu-items.update');
 Route::delete('header-editor/menu-items/{id}', [HeaderEditorController::class, 'deleteMenuItem'])->name('header-editor.menu-items.delete');
 Route::post('header-editor/menu-items/reorder', [HeaderEditorController::class, 'reorderMenuItems'])->name('header-editor.menu-items.reorder');
-
-// Slider Management
-Route::resource('sliders', SliderController::class);
-Route::post('sliders/reorder', [SliderController::class, 'reorder'])->name('sliders.reorder');
 
 // Pages Management (CMS)
 Route::resource('pages', PageController::class);
@@ -220,6 +216,21 @@ Route::prefix('notification-templates')->name('notification-templates.')->group(
     Route::delete('/{template}', [NotificationTemplateController::class, 'destroy'])->name('destroy');
     Route::post('/{template}/toggle', [NotificationTemplateController::class, 'toggleStatus'])->name('toggle');
     Route::get('/{template}/data', [NotificationTemplateController::class, 'getTemplate'])->name('data');
+});
+
+// Rank Management
+Route::prefix('ranks')->name('ranks.')->group(function () {
+    Route::get('/', [RankController::class, 'index'])->name('index');
+    Route::get('/create', [RankController::class, 'create'])->name('create');
+    Route::post('/', [RankController::class, 'store'])->name('store');
+    Route::get('/{rank}/edit', [RankController::class, 'edit'])->name('edit');
+    Route::put('/{rank}', [RankController::class, 'update'])->name('update');
+    Route::delete('/{rank}', [RankController::class, 'destroy'])->name('destroy');
+
+    // Promotions Management
+    Route::get('/promotions', [RankController::class, 'promotions'])->name('promotions.index');
+    Route::post('/promotions/{promotion}/approve', [RankController::class, 'approvePromotion'])->name('promotions.approve');
+    Route::post('/promotions/{promotion}/reject', [RankController::class, 'rejectPromotion'])->name('promotions.reject');
 });
 
 // Email Management (Email Delivery System)
