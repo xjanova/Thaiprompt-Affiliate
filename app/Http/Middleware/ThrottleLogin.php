@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SecurityLog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -81,6 +82,14 @@ class ThrottleLogin
                 'lockout_minutes' => $lockoutMinutes,
             ]);
 
+            // Log to security logs
+            SecurityLog::logRateLimitExceeded(
+                ipAddress: $ip,
+                endpoint: '/login',
+                email: $email,
+                userAgent: $request->userAgent()
+            );
+
             return $this->buildLockoutResponse($lockoutSeconds);
         }
 
@@ -106,12 +115,29 @@ class ThrottleLogin
                     'attempts' => $attempts,
                     'remaining_attempts' => $remainingAttempts,
                 ]);
+
+                // Log to security logs
+                SecurityLog::logFailedLogin(
+                    ipAddress: $ip,
+                    email: $email,
+                    reason: "Failed login attempt ({$attempts}/{$maxAttempts})",
+                    userAgent: $request->userAgent()
+                );
             }
         } else if ($response->status() === 200 || $response->status() === 302) {
             // Login successful, clear attempts
             Cache::forget($ipKey);
             if ($emailKey) {
                 Cache::forget($emailKey);
+            }
+
+            // Log successful login
+            if ($request->user()) {
+                SecurityLog::logSuccessfulLogin(
+                    ipAddress: $ip,
+                    userId: $request->user()->id,
+                    userAgent: $request->userAgent()
+                );
             }
         }
 

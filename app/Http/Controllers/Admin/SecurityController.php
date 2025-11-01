@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Models\BlockedIp;
+use App\Models\SecurityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -16,7 +18,33 @@ class SecurityController extends Controller
     {
         $settings = Setting::whereIn('group', ['security'])->get()->groupBy('group');
 
-        return view('admin.security.index', compact('settings'));
+        // Get blocked IPs
+        $blockedIps = BlockedIp::with('blocker')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        // Get recent security logs
+        $securityLogs = SecurityLog::with('user')
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        // Get statistics
+        $stats = [
+            'total_blocked_ips' => BlockedIp::blacklist()->active()->count(),
+            'total_whitelisted_ips' => BlockedIp::whitelist()->active()->count(),
+            'failed_logins_today' => SecurityLog::byType('login_failed')
+                ->whereDate('created_at', today())
+                ->count(),
+            'rate_limit_hits_today' => SecurityLog::byType('rate_limit_exceeded')
+                ->whereDate('created_at', today())
+                ->count(),
+            'turnstile_failures_today' => SecurityLog::byType('turnstile_failed')
+                ->whereDate('created_at', today())
+                ->count(),
+        ];
+
+        return view('admin.security.index', compact('settings', 'blockedIps', 'securityLogs', 'stats'));
     }
 
     /**
