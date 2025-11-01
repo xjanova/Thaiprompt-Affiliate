@@ -370,16 +370,16 @@
 
                 <!-- Version Info (Mobile) -->
                 <div class="mt-4 px-6 pb-4">
-                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-3 border border-indigo-100">
+                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs text-gray-600">เวอร์ชั่น</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-300">เวอร์ชั่น</span>
                             <span class="text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 px-2 py-0.5 rounded-full">
                                 {{ config('version.current') }}
                             </span>
                         </div>
-                        <div class="text-[10px] text-gray-600">
+                        <div class="text-[10px] text-gray-600 dark:text-gray-400">
                             <p>พัฒนาโดย</p>
-                            <p class="font-semibold text-gray-800">Xman enterprise.co.ltd.</p>
+                            <p class="font-semibold text-gray-800 dark:text-gray-200">Xman enterprise.co.ltd.</p>
                         </div>
                     </div>
                 </div>
@@ -491,16 +491,16 @@
 
                 <!-- Version Info -->
                 <div class="mt-4 px-6">
-                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg p-3 border border-indigo-100">
+                    <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-lg p-3 border border-indigo-100 dark:border-indigo-800">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs text-gray-600">เวอร์ชั่น</span>
+                            <span class="text-xs text-gray-600 dark:text-gray-300">เวอร์ชั่น</span>
                             <span class="text-xs font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 px-2 py-0.5 rounded-full">
                                 {{ config('version.current') }}
                             </span>
                         </div>
-                        <div class="text-[10px] text-gray-600">
+                        <div class="text-[10px] text-gray-600 dark:text-gray-400">
                             <p>พัฒนาโดย</p>
-                            <p class="font-semibold text-gray-800">Xman enterprise.co.ltd.</p>
+                            <p class="font-semibold text-gray-800 dark:text-gray-200">Xman enterprise.co.ltd.</p>
                         </div>
                     </div>
                 </div>
