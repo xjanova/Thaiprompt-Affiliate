@@ -29,7 +29,6 @@ class SettingsController extends Controller
             'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'multi_level_enabled' => ['nullable', 'boolean'],
             'default_sponsor_referral_code' => ['nullable', 'string', 'exists:affiliates,referral_code'],
-            'home_custom_content' => ['nullable', 'string'],
             // API Settings
             'google_translate_enabled' => ['nullable', 'boolean'],
             'google_translate_api_key' => ['nullable', 'string'],

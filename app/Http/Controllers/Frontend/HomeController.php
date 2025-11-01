@@ -104,8 +104,20 @@ class HomeController extends Controller
             'total_referrals' => $totalReferrals,
         ];
 
+        // Get premium page sections configuration
+        $premiumSections = [
+            'hero' => Setting::get('premium_page_hero_enabled', true),
+            'statistics' => Setting::get('premium_page_statistics_enabled', true),
+            'features' => Setting::get('premium_page_features_enabled', true),
+            'leaderboard' => Setting::get('premium_page_leaderboard_enabled', true),
+            'how_it_works' => Setting::get('premium_page_how_it_works_enabled', true),
+            'faq' => Setting::get('premium_page_faq_enabled', true),
+            'cta' => Setting::get('premium_page_cta_enabled', true),
+        ];
+
         return view('frontend.home', compact(
             'stats',
+            'premiumSections',
             'topAffiliates',
             'recentSuccesses'
         ));
