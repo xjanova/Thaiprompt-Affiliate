@@ -23,6 +23,19 @@ class VerifyCloudfareTurnstile
             return $next($request);
         }
 
+        // Check if Site Key and Secret Key are configured
+        $siteKey = config('turnstile.site_key');
+        $secretKey = config('turnstile.secret_key');
+
+        if (empty($siteKey) || empty($secretKey)) {
+            // Turnstile not configured yet, bypass verification
+            Log::info('Cloudflare Turnstile bypassed: Not configured yet', [
+                'ip' => $request->ip(),
+                'point' => $point,
+            ]);
+            return $next($request);
+        }
+
         // Check if this specific point is enabled
         if ($point && !config("turnstile.points.{$point}", false)) {
             return $next($request);

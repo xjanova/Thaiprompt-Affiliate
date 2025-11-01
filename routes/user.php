@@ -13,7 +13,9 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
-Route::post('/profile/update-password', [DashboardController::class, 'updatePassword'])->name('profile.update-password');
+Route::post('/profile/update-password', [DashboardController::class, 'updatePassword'])
+    ->middleware('turnstile:password_change')
+    ->name('profile.update-password');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
 Route::get('/referrals', [DashboardController::class, 'referrals'])->name('referrals');
 Route::get('/organization', [DashboardController::class, 'organizationChart'])->name('organization');
@@ -32,7 +34,9 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
 
     // Withdrawal Routes
     Route::get('/withdraw', [WalletController::class, 'withdraw'])->name('withdraw');
-    Route::post('/withdraw', [WalletController::class, 'submitWithdrawal'])->name('withdraw.submit');
+    Route::post('/withdraw', [WalletController::class, 'submitWithdrawal'])
+        ->middleware('turnstile:withdrawal_request')
+        ->name('withdraw.submit');
     Route::get('/withdrawals', [WalletController::class, 'withdrawals'])->name('withdrawals');
     Route::delete('/withdrawal/{id}/cancel', [WalletController::class, 'cancelWithdrawal'])->name('withdrawal.cancel');
 

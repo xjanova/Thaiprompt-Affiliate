@@ -2,6 +2,12 @@
 
 @section('title', 'ถอนเงิน')
 
+@push('scripts')
+@if(config('turnstile.enabled') && config('turnstile.points.withdrawal_request'))
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endif
+@endpush
+
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
@@ -108,6 +114,16 @@
                         <li>• หากพบปัญหา กรุณาติดต่อฝ่ายสนับสนุน</li>
                     </ul>
                 </div>
+
+                @if(config('turnstile.enabled') && config('turnstile.points.withdrawal_request'))
+                <div class="flex justify-center">
+                    <div class="cf-turnstile"
+                         data-sitekey="{{ config('turnstile.site_key') }}"
+                         data-theme="{{ config('turnstile.theme') }}"
+                         data-size="{{ config('turnstile.size') }}">
+                    </div>
+                </div>
+                @endif
 
                 <div class="flex gap-3">
                     <a href="{{ route('user.wallet.index') }}"
