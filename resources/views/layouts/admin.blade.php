@@ -350,6 +350,13 @@
                 <!-- Divider -->
                 <div class="border-t border-gray-700/50 my-3"></div>
 
+                <!-- Security -->
+                <a href="{{ route('admin.security.index') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.security.*') ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🛡️</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ความปลอดภัย</span>
+                </a>
+
                 <!-- System Management Dropdown -->
                 <div x-data="{ systemMenuOpen: false }" @mouseenter="!sidebarCollapsed ? systemMenuOpen = true : null" @mouseleave="systemMenuOpen = false" class="relative mb-1">
                     @php
