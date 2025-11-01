@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\HeaderEditorController;
 use App\Http\Controllers\Admin\VisualBuilderController;
 use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\Admin\RankController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -218,4 +219,19 @@ Route::prefix('notification-templates')->name('notification-templates.')->group(
     Route::delete('/{template}', [NotificationTemplateController::class, 'destroy'])->name('destroy');
     Route::post('/{template}/toggle', [NotificationTemplateController::class, 'toggleStatus'])->name('toggle');
     Route::get('/{template}/data', [NotificationTemplateController::class, 'getTemplate'])->name('data');
+});
+
+// Rank Management
+Route::prefix('ranks')->name('ranks.')->group(function () {
+    Route::get('/', [RankController::class, 'index'])->name('index');
+    Route::get('/create', [RankController::class, 'create'])->name('create');
+    Route::post('/', [RankController::class, 'store'])->name('store');
+    Route::get('/{rank}/edit', [RankController::class, 'edit'])->name('edit');
+    Route::put('/{rank}', [RankController::class, 'update'])->name('update');
+    Route::delete('/{rank}', [RankController::class, 'destroy'])->name('destroy');
+
+    // Promotions Management
+    Route::get('/promotions', [RankController::class, 'promotions'])->name('promotions.index');
+    Route::post('/promotions/{promotion}/approve', [RankController::class, 'approvePromotion'])->name('promotions.approve');
+    Route::post('/promotions/{promotion}/reject', [RankController::class, 'rejectPromotion'])->name('promotions.reject');
 });

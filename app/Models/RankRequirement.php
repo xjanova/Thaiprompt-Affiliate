@@ -1,0 +1,136 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class RankRequirement extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'rank_id',
+        'requirement_type',
+        'name',
+        'name_th',
+        'description',
+        'description_th',
+        'target_value',
+        'operator',
+        'unit',
+        'is_required',
+        'weight',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'target_value' => 'decimal:2',
+        'is_required' => 'boolean',
+        'is_active' => 'boolean',
+        'weight' => 'integer',
+    ];
+
+    /**
+     * Get the rank that owns this requirement
+     */
+    public function rank(): BelongsTo
+    {
+        return $this->belongsTo(Rank::class);
+    }
+
+    /**
+     * Get display name based on current locale
+     */
+    public function getDisplayNameAttribute(): string
+    {
+        $locale = app()->getLocale();
+        return $locale === 'th' && $this->name_th ? $this->name_th : $this->name;
+    }
+
+    /**
+     * Get display description based on current locale
+     */
+    public function getDisplayDescriptionAttribute(): ?string
+    {
+        $locale = app()->getLocale();
+        return $locale === 'th' && $this->description_th ? $this->description_th : $this->description;
+    }
+
+    /**
+     * Get user's current value for this requirement
+     */
+    public function getUserCurrentValue(User $user): float
+    {
+        $affiliate = $user->affiliate;
+        if (!$affiliate) {
+            return 0;
+        }
+
+        return match($this->requirement_type) {
+            'points' => $user->rank_points ?? 0,
+            'referrals' => $affiliate->total_referrals ?? 0,
+            'sales' => $affiliate->total_earnings ?? 0,
+            'active_referrals' => $this->getActiveReferralsCount($affiliate),
+            'team_sales' => $affiliate->team_sales ?? 0,
+            'consecutive_months' => $this->getConsecutiveMonths($affiliate),
+            default => 0,
+        };
+    }
+
+    /**
+     * Check if user meets this requirement
+     */
+    public function checkUserMeetsRequirement(User $user): bool
+    {
+        $currentValue = $this->getUserCurrentValue($user);
+        $targetValue = (float) $this->target_value;
+
+        return match($this->operator) {
+            '>=' => $currentValue >= $targetValue,
+            '>' => $currentValue > $targetValue,
+            '=' => $currentValue == $targetValue,
+            '<=' => $currentValue <= $targetValue,
+            '<' => $currentValue < $targetValue,
+            default => false,
+        };
+    }
+
+    /**
+     * Get active referrals count
+     */
+    private function getActiveReferralsCount(Affiliate $affiliate): int
+    {
+        return Affiliate::where('parent_id', $affiliate->id)
+            ->where('status', 'active')
+            ->count();
+    }
+
+    /**
+     * Get consecutive months count
+     */
+    private function getConsecutiveMonths(Affiliate $affiliate): int
+    {
+        // This would need more complex logic based on your business rules
+        // For now, returning a simple calculation
+        $monthsSinceCreation = now()->diffInMonths($affiliate->created_at);
+        return $monthsSinceCreation;
+    }
+
+    /**
+     * Get progress percentage for this requirement
+     */
+    public function getProgressPercentage(User $user): float
+    {
+        $currentValue = $this->getUserCurrentValue($user);
+        $targetValue = (float) $this->target_value;
+
+        if ($targetValue <= 0) {
+            return 0;
+        }
+
+        $percentage = ($currentValue / $targetValue) * 100;
+        return min(100, max(0, $percentage));
+    }
+}
