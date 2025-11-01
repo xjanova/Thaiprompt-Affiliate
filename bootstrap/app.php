@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'super_admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
             'role' => \App\Http\Middleware\CheckRole::class,
             'turnstile' => \App\Http\Middleware\VerifyCloudfareTurnstile::class,
+            'throttle.login' => \App\Http\Middleware\ThrottleLogin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
