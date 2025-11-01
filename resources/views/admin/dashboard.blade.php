@@ -17,7 +17,7 @@
     <!-- Stats Cards with Growth Indicators -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Users -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300">
+        <a href="{{ route('admin.users.index') }}" class="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -32,11 +32,12 @@
                 </div>
                 <p class="text-white text-opacity-80 text-sm mb-1">ผู้ใช้ทั้งหมด</p>
                 <p class="text-4xl font-bold">{{ number_format($stats['total_users']) }}</p>
+                <p class="text-xs text-white text-opacity-70 mt-2">คลิกเพื่อดูรายละเอียด</p>
             </div>
-        </div>
+        </a>
 
         <!-- Total Affiliates -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300">
+        <a href="{{ route('admin.affiliates.index') }}" class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -49,11 +50,12 @@
                 </div>
                 <p class="text-white text-opacity-80 text-sm mb-1">Affiliates ทั้งหมด</p>
                 <p class="text-4xl font-bold">{{ number_format($stats['total_affiliates']) }}</p>
+                <p class="text-xs text-white text-opacity-70 mt-2">คลิกเพื่อดูรายละเอียด</p>
             </div>
-        </div>
+        </a>
 
         <!-- Total Revenue -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300">
+        <a href="{{ route('admin.commissions.index', ['status' => 'paid']) }}" class="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -68,11 +70,12 @@
                 </div>
                 <p class="text-white text-opacity-80 text-sm mb-1">รายได้ทั้งหมด</p>
                 <p class="text-4xl font-bold">฿{{ number_format($stats['paid_commissions'], 0) }}</p>
+                <p class="text-xs text-white text-opacity-70 mt-2">คลิกเพื่อดูรายละเอียด</p>
             </div>
-        </div>
+        </a>
 
         <!-- Pending Commissions -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300">
+        <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -85,8 +88,9 @@
                 </div>
                 <p class="text-white text-opacity-80 text-sm mb-1">รอดำเนินการ</p>
                 <p class="text-4xl font-bold">{{ number_format($stats['pending_commissions']) }}</p>
+                <p class="text-xs text-white text-opacity-70 mt-2">คลิกเพื่อดูรายละเอียด</p>
             </div>
-        </div>
+        </a>
     </div>
 
     <!-- Charts Row -->
