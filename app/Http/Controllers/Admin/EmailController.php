@@ -227,11 +227,19 @@ class EmailController extends Controller
             'body_html' => 'required|string',
             'body_text' => 'nullable|string',
             'category' => 'required|in:system,marketing,transactional',
-            'variables' => 'nullable|array',
+            'variables' => 'nullable|string',
             'is_active' => 'boolean',
             'language' => 'required|string|max:10',
             'description' => 'nullable|string',
         ]);
+
+        // Convert comma-separated string to array
+        if (!empty($validated['variables'])) {
+            $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
+        }
+
+        // Set is_active default
+        $validated['is_active'] = $request->has('is_active');
 
         EmailTemplate::create($validated);
 
@@ -258,10 +266,18 @@ class EmailController extends Controller
             'body_html' => 'required|string',
             'body_text' => 'nullable|string',
             'category' => 'required|in:system,marketing,transactional',
-            'variables' => 'nullable|array',
+            'variables' => 'nullable|string',
             'is_active' => 'boolean',
             'description' => 'nullable|string',
         ]);
+
+        // Convert comma-separated string to array
+        if (!empty($validated['variables'])) {
+            $validated['variables'] = array_map('trim', explode(',', $validated['variables']));
+        }
+
+        // Set is_active
+        $validated['is_active'] = $request->has('is_active');
 
         $template->update($validated);
 
