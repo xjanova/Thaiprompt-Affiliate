@@ -222,4 +222,67 @@ class DashboardController extends Controller
 
         return view('user.referrals', compact('referrals', 'affiliate'));
     }
+
+    /**
+     * Display user organization chart (downline only)
+     */
+    public function organizationChart()
+    {
+        $user = Auth::user();
+        $affiliate = $user->affiliate;
+
+        if (!$affiliate) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'คุณยังไม่มีสิทธิ์ในระบบแอฟฟิลิเอท');
+        }
+
+        // Load children recursively
+        $affiliate->load(['children' => function ($query) {
+            $query->with(['user', 'children'])->orderBy('created_at', 'desc');
+        }]);
+
+        // Calculate total network size
+        $totalNetwork = $this->countTotalNetwork($affiliate);
+
+        // Calculate total network earnings
+        $totalNetworkEarnings = $this->sumNetworkEarnings($affiliate);
+
+        // Get depth of organization
+        $maxDepth = $this->getMaxLevel($affiliate);
+
+        return view('user.organization', compact(
+            'affiliate',
+            'totalNetwork',
+            'totalNetworkEarnings',
+            'maxDepth'
+        ));
+    }
+
+    /**
+     * Count total network size (all downlines)
+     */
+    private function countTotalNetwork($affiliate)
+    {
+        $count = $affiliate->children->count();
+
+        foreach ($affiliate->children as $child) {
+            $count += $this->countTotalNetwork($child);
+        }
+
+        return $count;
+    }
+
+    /**
+     * Sum total network earnings (all downlines)
+     */
+    private function sumNetworkEarnings($affiliate)
+    {
+        $sum = $affiliate->total_earnings;
+
+        foreach ($affiliate->children as $child) {
+            $sum += $this->sumNetworkEarnings($child);
+        }
+
+        return $sum;
+    }
 }

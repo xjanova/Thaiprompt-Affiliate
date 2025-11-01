@@ -350,6 +350,11 @@
                     <span>ผู้แนะนำ</span>
                 </a>
 
+                <a href="{{ route('user.organization') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.organization') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">🌳</span>
+                    <span>ผังสายงาน</span>
+                </a>
+
                 <div class="border-t mt-4 pt-4">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -464,6 +469,11 @@
                 <a href="{{ route('user.referrals') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.referrals') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
                     <span class="text-xl mr-3">👥</span>
                     <span>ผู้แนะนำ</span>
+                </a>
+
+                <a href="{{ route('user.organization') }}" class="flex items-center px-6 py-3 text-gray-700 hover:bg-gray-100 {{ request()->routeIs('user.organization') ? 'bg-gray-100 border-l-4 border-indigo-600' : '' }}">
+                    <span class="text-xl mr-3">🌳</span>
+                    <span>ผังสายงาน</span>
                 </a>
 
                 <div class="border-t mt-4 pt-4">
