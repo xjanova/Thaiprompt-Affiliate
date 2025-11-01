@@ -130,21 +130,15 @@ $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
             <!-- Logo Section -->
             <div class="shrink-0 flex items-center">
                 <a href="{{ route('home') }}" class="flex items-center">
-                    @if($logo)
-                        <img src="{{ asset($logo) }}"
-                             alt="{{ $appName }}"
-                             class="object-contain transition-all"
-                             :style="{
-                                 height: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $headerLogoHeightScrolled }}px' : '{{ $headerLogoHeight }}px')
-                             }">
-                    @else
-                        <span class="text-2xl font-bold transition-all"
-                              :style="{
-                                  fontSize: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $headerLogoHeightScrolled / 2.5 }}px' : '{{ $headerLogoHeight / 2.5 }}px')
-                              }">
-                            {{ $appName }}
-                        </span>
-                    @endif
+                    @php
+                        $logoHeight = 'h-10';
+                        if ($headerLogoHeight <= 24) $logoHeight = 'h-6';
+                        elseif ($headerLogoHeight <= 32) $logoHeight = 'h-8';
+                        elseif ($headerLogoHeight <= 40) $logoHeight = 'h-10';
+                        elseif ($headerLogoHeight <= 48) $logoHeight = 'h-12';
+                        else $logoHeight = 'h-16';
+                    @endphp
+                    <x-logo :height="$logoHeight" :shrinkOnScroll="$headerShrinkOnScroll" />
                 </a>
             </div>
 

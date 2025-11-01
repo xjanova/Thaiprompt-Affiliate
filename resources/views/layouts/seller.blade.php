@@ -216,14 +216,7 @@
                         </svg>
                     </button>
 
-                    @php
-                        $logo = \App\Models\Setting::get('logo');
-                    @endphp
-                    @if($logo)
-                        <img src="{{ asset($logo) }}" alt="Logo" class="h-8 object-contain">
-                    @else
-                        <span class="text-xl font-bold">{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}</span>
-                    @endif
+                    <x-logo height="h-8" />
                 </div>
 
                 <!-- Right Actions -->
