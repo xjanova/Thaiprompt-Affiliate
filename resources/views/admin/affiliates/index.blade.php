@@ -4,6 +4,21 @@
 
 @section('content')
 <div class="space-y-6">
+    <!-- Header Section -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold mb-1">👥 จัดการ Affiliates</h1>
+                <p class="text-indigo-100">ระบบจัดการเครือข่ายและคอมมิชชั่น</p>
+            </div>
+            <a href="{{ route('admin.affiliates.tree') }}"
+               class="flex items-center gap-2 px-6 py-3 bg-white/20 hover:bg-white/30 rounded-lg transition-all hover:scale-105 shadow-md">
+                <span class="text-2xl">🌳</span>
+                <span class="font-medium">ดู Tree ทั้งหมด</span>
+            </a>
+        </div>
+    </div>
+
     <!-- Filter Section -->
     <div class="bg-white rounded-lg shadow-md p-4">
         <form method="GET" action="{{ route('admin.affiliates.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">

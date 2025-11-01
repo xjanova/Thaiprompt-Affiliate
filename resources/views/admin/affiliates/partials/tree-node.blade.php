@@ -17,7 +17,7 @@
 
     <!-- Node Card -->
     <div class="affiliate-node relative cursor-move transition-all duration-200 hover:scale-102 {{ $colorScheme['bg'] }} border-2 {{ $colorScheme['border'] }} rounded-xl p-4 shadow-md hover:shadow-lg"
-         data-id="{{ $node->id }}"
+         data-affiliate-id="{{ $node->id }}"
          data-level="{{ $node->level }}">
 
         <!-- Drag Handle -->

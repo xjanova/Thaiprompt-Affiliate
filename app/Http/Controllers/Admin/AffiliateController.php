@@ -58,8 +58,8 @@ class AffiliateController extends Controller
      */
     public function treeView()
     {
-        // Get root affiliates (no parent)
-        $affiliates = Affiliate::with(['user', 'children.user', 'children.children'])
+        // Get root affiliates (no parent) with recursive children loading
+        $affiliates = Affiliate::with($this->getRecursiveRelations())
             ->whereNull('parent_id')
             ->get();
 
@@ -67,11 +67,28 @@ class AffiliateController extends Controller
     }
 
     /**
+     * Get recursive relations for tree loading
+     */
+    private function getRecursiveRelations($depth = 10)
+    {
+        $relations = ['user'];
+        $prefix = 'children';
+
+        for ($i = 0; $i < $depth; $i++) {
+            $relations[] = $prefix . '.user';
+            $prefix .= '.children';
+        }
+
+        return $relations;
+    }
+
+    /**
      * Show affiliate tree
      */
     public function tree(Affiliate $affiliate)
     {
-        $affiliate->load(['user', 'children.user', 'children.children']);
+        // Load affiliate with recursive children
+        $affiliate->load($this->getRecursiveRelations());
         return view('admin.affiliates.tree', compact('affiliate'));
     }
 

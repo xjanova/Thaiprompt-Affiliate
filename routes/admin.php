@@ -36,10 +36,11 @@ Route::put('users/{user}/permissions', [UserController::class, 'updatePermission
 Route::get('users/{user}/dashboard', [UserController::class, 'viewDashboard'])->name('users.dashboard');
 
 // Affiliate Management
-Route::resource('affiliates', AffiliateController::class);
+// Note: Specific routes must be defined BEFORE Route::resource to avoid conflicts
 Route::get('affiliates/tree-view', [AffiliateController::class, 'treeView'])->name('affiliates.tree');
 Route::get('affiliates/{affiliate}/tree', [AffiliateController::class, 'tree'])->name('affiliates.tree.single');
 Route::post('affiliates/{affiliate}/move', [AffiliateController::class, 'move'])->name('affiliates.move');
+Route::resource('affiliates', AffiliateController::class);
 
 // Commission Management
 Route::resource('commissions', CommissionController::class);

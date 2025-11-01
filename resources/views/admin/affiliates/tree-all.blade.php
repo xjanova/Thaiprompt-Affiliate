@@ -18,22 +18,53 @@
     </div>
 
     <!-- Stats -->
+    @php
+        $totalAffiliates = App\Models\Affiliate::count();
+        $activeAffiliates = App\Models\Affiliate::where('status', 'active')->count();
+        $totalEarnings = App\Models\Affiliate::sum('total_earnings');
+        $totalReferrals = App\Models\Affiliate::sum('total_referrals');
+    @endphp
+
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl shadow-md p-4">
-            <div class="text-sm text-gray-600">Root Affiliates</div>
-            <div class="text-2xl font-bold text-indigo-600">{{ $affiliates->count() }}</div>
+        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-indigo-500 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-gray-600 mb-1">Root Affiliates</div>
+                    <div class="text-3xl font-bold text-indigo-600">{{ $affiliates->count() }}</div>
+                </div>
+                <div class="text-4xl">🌱</div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-md p-4">
-            <div class="text-sm text-gray-600">เครือข่ายทั้งหมด</div>
-            <div class="text-2xl font-bold text-purple-600">{{ App\Models\Affiliate::count() }}</div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-gray-600 mb-1">เครือข่ายทั้งหมด</div>
+                    <div class="text-3xl font-bold text-purple-600">{{ number_format($totalAffiliates) }}</div>
+                    <div class="text-xs text-green-600 mt-1">{{ $activeAffiliates }} ใช้งาน</div>
+                </div>
+                <div class="text-4xl">👥</div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-md p-4">
-            <div class="text-sm text-gray-600">รายได้รวม</div>
-            <div class="text-2xl font-bold text-green-600">฿{{ number_format(App\Models\Affiliate::sum('total_earnings'), 0) }}</div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-gray-600 mb-1">รายได้รวม</div>
+                    <div class="text-3xl font-bold text-green-600">฿{{ number_format($totalEarnings, 2) }}</div>
+                </div>
+                <div class="text-4xl">💰</div>
+            </div>
         </div>
-        <div class="bg-white rounded-xl shadow-md p-4">
-            <div class="text-sm text-gray-600">ใช้งานอยู่</div>
-            <div class="text-2xl font-bold text-blue-600">{{ App\Models\Affiliate::where('status', 'active')->count() }}</div>
+
+        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-sm font-medium text-gray-600 mb-1">Referrals ทั้งหมด</div>
+                    <div class="text-3xl font-bold text-blue-600">{{ number_format($totalReferrals) }}</div>
+                </div>
+                <div class="text-4xl">🌐</div>
+            </div>
         </div>
     </div>
 
@@ -89,45 +120,53 @@
 // Drag and Drop functionality
 document.addEventListener('DOMContentLoaded', function() {
     const affiliateNodes = document.querySelectorAll('[data-affiliate-id]');
-    
+
     affiliateNodes.forEach(node => {
         node.draggable = true;
-        
+
         node.addEventListener('dragstart', function(e) {
             e.dataTransfer.setData('text/plain', this.dataset.affiliateId);
-            this.classList.add('opacity-50');
+            this.classList.add('opacity-50', 'scale-95');
         });
-        
+
         node.addEventListener('dragend', function(e) {
-            this.classList.remove('opacity-50');
+            this.classList.remove('opacity-50', 'scale-95');
         });
-        
+
         node.addEventListener('dragover', function(e) {
             e.preventDefault();
-            this.classList.add('ring-4', 'ring-green-400');
+            this.classList.add('ring-4', 'ring-green-400', 'scale-105');
         });
-        
+
         node.addEventListener('dragleave', function(e) {
-            this.classList.remove('ring-4', 'ring-green-400');
+            this.classList.remove('ring-4', 'ring-green-400', 'scale-105');
         });
-        
+
         node.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.classList.remove('ring-4', 'ring-green-400');
-            
+            this.classList.remove('ring-4', 'ring-green-400', 'scale-105');
+
             const draggedId = e.dataTransfer.getData('text/plain');
             const targetId = this.dataset.affiliateId;
-            
+
             if (draggedId !== targetId) {
-                if (confirm('คุณต้องการย้าย Affiliate นี้หรือไม่?')) {
+                if (confirm('คุณต้องการย้าย Affiliate นี้ให้เป็นลูกสายของ ID: ' + targetId + ' หรือไม่?')) {
                     moveAffiliate(draggedId, targetId);
                 }
             }
         });
     });
+
+    console.log('✅ Tree view loaded successfully! Found ' + affiliateNodes.length + ' affiliate nodes');
 });
 
 function moveAffiliate(affiliateId, newParentId) {
+    // Show loading overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    overlay.innerHTML = '<div class="bg-white rounded-lg p-6 shadow-xl"><div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div><p class="mt-4 text-gray-700">กำลังย้ายสายงาน...</p></div>';
+    document.body.appendChild(overlay);
+
     fetch(`/admin/affiliates/${affiliateId}/move`, {
         method: 'POST',
         headers: {
@@ -140,17 +179,50 @@ function moveAffiliate(affiliateId, newParentId) {
     })
     .then(response => response.json())
     .then(data => {
+        overlay.remove();
         if (data.success) {
-            alert(data.message);
-            location.reload();
+            showNotification('success', data.message);
+            setTimeout(() => location.reload(), 1000);
         } else {
-            alert(data.message);
+            showNotification('error', data.message);
         }
     })
     .catch(error => {
-        alert('เกิดข้อผิดพลาด: ' + error.message);
+        overlay.remove();
+        showNotification('error', 'เกิดข้อผิดพลาด: ' + error.message);
     });
 }
+
+function showNotification(type, message) {
+    const notification = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    notification.className = `fixed top-4 right-4 ${bgColor} text-white px-6 py-4 rounded-lg shadow-lg z-50 animate-slide-in`;
+    notification.innerHTML = `
+        <div class="flex items-center gap-3">
+            <span class="text-2xl">${type === 'success' ? '✅' : '❌'}</span>
+            <span>${message}</span>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 3000);
+}
 </script>
+
+<style>
+@keyframes slide-in {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in {
+    animation: slide-in 0.3s ease-out;
+}
+</style>
 @endpush
 @endsection
