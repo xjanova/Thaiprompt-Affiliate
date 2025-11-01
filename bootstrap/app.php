@@ -29,7 +29,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'turnstile' => \App\Http\Middleware\VerifyCloudfareTurnstile::class,
             'throttle.login' => \App\Http\Middleware\ThrottleLogin::class,
+            'check.blocked.ip' => \App\Http\Middleware\CheckBlockedIp::class,
         ]);
+
+        // Global middleware for IP blocking
+        $middleware->append(\App\Http\Middleware\CheckBlockedIp::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

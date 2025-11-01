@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\SliderController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\PremiumPageController;
@@ -53,6 +54,13 @@ Route::get('settings', [SettingsController::class, 'index'])->name('settings.ind
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
 Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
+
+// Security Management
+Route::prefix('security')->name('security.')->group(function () {
+    Route::get('/', [SecurityController::class, 'index'])->name('index');
+    Route::put('/turnstile', [SecurityController::class, 'updateTurnstile'])->name('turnstile.update');
+    Route::put('/rate-limiting', [SecurityController::class, 'updateRateLimiting'])->name('rate-limiting.update');
+});
 
 // Header Editor
 Route::get('header-editor', [HeaderEditorController::class, 'index'])->name('header-editor.index');

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SecurityLog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
@@ -147,6 +148,13 @@ class VerifyCloudfareTurnstile
             'reason' => $reason,
             'user_agent' => $request->userAgent(),
         ]);
+
+        // Log to security logs
+        SecurityLog::logTurnstileFailure(
+            ipAddress: $request->ip(),
+            point: $point ?? 'unknown',
+            userAgent: $request->userAgent()
+        );
 
         // For API requests, return JSON response
         if ($request->expectsJson()) {
