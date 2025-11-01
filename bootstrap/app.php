@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'super_admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
             'role' => \App\Http\Middleware\CheckRole::class,
+            'turnstile' => \App\Http\Middleware\VerifyCloudfareTurnstile::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

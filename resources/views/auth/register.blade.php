@@ -11,6 +11,9 @@
     <title>สมัครสมาชิก - {{ $appName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    @if(config('turnstile.enabled') && config('turnstile.points.register'))
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @endif
     <style>
         @keyframes fadeInUp {
             from {
@@ -263,6 +266,16 @@
                                 @enderror
                             </div>
                         </div>
+
+                        @if(config('turnstile.enabled') && config('turnstile.points.register'))
+                        <div class="mt-4 flex justify-center">
+                            <div class="cf-turnstile"
+                                 data-sitekey="{{ config('turnstile.site_key') }}"
+                                 data-theme="{{ config('turnstile.theme') }}"
+                                 data-size="{{ config('turnstile.size') }}">
+                            </div>
+                        </div>
+                        @endif
 
                         <button type="submit" class="mt-6 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 md:py-4 rounded-xl font-bold text-base md:text-lg hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl">
                             <i class="fas fa-rocket mr-2"></i> สมัครสมาชิกเลย!

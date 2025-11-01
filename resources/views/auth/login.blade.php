@@ -11,6 +11,9 @@
     @endphp
     <title>เข้าสู่ระบบ - {{ $appName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    @if(config('turnstile.enabled') && config('turnstile.points.login'))
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    @endif
     <style>
         /* Animated gradient background */
         @keyframes gradient {
@@ -234,6 +237,16 @@
                             <span class="ml-3 text-sm font-medium text-gray-700 group-hover:text-indigo-600 transition">จดจำฉัน</span>
                         </label>
                     </div>
+
+                    @if(config('turnstile.enabled') && config('turnstile.points.login'))
+                    <div class="flex justify-center">
+                        <div class="cf-turnstile"
+                             data-sitekey="{{ config('turnstile.site_key') }}"
+                             data-theme="{{ config('turnstile.theme') }}"
+                             data-size="{{ config('turnstile.size') }}">
+                        </div>
+                    </div>
+                    @endif
 
                     <button type="submit"
                             class="premium-button w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-2xl transition duration-300">
