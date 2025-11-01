@@ -200,9 +200,21 @@
              }">
             <!-- Logo Section -->
             <div class="flex items-center justify-center h-16 bg-gradient-primary relative">
-                <div :class="{ 'scale-75': sidebarCollapsed }" class="transition-transform duration-300">
-                    <x-logo height="h-10" :showText="false" class="text-white" />
-                </div>
+                @php
+                    $logo = \App\Models\Setting::get('logo');
+                @endphp
+                @if($logo)
+                    <img src="{{ asset($logo) }}" alt="Logo" class="h-10 object-contain" :class="{ 'md:h-8': sidebarCollapsed }">
+                @else
+                    @php
+                        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+                        $appNameShort = mb_substr($appName, 0, 2);
+                    @endphp
+                    <span class="text-white font-bold transition-all" :class="{ 'text-2xl': !sidebarCollapsed, 'md:text-lg': sidebarCollapsed }">
+                        <span x-show="!sidebarCollapsed">{{ $appName }}</span>
+                        <span x-show="sidebarCollapsed" class="hidden md:block">{{ $appNameShort }}</span>
+                    </span>
+                @endif
 
                 <!-- Collapse Toggle (Desktop only) -->
                 <button @click="sidebarCollapsed = !sidebarCollapsed; localStorage.setItem('sidebarCollapsed', sidebarCollapsed)"
