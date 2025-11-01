@@ -24,6 +24,9 @@ class User extends Authenticatable
         'role',
         'is_super_admin',
         'affiliate_id',
+        'current_rank_id',
+        'rank_points',
+        'rank_updated_at',
         'permissions',
         'preferred_language',
     ];
@@ -64,6 +67,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
             'permissions' => 'array',
+            'rank_updated_at' => 'datetime',
         ];
     }
 
@@ -172,6 +176,60 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the current rank
+     */
+    public function currentRank()
+    {
+        return $this->belongsTo(Rank::class, 'current_rank_id');
+    }
+
+    /**
+     * Get all rank promotions
+     */
+    public function rankPromotions()
+    {
+        return $this->hasMany(RankPromotion::class);
+    }
+
+    /**
+     * Get active rank promotions
+     */
+    public function activeRankPromotions()
+    {
+        return $this->rankPromotions()->where('status', 'active');
+    }
+
+    /**
+     * Get rank progress records
+     */
+    public function rankProgress()
+    {
+        return $this->hasMany(UserRankProgress::class);
+    }
+
+    /**
+     * Get progress for next rank
+     */
+    public function getNextRankProgressAttribute()
+    {
+        if (!$this->currentRank) {
+            // Get default rank
+            $defaultRank = Rank::where('is_default', true)->first();
+            if ($defaultRank) {
+                return $this->rankProgress()->where('target_rank_id', $defaultRank->id)->first();
+            }
+            return null;
+        }
+
+        $nextRank = $this->currentRank->next_rank;
+        if (!$nextRank) {
+            return null;
+        }
+
+        return $this->rankProgress()->where('target_rank_id', $nextRank->id)->first();
+    }
+
+    /**
      * Check if user has specific permission
      */
     public function hasPermission(string $permission): bool
@@ -241,6 +299,35 @@ class User extends Authenticatable
             'approve_withdrawals',
             'view_all_wallets',
             'manage_wallet_settings',
+            'manage_ranks',
+            'approve_rank_promotions',
+            'view_rank_analytics',
         ];
+    }
+
+    /**
+     * Add rank points
+     */
+    public function addRankPoints(int $points): void
+    {
+        $this->rank_points += $points;
+        $this->save();
+    }
+
+    /**
+     * Check if eligible for next rank
+     */
+    public function checkRankEligibility(): ?array
+    {
+        if (!$this->currentRank) {
+            return null;
+        }
+
+        $nextRank = $this->currentRank->next_rank;
+        if (!$nextRank) {
+            return null;
+        }
+
+        return $nextRank->checkUserEligibility($this);
     }
 }
