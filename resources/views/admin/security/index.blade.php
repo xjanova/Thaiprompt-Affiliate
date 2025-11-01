@@ -40,6 +40,15 @@
                     </span>
                 </button>
 
+                <button @click="activeTab = 'autoban'"
+                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'autoban', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'autoban' }"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
+                    <span class="flex items-center">
+                        <span class="text-lg mr-2">🚨</span>
+                        Auto-Ban
+                    </span>
+                </button>
+
                 <button @click="activeTab = 'ipmanagement'"
                         :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'ipmanagement', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'ipmanagement' }"
                         class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
@@ -65,7 +74,14 @@
             <!-- Dashboard Tab -->
             <div x-show="activeTab === 'dashboard'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                 <div class="space-y-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">สถิติความปลอดภัย</h3>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">สถิติความปลอดภัย</h3>
+                        <a href="{{ route('admin.security.analytics') }}"
+                           class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2">
+                            <span>📊</span>
+                            <span>View Full Analytics</span>
+                        </a>
+                    </div>
 
                     <!-- Statistics Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -182,8 +198,9 @@
                                     <tr>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เวลา</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ความรุนแรง</th>
                                     </tr>
                                 </thead>
@@ -191,9 +208,45 @@
                                     @foreach($securityLogs->take(15) as $log)
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-900">{{ $log->event_type }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ $log->ip_address }}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-500">{{ $log->email ?? '-' }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900">
+                                            <span class="px-2 py-1 text-xs font-mono rounded bg-gray-100">{{ $log->event_type }}</span>
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-900">
+                                            @if($log->country_code)
+                                            <span class="flex items-center gap-2">
+                                                <span>{{ \App\Services\IpIntelligenceService::getCountryFlag($log->country_code) }}</span>
+                                                <span>{{ $log->country_name }}</span>
+                                            </span>
+                                            @else
+                                            <span class="text-gray-400">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
+                                            {{ $log->ip_address }}
+                                            @if($log->is_vpn || $log->is_proxy)
+                                            <span class="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">VPN/Proxy</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">
+                                            @if($log->os || $log->browser)
+                                            <div class="flex flex-col gap-1">
+                                                @if($log->os)
+                                                <span class="flex items-center gap-1">
+                                                    <span>{{ \App\Services\UserAgentParser::getOsIcon($log->os) }}</span>
+                                                    <span>{{ $log->os }}</span>
+                                                </span>
+                                                @endif
+                                                @if($log->browser)
+                                                <span class="flex items-center gap-1">
+                                                    <span>{{ \App\Services\UserAgentParser::getBrowserIcon($log->browser) }}</span>
+                                                    <span>{{ $log->browser }}</span>
+                                                </span>
+                                                @endif
+                                            </div>
+                                            @else
+                                            <span class="text-gray-400">-</span>
+                                            @endif
+                                        </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @if($log->severity === 'critical')
                                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
