@@ -587,24 +587,66 @@ if [ "$PENDING_COUNT" != "0" ]; then
 fi
 echo ""
 
-# Step 11: Seed Database (optional - only for fresh installs)
-# Check if database is empty (no super admin)
-SUPER_ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('is_super_admin', true)->count();" 2>/dev/null | tail -1 || echo "0")
+# Step 11: Smart Database Seeding System
+print_info "[11/19] 🌱 Checking database seeding status..."
+echo ""
 
-if [ "$SUPER_ADMIN_COUNT" = "0" ]; then
-    print_warning "[11/19] No super admin found - database might need seeding"
-    read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
-    echo
-    if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
-        print_info "Running database seeders..."
-        php artisan db:seed --force || print_warning "Seeding failed (continuing anyway)"
-        print_success "Database seeded"
-    else
-        print_info "Skipping database seeders"
-    fi
+# Check if seeders directory exists and has seeders
+SEEDER_DIR="database/seeders"
+if [ ! -d "$SEEDER_DIR" ]; then
+    print_warning "No seeders directory found - skipping seeding"
 else
-    print_info "[11/19] Database already initialized (skipping seeders)"
+    # Count seeder files (excluding DatabaseSeeder.php and README.md)
+    SEEDER_COUNT=$(find "$SEEDER_DIR" -name "*Seeder.php" ! -name "DatabaseSeeder.php" 2>/dev/null | wc -l)
+
+    if [ "$SEEDER_COUNT" -eq 0 ]; then
+        print_info "No seeders found - skipping seeding"
+    else
+        print_info "→ Found $SEEDER_COUNT seeder file(s)"
+
+        # Check if database needs seeding by checking key tables
+        NEEDS_SEEDING=0
+
+        # Check users table
+        USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tail -1 || echo "0")
+        print_info "  • Users in database: $USER_COUNT"
+
+        # Check email_templates table (if it exists)
+        EMAIL_TEMPLATE_COUNT=$(php artisan tinker --execute="echo DB::table('email_templates')->count();" 2>/dev/null | tail -1 || echo "0")
+        print_info "  • Email templates: $EMAIL_TEMPLATE_COUNT"
+
+        echo ""
+
+        # Determine if seeding is needed
+        if [ "$USER_COUNT" = "0" ] || [ "$EMAIL_TEMPLATE_COUNT" = "0" ]; then
+            NEEDS_SEEDING=1
+            print_warning "⚠ Database appears to need seeding (some tables are empty)"
+            echo ""
+
+            # Show available seeders
+            print_info "→ Available seeders:"
+            find "$SEEDER_DIR" -name "*Seeder.php" ! -name "DatabaseSeeder.php" -exec basename {} \; 2>/dev/null | sed 's/^/  • /'
+            echo ""
+
+            read -p "Run database seeders? (y/n) [y]: " -n 1 -r RUN_SEEDER
+            echo
+            if [[ -z $RUN_SEEDER ]] || [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
+                print_info "Running database seeders..."
+                if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
+                    print_warning "Seeding failed (continuing anyway)"
+                else
+                    print_success "✓ Database seeded successfully"
+                fi
+            else
+                print_info "Skipping database seeders"
+            fi
+        else
+            print_success "✓ Database already has data - skipping seeders"
+            print_info "  (Run 'php artisan db:seed --force' manually if needed)"
+        fi
+    fi
 fi
+echo ""
 
 # Step 12: Create Storage Symlink
 print_info "[12/19] Creating storage symlink..."
