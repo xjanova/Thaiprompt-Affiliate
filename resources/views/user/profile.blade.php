@@ -2,6 +2,12 @@
 
 @section('title', 'โปรไฟล์')
 
+@push('scripts')
+@if(config('turnstile.enabled') && config('turnstile.points.password_change'))
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+@endif
+@endpush
+
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
@@ -118,6 +124,16 @@
                     <input type="password" name="new_password_confirmation" required
                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
+
+                @if(config('turnstile.enabled') && config('turnstile.points.password_change'))
+                <div class="flex justify-center pt-2">
+                    <div class="cf-turnstile"
+                         data-sitekey="{{ config('turnstile.site_key') }}"
+                         data-theme="{{ config('turnstile.theme') }}"
+                         data-size="{{ config('turnstile.size') }}">
+                    </div>
+                </div>
+                @endif
 
                 <div class="flex gap-3 pt-4">
                     <button type="submit"
