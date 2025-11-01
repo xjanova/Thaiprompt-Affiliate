@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             DemoHomeSectionsSeeder::class, // สร้าง sections หน้าแรก
             SeoMetaSeeder::class,          // สร้าง SEO meta data
             TestUsersSeeder::class,        // สร้างผู้ใช้ทดสอบเพิ่มเติม (backward compatibility)
+            EmailTemplateSeeder::class,    // สร้าง Email Templates สำหรับระบบส่งอีเมล
         ]);
 
         $this->command->info('');
