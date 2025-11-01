@@ -2,6 +2,7 @@
 
 @php
     // Logo component with fallback support
+    // Updated: Force production to recompile this file
     $logo = \App\Models\Setting::get('logo');
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
     $appNameShort = mb_substr($appName, 0, 2);
