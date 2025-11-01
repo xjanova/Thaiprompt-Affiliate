@@ -259,7 +259,7 @@
                 </a>
 
                 <!-- Wallet Dropdown Menu -->
-                <div x-data="{ walletOpen: false }" @mouseenter="!sidebarCollapsed ? walletOpen = true : null" @mouseleave="walletOpen = false" class="relative mb-1">
+                <div x-data="{ walletOpen: false }" class="relative mb-1">
                     @php
                         $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*');
                         $pendingCount = \App\Models\WithdrawalRequest::pending()->count();
@@ -268,7 +268,7 @@
                     <!-- Main Wallet Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}"
-                       @click="sidebarCollapsed ? null : (walletOpen = !walletOpen)">
+                       @click="walletOpen = !walletOpen">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             กระเป๋าเงิน
@@ -360,7 +360,7 @@
                 </a>
 
                 <!-- Email Management Dropdown -->
-                <div x-data="{ emailMenuOpen: false }" @mouseenter="!sidebarCollapsed ? emailMenuOpen = true : null" @mouseleave="emailMenuOpen = false" class="relative mb-1">
+                <div x-data="{ emailMenuOpen: false }" class="relative mb-1">
                     @php
                         $emailActive = request()->routeIs('admin.email.*');
                     @endphp
@@ -368,7 +368,7 @@
                     <!-- Main Email Menu Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-600 hover:text-white rounded-lg transition-all duration-200 group {{ $emailActive ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : '' }}"
-                       @click="sidebarCollapsed ? null : (emailMenuOpen = !emailMenuOpen)">
+                       @click="emailMenuOpen = !emailMenuOpen">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📧</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             จัดการอีเมล
@@ -418,7 +418,7 @@
                 </div>
 
                 <!-- System Management Dropdown -->
-                <div x-data="{ systemMenuOpen: false }" @mouseenter="!sidebarCollapsed ? systemMenuOpen = true : null" @mouseleave="systemMenuOpen = false" class="relative mb-1">
+                <div x-data="{ systemMenuOpen: false }" class="relative mb-1">
                     @php
                         $systemActive = request()->routeIs('admin.premium-page.*') ||
                                        request()->routeIs('admin.header-editor.*') ||
@@ -435,7 +435,7 @@
                     <!-- Main System Menu Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-teal-600 hover:text-white rounded-lg transition-all duration-200 group {{ $systemActive ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : '' }}"
-                       @click="sidebarCollapsed ? null : (systemMenuOpen = !systemMenuOpen)">
+                       @click="systemMenuOpen = !systemMenuOpen">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             จัดการระบบ

@@ -280,7 +280,7 @@
                 </a>
 
                 <!-- Wallet Dropdown Menu -->
-                <div x-data="{ walletOpen: false }" @mouseenter="!sidebarCollapsed ? walletOpen = true : null" @mouseleave="walletOpen = false" class="relative mb-1">
+                <div x-data="{ walletOpen: false }" class="relative mb-1">
                     @php
                         $walletActive = request()->routeIs('user.wallet.*');
                     @endphp
@@ -288,7 +288,7 @@
                     <!-- Main Wallet Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}"
-                       @click="sidebarCollapsed ? null : (walletOpen = !walletOpen)">
+                       @click="walletOpen = !walletOpen">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             กระเป๋าเงิน
