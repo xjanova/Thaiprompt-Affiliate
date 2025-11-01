@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\BlockedIp;
 use App\Models\SecurityLog;
+use App\Services\AutoBanService;
+use App\Services\IpIntelligenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Response;
 
 class SecurityController extends Controller
 {
@@ -245,5 +248,230 @@ class SecurityController extends Controller
         $blockedIp->delete();
 
         return back()->with('success', 'ลบ IP Address เรียบร้อยแล้ว');
+    }
+
+    /**
+     * Analytics Dashboard
+     */
+    public function analytics(Request $request)
+    {
+        $days = $request->input('days', 30);
+
+        $analytics = SecurityLog::getAnalytics($days);
+        $autoBanStats = AutoBanService::getStatistics();
+
+        // Get timeline data for charts
+        $timelineAll = SecurityLog::getTimeline(null, $days);
+        $timelineFailedLogins = SecurityLog::getTimeline('login_failed', $days);
+        $timelineTurnstile = SecurityLog::getTimeline('turnstile_failed', $days);
+        $timelineRateLimit = SecurityLog::getTimeline('rate_limit_exceeded', $days);
+
+        return view('admin.security.analytics', compact(
+            'analytics',
+            'autoBanStats',
+            'timelineAll',
+            'timelineFailedLogins',
+            'timelineTurnstile',
+            'timelineRateLimit',
+            'days'
+        ));
+    }
+
+    /**
+     * Get analytics data as JSON (for AJAX requests)
+     */
+    public function getAnalyticsData(Request $request)
+    {
+        $days = $request->input('days', 30);
+        $analytics = SecurityLog::getAnalytics($days);
+
+        return response()->json($analytics);
+    }
+
+    /**
+     * Update Auto-Ban settings
+     */
+    public function updateAutoBan(Request $request)
+    {
+        $validated = $request->validate([
+            'auto_ban_enabled' => ['nullable', 'boolean'],
+            // Failed Login
+            'auto_ban_failed_login_enabled' => ['nullable', 'boolean'],
+            'auto_ban_failed_login_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'auto_ban_failed_login_time_window' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'auto_ban_failed_login_ban_duration' => ['nullable', 'integer', 'min:1', 'max:10080'],
+            // Turnstile
+            'auto_ban_turnstile_enabled' => ['nullable', 'boolean'],
+            'auto_ban_turnstile_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'auto_ban_turnstile_time_window' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'auto_ban_turnstile_ban_duration' => ['nullable', 'integer', 'min:1', 'max:10080'],
+            // Rate Limit
+            'auto_ban_rate_limit_enabled' => ['nullable', 'boolean'],
+            'auto_ban_rate_limit_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'auto_ban_rate_limit_time_window' => ['nullable', 'integer', 'min:1', 'max:1440'],
+            'auto_ban_rate_limit_ban_duration' => ['nullable', 'integer', 'min:1', 'max:10080'],
+            // Notifications
+            'auto_ban_notifications_enabled' => ['nullable', 'boolean'],
+            'auto_ban_email_enabled' => ['nullable', 'boolean'],
+            'auto_ban_email_recipients' => ['nullable', 'string'],
+        ]);
+
+        // Update .env file
+        $this->updateEnvFileAutoBan($request);
+
+        return back()->with('success', 'บันทึกการตั้งค่า Auto-Ban เรียบร้อยแล้ว');
+    }
+
+    /**
+     * Update .env file with Auto-Ban settings
+     */
+    protected function updateEnvFileAutoBan(Request $request)
+    {
+        $envPath = base_path('.env');
+
+        if (!file_exists($envPath)) {
+            return;
+        }
+
+        $envContent = file_get_contents($envPath);
+
+        $envSettings = [
+            'AUTO_BAN_ENABLED' => $request->has('auto_ban_enabled') ? 'true' : 'false',
+            // Failed Login
+            'AUTO_BAN_FAILED_LOGIN_ENABLED' => $request->has('auto_ban_failed_login_enabled') ? 'true' : 'false',
+            'AUTO_BAN_FAILED_LOGIN_THRESHOLD' => $request->input('auto_ban_failed_login_threshold', 10),
+            'AUTO_BAN_FAILED_LOGIN_TIME_WINDOW' => $request->input('auto_ban_failed_login_time_window', 30),
+            'AUTO_BAN_FAILED_LOGIN_BAN_DURATION' => $request->input('auto_ban_failed_login_ban_duration', 1440),
+            // Turnstile
+            'AUTO_BAN_TURNSTILE_ENABLED' => $request->has('auto_ban_turnstile_enabled') ? 'true' : 'false',
+            'AUTO_BAN_TURNSTILE_THRESHOLD' => $request->input('auto_ban_turnstile_threshold', 15),
+            'AUTO_BAN_TURNSTILE_TIME_WINDOW' => $request->input('auto_ban_turnstile_time_window', 60),
+            'AUTO_BAN_TURNSTILE_BAN_DURATION' => $request->input('auto_ban_turnstile_ban_duration', 720),
+            // Rate Limit
+            'AUTO_BAN_RATE_LIMIT_ENABLED' => $request->has('auto_ban_rate_limit_enabled') ? 'true' : 'false',
+            'AUTO_BAN_RATE_LIMIT_THRESHOLD' => $request->input('auto_ban_rate_limit_threshold', 20),
+            'AUTO_BAN_RATE_LIMIT_TIME_WINDOW' => $request->input('auto_ban_rate_limit_time_window', 60),
+            'AUTO_BAN_RATE_LIMIT_BAN_DURATION' => $request->input('auto_ban_rate_limit_ban_duration', 480),
+            // Notifications
+            'AUTO_BAN_NOTIFICATIONS_ENABLED' => $request->has('auto_ban_notifications_enabled') ? 'true' : 'false',
+            'AUTO_BAN_EMAIL_ENABLED' => $request->has('auto_ban_email_enabled') ? 'true' : 'false',
+            'AUTO_BAN_EMAIL_RECIPIENTS' => $request->input('auto_ban_email_recipients', 'admin@example.com'),
+        ];
+
+        foreach ($envSettings as $key => $value) {
+            if (preg_match("/^{$key}=/m", $envContent)) {
+                $envContent = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $envContent);
+            } else {
+                $envContent .= "\n{$key}={$value}";
+            }
+        }
+
+        file_put_contents($envPath, $envContent);
+    }
+
+    /**
+     * Export security logs as CSV
+     */
+    public function exportLogs(Request $request)
+    {
+        $query = SecurityLog::with('user')->orderBy('created_at', 'desc');
+
+        // Apply filters
+        if ($request->filled('event_type')) {
+            $query->where('event_type', $request->event_type);
+        }
+
+        if ($request->filled('severity')) {
+            $query->where('severity', $request->severity);
+        }
+
+        if ($request->filled('country_code')) {
+            $query->where('country_code', $request->country_code);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('created_at', '<=', $request->date_to);
+        }
+
+        $logs = $query->limit(10000)->get(); // Limit to prevent memory issues
+
+        $filename = 'security-logs-' . now()->format('Y-m-d-His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($logs) {
+            $file = fopen('php://output', 'w');
+
+            // CSV Header
+            fputcsv($file, [
+                'Date/Time',
+                'Event Type',
+                'IP Address',
+                'Country',
+                'City',
+                'User',
+                'Email',
+                'OS',
+                'Browser',
+                'Device',
+                'Severity',
+                'Description',
+                'VPN/Proxy',
+            ]);
+
+            // CSV Rows
+            foreach ($logs as $log) {
+                fputcsv($file, [
+                    $log->created_at->format('Y-m-d H:i:s'),
+                    $log->event_type,
+                    $log->ip_address,
+                    $log->country_name ?? '-',
+                    $log->city ?? '-',
+                    $log->user->name ?? '-',
+                    $log->email ?? '-',
+                    $log->os ?? '-',
+                    $log->browser ?? '-',
+                    $log->device_type ?? '-',
+                    $log->severity,
+                    $log->description ?? '-',
+                    ($log->is_vpn || $log->is_proxy || $log->is_tor) ? 'Yes' : 'No',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export analytics as PDF
+     */
+    public function exportAnalytics(Request $request)
+    {
+        $days = $request->input('days', 30);
+        $analytics = SecurityLog::getAnalytics($days);
+        $autoBanStats = AutoBanService::getStatistics();
+
+        // For now, return JSON (can be enhanced with PDF library later)
+        $data = [
+            'analytics' => $analytics,
+            'auto_ban_stats' => $autoBanStats,
+            'period' => $days . ' days',
+            'generated_at' => now()->format('Y-m-d H:i:s'),
+        ];
+
+        $filename = 'security-analytics-' . now()->format('Y-m-d-His') . '.json';
+
+        return response()->json($data)
+            ->header('Content-Type', 'application/json')
+            ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
     }
 }
