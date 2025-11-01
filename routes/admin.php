@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\HeaderEditorController;
 use App\Http\Controllers\Admin\VisualBuilderController;
 use App\Http\Controllers\Admin\TemplateController;
+use App\Http\Controllers\Admin\EmailController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -218,4 +219,36 @@ Route::prefix('notification-templates')->name('notification-templates.')->group(
     Route::delete('/{template}', [NotificationTemplateController::class, 'destroy'])->name('destroy');
     Route::post('/{template}/toggle', [NotificationTemplateController::class, 'toggleStatus'])->name('toggle');
     Route::get('/{template}/data', [NotificationTemplateController::class, 'getTemplate'])->name('data');
+});
+
+// Email Management (Email Delivery System)
+Route::prefix('email')->name('email.')->group(function () {
+    // Dashboard
+    Route::get('/', [EmailController::class, 'index'])->name('index');
+    Route::get('/statistics', [EmailController::class, 'statistics'])->name('statistics');
+
+    // Email Logs
+    Route::get('/logs', [EmailController::class, 'logs'])->name('logs');
+    Route::get('/logs/{log}', [EmailController::class, 'showLog'])->name('logs.show');
+
+    // Email Providers
+    Route::get('/providers', [EmailController::class, 'providers'])->name('providers');
+    Route::get('/providers/create', [EmailController::class, 'createProvider'])->name('providers.create');
+    Route::post('/providers', [EmailController::class, 'storeProvider'])->name('providers.store');
+    Route::get('/providers/{provider}/edit', [EmailController::class, 'editProvider'])->name('providers.edit');
+    Route::put('/providers/{provider}', [EmailController::class, 'updateProvider'])->name('providers.update');
+    Route::delete('/providers/{provider}', [EmailController::class, 'destroyProvider'])->name('providers.destroy');
+    Route::post('/providers/{provider}/test', [EmailController::class, 'testProvider'])->name('providers.test');
+    Route::post('/providers/{provider}/set-default', [EmailController::class, 'setDefaultProvider'])->name('providers.set-default');
+
+    // Email Templates
+    Route::get('/templates', [EmailController::class, 'templates'])->name('templates');
+    Route::get('/templates/create', [EmailController::class, 'createTemplate'])->name('templates.create');
+    Route::post('/templates', [EmailController::class, 'storeTemplate'])->name('templates.store');
+    Route::get('/templates/{template}/edit', [EmailController::class, 'editTemplate'])->name('templates.edit');
+    Route::put('/templates/{template}', [EmailController::class, 'updateTemplate'])->name('templates.update');
+    Route::delete('/templates/{template}', [EmailController::class, 'destroyTemplate'])->name('templates.destroy');
+
+    // Send Test Email
+    Route::post('/test', [EmailController::class, 'sendTest'])->name('test');
 });
