@@ -58,10 +58,15 @@ Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('
 // Security Management
 Route::prefix('security')->name('security.')->group(function () {
     Route::get('/', [SecurityController::class, 'index'])->name('index');
+    Route::get('/analytics', [SecurityController::class, 'analytics'])->name('analytics');
+    Route::get('/analytics/data', [SecurityController::class, 'getAnalyticsData'])->name('analytics.data');
     Route::put('/turnstile', [SecurityController::class, 'updateTurnstile'])->name('turnstile.update');
     Route::put('/rate-limiting', [SecurityController::class, 'updateRateLimiting'])->name('rate-limiting.update');
+    Route::put('/auto-ban', [SecurityController::class, 'updateAutoBan'])->name('auto-ban.update');
     Route::post('/ip/block', [SecurityController::class, 'blockIp'])->name('ip.block');
     Route::delete('/ip/{id}', [SecurityController::class, 'unblockIp'])->name('ip.unblock');
+    Route::get('/export/logs', [SecurityController::class, 'exportLogs'])->name('export.logs');
+    Route::get('/export/analytics', [SecurityController::class, 'exportAnalytics'])->name('export.analytics');
 });
 
 // Header Editor
