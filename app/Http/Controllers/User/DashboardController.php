@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Commission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class DashboardController extends Controller
 {
@@ -284,5 +286,39 @@ class DashboardController extends Controller
         }
 
         return $sum;
+    }
+
+    /**
+     * Update user password
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
+        ], [
+            'current_password.required' => 'กรุณากรอกรหัสผ่านปัจจุบัน',
+            'new_password.required' => 'กรุณากรอกรหัสผ่านใหม่',
+            'new_password.min' => 'รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร',
+            'new_password.confirmed' => 'รหัสผ่านไม่ตรงกัน',
+        ]);
+
+        $user = Auth::user();
+
+        // Check if current password is correct
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->with('error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
+        }
+
+        // Check if new password is same as current password
+        if (Hash::check($request->new_password, $user->password)) {
+            return back()->with('error', 'รหัสผ่านใหม่ต้องไม่เหมือนกับรหัสผ่านเดิม');
+        }
+
+        // Update password
+        $user->password = Hash::make($request->new_password);
+        $user->save();
+
+        return back()->with('success', 'เปลี่ยนรหัสผ่านสำเร็จ');
     }
 }

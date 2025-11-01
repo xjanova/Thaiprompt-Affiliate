@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
+Route::post('/profile/update-password', [DashboardController::class, 'updatePassword'])->name('profile.update-password');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
 Route::get('/referrals', [DashboardController::class, 'referrals'])->name('referrals');
 Route::get('/organization', [DashboardController::class, 'organizationChart'])->name('organization');

@@ -462,24 +462,6 @@
                     </div>
                 </div>
 
-                <!-- Divider -->
-                <div class="border-t border-gray-700/50 my-3"></div>
-
-                <!-- Quick Actions -->
-                <a href="{{ route('home') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-600 hover:text-white rounded-lg transition-all duration-200 group">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏠</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">กลับหน้าแรก</span>
-                </a>
-
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group">
-                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🚪</span>
-                        <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ออกจากระบบ</span>
-                    </button>
-                </form>
-
                 <!-- Version Info -->
                 <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                     <div class="bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30 dark:border-gray-600/30">
@@ -564,24 +546,51 @@
                                  x-transition:leave="transition ease-in duration-150"
                                  x-transition:leave-start="opacity-100 scale-100"
                                  x-transition:leave-end="opacity-0 scale-95"
-                                 class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[70]"
+                                 class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-[70]"
                                  style="display: none;">
+                                <!-- User Info -->
                                 <div class="px-4 py-3 border-b border-gray-100">
                                     <p class="text-sm font-medium text-gray-900">{{ Auth::user()->name }}</p>
                                     <p class="text-sm text-gray-500 truncate">{{ Auth::user()->email }}</p>
+                                    <p class="text-xs text-indigo-600 mt-1">{{ ucfirst(Auth::user()->role) }}</p>
                                 </div>
 
+                                <!-- Menu Items -->
                                 <a href="{{ route('user.profile') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
                                     <span class="text-xl mr-3">👤</span>
-                                    <span>โปรไฟล์</span>
+                                    <span>โปรไฟล์ของฉัน</span>
                                 </a>
 
-                                <a href="{{ route('user.dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
-                                    <span class="text-xl mr-3">📊</span>
-                                    <span>แดชบอร์ดผู้ใช้</span>
+                                <a href="{{ route('user.profile') }}#change-password" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
+                                    <span class="text-xl mr-3">🔒</span>
+                                    <span>เปลี่ยนรหัสผ่าน</span>
                                 </a>
 
                                 <div class="border-t border-gray-100 my-1"></div>
+
+                                <a href="{{ route('admin.dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
+                                    <span class="text-xl mr-3">🔴</span>
+                                    <span>แดชบอร์ดแอดมิน</span>
+                                </a>
+
+                                <a href="{{ route('user.dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
+                                    <span class="text-xl mr-3">🔵</span>
+                                    <span>แดชบอร์ดผู้ใช้</span>
+                                </a>
+
+                                @if(Auth::user()->role === 'super_admin')
+                                <a href="{{ route('seller.dashboard') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 transition">
+                                    <span class="text-xl mr-3">🟢</span>
+                                    <span>แดชบอร์ดร้านค้า</span>
+                                </a>
+                                @endif
+
+                                <div class="border-t border-gray-100 my-1"></div>
+
+                                <a href="{{ route('home') }}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-green-50 transition">
+                                    <span class="text-xl mr-3">🏠</span>
+                                    <span>กลับหน้าแรก</span>
+                                </a>
 
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
