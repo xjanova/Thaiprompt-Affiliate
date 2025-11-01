@@ -26,6 +26,12 @@ class CheckBlockedIp
 
         // Check if IP is blocked
         if (BlockedIp::isBlocked($ip)) {
+            // Get the blocked IP record to get the reason
+            $blockedRecord = BlockedIp::where('ip_address', $ip)
+                ->where('type', 'blacklist')
+                ->where('is_active', true)
+                ->first();
+
             // Log the blocked attempt
             SecurityLog::logEvent(
                 eventType: 'blocked_ip_attempt',
@@ -43,6 +49,7 @@ class CheckBlockedIp
             return response()->view('errors.blocked', [
                 'message' => 'Your IP address has been blocked due to security reasons.',
                 'ip' => $ip,
+                'reason' => $blockedRecord?->reason,
             ], 403);
         }
 

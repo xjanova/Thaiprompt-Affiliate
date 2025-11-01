@@ -60,6 +60,8 @@ Route::prefix('security')->name('security.')->group(function () {
     Route::get('/', [SecurityController::class, 'index'])->name('index');
     Route::put('/turnstile', [SecurityController::class, 'updateTurnstile'])->name('turnstile.update');
     Route::put('/rate-limiting', [SecurityController::class, 'updateRateLimiting'])->name('rate-limiting.update');
+    Route::post('/ip/block', [SecurityController::class, 'blockIp'])->name('ip.block');
+    Route::delete('/ip/{id}', [SecurityController::class, 'unblockIp'])->name('ip.unblock');
 });
 
 // Header Editor

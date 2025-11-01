@@ -189,4 +189,61 @@ class SecurityController extends Controller
 
         file_put_contents($envPath, $envContent);
     }
+
+    /**
+     * Block an IP address
+     */
+    public function blockIp(Request $request)
+    {
+        $validated = $request->validate([
+            'ip_address' => ['required', 'ip', 'unique:blocked_ips,ip_address'],
+            'type' => ['required', 'in:blacklist,whitelist'],
+            'reason' => ['nullable', 'string', 'max:500'],
+            'expires_at' => ['nullable', 'date', 'after:now'],
+        ]);
+
+        BlockedIp::create([
+            'ip_address' => $validated['ip_address'],
+            'type' => $validated['type'],
+            'reason' => $validated['reason'] ?? null,
+            'expires_at' => $validated['expires_at'] ?? null,
+            'blocked_by' => auth()->id(),
+            'is_active' => true,
+        ]);
+
+        // Log the action
+        SecurityLog::create([
+            'event_type' => 'ip_' . $validated['type'],
+            'ip_address' => $validated['ip_address'],
+            'user_id' => auth()->id(),
+            'severity' => 'medium',
+            'description' => "IP address {$validated['ip_address']} added to {$validated['type']} by " . auth()->user()->name,
+            'user_agent' => request()->userAgent(),
+        ]);
+
+        return back()->with('success', 'เพิ่ม IP Address เรียบร้อยแล้ว');
+    }
+
+    /**
+     * Unblock an IP address
+     */
+    public function unblockIp($id)
+    {
+        $blockedIp = BlockedIp::findOrFail($id);
+        $ipAddress = $blockedIp->ip_address;
+
+        // Log the action before deleting
+        SecurityLog::create([
+            'event_type' => 'ip_unblocked',
+            'ip_address' => $ipAddress,
+            'user_id' => auth()->id(),
+            'severity' => 'low',
+            'description' => "IP address {$ipAddress} removed from {$blockedIp->type} by " . auth()->user()->name,
+            'user_agent' => request()->userAgent(),
+        ]);
+
+        $blockedIp->delete();
+
+        return back()->with('success', 'ลบ IP Address เรียบร้อยแล้ว');
+    }
 }
