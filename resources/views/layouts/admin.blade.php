@@ -658,8 +658,8 @@
                             <span>ตั้งค่า Widget</span>
                         </a>
 
-                        <a href="{{ route('admin.line-bot.avatar.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.avatar.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                        <a href="{{ route('admin.line-bot.avatars.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.avatars.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
                             <span class="mr-2">🎭</span>
                             <span>Avatars</span>
                         </a>
