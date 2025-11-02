@@ -990,7 +990,7 @@
                             <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6">
                                 <div class="flex items-center mb-4">
                                     <input type="checkbox" name="threat_intelligence_enabled" id="threat_intelligence_enabled"
-                                           {{ setting('threat_intelligence_enabled', false) ? 'checked' : '' }}
+                                           {{ \App\Models\Setting::get('threat_intelligence_enabled', 'boolean', false) ? 'checked' : '' }}
                                            class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
                                     <label for="threat_intelligence_enabled" class="ml-2 text-sm font-medium text-gray-900">
                                         เปิดใช้งาน Global Threat Intelligence
@@ -1004,28 +1004,28 @@
                                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     <div class="flex items-center">
                                         <input type="checkbox" name="threat_block_proxy" id="threat_block_proxy"
-                                               {{ setting('threat_block_proxy', true) ? 'checked' : '' }}
+                                               {{ \App\Models\Setting::get('threat_block_proxy', 'boolean', true) ? 'checked' : '' }}
                                                class="w-4 h-4 text-orange-600 border-gray-300 rounded">
                                         <label for="threat_block_proxy" class="ml-2 text-sm text-gray-700">🔀 Proxy</label>
                                     </div>
 
                                     <div class="flex items-center">
                                         <input type="checkbox" name="threat_block_vpn" id="threat_block_vpn"
-                                               {{ setting('threat_block_vpn', false) ? 'checked' : '' }}
+                                               {{ \App\Models\Setting::get('threat_block_vpn', 'boolean', false) ? 'checked' : '' }}
                                                class="w-4 h-4 text-yellow-600 border-gray-300 rounded">
                                         <label for="threat_block_vpn" class="ml-2 text-sm text-gray-700">🔒 VPN</label>
                                     </div>
 
                                     <div class="flex items-center">
                                         <input type="checkbox" name="threat_block_tor" id="threat_block_tor"
-                                               {{ setting('threat_block_tor', true) ? 'checked' : '' }}
+                                               {{ \App\Models\Setting::get('threat_block_tor', 'boolean', true) ? 'checked' : '' }}
                                                class="w-4 h-4 text-purple-600 border-gray-300 rounded">
                                         <label for="threat_block_tor" class="ml-2 text-sm text-gray-700">🧅 Tor</label>
                                     </div>
 
                                     <div class="flex items-center">
                                         <input type="checkbox" name="threat_block_abuse" id="threat_block_abuse"
-                                               {{ setting('threat_block_abuse', true) ? 'checked' : '' }}
+                                               {{ \App\Models\Setting::get('threat_block_abuse', 'boolean', true) ? 'checked' : '' }}
                                                class="w-4 h-4 text-red-600 border-gray-300 rounded">
                                         <label for="threat_block_abuse" class="ml-2 text-sm text-gray-700">⚠️ Abuse</label>
                                     </div>
@@ -1038,7 +1038,7 @@
                                     Confidence Threshold (%)
                                 </label>
                                 <input type="number" name="threat_confidence_threshold" id="threat_confidence_threshold"
-                                       value="{{ old('threat_confidence_threshold', setting('threat_confidence_threshold', 70)) }}"
+                                       value="{{ old('threat_confidence_threshold', \App\Models\Setting::get('threat_confidence_threshold', 'integer', 70)) }}"
                                        min="0" max="100"
                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                                 <p class="mt-1 text-xs text-gray-500">
@@ -1048,7 +1048,7 @@
 
                             <!-- Auto Update Schedule -->
                             <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6" x-data="{
-                                frequency: '{{ setting('threat_update_frequency', 'daily') }}'
+                                frequency: '{{ \App\Models\Setting::get('threat_update_frequency', 'string', 'daily') }}'
                             }">
                                 <h4 class="text-md font-semibold text-gray-900 mb-4">⏰ ตั้งเวลาอัปเดตอัตโนมัติ</h4>
 
@@ -1056,7 +1056,7 @@
                                     <!-- Enable Auto Update -->
                                     <div class="flex items-center">
                                         <input type="checkbox" name="threat_auto_update_enabled" id="threat_auto_update_enabled"
-                                               {{ setting('threat_auto_update_enabled', true) ? 'checked' : '' }}
+                                               {{ \App\Models\Setting::get('threat_auto_update_enabled', 'boolean', true) ? 'checked' : '' }}
                                                class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
                                         <label for="threat_auto_update_enabled" class="ml-2 text-sm font-medium text-gray-900">
                                             เปิดใช้งานการอัปเดตอัตโนมัติ
@@ -1084,7 +1084,7 @@
                                             เวลาที่ต้องการอัปเดต
                                         </label>
                                         <input type="time" name="threat_update_time" id="threat_update_time"
-                                               value="{{ old('threat_update_time', setting('threat_update_time', '03:00')) }}"
+                                               value="{{ old('threat_update_time', \App\Models\Setting::get('threat_update_time', 'string', '03:00')) }}"
                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
                                         <p class="mt-1 text-xs text-gray-500">
                                             แนะนำ: 03:00 (ช่วงที่เซิร์ฟเวอร์ไม่ยุ่ง)
@@ -1098,13 +1098,13 @@
                                         </label>
                                         <select name="threat_update_day" id="threat_update_day"
                                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
-                                            <option value="0" {{ setting('threat_update_day', 0) == 0 ? 'selected' : '' }}>อาทิตย์ (Sunday)</option>
-                                            <option value="1" {{ setting('threat_update_day', 0) == 1 ? 'selected' : '' }}>จันทร์ (Monday)</option>
-                                            <option value="2" {{ setting('threat_update_day', 0) == 2 ? 'selected' : '' }}>อังคาร (Tuesday)</option>
-                                            <option value="3" {{ setting('threat_update_day', 0) == 3 ? 'selected' : '' }}>พุธ (Wednesday)</option>
-                                            <option value="4" {{ setting('threat_update_day', 0) == 4 ? 'selected' : '' }}>พฤหัสบดี (Thursday)</option>
-                                            <option value="5" {{ setting('threat_update_day', 0) == 5 ? 'selected' : '' }}>ศุกร์ (Friday)</option>
-                                            <option value="6" {{ setting('threat_update_day', 0) == 6 ? 'selected' : '' }}>เสาร์ (Saturday)</option>
+                                            <option value="0" {{ \App\Models\Setting::get('threat_update_day', 'integer', 0) == 0 ? 'selected' : '' }}>อาทิตย์ (Sunday)</option>
+                                            <option value="1" {{ \App\Models\Setting::get('threat_update_day', 'integer', 0) == 1 ? 'selected' : '' }}>จันทร์ (Monday)</option>
+                                            <option value="2" {{ \App\Models\Setting::get('threat_update_day', 'integer', 0) == 2 ? 'selected' : '' }}>อังคาร (Tuesday)</option>
+                                            <option value="3" {{ \App\Models\Setting::get('threat_update_day', 'integer', 0) == 3 ? 'selected' : '' }}>พุธ (Wednesday)</option>
+                                            <option value="4" {{ \App\Models\Setting::get('threat_update_day', 'integer', 0) == 4 ? 'selected' : '' }}>พฤหัสบดี (Thursday)</option>
+                                            <option value="5" {{ \App\Models\Setting::get('threat_update_day', 'integer', 0) == 5 ? 'selected' : '' }}>ศุกร์ (Friday)</option>
+                                            <option value="6" {{ \App\Models\Setting::get('threat_update_day', 'integer', 0) == 6 ? 'selected' : '' }}>เสาร์ (Saturday)</option>
                                         </select>
                                     </div>
 
@@ -1114,7 +1114,7 @@
                                             Cron Expression
                                         </label>
                                         <input type="text" name="threat_update_cron" id="threat_update_cron"
-                                               value="{{ old('threat_update_cron', setting('threat_update_cron', '')) }}"
+                                               value="{{ old('threat_update_cron', \App\Models\Setting::get('threat_update_cron', 'string', '')) }}"
                                                placeholder="0 3 * * *"
                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 font-mono">
                                         <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
