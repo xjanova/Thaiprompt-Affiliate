@@ -22,7 +22,7 @@
     @php
         $currentUser = auth()->user();
         $userPosition = collect($leaderboard)->search(function($item) use ($currentUser) {
-            return $item->id === $currentUser->id;
+            return $item['user']->id === $currentUser->id;
         });
         $userRank = $userPosition !== false ? $userPosition + 1 : null;
     @endphp
@@ -48,7 +48,7 @@
     @endif
 
     <!-- Top 3 Podium -->
-    @if($leaderboard->count() >= 3)
+    @if(count($leaderboard) >= 3)
     <div class="grid grid-cols-3 gap-4 items-end">
         <!-- 2nd Place -->
         <div class="transform translate-y-8">
@@ -58,16 +58,16 @@
                 </div>
                 <div class="mb-3">
                     <div class="text-sm opacity-80 mb-1">#2</div>
-                    <div class="font-bold text-lg truncate">{{ $leaderboard[1]->name }}</div>
+                    <div class="font-bold text-lg truncate">{{ $leaderboard[1]['user']->name }}</div>
                 </div>
                 <div class="bg-white bg-opacity-20 rounded-lg p-3">
                     <div class="text-xs opacity-80">แต้ม</div>
-                    <div class="text-xl font-bold">{{ number_format($leaderboard[1]->rank_points ?? 0) }}</div>
+                    <div class="text-xl font-bold">{{ number_format($leaderboard[1]['points'] ?? 0) }}</div>
                 </div>
-                @if($leaderboard[1]->currentRank)
+                @if($leaderboard[1]['rank'])
                 <div class="mt-3 text-xs opacity-90">
-                    <i class="{{ $leaderboard[1]->currentRank->icon ?? 'fas fa-star' }}"></i>
-                    {{ $leaderboard[1]->currentRank->name_th ?? $leaderboard[1]->currentRank->name }}
+                    <i class="{{ $leaderboard[1]['rank']->icon ?? 'fas fa-star' }}"></i>
+                    {{ $leaderboard[1]['rank']->name_th ?? $leaderboard[1]['rank']->name }}
                 </div>
                 @endif
             </div>
@@ -86,16 +86,16 @@
                 </div>
                 <div class="mb-4">
                     <div class="text-sm opacity-80 mb-1">#1 CHAMPION</div>
-                    <div class="font-bold text-2xl truncate">{{ $leaderboard[0]->name }}</div>
+                    <div class="font-bold text-2xl truncate">{{ $leaderboard[0]['user']->name }}</div>
                 </div>
                 <div class="bg-white bg-opacity-20 rounded-lg p-4">
                     <div class="text-xs opacity-80">แต้ม</div>
-                    <div class="text-3xl font-bold">{{ number_format($leaderboard[0]->rank_points ?? 0) }}</div>
+                    <div class="text-3xl font-bold">{{ number_format($leaderboard[0]['points'] ?? 0) }}</div>
                 </div>
-                @if($leaderboard[0]->currentRank)
+                @if($leaderboard[0]['rank'])
                 <div class="mt-4 text-sm opacity-90">
-                    <i class="{{ $leaderboard[0]->currentRank->icon ?? 'fas fa-star' }}"></i>
-                    {{ $leaderboard[0]->currentRank->name_th ?? $leaderboard[0]->currentRank->name }}
+                    <i class="{{ $leaderboard[0]['rank']->icon ?? 'fas fa-star' }}"></i>
+                    {{ $leaderboard[0]['rank']->name_th ?? $leaderboard[0]['rank']->name }}
                 </div>
                 @endif
             </div>
@@ -109,16 +109,16 @@
                 </div>
                 <div class="mb-3">
                     <div class="text-sm opacity-80 mb-1">#3</div>
-                    <div class="font-bold text-lg truncate">{{ $leaderboard[2]->name }}</div>
+                    <div class="font-bold text-lg truncate">{{ $leaderboard[2]['user']->name }}</div>
                 </div>
                 <div class="bg-white bg-opacity-20 rounded-lg p-3">
                     <div class="text-xs opacity-80">แต้ม</div>
-                    <div class="text-xl font-bold">{{ number_format($leaderboard[2]->rank_points ?? 0) }}</div>
+                    <div class="text-xl font-bold">{{ number_format($leaderboard[2]['points'] ?? 0) }}</div>
                 </div>
-                @if($leaderboard[2]->currentRank)
+                @if($leaderboard[2]['rank'])
                 <div class="mt-3 text-xs opacity-90">
-                    <i class="{{ $leaderboard[2]->currentRank->icon ?? 'fas fa-star' }}"></i>
-                    {{ $leaderboard[2]->currentRank->name_th ?? $leaderboard[2]->currentRank->name }}
+                    <i class="{{ $leaderboard[2]['rank']->icon ?? 'fas fa-star' }}"></i>
+                    {{ $leaderboard[2]['rank']->name_th ?? $leaderboard[2]['rank']->name }}
                 </div>
                 @endif
             </div>
@@ -130,7 +130,7 @@
     <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
         <div class="p-6 border-b border-gray-200">
             <h2 class="text-xl font-bold text-gray-900">🏆 ผู้นำทั้งหมด</h2>
-            <p class="text-sm text-gray-600 mt-1">แสดง {{ $leaderboard->count() }} อันดับแรก</p>
+            <p class="text-sm text-gray-600 mt-1">แสดง {{ count($leaderboard) }} อันดับแรก</p>
         </div>
 
         <div class="overflow-x-auto">
@@ -145,7 +145,12 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    @forelse($leaderboard as $index => $user)
+                    @forelse($leaderboard as $index => $item)
+                    @php
+                        $user = $item['user'];
+                        $rank = $item['rank'];
+                        $points = $item['points'];
+                    @endphp
                     <tr class="hover:bg-gray-50 transition {{ $user->id === auth()->id() ? 'bg-indigo-50' : '' }}">
                         <!-- Rank -->
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -190,16 +195,16 @@
 
                         <!-- Rank -->
                         <td class="px-6 py-4 whitespace-nowrap">
-                            @if($user->currentRank)
+                            @if($rank)
                             <div class="flex items-center gap-2">
                                 <div class="w-8 h-8 bg-gradient-to-br from-orange-400 to-amber-600 rounded-full flex items-center justify-center text-white">
-                                    <i class="{{ $user->currentRank->icon ?? 'fas fa-star' }} text-sm"></i>
+                                    <i class="{{ $rank->icon ?? 'fas fa-star' }} text-sm"></i>
                                 </div>
                                 <div>
                                     <div class="text-sm font-semibold text-gray-900">
-                                        {{ app()->getLocale() === 'th' ? ($user->currentRank->name_th ?? $user->currentRank->name) : $user->currentRank->name }}
+                                        {{ app()->getLocale() === 'th' ? ($rank->name_th ?? $rank->name) : $rank->name }}
                                     </div>
-                                    <div class="text-xs text-gray-500">Level {{ $user->currentRank->level }}</div>
+                                    <div class="text-xs text-gray-500">Level {{ $rank->level }}</div>
                                 </div>
                             </div>
                             @else
@@ -209,7 +214,7 @@
 
                         <!-- Points -->
                         <td class="px-6 py-4 whitespace-nowrap text-right">
-                            <div class="text-lg font-bold text-gray-900">{{ number_format($user->rank_points ?? 0) }}</div>
+                            <div class="text-lg font-bold text-gray-900">{{ number_format($points ?? 0) }}</div>
                             <div class="text-xs text-gray-500">แต้ม</div>
                         </td>
 
