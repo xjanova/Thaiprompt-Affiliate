@@ -89,6 +89,108 @@ log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
 }
 
+# Smart ENV Sync - Auto-update .env with new variables from .env.example
+sync_env_file() {
+    print_header "🔄 Smart ENV Sync System"
+
+    if [ ! -f ".env.example" ]; then
+        print_warning "No .env.example found - skipping ENV sync"
+        return 0
+    fi
+
+    if [ ! -f ".env" ]; then
+        print_error ".env file not found!"
+        return 1
+    fi
+
+    print_info "Checking for new environment variables..."
+
+    # Create temporary files for processing
+    local temp_new_vars="/tmp/new_env_vars_$$.txt"
+    local temp_env_backup="/tmp/env_backup_$$.env"
+
+    # Backup current .env
+    cp .env "$temp_env_backup"
+
+    # Extract variable names from both files (ignore comments and empty lines)
+    local example_vars=$(grep -v '^#' .env.example | grep -v '^$' | cut -d '=' -f1 | sort)
+    local current_vars=$(grep -v '^#' .env | grep -v '^$' | cut -d '=' -f1 | sort)
+
+    # Find new variables that exist in .env.example but not in .env
+    local new_vars=()
+    local added_count=0
+
+    while IFS= read -r var; do
+        if ! grep -q "^${var}=" .env 2>/dev/null; then
+            new_vars+=("$var")
+        fi
+    done <<< "$example_vars"
+
+    # If there are new variables, add them
+    if [ ${#new_vars[@]} -gt 0 ]; then
+        print_warning "Found ${#new_vars[@]} new environment variable(s)"
+        echo ""
+        print_info "→ New variables to be added:"
+
+        # Show what will be added
+        for var in "${new_vars[@]}"; do
+            local var_line=$(grep "^${var}=" .env.example)
+            echo "  • $var"
+        done
+        echo ""
+
+        # Add new variables to .env with proper formatting
+        print_info "→ Adding new variables to .env..."
+
+        # Create a temporary file with updates
+        cp .env .env.tmp
+
+        echo "" >> .env.tmp
+        echo "# Auto-added by deploy script on $(date +'%Y-%m-%d %H:%M:%S')" >> .env.tmp
+
+        for var in "${new_vars[@]}"; do
+            # Get the full line from .env.example (including comments if any)
+            local line_number=$(grep -n "^${var}=" .env.example | cut -d ':' -f1)
+
+            # Get any comment above this variable
+            if [ -n "$line_number" ] && [ "$line_number" -gt 1 ]; then
+                local prev_line=$((line_number - 1))
+                local comment_line=$(sed -n "${prev_line}p" .env.example)
+                if [[ "$comment_line" =~ ^#.*$ ]]; then
+                    echo "$comment_line" >> .env.tmp
+                fi
+            fi
+
+            # Add the variable
+            grep "^${var}=" .env.example >> .env.tmp
+            added_count=$((added_count + 1))
+        done
+
+        # Replace .env with updated version
+        mv .env.tmp .env
+
+        print_success "✓ Added $added_count new variable(s) to .env"
+        echo ""
+
+        print_info "→ Summary of changes:"
+        for var in "${new_vars[@]}"; do
+            local value=$(grep "^${var}=" .env | cut -d '=' -f2-)
+            echo "  • $var=${value}"
+        done
+        echo ""
+
+        print_success "✓ .env file successfully synced with .env.example"
+        print_info "  Backup saved: $temp_env_backup"
+        log "ENV Sync: Added $added_count new variables to .env"
+    else
+        print_success "✓ .env is already up to date with .env.example"
+        rm -f "$temp_env_backup"
+    fi
+
+    echo ""
+    return 0
+}
+
 # Ensure Laravel essential directories exist
 ensure_laravel_directories() {
     mkdir -p bootstrap/cache 2>/dev/null || true
@@ -413,7 +515,13 @@ print_info "Restoring critical files (.env, uploads)..."
 restore_critical_files
 print_success "Critical files restored successfully"
 
-# Step 4.6: Recreate essential Laravel directories
+# Step 4.6: Smart ENV Sync - Auto-update .env with new variables
+print_info "[4.6/19] Syncing .env with .env.example..."
+if ! sync_env_file; then
+    error_exit "ENV sync failed" "$?"
+fi
+
+# Step 4.7: Recreate essential Laravel directories
 print_info "Recreating essential Laravel directories..."
 ensure_laravel_directories
 print_success "Essential directories created"
@@ -433,7 +541,7 @@ log "New commit: $NEW_COMMIT"
 print_info "New commit: ${NEW_COMMIT:0:8}"
 
 # Step 6: Ensure Base Controller Exists
-print_info "[6/19] Ensuring base Controller exists..."
+print_info "[6/20] Ensuring base Controller exists..."
 CONTROLLER_FILE="app/Http/Controllers/Controller.php"
 if [ ! -f "$CONTROLLER_FILE" ]; then
     print_warning "Base Controller.php not found, creating..."
@@ -454,7 +562,7 @@ else
 fi
 
 # Step 7: Install/Update Composer Dependencies
-print_info "[7/19] Installing composer dependencies..."
+print_info "[7/20] Installing composer dependencies..."
 
 # Remove vendor directory to ensure clean install
 if [ -d "vendor" ]; then
@@ -480,14 +588,14 @@ if [ -f "composer.lock" ]; then
 fi
 
 # Step 8: Install/Reinstall Laravel Sanctum
-print_info "[8/19] Installing Laravel Sanctum..."
+print_info "[8/20] Installing Laravel Sanctum..."
 if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Sanctum installation failed" "$?"
 fi
 print_success "Laravel Sanctum installed and configured"
 
 # Step 9: Clear All Cache (before migration)
-print_info "[9/19] Clearing all caches..."
+print_info "[9/20] Clearing all caches..."
 php artisan cache:clear 2>/dev/null || true
 php artisan config:clear 2>/dev/null || true
 php artisan route:clear 2>/dev/null || true
@@ -496,7 +604,7 @@ php artisan event:clear 2>/dev/null || true
 print_success "All caches cleared"
 
 # Step 10: Smart Database Migration System
-print_info "[10/19] 🎯 Smart Database Migration System..."
+print_info "[10/20] 🎯 Smart Database Migration System..."
 echo ""
 
 # Step 9.1: Verify database connection
@@ -588,7 +696,7 @@ fi
 echo ""
 
 # Step 11: Smart Database Seeding System
-print_info "[11/19] 🌱 Checking database seeding status..."
+print_info "[11/20] 🌱 Checking database seeding status..."
 echo ""
 
 # Check if seeders directory exists and has seeders
@@ -649,7 +757,7 @@ fi
 echo ""
 
 # Step 12: Create Storage Symlink
-print_info "[12/19] Creating storage symlink..."
+print_info "[12/20] Creating storage symlink..."
 php artisan storage:link --force --no-interaction || print_warning "Storage link already exists or failed to create"
 if [ -L "public/storage" ]; then
     print_success "Storage symlink exists (public/storage → storage/app/public)"
@@ -658,7 +766,7 @@ else
 fi
 
 # Step 13: Set Permissions
-print_info "[13/19] Setting file permissions..."
+print_info "[13/20] Setting file permissions..."
 
 # Detect web server user
 WEB_USER=""
@@ -698,29 +806,29 @@ fi
 print_success "Permissions set"
 
 # Step 14: Cache Configuration
-print_info "[14/19] Caching configuration..."
+print_info "[14/20] Caching configuration..."
 if ! php artisan config:cache 2>&1 | tee -a "$LOG_FILE"; then
     error_exit "Config cache failed - ตรวจสอบ .env และ config files" "$?"
 fi
 print_success "Configuration cached"
 
 # Step 15: Cache Routes
-print_info "[15/19] Caching routes..."
+print_info "[15/20] Caching routes..."
 php artisan route:cache || print_warning "Route cache failed (continuing anyway)"
 print_success "Routes cached"
 
 # Step 16: Cache Views
-print_info "[16/19] Caching views..."
+print_info "[16/20] Caching views..."
 php artisan view:cache || print_warning "View cache failed (continuing anyway)"
 print_success "Views cached"
 
 # Step 17: Optimize Autoloader
-print_info "[17/19] Optimizing autoloader..."
+print_info "[17/20] Optimizing autoloader..."
 composer dump-autoload --optimize --no-dev --no-interaction
 print_success "Autoloader optimized"
 
 # Step 18: Restart Services
-print_info "[18/19] Restarting services..."
+print_info "[18/20] Restarting services..."
 
 # Restart PHP-FPM (if available)
 if command -v systemctl >/dev/null 2>&1; then
@@ -736,8 +844,16 @@ fi
 # Restart queue workers (if using)
 php artisan queue:restart 2>/dev/null && print_success "Queue workers restarted" || true
 
-# Step 19: Disable Maintenance Mode
-print_info "[19/19] Disabling maintenance mode..."
+# Step 19: Final ENV Verification
+print_info "[19/20] Verifying environment configuration..."
+if [ -f ".env" ]; then
+    print_success "✓ .env file exists and is ready"
+else
+    error_exit ".env file missing after sync"
+fi
+
+# Step 20: Disable Maintenance Mode
+print_info "[20/20] Disabling maintenance mode..."
 php artisan up || error_exit "Failed to disable maintenance mode"
 print_success "Application is now live!"
 
@@ -790,6 +906,7 @@ echo "  Backup:        ${BLUE}$BACKUP_FILE${NC}"
 echo ""
 echo "🔄 What was deployed:"
 echo "  ✓ Code synced from GitHub (forced)"
+echo "  ✓ Environment variables synced (.env updated)"
 echo "  ✓ Dependencies reinstalled (clean)"
 echo "  ✓ Laravel Sanctum installed/updated"
 echo "  ✓ Database migrations applied"
