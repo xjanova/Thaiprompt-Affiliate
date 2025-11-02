@@ -19,22 +19,29 @@ class MembershipRetentionService
     /**
      * Initialize retention status for a user
      */
-    public function initializeUser(User $user): MembershipRetentionStatus
+    public function initializeUser(User $user, ?Carbon $membershipStartDate = null): MembershipRetentionStatus
     {
         $minimumPoints = $this->getSetting('minimum_points_per_month', 1000);
         $now = Carbon::now();
-        $periodStart = $now->startOfMonth()->copy();
-        $periodEnd = $now->endOfMonth()->copy();
+
+        // ถ้าไม่มี membership_start_date ให้ใช้วันนี้
+        $startDate = $membershipStartDate ?? $now->copy();
+
+        // คำนวณรอบ 30 วันจากวันเริ่มต้น
+        $nextRenewalDate = $startDate->copy()->addDays(30);
+        $periodStart = $startDate->copy();
+        $periodEnd = $nextRenewalDate->copy();
 
         return MembershipRetentionStatus::updateOrCreate(
             ['user_id' => $user->id],
             [
+                'membership_start_date' => $startDate,
                 'status' => 'active',
                 'current_points' => 0,
                 'required_points' => $minimumPoints,
                 'period_start' => $periodStart,
                 'period_end' => $periodEnd,
-                'next_renewal_date' => $periodEnd,
+                'next_renewal_date' => $nextRenewalDate,
                 'consecutive_months' => 0,
                 'last_active_date' => $now,
             ]
@@ -53,7 +60,21 @@ class MembershipRetentionService
         ?array $metadata = null
     ): MembershipRetentionTransaction {
         $status = $this->getOrCreateStatus($user);
-        $periodMonth = Carbon::now()->format('Y-m');
+        $now = Carbon::now();
+        $periodMonth = $now->format('Y-m');
+
+        // ตรวจสอบว่าเป็นการซื้อครั้งแรกหรือไม่ (ไม่รวมการเติม wallet)
+        if (!$status->membership_start_date && $transactionType !== 'wallet_deposit') {
+            // บันทึกวันที่เริ่มเป็นสมาชิก
+            $status->membership_start_date = $now->copy()->startOfDay();
+
+            // คำนวณรอบใหม่จากวันเริ่มต้น
+            $nextRenewalDate = $status->membership_start_date->copy()->addDays(30);
+            $status->period_start = $status->membership_start_date->copy();
+            $status->period_end = $nextRenewalDate->copy();
+            $status->next_renewal_date = $nextRenewalDate;
+            $status->save();
+        }
 
         // Create transaction
         $transaction = MembershipRetentionTransaction::create([
@@ -68,7 +89,7 @@ class MembershipRetentionService
 
         // Update current points
         $status->current_points += $points;
-        $status->last_active_date = Carbon::now();
+        $status->last_active_date = $now;
         $status->save();
 
         // Check if reached required points
@@ -130,7 +151,7 @@ class MembershipRetentionService
     }
 
     /**
-     * Process monthly renewal
+     * Process 30-day renewal cycles
      */
     public function processMonthlyRenewal(): array
     {
@@ -141,56 +162,73 @@ class MembershipRetentionService
             'errors' => [],
         ];
 
-        $lastMonth = Carbon::now()->subMonth();
-        $periodMonth = $lastMonth->format('Y-m');
+        $now = Carbon::now();
 
-        // Get all active users
-        $activeStatuses = MembershipRetentionStatus::active()->get();
+        // Get all active users whose next_renewal_date has passed
+        $activeStatuses = MembershipRetentionStatus::active()
+            ->whereNotNull('next_renewal_date')
+            ->where('next_renewal_date', '<=', $now)
+            ->get();
 
         foreach ($activeStatuses as $status) {
             try {
                 $results['processed']++;
 
-                // Get history for last month
-                $history = MembershipRetentionHistory::where('user_id', $status->user_id)
-                    ->where('period_month', $periodMonth)
-                    ->first();
+                // คำนวณ period_month จาก period_start
+                $periodMonth = $status->period_start ? $status->period_start->format('Y-m') : $now->format('Y-m');
 
-                if ($history) {
-                    // Check if achieved
-                    if ($history->earned_points >= $history->required_points) {
-                        $history->status = 'achieved';
-                        $history->achieved_at = Carbon::now();
-                        $results['succeeded']++;
+                // Get or create history for this period
+                $history = MembershipRetentionHistory::firstOrCreate(
+                    [
+                        'user_id' => $status->user_id,
+                        'period_month' => $periodMonth,
+                    ],
+                    [
+                        'required_points' => $status->required_points,
+                        'earned_points' => $status->current_points,
+                        'status' => 'pending',
+                        'period_start' => $status->period_start,
+                        'period_end' => $status->period_end,
+                    ]
+                );
+
+                // Update earned points
+                $history->earned_points = $status->current_points;
+
+                // Check if achieved
+                if ($history->earned_points >= $history->required_points) {
+                    $history->status = 'achieved';
+                    $history->achieved_at = $now;
+                    $status->consecutive_months++;
+                    $results['succeeded']++;
+                } else {
+                    // Check if user has advance renewal
+                    $hasAdvanceRenewal = MembershipRetentionAdvanceRenewal::where('user_id', $status->user_id)
+                        ->active()
+                        ->exists();
+
+                    if (!$hasAdvanceRenewal) {
+                        $history->status = 'failed';
+                        $status->status = 'expired';
+                        $status->consecutive_months = 0;
+                        $results['failed']++;
                     } else {
-                        // Check if user has advance renewal
-                        $hasAdvanceRenewal = MembershipRetentionAdvanceRenewal::where('user_id', $status->user_id)
-                            ->active()
-                            ->exists();
-
-                        if (!$hasAdvanceRenewal) {
-                            $history->status = 'failed';
-                            $status->status = 'expired';
-                            $status->consecutive_months = 0;
-                            $results['failed']++;
-                        } else {
-                            // Protected by advance renewal
-                            $history->status = 'achieved';
-                            $history->achieved_at = Carbon::now();
-                            $history->notes = 'Protected by advance renewal';
-                            $results['succeeded']++;
-                        }
+                        // Protected by advance renewal
+                        $history->status = 'achieved';
+                        $history->achieved_at = $now;
+                        $history->notes = 'Protected by advance renewal';
+                        $status->consecutive_months++;
+                        $results['succeeded']++;
                     }
-
-                    $history->save();
                 }
 
-                // Reset for new month
-                $now = Carbon::now();
+                $history->save();
+
+                // Reset for new 30-day cycle
                 $status->current_points = 0;
-                $status->period_start = $now->startOfMonth()->copy();
-                $status->period_end = $now->endOfMonth()->copy();
-                $status->next_renewal_date = $status->period_end;
+                $status->period_start = $status->next_renewal_date->copy();
+                $status->period_end = $status->period_start->copy()->addDays(30);
+                $status->next_renewal_date = $status->period_end->copy();
                 $status->save();
 
             } catch (\Exception $e) {
