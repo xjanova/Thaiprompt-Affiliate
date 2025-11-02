@@ -13,7 +13,7 @@ return new class extends Migration
     {
         // Skip if table already exists (from SQL import)
         if (Schema::hasTable('line_avatars')) {
-            $this->command->warn('Table line_avatars already exists, skipping...');
+            echo "Table line_avatars already exists, skipping...\n";
             return;
         }
 
