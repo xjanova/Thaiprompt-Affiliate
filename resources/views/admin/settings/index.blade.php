@@ -5,11 +5,11 @@
 @section('content')
 <div x-data="{ activeTab: 'general' }" class="space-y-6">
     <!-- Tab Navigation -->
-    <div class="bg-white rounded-lg shadow-md">
-        <div class="border-b border-gray-200">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md">
+        <div class="border-b border-gray-200 dark:border-slate-700">
             <nav class="flex -mb-px">
                 <button @click="activeTab = 'general'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'general', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'general' }"
+                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'general', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'general' }"
                         class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
                     <span class="flex items-center">
                         <span class="text-lg mr-2">⚙️</span>
@@ -18,7 +18,7 @@
                 </button>
 
                 <button @click="activeTab = 'affiliate'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'affiliate', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'affiliate' }"
+                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'affiliate', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'affiliate' }"
                         class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
                     <span class="flex items-center">
                         <span class="text-lg mr-2">🌐</span>
@@ -27,7 +27,7 @@
                 </button>
 
                 <button @click="activeTab = 'branding'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'branding', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'branding' }"
+                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'branding', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'branding' }"
                         class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
                     <span class="flex items-center">
                         <span class="text-lg mr-2">🎨</span>
@@ -36,7 +36,7 @@
                 </button>
 
                 <button @click="activeTab = 'theme'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'theme', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'theme' }"
+                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'theme', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'theme' }"
                         class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
                     <span class="flex items-center">
                         <span class="text-lg mr-2">🎨</span>
@@ -45,7 +45,7 @@
                 </button>
 
                 <button @click="activeTab = 'api'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'api', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'api' }"
+                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'api', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'api' }"
                         class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
                     <span class="flex items-center">
                         <span class="text-lg mr-2">🔑</span>
@@ -54,7 +54,7 @@
                 </button>
 
                 <button @click="activeTab = 'pageloader'"
-                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'pageloader', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'pageloader' }"
+                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'pageloader', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'pageloader' }"
                         class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
                     <span class="flex items-center">
                         <span class="text-lg mr-2">⏳</span>
@@ -74,12 +74,12 @@
 
                     <div class="space-y-6">
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่าทั่วไป</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าทั่วไป</h3>
 
                             <div class="mb-4">
-                                <label for="app_name" class="block text-sm font-medium text-gray-700 mb-2">ชื่อแอพพลิเคชั่น</label>
+                                <label for="app_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ชื่อแอพพลิเคชั่น</label>
                                 <input type="text" name="app_name" id="app_name" value="{{ old('app_name', $settings->get('general')->firstWhere('key', 'app_name')->value ?? 'TP-Affiliate') }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             </div>
                         </div>
 
@@ -100,13 +100,13 @@
 
                     <div class="space-y-6">
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่า Affiliate</h3>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่า Affiliate</h3>
 
                             <div class="mb-4">
-                                <label for="commission_rate" class="block text-sm font-medium text-gray-700 mb-2">อัตราคอมมิชชั่น (%)</label>
+                                <label for="commission_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">อัตราคอมมิชชั่น (%)</label>
                                 <input type="number" name="commission_rate" id="commission_rate" min="0" max="100" step="0.01"
                                        value="{{ old('commission_rate', $settings->get('affiliate')->firstWhere('key', 'commission_rate')->value ?? 10) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             </div>
 
                             <div class="mb-4">
@@ -119,19 +119,19 @@
                             </div>
 
                             <div class="mb-4">
-                                <label for="default_sponsor_referral_code" class="block text-sm font-medium text-gray-700 mb-2">รหัสแนะนำเริ่มต้น (Default Sponsor ID)</label>
+                                <label for="default_sponsor_referral_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รหัสแนะนำเริ่มต้น (Default Sponsor ID)</label>
                                 <input type="text" name="default_sponsor_referral_code" id="default_sponsor_referral_code"
                                        value="{{ old('default_sponsor_referral_code', $settings->get('affiliate')->firstWhere('key', 'default_sponsor_referral_code')->value ?? '') }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                        placeholder="กรอกรหัสแนะนำเริ่มต้น">
                                 <p class="text-xs text-gray-500 mt-1">ผู้สมัครที่ไม่มีรหัสแนะนำจะถูกต่อสายงานอัตโนมัติกับรหัสนี้</p>
                             </div>
 
                             <div class="mb-4">
-                                <label for="commission_depth" class="block text-sm font-medium text-gray-700 mb-2">ความลึกคอมมิชชั่น (Commission Depth)</label>
+                                <label for="commission_depth" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความลึกคอมมิชชั่น (Commission Depth)</label>
                                 <input type="number" name="commission_depth" id="commission_depth" min="1" max="100"
                                        value="{{ old('commission_depth', $settings->get('affiliate')->firstWhere('key', 'commission_depth')->value ?? 10) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 <p class="text-xs text-gray-500 mt-1">กำหนดจำนวนชั้นสายงานที่สมาชิกจะมองเห็นและได้รับคอมมิชชั่น (ค่าเริ่มต้น: 10 ชั้น)</p>
                             </div>
                         </div>
@@ -178,12 +178,12 @@
                     <form method="POST" action="{{ route('admin.settings.branding') }}" enctype="multipart/form-data" @submit="handleSubmit">
                         @csrf
 
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่าโลโก้และ Favicon</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าโลโก้และ Favicon</h3>
 
                     <div class="grid md:grid-cols-2 gap-6">
                         <!-- Logo Upload -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">โลโก้</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โลโก้</label>
                             @php
                                 $logo = $settings->get('branding')->firstWhere('key', 'logo')->value ?? '';
                             @endphp
@@ -194,13 +194,13 @@
                                 </div>
                             @endif
                             <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml" @change="handleLogoUpload"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             <p class="text-xs text-gray-500 mt-1">รองรับ PNG, JPG, SVG (สูงสุด 2MB)</p>
 
                             <!-- Logo Preview -->
                             <div x-show="logoPreview" x-transition class="mt-4">
                                 <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่างโลโก้ใหม่:</p>
-                                <div class="border rounded-lg p-4 bg-gray-50">
+                                <div class="border border-gray-300 dark:border-slate-600 rounded-lg p-4 bg-gray-50 dark:bg-slate-700">
                                     <img :src="logoPreview" alt="Preview" class="h-20 object-contain">
                                 </div>
                             </div>
@@ -208,7 +208,7 @@
 
                         <!-- Favicon Upload -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Favicon</label>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Favicon</label>
                             @php
                                 $favicon = $settings->get('branding')->firstWhere('key', 'favicon')->value ?? '';
                             @endphp
@@ -219,13 +219,13 @@
                                 </div>
                             @endif
                             <input type="file" name="favicon" accept="image/png,image/jpeg,image/jpg,image/x-icon" @change="handleFaviconUpload"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             <p class="text-xs text-gray-500 mt-1">รองรับ PNG, JPG, ICO (สูงสุด 512KB)</p>
 
                             <!-- Favicon Preview -->
                             <div x-show="faviconPreview" x-transition class="mt-4">
                                 <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่าง Favicon ใหม่:</p>
-                                <div class="border rounded-lg p-4 bg-gray-50">
+                                <div class="border border-gray-300 dark:border-slate-600 rounded-lg p-4 bg-gray-50 dark:bg-slate-700">
                                     <img :src="faviconPreview" alt="Preview" class="h-16 w-16 object-contain">
                                 </div>
                             </div>
@@ -271,7 +271,7 @@
                     @csrf
                     @method('PUT')
 
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่าสีของทีม (Gradient)</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าสีของทีม (Gradient)</h3>
 
                     <div class="space-y-6">
                         <!-- Primary Colors -->
@@ -367,11 +367,11 @@
                     @csrf
                     @method('PUT')
 
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">การตั้งค่า API Keys</h3>
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">การตั้งค่า API Keys</h3>
                     <p class="text-gray-600 mb-6">จัดการ API Keys สำหรับบริการต่างๆ</p>
 
                     <!-- Google Translate API -->
-                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                    <div class="mb-8 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
                         <div class="flex items-center mb-4">
                             <span class="text-2xl mr-3">🌐</span>
                             <h4 class="text-lg font-semibold text-gray-900">Google Translate API</h4>
@@ -390,28 +390,28 @@
 
                             <!-- API Key -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">API Key</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">API Key</label>
                                 <input type="text" name="google_translate_api_key"
                                        value="{{ old('google_translate_api_key', $settings->get('general')->firstWhere('key', 'google_translate_api_key')->value ?? '') }}"
                                        placeholder="AIzaSy..."
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 <p class="text-xs text-gray-500 mt-1">ดูวิธีการสร้าง API Key ได้ที่ <a href="https://console.cloud.google.com" target="_blank" class="text-indigo-600 hover:underline">Google Cloud Console</a></p>
                             </div>
 
                             <!-- Project ID -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Project ID (ไม่บังคับ)</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project ID (ไม่บังคับ)</label>
                                 <input type="text" name="google_translate_project_id"
                                        value="{{ old('google_translate_project_id', $settings->get('general')->firstWhere('key', 'google_translate_project_id')->value ?? '') }}"
                                        placeholder="my-project-id"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             </div>
 
                             <!-- Source Language -->
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">ภาษาต้นทาง</label>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ภาษาต้นทาง</label>
                                 <select name="translate_source_language"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                     @php
                                         $currentSource = $settings->get('general')->firstWhere('key', 'translate_source_language')->value ?? 'th';
                                     @endphp
@@ -433,22 +433,22 @@
                     </div>
 
                     <!-- Future API Sections (Placeholder) -->
-                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                    <div class="mb-8 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
                         <div class="flex items-center mb-4">
                             <span class="text-2xl mr-3">💳</span>
                             <h4 class="text-lg font-semibold text-gray-900">Payment Gateway API</h4>
-                            <span class="ml-3 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">Coming Soon</span>
+                            <span class="ml-3 px-2 py-1 text-xs bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 rounded">Coming Soon</span>
                         </div>
-                        <p class="text-sm text-gray-500">การตั้งค่า API สำหรับระบบชำระเงิน (Stripe, PayPal, etc.)</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">การตั้งค่า API สำหรับระบบชำระเงิน (Stripe, PayPal, etc.)</p>
                     </div>
 
-                    <div class="mb-8 p-6 bg-gray-50 rounded-lg">
+                    <div class="mb-8 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
                         <div class="flex items-center mb-4">
                             <span class="text-2xl mr-3">📧</span>
                             <h4 class="text-lg font-semibold text-gray-900">Email Service API</h4>
-                            <span class="ml-3 px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">Coming Soon</span>
+                            <span class="ml-3 px-2 py-1 text-xs bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 rounded">Coming Soon</span>
                         </div>
-                        <p class="text-sm text-gray-500">การตั้งค่า API สำหรับบริการอีเมล (SendGrid, Mailgun, etc.)</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">การตั้งค่า API สำหรับบริการอีเมล (SendGrid, Mailgun, etc.)</p>
                     </div>
 
                     <div class="flex justify-end mt-6">
@@ -487,7 +487,7 @@
                             <p class="text-gray-600 mb-6">กำหนดรูปแบบและการแสดงผลของอนิเมชั่นโหลดหน้าแบบมืออาชีพ</p>
 
                             <!-- Enable/Disable -->
-                            <div class="mb-6 p-6 bg-gray-50 rounded-lg">
+                            <div class="mb-6 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
                                 <label class="flex items-center cursor-pointer">
                                     <input type="checkbox" name="page_loader_enabled" value="1" x-model="loaderEnabled"
                                            class="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500 transition">
@@ -528,7 +528,7 @@
                             </div>
 
                             <!-- Color Settings -->
-                            <div class="mb-6 p-6 bg-gray-50 rounded-lg">
+                            <div class="mb-6 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
                                 <label class="block text-sm font-medium text-gray-700 mb-3">การตั้งค่าสี</label>
 
                                 <!-- Primary Color -->
