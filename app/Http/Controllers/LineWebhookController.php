@@ -101,7 +101,10 @@ class LineWebhookController extends Controller
         // Handle commands
         $lineService = app(LineService::class);
 
-        if (strtolower($messageText) === 'info' || strtolower($messageText) === 'ข้อมูล') {
+        // Check for special commands first
+        $command = strtolower(trim($messageText));
+
+        if ($command === 'info' || $command === 'ข้อมูล') {
             if ($user) {
                 $lineService->sendUserInfoCard($user);
             } else {
@@ -110,6 +113,76 @@ class LineWebhookController extends Controller
                     'คุณยังไม่ได้ลงทะเบียนในระบบ กรุณาสมัครสมาชิกที่เว็บไซต์ของเรา'
                 );
             }
+            return;
+        }
+
+        // Check if AI Bot is enabled
+        $aiSetting = \App\Models\LineBotAiSetting::getActive();
+
+        if ($aiSetting && $aiSetting->is_active) {
+            $this->handleAiChat($lineUserId, $messageText, $user, $aiSetting);
+        } else {
+            // Default response when AI is not enabled
+            $lineService->sendPushMessage(
+                $lineUserId,
+                "ขอบคุณสำหรับข้อความของคุณ 😊\n\nพิมพ์ 'info' หรือ 'ข้อมูล' เพื่อดูข้อมูลบัญชีของคุณ"
+            );
+        }
+    }
+
+    /**
+     * Handle AI chat
+     */
+    private function handleAiChat(
+        string $lineUserId,
+        string $messageText,
+        ?User $user,
+        \App\Models\LineBotAiSetting $aiSetting
+    ): void {
+        try {
+            // Get or create conversation
+            $conversation = \App\Models\LineBotConversation::where('line_user_id', $lineUserId)
+                ->where('status', 'active')
+                ->first();
+
+            if (!$conversation) {
+                $conversation = \App\Models\LineBotConversation::create([
+                    'line_user_id' => $lineUserId,
+                    'user_id' => $user?->id,
+                    'ai_setting_id' => $aiSetting->id,
+                    'status' => 'active',
+                ]);
+            }
+
+            // Save user message
+            $conversation->addMessage('user', $messageText);
+
+            // Generate AI response
+            $aiService = new \App\Services\LineBotAiService($aiSetting);
+            $response = $aiService->generateResponse($messageText, $conversation);
+
+            // Save AI response
+            $conversation->addMessage('assistant', $response['message'], [
+                'tokens_used' => $response['tokens_used'],
+                'response_time' => $response['response_time'],
+                'provider' => $response['provider'],
+                'is_ai_generated' => true,
+            ]);
+
+            // Send response to user
+            $lineService = app(LineService::class);
+            $lineService->sendPushMessage($lineUserId, $response['message']);
+
+        } catch (\Exception $e) {
+            Log::error('AI chat error', [
+                'error' => $e->getMessage(),
+                'line_user_id' => $lineUserId,
+            ]);
+
+            // Send fallback message
+            $fallbackMessage = $aiSetting->fallback_message;
+            $lineService = app(LineService::class);
+            $lineService->sendPushMessage($lineUserId, $fallbackMessage);
         }
     }
 
