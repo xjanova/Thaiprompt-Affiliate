@@ -790,44 +790,34 @@
             };
         };
 
-        // GSAP Animations
+        // GSAP Animations - ปรับให้ไม่กระทบการแสดงผล
         gsap.registerPlugin(ScrollTrigger);
 
         // Animate page entrance
         document.addEventListener('DOMContentLoaded', function() {
-            // Fade in content
+            // ปิด animations ที่อาจทำให้แสดงผลไม่ครบ
+            // Removed initial opacity animations to prevent display issues
+
+            // Subtle entrance animation - ใช้แค่ translateY ไม่ใช้ opacity
             gsap.from('main > *', {
-                opacity: 0,
-                y: 20,
-                duration: 0.6,
-                stagger: 0.1,
-                ease: 'power2.out'
+                y: 10,
+                duration: 0.3,
+                stagger: 0.05,
+                ease: 'power2.out',
+                clearProps: 'all' // Clear all properties after animation
             });
 
-            // Animate cards on scroll
-            const cards = document.querySelectorAll('.bg-white');
-            cards.forEach(card => {
-                gsap.from(card, {
-                    scrollTrigger: {
-                        trigger: card,
-                        start: 'top 80%',
-                        toggleActions: 'play none none reverse'
-                    },
-                    opacity: 0,
-                    y: 30,
-                    duration: 0.5,
-                    ease: 'power2.out'
-                });
-            });
+            // Removed scroll-triggered animations to prevent rendering issues
+            // เอา card animations ออกเพื่อป้องกันปัญหาการแสดงผล
 
-            // Animate buttons on hover
+            // Subtle hover effects on buttons - ไม่กระทบการแสดงผล
             const buttons = document.querySelectorAll('button:not([type=submit]), .btn');
             buttons.forEach(button => {
                 button.addEventListener('mouseenter', () => {
-                    gsap.to(button, { scale: 1.05, duration: 0.2 });
+                    gsap.to(button, { scale: 1.03, duration: 0.15 });
                 });
                 button.addEventListener('mouseleave', () => {
-                    gsap.to(button, { scale: 1, duration: 0.2 });
+                    gsap.to(button, { scale: 1, duration: 0.15 });
                 });
             });
         });
