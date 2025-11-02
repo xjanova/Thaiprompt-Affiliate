@@ -78,7 +78,7 @@ jobs:
             echo "should_bump=true" >> $GITHUB_OUTPUT
           fi
 
-      - name: Determine version bump
+      - name: Determine version bump and calculate new version
         id: bump
         if: steps.check_bump.outputs.should_bump == 'true'
         run: |
@@ -112,23 +112,41 @@ jobs:
           echo "bump=$BUMP_TYPE" >> $GITHUB_OUTPUT
           echo "🎯 Version bump type: $BUMP_TYPE"
 
-      - name: Bump version and create tag
-        id: tag_version
-        if: steps.check_bump.outputs.should_bump == 'true'
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: ${{ steps.bump.outputs.bump }}
-          tag_prefix: v
-          fetch_all_tags: true
-          create_annotated_tag: true
+          # Calculate new version
+          CURRENT_TAG="${{ steps.previoustag.outputs.tag }}"
+          # Remove 'v' prefix
+          CURRENT_VERSION="${CURRENT_TAG#v}"
+
+          # Split version into parts
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+          # Bump version based on type
+          if [ "$BUMP_TYPE" == "major" ]; then
+            MAJOR=$((MAJOR + 1))
+            MINOR=0
+            PATCH=0
+          elif [ "$BUMP_TYPE" == "minor" ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          else
+            PATCH=$((PATCH + 1))
+          fi
+
+          NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+          NEW_TAG="v${NEW_VERSION}"
+
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+          echo "previous_tag=$CURRENT_TAG" >> $GITHUB_OUTPUT
+
+          echo "📊 Version: $CURRENT_TAG → $NEW_TAG"
 
       - name: Generate changelog
         id: changelog
         if: steps.check_bump.outputs.should_bump == 'true'
         run: |
-          PREVIOUS_TAG="${{ steps.previoustag.outputs.tag }}"
-          NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
+          PREVIOUS_TAG="${{ steps.bump.outputs.previous_tag }}"
+          NEW_TAG="${{ steps.bump.outputs.new_tag }}"
           RELEASE_DATE=$(date +%Y-%m-%d)
 
           # Generate changelog for GitHub release
@@ -160,8 +178,8 @@ jobs:
       - name: Update CHANGELOG.md
         if: steps.check_bump.outputs.should_bump == 'true'
         run: |
-          PREVIOUS_TAG="${{ steps.previoustag.outputs.tag }}"
-          NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
+          PREVIOUS_TAG="${{ steps.bump.outputs.previous_tag }}"
+          NEW_TAG="${{ steps.bump.outputs.new_tag }}"
           RELEASE_DATE=$(date +%Y-%m-%d)
 
           # Create CHANGELOG.md if it doesn't exist
@@ -205,12 +223,13 @@ jobs:
         if: steps.check_bump.outputs.should_bump == 'true'
         uses: ncipollo/create-release@v1
         with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          tag: ${{ steps.bump.outputs.new_tag }}
+          name: Release ${{ steps.bump.outputs.new_tag }}
           bodyFile: CHANGELOG.txt
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
+          makeLatest: true
 
       - name: Setup Node.js
         if: steps.check_bump.outputs.should_bump == 'true'
@@ -222,7 +241,7 @@ jobs:
         if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           # Remove 'v' prefix from tag
-          NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
 
           # Update package.json
           npm version $NEW_VERSION --no-git-tag-version --allow-same-version
@@ -232,7 +251,7 @@ jobs:
       - name: Update VERSION file
         if: steps.check_bump.outputs.should_bump == 'true'
         run: |
-          NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
 
           # Update VERSION file (used by Laravel config)
           echo "$NEW_VERSION" > VERSION
@@ -253,7 +272,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: bump version to ${{ steps.tag_version.outputs.new_version }} [skip ci]"
+            git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
 
             # Determine target branch
             if [ "${{ github.event_name }}" == "pull_request" ]; then
@@ -269,6 +288,6 @@ jobs:
       - name: Output new version
         if: steps.check_bump.outputs.should_bump == 'true'
         run: |
-          echo "🎉 New version created: ${{ steps.tag_version.outputs.new_tag }}"
-          echo "📦 Previous version: ${{ steps.previoustag.outputs.tag }}"
+          echo "🎉 New version created: ${{ steps.bump.outputs.new_tag }}"
+          echo "📦 Previous version: ${{ steps.bump.outputs.previous_tag }}"
           echo "📈 Version bump type: ${{ steps.bump.outputs.bump }}"
