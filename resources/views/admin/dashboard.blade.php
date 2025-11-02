@@ -96,11 +96,11 @@
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Revenue Area Chart -->
-        <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6">
+        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <h3 class="text-xl font-bold text-gray-900">รายได้รายเดือน</h3>
-                    <p class="text-sm text-gray-500">12 เดือนย้อนหลัง</p>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">รายได้รายเดือน</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">12 เดือนย้อนหลัง</p>
                 </div>
                 <div class="flex gap-2">
                     <span class="px-3 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">
@@ -112,37 +112,37 @@
         </div>
 
         <!-- Commission Status Donut Chart -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-6">สถานะคอมมิชชั่น</h3>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">สถานะคอมมิชชั่น</h3>
             <canvas id="statusChart"></canvas>
             <div class="mt-6 space-y-3">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600">รอดำเนินการ</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">รอดำเนินการ</span>
                     </div>
-                    <span class="font-semibold text-gray-900">{{ $commissionStatus['pending'] }}</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['pending'] }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600">อนุมัติแล้ว</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">อนุมัติแล้ว</span>
                     </div>
-                    <span class="font-semibold text-gray-900">{{ $commissionStatus['approved'] }}</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['approved'] }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600">จ่ายแล้ว</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">จ่ายแล้ว</span>
                     </div>
-                    <span class="font-semibold text-gray-900">{{ $commissionStatus['paid'] }}</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['paid'] }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600">ปฏิเสธ</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">ปฏิเสธ</span>
                     </div>
-                    <span class="font-semibold text-gray-900">{{ $commissionStatus['rejected'] }}</span>
+                    <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['rejected'] }}</span>
                 </div>
             </div>
         </div>
@@ -151,14 +151,14 @@
     <!-- Commission Types & Daily Activity -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Commission Types Bar Chart -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-6">ประเภทคอมมิชชั่น</h3>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">ประเภทคอมมิชชั่น</h3>
             <canvas id="typesChart"></canvas>
         </div>
 
         <!-- Daily Activity Line Chart -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-6">กิจกรรมรายวัน (30 วัน)</h3>
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">กิจกรรมรายวัน (30 วัน)</h3>
             <canvas id="dailyChart"></canvas>
         </div>
     </div>
@@ -166,16 +166,16 @@
     <!-- Bottom Section: Top Affiliates & Recent Activity -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Top Affiliates Leaderboard -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-bold text-gray-900">🏆 Top Affiliates</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">🏆 Top Affiliates</h3>
                 <a href="{{ route('admin.affiliates.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                     ดูทั้งหมด →
                 </a>
             </div>
             <div class="space-y-4">
                 @forelse($topAffiliates as $index => $affiliate)
-                    <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl hover:shadow-md transition border border-gray-100">
+                    <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white dark:from-slate-700 dark:to-slate-800 rounded-xl hover:shadow-md transition border border-gray-100 dark:border-slate-600">
                         <div class="flex-shrink-0">
                             @if($index === 0)
                                 <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
@@ -196,12 +196,12 @@
                             @endif
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-gray-900 truncate">{{ $affiliate->user->name }}</p>
-                            <p class="text-sm text-gray-500 truncate">{{ $affiliate->user->email }}</p>
+                            <p class="font-semibold text-gray-900 dark:text-white truncate">{{ $affiliate->user->name }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ $affiliate->user->email }}</p>
                         </div>
                         <div class="text-right">
-                            <p class="font-bold text-lg text-green-600">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
-                            <p class="text-xs text-gray-500">{{ $affiliate->total_referrals }} refs</p>
+                            <p class="font-bold text-lg text-green-600 dark:text-green-400">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $affiliate->total_referrals }} refs</p>
                         </div>
                     </div>
                 @empty
@@ -214,9 +214,9 @@
         </div>
 
         <!-- Recent Commissions Activity Feed -->
-        <div class="bg-white rounded-2xl shadow-xl p-6" x-data="activityFeed()">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6" x-data="activityFeed()">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-bold text-gray-900">🔔 กิจกรรมล่าสุด</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">🔔 กิจกรรมล่าสุด</h3>
                 <a href="{{ route('admin.commissions.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                     ดูทั้งหมด →
                 </a>
@@ -225,7 +225,7 @@
                  x-ref="scrollContainer"
                  @scroll="handleScroll()">
                 @forelse($recentCommissions as $index => $commission)
-                    <div class="flex items-start gap-3 p-3 hover:bg-gray-50 rounded-lg transition"
+                    <div class="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition"
                          x-show="$index < visibleCount"
                          x-transition:enter="transition ease-out duration-300"
                          x-transition:enter-start="opacity-0 transform translate-y-4"
@@ -234,13 +234,13 @@
                              alt="{{ $commission->affiliate->user->name }}"
                              class="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-200">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 truncate">
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                 {{ $commission->affiliate->user->name }}
                             </p>
-                            <p class="text-xs text-gray-500">
-                                ได้รับ <span class="font-semibold text-green-600">฿{{ number_format($commission->amount, 2) }}</span>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                ได้รับ <span class="font-semibold text-green-600 dark:text-green-400">฿{{ number_format($commission->amount, 2) }}</span>
                             </p>
-                            <p class="text-xs text-gray-400 mt-1">
+                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
                                 {{ $commission->created_at->diffForHumans() }}
                             </p>
                         </div>

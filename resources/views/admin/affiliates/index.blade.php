@@ -20,16 +20,16 @@
     </div>
 
     <!-- Filter Section -->
-    <div class="bg-white rounded-lg shadow-md p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4">
         <form method="GET" action="{{ route('admin.affiliates.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหา</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ค้นหา</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="ชื่อ, อีเมล, รหัสแนะนำ"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สถานะ</label>
                 <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     <option value="">ทั้งหมด</option>
                     <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
@@ -39,13 +39,13 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ระดับ</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ระดับ</label>
                 <input type="number" name="level" value="{{ request('level') }}" placeholder="ระดับ" min="1"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">จำนวนต่อหน้า</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำนวนต่อหน้า</label>
                 <select name="per_page" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
                     <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
@@ -66,46 +66,46 @@
     </div>
 
     <!-- Affiliates Table -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                <thead class="bg-gray-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ผู้ใช้</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสแนะนำ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ระดับ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referrals</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รายได้</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การกระทำ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ผู้ใช้</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">รหัสแนะนำ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ระดับ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Referrals</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">รายได้</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">การกระทำ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                     @forelse($affiliates as $affiliate)
-                        <tr class="hover:bg-gray-50 transition">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ $affiliate->user->name }}</div>
-                                <div class="text-sm text-gray-500">{{ $affiliate->user->email }}</div>
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $affiliate->user->name }}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $affiliate->user->email }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <code class="px-2 py-1 bg-gray-100 rounded text-sm font-mono">{{ $affiliate->referral_code }}</code>
+                                <code class="px-2 py-1 bg-gray-100 dark:bg-slate-700 dark:text-gray-300 rounded text-sm font-mono">{{ $affiliate->referral_code }}</code>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
                                     Level {{ $affiliate->level }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 <span class="font-semibold">{{ $affiliate->total_referrals }}</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900 dark:text-white">
                                 {{ number_format($affiliate->total_earnings, 2) }} ฿
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                    {{ $affiliate->status === 'active' ? 'bg-green-100 text-green-800' : '' }}
-                                    {{ $affiliate->status === 'inactive' ? 'bg-gray-100 text-gray-800' : '' }}
-                                    {{ $affiliate->status === 'suspended' ? 'bg-red-100 text-red-800' : '' }}">
+                                    {{ $affiliate->status === 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : '' }}
+                                    {{ $affiliate->status === 'inactive' ? 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-300' : '' }}
+                                    {{ $affiliate->status === 'suspended' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' : '' }}">
                                     {{ ucfirst($affiliate->status) }}
                                 </span>
                             </td>
@@ -131,7 +131,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            <td colspan="7" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                                 <div class="flex flex-col items-center justify-center">
                                     <span class="text-4xl mb-2">📭</span>
                                     <span>ไม่พบข้อมูล Affiliates</span>
@@ -145,7 +145,7 @@
 
         <!-- Pagination -->
         @if($affiliates->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200">
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-slate-700">
                 <div class="flex items-center justify-between">
                     <div class="text-sm text-gray-700">
                         แสดง {{ $affiliates->firstItem() ?? 0 }} ถึง {{ $affiliates->lastItem() ?? 0 }} จากทั้งหมด {{ $affiliates->total() }} รายการ

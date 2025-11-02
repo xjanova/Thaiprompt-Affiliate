@@ -12,16 +12,16 @@
     </div>
 
     <!-- Filter Section -->
-    <div class="bg-white rounded-lg shadow-md p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4">
         <form method="GET" action="{{ route('admin.users.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">ค้นหา</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ค้นหา</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="ชื่อหรืออีเมล"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">บทบาท</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">บทบาท</label>
                 <select name="role" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     <option value="">ทั้งหมด</option>
                     <option value="admin" {{ request('role') === 'admin' ? 'selected' : '' }}>Admin</option>
@@ -31,7 +31,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">จำนวนต่อหน้า</label>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำนวนต่อหน้า</label>
                 <select name="per_page" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
                     <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
@@ -52,43 +52,43 @@
     </div>
 
     <!-- Users Table -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                <thead class="bg-gray-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อีเมล</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">บทบาท</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สร้างเมื่อ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การกระทำ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ชื่อ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">อีเมล</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">บทบาท</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">สร้างเมื่อ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">การกระทำ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                     @forelse($users as $user)
-                        <tr class="hover:bg-gray-50 transition">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div>
-                                        <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $user->name }}</div>
                                         @if($user->is_super_admin)
-                                            <span class="text-xs text-purple-600 font-semibold">Super Admin</span>
+                                            <span class="text-xs text-purple-600 dark:text-purple-400 font-semibold">Super Admin</span>
                                         @endif
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-500">{{ $user->email }}</div>
+                                <div class="text-sm text-gray-500 dark:text-gray-400">{{ $user->email }}</div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                    {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-800' : '' }}
-                                    {{ $user->role === 'manager' ? 'bg-blue-100 text-blue-800' : '' }}
-                                    {{ $user->role === 'affiliate' ? 'bg-green-100 text-green-800' : '' }}">
+                                    {{ $user->role === 'admin' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300' : '' }}
+                                    {{ $user->role === 'manager' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300' : '' }}
+                                    {{ $user->role === 'affiliate' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : '' }}">
                                     {{ ucfirst($user->role) }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                 {{ $user->created_at->format('d/m/Y') }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
