@@ -17,6 +17,8 @@ class SchemaVerifyCommand extends Command
      */
     protected $signature = 'schema:verify
                             {--fix : Generate ALTER TABLE statements to fix schema}
+                            {--auto-fix : Automatically execute ALTER TABLE to fix schema}
+                            {--force : Skip confirmation prompts (for automation)}
                             {--snapshot : Update schema snapshot file}
                             {--table= : Verify specific table only}';
 
@@ -119,11 +121,16 @@ class SchemaVerifyCommand extends Command
             $this->error('═══════════════════════════════════════');
             $this->newLine();
 
+            // Auto-fix mode
+            if ($this->option('auto-fix')) {
+                return $this->executeAutoFix();
+            }
+
             $this->warn('💡 Recommendations:');
             $this->line('  1. Review the issues above');
             $this->line('  2. Run: php artisan schema:verify --fix');
-            $this->line('  3. Or manually fix the schema');
-            $this->line('  4. Then run: php artisan migrate --force');
+            $this->line('  3. Run: php artisan schema:verify --auto-fix (auto repair)');
+            $this->line('  4. Or manually fix the schema');
             $this->newLine();
 
             if ($this->option('fix')) {
@@ -476,5 +483,142 @@ class SchemaVerifyCommand extends Command
         }
 
         return $indexes;
+    }
+
+    /**
+     * Execute auto-fix: Apply ALTER TABLE statements to fix schema
+     */
+    protected function executeAutoFix()
+    {
+        $this->newLine();
+        $this->info('🔧 Auto-Fix Mode: Repairing Database Schema');
+        $this->info('═══════════════════════════════════════');
+        $this->newLine();
+
+        // Collect fixable issues
+        $fixableIssues = array_filter($this->issues, function($issue) {
+            return $issue['type'] === 'missing_column';
+        });
+
+        $missingTableIssues = array_filter($this->issues, function($issue) {
+            return $issue['type'] === 'missing_table';
+        });
+
+        // Handle missing tables
+        if (!empty($missingTableIssues)) {
+            $this->error('⚠️ Cannot auto-fix missing tables!');
+            $this->newLine();
+            foreach ($missingTableIssues as $issue) {
+                $this->line("  • Table '{$issue['table']}' does not exist");
+            }
+            $this->newLine();
+            $this->warn('Please run migrations first:');
+            $this->line('  php artisan migrate --force');
+            $this->newLine();
+            return Command::FAILURE;
+        }
+
+        // Check if there are fixable issues
+        if (empty($fixableIssues)) {
+            $this->warn('No fixable issues found.');
+            $this->newLine();
+            return Command::SUCCESS;
+        }
+
+        // Show what will be fixed
+        $fixCount = count($fixableIssues);
+        $this->warn("Found {$fixCount} fixable issue(s):");
+        $this->newLine();
+
+        $statements = [];
+        foreach ($fixableIssues as $issue) {
+            $sqlType = $this->mapToSqlType($issue['expected_type']);
+            $sql = "ALTER TABLE `{$issue['table']}` ADD COLUMN `{$issue['column']}` {$sqlType}";
+            $statements[] = $sql;
+
+            $this->line("  • {$issue['table']}.{$issue['column']} ({$issue['expected_type']})");
+        }
+        $this->newLine();
+
+        // Show SQL statements
+        $this->info('📋 SQL Statements to execute:');
+        $this->newLine();
+        foreach ($statements as $sql) {
+            $this->line("  {$sql};");
+        }
+        $this->newLine();
+
+        // Ask for confirmation (unless --force)
+        if (!$this->option('force')) {
+            $confirm = $this->confirm('⚠️  Do you want to execute these ALTER TABLE statements?', false);
+            if (!$confirm) {
+                $this->warn('Auto-fix cancelled by user.');
+                return Command::FAILURE;
+            }
+        }
+
+        // Execute fixes
+        $this->info('⚡ Executing auto-fix...');
+        $this->newLine();
+
+        $successCount = 0;
+        $failCount = 0;
+
+        foreach ($statements as $index => $sql) {
+            try {
+                $this->line("  [{$index + 1}/" . count($statements) . "] Executing...");
+                DB::statement($sql);
+                $this->info("  ✓ Success: " . $statements[$index]);
+                $successCount++;
+            } catch (\Exception $e) {
+                $this->error("  ✗ Failed: " . $e->getMessage());
+                $this->warn("    SQL: {$sql}");
+                $failCount++;
+            }
+            $this->newLine();
+        }
+
+        // Summary
+        $this->newLine();
+        $this->info('═══════════════════════════════════════');
+        if ($failCount === 0) {
+            $this->info("  ✅ Auto-Fix Completed Successfully!");
+            $this->info("     Fixed {$successCount} issue(s)");
+        } else {
+            $this->warn("  ⚠️  Auto-Fix Completed with Errors");
+            $this->line("     Success: {$successCount}");
+            $this->line("     Failed: {$failCount}");
+        }
+        $this->info('═══════════════════════════════════════');
+        $this->newLine();
+
+        // Verify schema again
+        $this->info('🔍 Verifying schema after auto-fix...');
+        $this->newLine();
+
+        // Re-run verification
+        $this->issues = [];
+        $hasIssues = false;
+
+        foreach ($this->tablesToVerify as $table) {
+            if (!Schema::hasTable($table)) {
+                continue;
+            }
+
+            $issues = $this->verifyTableSchema($table);
+            if (!empty($issues)) {
+                $hasIssues = true;
+            }
+        }
+
+        if (!$hasIssues) {
+            $this->info('✅ All schema issues have been resolved!');
+            $this->newLine();
+            return Command::SUCCESS;
+        } else {
+            $this->warn('⚠️  Some issues still remain. Run schema:verify for details.');
+            $this->newLine();
+            return Command::FAILURE;
+        }
     }
 }

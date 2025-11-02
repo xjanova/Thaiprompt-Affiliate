@@ -112,15 +112,16 @@ php artisan view:clear
 6. ✅ ทดสอบ AI Connection
 7. ✅ เปิดใช้งาน (คลิก Toggle)
 
-## 🔍 Schema Verification System (ใหม่!)
+## 🔍 Schema Verification & Auto-Repair System (ใหม่!)
 
-ระบบตรวจสอบความถูกต้องของ Database Schema อัตโนมัติ - ป้องกัน Schema Drift!
+ระบบตรวจสอบและซ่อมแซม Database Schema อัตโนมัติ - ป้องกัน Schema Drift!
 
 ### วิธีใช้งาน:
 
 **1. ตรวจสอบ Schema ด้วย Helper Script (แนะนำ):**
 ```bash
 ./verify-schema.sh
+# เลือก option 3 สำหรับ Auto-Repair อัตโนมัติ 🔧
 ```
 
 **2. หรือใช้ Artisan Command โดยตรง:**
@@ -130,6 +131,12 @@ php artisan schema:verify
 
 # ตรวจสอบและแสดง SQL สำหรับแก้ไข
 php artisan schema:verify --fix
+
+# ⚡ ซ่อมแซมอัตโนมัติ (Auto-Fix) - ใหม่!
+php artisan schema:verify --auto-fix
+
+# ซ่อมแซมแบบไม่ถาม (สำหรับ automation)
+php artisan schema:verify --auto-fix --force
 
 # สร้าง Schema Snapshot
 php artisan schema:verify --snapshot
@@ -144,6 +151,7 @@ php artisan schema:verify --table=line_bot_ai_settings
 - ✅ Data types ตรงตาม migration หรือไม่
 - ⚠️ แจ้งเตือนถ้าพบความแตกต่าง (Schema Drift)
 - 🔧 สร้าง ALTER TABLE statements สำหรับแก้ไขอัตโนมัติ
+- ⚡ **ซ่อมแซม Schema อัตโนมัติได้ (Auto-Repair)!**
 
 ### เมื่อไหร่ควรใช้:
 - ✅ หลังจาก import SQL file
@@ -160,6 +168,7 @@ php artisan schema:verify --table=line_bot_ai_settings
 - Migrations ต้องรันบน production server ที่มี PHP และ Laravel ติดตั้งแล้ว
 - **ถ้าได้ import SQL ไปบางส่วนแล้ว** สามารถรัน migrations ต่อได้เลย ระบบจะข้ามตารางที่มีอยู่แล้วอัตโนมัติ
 - **ระบบ deploy.sh จะตรวจสอบ schema อัตโนมัติ** ก่อนรัน migrations ทุกครั้ง
+- ⚡ **ถ้าเจอปัญหา schema ระหว่าง deploy - ระบบจะซ่อมแซมอัตโนมัติ!** (Auto-Repair with Backup)
 
 ## 📝 ฟีเจอร์ที่พร้อมใช้งาน
 

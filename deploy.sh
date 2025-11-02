@@ -614,7 +614,7 @@ if ! php artisan db:show >/dev/null 2>&1; then
 fi
 print_success "✓ Database connection OK"
 
-# Step 10.2: Schema Verification (Detect Schema Drift)
+# Step 10.2: Schema Verification & Auto-Repair System
 print_info "→ Verifying database schema integrity..."
 if php artisan schema:verify >/dev/null 2>&1; then
     print_success "✓ Database schema is correct"
@@ -635,19 +635,57 @@ else
     echo "  • Database was modified manually"
     echo "  • Migrations were partially applied"
     echo ""
-    print_info "📋 Recommended actions:"
-    echo "  1. Review the issues above carefully"
-    echo "  2. Run: php artisan schema:verify --fix"
-    echo "  3. Or manually fix with ALTER TABLE statements"
+
+    # Backup database before auto-repair
+    print_info "→ Creating safety backup before auto-repair..."
+    SCHEMA_BACKUP="$BACKUP_DIR/pre_autofix_$(date +'%Y%m%d_%H%M%S').sql"
+    if [ "$DB_CONNECTION" = "mysql" ] && command -v mysqldump >/dev/null 2>&1; then
+        if [ -z "$DB_PASSWORD" ]; then
+            mysqldump -h "$DB_HOST" -u "$DB_USERNAME" "$DB_DATABASE" > "$SCHEMA_BACKUP" 2>/dev/null || \
+                print_warning "Backup failed (continuing anyway)"
+        else
+            mysqldump -h "$DB_HOST" -u "$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" > "$SCHEMA_BACKUP" 2>/dev/null || \
+                print_warning "Backup failed (continuing anyway)"
+        fi
+        if [ -f "$SCHEMA_BACKUP" ]; then
+            print_success "✓ Schema backed up: $SCHEMA_BACKUP"
+        fi
+    fi
     echo ""
 
-    read -p "Continue with deployment anyway? (y/n) [y]: " -n 1 -r CONTINUE_DEPLOY
-    echo
-    if [[ ! -z $CONTINUE_DEPLOY ]] && [[ ! $CONTINUE_DEPLOY =~ ^[Yy]$ ]]; then
-        error_exit "Deployment cancelled due to schema issues"
-    fi
+    # Attempt auto-repair
+    print_info "🔧 Attempting automatic schema repair..."
+    echo ""
 
-    print_info "Continuing deployment (schema issues will be addressed by migrations)..."
+    if php artisan schema:verify --auto-fix --force 2>&1 | tee -a "$LOG_FILE"; then
+        print_success "✓ Schema auto-repair completed successfully!"
+        echo ""
+        log "Schema auto-repair: SUCCESS"
+
+        # Verify repair was successful
+        if php artisan schema:verify >/dev/null 2>&1; then
+            print_success "✓ Schema verification passed after repair"
+        else
+            print_warning "⚠ Some schema issues may remain, but continuing..."
+        fi
+    else
+        print_error "✗ Auto-repair failed or incomplete"
+        echo ""
+        print_warning "→ Rollback information:"
+        echo "  • Backup file: $SCHEMA_BACKUP"
+        echo "  • Restore: mysql -u $DB_USERNAME -p $DB_DATABASE < $SCHEMA_BACKUP"
+        echo ""
+        log "Schema auto-repair: FAILED"
+
+        # Ask whether to continue
+        read -p "Continue with deployment anyway? (y/n) [n]: " -n 1 -r CONTINUE_DEPLOY
+        echo
+        if [[ ! $CONTINUE_DEPLOY =~ ^[Yy]$ ]]; then
+            error_exit "Deployment cancelled due to schema repair failure"
+        fi
+
+        print_warning "⚠ Continuing despite schema issues..."
+    fi
     echo ""
 fi
 

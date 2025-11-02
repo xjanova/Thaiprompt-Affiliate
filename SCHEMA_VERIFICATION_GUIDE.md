@@ -112,6 +112,65 @@ ALTER TABLE `line_bot_ai_settings` ADD COLUMN `conversation_memory_limit` INT;
 
 คัดลอก SQL statements เหล่านี้ไปรันใน phpMyAdmin หรือ MySQL client
 
+#### ⚡ Auto-Fix: ซ่อมแซม Schema อัตโนมัติ (ใหม่!)
+```bash
+php artisan schema:verify --auto-fix
+```
+
+**Output:**
+```
+🔧 Auto-Fix Mode: Repairing Database Schema
+═══════════════════════════════════════
+
+Found 2 fixable issue(s):
+
+  • line_bot_ai_settings.enable_conversation_history (boolean)
+  • line_bot_ai_settings.conversation_memory_limit (integer)
+
+📋 SQL Statements to execute:
+
+  ALTER TABLE `line_bot_ai_settings` ADD COLUMN `enable_conversation_history` TINYINT(1);
+  ALTER TABLE `line_bot_ai_settings` ADD COLUMN `conversation_memory_limit` INT;
+
+⚠️  Do you want to execute these ALTER TABLE statements? (yes/no):
+> yes
+
+⚡ Executing auto-fix...
+
+  [1/2] Executing...
+  ✓ Success: ALTER TABLE `line_bot_ai_settings` ADD COLUMN `enable_conversation_history` TINYINT(1)
+
+  [2/2] Executing...
+  ✓ Success: ALTER TABLE `line_bot_ai_settings` ADD COLUMN `conversation_memory_limit` INT
+
+═══════════════════════════════════════
+  ✅ Auto-Fix Completed Successfully!
+     Fixed 2 issue(s)
+═══════════════════════════════════════
+
+🔍 Verifying schema after auto-fix...
+
+✅ All schema issues have been resolved!
+```
+
+**สำหรับ Automation (ไม่ต้องถาม):**
+```bash
+php artisan schema:verify --auto-fix --force
+```
+
+**ฟีเจอร์ Auto-Fix:**
+- ✅ ตรวจจับ missing columns อัตโนมัติ
+- ✅ สร้างและรัน ALTER TABLE statements
+- ✅ ถามยืนยันก่อนทำการเปลี่ยนแปลง (ยกเว้น --force)
+- ✅ ตรวจสอบผลลัพธ์หลังซ่อมแซม
+- ✅ ปลอดภัย: เพิ่ม columns เท่านั้น ไม่ลบ
+- ✅ แสดงสถิติการซ่อมแซม (success/fail)
+
+**⚠️ Safety Notes:**
+- Auto-fix จะทำการ **เพิ่ม columns เท่านั้น** (ไม่ลบหรือแก้ไข)
+- ควร backup database ก่อนใช้ auto-fix
+- ระบบ deploy.sh จะ backup อัตโนมัติก่อนรัน auto-fix
+
 #### ตรวจสอบตารางเฉพาะ
 ```bash
 php artisan schema:verify --table=line_bot_ai_settings
@@ -180,24 +239,42 @@ ALTER TABLE `table_name` ADD COLUMN `column_name` VARCHAR(255);
 
 ## 📋 Integration กับ Deploy Script
 
-ระบบ `deploy.sh` จะรัน Schema Verification อัตโนมัติก่อน Migration:
+ระบบ `deploy.sh` จะรัน **Schema Verification & Auto-Repair** อัตโนมัติก่อน Migration:
 
 ```bash
-# Step 10.2: Schema Verification (Detect Schema Drift)
+# Step 10.2: Schema Verification & Auto-Repair System
 print_info "→ Verifying database schema integrity..."
 if php artisan schema:verify >/dev/null 2>&1; then
     print_success "✓ Database schema is correct"
 else
     print_warning "⚠ Schema issues detected"
-    # แสดง detailed report
-    php artisan schema:verify
-    # ถามว่าจะดำเนินการต่อหรือไม่
+
+    # Backup database ก่อน auto-repair
+    print_info "→ Creating safety backup before auto-repair..."
+    mysqldump ... > pre_autofix_backup.sql
+
+    # Attempt auto-repair
+    print_info "🔧 Attempting automatic schema repair..."
+    if php artisan schema:verify --auto-fix --force; then
+        print_success "✓ Schema auto-repair completed successfully!"
+    else
+        print_error "✗ Auto-repair failed"
+        # ถามว่าจะ continue หรือไม่
+    fi
 fi
 ```
 
 **ผลลัพธ์:**
 - ✅ ถ้า schema ถูกต้อง → ดำเนินการต่อเลย
-- ⚠️ ถ้ามีปัญหา → แสดง report และถามก่อนดำเนินการต่อ
+- ⚠️ ถ้ามีปัญหา → **ซ่อมแซมอัตโนมัติ!** (พร้อม backup)
+- ✅ ถ้าซ่อมสำเร็จ → ดำเนินการต่อ
+- ❌ ถ้าซ่อมไม่สำเร็จ → ถามก่อนดำเนินการต่อ
+
+**Safety Features:**
+- ✅ สร้าง database backup ก่อน auto-repair ทุกครั้ง
+- ✅ ใช้ --force เพื่อไม่ต้องถามระหว่าง deployment
+- ✅ แสดง rollback information ถ้าเกิดปัญหา
+- ✅ Log ทุกการเปลี่ยนแปลงใน deployment.log
 
 ---
 

@@ -39,11 +39,12 @@ echo -e "${BLUE}Choose an option:${NC}"
 echo ""
 echo "  1) 🔍 Verify Schema (Check for issues)"
 echo "  2) 🔧 Verify & Generate Fix Statements"
-echo "  3) 📸 Create/Update Schema Snapshot"
-echo "  4) 📋 Check Specific Table"
-echo "  5) ℹ️  Show Help"
+echo "  3) ⚡ Auto-Fix Schema Issues (Automatic Repair)"
+echo "  4) 📸 Create/Update Schema Snapshot"
+echo "  5) 📋 Check Specific Table"
+echo "  6) ℹ️  Show Help"
 echo ""
-read -p "Enter choice [1-5]: " choice
+read -p "Enter choice [1-6]: " choice
 
 case $choice in
     1)
@@ -60,6 +61,25 @@ case $choice in
         ;;
     3)
         echo ""
+        echo -e "${YELLOW}⚡ Auto-Fix Mode - Automatic Schema Repair${NC}"
+        echo ""
+        echo -e "${RED}⚠️  WARNING: This will modify your database!${NC}"
+        echo "A backup will be created before making changes."
+        echo ""
+        read -p "Continue with auto-fix? (y/n): " -n 1 -r confirm
+        echo ""
+        if [[ $confirm =~ ^[Yy]$ ]]; then
+            echo ""
+            echo -e "${BLUE}Running auto-fix...${NC}"
+            echo ""
+            php artisan schema:verify --auto-fix
+        else
+            echo ""
+            echo -e "${YELLOW}Auto-fix cancelled.${NC}"
+        fi
+        ;;
+    4)
+        echo ""
         echo -e "${BLUE}Creating schema snapshot...${NC}"
         echo ""
         php artisan schema:verify --snapshot
@@ -67,7 +87,7 @@ case $choice in
         echo -e "${GREEN}✓ Snapshot created successfully!${NC}"
         echo "Location: database/schema_snapshot.json"
         ;;
-    4)
+    5)
         echo ""
         read -p "Enter table name: " table_name
         echo ""
@@ -75,7 +95,7 @@ case $choice in
         echo ""
         php artisan schema:verify --table="$table_name"
         ;;
-    5)
+    6)
         echo ""
         echo -e "${YELLOW}Schema Verification Help${NC}"
         echo ""
@@ -89,10 +109,19 @@ case $choice in
         echo "  • Troubleshooting schema issues"
         echo ""
         echo "Commands:"
-        echo "  php artisan schema:verify              - Basic verification"
-        echo "  php artisan schema:verify --fix        - Generate ALTER TABLE statements"
-        echo "  php artisan schema:verify --snapshot   - Create schema snapshot"
-        echo "  php artisan schema:verify --table=NAME - Check specific table"
+        echo "  php artisan schema:verify                  - Basic verification"
+        echo "  php artisan schema:verify --fix            - Generate ALTER TABLE statements"
+        echo "  php artisan schema:verify --auto-fix       - Auto-repair schema (interactive)"
+        echo "  php artisan schema:verify --auto-fix --force - Auto-repair (non-interactive)"
+        echo "  php artisan schema:verify --snapshot       - Create schema snapshot"
+        echo "  php artisan schema:verify --table=NAME     - Check specific table"
+        echo ""
+        echo "Auto-Fix Features:"
+        echo "  • Automatically detects missing columns"
+        echo "  • Generates and executes ALTER TABLE statements"
+        echo "  • Asks for confirmation before applying changes"
+        echo "  • Verifies repairs after completion"
+        echo "  • Safe: Only adds missing columns, doesn't delete"
         echo ""
         ;;
     *)
