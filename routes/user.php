@@ -78,6 +78,7 @@ Route::prefix('ranks')->name('ranks.')->group(function () {
     Route::get('/dashboard', [RankController::class, 'dashboard'])->name('dashboard');
     Route::get('/progress', [RankController::class, 'progress'])->name('progress');
     Route::get('/leaderboard', [RankController::class, 'leaderboard'])->name('leaderboard');
+    Route::get('/widget-data', [RankController::class, 'widgetData'])->name('widget-data');
     Route::post('/request-promotion', [RankController::class, 'requestPromotion'])->name('request-promotion');
 });
 

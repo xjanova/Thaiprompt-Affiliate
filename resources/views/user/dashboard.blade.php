@@ -20,6 +20,15 @@
         </div>
     </div>
 
+    <!-- Rank & Retention Widgets -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Rank Widget -->
+        @include('components.rank-widget')
+
+        <!-- Retention Widget -->
+        @include('components.life-power-widget')
+    </div>
+
     <!-- Premium Stats Cards with Growth Indicators -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Lifetime Earnings -->
@@ -674,6 +683,74 @@ if (dailyCtx) {
 
 .animate-fade-in {
     animation: fade-in 0.3s ease-out;
+}
+
+/* Dashboard Enhancement Animations */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Add animation delay classes */
+.animate-delay-100 { animation-delay: 0.1s; }
+.animate-delay-200 { animation-delay: 0.2s; }
+.animate-delay-300 { animation-delay: 0.3s; }
+.animate-delay-400 { animation-delay: 0.4s; }
+
+/* Smooth page load animations */
+.space-y-6 > * {
+    animation: slideInUp 0.5s ease-out backwards;
+}
+
+.space-y-6 > *:nth-child(1) { animation-delay: 0s; }
+.space-y-6 > *:nth-child(2) { animation-delay: 0.1s; }
+.space-y-6 > *:nth-child(3) { animation-delay: 0.2s; }
+.space-y-6 > *:nth-child(4) { animation-delay: 0.3s; }
+.space-y-6 > *:nth-child(5) { animation-delay: 0.4s; }
+.space-y-6 > *:nth-child(6) { animation-delay: 0.5s; }
+
+/* Floating decorative circles */
+.bg-gradient-to-r .absolute.rounded-full {
+    animation: float 3s ease-in-out infinite;
+}
+
+.bg-gradient-to-r .absolute.rounded-full:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+.bg-gradient-to-r .absolute.rounded-full:nth-child(3) {
+    animation-delay: 1s;
+}
+
+/* Enhanced card hover effects */
+.bg-white.rounded-2xl.shadow-xl {
+    transition: all 0.3s ease;
+}
+
+.bg-white.rounded-2xl.shadow-xl:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Performance metric cards pulse on hover */
+.bg-white.rounded-xl.shadow-md:hover .text-3xl {
+    animation: pulse 1s ease-in-out infinite;
 }
 </style>
 @endpush
