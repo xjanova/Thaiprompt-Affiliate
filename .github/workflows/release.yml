@@ -263,21 +263,6 @@ jobs:
 
           echo "Updated CHANGELOG.md with ${NEW_TAG}"
 
-      - name: Create and push git tag
-        if: steps.check_bump.outputs.should_bump == 'true'
-        run: |
-          NEW_TAG="${{ steps.bump.outputs.new_tag }}"
-          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
-
-          # Configure git
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
-          # Create annotated tag
-          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
-
-          echo "✅ Created tag $NEW_TAG"
-
       - name: Create GitHub Release
         if: steps.check_bump.outputs.should_bump == 'true'
         uses: softprops/action-gh-release@v1
@@ -289,6 +274,7 @@ jobs:
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
           make_latest: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
