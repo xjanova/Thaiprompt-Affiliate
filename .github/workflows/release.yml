@@ -37,34 +37,31 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
-      - name: Get previous tag
+      - name: Get previous version
         id: previoustag
         run: |
-          # Get the latest tag
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-          HAS_GIT_TAG="true"
+          # ALWAYS use VERSION file as the source of truth (not git tags)
+          # This prevents overwriting manual version corrections
+          HAS_GIT_TAG="false"
 
-          # If no tag exists, use VERSION file or package.json
-          if [ -z "$LATEST_TAG" ]; then
-            HAS_GIT_TAG="false"
-            if [ -f "VERSION" ]; then
-              VERSION_FROM_FILE=$(cat VERSION | tr -d '\n\r' | sed 's/^/v/')
-              LATEST_TAG="$VERSION_FROM_FILE"
-              echo "No git tags found, using VERSION file: $LATEST_TAG"
-            elif [ -f "package.json" ]; then
-              VERSION_FROM_PKG=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
-              LATEST_TAG="v$VERSION_FROM_PKG"
-              echo "No git tags found, using package.json: $LATEST_TAG"
-            else
-              LATEST_TAG="v0.0.0"
-              echo "No version found, defaulting to: $LATEST_TAG"
-            fi
+          if [ -f "VERSION" ]; then
+            VERSION_FROM_FILE=$(cat VERSION | tr -d '\n\r')
+            LATEST_TAG="v$VERSION_FROM_FILE"
+            echo "✅ Using VERSION file as base: $LATEST_TAG"
+          elif [ -f "package.json" ]; then
+            VERSION_FROM_PKG=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
+            LATEST_TAG="v$VERSION_FROM_PKG"
+            echo "Using package.json: $LATEST_TAG"
           else
-            echo "Latest tag: $LATEST_TAG"
+            # Fallback to git tag only if no VERSION file exists
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            HAS_GIT_TAG="true"
+            echo "Fallback to git tag: $LATEST_TAG"
           fi
 
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "has_git_tag=$HAS_GIT_TAG" >> $GITHUB_OUTPUT
+          echo "📌 Base version for bump: $LATEST_TAG"
 
       - name: Check if version bump needed
         id: check_bump
