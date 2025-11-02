@@ -689,9 +689,110 @@
 
             <!-- IP Management Tab -->
             <div x-show="activeTab === 'ipmanagement'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-                <div class="space-y-6">
+                <div class="space-y-6" x-data="{ showAddModal: false }">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-semibold text-gray-900">จัดการ IP Blocking</h3>
+                        <button @click="showAddModal = true"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2">
+                            <span>➕</span>
+                            <span>เพิ่ม IP</span>
+                        </button>
+                    </div>
+
+                    <!-- Add IP Modal -->
+                    <div x-show="showAddModal"
+                         x-cloak
+                         @click.self="showAddModal = false"
+                         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                         style="display: none;">
+                        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                            <div class="p-6">
+                                <div class="flex justify-between items-center mb-6">
+                                    <h3 class="text-xl font-semibold text-gray-900">เพิ่ม IP Address</h3>
+                                    <button @click="showAddModal = false" class="text-gray-400 hover:text-gray-600">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <form method="POST" action="{{ route('admin.security.ip.block') }}" class="space-y-6">
+                                    @csrf
+
+                                    <!-- IP Address -->
+                                    <div>
+                                        <label for="ip_address" class="block text-sm font-medium text-gray-700 mb-2">
+                                            IP Address <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text"
+                                               name="ip_address"
+                                               id="ip_address"
+                                               required
+                                               placeholder="192.168.1.1"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <p class="mt-1 text-xs text-gray-500">รองรับทั้ง IPv4 และ IPv6</p>
+                                    </div>
+
+                                    <!-- Type -->
+                                    <div>
+                                        <label for="type" class="block text-sm font-medium text-gray-700 mb-2">
+                                            ประเภท <span class="text-red-500">*</span>
+                                        </label>
+                                        <select name="type"
+                                                id="type"
+                                                required
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                            <option value="blacklist">🚫 Blacklist (บล็อก)</option>
+                                            <option value="whitelist">✅ Whitelist (อนุญาต)</option>
+                                        </select>
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            Blacklist จะบล็อกการเข้าถึง / Whitelist จะอนุญาตเสมอ (ข้าม Auto-Ban)
+                                        </p>
+                                    </div>
+
+                                    <!-- Reason -->
+                                    <div>
+                                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">
+                                            เหตุผล
+                                        </label>
+                                        <textarea name="reason"
+                                                  id="reason"
+                                                  rows="3"
+                                                  maxlength="500"
+                                                  placeholder="ระบุเหตุผลในการบล็อกหรือเพิ่ม IP นี้..."
+                                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"></textarea>
+                                        <p class="mt-1 text-xs text-gray-500">สูงสุด 500 ตัวอักษร (ไม่จำเป็น)</p>
+                                    </div>
+
+                                    <!-- Expires At -->
+                                    <div>
+                                        <label for="expires_at" class="block text-sm font-medium text-gray-700 mb-2">
+                                            วันหมดอายุ
+                                        </label>
+                                        <input type="datetime-local"
+                                               name="expires_at"
+                                               id="expires_at"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            ถ้าไม่ระบุจะเป็นการบล็อก/อนุญาตแบบถาวร
+                                        </p>
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    <div class="flex justify-end gap-3 pt-4 border-t">
+                                        <button type="button"
+                                                @click="showAddModal = false"
+                                                class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                                            ยกเลิก
+                                        </button>
+                                        <button type="submit"
+                                                class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
+                                            เพิ่ม IP
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Blocked IPs Table -->
