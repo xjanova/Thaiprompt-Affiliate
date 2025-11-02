@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\LineLoginController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\OtpController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -65,6 +66,14 @@ Route::middleware('auth')->group(function () {
 
 // LINE Webhook (no auth required)
 Route::post('/webhook/line', [LineWebhookController::class, 'handle'])->name('line.webhook');
+
+// OTP Routes
+Route::prefix('otp')->name('otp.')->group(function () {
+    Route::post('/send', [OtpController::class, 'send'])->name('send');
+    Route::post('/verify', [OtpController::class, 'verify'])->name('verify');
+    Route::post('/resend', [OtpController::class, 'resend'])->name('resend');
+    Route::get('/status', [OtpController::class, 'status'])->name('status');
+});
 
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');

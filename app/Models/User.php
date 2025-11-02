@@ -29,6 +29,33 @@ class User extends Authenticatable
         'rank_updated_at',
         'permissions',
         'preferred_language',
+        // LINE OA fields
+        'line_user_id',
+        'line_display_name',
+        'line_picture_url',
+        'line_access_token',
+        'line_linked_at',
+        'line_verified',
+        // Contact fields
+        'phone',
+        'phone_verified',
+        'phone_verified_at',
+        // Address fields
+        'address',
+        'city',
+        'state',
+        'postal_code',
+        'country',
+        // Shipping address fields
+        'shipping_address',
+        'shipping_city',
+        'shipping_state',
+        'shipping_postal_code',
+        'shipping_country',
+        'shipping_phone',
+        // Additional profile
+        'date_of_birth',
+        'gender',
     ];
 
     /**
@@ -39,6 +66,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'line_access_token',
     ];
 
     /**
@@ -68,6 +96,11 @@ class User extends Authenticatable
             'is_super_admin' => 'boolean',
             'permissions' => 'array',
             'rank_updated_at' => 'datetime',
+            'line_linked_at' => 'datetime',
+            'line_verified' => 'boolean',
+            'phone_verified' => 'boolean',
+            'phone_verified_at' => 'datetime',
+            'date_of_birth' => 'date',
         ];
     }
 

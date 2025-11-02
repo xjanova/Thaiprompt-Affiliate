@@ -96,12 +96,18 @@ class RegisterController extends Controller
         ];
 
         if ($lineProfile) {
+            // LINE profile data
             $userData['line_user_id'] = $lineProfile['line_user_id'];
             $userData['line_display_name'] = $lineProfile['line_display_name'];
             $userData['line_picture_url'] = $lineProfile['line_picture_url'];
             $userData['line_access_token'] = $lineProfile['line_access_token'];
             $userData['line_linked_at'] = now();
             $userData['line_verified'] = true;
+
+            // Use LINE picture as profile picture
+            if (!empty($lineProfile['line_picture_url'])) {
+                $userData['profile_picture'] = $lineProfile['line_picture_url'];
+            }
         }
 
         $user = User::create($userData);
