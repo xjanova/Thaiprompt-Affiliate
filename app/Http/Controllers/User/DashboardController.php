@@ -203,6 +203,47 @@ class DashboardController extends Controller
     }
 
     /**
+     * Update user profile
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $rules = [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
+            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'gender' => ['nullable', 'in:male,female,other,prefer_not_to_say'],
+            'address' => ['nullable', 'string', 'max:500'],
+            'city' => ['nullable', 'string', 'max:100'],
+            'state' => ['nullable', 'string', 'max:100'],
+            'postal_code' => ['nullable', 'string', 'max:20'],
+            'country' => ['nullable', 'string', 'max:2'],
+            'shipping_address' => ['nullable', 'string', 'max:500'],
+            'shipping_city' => ['nullable', 'string', 'max:100'],
+            'shipping_state' => ['nullable', 'string', 'max:100'],
+            'shipping_postal_code' => ['nullable', 'string', 'max:20'],
+            'shipping_country' => ['nullable', 'string', 'max:2'],
+            'shipping_phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
+        ];
+
+        $validated = $request->validate($rules);
+
+        // Don't update phone if it hasn't changed, or if it changed, require verification
+        if (isset($validated['phone']) && $validated['phone'] !== $user->phone) {
+            // Phone changed - reset verification status
+            $validated['phone_verified'] = false;
+            $validated['phone_verified_at'] = null;
+        }
+
+        $user->update($validated);
+
+        return redirect()->route('user.profile')
+            ->with('success', 'อัปเดตโปรไฟล์เรียบร้อยแล้ว');
+    }
+
+    /**
      * Display user commissions
      */
     public function commissions()

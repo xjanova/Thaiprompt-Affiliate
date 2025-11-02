@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
+Route::put('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
 Route::post('/profile/update-password', [DashboardController::class, 'updatePassword'])
     ->middleware('turnstile:password_change')
     ->name('profile.update-password');
