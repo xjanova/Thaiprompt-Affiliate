@@ -2,7 +2,23 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
-## [v1.5.5] - 2025-11-02
+## [v1.11.2] - 2025-11-02
+
+### 🔄 Version Correction (แก้ไขเวอร์ชั่นครั้งที่ 2)
+แก้ไขเลขเวอร์ชั่นให้ถูกต้องตามหลัก Semantic Versioning โดยนับจากประวัติการ merge ที่แท้จริงตั้งแต่ v1.1.0
+
+**ปัญหา:** Workflow ทำงานอัตโนมัติและ bump version ไปเป็น v1.5.5 แทนที่จะเป็น v1.11.2 ที่ถูกต้อง
+
+**เวอร์ชั่นที่ถูกต้องคือ v1.11.2 เพราะ:**
+- มี 10 Features ใหม่ตั้งแต่ v1.1.0 → bump MINOR 10 ครั้ง (1.1→1.2→...→1.11)
+- มี 7 Bug Fixes → bump PATCH 7 ครั้ง (1.11.0→1.11.1→1.11.2)
+
+**รายการ Features และ Fixes ที่รวมอยู่:**
+- ✨ Tree Interactive, Retention UI/UX, User Management
+- ✨ Automatic Versioning, Loading Progress, ระบบรักษายอด
+- 🐛 Org chart fixes, User ranks dashboard, Leaderboard
+
+## [v1.5.5] - 2025-11-02 (Incorrect - ควรเป็น v1.11.2)
 
 ### ✨ Features
 
