@@ -260,6 +260,7 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::get('/templates/{template}/edit', [EmailController::class, 'editTemplate'])->name('templates.edit');
     Route::put('/templates/{template}', [EmailController::class, 'updateTemplate'])->name('templates.update');
     Route::delete('/templates/{template}', [EmailController::class, 'destroyTemplate'])->name('templates.destroy');
+    Route::get('/templates/{template}/preview', [EmailController::class, 'previewTemplate'])->name('templates.preview');
 
     // Send Test Email
     Route::post('/test', [EmailController::class, 'sendTest'])->name('test');
