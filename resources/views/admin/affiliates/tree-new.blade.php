@@ -9,7 +9,7 @@
         <div class="flex items-center justify-between flex-wrap gap-4">
             <div>
                 <h1 class="text-2xl lg:text-3xl font-bold mb-2">🌳 ผังสายงาน Affiliate (Interactive)</h1>
-                <p class="text-purple-100 text-sm lg:text-base">แสดงโครงสร้างเครือข่าย Affiliate ทั้งหมดแบบ Interactive</p>
+                <p class="text-purple-100 text-sm lg:text-base">แสดงโครงสร้างเครือข่าย Affiliate แบบ Google Maps Style</p>
             </div>
         </div>
     </div>
@@ -82,32 +82,28 @@
             <div class="flex items-center justify-between flex-wrap gap-3">
                 <h2 class="text-xl font-bold text-gray-900">โครงสร้างเครือข่าย</h2>
                 <div class="flex items-center gap-2">
-                    <button onclick="treeViz.zoomIn()" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
-                        🔍 Zoom In
+                    <button onclick="treeNetwork.zoomIn()" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
+                        ➕ Zoom In
                     </button>
-                    <button onclick="treeViz.zoomOut()" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
-                        🔍 Zoom Out
+                    <button onclick="treeNetwork.zoomOut()" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
+                        ➖ Zoom Out
                     </button>
-                    <button onclick="treeViz.resetZoom()" class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition text-sm font-medium">
-                        🎯 Reset
-                    </button>
-                    <button onclick="treeViz.expandAll()" class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium">
-                        ▼ Expand All
-                    </button>
-                    <button onclick="treeViz.collapseAll()" class="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm font-medium">
-                        ▶ Collapse All
+                    <button onclick="treeNetwork.resetView()" class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-sm font-medium">
+                        🎯 Reset View
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Tree Container -->
-        <div id="tree-container" class="w-full" style="height: 700px; min-height: 700px; position: relative;">
+        <!-- Network Container -->
+        <div class="relative">
+            <div id="tree-container" class="w-full" style="height: 700px; min-height: 700px;"></div>
+
             <!-- Loading State -->
-            <div id="tree-loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90">
+            <div id="tree-container-loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 hidden">
                 <div class="text-center">
                     <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                    <p class="text-gray-600 font-medium">กำลังโหลดข้อมูล...</p>
+                    <p class="text-gray-600 font-medium" id="tree-container-progress">กำลังโหลดข้อมูล...</p>
                 </div>
             </div>
 
@@ -134,36 +130,32 @@
                     <button onclick="closeDetailModal()" class="text-white hover:text-gray-200 text-2xl">×</button>
                 </div>
             </div>
-            <div id="detail-content" class="p-6">
-                <!-- Content will be populated by JavaScript -->
-            </div>
+            <div id="detail-content" class="p-6"></div>
         </div>
     </div>
 </div>
 
-<!-- D3.js -->
-<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<!-- vis-network CDN -->
+<link href="https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
 
 <script>
-let treeViz = null;
+let treeNetwork = null;
 let currentData = null;
 let currentAffiliateId = null;
 let currentDepth = 10;
 
-// Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
     setupEventListeners();
     loadTreeData();
 });
 
 function setupEventListeners() {
-    // Affiliate select
     document.getElementById('affiliate-select')?.addEventListener('change', function(e) {
         currentAffiliateId = e.target.value || null;
         loadTreeData();
     });
 
-    // Depth slider
     const depthSlider = document.getElementById('depth-slider');
     const depthValue = document.getElementById('depth-value');
 
@@ -179,18 +171,15 @@ function setupEventListeners() {
 
 async function loadTreeData() {
     const container = document.getElementById('tree-container');
-    const loading = document.getElementById('tree-loading');
+    const loading = document.getElementById('tree-container-loading');
     const error = document.getElementById('tree-error');
 
     try {
         loading?.classList.remove('hidden');
         error?.classList.add('hidden');
 
-        // Build API URL
         let apiUrl = '/api/v1/tree/admin';
-        if (currentAffiliateId) {
-            apiUrl += `/${currentAffiliateId}`;
-        }
+        if (currentAffiliateId) apiUrl += `/${currentAffiliateId}`;
         apiUrl += `?max_depth=${currentDepth}`;
 
         const response = await fetch(apiUrl, {
@@ -201,34 +190,27 @@ async function loadTreeData() {
             credentials: 'same-origin'
         });
 
-        if (!response.ok) {
-            throw new Error('Failed to load tree data');
-        }
+        if (!response.ok) throw new Error('Failed to load tree data');
 
         const result = await response.json();
-
-        if (!result.success) {
-            throw new Error(result.message || 'Failed to load tree data');
-        }
+        if (!result.success) throw new Error(result.message || 'Failed to load tree data');
 
         currentData = result.data;
 
-        // Update statistics
         if (result.stats) {
             updateStatistics(result.stats);
         }
 
-        // Initialize or update tree
-        if (!treeViz) {
-            treeViz = new TreeVisualization('tree-container', {
-                width: container.clientWidth,
-                height: 700,
+        if (!treeNetwork) {
+            treeNetwork = new TreeNetwork('tree-container', {
                 onNodeClick: handleNodeClick,
-                readOnly: true
+                readOnly: true,
+                physics: true,
+                hierarchical: true
             });
         }
 
-        treeViz.loadData(currentData);
+        treeNetwork.loadData(currentData);
         loading?.classList.add('hidden');
 
     } catch (err) {
@@ -236,9 +218,7 @@ async function loadTreeData() {
         loading?.classList.add('hidden');
         error?.classList.remove('hidden');
         const errorMessage = document.getElementById('tree-error-message');
-        if (errorMessage) {
-            errorMessage.textContent = err.message || 'ไม่สามารถโหลดข้อมูลได้';
-        }
+        if (errorMessage) errorMessage.textContent = err.message || 'ไม่สามารถโหลดข้อมูลได้';
     }
 }
 
@@ -272,7 +252,6 @@ function showDetailModal(nodeData) {
 
     content.innerHTML = `
         <div class="space-y-6">
-            <!-- Header -->
             <div class="flex items-center gap-4">
                 <div class="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
                     ${nodeData.avatar?.text || nodeData.name.charAt(0).toUpperCase()}
@@ -287,7 +266,6 @@ function showDetailModal(nodeData) {
                 </div>
             </div>
 
-            <!-- Stats Grid -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
                     <p class="text-sm text-blue-600 mb-1">Referral Code</p>
@@ -307,7 +285,6 @@ function showDetailModal(nodeData) {
                 </div>
             </div>
 
-            <!-- Financial Stats -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div class="bg-gradient-to-br from-green-50 to-teal-50 rounded-lg p-4 border border-green-200">
                     <p class="text-sm text-green-600 mb-1">Total Earnings</p>
@@ -328,7 +305,6 @@ function showDetailModal(nodeData) {
             </div>
 
             ${nodeData.rank_points !== undefined ? `
-            <!-- Rank Points -->
             <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-4 border border-amber-200">
                 <p class="text-sm text-amber-600 mb-1">Rank Points</p>
                 <div class="flex items-center gap-3">
@@ -340,7 +316,6 @@ function showDetailModal(nodeData) {
             </div>
             ` : ''}
 
-            <!-- Additional Info -->
             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <h5 class="font-semibold text-gray-900 mb-3">Additional Information</h5>
                 <div class="grid grid-cols-2 gap-3 text-sm">
@@ -355,13 +330,12 @@ function showDetailModal(nodeData) {
                 </div>
             </div>
 
-            <!-- Admin Actions -->
             <div class="flex gap-3 pt-4 border-t">
                 <a href="/admin/affiliates/${nodeData.id}/edit" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition text-center font-medium">
                     ✏️ Edit
                 </a>
                 <a href="/admin/affiliates/${nodeData.id}" class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-center font-medium">
-                    👁️ View Full Details
+                    👁️ View Details
                 </a>
             </div>
         </div>
@@ -392,179 +366,186 @@ function exportTreeData() {
     URL.revokeObjectURL(url);
 }
 
-// Tree Visualization Class (same as user version)
-class TreeVisualization {
+// TreeNetwork class (same as user version)
+class TreeNetwork {
     constructor(containerId, options = {}) {
         this.containerId = containerId;
         this.container = document.getElementById(containerId);
-        this.config = {
-            width: options.width || 1200,
-            height: options.height || 700,
-            nodeSpacing: { horizontal: 180, vertical: 150 },
-            avatarRadius: 30,
-            onNodeClick: options.onNodeClick || null
-        };
+        this.options = options;
+        this.network = null;
+        this.nodes = null;
+        this.edges = null;
         this.init();
     }
 
     init() {
-        d3.select(`#${this.containerId}`).selectAll('svg').remove();
+        const opts = {
+            nodes: {
+                shape: 'circularImage',
+                size: 40,
+                borderWidth: 3,
+                color: { border: '#6366f1', background: '#ffffff' },
+                font: { size: 14, face: 'Arial', color: '#1e293b' },
+                shadow: { enabled: true, color: 'rgba(0,0,0,0.2)', size: 10, x: 2, y: 2 }
+            },
+            edges: {
+                width: 2,
+                color: { color: '#cbd5e1' },
+                smooth: { enabled: true, type: 'cubicBezier', roundness: 0.5 },
+                arrows: { to: { enabled: true, scaleFactor: 0.5 } },
+                shadow: { enabled: true }
+            },
+            layout: {
+                hierarchical: {
+                    enabled: true,
+                    direction: 'UD',
+                    sortMethod: 'directed',
+                    nodeSpacing: 180,
+                    levelSeparation: 150
+                }
+            },
+            physics: {
+                enabled: this.options.physics,
+                hierarchicalRepulsion: {
+                    centralGravity: 0,
+                    springLength: 150,
+                    springConstant: 0.01,
+                    nodeDistance: 180,
+                    damping: 0.09
+                }
+            },
+            interaction: {
+                dragNodes: !this.options.readOnly,
+                dragView: true,
+                zoomView: true,
+                hover: true
+            }
+        };
 
-        this.svg = d3.select(`#${this.containerId}`)
-            .append('svg')
-            .attr('width', this.config.width)
-            .attr('height', this.config.height)
-            .style('background', '#fafafa');
+        this.network = new vis.Network(this.container, {}, opts);
+        this.setupEventListeners();
+    }
 
-        this.zoom = d3.zoom()
-            .scaleExtent([0.1, 3])
-            .on('zoom', (event) => {
-                this.g.attr('transform', event.transform);
-            });
+    setupEventListeners() {
+        this.network.on('click', (params) => {
+            if (params.nodes.length > 0 && this.options.onNodeClick) {
+                const node = this.nodes.find(n => n.id === params.nodes[0]);
+                if (node) this.options.onNodeClick(node.data);
+            }
+        });
 
-        this.svg.call(this.zoom);
-        this.g = this.svg.append('g').attr('transform', `translate(${this.config.width / 2}, 80)`);
-        this.tree = d3.tree().nodeSize([this.config.nodeSpacing.horizontal, this.config.nodeSpacing.vertical]);
-        this.nodeId = 0;
+        this.network.on('hoverNode', () => {
+            this.container.style.cursor = 'pointer';
+        });
+
+        this.network.on('blurNode', () => {
+            this.container.style.cursor = 'default';
+        });
+
+        this.network.on('doubleClick', (params) => {
+            if (params.nodes.length > 0) {
+                this.network.focus(params.nodes[0], { scale: 1.5, animation: true });
+            }
+        });
     }
 
     loadData(data) {
-        this.root = d3.hierarchy(data);
-        this.root.x0 = 0;
-        this.root.y0 = 0;
-        if (this.root.children) {
-            this.root.children.forEach(d => this.collapse(d));
-        }
-        this.update(this.root);
-        this.centerNode(this.root);
+        const { nodes, edges } = this.convertToNetwork(data);
+        this.nodes = nodes;
+        this.edges = edges;
+        this.network.setData({ nodes: nodes, edges: edges });
     }
 
-    collapse(d) {
-        if (d.children) {
-            d._children = d.children;
-            d._children.forEach(child => this.collapse(child));
-            d.children = null;
+    convertToNetwork(data, parentId = null, nodes = [], edges = [], level = 0) {
+        if (!data) return { nodes, edges };
+
+        const nodeId = data.id || `node_${nodes.length}`;
+        const imageUrl = this.createAvatarDataUrl(
+            data.avatar?.text || data.name?.charAt(0)?.toUpperCase() || '?',
+            this.getNodeColor(data)
+        );
+
+        nodes.push({
+            id: nodeId,
+            label: data.name && data.name.length > 20 ? data.name.substring(0, 20) + '...' : (data.name || 'Unknown'),
+            image: imageUrl,
+            title: this.createTooltipHtml(data),
+            level: level,
+            color: { border: this.getNodeColor(data) },
+            data: data
+        });
+
+        if (parentId !== null) {
+            edges.push({ from: parentId, to: nodeId });
         }
-    }
 
-    update(source) {
-        const duration = 750;
-        const treeData = this.tree(this.root);
-        const nodes = treeData.descendants();
-        const links = treeData.links();
-
-        const node = this.g.selectAll('g.node').data(nodes, d => d.id || (d.id = ++this.nodeId));
-        const nodeEnter = node.enter().append('g')
-            .attr('class', 'node')
-            .attr('transform', `translate(${source.x0},${source.y0})`)
-            .style('opacity', 0)
-            .on('click', (event, d) => {
-                this.toggleChildren(d);
-                if (this.config.onNodeClick) this.config.onNodeClick(d.data);
+        if (data.children) {
+            data.children.forEach(child => {
+                this.convertToNetwork(child, nodeId, nodes, edges, level + 1);
             });
-
-        nodeEnter.append('circle')
-            .attr('r', this.config.avatarRadius)
-            .style('fill', d => d.data.rank?.color || '#6366f1')
-            .style('stroke', '#fff')
-            .style('stroke-width', '3px')
-            .style('cursor', 'pointer');
-
-        nodeEnter.append('text')
-            .attr('dy', '0.35em')
-            .style('text-anchor', 'middle')
-            .style('fill', '#fff')
-            .style('font-weight', 'bold')
-            .style('pointer-events', 'none')
-            .text(d => d.data.avatar?.text || d.data.name.charAt(0).toUpperCase());
-
-        nodeEnter.append('text')
-            .attr('dy', this.config.avatarRadius + 20)
-            .style('text-anchor', 'middle')
-            .style('font-size', '12px')
-            .style('font-weight', '600')
-            .text(d => d.data.name.length > 15 ? d.data.name.substring(0, 15) + '...' : d.data.name);
-
-        const nodeUpdate = nodeEnter.merge(node);
-        nodeUpdate.transition().duration(duration)
-            .attr('transform', d => `translate(${d.x},${d.y})`)
-            .style('opacity', 1);
-
-        node.exit().transition().duration(duration)
-            .attr('transform', `translate(${source.x},${source.y})`)
-            .style('opacity', 0).remove();
-
-        const link = this.g.selectAll('path.link').data(links, d => d.target.id);
-        link.enter().insert('path', 'g')
-            .attr('class', 'link')
-            .attr('d', d => this.diagonal({ x: source.x0, y: source.y0 }, { x: source.x0, y: source.y0 }))
-            .style('fill', 'none')
-            .style('stroke', '#cbd5e1')
-            .style('stroke-width', '2px')
-            .transition().duration(duration)
-            .attr('d', d => this.diagonal(d.source, d.target));
-
-        link.transition().duration(duration).attr('d', d => this.diagonal(d.source, d.target));
-        link.exit().transition().duration(duration)
-            .attr('d', d => this.diagonal({ x: source.x, y: source.y }, { x: source.x, y: source.y }))
-            .remove();
-
-        nodes.forEach(d => { d.x0 = d.x; d.y0 = d.y; });
-    }
-
-    diagonal(s, d) {
-        return `M ${s.x},${s.y} C ${s.x},${(s.y + d.y) / 2} ${d.x},${(s.y + d.y) / 2} ${d.x},${d.y}`;
-    }
-
-    toggleChildren(d) {
-        if (d.children) {
-            d._children = d.children;
-            d.children = null;
-        } else if (d._children) {
-            d.children = d._children;
-            d._children = null;
         }
-        this.update(d);
+
+        return { nodes, edges };
     }
 
-    centerNode(d) {
-        const scale = 0.7;
-        const x = -d.x * scale + this.config.width / 2;
-        const y = -d.y * scale + this.config.height / 2;
-        this.svg.transition().duration(750)
-            .call(this.zoom.transform, d3.zoomIdentity.translate(x, y).scale(scale));
+    createAvatarDataUrl(letter, color) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 100;
+        canvas.height = 100;
+        const ctx = canvas.getContext('2d');
+
+        ctx.beginPath();
+        ctx.arc(50, 50, 48, 0, 2 * Math.PI);
+        ctx.fillStyle = color;
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#ffffff';
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 48px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(letter, 50, 50);
+
+        return canvas.toDataURL();
+    }
+
+    createTooltipHtml(data) {
+        return `<div style="padding: 8px;">
+            <strong>${data.name || 'Unknown'}</strong><br>
+            ${data.email || ''}<br>
+            รหัส: ${data.referral_code || 'N/A'} | L${data.level || 0}<br>
+            ลูกทีม: ${data.direct_children || 0} | รายได้: ฿${(data.total_earnings || 0).toLocaleString()}
+        </div>`;
+    }
+
+    getNodeColor(data) {
+        if (data.status === 'inactive') return '#94a3b8';
+        if (data.rank?.color) return data.rank.color;
+        const colors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+        return colors[Math.min(data.level || 0, colors.length - 1)];
     }
 
     zoomIn() {
-        this.svg.transition().duration(300).call(this.zoom.scaleBy, 1.3);
+        const scale = this.network.getScale();
+        this.network.moveTo({ scale: scale * 1.3, animation: true });
     }
 
     zoomOut() {
-        this.svg.transition().duration(300).call(this.zoom.scaleBy, 0.7);
+        const scale = this.network.getScale();
+        this.network.moveTo({ scale: scale * 0.7, animation: true });
     }
 
-    resetZoom() {
-        this.centerNode(this.root);
-    }
-
-    expandAll() {
-        this.root.each(d => { if (d._children) { d.children = d._children; d._children = null; } });
-        this.update(this.root);
-        this.centerNode(this.root);
-    }
-
-    collapseAll() {
-        this.root.children?.forEach(d => this.collapse(d));
-        this.update(this.root);
-        this.centerNode(this.root);
-    }
-
-    resize() {
-        this.config.width = this.container.clientWidth;
-        this.svg.attr('width', this.config.width);
-        this.g.attr('transform', `translate(${this.config.width / 2}, 80)`);
-        this.update(this.root);
+    resetView() {
+        this.network.fit({ animation: true });
     }
 }
+
+window.addEventListener('resize', () => {
+    if (treeNetwork?.network) {
+        treeNetwork.network.redraw();
+    }
+});
 </script>
 @endsection
