@@ -54,7 +54,7 @@ class AffiliateController extends Controller
     }
 
     /**
-     * Show all affiliates tree view
+     * Show all affiliates tree view (old HTML version)
      */
     public function treeView()
     {
@@ -64,6 +64,20 @@ class AffiliateController extends Controller
             ->get();
 
         return view('admin.affiliates.tree-all', compact('affiliates'));
+    }
+
+    /**
+     * Show interactive tree view with D3.js (new version)
+     */
+    public function treeViewInteractive()
+    {
+        // Get root affiliates for the dropdown selector
+        $rootAffiliates = Affiliate::with(['user', 'rank'])
+            ->whereNull('parent_id')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('admin.affiliates.tree-new', compact('rootAffiliates'));
     }
 
     /**

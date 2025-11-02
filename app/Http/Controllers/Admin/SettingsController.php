@@ -28,6 +28,7 @@ class SettingsController extends Controller
             'app_name' => ['nullable', 'string', 'max:255'],
             'commission_rate' => ['nullable', 'numeric', 'min:0', 'max:100'],
             'multi_level_enabled' => ['nullable', 'boolean'],
+            'commission_depth' => ['nullable', 'integer', 'min:1', 'max:100'],
             'default_sponsor_referral_code' => ['nullable', 'string', 'exists:affiliates,referral_code'],
             // API Settings
             'google_translate_enabled' => ['nullable', 'boolean'],
@@ -103,7 +104,7 @@ class SettingsController extends Controller
                 $type = is_bool($value) ? 'boolean' : (is_numeric($value) ? 'integer' : 'string');
 
                 // Determine group
-                if (in_array($key, ['commission_rate', 'multi_level_enabled', 'default_sponsor_referral_code'])) {
+                if (in_array($key, ['commission_rate', 'multi_level_enabled', 'commission_depth', 'default_sponsor_referral_code'])) {
                     $group = 'affiliate';
                 } elseif (str_starts_with($key, 'turnstile_')) {
                     $group = 'security';

@@ -238,7 +238,7 @@ function previewTemplate(templateId) {
                     const value = data.sample_data[variable] || 'N/A';
                     const badge = document.createElement('span');
                     badge.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-                    badge.innerHTML = `<code class="font-mono">{{${variable}}}</code> = <strong class="ml-1">${value}</strong>`;
+                    badge.innerHTML = `<code class="font-mono">@{{${variable}}}</code> = <strong class="ml-1">${value}</strong>`;
                     variablesContainer.appendChild(badge);
                 });
             } else {
