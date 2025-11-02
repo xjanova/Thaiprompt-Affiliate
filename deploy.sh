@@ -756,13 +756,40 @@ else
 fi
 echo ""
 
-# Step 12: Create Storage Symlink
+# Step 12: Create Storage Symlink (แก้ไขปัญหาโลโก้หาย)
 print_info "[12/20] Creating storage symlink..."
-php artisan storage:link --force --no-interaction || print_warning "Storage link already exists or failed to create"
-if [ -L "public/storage" ]; then
-    print_success "Storage symlink exists (public/storage → storage/app/public)"
+
+# ใช้ storage:fix แทน storage:link เพราะจัดการกรณีพิเศษได้ดีกว่า
+if php artisan storage:fix --force --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+    print_success "✓ Storage symlink created successfully"
 else
-    print_warning "Storage symlink verification failed"
+    print_warning "⚠ storage:fix command not available, trying storage:link..."
+    php artisan storage:link --force --no-interaction 2>&1 | tee -a "$LOG_FILE" || true
+fi
+
+# Verify symlink มีอยู่และชี้ไปถูกที่
+if [ -L "public/storage" ]; then
+    LINK_TARGET=$(readlink -f "public/storage" 2>/dev/null || readlink "public/storage")
+    EXPECTED_TARGET=$(readlink -f "storage/app/public" 2>/dev/null || echo "$PWD/storage/app/public")
+
+    if [[ "$LINK_TARGET" == *"storage/app/public"* ]]; then
+        print_success "✓ Storage symlink verified (public/storage → storage/app/public)"
+
+        # ตรวจสอบ permissions
+        if [ -w "storage/app/public" ]; then
+            print_success "✓ Storage directory is writable"
+        else
+            print_warning "⚠ Storage directory may not be writable"
+        fi
+    else
+        print_error "✗ Storage symlink points to wrong location: $LINK_TARGET"
+        error_exit "Storage symlink configuration error - uploaded files will not work!"
+    fi
+else
+    print_error "✗ Storage symlink does not exist!"
+    print_error "  This will cause uploaded logos and files to not work."
+    print_error "  Run 'php artisan storage:fix --force' manually after deployment."
+    error_exit "Critical: Storage symlink creation failed"
 fi
 
 # Step 13: Set Permissions
