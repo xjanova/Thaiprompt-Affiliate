@@ -6,12 +6,12 @@
 <div x-data="{ activeTab: 'dashboard' }" class="space-y-6">
     <!-- Page Header -->
     <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🛡️ ระบบความปลอดภัย</h1>
+        <h1 class="text-2xl font-bold text-gray-900">🛡️ ระบบความปลอดภัย</h1>
     </div>
 
     <!-- Tab Navigation -->
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md">
-        <div class="border-b border-gray-200 dark:border-slate-700">
+    <div class="bg-white rounded-lg shadow-md">
+        <div class="border-b border-gray-200">
             <nav class="flex -mb-px">
                 <button @click="activeTab = 'dashboard'"
                         :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'dashboard', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'dashboard' }"
@@ -75,7 +75,7 @@
             <div x-show="activeTab === 'dashboard'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                 <div class="space-y-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">สถิติความปลอดภัย</h3>
+                        <h3 class="text-lg font-semibold text-gray-900">สถิติความปลอดภัย</h3>
                         <a href="{{ route('admin.security.analytics') }}"
                            class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2">
                             <span>📊</span>
@@ -142,25 +142,25 @@
                     </div>
 
                     <!-- Recent Blocked IPs -->
-                    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
-                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-4">IP ที่ถูกบล็อกล่าสุด</h4>
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h4 class="text-md font-semibold text-gray-900 mb-4">IP ที่ถูกบล็อกล่าสุด</h4>
 
                         @if($blockedIps->count() > 0)
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50 dark:bg-slate-700">
+                                <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">IP Address</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ประเภท</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">เหตุผล</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">วันที่บล็อก</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เหตุผล</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่บล็อก</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($blockedIps->take(10) as $blockedIp)
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">{{ $blockedIp->ip_address }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ $blockedIp->ip_address }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @if($blockedIp->type === 'blacklist')
                                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Blacklist</span>
@@ -168,8 +168,8 @@
                                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Whitelist</span>
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $blockedIp->reason ?? '-' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $blockedIp->created_at->diffForHumans() }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-500">{{ $blockedIp->reason ?? '-' }}</td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $blockedIp->created_at->diffForHumans() }}</td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             @if($blockedIp->is_active)
                                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Active</span>
@@ -183,51 +183,51 @@
                             </table>
                         </div>
                         @else
-                        <p class="text-gray-500 dark:text-gray-400 text-center py-8">ไม่มี IP ที่ถูกบล็อก</p>
+                        <p class="text-gray-500 text-center py-8">ไม่มี IP ที่ถูกบล็อก</p>
                         @endif
                     </div>
 
                     <!-- Recent Security Logs -->
-                    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-6">
-                        <h4 class="text-md font-semibold text-gray-900 dark:text-white mb-4">Security Logs ล่าสุด</h4>
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h4 class="text-md font-semibold text-gray-900 mb-4">Security Logs ล่าสุด</h4>
 
                         @if($securityLogs->count() > 0)
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50 dark:bg-slate-700">
+                                <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">เวลา</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Event</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Location</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">IP Address</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Device</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ความรุนแรง</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เวลา</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Device</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ความรุนแรง</th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                                <tbody class="bg-white divide-y divide-gray-200">
                                     @foreach($securityLogs->take(15) as $log)
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
-                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
+                                        <td class="px-6 py-4 text-sm text-gray-900">
                                             <span class="px-2 py-1 text-xs font-mono rounded bg-gray-100">{{ $log->event_type }}</span>
                                         </td>
-                                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                        <td class="px-6 py-4 text-sm text-gray-900">
                                             @if($log->country_code)
                                             <span class="flex items-center gap-2">
                                                 <span>{{ \App\Services\IpIntelligenceService::getCountryFlag($log->country_code) }}</span>
                                                 <span>{{ $log->country_name }}</span>
                                             </span>
                                             @else
-                                            <span class="text-gray-400 dark:text-gray-500">-</span>
+                                            <span class="text-gray-400">-</span>
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
                                             {{ $log->ip_address }}
                                             @if($log->is_vpn || $log->is_proxy)
                                             <span class="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800">VPN/Proxy</span>
                                             @endif
                                         </td>
-                                        <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
+                                        <td class="px-6 py-4 text-sm text-gray-500">
                                             @if($log->os || $log->browser)
                                             <div class="flex flex-col gap-1">
                                                 @if($log->os)
@@ -244,7 +244,7 @@
                                                 @endif
                                             </div>
                                             @else
-                                            <span class="text-gray-400 dark:text-gray-500">-</span>
+                                            <span class="text-gray-400">-</span>
                                             @endif
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -264,7 +264,7 @@
                             </table>
                         </div>
                         @else
-                        <p class="text-gray-500 dark:text-gray-400 text-center py-8">ไม่มี Security Logs</p>
+                        <p class="text-gray-500 text-center py-8">ไม่มี Security Logs</p>
                         @endif
                     </div>
                 </div>
@@ -277,36 +277,36 @@
                     @method('PUT')
 
                     <div class="space-y-6">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่า Cloudflare Turnstile</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่า Cloudflare Turnstile</h3>
 
                         <!-- Enable Turnstile -->
                         <div class="flex items-center">
                             <input type="checkbox" name="turnstile_enabled" id="turnstile_enabled"
                                    {{ config('turnstile.enabled') ? 'checked' : '' }}
                                    class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                            <label for="turnstile_enabled" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label for="turnstile_enabled" class="ml-2 text-sm font-medium text-gray-700">
                                 เปิดใช้งาน Cloudflare Turnstile
                             </label>
                         </div>
 
                         <!-- Site Key -->
                         <div>
-                            <label for="turnstile_site_key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Site Key</label>
+                            <label for="turnstile_site_key" class="block text-sm font-medium text-gray-700 mb-2">Site Key</label>
                             <input type="text" name="turnstile_site_key" id="turnstile_site_key"
                                    value="{{ old('turnstile_site_key', config('turnstile.site_key')) }}"
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                    placeholder="1x00000000000000000000AA">
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Site Key ที่ได้จาก Cloudflare Dashboard</p>
+                            <p class="mt-1 text-sm text-gray-500">Site Key ที่ได้จาก Cloudflare Dashboard</p>
                         </div>
 
                         <!-- Secret Key -->
                         <div>
-                            <label for="turnstile_secret_key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Secret Key</label>
+                            <label for="turnstile_secret_key" class="block text-sm font-medium text-gray-700 mb-2">Secret Key</label>
                             <input type="text" name="turnstile_secret_key" id="turnstile_secret_key"
                                    value="{{ old('turnstile_secret_key', config('turnstile.secret_key')) }}"
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                    placeholder="1x0000000000000000000000000000000AA">
-                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Secret Key ที่ได้จาก Cloudflare Dashboard</p>
+                            <p class="mt-1 text-sm text-gray-500">Secret Key ที่ได้จาก Cloudflare Dashboard</p>
                         </div>
 
                         <!-- Admin Bypass -->
@@ -314,16 +314,16 @@
                             <input type="checkbox" name="turnstile_bypass_admin" id="turnstile_bypass_admin"
                                    {{ config('turnstile.bypass_admin') ? 'checked' : '' }}
                                    class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                            <label for="turnstile_bypass_admin" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label for="turnstile_bypass_admin" class="ml-2 text-sm font-medium text-gray-700">
                                 ยกเว้น Admin จากการตรวจสอบ Turnstile
                             </label>
                         </div>
 
                         <!-- Theme -->
                         <div>
-                            <label for="turnstile_theme" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ธีม</label>
+                            <label for="turnstile_theme" class="block text-sm font-medium text-gray-700 mb-2">ธีม</label>
                             <select name="turnstile_theme" id="turnstile_theme"
-                                    class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 <option value="auto" {{ config('turnstile.theme') === 'auto' ? 'selected' : '' }}>Auto</option>
                                 <option value="light" {{ config('turnstile.theme') === 'light' ? 'selected' : '' }}>Light</option>
                                 <option value="dark" {{ config('turnstile.theme') === 'dark' ? 'selected' : '' }}>Dark</option>
@@ -332,9 +332,9 @@
 
                         <!-- Size -->
                         <div>
-                            <label for="turnstile_size" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ขนาด</label>
+                            <label for="turnstile_size" class="block text-sm font-medium text-gray-700 mb-2">ขนาด</label>
                             <select name="turnstile_size" id="turnstile_size"
-                                    class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                 <option value="normal" {{ config('turnstile.size') === 'normal' ? 'selected' : '' }}>Normal</option>
                                 <option value="compact" {{ config('turnstile.size') === 'compact' ? 'selected' : '' }}>Compact</option>
                             </select>
@@ -348,42 +348,42 @@
                                     <input type="checkbox" name="turnstile_login" id="turnstile_login"
                                            {{ config('turnstile.points.login') ? 'checked' : '' }}
                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                    <label for="turnstile_login" class="ml-2 text-sm text-gray-700 dark:text-gray-300">หน้า Login</label>
+                                    <label for="turnstile_login" class="ml-2 text-sm text-gray-700">หน้า Login</label>
                                 </div>
 
                                 <div class="flex items-center">
                                     <input type="checkbox" name="turnstile_register" id="turnstile_register"
                                            {{ config('turnstile.points.register') ? 'checked' : '' }}
                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                    <label for="turnstile_register" class="ml-2 text-sm text-gray-700 dark:text-gray-300">หน้า Register</label>
+                                    <label for="turnstile_register" class="ml-2 text-sm text-gray-700">หน้า Register</label>
                                 </div>
 
                                 <div class="flex items-center">
                                     <input type="checkbox" name="turnstile_password_change" id="turnstile_password_change"
                                            {{ config('turnstile.points.password_change') ? 'checked' : '' }}
                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                    <label for="turnstile_password_change" class="ml-2 text-sm text-gray-700 dark:text-gray-300">การเปลี่ยนรหัสผ่าน</label>
+                                    <label for="turnstile_password_change" class="ml-2 text-sm text-gray-700">การเปลี่ยนรหัสผ่าน</label>
                                 </div>
 
                                 <div class="flex items-center">
                                     <input type="checkbox" name="turnstile_profile_update" id="turnstile_profile_update"
                                            {{ config('turnstile.points.profile_update') ? 'checked' : '' }}
                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                    <label for="turnstile_profile_update" class="ml-2 text-sm text-gray-700 dark:text-gray-300">การแก้ไขโปรไฟล์</label>
+                                    <label for="turnstile_profile_update" class="ml-2 text-sm text-gray-700">การแก้ไขโปรไฟล์</label>
                                 </div>
 
                                 <div class="flex items-center">
                                     <input type="checkbox" name="turnstile_withdrawal" id="turnstile_withdrawal"
                                            {{ config('turnstile.points.withdrawal_request') ? 'checked' : '' }}
                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                    <label for="turnstile_withdrawal" class="ml-2 text-sm text-gray-700 dark:text-gray-300">การถอนเงิน</label>
+                                    <label for="turnstile_withdrawal" class="ml-2 text-sm text-gray-700">การถอนเงิน</label>
                                 </div>
 
                                 <div class="flex items-center">
                                     <input type="checkbox" name="turnstile_affiliate_app" id="turnstile_affiliate_app"
                                            {{ config('turnstile.points.affiliate_application') ? 'checked' : '' }}
                                            class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                                    <label for="turnstile_affiliate_app" class="ml-2 text-sm text-gray-700 dark:text-gray-300">การสมัคร Affiliate</label>
+                                    <label for="turnstile_affiliate_app" class="ml-2 text-sm text-gray-700">การสมัคร Affiliate</label>
                                 </div>
                             </div>
                         </div>
@@ -404,54 +404,54 @@
                     @method('PUT')
 
                     <div class="space-y-6">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่า Rate Limiting</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่า Rate Limiting</h3>
 
                         <!-- Enable Rate Limiting -->
                         <div class="flex items-center">
                             <input type="checkbox" name="rate_limiting_enabled" id="rate_limiting_enabled"
                                    {{ config('ratelimit.enabled') ? 'checked' : '' }}
                                    class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                            <label for="rate_limiting_enabled" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label for="rate_limiting_enabled" class="ml-2 text-sm font-medium text-gray-700">
                                 เปิดใช้งาน Rate Limiting
                             </label>
                         </div>
 
                         <!-- Login Rate Limiting Settings -->
-                        <div class="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
+                        <div class="bg-gray-50 rounded-lg p-4">
                             <h4 class="text-sm font-medium text-gray-900 mb-3">การ Login</h4>
 
                             <div class="space-y-4">
                                 <div>
-                                    <label for="rate_limit_login_max_attempts" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <label for="rate_limit_login_max_attempts" class="block text-sm font-medium text-gray-700 mb-2">
                                         จำนวนครั้งสูงสุดที่พยายาม Login
                                     </label>
                                     <input type="number" name="rate_limit_login_max_attempts" id="rate_limit_login_max_attempts"
                                            value="{{ old('rate_limit_login_max_attempts', config('ratelimit.login.max_attempts')) }}"
                                            min="1" max="50"
-                                           class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">จำนวนครั้งที่อนุญาตให้พยายาม Login ล้มเหลวได้</p>
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <p class="mt-1 text-sm text-gray-500">จำนวนครั้งที่อนุญาตให้พยายาม Login ล้มเหลวได้</p>
                                 </div>
 
                                 <div>
-                                    <label for="rate_limit_login_decay_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <label for="rate_limit_login_decay_minutes" class="block text-sm font-medium text-gray-700 mb-2">
                                         เวลารีเซ็ตจำนวนครั้ง (นาที)
                                     </label>
                                     <input type="number" name="rate_limit_login_decay_minutes" id="rate_limit_login_decay_minutes"
                                            value="{{ old('rate_limit_login_decay_minutes', config('ratelimit.login.decay_minutes')) }}"
                                            min="1" max="1440"
-                                           class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">ระยะเวลาที่จะรีเซ็ตจำนวนครั้งที่พยายาม</p>
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <p class="mt-1 text-sm text-gray-500">ระยะเวลาที่จะรีเซ็ตจำนวนครั้งที่พยายาม</p>
                                 </div>
 
                                 <div>
-                                    <label for="rate_limit_login_lockout_minutes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    <label for="rate_limit_login_lockout_minutes" class="block text-sm font-medium text-gray-700 mb-2">
                                         เวลาล็อกบัญชี (นาที)
                                     </label>
                                     <input type="number" name="rate_limit_login_lockout_minutes" id="rate_limit_login_lockout_minutes"
                                            value="{{ old('rate_limit_login_lockout_minutes', config('ratelimit.login.lockout_minutes')) }}"
                                            min="1" max="1440"
-                                           class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">ระยะเวลาที่จะล็อกไม่ให้ Login ได้</p>
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <p class="mt-1 text-sm text-gray-500">ระยะเวลาที่จะล็อกไม่ให้ Login ได้</p>
                                 </div>
                             </div>
                         </div>
@@ -479,14 +479,14 @@
                     @method('PUT')
 
                     <div class="space-y-6">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่า Auto-Ban System</h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">ตั้งค่า Auto-Ban System</h3>
 
                         <!-- Enable Auto-Ban -->
                         <div class="flex items-center">
                             <input type="checkbox" name="auto_ban_enabled" id="auto_ban_enabled"
                                    {{ config('autoban.enabled') ? 'checked' : '' }}
                                    class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                            <label for="auto_ban_enabled" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label for="auto_ban_enabled" class="ml-2 text-sm font-medium text-gray-700">
                                 เปิดใช้งาน Auto-Ban System
                             </label>
                         </div>
@@ -495,7 +495,7 @@
                         <div class="bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-lg p-6">
                             <div class="flex items-center mb-4">
                                 <span class="text-2xl mr-3">🔒</span>
-                                <h4 class="text-md font-semibold text-gray-900 dark:text-white">Failed Login Auto-Ban</h4>
+                                <h4 class="text-md font-semibold text-gray-900">Failed Login Auto-Ban</h4>
                             </div>
 
                             <div class="space-y-4">
@@ -503,35 +503,35 @@
                                     <input type="checkbox" name="auto_ban_failed_login_enabled" id="auto_ban_failed_login_enabled"
                                            {{ config('autoban.failed_login.enabled') ? 'checked' : '' }}
                                            class="w-4 h-4 text-red-600 border-gray-300 rounded focus:ring-red-500">
-                                    <label for="auto_ban_failed_login_enabled" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <label for="auto_ban_failed_login_enabled" class="ml-2 text-sm font-medium text-gray-700">
                                         เปิดใช้งาน
                                     </label>
                                 </div>
 
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนครั้ง (Threshold)</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">จำนวนครั้ง (Threshold)</label>
                                         <input type="number" name="auto_ban_failed_login_threshold"
                                                value="{{ old('auto_ban_failed_login_threshold', config('autoban.failed_login.threshold')) }}"
                                                min="1" max="100"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-red-500">
-                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ครั้ง</p>
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                        <p class="mt-1 text-xs text-gray-500">ครั้ง</p>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ช่วงเวลา (Time Window)</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา (Time Window)</label>
                                         <input type="number" name="auto_ban_failed_login_time_window"
                                                value="{{ old('auto_ban_failed_login_time_window', config('autoban.failed_login.time_window')) }}"
                                                min="1" max="1440"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-red-500">
-                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">นาที</p>
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                        <p class="mt-1 text-xs text-gray-500">นาที</p>
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ระยะเวลาแบน (Ban Duration)</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ระยะเวลาแบน (Ban Duration)</label>
                                         <input type="number" name="auto_ban_failed_login_ban_duration"
                                                value="{{ old('auto_ban_failed_login_ban_duration', config('autoban.failed_login.ban_duration')) }}"
                                                min="1" max="10080"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-red-500">
-                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">นาที ({{ round(config('autoban.failed_login.ban_duration') / 60, 1) }} ชม.)</p>
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500">
+                                        <p class="mt-1 text-xs text-gray-500">นาที ({{ round(config('autoban.failed_login.ban_duration') / 60, 1) }} ชม.)</p>
                                     </div>
                                 </div>
                             </div>
@@ -541,7 +541,7 @@
                         <div class="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6">
                             <div class="flex items-center mb-4">
                                 <span class="text-2xl mr-3">🤖</span>
-                                <h4 class="text-md font-semibold text-gray-900 dark:text-white">Turnstile Failure Auto-Ban</h4>
+                                <h4 class="text-md font-semibold text-gray-900">Turnstile Failure Auto-Ban</h4>
                             </div>
 
                             <div class="space-y-4">
@@ -549,33 +549,33 @@
                                     <input type="checkbox" name="auto_ban_turnstile_enabled" id="auto_ban_turnstile_enabled"
                                            {{ config('autoban.turnstile_failure.enabled') ? 'checked' : '' }}
                                            class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                    <label for="auto_ban_turnstile_enabled" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <label for="auto_ban_turnstile_enabled" class="ml-2 text-sm font-medium text-gray-700">
                                         เปิดใช้งาน
                                     </label>
                                 </div>
 
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนครั้ง</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">จำนวนครั้ง</label>
                                         <input type="number" name="auto_ban_turnstile_threshold"
                                                value="{{ old('auto_ban_turnstile_threshold', config('autoban.turnstile_failure.threshold')) }}"
                                                min="1" max="100"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ช่วงเวลา (นาที)</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา (นาที)</label>
                                         <input type="number" name="auto_ban_turnstile_time_window"
                                                value="{{ old('auto_ban_turnstile_time_window', config('autoban.turnstile_failure.time_window')) }}"
                                                min="1" max="1440"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ระยะเวลาแบน (นาที)</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ระยะเวลาแบน (นาที)</label>
                                         <input type="number" name="auto_ban_turnstile_ban_duration"
                                                value="{{ old('auto_ban_turnstile_ban_duration', config('autoban.turnstile_failure.ban_duration')) }}"
                                                min="1" max="10080"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ round(config('autoban.turnstile_failure.ban_duration') / 60, 1) }} ชม.</p>
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <p class="mt-1 text-xs text-gray-500">{{ round(config('autoban.turnstile_failure.ban_duration') / 60, 1) }} ชม.</p>
                                     </div>
                                 </div>
                             </div>
@@ -585,7 +585,7 @@
                         <div class="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-6">
                             <div class="flex items-center mb-4">
                                 <span class="text-2xl mr-3">⏱️</span>
-                                <h4 class="text-md font-semibold text-gray-900 dark:text-white">Rate Limit Auto-Ban</h4>
+                                <h4 class="text-md font-semibold text-gray-900">Rate Limit Auto-Ban</h4>
                             </div>
 
                             <div class="space-y-4">
@@ -593,33 +593,33 @@
                                     <input type="checkbox" name="auto_ban_rate_limit_enabled" id="auto_ban_rate_limit_enabled"
                                            {{ config('autoban.rate_limit.enabled') ? 'checked' : '' }}
                                            class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
-                                    <label for="auto_ban_rate_limit_enabled" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <label for="auto_ban_rate_limit_enabled" class="ml-2 text-sm font-medium text-gray-700">
                                         เปิดใช้งาน
                                     </label>
                                 </div>
 
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนครั้ง</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">จำนวนครั้ง</label>
                                         <input type="number" name="auto_ban_rate_limit_threshold"
                                                value="{{ old('auto_ban_rate_limit_threshold', config('autoban.rate_limit.threshold')) }}"
                                                min="1" max="100"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500">
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ช่วงเวลา (นาที)</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ช่วงเวลา (นาที)</label>
                                         <input type="number" name="auto_ban_rate_limit_time_window"
                                                value="{{ old('auto_ban_rate_limit_time_window', config('autoban.rate_limit.time_window')) }}"
                                                min="1" max="1440"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500">
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ระยะเวลาแบน (นาที)</label>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">ระยะเวลาแบน (นาที)</label>
                                         <input type="number" name="auto_ban_rate_limit_ban_duration"
                                                value="{{ old('auto_ban_rate_limit_ban_duration', config('autoban.rate_limit.ban_duration')) }}"
                                                min="1" max="10080"
-                                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-purple-500">
-                                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ round(config('autoban.rate_limit.ban_duration') / 60, 1) }} ชม.</p>
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                        <p class="mt-1 text-xs text-gray-500">{{ round(config('autoban.rate_limit.ban_duration') / 60, 1) }} ชม.</p>
                                     </div>
                                 </div>
                             </div>
@@ -629,7 +629,7 @@
                         <div class="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-6">
                             <div class="flex items-center mb-4">
                                 <span class="text-2xl mr-3">📧</span>
-                                <h4 class="text-md font-semibold text-gray-900 dark:text-white">Email Notifications</h4>
+                                <h4 class="text-md font-semibold text-gray-900">Email Notifications</h4>
                             </div>
 
                             <div class="space-y-4">
@@ -637,7 +637,7 @@
                                     <input type="checkbox" name="auto_ban_notifications_enabled" id="auto_ban_notifications_enabled"
                                            {{ config('autoban.notifications.enabled') ? 'checked' : '' }}
                                            class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                                    <label for="auto_ban_notifications_enabled" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <label for="auto_ban_notifications_enabled" class="ml-2 text-sm font-medium text-gray-700">
                                         เปิดใช้งานการแจ้งเตือน
                                     </label>
                                 </div>
@@ -646,18 +646,18 @@
                                     <input type="checkbox" name="auto_ban_email_enabled" id="auto_ban_email_enabled"
                                            {{ config('autoban.notifications.email.enabled') ? 'checked' : '' }}
                                            class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                                    <label for="auto_ban_email_enabled" class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    <label for="auto_ban_email_enabled" class="ml-2 text-sm font-medium text-gray-700">
                                         ส่งอีเมล
                                     </label>
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">อีเมลผู้รับ (คั่นด้วย comma)</label>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">อีเมลผู้รับ (คั่นด้วย comma)</label>
                                     <input type="text" name="auto_ban_email_recipients"
                                            value="{{ old('auto_ban_email_recipients', config('autoban.notifications.email.recipients')) }}"
                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
                                            placeholder="admin@example.com, security@example.com">
-                                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">อีเมลที่จะได้รับการแจ้งเตือนเมื่อมี IP ถูก Auto-Ban</p>
+                                    <p class="mt-1 text-xs text-gray-500">อีเมลที่จะได้รับการแจ้งเตือนเมื่อมี IP ถูก Auto-Ban</p>
                                 </div>
                             </div>
                         </div>
@@ -691,7 +691,7 @@
             <div x-show="activeTab === 'ipmanagement'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">จัดการ IP Blocking</h3>
+                        <h3 class="text-lg font-semibold text-gray-900">จัดการ IP Blocking</h3>
                         <button @click="showAddIpModal = true" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
                             เพิ่ม IP
                         </button>
@@ -699,24 +699,24 @@
 
                     <!-- Blocked IPs Table -->
                     @if($blockedIps->count() > 0)
-                    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-x-auto">
+                    <div class="bg-white rounded-lg border border-gray-200 overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">IP Address</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ประเภท</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">เหตุผล</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">บล็อกโดย</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">วันที่บล็อก</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">หมดอายุ</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">การดำเนินการ</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เหตุผล</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">บล็อกโดย</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่บล็อก</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หมดอายุ</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การดำเนินการ</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($blockedIps as $blockedIp)
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">{{ $blockedIp->ip_address }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ $blockedIp->ip_address }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($blockedIp->type === 'blacklist')
                                         <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Blacklist</span>
@@ -724,10 +724,10 @@
                                         <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Whitelist</span>
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $blockedIp->reason ?? '-' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $blockedIp->blocker->name ?? 'System' }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $blockedIp->created_at->format('Y-m-d H:i') }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    <td class="px-6 py-4 text-sm text-gray-500">{{ $blockedIp->reason ?? '-' }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">{{ $blockedIp->blocker->name ?? 'System' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $blockedIp->created_at->format('Y-m-d H:i') }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                         {{ $blockedIp->expires_at ? $blockedIp->expires_at->format('Y-m-d H:i') : 'ถาวร' }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -757,8 +757,8 @@
                         {{ $blockedIps->links() }}
                     </div>
                     @else
-                    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-8">
-                        <p class="text-gray-500 dark:text-gray-400 text-center">ไม่มี IP ที่ถูกบล็อก</p>
+                    <div class="bg-white rounded-lg border border-gray-200 p-8">
+                        <p class="text-gray-500 text-center">ไม่มี IP ที่ถูกบล็อก</p>
                     </div>
                     @endif
                 </div>
@@ -767,32 +767,32 @@
             <!-- Security Logs Tab -->
             <div x-show="activeTab === 'logs'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                 <div class="space-y-6">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Security Logs</h3>
+                    <h3 class="text-lg font-semibold text-gray-900">Security Logs</h3>
 
                     @if($securityLogs->count() > 0)
-                    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 overflow-x-auto">
+                    <div class="bg-white rounded-lg border border-gray-200 overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">เวลา</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Event Type</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">IP Address</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ความรุนแรง</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">รายละเอียด</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เวลา</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ความรุนแรง</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รายละเอียด</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($securityLogs as $log)
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-900">
                                         <span class="px-2 py-1 text-xs font-mono rounded bg-gray-100">{{ $log->event_type }}</span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900 dark:text-white">{{ $log->ip_address }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $log->user->name ?? '-' }}</td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ $log->email ?? '-' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ $log->ip_address }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">{{ $log->user->name ?? '-' }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">{{ $log->email ?? '-' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($log->severity === 'critical')
                                         <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Critical</span>
@@ -804,15 +804,15 @@
                                         <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Low</span>
                                         @endif
                                     </td>
-                                    <td class="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">{{ Str::limit($log->description, 50) }}</td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">{{ Str::limit($log->description, 50) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
                     @else
-                    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-8">
-                        <p class="text-gray-500 dark:text-gray-400 text-center">ไม่มี Security Logs</p>
+                    <div class="bg-white rounded-lg border border-gray-200 p-8">
+                        <p class="text-gray-500 text-center">ไม่มี Security Logs</p>
                     </div>
                     @endif
                 </div>
@@ -823,51 +823,50 @@
 
 <!-- Add IP Modal (Simple inline form - can be enhanced with Alpine.js modal) -->
 <div x-data="{ showAddIpModal: false }" x-show="showAddIpModal" x-cloak
-     class="fixed inset-0 z-50 overflow-y-auto"
-     @keydown.escape.window="showAddIpModal = false">
+     class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
     <div class="flex items-center justify-center min-h-screen px-4">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showAddIpModal = false"></div>
 
-        <div class="relative bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">เพิ่ม IP Address</h3>
+        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">เพิ่ม IP Address</h3>
 
             <form method="POST" action="{{ route('admin.security.ip.block') }}">
                 @csrf
 
                 <div class="space-y-4">
                     <div>
-                        <label for="ip_address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">IP Address</label>
+                        <label for="ip_address" class="block text-sm font-medium text-gray-700 mb-2">IP Address</label>
                         <input type="text" name="ip_address" id="ip_address" required
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                placeholder="192.168.1.1">
                     </div>
 
                     <div>
-                        <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ประเภท</label>
+                        <label for="type" class="block text-sm font-medium text-gray-700 mb-2">ประเภท</label>
                         <select name="type" id="type" required
-                                class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                             <option value="blacklist">Blacklist</option>
                             <option value="whitelist">Whitelist</option>
                         </select>
                     </div>
 
                     <div>
-                        <label for="reason" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เหตุผล</label>
+                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">เหตุผล</label>
                         <textarea name="reason" id="reason" rows="3"
-                                  class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                   placeholder="ระบุเหตุผลในการบล็อก IP นี้"></textarea>
                     </div>
 
                     <div>
-                        <label for="expires_at" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วันหมดอายุ (ถ้าไม่ระบุจะเป็นถาวร)</label>
+                        <label for="expires_at" class="block text-sm font-medium text-gray-700 mb-2">วันหมดอายุ (ถ้าไม่ระบุจะเป็นถาวร)</label>
                         <input type="datetime-local" name="expires_at" id="expires_at"
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                     </div>
                 </div>
 
                 <div class="mt-6 flex justify-end space-x-3">
                     <button type="button" @click="showAddIpModal = false"
-                            class="px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 transition">
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
                         ยกเลิก
                     </button>
                     <button type="submit"
