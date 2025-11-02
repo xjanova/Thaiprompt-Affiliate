@@ -210,7 +210,7 @@
             this.systemMenuOpen = false;
 
             // Open only the relevant menu based on current path
-            if (currentPath.includes('/admin/line-oa')) {
+            if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/otp')) {
                 this.lineMenuOpen = true;
             } else if (currentPath.includes('/admin/affiliates') || currentPath.includes('/admin/retention') || currentPath.includes('/admin/ranks')) {
                 this.marketingMenuOpen = true;
@@ -546,7 +546,7 @@
                 <!-- LINE OA Management Dropdown -->
                 <div class="relative mb-1">
                     @php
-                        $lineActive = request()->routeIs('admin.line-oa.*');
+                        $lineActive = request()->routeIs('admin.line-oa.*') || request()->routeIs('admin.otp.*');
                     @endphp
 
                     <!-- Main LINE Menu Button -->
@@ -587,6 +587,12 @@
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-oa.logs') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
                             <span class="mr-2">📊</span>
                             <span>ประวัติการใช้งาน</span>
+                        </a>
+
+                        <a href="{{ route('admin.otp.settings') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.otp.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">🔐</span>
+                            <span>ตั้งค่า OTP</span>
                         </a>
 
                         <div class="border-t border-gray-700/30 my-1"></div>

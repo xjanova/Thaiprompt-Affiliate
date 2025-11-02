@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\RankController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\MembershipRetentionController as AdminRetentionController;
 use App\Http\Controllers\Admin\LineOaController;
+use App\Http\Controllers\Admin\OtpSettingsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -293,4 +294,11 @@ Route::prefix('line-oa')->name('line-oa.')->group(function () {
     Route::put('/update', [LineOaController::class, 'update'])->name('update');
     Route::post('/test-message', [LineOaController::class, 'testMessage'])->name('test-message');
     Route::get('/logs', [LineOaController::class, 'logs'])->name('logs');
+});
+
+// OTP Settings Management
+Route::prefix('otp')->name('otp.')->group(function () {
+    Route::get('/settings', [OtpSettingsController::class, 'index'])->name('settings');
+    Route::put('/settings', [OtpSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/test', [OtpSettingsController::class, 'test'])->name('test');
 });
