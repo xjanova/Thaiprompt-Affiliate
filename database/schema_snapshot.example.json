@@ -1,0 +1,166 @@
+{
+    "created_at": "2025-11-02 12:00:00",
+    "database": "mysql",
+    "note": "This is an example schema snapshot. Generate your actual snapshot with: php artisan schema:verify --snapshot",
+    "tables": {
+        "line_bot_ai_settings": {
+            "columns": {
+                "id": "bigint",
+                "name": "string",
+                "provider": "string",
+                "api_key": "text",
+                "api_endpoint": "string",
+                "model": "string",
+                "temperature": "decimal",
+                "max_tokens": "integer",
+                "system_prompt": "text",
+                "is_active": "boolean",
+                "enable_conversation_history": "boolean",
+                "conversation_memory_limit": "integer",
+                "created_at": "datetime",
+                "updated_at": "datetime",
+                "deleted_at": "datetime"
+            },
+            "indexes": {
+                "PRIMARY": {
+                    "columns": ["id"],
+                    "unique": true
+                }
+            }
+        },
+        "line_bot_knowledge_bases": {
+            "columns": {
+                "id": "bigint",
+                "ai_setting_id": "bigint",
+                "name": "string",
+                "source_type": "string",
+                "source_url": "string",
+                "source_file_path": "string",
+                "content": "text",
+                "priority": "integer",
+                "is_active": "boolean",
+                "last_synced_at": "datetime",
+                "created_at": "datetime",
+                "updated_at": "datetime",
+                "deleted_at": "datetime"
+            }
+        },
+        "line_bot_conversations": {
+            "columns": {
+                "id": "bigint",
+                "user_id": "bigint",
+                "line_user_id": "string",
+                "session_id": "string",
+                "ai_setting_id": "bigint",
+                "message_count": "integer",
+                "last_message_at": "datetime",
+                "created_at": "datetime",
+                "updated_at": "datetime",
+                "deleted_at": "datetime"
+            }
+        },
+        "line_bot_messages": {
+            "columns": {
+                "id": "bigint",
+                "conversation_id": "bigint",
+                "role": "string",
+                "message": "text",
+                "metadata": "json",
+                "created_at": "datetime",
+                "updated_at": "datetime"
+            }
+        },
+        "line_flex_message_templates": {
+            "columns": {
+                "id": "bigint",
+                "name": "string",
+                "category": "string",
+                "description": "text",
+                "flex_content": "json",
+                "thumbnail": "string",
+                "is_active": "boolean",
+                "created_by": "bigint",
+                "created_at": "datetime",
+                "updated_at": "datetime",
+                "deleted_at": "datetime"
+            }
+        },
+        "line_rich_menus": {
+            "columns": {
+                "id": "bigint",
+                "name": "string",
+                "rich_menu_id": "string",
+                "size_width": "integer",
+                "size_height": "integer",
+                "selected": "boolean",
+                "chat_bar_text": "string",
+                "image_url": "string",
+                "areas": "json",
+                "is_active": "boolean",
+                "created_by": "bigint",
+                "created_at": "datetime",
+                "updated_at": "datetime",
+                "deleted_at": "datetime"
+            }
+        },
+        "line_chat_widget_settings": {
+            "columns": {
+                "id": "bigint",
+                "name": "string",
+                "position": "string",
+                "primary_color": "string",
+                "bot_avatar": "string",
+                "welcome_message": "text",
+                "offline_message": "text",
+                "enable_user_chat": "boolean",
+                "enable_seller_chat": "boolean",
+                "enable_ai_bot": "boolean",
+                "ai_setting_id": "bigint",
+                "is_active": "boolean",
+                "created_at": "datetime",
+                "updated_at": "datetime",
+                "deleted_at": "datetime"
+            }
+        },
+        "line_avatars": {
+            "columns": {
+                "id": "bigint",
+                "name": "string",
+                "type": "string",
+                "file_path": "string",
+                "file_url": "string",
+                "file_size": "integer",
+                "source_type": "string",
+                "description": "text",
+                "is_active": "boolean",
+                "is_default": "boolean",
+                "created_by": "bigint",
+                "created_at": "datetime",
+                "updated_at": "datetime",
+                "deleted_at": "datetime"
+            }
+        },
+        "line_broadcast_messages": {
+            "columns": {
+                "id": "bigint",
+                "name": "string",
+                "message_type": "string",
+                "content": "text",
+                "flex_template_id": "bigint",
+                "message_data": "json",
+                "target_type": "string",
+                "target_users": "json",
+                "status": "string",
+                "scheduled_at": "datetime",
+                "sent_at": "datetime",
+                "total_recipients": "integer",
+                "sent_count": "integer",
+                "failed_count": "integer",
+                "created_by": "bigint",
+                "created_at": "datetime",
+                "updated_at": "datetime",
+                "deleted_at": "datetime"
+            }
+        }
+    }
+}

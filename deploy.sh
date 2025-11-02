@@ -607,19 +607,56 @@ print_success "All caches cleared"
 print_info "[10/20] 🎯 Smart Database Migration System..."
 echo ""
 
-# Step 9.1: Verify database connection
+# Step 10.1: Verify database connection
 print_info "→ Verifying database connection..."
 if ! php artisan db:show >/dev/null 2>&1; then
     error_exit "Database connection failed - ตรวจสอบ .env credentials"
 fi
 print_success "✓ Database connection OK"
 
-# Step 9.2: Show current migration status (BEFORE)
+# Step 10.2: Schema Verification (Detect Schema Drift)
+print_info "→ Verifying database schema integrity..."
+if php artisan schema:verify >/dev/null 2>&1; then
+    print_success "✓ Database schema is correct"
+else
+    print_warning "⚠ Schema issues detected - Running detailed verification..."
+    echo ""
+
+    # Run detailed schema verification
+    php artisan schema:verify 2>&1 | tee -a "$LOG_FILE" || true
+    echo ""
+
+    print_warning "╔═══════════════════════════════════════════════════════════╗"
+    print_warning "║  ⚠️  Schema Drift Detected!                              ║"
+    print_warning "╚═══════════════════════════════════════════════════════════╝"
+    echo ""
+    print_info "💡 This usually happens when:"
+    echo "  • Tables were created via SQL import"
+    echo "  • Database was modified manually"
+    echo "  • Migrations were partially applied"
+    echo ""
+    print_info "📋 Recommended actions:"
+    echo "  1. Review the issues above carefully"
+    echo "  2. Run: php artisan schema:verify --fix"
+    echo "  3. Or manually fix with ALTER TABLE statements"
+    echo ""
+
+    read -p "Continue with deployment anyway? (y/n) [y]: " -n 1 -r CONTINUE_DEPLOY
+    echo
+    if [[ ! -z $CONTINUE_DEPLOY ]] && [[ ! $CONTINUE_DEPLOY =~ ^[Yy]$ ]]; then
+        error_exit "Deployment cancelled due to schema issues"
+    fi
+
+    print_info "Continuing deployment (schema issues will be addressed by migrations)..."
+    echo ""
+fi
+
+# Step 10.3: Show current migration status (BEFORE)
 print_info "→ Current migration status (BEFORE):"
 php artisan migrate:status 2>/dev/null | tail -15 || true
 echo ""
 
-# Step 9.3: Check for pending migrations
+# Step 10.4: Check for pending migrations
 PENDING_COUNT=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
 TOTAL_MIGRATIONS=$(php artisan migrate:status 2>/dev/null | grep -c "migration" || echo "0")
 
@@ -628,7 +665,7 @@ echo "  • Total migrations: $TOTAL_MIGRATIONS"
 echo "  • Pending migrations: $PENDING_COUNT"
 echo ""
 
-# Step 9.4: Run migrations if needed
+# Step 10.5: Run migrations if needed
 if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     print_warning "⚠ Found $PENDING_COUNT pending migration(s) - Will apply now"
     echo ""
@@ -675,12 +712,12 @@ else
     echo ""
 fi
 
-# Step 9.5: Show migration status (AFTER)
+# Step 10.6: Show migration status (AFTER)
 print_info "→ Migration status (AFTER):"
 php artisan migrate:status 2>/dev/null | tail -15 || true
 echo ""
 
-# Step 9.6: Verify migration integrity
+# Step 10.7: Verify migration integrity
 print_info "→ Verifying database integrity..."
 MIGRATED_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
 echo "  • Successfully migrated: $MIGRATED_COUNT migrations"
