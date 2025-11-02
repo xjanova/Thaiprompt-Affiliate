@@ -58,18 +58,18 @@ class SecurityController extends Controller
     public function updateTurnstile(Request $request)
     {
         $validated = $request->validate([
-            'turnstile_enabled' => ['nullable', 'boolean'],
+            'turnstile_enabled' => ['nullable'],
             'turnstile_site_key' => ['nullable', 'string'],
             'turnstile_secret_key' => ['nullable', 'string'],
-            'turnstile_bypass_admin' => ['nullable', 'boolean'],
+            'turnstile_bypass_admin' => ['nullable'],
             'turnstile_theme' => ['nullable', 'string', 'in:auto,light,dark'],
             'turnstile_size' => ['nullable', 'string', 'in:normal,compact'],
-            'turnstile_login' => ['nullable', 'boolean'],
-            'turnstile_register' => ['nullable', 'boolean'],
-            'turnstile_password_change' => ['nullable', 'boolean'],
-            'turnstile_profile_update' => ['nullable', 'boolean'],
-            'turnstile_withdrawal' => ['nullable', 'boolean'],
-            'turnstile_affiliate_app' => ['nullable', 'boolean'],
+            'turnstile_login' => ['nullable'],
+            'turnstile_register' => ['nullable'],
+            'turnstile_password_change' => ['nullable'],
+            'turnstile_profile_update' => ['nullable'],
+            'turnstile_withdrawal' => ['nullable'],
+            'turnstile_affiliate_app' => ['nullable'],
         ]);
 
         // Handle checkbox values
@@ -101,7 +101,7 @@ class SecurityController extends Controller
     public function updateRateLimiting(Request $request)
     {
         $validated = $request->validate([
-            'rate_limiting_enabled' => ['nullable', 'boolean'],
+            'rate_limiting_enabled' => ['nullable'],
             'rate_limit_login_max_attempts' => ['nullable', 'integer', 'min:1', 'max:50'],
             'rate_limit_login_decay_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'rate_limit_login_lockout_minutes' => ['nullable', 'integer', 'min:1', 'max:1440'],
@@ -368,25 +368,25 @@ class SecurityController extends Controller
     public function updateAutoBan(Request $request)
     {
         $validated = $request->validate([
-            'auto_ban_enabled' => ['nullable', 'boolean'],
+            'auto_ban_enabled' => ['nullable'],
             // Failed Login
-            'auto_ban_failed_login_enabled' => ['nullable', 'boolean'],
+            'auto_ban_failed_login_enabled' => ['nullable'],
             'auto_ban_failed_login_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
             'auto_ban_failed_login_time_window' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'auto_ban_failed_login_ban_duration' => ['nullable', 'integer', 'min:1', 'max:10080'],
             // Turnstile
-            'auto_ban_turnstile_enabled' => ['nullable', 'boolean'],
+            'auto_ban_turnstile_enabled' => ['nullable'],
             'auto_ban_turnstile_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
             'auto_ban_turnstile_time_window' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'auto_ban_turnstile_ban_duration' => ['nullable', 'integer', 'min:1', 'max:10080'],
             // Rate Limit
-            'auto_ban_rate_limit_enabled' => ['nullable', 'boolean'],
+            'auto_ban_rate_limit_enabled' => ['nullable'],
             'auto_ban_rate_limit_threshold' => ['nullable', 'integer', 'min:1', 'max:100'],
             'auto_ban_rate_limit_time_window' => ['nullable', 'integer', 'min:1', 'max:1440'],
             'auto_ban_rate_limit_ban_duration' => ['nullable', 'integer', 'min:1', 'max:10080'],
             // Notifications
-            'auto_ban_notifications_enabled' => ['nullable', 'boolean'],
-            'auto_ban_email_enabled' => ['nullable', 'boolean'],
+            'auto_ban_notifications_enabled' => ['nullable'],
+            'auto_ban_email_enabled' => ['nullable'],
             'auto_ban_email_recipients' => ['nullable', 'string'],
         ]);
 
@@ -630,16 +630,16 @@ class SecurityController extends Controller
     public function updateThreatSettings(Request $request)
     {
         $validated = $request->validate([
-            'threat_intelligence_enabled' => ['nullable', 'boolean'],
-            'threat_block_proxy' => ['nullable', 'boolean'],
-            'threat_block_vpn' => ['nullable', 'boolean'],
-            'threat_block_tor' => ['nullable', 'boolean'],
-            'threat_block_abuse' => ['nullable', 'boolean'],
+            'threat_intelligence_enabled' => ['nullable'],
+            'threat_block_proxy' => ['nullable'],
+            'threat_block_vpn' => ['nullable'],
+            'threat_block_tor' => ['nullable'],
+            'threat_block_abuse' => ['nullable'],
             'threat_confidence_threshold' => ['nullable', 'integer', 'min:0', 'max:100'],
             'abuseipdb_api_key' => ['nullable', 'string'],
             'ipqualityscore_api_key' => ['nullable', 'string'],
             // Schedule settings
-            'threat_auto_update_enabled' => ['nullable', 'boolean'],
+            'threat_auto_update_enabled' => ['nullable'],
             'threat_update_frequency' => ['nullable', 'string', 'in:hourly,daily,weekly,custom'],
             'threat_update_time' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
             'threat_update_day' => ['nullable', 'integer', 'min:0', 'max:6'],
