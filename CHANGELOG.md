@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v1.4.1] - 2025-11-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #214 from xjanova/claude/auto-version-release-011CUiRsoU3XMBgrgCCLWNkQ (30d7290)
+- fix: ลบ step สร้าง tag ออก ให้ softprops สร้าง tag อัตโนมัติ (42c277a)
+### 🔧 Other Changes
+- chore: bump version to 1.4.0 [skip ci] (827d2b7)
+
 ## [v1.4.0] - 2025-11-02
 
 ### ✨ Features
