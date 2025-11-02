@@ -39,6 +39,8 @@
 
 ## 🔧 **วิธีที่ 2: รัน Migrations ผ่าน Artisan**
 
+> ⚠️ **หมายเหตุ:** Migrations ปัจจุบันมีการตรวจสอบตารางที่มีอยู่แล้ว หากตารางมีอยู่จะข้ามการสร้างอัตโนมัติ ทำให้สามารถรันได้อย่างปลอดภัยแม้บางตารางถูกสร้างผ่าน SQL import แล้วก็ตาม
+
 ### 1. รัน Database Migrations
 
 ต้องรันคำสั่งต่อไปนี้ใน production server (ต้องเข้า SSH):
@@ -115,6 +117,7 @@ php artisan view:clear
 - ต้อง **รัน migrations** ก่อนเข้าใช้งานหน้า Admin
 - ถ้ายังไม่ได้รัน จะเจอ error: `Table 'xxx.line_avatars' doesn't exist`
 - Migrations ต้องรันบน production server ที่มี PHP และ Laravel ติดตั้งแล้ว
+- **ถ้าได้ import SQL ไปบางส่วนแล้ว** สามารถรัน migrations ต่อได้เลย ระบบจะข้ามตารางที่มีอยู่แล้วอัตโนมัติ
 
 ## 📝 ฟีเจอร์ที่พร้อมใช้งาน
 

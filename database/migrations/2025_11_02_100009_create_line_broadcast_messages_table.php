@@ -11,6 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip if table already exists (from SQL import)
+        if (Schema::hasTable('line_broadcast_messages')) {
+            $this->command->warn('Table line_broadcast_messages already exists, skipping...');
+            return;
+        }
+
         Schema::create('line_broadcast_messages', function (Blueprint $table) {
             $table->id();
             $table->string('name')->comment('ชื่อแคมเปญ');
