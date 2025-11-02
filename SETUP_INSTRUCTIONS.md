@@ -2,9 +2,46 @@
 
 ## ⚠️ สิ่งที่ต้องทำเพื่อให้ระบบทำงานได้
 
+**เลือกวิธีใดวิธีหนึ่ง:**
+- ✅ **วิธีที่ 1: Import SQL File** (แนะนำ - ง่ายที่สุด)
+- ✅ **วิธีที่ 2: รัน Migrations ผ่าน Artisan**
+
+---
+
+## 📦 **วิธีที่ 1: Import SQL File (แนะนำ)**
+
+### ขั้นตอนที่ 1: เข้า phpMyAdmin หรือ MySQL Client
+
+1. เข้า phpMyAdmin ของคุณ
+2. เลือกฐานข้อมูล `admin_mlmtestthai`
+3. ไปที่แท็บ **Import**
+4. เลือกไฟล์: `database/line_bot_schema.sql`
+5. กด **Go** หรือ **Import**
+
+### ขั้นตอนที่ 2: ตรวจสอบว่าสำเร็จ
+
+หลังจาก import เสร็จ จะมีตาราง 9 ตารางใหม่:
+- ✅ line_bot_ai_settings
+- ✅ line_bot_knowledge_bases
+- ✅ line_bot_conversations
+- ✅ line_bot_messages
+- ✅ line_flex_message_templates (มีข้อมูลตัวอย่าง 3 แบบ)
+- ✅ line_rich_menus
+- ✅ line_chat_widget_settings
+- ✅ line_avatars
+- ✅ line_broadcast_messages
+
+### ขั้นตอนที่ 3: เสร็จสิ้น! 🎉
+
+ระบบพร้อมใช้งานแล้ว สามารถเข้าเมนู **Line & AI** ได้ทันที
+
+---
+
+## 🔧 **วิธีที่ 2: รัน Migrations ผ่าน Artisan**
+
 ### 1. รัน Database Migrations
 
-ต้องรันคำสั่งต่อไปนี้ใน production server:
+ต้องรันคำสั่งต่อไปนี้ใน production server (ต้องเข้า SSH):
 
 ```bash
 # เข้าไปที่ directory โปรเจค
