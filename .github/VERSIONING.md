@@ -46,8 +46,9 @@ BREAKING CHANGE: ลบ API v1 และใช้ v2 เท่านั้น
 2. 🏷️ สร้าง git tag ใหม่ (เช่น v1.2.3)
 3. 📦 สร้าง GitHub Release พร้อม changelog
 4. 📝 อัพเดต CHANGELOG.md ในโปรเจค
-5. 🔄 อัพเดต version ใน package.json
-6. ✍️ Commit การเปลี่ยนแปลงกลับเข้า main branch
+5. 🔄 อัพเดต version ใน package.json และไฟล์ VERSION
+6. 🖥️ เวอร์ชั่นใหม่จะแสดงอัตโนมัติในหน้าแอดมินและยูสเซอร์
+7. ✍️ Commit การเปลี่ยนแปลงกลับเข้า main branch
 
 ## 📖 ตัวอย่างการใช้งาน
 
@@ -83,7 +84,9 @@ Result: `v1.0.0` → `v2.0.0`
 
 - `.github/workflows/release.yml` - GitHub Actions workflow
 - `CHANGELOG.md` - ประวัติการเปลี่ยนแปลง
-- `package.json` - ข้อมูล version ของโปรเจค
+- `package.json` - ข้อมูล version ของโปรเจค (Node.js)
+- `VERSION` - ไฟล์เก็บเวอร์ชั่นปัจจุบัน (ใช้โดย Laravel)
+- `config/version.php` - Configuration สำหรับระบบ versioning
 
 ## 🎯 Best Practices
 
@@ -121,10 +124,57 @@ git commit -m "docs: อัพเดตเอกสาร [skip ci]"
 
 ใช้ `[skip ci]` ใน commit message เพื่อข้ามการ trigger workflow
 
+## 🖥️ การแสดงเวอร์ชั่นในระบบ
+
+### ในหน้าแอดมิน
+
+เวอร์ชั่นจะแสดงอัตโนมัติใน sidebar ของหน้าแอดมิน ประกอบด้วย:
+
+- **เวอร์ชั่นปัจจุบัน**: แสดงในรูปแบบ badge สีน้ำเงิน-ม่วง
+- **Laravel Version**: เวอร์ชั่นของ framework
+- **PHP Version**: เวอร์ชั่นของ PHP ที่กำลังใช้งาน
+
+ตำแหน่ง: `resources/views/layouts/admin.blade.php` (บรรทัด 600-623)
+
+### ในหน้ายูสเซอร์
+
+เวอร์ชั่นจะแสดงอัตโนมัติใน sidebar ของหน้ายูสเซอร์ ประกอบด้วย:
+
+- **เวอร์ชั่นปัจจุบัน**: แสดงในรูปแบบ badge สีน้ำเงิน-ม่วง
+- **Laravel Version**: เวอร์ชั่นของ framework
+- **PHP Version**: เวอร์ชั่นของ PHP ที่กำลังใช้งาน
+
+ตำแหน่ง: `resources/views/layouts/user.blade.php` (บรรทัด 420-443)
+
+### วิธีการทำงาน
+
+1. ระบบจะอ่านเวอร์ชั่นจาก `config('version.current')`
+2. Config จะดึงค่าจากไฟล์ `VERSION` เป็นหลัก
+3. ถ้าไม่มีไฟล์ `VERSION` จะ fallback ไปที่ `package.json`
+4. เวอร์ชั่นจะอัพเดตอัตโนมัติทุกครั้งที่มีการ merge และ release ใหม่
+
+### การตรวจสอบเวอร์ชั่นผ่าน Command Line
+
+```bash
+# แสดงข้อมูลเวอร์ชั่น
+php artisan app:version
+
+# ตรวจสอบ updates
+php artisan app:version --check
+
+# แสดง system requirements
+php artisan app:version --system
+
+# แสดง changelog
+php artisan app:version --changelog
+```
+
 ## 📞 การขอความช่วยเหลือ
 
 หากพบปัญหาหรือต้องการความช่วยเหลือ:
 
 1. ตรวจสอบ Actions log ใน GitHub
 2. ดู workflow file ที่ `.github/workflows/release.yml`
-3. ติดต่อทีม DevOps หรือ maintainers
+3. ตรวจสอบไฟล์ VERSION และ package.json
+4. รัน `php artisan app:version --check` เพื่อตรวจสอบสถานะ
+5. ติดต่อทีม DevOps หรือ maintainers

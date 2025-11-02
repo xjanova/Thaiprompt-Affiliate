@@ -165,13 +165,22 @@ jobs:
 
           echo "Updated package.json to version $NEW_VERSION"
 
+      - name: Update VERSION file
+        run: |
+          NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
+
+          # Update VERSION file (used by Laravel config)
+          echo "$NEW_VERSION" > VERSION
+
+          echo "Updated VERSION file to $NEW_VERSION"
+
       - name: Commit version update and changelog
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
 
           # Add all updated files
-          git add package.json CHANGELOG.md
+          git add package.json CHANGELOG.md VERSION
           git add package-lock.json 2>/dev/null || true
 
           # Only commit if there are changes
