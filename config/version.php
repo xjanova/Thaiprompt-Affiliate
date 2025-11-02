@@ -12,7 +12,28 @@ return [
     |
     */
 
-    'current' => env('APP_VERSION', trim(file_get_contents(base_path('VERSION')))),
+    'current' => env('APP_VERSION', (function() {
+        // Try VERSION file first
+        $versionFile = base_path('VERSION');
+        if (file_exists($versionFile)) {
+            $version = trim(file_get_contents($versionFile));
+            if (!empty($version)) {
+                return $version;
+            }
+        }
+
+        // Fallback to package.json
+        $packageJson = base_path('package.json');
+        if (file_exists($packageJson)) {
+            $package = json_decode(file_get_contents($packageJson), true);
+            if (isset($package['version'])) {
+                return $package['version'];
+            }
+        }
+
+        // Final fallback
+        return '1.0.0';
+    })()),
 
     /*
     |--------------------------------------------------------------------------

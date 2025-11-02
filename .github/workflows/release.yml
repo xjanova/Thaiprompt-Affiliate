@@ -1,0 +1,274 @@
+name: Automatic Version Release
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - claude/Main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+      - master
+      - claude/Main
+  workflow_dispatch:
+
+jobs:
+  release:
+    # Only run on push to main branches OR when PR is merged (not just closed)
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      packages: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+
+      - name: Get previous tag
+        id: previoustag
+        run: |
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # If no tag exists, use VERSION file or package.json
+          if [ -z "$LATEST_TAG" ]; then
+            if [ -f "VERSION" ]; then
+              VERSION_FROM_FILE=$(cat VERSION | tr -d '\n\r' | sed 's/^/v/')
+              LATEST_TAG="$VERSION_FROM_FILE"
+              echo "No git tags found, using VERSION file: $LATEST_TAG"
+            elif [ -f "package.json" ]; then
+              VERSION_FROM_PKG=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
+              LATEST_TAG="v$VERSION_FROM_PKG"
+              echo "No git tags found, using package.json: $LATEST_TAG"
+            else
+              LATEST_TAG="v0.0.0"
+              echo "No version found, defaulting to: $LATEST_TAG"
+            fi
+          else
+            echo "Latest tag: $LATEST_TAG"
+          fi
+
+          echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
+      - name: Check if version bump needed
+        id: check_bump
+        run: |
+          # Count commits since last tag
+          COMMIT_COUNT=$(git rev-list ${{ steps.previoustag.outputs.tag }}..HEAD --count)
+          echo "Commits since last tag: $COMMIT_COUNT"
+
+          if [ "$COMMIT_COUNT" -eq "0" ]; then
+            echo "No new commits since last tag. Skipping version bump."
+            echo "should_bump=false" >> $GITHUB_OUTPUT
+          else
+            echo "New commits found. Version bump required."
+            echo "should_bump=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Determine version bump
+        id: bump
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          # Get commits since last tag
+          COMMITS=$(git log ${{ steps.previoustag.outputs.tag }}..HEAD --pretty=format:"%s")
+          echo "📝 Commits since last tag:"
+          echo "$COMMITS"
+          echo ""
+
+          # Default to patch (bump ทุกครั้งที่มี commits ใหม่)
+          BUMP_TYPE="patch"
+
+          # Check for breaking changes (major version)
+          if echo "$COMMITS" | grep -qiE "^(BREAKING CHANGE:|.*!:)"; then
+            BUMP_TYPE="major"
+            echo "🔴 Found BREAKING CHANGE → MAJOR version bump"
+          # Check for features (minor version)
+          elif echo "$COMMITS" | grep -qiE "^(feat|feature):"; then
+            BUMP_TYPE="minor"
+            echo "🟢 Found feat: → MINOR version bump"
+          # Check for fixes (patch version)
+          elif echo "$COMMITS" | grep -qiE "^(fix|bugfix|hotfix):"; then
+            BUMP_TYPE="patch"
+            echo "🟡 Found fix: → PATCH version bump"
+          else
+            # ถ้าไม่มี feat: หรือ fix: ให้ bump patch อยู่ดี
+            BUMP_TYPE="patch"
+            echo "⚪ No conventional commits found → Default PATCH version bump"
+          fi
+
+          echo "bump=$BUMP_TYPE" >> $GITHUB_OUTPUT
+          echo "🎯 Version bump type: $BUMP_TYPE"
+
+      - name: Bump version and create tag
+        id: tag_version
+        if: steps.check_bump.outputs.should_bump == 'true'
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          default_bump: ${{ steps.bump.outputs.bump }}
+          tag_prefix: v
+          fetch_all_tags: true
+          create_annotated_tag: true
+
+      - name: Generate changelog
+        id: changelog
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          PREVIOUS_TAG="${{ steps.previoustag.outputs.tag }}"
+          NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
+          RELEASE_DATE=$(date +%Y-%m-%d)
+
+          # Generate changelog for GitHub release
+          echo "## 📋 What's Changed in ${NEW_TAG}" > CHANGELOG.txt
+          echo "" >> CHANGELOG.txt
+          echo "**เวอร์ชั่น:** ${NEW_TAG}" >> CHANGELOG.txt
+          echo "**วันที่:** ${RELEASE_DATE}" >> CHANGELOG.txt
+          echo "**เวอร์ชั่นก่อนหน้า:** ${PREVIOUS_TAG}" >> CHANGELOG.txt
+          echo "" >> CHANGELOG.txt
+
+          # Group commits by type
+          echo "### ✨ Features" >> CHANGELOG.txt
+          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" >> CHANGELOG.txt || echo "- ไม่มีฟีเจอร์ใหม่" >> CHANGELOG.txt
+          echo "" >> CHANGELOG.txt
+          echo "" >> CHANGELOG.txt
+
+          echo "### 🐛 Bug Fixes" >> CHANGELOG.txt
+          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> CHANGELOG.txt || echo "- ไม่มีการแก้ไขบัก" >> CHANGELOG.txt
+          echo "" >> CHANGELOG.txt
+          echo "" >> CHANGELOG.txt
+
+          echo "### 🔧 Other Changes" >> CHANGELOG.txt
+          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> CHANGELOG.txt || echo "- ไม่มีการเปลี่ยนแปลงอื่นๆ" >> CHANGELOG.txt
+          echo "" >> CHANGELOG.txt
+
+          # Output for release
+          cat CHANGELOG.txt
+
+      - name: Update CHANGELOG.md
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          PREVIOUS_TAG="${{ steps.previoustag.outputs.tag }}"
+          NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
+          RELEASE_DATE=$(date +%Y-%m-%d)
+
+          # Create CHANGELOG.md if it doesn't exist
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog" > CHANGELOG.md
+            echo "" >> CHANGELOG.md
+            echo "ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform" >> CHANGELOG.md
+            echo "" >> CHANGELOG.md
+          fi
+
+          # Prepare new version entry
+          echo "" > NEW_ENTRY.txt
+          echo "## [${NEW_TAG}] - ${RELEASE_DATE}" >> NEW_ENTRY.txt
+          echo "" >> NEW_ENTRY.txt
+
+          # Group commits by type
+          echo "### ✨ Features" >> NEW_ENTRY.txt
+          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" >> NEW_ENTRY.txt || echo "- ไม่มีฟีเจอร์ใหม่" >> NEW_ENTRY.txt
+          echo "" >> NEW_ENTRY.txt
+
+          echo "### 🐛 Bug Fixes" >> NEW_ENTRY.txt
+          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> NEW_ENTRY.txt || echo "- ไม่มีการแก้ไขบัก" >> NEW_ENTRY.txt
+          echo "" >> NEW_ENTRY.txt
+
+          echo "### 🔧 Other Changes" >> NEW_ENTRY.txt
+          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> NEW_ENTRY.txt || echo "- ไม่มีการเปลี่ยนแปลงอื่นๆ" >> NEW_ENTRY.txt
+          echo "" >> NEW_ENTRY.txt
+
+          # Insert new entry after the header (after line 3)
+          head -n 3 CHANGELOG.md > TEMP_CHANGELOG.md
+          cat NEW_ENTRY.txt >> TEMP_CHANGELOG.md
+          tail -n +4 CHANGELOG.md >> TEMP_CHANGELOG.md
+          mv TEMP_CHANGELOG.md CHANGELOG.md
+
+          # Cleanup
+          rm NEW_ENTRY.txt
+
+          echo "Updated CHANGELOG.md with ${NEW_TAG}"
+
+      - name: Create GitHub Release
+        if: steps.check_bump.outputs.should_bump == 'true'
+        uses: ncipollo/create-release@v1
+        with:
+          tag: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          bodyFile: CHANGELOG.txt
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        if: steps.check_bump.outputs.should_bump == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Update package.json version
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          # Remove 'v' prefix from tag
+          NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
+
+          # Update package.json
+          npm version $NEW_VERSION --no-git-tag-version --allow-same-version
+
+          echo "Updated package.json to version $NEW_VERSION"
+
+      - name: Update VERSION file
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
+
+          # Update VERSION file (used by Laravel config)
+          echo "$NEW_VERSION" > VERSION
+
+          echo "Updated VERSION file to $NEW_VERSION"
+
+      - name: Commit version update and changelog
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          # Add all updated files
+          git add package.json CHANGELOG.md VERSION
+          git add package-lock.json 2>/dev/null || true
+
+          # Only commit if there are changes
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: bump version to ${{ steps.tag_version.outputs.new_version }} [skip ci]"
+
+            # Determine target branch
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+            else
+              TARGET_BRANCH="${{ github.ref_name }}"
+            fi
+
+            echo "Pushing to branch: $TARGET_BRANCH"
+            git push origin HEAD:$TARGET_BRANCH
+          fi
+
+      - name: Output new version
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          echo "🎉 New version created: ${{ steps.tag_version.outputs.new_tag }}"
+          echo "📦 Previous version: ${{ steps.previoustag.outputs.tag }}"
+          echo "📈 Version bump type: ${{ steps.bump.outputs.bump }}"
