@@ -20,6 +20,7 @@ class Rank extends Model
         'icon',
         'color',
         'badge_icon',
+        'stars',
         'commission_rate',
         'bonus_multiplier',
         'min_points',
@@ -39,6 +40,7 @@ class Rank extends Model
         'level' => 'integer',
         'min_points' => 'integer',
         'min_referrals' => 'integer',
+        'stars' => 'integer',
     ];
 
     /**

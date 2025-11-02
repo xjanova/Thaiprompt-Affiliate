@@ -60,7 +60,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Level <span class="text-red-500">*</span>
@@ -83,6 +83,48 @@
                                required>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">สีที่แสดงสำหรับ Rank นี้</p>
                         @error('color')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            จำนวนดาว <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="stars" value="{{ old('stars', $rank->stars ?? 1) }}" min="1" max="10"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               required>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">จำนวนดาวที่แสดงในผังสายงาน (1-10)</p>
+                        @error('stars')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Icon URL
+                        </label>
+                        <input type="text" name="icon" value="{{ old('icon', $rank->icon) }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               placeholder="/images/ranks/bronze.svg">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">URL หรือ path ของไอคอน (เช่น /images/ranks/bronze.svg)</p>
+                        @error('icon')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Badge Icon (Emoji)
+                        </label>
+                        <input type="text" name="badge_icon" value="{{ old('badge_icon', $rank->badge_icon) }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               placeholder="🥉"
+                               maxlength="10">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">อิโมจิหรือไอคอนตราสำหรับ Badge (เช่น 🥉, 🥈, 🥇)</p>
+                        @error('badge_icon')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
                     </div>
