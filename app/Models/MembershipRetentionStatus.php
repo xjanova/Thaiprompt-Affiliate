@@ -14,6 +14,7 @@ class MembershipRetentionStatus extends Model
 
     protected $fillable = [
         'user_id',
+        'membership_start_date',
         'status',
         'current_points',
         'required_points',
@@ -27,6 +28,7 @@ class MembershipRetentionStatus extends Model
     protected $casts = [
         'current_points' => 'decimal:2',
         'required_points' => 'decimal:2',
+        'membership_start_date' => 'date',
         'period_start' => 'date',
         'period_end' => 'date',
         'next_renewal_date' => 'date',
