@@ -417,7 +417,7 @@
                     </div>
                 </div>
 
-                <!-- Version Info -->
+                <!-- System Info -->
                 <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                     <div class="bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30 dark:border-gray-600/30">
                         <div class="flex items-center justify-between mb-2">
@@ -429,15 +429,26 @@
                         @if(config('version.name'))
                             <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ config('version.name') }}</p>
                         @endif
-                        <div class="text-[10px] text-gray-600 dark:text-gray-400 space-y-1">
-                            <div class="flex items-center justify-between">
-                                <span>Laravel</span>
-                                <span class="text-gray-400 dark:text-gray-300">{{ app()->version() }}</span>
+                        <div class="text-[10px] text-gray-600 dark:text-gray-400 space-y-1.5">
+                            <!-- Company Info -->
+                            <div class="mb-1">
+                                <a href="https://xman4289.com" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 transition-colors underline decoration-dotted text-xs font-medium">
+                                    Xman Enterprise co.,ltd.
+                                </a>
                             </div>
+                            <!-- License -->
                             <div class="flex items-center justify-between">
-                                <span>PHP</span>
-                                <span class="text-gray-400 dark:text-gray-300">{{ PHP_VERSION }}</span>
+                                <span>ไลเซ่นส์</span>
+                                <span class="text-gray-400 dark:text-gray-300">แบบมาตรฐาน</span>
                             </div>
+                            <!-- IP Address -->
+                            <div class="flex items-center justify-between pt-1 border-t border-gray-700/30">
+                                <span class="text-yellow-400">🔒 IP</span>
+                                <span class="text-gray-400 dark:text-gray-300 font-mono">{{ request()->ip() }}</span>
+                            </div>
+                            <p class="text-[9px] text-gray-500 dark:text-gray-500 italic pt-0.5">
+                                *ระบบบันทึก IP เพื่อความปลอดภัย
+                            </p>
                         </div>
                     </div>
                 </div>
