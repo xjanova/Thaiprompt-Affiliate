@@ -70,6 +70,55 @@ class RankController extends Controller
         return back()->with('success', 'Promotion request submitted successfully!');
     }
 
+    public function widgetData()
+    {
+        $user = auth()->user()->load(['currentRank', 'affiliate']);
+
+        // Calculate and update points
+        if ($user->affiliate) {
+            $this->rankingService->calculateRankPoints($user);
+            $this->rankingService->updateUserProgress($user);
+        }
+
+        $currentRank = $user->currentRank;
+        $nextRank = $currentRank?->next_rank;
+        $nextRankProgress = $user->next_rank_progress;
+
+        // Get leaderboard position
+        $leaderboardPosition = $this->getUserLeaderboardPosition($user);
+
+        // Calculate progress percentage
+        $progressPercentage = 0;
+        if ($nextRank && $nextRankProgress) {
+            $progressPercentage = $nextRankProgress->progress_percentage ?? 0;
+        }
+
+        $data = [
+            'current_rank' => [
+                'id' => $currentRank->id ?? null,
+                'name' => $currentRank->name ?? 'No Rank',
+                'name_th' => $currentRank->name_th ?? 'ไม่มีระดับ',
+                'level' => $currentRank->level ?? 0,
+                'icon' => $currentRank->icon ?? 'fa-star',
+            ],
+            'next_rank' => $nextRank ? [
+                'id' => $nextRank->id,
+                'name' => $nextRank->name,
+                'name_th' => $nextRank->name_th,
+                'level' => $nextRank->level,
+            ] : null,
+            'current_points' => $user->rank_points ?? 0,
+            'next_rank_points' => $nextRankProgress->target_points ?? 0,
+            'progress_percentage' => round($progressPercentage, 2),
+            'leaderboard_position' => $leaderboardPosition,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $data
+        ]);
+    }
+
     private function getUserLeaderboardPosition($user)
     {
         return \App\Models\User::whereNotNull('current_rank_id')
