@@ -112,12 +112,54 @@ php artisan view:clear
 6. ✅ ทดสอบ AI Connection
 7. ✅ เปิดใช้งาน (คลิก Toggle)
 
+## 🔍 Schema Verification System (ใหม่!)
+
+ระบบตรวจสอบความถูกต้องของ Database Schema อัตโนมัติ - ป้องกัน Schema Drift!
+
+### วิธีใช้งาน:
+
+**1. ตรวจสอบ Schema ด้วย Helper Script (แนะนำ):**
+```bash
+./verify-schema.sh
+```
+
+**2. หรือใช้ Artisan Command โดยตรง:**
+```bash
+# ตรวจสอบพื้นฐาน
+php artisan schema:verify
+
+# ตรวจสอบและแสดง SQL สำหรับแก้ไข
+php artisan schema:verify --fix
+
+# สร้าง Schema Snapshot
+php artisan schema:verify --snapshot
+
+# ตรวจสอบตารางเฉพาะ
+php artisan schema:verify --table=line_bot_ai_settings
+```
+
+### ระบบจะตรวจสอบ:
+- ✅ ตารางที่ควรมีมีครบหรือไม่
+- ✅ Columns ในแต่ละตารางถูกต้องหรือไม่
+- ✅ Data types ตรงตาม migration หรือไม่
+- ⚠️ แจ้งเตือนถ้าพบความแตกต่าง (Schema Drift)
+- 🔧 สร้าง ALTER TABLE statements สำหรับแก้ไขอัตโนมัติ
+
+### เมื่อไหร่ควรใช้:
+- ✅ หลังจาก import SQL file
+- ✅ ก่อนรัน migrations
+- ✅ หลังจากแก้ไข database manual
+- ✅ เมื่อเกิด error เกี่ยวกับ schema
+
+---
+
 ## 🚨 หมายเหตุสำคัญ
 
 - ต้อง **รัน migrations** ก่อนเข้าใช้งานหน้า Admin
 - ถ้ายังไม่ได้รัน จะเจอ error: `Table 'xxx.line_avatars' doesn't exist`
 - Migrations ต้องรันบน production server ที่มี PHP และ Laravel ติดตั้งแล้ว
 - **ถ้าได้ import SQL ไปบางส่วนแล้ว** สามารถรัน migrations ต่อได้เลย ระบบจะข้ามตารางที่มีอยู่แล้วอัตโนมัติ
+- **ระบบ deploy.sh จะตรวจสอบ schema อัตโนมัติ** ก่อนรัน migrations ทุกครั้ง
 
 ## 📝 ฟีเจอร์ที่พร้อมใช้งาน
 
