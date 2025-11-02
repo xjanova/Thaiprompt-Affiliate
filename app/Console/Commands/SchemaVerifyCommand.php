@@ -566,7 +566,9 @@ class SchemaVerifyCommand extends Command
 
         foreach ($statements as $index => $sql) {
             try {
-                $this->line("  [{$index + 1}/" . count($statements) . "] Executing...");
+                $currentIndex = $index + 1;
+                $totalCount = count($statements);
+                $this->line("  [{$currentIndex}/{$totalCount}] Executing...");
                 DB::statement($sql);
                 $this->info("  ✓ Success: " . $statements[$index]);
                 $successCount++;
