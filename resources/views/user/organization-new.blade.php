@@ -341,12 +341,82 @@ function showDetailModal(nodeData) {
                 </div>
             </div>
 
+            <!-- Membership Retention Status -->
+            ${nodeData.retention ? `
+                <div class="bg-gradient-to-br from-rose-50 to-pink-50 rounded-xl p-5 border-2 border-rose-200">
+                    <h5 class="font-bold text-rose-900 mb-4 text-lg flex items-center gap-2">
+                        🎯 สถานะการรักษายอด
+                    </h5>
+                    <div class="space-y-3">
+                        <!-- Days Remaining -->
+                        <div class="bg-white/80 backdrop-blur rounded-xl p-4 shadow-lg border border-rose-200">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-2xl">⏰</span>
+                                    <div>
+                                        <p class="text-sm text-rose-600 font-medium">วันที่เหลือ</p>
+                                        <p class="text-xs text-rose-500">จนถึงวันต่ออายุ</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-3xl font-bold ${nodeData.retention.health_color === 'red' ? 'text-red-600' : nodeData.retention.health_color === 'orange' ? 'text-orange-600' : nodeData.retention.health_color === 'yellow' ? 'text-yellow-600' : 'text-green-600'}">
+                                        ${nodeData.retention.days_remaining}
+                                    </p>
+                                    <p class="text-sm font-medium text-gray-600">วัน</p>
+                                </div>
+                            </div>
+                            ${nodeData.retention.next_renewal_date ? `
+                                <p class="text-xs text-center text-rose-600 bg-rose-50 rounded-lg py-2">
+                                    📅 ต่ออายุวันที่: ${nodeData.retention.next_renewal_date}
+                                </p>
+                            ` : ''}
+                        </div>
+
+                        <!-- Points Progress -->
+                        <div class="bg-white/80 backdrop-blur rounded-xl p-4 shadow-lg border border-rose-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <p class="text-sm text-rose-600 font-medium">📊 ความคืบหน้าคะแนน</p>
+                                <p class="text-sm font-bold text-rose-900">${Math.round(nodeData.retention.points_percentage)}%</p>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 mb-2 overflow-hidden">
+                                <div class="h-full rounded-full transition-all duration-500 ${nodeData.retention.points_percentage >= 100 ? 'bg-gradient-to-r from-green-500 to-emerald-600' : nodeData.retention.points_percentage >= 70 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-red-500 to-rose-600'}"
+                                     style="width: ${Math.min(100, nodeData.retention.points_percentage)}%">
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-xs">
+                                <span class="text-rose-600">คะแนนปัจจุบัน: <strong>${nodeData.retention.current_points.toLocaleString('th-TH')}</strong></span>
+                                <span class="text-rose-600">เป้าหมาย: <strong>${nodeData.retention.required_points.toLocaleString('th-TH')}</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div class="text-center">
+                            <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full font-bold ${nodeData.retention.status === 'active' ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-gray-400 to-gray-500'} text-white shadow-lg">
+                                ${nodeData.retention.status === 'active' ? '✅ การรักษายอดปกติ' : '⚠️ การรักษายอดหมดอายุ'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            ` : ''}
+
             <!-- Marketing Tips -->
             <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-5 border-2 border-yellow-200">
                 <h5 class="font-bold text-orange-900 mb-3 text-lg flex items-center gap-2">
                     💡 คำแนะนำสำหรับแม่ทีม
                 </h5>
                 <div class="space-y-2 text-sm">
+                    ${nodeData.retention && nodeData.retention.days_remaining <= 7 && nodeData.retention.days_remaining > 0 ? `
+                        <div class="flex items-start gap-2 bg-red-50 p-3 rounded-lg shadow-sm border border-red-200">
+                            <span>🚨</span>
+                            <p class="text-red-800 font-semibold">การรักษายอดใกล้หมดอายุ (${nodeData.retention.days_remaining} วัน) - ควรติดตามและช่วยเหลือด่วน!</p>
+                        </div>
+                    ` : ''}
+                    ${nodeData.retention && nodeData.retention.points_percentage < 50 && nodeData.retention.days_remaining > 0 ? `
+                        <div class="flex items-start gap-2 bg-orange-50 p-3 rounded-lg shadow-sm border border-orange-200">
+                            <span>📉</span>
+                            <p class="text-orange-800 font-semibold">คะแนนการรักษายอดต่ำ (${Math.round(nodeData.retention.points_percentage)}%) - ควรช่วยวางแผนการทำยอด</p>
+                        </div>
+                    ` : ''}
                     ${nodeData.direct_children === 0 ? `
                         <div class="flex items-start gap-2 bg-white/80 backdrop-blur p-3 rounded-lg shadow-sm border border-yellow-200">
                             <span>🎯</span>
@@ -612,73 +682,28 @@ class TreeNetwork {
         const totalReferrals = data.total_referrals || 0;
         const totalEarnings = data.total_earnings || 0;
         const status = data.status === 'active' ? 'ใช้งาน' : 'ไม่ใช้งาน';
-        const statusColor = data.status === 'active' ? '#10b981' : '#94a3b8';
         const rankName = data.rank?.name || 'ไม่มีแรงค์';
-        const rankColor = data.rank?.color || '#6b7280';
 
-        return `
-            <div style="
-                padding: 16px;
-                min-width: 280px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-                color: white;
-                font-family: 'Inter', system-ui, sans-serif;
-            ">
-                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px;">
-                    <div style="
-                        width: 48px;
-                        height: 48px;
-                        background: linear-gradient(135deg, ${rankColor}, ${rankColor}dd);
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        font-size: 24px;
-                        font-weight: bold;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-                    ">${data.avatar?.text || name.charAt(0).toUpperCase()}</div>
-                    <div style="flex: 1;">
-                        <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">${name}</div>
-                        <div style="font-size: 12px; opacity: 0.9;">รหัส: ${referralCode}</div>
-                    </div>
-                </div>
+        // Plain text tooltip (vis-network doesn't support HTML)
+        let tooltip = `👤 ${name}\n`;
+        tooltip += `📌 รหัส: ${referralCode} | Level ${level}\n`;
+        tooltip += `⭐ แรงค์: ${rankName}\n`;
+        tooltip += `━━━━━━━━━━━━━━━━━━━━\n`;
+        tooltip += `👥 ลูกทีมตรง: ${directChildren} คน\n`;
+        tooltip += `🌐 เครือข่าย: ${totalReferrals} คน\n`;
+        tooltip += `💰 รายได้: ฿${totalEarnings.toLocaleString('th-TH')}\n`;
+        tooltip += `🔥 สถานะ: ${status}\n`;
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
-                    <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px);">
-                        <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">สถานะ</div>
-                        <div style="font-size: 13px; font-weight: 600; color: ${statusColor};">● ${status}</div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px);">
-                        <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">ระดับ</div>
-                        <div style="font-size: 13px; font-weight: 600;">L${level}</div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px);">
-                        <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">ลูกทีมตรง</div>
-                        <div style="font-size: 13px; font-weight: 600;">👥 ${directChildren}</div>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px);">
-                        <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">เครือข่าย</div>
-                        <div style="font-size: 13px; font-weight: 600;">🌐 ${totalReferrals}</div>
-                    </div>
-                </div>
+        if (data.retention) {
+            tooltip += `━━━━━━━━━━━━━━━━━━━━\n`;
+            tooltip += `🎯 การรักษายอด:\n`;
+            tooltip += `   วันที่เหลือ: ${data.retention.days_remaining} วัน\n`;
+            tooltip += `   คะแนน: ${data.retention.current_points}/${data.retention.required_points}\n`;
+        }
 
-                <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; text-align: center; backdrop-filter: blur(10px);">
-                    <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">รายได้รวม</div>
-                    <div style="font-size: 18px; font-weight: 700; color: #fbbf24;">฿${totalEarnings.toLocaleString('th-TH')}</div>
-                </div>
+        tooltip += `\n💡 คลิกเพื่อดูรายละเอียด`;
 
-                <div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; backdrop-filter: blur(10px);">
-                    <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">แรงค์</div>
-                    <div style="font-size: 13px; font-weight: 600; color: ${rankColor};">⭐ ${rankName}</div>
-                </div>
-
-                <div style="margin-top: 12px; text-align: center; font-size: 11px; opacity: 0.7;">
-                    💡 คลิกเพื่อดูรายละเอียดเพิ่มเติม
-                </div>
-            </div>
-        `;
+        return tooltip;
     }
 
     getNodeColor(data) {

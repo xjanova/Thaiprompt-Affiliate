@@ -332,7 +332,7 @@ class DashboardController extends Controller
     protected function buildTreeNode($affiliate, $currentDepth = 0, $maxDepth = 10)
     {
         // Load necessary relationships
-        $affiliate->load(['user', 'rank', 'children' => function ($query) {
+        $affiliate->load(['user', 'user.retentionStatus', 'rank', 'children' => function ($query) {
             $query->with(['user', 'rank'])->orderBy('created_at', 'desc');
         }]);
 
@@ -355,6 +355,20 @@ class DashboardController extends Controller
                 'level' => $affiliate->rank->level,
             ] : null,
         ];
+
+        // Add retention status if available
+        if ($affiliate->user->retentionStatus) {
+            $retention = $affiliate->user->retentionStatus;
+            $node['retention'] = [
+                'status' => $retention->status,
+                'days_remaining' => $retention->daysRemaining(),
+                'current_points' => $retention->current_points,
+                'required_points' => $retention->required_points,
+                'points_percentage' => $retention->getPointsPercentage(),
+                'health_color' => $retention->getHealthColor(),
+                'next_renewal_date' => $retention->next_renewal_date ? $retention->next_renewal_date->format('d/m/Y') : null,
+            ];
+        }
 
         // Always initialize children array
         $node['children'] = [];
