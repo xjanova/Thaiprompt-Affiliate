@@ -3,257 +3,501 @@
 @section('title', 'ตั้งค่า LINE Official Account')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <div class="flex items-center justify-between">
+<div class="container-fluid px-4 py-6" x-data="{
+    requireLineReg: {{ old('require_line_registration', $settings->require_line_registration) ? 'true' : 'false' }},
+    enableMessaging: {{ old('enable_line_messaging', $settings->enable_line_messaging) ? 'true' : 'false' }},
+    isActive: {{ old('is_active', $settings->is_active) ? 'true' : 'false' }}
+}">
+    <!-- Animated Header -->
+    <div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-green-500 via-emerald-600 to-teal-700 p-8 shadow-2xl">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
+        <div class="relative flex items-center justify-between">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">ตั้งค่า LINE Official Account</h1>
-                <p class="mt-1 text-sm text-gray-600">จัดการการเชื่อมต่อกับ LINE OA และระบบ LINE Login</p>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-1">LINE Official Account</h1>
+                        <p class="text-green-100">Connect with LINE Login & Messaging API</p>
+                    </div>
+                </div>
             </div>
-            <div class="flex items-center space-x-2">
-                @if($settings->is_active)
-                    <span class="px-3 py-1 text-sm font-semibold text-green-800 bg-green-100 rounded-full">เปิดใช้งาน</span>
-                @else
-                    <span class="px-3 py-1 text-sm font-semibold text-gray-800 bg-gray-100 rounded-full">ปิดใช้งาน</span>
-                @endif
+            <div>
+                <button type="button" onclick="showTestModal()"
+                        class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-xl hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <i class="fas fa-paper-plane me-2"></i>Test Message
+                </button>
             </div>
         </div>
     </div>
 
-    @if (session('success'))
-        <div class="bg-green-50 border-l-4 border-green-400 p-4 rounded">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                    </svg>
+    @if(session('success'))
+        <div class="mb-6 p-4 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 animate-fade-in">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center mr-3">
+                    <i class="fas fa-check text-white"></i>
                 </div>
-                <div class="ml-3">
+                <div class="flex-1">
+                    <p class="font-semibold text-green-900">Success!</p>
                     <p class="text-sm text-green-700">{{ session('success') }}</p>
                 </div>
             </div>
         </div>
     @endif
 
-    @if (session('error'))
-        <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded">
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                    </svg>
+    @if(session('error'))
+        <div class="mb-6 p-4 rounded-xl bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 animate-fade-in">
+            <div class="flex items-center">
+                <div class="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center mr-3">
+                    <i class="fas fa-exclamation-circle text-white"></i>
                 </div>
-                <div class="ml-3">
+                <div class="flex-1">
+                    <p class="font-semibold text-red-900">Error!</p>
                     <p class="text-sm text-red-700">{{ session('error') }}</p>
                 </div>
             </div>
         </div>
     @endif
 
-    <!-- Settings Form -->
-    <form method="POST" action="{{ route('admin.line-oa.update') }}" class="space-y-6">
+    <form method="POST" action="{{ route('admin.line-oa.update') }}">
         @csrf
         @method('PUT')
 
-        <!-- LINE Channel Configuration -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">การตั้งค่า LINE Channel</h2>
-            <div class="space-y-4">
-                <div>
-                    <label for="channel_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Channel ID <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="channel_id" id="channel_id"
-                           value="{{ old('channel_id', $settings->channel_id) }}"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                           placeholder="1234567890">
-                    <p class="mt-1 text-sm text-gray-500">Channel ID จาก LINE Developers Console</p>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Main Settings (Left - 2 columns) -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- System Status Card -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-power-off mr-2"></i>
+                            System Control
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <h4 class="text-lg font-bold text-gray-900 mb-1">Enable LINE OA System</h4>
+                                <p class="text-sm text-gray-600">Activate LINE Official Account integration</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="is_active" name="is_active" value="1" class="sr-only peer"
+                                    {{ old('is_active', $settings->is_active) ? 'checked' : '' }}
+                                    x-model="isActive">
+                                <div class="w-16 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-green-500 peer-checked:to-emerald-600"></div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="channel_secret" class="block text-sm font-medium text-gray-700 mb-2">
-                        Channel Secret <span class="text-red-500">*</span>
-                    </label>
-                    <input type="password" name="channel_secret" id="channel_secret"
-                           value="{{ old('channel_secret', $settings->channel_secret) }}"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                           placeholder="••••••••••••••••">
-                    <p class="mt-1 text-sm text-gray-500">Channel Secret จาก LINE Developers Console</p>
+                <!-- LINE Channel Configuration -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-key mr-2"></i>
+                            LINE Channel Credentials
+                        </h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <p class="text-sm text-gray-600 mb-4">Enter your LINE Developer credentials to connect</p>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-id-card text-blue-500 mr-1"></i> Channel ID <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="channel_id" value="{{ old('channel_id', $settings->channel_id) }}"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder="1234567890">
+                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → Channel Basic Settings</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-lock text-blue-500 mr-1"></i> Channel Secret <span class="text-red-500">*</span>
+                            </label>
+                            <input type="password" name="channel_secret" value="{{ old('channel_secret', $settings->channel_secret) }}"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder="••••••••••••••••">
+                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → Channel Basic Settings</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-ticket-alt text-blue-500 mr-1"></i> Channel Access Token (Long-lived)
+                            </label>
+                            <textarea name="channel_access_token" rows="3"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
+                                placeholder="Enter your long-lived channel access token here">{{ old('channel_access_token', $settings->channel_access_token) }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">For Messaging API → From Messaging API tab</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-window-maximize text-blue-500 mr-1"></i> LIFF ID (Optional)
+                            </label>
+                            <input type="text" name="liff_id" value="{{ old('liff_id', $settings->liff_id) }}"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder="1234567890-abcdefgh">
+                            <p class="text-xs text-gray-500 mt-1">For LIFF (LINE Front-end Framework) applications</p>
+                        </div>
+
+                        <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-info-circle text-blue-500 text-xl mt-0.5"></i>
+                                <div class="text-sm">
+                                    <p class="font-semibold text-blue-900 mb-1">Important URLs</p>
+                                    <ul class="text-blue-700 space-y-1">
+                                        <li><strong>Callback URL:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ route('line.callback') }}</code></li>
+                                        <li><strong>Webhook URL:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ route('line.webhook') }}</code></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="channel_access_token" class="block text-sm font-medium text-gray-700 mb-2">
-                        Channel Access Token (Long-lived)
-                    </label>
-                    <textarea name="channel_access_token" id="channel_access_token" rows="3"
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                              placeholder="Enter your channel access token here">{{ old('channel_access_token', $settings->channel_access_token) }}</textarea>
-                    <p class="mt-1 text-sm text-gray-500">ใช้สำหรับส่งข้อความผ่าน Messaging API</p>
+                <!-- Registration Settings -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Registration Settings
+                        </h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex-1">
+                                <h4 class="text-base font-bold text-gray-900 mb-1">Require LINE Registration</h4>
+                                <p class="text-sm text-gray-600">Force users to login with LINE before registration (KYC Level 1)</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="require_line_registration" value="1" class="sr-only peer"
+                                    {{ old('require_line_registration', $settings->require_line_registration) ? 'checked' : '' }}
+                                    x-model="requireLineReg">
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-500 peer-checked:to-pink-600"></div>
+                            </label>
+                        </div>
+
+                        <div class="p-4 bg-purple-50 rounded-xl border border-purple-200">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-shield-alt text-purple-500 text-lg mt-0.5"></i>
+                                <div class="text-sm text-purple-800">
+                                    <p class="font-semibold mb-1">Security Benefits</p>
+                                    <ul class="list-disc list-inside space-y-1">
+                                        <li>Verified identity through LINE</li>
+                                        <li>Reduced fake accounts</li>
+                                        <li>Better user tracking</li>
+                                        <li>Direct communication channel</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="liff_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        LIFF ID (Optional)
-                    </label>
-                    <input type="text" name="liff_id" id="liff_id"
-                           value="{{ old('liff_id', $settings->liff_id) }}"
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                           placeholder="1234567890-abcdefgh">
-                    <p class="mt-1 text-sm text-gray-500">LIFF ID สำหรับใช้งาน LIFF (LINE Front-end Framework)</p>
+                <!-- Messaging Settings -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-orange-500 to-red-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-comments mr-2"></i>
+                            Messaging Settings
+                        </h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex-1">
+                                <h4 class="text-base font-bold text-gray-900 mb-1">Enable LINE Messaging</h4>
+                                <p class="text-sm text-gray-600">Allow sending messages through LINE Messaging API</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="enable_line_messaging" value="1" class="sr-only peer"
+                                    {{ old('enable_line_messaging', $settings->enable_line_messaging) ? 'checked' : '' }}
+                                    x-model="enableMessaging">
+                                <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-7 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-orange-500 peer-checked:to-red-600"></div>
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-hand-peace text-orange-500 mr-1"></i> Welcome Message
+                            </label>
+                            <textarea name="welcome_message" rows="3"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                                placeholder="ยินดีต้อนรับสู่ระบบ Affiliate! 🎉">{{ old('welcome_message', $settings->welcome_message) }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">Sent when user adds your LINE OA as friend</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-check-circle text-orange-500 mr-1"></i> Registration Success Message
+                            </label>
+                            <textarea name="registration_success_message" rows="4"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all"
+                                placeholder="🎉 ยินดีด้วย! คุณสมัครสมาชิกสำเร็จแล้ว">{{ old('registration_success_message', $settings->registration_success_message) }}</textarea>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Available variables: <code class="bg-gray-100 px-2 py-1 rounded text-orange-600">{name}</code>, <code class="bg-gray-100 px-2 py-1 rounded text-orange-600">{email}</code>, <code class="bg-gray-100 px-2 py-1 rounded text-orange-600">{referral_code}</code>
+                            </p>
+                        </div>
+
+                        <div class="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-200">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-lightbulb text-orange-500 text-lg mt-0.5"></i>
+                                <div class="text-sm text-orange-800">
+                                    <p class="font-semibold mb-1">Pro Tips</p>
+                                    <ul class="list-disc list-inside space-y-1">
+                                        <li>Use emojis to make messages friendly</li>
+                                        <li>Keep messages concise and clear</li>
+                                        <li>Include important information like referral code</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
-        </div>
 
-        <!-- Registration Settings -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">การตั้งค่าการสมัครสมาชิก</h2>
-            <div class="space-y-4">
-                <div class="flex items-center">
-                    <input type="checkbox" name="require_line_registration" id="require_line_registration"
-                           value="1" {{ old('require_line_registration', $settings->require_line_registration) ? 'checked' : '' }}
-                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                    <label for="require_line_registration" class="ml-2 block text-sm text-gray-900">
-                        บังคับให้เข้าสู่ระบบด้วย LINE ก่อนสมัครสมาชิก
-                    </label>
+            <!-- Status Sidebar (Right - 1 column) -->
+            <div class="lg:col-span-1 space-y-6">
+
+                <!-- Current Status Card -->
+                <div class="bg-gradient-to-br from-green-600 to-emerald-700 rounded-2xl shadow-2xl p-6 text-white sticky top-6">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                            <i class="fas fa-chart-line text-2xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold">System Status</h3>
+                            <p class="text-sm text-green-200">Current Configuration</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+                            <span class="text-sm">System:</span>
+                            @if($settings->is_active)
+                                <span class="px-3 py-1 bg-green-400 rounded-full text-xs font-bold text-green-900">Active</span>
+                            @else
+                                <span class="px-3 py-1 bg-red-500 rounded-full text-xs font-bold">Inactive</span>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+                            <span class="text-sm">Channel:</span>
+                            @if($settings->channel_id)
+                                <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-bold">Connected</span>
+                            @else
+                                <span class="px-3 py-1 bg-red-500 rounded-full text-xs font-bold">Not Set</span>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+                            <span class="text-sm">Messaging:</span>
+                            @if($settings->enable_line_messaging)
+                                <span class="px-3 py-1 bg-blue-400 rounded-full text-xs font-bold text-blue-900">Enabled</span>
+                            @else
+                                <span class="px-3 py-1 bg-gray-400 rounded-full text-xs font-bold text-gray-900">Disabled</span>
+                            @endif
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+                            <span class="text-sm">Required:</span>
+                            @if($settings->require_line_registration)
+                                <span class="px-3 py-1 bg-yellow-400 rounded-full text-xs font-bold text-yellow-900">Yes</span>
+                            @else
+                                <span class="px-3 py-1 bg-gray-400 rounded-full text-xs font-bold text-gray-900">No</span>
+                            @endif
+                        </div>
+                    </div>
                 </div>
-                <p class="text-sm text-gray-500 ml-6">เมื่อเปิดใช้งาน ผู้ใช้จะต้องเข้าสู่ระบบด้วย LINE OA ก่อนจึงจะสมัครสมาชิกได้ (KYC Level 1)</p>
-            </div>
-        </div>
 
-        <!-- Messaging Settings -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">การตั้งค่าการส่งข้อความ</h2>
-            <div class="space-y-4">
-                <div class="flex items-center">
-                    <input type="checkbox" name="enable_line_messaging" id="enable_line_messaging"
-                           value="1" {{ old('enable_line_messaging', $settings->enable_line_messaging) ? 'checked' : '' }}
-                           class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                    <label for="enable_line_messaging" class="ml-2 block text-sm text-gray-900">
-                        เปิดใช้งานการส่งข้อความผ่าน LINE
-                    </label>
+                <!-- Setup Guide -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                            <i class="fas fa-book text-green-600"></i>
+                        </div>
+                        <h3 class="font-bold text-gray-900">Setup Guide</h3>
+                    </div>
+
+                    <ol class="space-y-3">
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">1</span>
+                            <span class="text-sm text-gray-700">Create LINE Provider</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">2</span>
+                            <span class="text-sm text-gray-700">Create LINE Login Channel</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">3</span>
+                            <span class="text-sm text-gray-700">Copy Channel ID & Secret</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">4</span>
+                            <span class="text-sm text-gray-700">Set Callback URL</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">5</span>
+                            <span class="text-sm text-gray-700">Enable Messaging API</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-xs font-bold">6</span>
+                            <span class="text-sm text-gray-700">Configure Webhook</span>
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">7</span>
+                            <span class="text-sm text-gray-700 font-semibold">Test & Activate</span>
+                        </li>
+                    </ol>
                 </div>
 
-                <div>
-                    <label for="welcome_message" class="block text-sm font-medium text-gray-700 mb-2">
-                        ข้อความต้อนรับ (เมื่อเพิ่มเพื่อน)
-                    </label>
-                    <textarea name="welcome_message" id="welcome_message" rows="3"
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                              placeholder="ยินดีต้อนรับสู่ระบบ Affiliate!">{{ old('welcome_message', $settings->welcome_message) }}</textarea>
+                <!-- Quick Links -->
+                <div class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-200 p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
+                            <i class="fas fa-link text-white"></i>
+                        </div>
+                        <h3 class="font-bold text-blue-900">Quick Links</h3>
+                    </div>
+
+                    <div class="space-y-2">
+                        <a href="{{ route('admin.line-oa.logs') }}"
+                           class="flex items-center gap-2 p-3 bg-white rounded-lg hover:shadow-md transition-all group">
+                            <i class="fas fa-history text-blue-500"></i>
+                            <span class="text-sm font-semibold text-gray-700 group-hover:text-blue-600">Usage Logs</span>
+                        </a>
+
+                        <a href="https://developers.line.biz/console/" target="_blank"
+                           class="flex items-center gap-2 p-3 bg-white rounded-lg hover:shadow-md transition-all group">
+                            <i class="fas fa-external-link-alt text-blue-500"></i>
+                            <span class="text-sm font-semibold text-gray-700 group-hover:text-blue-600">LINE Console</span>
+                        </a>
+
+                        <a href="https://developers.line.biz/en/docs/line-login/" target="_blank"
+                           class="flex items-center gap-2 p-3 bg-white rounded-lg hover:shadow-md transition-all group">
+                            <i class="fas fa-book-open text-blue-500"></i>
+                            <span class="text-sm font-semibold text-gray-700 group-hover:text-blue-600">Documentation</span>
+                        </a>
+                    </div>
                 </div>
 
-                <div>
-                    <label for="registration_success_message" class="block text-sm font-medium text-gray-700 mb-2">
-                        ข้อความเมื่อสมัครสมาชิกสำเร็จ
-                    </label>
-                    <textarea name="registration_success_message" id="registration_success_message" rows="4"
-                              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                              placeholder="🎉 สมัครสมาชิกสำเร็จ!">{{ old('registration_success_message', $settings->registration_success_message) }}</textarea>
-                    <p class="mt-1 text-sm text-gray-500">ใช้ได้: {name}, {email}, {referral_code}</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Status -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">สถานะการใช้งาน</h2>
-            <div class="flex items-center">
-                <input type="checkbox" name="is_active" id="is_active"
-                       value="1" {{ old('is_active', $settings->is_active) ? 'checked' : '' }}
-                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                <label for="is_active" class="ml-2 block text-sm text-gray-900">
-                    เปิดใช้งานระบบ LINE OA
-                </label>
             </div>
         </div>
 
         <!-- Save Button -->
-        <div class="flex justify-end">
-            <button type="submit" class="px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                บันทึกการตั้งค่า
-            </button>
+        <div class="mt-8">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-info-circle text-green-500 text-xl"></i>
+                        <p class="text-sm text-gray-600">
+                            Make sure to test the LINE integration before activating it
+                        </p>
+                    </div>
+                    <button type="submit" class="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+                        <i class="fas fa-save mr-2"></i>Save Settings
+                    </button>
+                </div>
+            </div>
         </div>
     </form>
+</div>
 
-    <!-- Setup Instructions -->
-    <div class="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg">
-        <h3 class="text-lg font-semibold text-blue-900 mb-3">คำแนะนำการตั้งค่า LINE Developers</h3>
-        <div class="prose prose-sm text-blue-800 space-y-2">
-            <ol class="list-decimal list-inside space-y-2">
-                <li>เข้าสู่ <a href="https://developers.line.biz/console/" target="_blank" class="underline">LINE Developers Console</a></li>
-                <li>สร้าง Provider หรือเลือก Provider ที่มีอยู่</li>
-                <li>สร้าง Channel ใหม่ ประเภท "LINE Login"</li>
-                <li>ในหน้า Channel settings:
-                    <ul class="list-disc list-inside ml-5 mt-1">
-                        <li>คัดลอก <strong>Channel ID</strong> และ <strong>Channel secret</strong></li>
-                        <li>ตั้งค่า <strong>Callback URL</strong> เป็น: <code class="bg-white px-2 py-1 rounded">{{ route('line.callback') }}</code></li>
-                    </ul>
-                </li>
-                <li>สำหรับ Messaging API (ถ้าต้องการส่งข้อความ):
-                    <ul class="list-disc list-inside ml-5 mt-1">
-                        <li>ไปที่แท็บ "Messaging API"</li>
-                        <li>คัดลอก <strong>Channel access token</strong> (แบบ long-lived)</li>
-                        <li>ตั้งค่า <strong>Webhook URL</strong> เป็น: <code class="bg-white px-2 py-1 rounded">{{ route('line.webhook') }}</code></li>
-                        <li>เปิดใช้งาน "Use webhook"</li>
-                    </ul>
-                </li>
-                <li>เปิดใช้งาน Bot prompt: "Aggressive" (บังคับให้เพิ่มเพื่อนเมื่อ login)</li>
-            </ol>
+<!-- Test Message Modal -->
+<div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all">
+        <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Test LINE Message
+                </h3>
+                <button onclick="closeTestModal()" class="text-white/80 hover:text-white transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
         </div>
-    </div>
 
-    <!-- Test Message -->
-    <div class="bg-white rounded-lg shadow-md p-6" x-data="{ showTest: false }">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">ทดสอบการส่งข้อความ</h2>
-        <button @click="showTest = !showTest" type="button"
-                class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
-            <span x-show="!showTest">แสดงฟอร์มทดสอบ</span>
-            <span x-show="showTest">ซ่อนฟอร์มทดสอบ</span>
-        </button>
-
-        <form x-show="showTest" x-transition method="POST" action="{{ route('admin.line-oa.test-message') }}" class="mt-4 space-y-4">
+        <form method="POST" action="{{ route('admin.line-oa.test-message') }}" class="p-6 space-y-4">
             @csrf
+            <div id="test-alert" class="hidden p-3 rounded-lg"></div>
+
             <div>
-                <label for="line_user_id" class="block text-sm font-medium text-gray-700 mb-2">LINE User ID</label>
-                <input type="text" name="line_user_id" id="line_user_id"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                       placeholder="U1234567890abcdef1234567890abcdef" required>
-                <p class="mt-1 text-sm text-gray-500">LINE User ID ของผู้ใช้ที่ต้องการทดสอบส่งข้อความ</p>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-user text-green-500 mr-1"></i> LINE User ID
+                </label>
+                <input type="text" name="line_user_id" required
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                    placeholder="U1234567890abcdef1234567890abcdef">
+                <p class="text-xs text-gray-500 mt-2">The LINE User ID of the recipient</p>
             </div>
 
             <div>
-                <label for="message" class="block text-sm font-medium text-gray-700 mb-2">ข้อความทดสอบ</label>
-                <textarea name="message" id="message" rows="3"
-                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                          placeholder="ข้อความทดสอบ..." required>ทดสอบการส่งข้อความจากระบบ</textarea>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    <i class="fas fa-comment text-green-500 mr-1"></i> Test Message
+                </label>
+                <textarea name="message" rows="4" required
+                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                    placeholder="Enter your test message here...">ทดสอบการส่งข้อความจากระบบ</textarea>
             </div>
 
-            <button type="submit" class="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
-                ส่งข้อความทดสอบ
-            </button>
+            <div class="flex gap-3 pt-4">
+                <button type="button" onclick="closeTestModal()"
+                        class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
+                    Cancel
+                </button>
+                <button type="submit"
+                        class="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg hover:from-green-600 hover:to-emerald-700 transition shadow-lg font-semibold">
+                    <i class="fas fa-paper-plane mr-2"></i>Send Message
+                </button>
+            </div>
         </form>
     </div>
-
-    <!-- Quick Links -->
-    <div class="bg-white rounded-lg shadow-md p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">ลิงก์ที่เป็นประโยชน์</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <a href="{{ route('admin.line-oa.logs') }}" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <h3 class="font-semibold text-gray-900">ประวัติการใช้งาน LINE</h3>
-                <p class="text-sm text-gray-600 mt-1">ดู logs การ login และการใช้งาน</p>
-            </a>
-
-            <a href="https://developers.line.biz/console/" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <h3 class="font-semibold text-gray-900">LINE Developers Console</h3>
-                <p class="text-sm text-gray-600 mt-1">จัดการ LINE Channel</p>
-            </a>
-
-            <a href="https://developers.line.biz/en/docs/line-login/" target="_blank" class="block p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                <h3 class="font-semibold text-gray-900">เอกสาร LINE Login</h3>
-                <p class="text-sm text-gray-600 mt-1">คู่มือการใช้งาน LINE Login API</p>
-            </a>
-        </div>
-    </div>
 </div>
+
+<style>
+@keyframes fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease-out;
+}
+
+[x-cloak] {
+    display: none !important;
+}
+</style>
+
+<script>
+// Show/close test modal
+function showTestModal() {
+    document.getElementById('testModal').classList.remove('hidden');
+    document.getElementById('testModal').classList.add('flex');
+}
+
+function closeTestModal() {
+    document.getElementById('testModal').classList.add('hidden');
+    document.getElementById('testModal').classList.remove('flex');
+}
+
+// Close modal on ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeTestModal();
+    }
+});
+</script>
 @endsection
