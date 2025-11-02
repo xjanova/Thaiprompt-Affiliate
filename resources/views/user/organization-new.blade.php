@@ -230,66 +230,153 @@ function showDetailModal(nodeData) {
     if (!modal || !content) return;
 
     const rankBadge = nodeData.rank ? `
-        <div class="flex items-center gap-2 px-3 py-1 rounded-full" style="background: ${nodeData.rank.color}20;">
-            <div class="w-3 h-3 rounded-full" style="background: ${nodeData.rank.color};"></div>
-            <span class="font-semibold" style="color: ${nodeData.rank.color};">${nodeData.rank.name}</span>
+        <div class="flex items-center gap-2 px-4 py-2 rounded-full shadow-lg" style="background: linear-gradient(135deg, ${nodeData.rank.color}, ${nodeData.rank.color}dd);">
+            <div class="w-3 h-3 rounded-full bg-white shadow-inner"></div>
+            <span class="font-bold text-white">⭐ ${nodeData.rank.name}</span>
         </div>
-    ` : '<span class="text-gray-500">ไม่มีแรงค์</span>';
+    ` : '<span class="px-4 py-2 bg-gray-200 text-gray-600 rounded-full text-sm font-medium">ไม่มีแรงค์</span>';
 
     const statusBadge = nodeData.status === 'active'
-        ? '<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">✅ ใช้งาน</span>'
-        : '<span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">⏸️ ไม่ใช้งาน</span>';
+        ? '<span class="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-full text-sm font-bold shadow-lg">✅ ใช้งาน</span>'
+        : '<span class="px-4 py-2 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-full text-sm font-bold shadow-lg">⏸️ ไม่ใช้งาน</span>';
+
+    const avatarColor = nodeData.rank?.color || '#6366f1';
+    const avatarLetter = nodeData.avatar?.text || nodeData.name.charAt(0).toUpperCase();
 
     content.innerHTML = `
         <div class="space-y-6">
-            <div class="flex items-center gap-4">
-                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-                    ${nodeData.avatar?.text || nodeData.name.charAt(0).toUpperCase()}
+            <!-- Header Section with 3D Avatar -->
+            <div class="flex items-center gap-6 pb-6 border-b-2 border-gray-100">
+                <div class="relative">
+                    <div class="w-24 h-24 rounded-full flex items-center justify-center text-white text-4xl font-bold shadow-2xl"
+                         style="background: linear-gradient(135deg, ${avatarColor}, ${avatarColor}dd);
+                                box-shadow: 0 10px 30px rgba(0,0,0,0.3), 0 0 0 4px white, 0 0 0 6px ${avatarColor}40;">
+                        ${avatarLetter}
+                    </div>
+                    <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                        ${nodeData.level || 0}
+                    </div>
                 </div>
                 <div class="flex-1">
-                    <h4 class="text-2xl font-bold text-gray-900 mb-1">${nodeData.name}</h4>
-                    <p class="text-gray-600 mb-2">${nodeData.email}</p>
-                    <div class="flex items-center gap-2">
+                    <h4 class="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                        ${nodeData.name}
+                    </h4>
+                    <div class="flex flex-wrap items-center gap-2 mb-3">
                         ${rankBadge}
                         ${statusBadge}
                     </div>
+                    <div class="flex items-center gap-2 text-sm">
+                        <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-lg font-semibold">
+                            🎫 ${nodeData.referral_code}
+                        </span>
+                        <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-lg font-semibold">
+                            📅 ${nodeData.created_at}
+                        </span>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
-                    <p class="text-sm text-blue-600 mb-1">รหัสแนะนำ</p>
-                    <p class="text-xl font-bold text-blue-900">${nodeData.referral_code}</p>
-                </div>
-                <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
-                    <p class="text-sm text-purple-600 mb-1">ระดับ</p>
-                    <p class="text-xl font-bold text-purple-900">L${nodeData.level || 0}</p>
-                </div>
-                <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
-                    <p class="text-sm text-green-600 mb-1">ลูกทีมโดยตรง</p>
-                    <p class="text-xl font-bold text-green-900">${nodeData.direct_children || 0}</p>
-                </div>
-                <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg p-4 border border-yellow-200">
-                    <p class="text-sm text-yellow-600 mb-1">เครือข่ายทั้งหมด</p>
-                    <p class="text-xl font-bold text-yellow-900">${nodeData.total_referrals || 0}</p>
-                </div>
-                <div class="bg-gradient-to-br from-green-50 to-teal-50 rounded-lg p-4 border border-green-200 lg:col-span-2">
-                    <p class="text-sm text-green-600 mb-1">รายได้รวม</p>
-                    <p class="text-2xl font-bold text-green-900">฿${(nodeData.total_earnings || 0).toLocaleString('th-TH')}</p>
+            <!-- Marketing Performance Section -->
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border-2 border-blue-200">
+                <h5 class="font-bold text-blue-900 mb-4 text-lg flex items-center gap-2">
+                    📊 ประสิทธิภาพการตลาด
+                </h5>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white/80 backdrop-blur rounded-xl p-4 shadow-lg border border-blue-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm text-blue-600 font-medium">ลูกทีมโดยตรง</p>
+                            <span class="text-2xl">👥</span>
+                        </div>
+                        <p class="text-3xl font-bold text-blue-900">${nodeData.direct_children || 0}</p>
+                        <p class="text-xs text-blue-600 mt-1">คนที่สมัครผ่านคุณ</p>
+                    </div>
+                    <div class="bg-white/80 backdrop-blur rounded-xl p-4 shadow-lg border border-indigo-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="text-sm text-indigo-600 font-medium">เครือข่ายทั้งหมด</p>
+                            <span class="text-2xl">🌐</span>
+                        </div>
+                        <p class="text-3xl font-bold text-indigo-900">${nodeData.total_referrals || 0}</p>
+                        <p class="text-xs text-indigo-600 mt-1">ขนาดทีมทั้งหมด</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <h5 class="font-semibold text-gray-900 mb-3">ข้อมูลเพิ่มเติม</h5>
-                <div class="grid grid-cols-2 gap-3 text-sm">
-                    <div>
-                        <p class="text-gray-600">สมัครเมื่อ</p>
-                        <p class="font-medium text-gray-900">${nodeData.created_at}</p>
+            <!-- Revenue Section -->
+            <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-2 border-green-200">
+                <h5 class="font-bold text-green-900 mb-4 text-lg flex items-center gap-2">
+                    💰 รายได้และผลตอบแทน
+                </h5>
+                <div class="bg-white/80 backdrop-blur rounded-xl p-6 shadow-lg border border-green-200 text-center">
+                    <p class="text-sm text-green-600 font-medium mb-2">รายได้รวมทั้งหมด</p>
+                    <p class="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                        ฿${(nodeData.total_earnings || 0).toLocaleString('th-TH')}
+                    </p>
+                    <div class="mt-4 pt-4 border-t border-green-200">
+                        <p class="text-xs text-green-600">รายได้เฉลี่ยต่อคน: <span class="font-bold">฿${nodeData.total_referrals > 0 ? Math.round((nodeData.total_earnings || 0) / nodeData.total_referrals).toLocaleString('th-TH') : '0'}</span></p>
                     </div>
-                    <div>
-                        <p class="text-gray-600">ความลึกในผัง</p>
-                        <p class="font-medium text-gray-900">ชั้นที่ ${nodeData.depth || 0}</p>
+                </div>
+            </div>
+
+            <!-- Team Structure Insight -->
+            <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200">
+                <h5 class="font-bold text-purple-900 mb-4 text-lg flex items-center gap-2">
+                    🎯 โครงสร้างทีม
+                </h5>
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-white/80 backdrop-blur rounded-lg p-3 shadow text-center border border-purple-200">
+                        <p class="text-2xl mb-1">📊</p>
+                        <p class="text-xs text-purple-600 mb-1">ระดับในผัง</p>
+                        <p class="text-lg font-bold text-purple-900">L${nodeData.level || 0}</p>
                     </div>
+                    <div class="bg-white/80 backdrop-blur rounded-lg p-3 shadow text-center border border-purple-200">
+                        <p class="text-2xl mb-1">🏗️</p>
+                        <p class="text-xs text-purple-600 mb-1">ความลึก</p>
+                        <p class="text-lg font-bold text-purple-900">ชั้น ${nodeData.depth || 0}</p>
+                    </div>
+                    <div class="bg-white/80 backdrop-blur rounded-lg p-3 shadow text-center border border-purple-200">
+                        <p class="text-2xl mb-1">🎖️</p>
+                        <p class="text-xs text-purple-600 mb-1">ระดับแรงค์</p>
+                        <p class="text-lg font-bold text-purple-900">${nodeData.rank?.level || 0}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Marketing Tips -->
+            <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-5 border-2 border-yellow-200">
+                <h5 class="font-bold text-orange-900 mb-3 text-lg flex items-center gap-2">
+                    💡 คำแนะนำสำหรับแม่ทีม
+                </h5>
+                <div class="space-y-2 text-sm">
+                    ${nodeData.direct_children === 0 ? `
+                        <div class="flex items-start gap-2 bg-white/80 backdrop-blur p-3 rounded-lg shadow-sm border border-yellow-200">
+                            <span>🎯</span>
+                            <p class="text-orange-800">สมาชิกท่านนี้ยังไม่มีลูกทีม - เหมาะสำหรับการโค้ชด้านการหาลูกข่าย</p>
+                        </div>
+                    ` : ''}
+                    ${nodeData.direct_children > 0 && nodeData.direct_children < 3 ? `
+                        <div class="flex items-start gap-2 bg-white/80 backdrop-blur p-3 rounded-lg shadow-sm border border-yellow-200">
+                            <span>🌱</span>
+                            <p class="text-orange-800">กำลังสร้างทีม - ควรให้กำลังใจและช่วยฝึกทักษะการปิดการขาย</p>
+                        </div>
+                    ` : ''}
+                    ${nodeData.direct_children >= 3 ? `
+                        <div class="flex items-start gap-2 bg-white/80 backdrop-blur p-3 rounded-lg shadow-sm border border-yellow-200">
+                            <span>⭐</span>
+                            <p class="text-orange-800">มีทีมที่แข็งแรง - ควรฝึกทักษะการเป็นผู้นำและดูแลทีม</p>
+                        </div>
+                    ` : ''}
+                    ${nodeData.total_referrals > 10 ? `
+                        <div class="flex items-start gap-2 bg-white/80 backdrop-blur p-3 rounded-lg shadow-sm border border-yellow-200">
+                            <span>🏆</span>
+                            <p class="text-orange-800">เครือข่ายใหญ่ - สามารถเป็นพี่เลี้ยงให้กับสมาชิกใหม่ได้</p>
+                        </div>
+                    ` : ''}
+                    ${nodeData.status === 'inactive' ? `
+                        <div class="flex items-start gap-2 bg-red-50 p-3 rounded-lg shadow-sm border border-red-200">
+                            <span>⚠️</span>
+                            <p class="text-red-800 font-semibold">สมาชิกไม่ใช้งาน - ควรติดตามและช่วยเหลือด่วน!</p>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         </div>
@@ -320,11 +407,22 @@ class TreeNetwork {
         const opts = {
             nodes: {
                 shape: 'circularImage',
-                size: 40,
-                borderWidth: 3,
+                size: 50,
+                borderWidth: 4,
                 color: { border: '#6366f1', background: '#ffffff' },
-                font: { size: 14, face: 'Arial', color: '#1e293b' },
-                shadow: { enabled: true, color: 'rgba(0,0,0,0.2)', size: 10, x: 2, y: 2 }
+                font: {
+                    size: 15,
+                    face: 'Inter, system-ui, sans-serif',
+                    color: '#1e293b',
+                    bold: '600'
+                },
+                shadow: {
+                    enabled: true,
+                    color: 'rgba(99, 102, 241, 0.4)',
+                    size: 20,
+                    x: 0,
+                    y: 4
+                }
             },
             edges: {
                 width: 2,
@@ -430,41 +528,157 @@ class TreeNetwork {
 
     createAvatarDataUrl(letter, color) {
         const canvas = document.createElement('canvas');
-        canvas.width = 100;
-        canvas.height = 100;
+        canvas.width = 120;
+        canvas.height = 120;
         const ctx = canvas.getContext('2d');
 
+        // Add outer shadow glow
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 15;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+
+        // Draw main circle with gradient
+        const gradient = ctx.createLinearGradient(0, 0, 120, 120);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(1, this.adjustColorBrightness(color, -20));
+
         ctx.beginPath();
-        ctx.arc(50, 50, 48, 0, 2 * Math.PI);
-        ctx.fillStyle = color;
+        ctx.arc(60, 60, 50, 0, 2 * Math.PI);
+        ctx.fillStyle = gradient;
         ctx.fill();
-        ctx.lineWidth = 4;
+
+        // Reset shadow for border
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+
+        // Draw white border
+        ctx.lineWidth = 5;
         ctx.strokeStyle = '#ffffff';
         ctx.stroke();
 
+        // Add inner highlight for 3D effect
+        const highlightGradient = ctx.createRadialGradient(45, 45, 10, 60, 60, 50);
+        highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+        highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = highlightGradient;
+        ctx.fill();
+
+        // Add subtle inner shadow at bottom
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        ctx.shadowBlur = 8;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 3;
+
+        // Draw letter
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+        ctx.shadowBlur = 4;
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 2;
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 48px Arial';
+        ctx.font = 'bold 56px Inter, system-ui, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(letter, 50, 50);
+        ctx.fillText(letter, 60, 62);
 
         return canvas.toDataURL();
     }
 
+    adjustColorBrightness(color, amount) {
+        // Convert hex to RGB
+        let usePound = false;
+        if (color[0] === "#") {
+            color = color.slice(1);
+            usePound = true;
+        }
+
+        const num = parseInt(color, 16);
+        let r = (num >> 16) + amount;
+        let g = ((num >> 8) & 0x00FF) + amount;
+        let b = (num & 0x0000FF) + amount;
+
+        r = Math.max(Math.min(255, r), 0);
+        g = Math.max(Math.min(255, g), 0);
+        b = Math.max(Math.min(255, b), 0);
+
+        return (usePound ? "#" : "") + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+    }
+
     createTooltipHtml(data) {
         const name = data.name || 'Unknown';
-        const email = data.email || '-';
         const referralCode = data.referral_code || '-';
         const level = data.level || 0;
         const directChildren = data.direct_children || 0;
+        const totalReferrals = data.total_referrals || 0;
         const totalEarnings = data.total_earnings || 0;
+        const status = data.status === 'active' ? 'ใช้งาน' : 'ไม่ใช้งาน';
+        const statusColor = data.status === 'active' ? '#10b981' : '#94a3b8';
+        const rankName = data.rank?.name || 'ไม่มีแรงค์';
+        const rankColor = data.rank?.color || '#6b7280';
 
-        return `<div style="padding: 8px;">
-            <strong>${name}</strong><br>
-            ${email}<br>
-            รหัส: ${referralCode} | L${level}<br>
-            ลูกทีม: ${directChildren} | รายได้: ฿${totalEarnings.toLocaleString('th-TH')}
-        </div>`;
+        return `
+            <div style="
+                padding: 16px;
+                min-width: 280px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 12px;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+                color: white;
+                font-family: 'Inter', system-ui, sans-serif;
+            ">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 12px;">
+                    <div style="
+                        width: 48px;
+                        height: 48px;
+                        background: linear-gradient(135deg, ${rankColor}, ${rankColor}dd);
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-size: 24px;
+                        font-weight: bold;
+                        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    ">${data.avatar?.text || name.charAt(0).toUpperCase()}</div>
+                    <div style="flex: 1;">
+                        <div style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">${name}</div>
+                        <div style="font-size: 12px; opacity: 0.9;">รหัส: ${referralCode}</div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px);">
+                        <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">สถานะ</div>
+                        <div style="font-size: 13px; font-weight: 600; color: ${statusColor};">● ${status}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px);">
+                        <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">ระดับ</div>
+                        <div style="font-size: 13px; font-weight: 600;">L${level}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px);">
+                        <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">ลูกทีมตรง</div>
+                        <div style="font-size: 13px; font-weight: 600;">👥 ${directChildren}</div>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.15); padding: 8px; border-radius: 8px; backdrop-filter: blur(10px);">
+                        <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">เครือข่าย</div>
+                        <div style="font-size: 13px; font-weight: 600;">🌐 ${totalReferrals}</div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.2); padding: 10px; border-radius: 8px; text-align: center; backdrop-filter: blur(10px);">
+                    <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">รายได้รวม</div>
+                    <div style="font-size: 18px; font-weight: 700; color: #fbbf24;">฿${totalEarnings.toLocaleString('th-TH')}</div>
+                </div>
+
+                <div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 8px; text-align: center; backdrop-filter: blur(10px);">
+                    <div style="font-size: 11px; opacity: 0.8; margin-bottom: 2px;">แรงค์</div>
+                    <div style="font-size: 13px; font-weight: 600; color: ${rankColor};">⭐ ${rankName}</div>
+                </div>
+
+                <div style="margin-top: 12px; text-align: center; font-size: 11px; opacity: 0.7;">
+                    💡 คลิกเพื่อดูรายละเอียดเพิ่มเติม
+                </div>
+            </div>
+        `;
     }
 
     getNodeColor(data) {
