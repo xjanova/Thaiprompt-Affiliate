@@ -199,32 +199,104 @@ class SecurityController extends Controller
     public function blockIp(Request $request)
     {
         $validated = $request->validate([
-            'ip_address' => ['required', 'ip', 'unique:blocked_ips,ip_address'],
+            'ip_type' => ['required', 'in:single,range,cidr'],
+            'ip_address' => ['required_if:ip_type,single', 'nullable'],
+            'ip_range_start' => ['required_if:ip_type,range', 'nullable'],
+            'ip_range_end' => ['required_if:ip_type,range', 'nullable'],
+            'ip_cidr' => ['required_if:ip_type,cidr', 'nullable'],
             'type' => ['required', 'in:blacklist,whitelist'],
             'reason' => ['nullable', 'string', 'max:500'],
             'expires_at' => ['nullable', 'date', 'after:now'],
         ]);
 
-        BlockedIp::create([
-            'ip_address' => $validated['ip_address'],
+        // Validate IP format based on type
+        if ($validated['ip_type'] === 'single') {
+            if (!filter_var($validated['ip_address'], FILTER_VALIDATE_IP)) {
+                return back()->withErrors(['ip_address' => 'Invalid IP address format.']);
+            }
+        } elseif ($validated['ip_type'] === 'range') {
+            if (!filter_var($validated['ip_range_start'], FILTER_VALIDATE_IP) ||
+                !filter_var($validated['ip_range_end'], FILTER_VALIDATE_IP)) {
+                return back()->withErrors(['ip_range_start' => 'Invalid IP range format.']);
+            }
+        } elseif ($validated['ip_type'] === 'cidr') {
+            if (!$this->validateCidr($validated['ip_cidr'])) {
+                return back()->withErrors(['ip_cidr' => 'Invalid CIDR notation.']);
+            }
+        }
+
+        // Create the blocked IP record
+        $data = [
             'type' => $validated['type'],
+            'ip_type' => $validated['ip_type'],
             'reason' => $validated['reason'] ?? null,
             'expires_at' => $validated['expires_at'] ?? null,
             'blocked_by' => auth()->id(),
             'is_active' => true,
-        ]);
+        ];
+
+        // Add IP-specific fields
+        switch ($validated['ip_type']) {
+            case 'single':
+                $data['ip_address'] = $validated['ip_address'];
+                $ipDisplay = $validated['ip_address'];
+                break;
+            case 'range':
+                $data['ip_address'] = $validated['ip_range_start']; // Store first IP for reference
+                $data['ip_range_start'] = $validated['ip_range_start'];
+                $data['ip_range_end'] = $validated['ip_range_end'];
+                $ipDisplay = "{$validated['ip_range_start']} - {$validated['ip_range_end']}";
+                break;
+            case 'cidr':
+                list($network, $mask) = explode('/', $validated['ip_cidr']);
+                $data['ip_address'] = $network; // Store network IP for reference
+                $data['ip_cidr'] = $validated['ip_cidr'];
+                $ipDisplay = $validated['ip_cidr'];
+                break;
+        }
+
+        BlockedIp::create($data);
 
         // Log the action
         SecurityLog::create([
             'event_type' => 'ip_' . $validated['type'],
-            'ip_address' => $validated['ip_address'],
+            'ip_address' => $data['ip_address'],
             'user_id' => auth()->id(),
             'severity' => 'medium',
-            'description' => "IP address {$validated['ip_address']} added to {$validated['type']} by " . auth()->user()->name,
+            'description' => "{$validated['ip_type']} IP {$ipDisplay} added to {$validated['type']} by " . auth()->user()->name,
             'user_agent' => request()->userAgent(),
         ]);
 
         return back()->with('success', 'เพิ่ม IP Address เรียบร้อยแล้ว');
+    }
+
+    /**
+     * Validate CIDR notation
+     */
+    protected function validateCidr(string $cidr): bool
+    {
+        if (!str_contains($cidr, '/')) {
+            return false;
+        }
+
+        list($ip, $mask) = explode('/', $cidr);
+
+        // Validate IP
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
+            return false;
+        }
+
+        // Validate mask
+        $mask = (int)$mask;
+
+        // Check if IPv4 or IPv6
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            return $mask >= 0 && $mask <= 32;
+        } elseif (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            return $mask >= 0 && $mask <= 128;
+        }
+
+        return false;
     }
 
     /**

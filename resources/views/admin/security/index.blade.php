@@ -716,21 +716,106 @@
                                     </button>
                                 </div>
 
-                                <form method="POST" action="{{ route('admin.security.ip.block') }}" class="space-y-6">
+                                <form method="POST" action="{{ route('admin.security.ip.block') }}" class="space-y-6" x-data="{ ipType: 'single' }">
                                     @csrf
 
-                                    <!-- IP Address -->
+                                    <!-- IP Type Selection -->
                                     <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            ประเภท IP <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="grid grid-cols-3 gap-3">
+                                            <label class="relative flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all"
+                                                   :class="ipType === 'single' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400'">
+                                                <input type="radio" name="ip_type" value="single" x-model="ipType" class="sr-only" checked>
+                                                <div class="text-center">
+                                                    <div class="text-2xl mb-1">🎯</div>
+                                                    <div class="text-sm font-medium">Single IP</div>
+                                                    <div class="text-xs text-gray-500">IP เดียว</div>
+                                                </div>
+                                            </label>
+
+                                            <label class="relative flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all"
+                                                   :class="ipType === 'range' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400'">
+                                                <input type="radio" name="ip_type" value="range" x-model="ipType" class="sr-only">
+                                                <div class="text-center">
+                                                    <div class="text-2xl mb-1">↔️</div>
+                                                    <div class="text-sm font-medium">IP Range</div>
+                                                    <div class="text-xs text-gray-500">ช่วง IP</div>
+                                                </div>
+                                            </label>
+
+                                            <label class="relative flex items-center justify-center p-3 border rounded-lg cursor-pointer transition-all"
+                                                   :class="ipType === 'cidr' ? 'border-indigo-600 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400'">
+                                                <input type="radio" name="ip_type" value="cidr" x-model="ipType" class="sr-only">
+                                                <div class="text-center">
+                                                    <div class="text-2xl mb-1">🌐</div>
+                                                    <div class="text-sm font-medium">CIDR</div>
+                                                    <div class="text-xs text-gray-500">Class IP</div>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- Single IP Address -->
+                                    <div x-show="ipType === 'single'" x-transition>
                                         <label for="ip_address" class="block text-sm font-medium text-gray-700 mb-2">
                                             IP Address <span class="text-red-500">*</span>
                                         </label>
                                         <input type="text"
                                                name="ip_address"
                                                id="ip_address"
-                                               required
-                                               placeholder="192.168.1.1"
+                                               placeholder="192.168.1.1 หรือ 2001:0db8:85a3::8a2e:0370:7334"
                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
                                         <p class="mt-1 text-xs text-gray-500">รองรับทั้ง IPv4 และ IPv6</p>
+                                    </div>
+
+                                    <!-- IP Range -->
+                                    <div x-show="ipType === 'range'" x-transition>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            ช่วง IP Address <span class="text-red-500">*</span>
+                                        </label>
+                                        <div class="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <input type="text"
+                                                       name="ip_range_start"
+                                                       placeholder="เริ่มต้น: 192.168.1.1"
+                                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                                <p class="mt-1 text-xs text-gray-500">IP เริ่มต้น</p>
+                                            </div>
+                                            <div>
+                                                <input type="text"
+                                                       name="ip_range_end"
+                                                       placeholder="สิ้นสุด: 192.168.1.255"
+                                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                                <p class="mt-1 text-xs text-gray-500">IP สิ้นสุด</p>
+                                            </div>
+                                        </div>
+                                        <p class="mt-2 text-xs text-blue-600">
+                                            💡 ตัวอย่าง: 192.168.1.1 ถึง 192.168.1.255 (256 IP addresses)
+                                        </p>
+                                    </div>
+
+                                    <!-- CIDR Notation -->
+                                    <div x-show="ipType === 'cidr'" x-transition>
+                                        <label for="ip_cidr" class="block text-sm font-medium text-gray-700 mb-2">
+                                            CIDR Notation <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text"
+                                               name="ip_cidr"
+                                               id="ip_cidr"
+                                               placeholder="192.168.1.0/24 หรือ 2001:db8::/32"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <p class="mt-1 text-xs text-gray-500">รูปแบบ CIDR เช่น 192.168.1.0/24 (256 addresses)</p>
+                                        <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                            <p class="text-xs text-blue-800 font-medium mb-1">📚 CIDR ที่ใช้บ่อย:</p>
+                                            <ul class="text-xs text-blue-700 space-y-1">
+                                                <li>• /32 = 1 IP (Single host)</li>
+                                                <li>• /24 = 256 IPs (Class C)</li>
+                                                <li>• /16 = 65,536 IPs (Class B)</li>
+                                                <li>• /8 = 16,777,216 IPs (Class A)</li>
+                                            </ul>
+                                        </div>
                                     </div>
 
                                     <!-- Type -->
@@ -801,6 +886,7 @@
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Type</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IP Address</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">เหตุผล</th>
@@ -814,7 +900,18 @@
                             <tbody class="bg-white divide-y divide-gray-200">
                                 @foreach($blockedIps as $blockedIp)
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ $blockedIp->ip_address }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        @if($blockedIp->ip_type === 'single')
+                                        <span class="px-2 py-1 text-xs font-semibold rounded bg-blue-100 text-blue-800">🎯 Single</span>
+                                        @elseif($blockedIp->ip_type === 'range')
+                                        <span class="px-2 py-1 text-xs font-semibold rounded bg-purple-100 text-purple-800">↔️ Range</span>
+                                        @elseif($blockedIp->ip_type === 'cidr')
+                                        <span class="px-2 py-1 text-xs font-semibold rounded bg-indigo-100 text-indigo-800">🌐 CIDR</span>
+                                        @endif
+                                    </td>
+                                    <td class="px-6 py-4 text-sm font-mono text-gray-900">
+                                        {{ $blockedIp->getIpDisplay() }}
+                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         @if($blockedIp->type === 'blacklist')
                                         <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Blacklist</span>
