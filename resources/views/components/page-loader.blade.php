@@ -5,6 +5,7 @@
     $loaderColor = \App\Models\Setting::get('page_loader_color', '#6366f1');
     $loaderColorSecondary = \App\Models\Setting::get('page_loader_color_secondary', '#8b5cf6');
     $loaderGif = \App\Models\Setting::get('page_loader_gif');
+    $progressMode = \App\Models\Setting::get('page_loader_progress_mode', 'real'); // 'real' or 'fake'
 @endphp
 
 @if($loaderEnabled)
@@ -112,13 +113,16 @@
 </div>
 
 <script>
-    // Realistic Page Loader Script - Track actual resource loading
+    // Page Loader Script - Supports both Real and Fake progress modes
     (function() {
         const loader = document.getElementById('page-loader');
         const progressBar = document.getElementById('progress-bar');
         const percentageEl = document.getElementById('loading-percentage');
         const statusEl = document.getElementById('loading-status');
         const detailsEl = document.getElementById('loading-details');
+
+        // Progress mode: 'real' or 'fake'
+        const progressMode = '{{ $progressMode }}';
 
         // Loading state
         let totalResources = 0;
@@ -132,6 +136,50 @@
             font: { count: 0, loaded: 0, label: 'ฟอนต์' },
             other: { count: 0, loaded: 0, label: 'อื่นๆ' }
         };
+
+        // ============================================
+        // FAKE PROGRESS MODE (แสดง Animation เฉยๆ ไม่ติดตาม)
+        // ============================================
+        function startFakeProgress() {
+            console.log('Using FAKE progress mode (Animation only - no progress tracking)');
+
+            // ไม่แสดง progress text และรายละเอียด - แสดงแค่ animation
+            if (percentageEl) {
+                percentageEl.style.display = 'none';
+            }
+            if (statusEl) {
+                statusEl.style.display = 'none';
+            }
+            if (detailsEl) {
+                detailsEl.style.display = 'none';
+            }
+
+            // รอให้หน้าโหลดเสร็จแล้วซ่อน loader
+            window.addEventListener('load', () => {
+                setTimeout(() => {
+                    if (loader) {
+                        loader.style.opacity = '0';
+                        setTimeout(() => {
+                            loader.style.display = 'none';
+                        }, 500);
+                    }
+                }, 300);
+            });
+
+            // Fallback: ซ่อนหลังจาก 5 วินาที
+            setTimeout(() => {
+                if (loader && loader.style.opacity !== '0') {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 500);
+                }
+            }, 5000);
+        }
+
+        // ============================================
+        // REAL PROGRESS MODE
+        // ============================================
 
         // Initialize - count all resources that need to be loaded
         function initializeResourceTracking() {
@@ -285,82 +333,95 @@
             });
         }
 
-        // Initialize tracking
-        initializeResourceTracking();
-        updateProgress(5, 'กำลังเริ่มต้น...', 'เตรียมโหลดทรัพยากร');
+        // ============================================
+        // MODE SELECTOR
+        // ============================================
+        console.log('Progress Mode:', progressMode);
 
-        // Use PerformanceAPI or fallback to manual tracking
-        const usingPerformanceAPI = trackWithPerformanceAPI();
-        if (!usingPerformanceAPI) {
-            trackResourcesManually();
-        }
+        if (progressMode === 'fake') {
+            // Use FAKE progress mode
+            startFakeProgress();
+        } else {
+            // Use REAL progress mode (default)
+            console.log('Using REAL progress mode');
 
-        // DOMContentLoaded event - DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
-            loadedResources += 2;
-            const progress = Math.min((loadedResources / totalResources) * 100, 85);
-            updateProgress(progress, 'กำลังเตรียม Alpine.js...', 'DOM พร้อมแล้ว');
-        });
+            // Initialize tracking
+            initializeResourceTracking();
+            updateProgress(5, 'กำลังเริ่มต้น...', 'เตรียมโหลดทรัพยากร');
 
-        // Wait for Alpine.js initialization
-        document.addEventListener('alpine:init', () => {
-            loadedResources += 1;
-            const progress = Math.min((loadedResources / totalResources) * 100, 90);
-            updateProgress(progress, 'กำลังเริ่มต้น Components...', 'Alpine.js พร้อมแล้ว');
-        });
+            // Use PerformanceAPI or fallback to manual tracking
+            const usingPerformanceAPI = trackWithPerformanceAPI();
+            if (!usingPerformanceAPI) {
+                trackResourcesManually();
+            }
 
-        // window.load event - everything is loaded
-        window.addEventListener('load', () => {
-            loadedResources = totalResources;
-            updateProgress(95, 'เกือบเสร็จแล้ว...', 'โหลดทรัพยากรเสร็จสมบูรณ์');
+            // DOMContentLoaded event - DOM is ready
+            document.addEventListener('DOMContentLoaded', () => {
+                loadedResources += 2;
+                const progress = Math.min((loadedResources / totalResources) * 100, 85);
+                updateProgress(progress, 'กำลังเตรียม Alpine.js...', 'DOM พร้อมแล้ว');
+            });
 
-            // Final step
+            // Wait for Alpine.js initialization
+            document.addEventListener('alpine:init', () => {
+                loadedResources += 1;
+                const progress = Math.min((loadedResources / totalResources) * 100, 90);
+                updateProgress(progress, 'กำลังเริ่มต้น Components...', 'Alpine.js พร้อมแล้ว');
+            });
+
+            // window.load event - everything is loaded
+            window.addEventListener('load', () => {
+                loadedResources = totalResources;
+                updateProgress(95, 'เกือบเสร็จแล้ว...', 'โหลดทรัพยากรเสร็จสมบูรณ์');
+
+                // Final step
+                setTimeout(() => {
+                    updateProgress(100, 'เสร็จสมบูรณ์!', 'พร้อมใช้งาน');
+
+                    // Hide loader
+                    setTimeout(() => {
+                        if (loader) {
+                            loader.style.opacity = '0';
+                            setTimeout(() => {
+                                loader.style.display = 'none';
+                            }, 500);
+                        }
+                    }, 300);
+                }, 200);
+            });
+
+            // Fallback: Force hide loader after 10 seconds (increased from 5)
             setTimeout(() => {
-                updateProgress(100, 'เสร็จสมบูรณ์!', 'พร้อมใช้งาน');
+                if (loader && loader.style.opacity !== '0') {
+                    updateProgress(100, 'โหลดเสร็จสิ้น', 'ใช้เวลานานกว่าปกติ');
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 500);
+                }
+            }, 10000);
 
-                // Hide loader
-                setTimeout(() => {
-                    if (loader) {
-                        loader.style.opacity = '0';
-                        setTimeout(() => {
-                            loader.style.display = 'none';
-                        }, 500);
+            // Progressive updates for better UX (even if resources load slowly)
+            let fakeProgressInterval = setInterval(() => {
+                if (currentProgress < 85 && currentProgress < ((loadedResources / totalResources) * 100) - 10) {
+                    // Gradually increase progress if it's lagging behind
+                    const targetProgress = Math.min((loadedResources / totalResources) * 100, 85);
+                    currentProgress = Math.min(currentProgress + 1, targetProgress);
+
+                    if (percentageEl) {
+                        percentageEl.textContent = Math.round(currentProgress) + '%';
                     }
-                }, 300);
-            }, 200);
-        });
-
-        // Fallback: Force hide loader after 10 seconds (increased from 5)
-        setTimeout(() => {
-            if (loader && loader.style.opacity !== '0') {
-                updateProgress(100, 'โหลดเสร็จสิ้น', 'ใช้เวลานานกว่าปกติ');
-                loader.style.opacity = '0';
-                setTimeout(() => {
-                    loader.style.display = 'none';
-                }, 500);
-            }
-        }, 10000);
-
-        // Progressive updates for better UX (even if resources load slowly)
-        let fakeProgressInterval = setInterval(() => {
-            if (currentProgress < 85 && currentProgress < ((loadedResources / totalResources) * 100) - 10) {
-                // Gradually increase progress if it's lagging behind
-                const targetProgress = Math.min((loadedResources / totalResources) * 100, 85);
-                currentProgress = Math.min(currentProgress + 1, targetProgress);
-
-                if (percentageEl) {
-                    percentageEl.textContent = Math.round(currentProgress) + '%';
+                    if (progressBar) {
+                        progressBar.style.width = Math.round(currentProgress) + '%';
+                    }
                 }
-                if (progressBar) {
-                    progressBar.style.width = Math.round(currentProgress) + '%';
-                }
-            }
 
-            // Stop interval when we reach 95%
-            if (currentProgress >= 95) {
-                clearInterval(fakeProgressInterval);
-            }
-        }, 100);
+                // Stop interval when we reach 95%
+                if (currentProgress >= 95) {
+                    clearInterval(fakeProgressInterval);
+                }
+            }, 100);
+        }
     })();
 </script>
 
