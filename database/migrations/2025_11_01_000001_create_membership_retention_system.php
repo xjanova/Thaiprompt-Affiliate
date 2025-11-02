@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         // ตาราง membership_retention_status - เก็บสถานะการรักษายอดของสมาชิก
-        Schema::create('membership_retention_status', function (Blueprint $table) {
+        if (!Schema::hasTable('membership_retention_status')) {
+            Schema::create('membership_retention_status', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->enum('status', ['active', 'inactive', 'expired'])->default('active');
@@ -27,10 +28,12 @@ return new class extends Migration
 
             $table->index(['user_id', 'status']);
             $table->index('next_renewal_date');
-        });
+            });
+        }
 
         // ตาราง membership_retention_history - ประวัติการรักษายอดแต่ละเดือน
-        Schema::create('membership_retention_history', function (Blueprint $table) {
+        if (!Schema::hasTable('membership_retention_history')) {
+            Schema::create('membership_retention_history', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('period_month', 7); // YYYY-MM
@@ -45,10 +48,12 @@ return new class extends Migration
 
             $table->index(['user_id', 'period_month']);
             $table->index('status');
-        });
+            });
+        }
 
         // ตาราง membership_retention_transactions - รายการซื้อขายที่นับเข้าระบบรักษายอด
-        Schema::create('membership_retention_transactions', function (Blueprint $table) {
+        if (!Schema::hasTable('membership_retention_transactions')) {
+            Schema::create('membership_retention_transactions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('commission_id')->nullable()->constrained()->onDelete('set null');
@@ -61,10 +66,12 @@ return new class extends Migration
 
             $table->index(['user_id', 'period_month']);
             $table->index('transaction_type');
-        });
+            });
+        }
 
         // ตาราง membership_retention_repairs - การซื้อซ่อมสิทธิ์
-        Schema::create('membership_retention_repairs', function (Blueprint $table) {
+        if (!Schema::hasTable('membership_retention_repairs')) {
+            Schema::create('membership_retention_repairs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('repair_period_month', 7); // เดือนที่ซ่อม YYYY-MM
@@ -77,10 +84,12 @@ return new class extends Migration
 
             $table->index(['user_id', 'repair_period_month']);
             $table->index('payment_status');
-        });
+            });
+        }
 
         // ตาราง membership_retention_advance_renewals - การเติมวันล่วงหน้า
-        Schema::create('membership_retention_advance_renewals', function (Blueprint $table) {
+        if (!Schema::hasTable('membership_retention_advance_renewals')) {
+            Schema::create('membership_retention_advance_renewals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->integer('months_advance')->default(1); // จำนวนเดือนที่เติมล่วงหน้า
@@ -94,20 +103,22 @@ return new class extends Migration
 
             $table->index(['user_id', 'valid_from', 'valid_until']);
             $table->index('payment_status');
-        });
+            });
+        }
 
         // ตาราง membership_retention_settings - การตั้งค่าระบบ
-        Schema::create('membership_retention_settings', function (Blueprint $table) {
+        if (!Schema::hasTable('membership_retention_settings')) {
+            Schema::create('membership_retention_settings', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();
             $table->text('value')->nullable();
             $table->string('type')->default('string'); // string, number, boolean, json
             $table->text('description')->nullable();
             $table->timestamps();
-        });
+            });
 
-        // Insert default settings
-        DB::table('membership_retention_settings')->insert([
+            // Insert default settings
+            DB::table('membership_retention_settings')->insert([
             [
                 'key' => 'minimum_points_per_month',
                 'value' => '1000',
@@ -164,7 +175,8 @@ return new class extends Migration
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+            ]);
+        }
     }
 
     /**
