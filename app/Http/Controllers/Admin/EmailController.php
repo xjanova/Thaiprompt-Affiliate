@@ -303,6 +303,69 @@ class EmailController extends Controller
     }
 
     /**
+     * Preview email template with sample data.
+     */
+    public function previewTemplate(EmailTemplate $template)
+    {
+        // Generate sample data for template variables
+        $sampleData = $this->generateSampleData($template->variables ?? []);
+
+        try {
+            // Render template with sample data
+            $rendered = $template->render($sampleData);
+
+            return response()->json([
+                'success' => true,
+                'subject' => $rendered['subject'],
+                'body_html' => $rendered['body_html'],
+                'body_text' => $rendered['body_text'],
+                'variables' => $template->variables ?? [],
+                'sample_data' => $sampleData,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Email template preview error', [
+                'template_id' => $template->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to preview template: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate sample data for template variables.
+     */
+    private function generateSampleData(array $variables): array
+    {
+        $sampleData = [];
+
+        foreach ($variables as $variable) {
+            // Generate appropriate sample data based on variable name
+            $sampleData[$variable] = match (true) {
+                str_contains($variable, 'name') => 'สมชาย ใจดี',
+                str_contains($variable, 'email') => 'somchai@example.com',
+                str_contains($variable, 'amount') => '1,500.00',
+                str_contains($variable, 'commission') => '450.00',
+                str_contains($variable, 'date') => now()->format('d/m/Y H:i'),
+                str_contains($variable, 'link') || str_contains($variable, 'url') => url('/dashboard'),
+                str_contains($variable, 'code') => strtoupper(substr(md5(time()), 0, 8)),
+                str_contains($variable, 'token') => substr(md5(time()), 0, 32),
+                str_contains($variable, 'ip') => '203.154.123.45',
+                str_contains($variable, 'reason') => 'ตัวอย่างเหตุผล',
+                str_contains($variable, 'status') => 'สำเร็จ',
+                str_contains($variable, 'count') || str_contains($variable, 'number') => '5',
+                str_contains($variable, 'percentage') || str_contains($variable, 'percent') => '15.5%',
+                default => 'ค่าตัวอย่าง'
+            };
+        }
+
+        return $sampleData;
+    }
+
+    /**
      * Send test email.
      */
     public function sendTest(Request $request)
