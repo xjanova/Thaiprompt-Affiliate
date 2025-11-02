@@ -823,7 +823,8 @@
 
 <!-- Add IP Modal (Simple inline form - can be enhanced with Alpine.js modal) -->
 <div x-show="showAddIpModal" x-cloak
-     class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+     class="fixed inset-0 z-50 overflow-y-auto"
+     @keydown.escape.window="showAddIpModal = false">
     <div class="flex items-center justify-center min-h-screen px-4">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showAddIpModal = false"></div>
 
