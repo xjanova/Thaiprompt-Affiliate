@@ -103,13 +103,17 @@
         <!-- All Events Timeline -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">📊 Security Events Timeline</h3>
-            <canvas id="timelineAllChart" height="300"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="timelineAllChart"></canvas>
+            </div>
         </div>
 
         <!-- Failed Logins Timeline -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">🔐 Failed Login Attempts</h3>
-            <canvas id="timelineFailedLoginsChart" height="300"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="timelineFailedLoginsChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -118,13 +122,17 @@
         <!-- Event Types -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">📋 Event Types Distribution</h3>
-            <canvas id="eventTypesChart" height="300"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="eventTypesChart"></canvas>
+            </div>
         </div>
 
         <!-- Severity Levels -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">⚠️ Severity Levels</h3>
-            <canvas id="severityChart" height="300"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="severityChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -133,7 +141,9 @@
         <!-- Top Countries -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">🌍 Top Countries</h3>
-            <canvas id="countriesChart" height="300"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="countriesChart"></canvas>
+            </div>
         </div>
 
         <!-- Country List -->
@@ -161,20 +171,26 @@
         <!-- Operating Systems -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">💻 Operating Systems</h3>
-            <canvas id="osChart" height="300"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="osChart"></canvas>
+            </div>
         </div>
 
         <!-- Browsers -->
         <div class="bg-white rounded-lg shadow-md p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">🌐 Browsers</h3>
-            <canvas id="browserChart" height="300"></canvas>
+            <div style="position: relative; height: 300px;">
+                <canvas id="browserChart"></canvas>
+            </div>
         </div>
     </div>
 
     <!-- Device Types -->
     <div class="bg-white rounded-lg shadow-md p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">📱 Device Types</h3>
-        <canvas id="deviceChart" height="150"></canvas>
+        <div style="position: relative; height: 200px;">
+            <canvas id="deviceChart"></canvas>
+        </div>
     </div>
 </div>
 
