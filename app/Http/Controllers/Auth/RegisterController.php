@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Affiliate;
+use App\Models\LineLoginLog;
+use App\Models\LineOaSetting;
 use App\Models\Setting;
+use App\Services\LineService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterController extends Controller
@@ -19,6 +23,20 @@ class RegisterController extends Controller
     public function showRegistrationForm(Request $request)
     {
         $referralCode = $request->query('ref');
+
+        // Check if LINE registration is required
+        $lineRequired = LineOaSetting::isRequired();
+        $lineProfile = Session::get('line_temp_profile');
+
+        // If LINE is required and no LINE profile, redirect to LINE login
+        if ($lineRequired && !$lineProfile) {
+            $redirectUrl = route('line.redirect');
+            if ($referralCode) {
+                $redirectUrl .= '?ref=' . $referralCode;
+            }
+            return redirect($redirectUrl)
+                ->with('info', 'กรุณาเข้าสู่ระบบด้วย LINE เพื่อสมัครสมาชิก');
+        }
 
         // Get default sponsor info
         $defaultSponsorName = null;
@@ -32,7 +50,7 @@ class RegisterController extends Controller
             }
         }
 
-        return view('auth.register', compact('referralCode', 'defaultSponsorName'));
+        return view('auth.register', compact('referralCode', 'defaultSponsorName', 'lineRequired', 'lineProfile'));
     }
 
     /**
@@ -40,20 +58,53 @@ class RegisterController extends Controller
      */
     public function register(Request $request)
     {
-        $validated = $request->validate([
+        // Check if LINE registration is required
+        $lineRequired = LineOaSetting::isRequired();
+        $lineProfile = Session::get('line_temp_profile');
+
+        if ($lineRequired && !$lineProfile) {
+            return redirect()->route('register')
+                ->with('error', 'กรุณาเข้าสู่ระบบด้วย LINE ก่อนสมัครสมาชิก');
+        }
+
+        // Validate basic fields
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'referral_code' => ['nullable', 'string', 'exists:affiliates,referral_code'],
-        ]);
+        ];
 
-        // Create user
-        $user = User::create([
+        $validated = $request->validate($rules);
+
+        // If LINE profile exists, check for duplicate LINE user
+        if ($lineProfile) {
+            $existingLineUser = User::where('line_user_id', $lineProfile['line_user_id'])->first();
+            if ($existingLineUser) {
+                Session::forget('line_temp_profile');
+                return redirect()->route('login')
+                    ->with('error', 'บัญชี LINE นี้ถูกใช้งานแล้ว กรุณาเข้าสู่ระบบ');
+            }
+        }
+
+        // Create user with LINE info if available
+        $userData = [
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'user',
-        ]);
+        ];
+
+        if ($lineProfile) {
+            $userData['line_user_id'] = $lineProfile['line_user_id'];
+            $userData['line_display_name'] = $lineProfile['line_display_name'];
+            $userData['line_picture_url'] = $lineProfile['line_picture_url'];
+            $userData['line_access_token'] = $lineProfile['line_access_token'];
+            $userData['line_linked_at'] = now();
+            $userData['line_verified'] = true;
+        }
+
+        $user = User::create($userData);
 
         // Create affiliate account
         $parentAffiliate = null;
@@ -84,10 +135,39 @@ class RegisterController extends Controller
             $parentAffiliate->increment('total_referrals');
         }
 
+        // Log LINE registration if applicable
+        if ($lineProfile) {
+            LineLoginLog::logAction(
+                $lineProfile['line_user_id'],
+                'register',
+                $user->id,
+                [
+                    'display_name' => $lineProfile['line_display_name'],
+                    'referral_code' => $affiliate->referral_code,
+                    'parent_id' => $parentAffiliate?->id,
+                ]
+            );
+
+            // Send LINE welcome message
+            try {
+                $lineService = app(LineService::class);
+                $lineService->sendRegistrationSuccessMessage($user);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send LINE registration message', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Clear LINE temp profile from session
+            Session::forget('line_temp_profile');
+            Session::forget('line_login_referral');
+        }
+
         // Log the user in
         Auth::login($user);
 
-        return redirect()->route('admin.dashboard')
-            ->with('success', 'Registration successful! Welcome to TP-Affiliate.');
+        return redirect()->route('user.dashboard')
+            ->with('success', 'ลงทะเบียนสำเร็จ! ยินดีต้อนรับสู่ระบบ Affiliate');
     }
 }

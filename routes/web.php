@@ -4,6 +4,8 @@ use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SetupController;
+use App\Http\Controllers\Auth\LineLoginController;
+use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\SitemapController;
 use Illuminate\Support\Facades\Route;
@@ -46,9 +48,23 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register'])->middleware('turnstile:register');
+
+    // LINE Login Routes
+    Route::get('/auth/line', [LineLoginController::class, 'redirect'])->name('line.redirect');
+    Route::get('/auth/line/callback', [LineLoginController::class, 'callback'])->name('line.callback');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// LINE Account Linking (for authenticated users)
+Route::middleware('auth')->group(function () {
+    Route::get('/auth/line/link', [LineLoginController::class, 'link'])->name('line.link');
+    Route::get('/auth/line/link/callback', [LineLoginController::class, 'linkCallback'])->name('line.link.callback');
+    Route::post('/auth/line/unlink', [LineLoginController::class, 'unlink'])->name('line.unlink');
+});
+
+// LINE Webhook (no auth required)
+Route::post('/webhook/line', [LineWebhookController::class, 'handle'])->name('line.webhook');
 
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
