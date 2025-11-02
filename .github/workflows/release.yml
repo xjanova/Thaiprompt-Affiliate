@@ -5,10 +5,23 @@ on:
     branches:
       - main
       - master
+      - claude/Main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+      - master
+      - claude/Main
   workflow_dispatch:
 
 jobs:
   release:
+    # Only run on push to main branches OR when PR is merged (not just closed)
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -20,14 +33,33 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
+          ref: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
 
       - name: Get previous tag
         id: previoustag
         run: |
-          # Get the latest tag, or use v0.0.0 if no tags exist
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          # Get the latest tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+
+          # If no tag exists, use VERSION file or package.json
+          if [ -z "$LATEST_TAG" ]; then
+            if [ -f "VERSION" ]; then
+              VERSION_FROM_FILE=$(cat VERSION | tr -d '\n\r' | sed 's/^/v/')
+              LATEST_TAG="$VERSION_FROM_FILE"
+              echo "No git tags found, using VERSION file: $LATEST_TAG"
+            elif [ -f "package.json" ]; then
+              VERSION_FROM_PKG=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
+              LATEST_TAG="v$VERSION_FROM_PKG"
+              echo "No git tags found, using package.json: $LATEST_TAG"
+            else
+              LATEST_TAG="v0.0.0"
+              echo "No version found, defaulting to: $LATEST_TAG"
+            fi
+          else
+            echo "Latest tag: $LATEST_TAG"
+          fi
+
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "Latest tag: $LATEST_TAG"
 
       - name: Determine version bump
         id: bump
@@ -188,7 +220,16 @@ jobs:
             echo "No changes to commit"
           else
             git commit -m "chore: bump version to ${{ steps.tag_version.outputs.new_version }} [skip ci]"
-            git push origin HEAD:main || git push origin HEAD:master
+
+            # Determine target branch
+            if [ "${{ github.event_name }}" == "pull_request" ]; then
+              TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+            else
+              TARGET_BRANCH="${{ github.ref_name }}"
+            fi
+
+            echo "Pushing to branch: $TARGET_BRANCH"
+            git push origin HEAD:$TARGET_BRANCH
           fi
 
       - name: Output new version
