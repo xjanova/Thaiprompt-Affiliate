@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v1.4.3] - 2025-11-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #216 from xjanova/claude/auto-version-release-011CUiRsoU3XMBgrgCCLWNkQ (a8dcb7b)
+- fix: เพิ่ม git rebase ก่อน push เพื่อแก้ปัญหา rejected push (454cdad)
+### 🔧 Other Changes
+- chore: bump version to 1.4.2 [skip ci] (8f5d4c9)
+
 ## [v1.4.2] - 2025-11-02
 
 ### ✨ Features
