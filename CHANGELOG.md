@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v1.4.2] - 2025-11-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #215 from xjanova/claude/fix-org-chart-loading-error-011CUieqgN7RZd5AdejhnJE7 (e88d5ef)
+- fix: แก้ไขปัญหาการเรียก API ผังสายงานด้วย session authentication (8bc3d70)
+### 🔧 Other Changes
+- chore: bump version to 1.4.1 [skip ci] (fc7c048)
+
 ## [v1.4.1] - 2025-11-02
 
 ### ✨ Features
