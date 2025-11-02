@@ -39,6 +39,12 @@ database/database.sqlite
 # Logs
 storage/logs/*.log
 
+# Uploaded files (ป้องกันไฟล์อัปโหลดถูก track ใน git)
+storage/app/public/*
+!storage/app/public/.gitkeep
+!storage/app/public/branding/.gitkeep
+!storage/app/public/sliders/.gitkeep
+
 # Google Cloud Credentials
 storage/app/google-credentials.json
 google-credentials.json
