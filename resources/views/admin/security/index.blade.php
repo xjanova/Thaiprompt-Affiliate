@@ -692,9 +692,6 @@
                 <div class="space-y-6">
                     <div class="flex justify-between items-center">
                         <h3 class="text-lg font-semibold text-gray-900">จัดการ IP Blocking</h3>
-                        <button @click="showAddIpModal = true" class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                            เพิ่ม IP
-                        </button>
                     </div>
 
                     <!-- Blocked IPs Table -->
@@ -817,64 +814,6 @@
                     @endif
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add IP Modal (Simple inline form - can be enhanced with Alpine.js modal) -->
-<div x-data="{ showAddIpModal: false }" x-show="showAddIpModal" x-cloak
-     class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-    <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="showAddIpModal = false"></div>
-
-        <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-            <h3 class="text-lg font-semibold text-gray-900 mb-4">เพิ่ม IP Address</h3>
-
-            <form method="POST" action="{{ route('admin.security.ip.block') }}">
-                @csrf
-
-                <div class="space-y-4">
-                    <div>
-                        <label for="ip_address" class="block text-sm font-medium text-gray-700 mb-2">IP Address</label>
-                        <input type="text" name="ip_address" id="ip_address" required
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                               placeholder="192.168.1.1">
-                    </div>
-
-                    <div>
-                        <label for="type" class="block text-sm font-medium text-gray-700 mb-2">ประเภท</label>
-                        <select name="type" id="type" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            <option value="blacklist">Blacklist</option>
-                            <option value="whitelist">Whitelist</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label for="reason" class="block text-sm font-medium text-gray-700 mb-2">เหตุผล</label>
-                        <textarea name="reason" id="reason" rows="3"
-                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                  placeholder="ระบุเหตุผลในการบล็อก IP นี้"></textarea>
-                    </div>
-
-                    <div>
-                        <label for="expires_at" class="block text-sm font-medium text-gray-700 mb-2">วันหมดอายุ (ถ้าไม่ระบุจะเป็นถาวร)</label>
-                        <input type="datetime-local" name="expires_at" id="expires_at"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                    </div>
-                </div>
-
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button type="button" @click="showAddIpModal = false"
-                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
-                        ยกเลิก
-                    </button>
-                    <button type="submit"
-                            class="px-4 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                        เพิ่ม IP
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
 </div>
