@@ -496,6 +496,54 @@
                                 <p class="ml-8 mt-2 text-sm text-gray-500">แสดงอนิเมชั่นขณะโหลดหน้าเว็บ</p>
                             </div>
 
+                            <!-- Progress Mode Selection -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-3">โหมดการแสดงความคืบหน้า</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    @php
+                                        $currentProgressMode = \App\Models\Setting::get('page_loader_progress_mode', 'real');
+                                    @endphp
+
+                                    <!-- Real Progress -->
+                                    <label class="relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all {{ $currentProgressMode === 'real' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300' }}">
+                                        <input type="radio" name="page_loader_progress_mode" value="real"
+                                               {{ $currentProgressMode === 'real' ? 'checked' : '' }}
+                                               class="form-radio h-5 w-5 text-green-600 focus:ring-green-500 mt-1">
+                                        <div class="ml-3">
+                                            <div class="flex items-center">
+                                                <span class="text-2xl mr-2">✅</span>
+                                                <span class="font-semibold text-gray-800">Real Progress</span>
+                                            </div>
+                                            <p class="text-sm text-gray-600 mt-1">ใช้ Performance API ติดตามการโหลดจริง</p>
+                                            <ul class="text-xs text-gray-500 mt-2 space-y-1 list-disc list-inside">
+                                                <li>แสดงเปอร์เซ็นต์จริง 100%</li>
+                                                <li>ติดตาม JS, CSS, รูปภาพ, ฟอนต์</li>
+                                                <li>แสดงสถานะและรายละเอียด</li>
+                                            </ul>
+                                        </div>
+                                    </label>
+
+                                    <!-- Fake Progress (Animation Only) -->
+                                    <label class="relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all {{ $currentProgressMode === 'fake' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300' }}">
+                                        <input type="radio" name="page_loader_progress_mode" value="fake"
+                                               {{ $currentProgressMode === 'fake' ? 'checked' : '' }}
+                                               class="form-radio h-5 w-5 text-purple-600 focus:ring-purple-500 mt-1">
+                                        <div class="ml-3">
+                                            <div class="flex items-center">
+                                                <span class="text-2xl mr-2">🎭</span>
+                                                <span class="font-semibold text-gray-800">Fake Progress (Animation Only)</span>
+                                            </div>
+                                            <p class="text-sm text-gray-600 mt-1">แสดงแค่ animation ไม่ติดตามการโหลด</p>
+                                            <ul class="text-xs text-gray-500 mt-2 space-y-1 list-disc list-inside">
+                                                <li>แสดง Loader Animation เฉยๆ</li>
+                                                <li>ไม่แสดงเปอร์เซ็นต์และสถานะ</li>
+                                                <li>เบาและรวดเร็วกว่า Real Progress</li>
+                                            </ul>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+
                             <!-- Loader Type -->
                             <div class="mb-6">
                                 <label class="block text-sm font-medium text-gray-700 mb-3">รูปแบบอนิเมชั่น</label>

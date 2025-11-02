@@ -56,6 +56,7 @@ class SettingsController extends Controller
             'page_loader_type' => ['nullable', 'string', 'in:spinner,dots,pulse,progress,gradient_spinner,wave,bouncing_balls,custom_gif'],
             'page_loader_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
             'page_loader_color_secondary' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'page_loader_progress_mode' => ['nullable', 'string', 'in:real,fake'],
         ]);
 
         // Validate GIF file separately
