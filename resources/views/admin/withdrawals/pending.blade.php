@@ -159,12 +159,30 @@
      x-on:show-reject-modal.window="showModal = true; withdrawalId = $event.detail.id; requestId = $event.detail.requestId"
      x-show="showModal"
      x-cloak
-     class="fixed inset-0 z-50 overflow-y-auto"
-     style="display: none;">
+     class="hidden fixed inset-0 z-50 overflow-y-auto"
+     :class="{ 'hidden': !showModal, 'flex': showModal }">
     <div class="flex items-center justify-center min-h-screen px-4">
-        <div class="fixed inset-0 bg-black opacity-50" x-on:click="showModal = false"></div>
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-black bg-opacity-50"
+             x-show="showModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             @click="showModal = false"></div>
 
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+        <!-- Modal Content -->
+        <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-6 z-10"
+             x-show="showModal"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 transform scale-95"
+             x-transition:enter-end="opacity-100 transform scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 transform scale-100"
+             x-transition:leave-end="opacity-0 transform scale-95"
+             @click.stop>
             <h3 class="text-xl font-bold text-gray-900 mb-4">ปฏิเสธคำขอถอนเงิน</h3>
             <p class="text-sm text-gray-600 mb-4">รหัสคำขอ: <span class="font-bold" x-text="requestId"></span></p>
 
@@ -176,7 +194,7 @@
                 </div>
 
                 <div class="flex space-x-3">
-                    <button type="button" x-on:click="showModal = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
+                    <button type="button" @click="showModal = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
                         ยกเลิก
                     </button>
                     <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">
