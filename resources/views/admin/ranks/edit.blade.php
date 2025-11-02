@@ -1,0 +1,265 @@
+@extends('layouts.admin')
+
+@section('title', 'แก้ไข Rank: ' . $rank->name)
+
+@section('content')
+<div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200">
+                    🏆 แก้ไข Rank: {{ $rank->name }}
+                </h2>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                    อัปเดตรายละเอียดและข้อกำหนดของ Rank
+                </p>
+            </div>
+            <a href="{{ route('admin.ranks.index') }}"
+               class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200">
+                ← กลับ
+            </a>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form action="{{ route('admin.ranks.update', $rank) }}" method="POST">
+        @csrf
+        @method('PUT')
+
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-6">
+            <!-- Basic Information -->
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                    <span class="mr-2">📝</span>
+                    ข้อมูลพื้นฐาน
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            ชื่อ Rank (EN) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" value="{{ old('name', $rank->name) }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               required>
+                        @error('name')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            ชื่อ Rank (TH)
+                        </label>
+                        <input type="text" name="name_th" value="{{ old('name_th', $rank->name_th) }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200">
+                        @error('name_th')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Level <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="level" value="{{ old('level', $rank->level) }}" min="1"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               required>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ระดับของ Rank (ตัวเลขที่สูงกว่า = ระดับที่สูงกว่า)</p>
+                        @error('level')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            สี <span class="text-red-500">*</span>
+                        </label>
+                        <input type="color" name="color" value="{{ old('color', $rank->color) }}"
+                               class="w-full h-10 px-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700"
+                               required>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">สีที่แสดงสำหรับ Rank นี้</p>
+                        @error('color')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        คำอธิบาย (EN)
+                    </label>
+                    <textarea name="description" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200">{{ old('description', $rank->description) }}</textarea>
+                    @error('description')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="mt-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        คำอธิบาย (TH)
+                    </label>
+                    <textarea name="description_th" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200">{{ old('description_th', $rank->description_th) }}</textarea>
+                    @error('description_th')
+                    <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Status Toggle -->
+                <div class="mt-4">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_active" value="1" {{ old('is_active', $rank->is_active) ? 'checked' : '' }}
+                               class="w-4 h-4 text-pink-600 bg-gray-100 border-gray-300 rounded focus:ring-pink-500 dark:focus:ring-pink-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                        <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">เปิดใช้งาน Rank นี้</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Benefits -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                    <span class="mr-2">💰</span>
+                    ผลประโยชน์และสิทธิพิเศษ
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Commission Rate (%) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="commission_rate" value="{{ old('commission_rate', $rank->commission_rate) }}"
+                               min="0" max="100" step="0.01"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               required>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เปอร์เซ็นต์ค่าคอมมิชชั่นที่ได้รับ</p>
+                        @error('commission_rate')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Bonus Multiplier <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="bonus_multiplier" value="{{ old('bonus_multiplier', $rank->bonus_multiplier) }}"
+                               min="1" step="0.1"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               required>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ตัวคูณโบนัสพิเศษ</p>
+                        @error('bonus_multiplier')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Requirements -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center">
+                    <span class="mr-2">📋</span>
+                    ข้อกำหนด
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <span class="mr-1">💰</span> ยอดขายขั้นต่ำ (฿) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="min_sales" value="{{ old('min_sales', $rank->min_sales) }}"
+                               min="0" step="0.01"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               required>
+                        @error('min_sales')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <span class="mr-1">👥</span> Referrals ขั้นต่ำ <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="min_referrals" value="{{ old('min_referrals', $rank->min_referrals) }}"
+                               min="0"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               required>
+                        @error('min_referrals')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <span class="mr-1">⭐</span> Points ขั้นต่ำ <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="min_points" value="{{ old('min_points', $rank->min_points) }}"
+                               min="0"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-pink-500 dark:bg-gray-700 dark:text-gray-200"
+                               required>
+                        @error('min_points')
+                        <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Users Info -->
+            @if($rank->users()->count() > 0)
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">👥</span>
+                        <div>
+                            <h4 class="font-semibold text-blue-800 dark:text-blue-200">ผู้ใช้ปัจจุบัน</h4>
+                            <p class="text-sm text-blue-600 dark:text-blue-300 mt-1">
+                                มีผู้ใช้ {{ $rank->users()->count() }} คน ที่อยู่ใน Rank นี้
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- Submit Buttons -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        @if($rank->users()->count() == 0)
+                        <form action="{{ route('admin.ranks.destroy', $rank) }}" method="POST" class="inline-block"
+                              onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการลบ Rank นี้?');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                    class="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                ลบ Rank
+                            </button>
+                        </form>
+                        @endif
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <a href="{{ route('admin.ranks.index') }}"
+                           class="px-6 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-all duration-200">
+                            ยกเลิก
+                        </a>
+                        <button type="submit"
+                                class="px-6 py-2 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white rounded-lg transition-all duration-200 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            บันทึกการเปลี่ยนแปลง
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+@endsection
