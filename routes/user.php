@@ -96,6 +96,7 @@ Route::prefix('retention')->name('retention.')->group(function () {
     Route::get('/status', [MembershipRetentionController::class, 'getStatus'])->name('status');
     Route::get('/history', [MembershipRetentionController::class, 'history'])->name('history');
     Route::get('/widget-data', [MembershipRetentionController::class, 'getWidgetData'])->name('widget-data');
+    Route::get('/how-it-works', [MembershipRetentionController::class, 'howItWorks'])->name('how-it-works');
 
     // Repair Routes
     Route::get('/repair', [MembershipRetentionController::class, 'showRepair'])->name('repair');

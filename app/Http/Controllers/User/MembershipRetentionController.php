@@ -56,6 +56,22 @@ class MembershipRetentionController extends Controller
     }
 
     /**
+     * Show how retention system works
+     */
+    public function howItWorks()
+    {
+        $settings = [
+            'minimum_points_per_month' => $this->retentionService->getSetting('minimum_points_per_month', 1000),
+            'grace_period_days' => $this->retentionService->getSetting('grace_period_days', 3),
+            'warning_days_before_expiry' => $this->retentionService->getSetting('warning_days_before_expiry', 7),
+            'repair_cost_per_point' => $this->retentionService->getSetting('repair_cost_per_point', 1.5),
+            'advance_renewal_discount' => $this->retentionService->getSetting('advance_renewal_discount', 0.9),
+        ];
+
+        return view('user.retention.how-it-works', compact('settings'));
+    }
+
+    /**
      * Get retention status API
      */
     public function getStatus()
