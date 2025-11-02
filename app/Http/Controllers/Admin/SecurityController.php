@@ -8,6 +8,8 @@ use App\Models\BlockedIp;
 use App\Models\SecurityLog;
 use App\Services\AutoBanService;
 use App\Services\IpIntelligenceService;
+use App\Services\ThreatIntelligenceService;
+use App\Models\ThreatIp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
@@ -545,5 +547,145 @@ class SecurityController extends Controller
         return response()->json($data)
             ->header('Content-Type', 'application/json')
             ->header('Content-Disposition', "attachment; filename=\"{$filename}\"");
+    }
+
+    /**
+     * Threat Intelligence Dashboard
+     */
+    public function threatIntelligence(ThreatIntelligenceService $service)
+    {
+        $stats = $service->getStatistics();
+
+        // Get recent threats
+        $recentThreats = ThreatIp::active()
+            ->orderBy('last_seen', 'desc')
+            ->limit(100)
+            ->get();
+
+        // Get threat distribution
+        $threatsByType = ThreatIp::active()
+            ->selectRaw('threat_type, COUNT(*) as count')
+            ->groupBy('threat_type')
+            ->orderBy('count', 'desc')
+            ->get();
+
+        $threatsBySource = ThreatIp::active()
+            ->selectRaw('source, COUNT(*) as count')
+            ->groupBy('source')
+            ->orderBy('count', 'desc')
+            ->get();
+
+        return view('admin.security.threat-intelligence', compact(
+            'stats',
+            'recentThreats',
+            'threatsByType',
+            'threatsBySource'
+        ));
+    }
+
+    /**
+     * Update threat intelligence manually
+     */
+    public function updateThreatIntelligence(ThreatIntelligenceService $service)
+    {
+        try {
+            $results = $service->updateAllSources();
+
+            return back()->with('success', "อัปเดต Threat Intelligence สำเร็จ! อัปเดต {$results['total_updated']} รายการ");
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Check IP against threat databases
+     */
+    public function checkIpThreat(Request $request, ThreatIntelligenceService $service)
+    {
+        $validated = $request->validate([
+            'ip_address' => ['required', 'ip'],
+        ]);
+
+        $ip = $validated['ip_address'];
+
+        // Check local database first
+        $localThreat = ThreatIp::getThreatInfo($ip);
+
+        // Check external APIs if configured
+        $abuseIpDb = $service->checkAbuseIPDB($ip);
+        $ipQualityScore = $service->checkIPQualityScore($ip);
+
+        return response()->json([
+            'ip' => $ip,
+            'is_threat' => ThreatIp::isThreatIp($ip),
+            'local_threat' => $localThreat,
+            'abuseipdb' => $abuseIpDb,
+            'ipqualityscore' => $ipQualityScore,
+        ]);
+    }
+
+    /**
+     * Update threat intelligence settings
+     */
+    public function updateThreatSettings(Request $request)
+    {
+        $validated = $request->validate([
+            'threat_intelligence_enabled' => ['nullable', 'boolean'],
+            'threat_block_proxy' => ['nullable', 'boolean'],
+            'threat_block_vpn' => ['nullable', 'boolean'],
+            'threat_block_tor' => ['nullable', 'boolean'],
+            'threat_block_abuse' => ['nullable', 'boolean'],
+            'threat_confidence_threshold' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'abuseipdb_api_key' => ['nullable', 'string'],
+            'ipqualityscore_api_key' => ['nullable', 'string'],
+        ]);
+
+        // Handle checkbox values
+        $validated['threat_intelligence_enabled'] = $request->has('threat_intelligence_enabled');
+        $validated['threat_block_proxy'] = $request->has('threat_block_proxy');
+        $validated['threat_block_vpn'] = $request->has('threat_block_vpn');
+        $validated['threat_block_tor'] = $request->has('threat_block_tor');
+        $validated['threat_block_abuse'] = $request->has('threat_block_abuse');
+
+        foreach ($validated as $key => $value) {
+            if ($value !== null) {
+                $type = is_bool($value) ? 'boolean' : (is_int($value) ? 'integer' : 'string');
+                Setting::set($key, $value, $type, 'security');
+            }
+        }
+
+        // Update .env file for API keys
+        $this->updateEnvFileThreatSettings($request);
+
+        return back()->with('success', 'บันทึกการตั้งค่า Threat Intelligence เรียบร้อยแล้ว');
+    }
+
+    /**
+     * Update .env file with Threat Intelligence API keys
+     */
+    protected function updateEnvFileThreatSettings(Request $request)
+    {
+        $envPath = base_path('.env');
+
+        if (!file_exists($envPath)) {
+            return;
+        }
+
+        $envContent = file_get_contents($envPath);
+
+        $envSettings = [
+            'ABUSEIPDB_API_KEY' => $request->input('abuseipdb_api_key', ''),
+            'IPQUALITYSCORE_API_KEY' => $request->input('ipqualityscore_api_key', ''),
+        ];
+
+        foreach ($envSettings as $key => $value) {
+            if (preg_match("/^{$key}=/m", $envContent)) {
+                $envContent = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $envContent);
+            } else {
+                $envContent .= "\n{$key}={$value}";
+            }
+        }
+
+        file_put_contents($envPath, $envContent);
     }
 }

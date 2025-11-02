@@ -66,6 +66,15 @@
                         Security Logs
                     </span>
                 </button>
+
+                <button @click="activeTab = 'threat'"
+                        :class="{ 'border-indigo-500 text-indigo-600': activeTab === 'threat', 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300': activeTab !== 'threat' }"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
+                    <span class="flex items-center">
+                        <span class="text-lg mr-2">🌍</span>
+                        Threat Intelligence
+                    </span>
+                </button>
             </nav>
         </div>
 
@@ -956,6 +965,174 @@
                         <p class="text-gray-500 text-center">ไม่มี IP ที่ถูกบล็อก</p>
                     </div>
                     @endif
+                </div>
+            </div>
+
+            <!-- Threat Intelligence Tab -->
+            <div x-show="activeTab === 'threat'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-lg font-semibold text-gray-900">🌍 Global Threat Intelligence</h3>
+                        <a href="{{ route('admin.security.threat-intelligence') }}"
+                           class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center gap-2">
+                            <span>📊</span>
+                            <span>View Full Dashboard</span>
+                        </a>
+                    </div>
+
+                    <!-- Settings Form -->
+                    <form method="POST" action="{{ route('admin.security.threat-intelligence.settings') }}">
+                        @csrf
+                        @method('PUT')
+
+                        <div class="space-y-6">
+                            <!-- Enable Threat Intelligence -->
+                            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6">
+                                <div class="flex items-center mb-4">
+                                    <input type="checkbox" name="threat_intelligence_enabled" id="threat_intelligence_enabled"
+                                           {{ setting('threat_intelligence_enabled', false) ? 'checked' : '' }}
+                                           class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                                    <label for="threat_intelligence_enabled" class="ml-2 text-sm font-medium text-gray-900">
+                                        เปิดใช้งาน Global Threat Intelligence
+                                    </label>
+                                </div>
+
+                                <p class="text-sm text-gray-700 mb-4">
+                                    ระบบจะตรวจสอบและบล็อก IP ที่อยู่ในบล็อกลิสต์ทั่วโลกโดยอัตโนมัติ จากแหล่งข้อมูลที่น่าเชื่อถือ
+                                </p>
+
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div class="flex items-center">
+                                        <input type="checkbox" name="threat_block_proxy" id="threat_block_proxy"
+                                               {{ setting('threat_block_proxy', true) ? 'checked' : '' }}
+                                               class="w-4 h-4 text-orange-600 border-gray-300 rounded">
+                                        <label for="threat_block_proxy" class="ml-2 text-sm text-gray-700">🔀 Proxy</label>
+                                    </div>
+
+                                    <div class="flex items-center">
+                                        <input type="checkbox" name="threat_block_vpn" id="threat_block_vpn"
+                                               {{ setting('threat_block_vpn', false) ? 'checked' : '' }}
+                                               class="w-4 h-4 text-yellow-600 border-gray-300 rounded">
+                                        <label for="threat_block_vpn" class="ml-2 text-sm text-gray-700">🔒 VPN</label>
+                                    </div>
+
+                                    <div class="flex items-center">
+                                        <input type="checkbox" name="threat_block_tor" id="threat_block_tor"
+                                               {{ setting('threat_block_tor', true) ? 'checked' : '' }}
+                                               class="w-4 h-4 text-purple-600 border-gray-300 rounded">
+                                        <label for="threat_block_tor" class="ml-2 text-sm text-gray-700">🧅 Tor</label>
+                                    </div>
+
+                                    <div class="flex items-center">
+                                        <input type="checkbox" name="threat_block_abuse" id="threat_block_abuse"
+                                               {{ setting('threat_block_abuse', true) ? 'checked' : '' }}
+                                               class="w-4 h-4 text-red-600 border-gray-300 rounded">
+                                        <label for="threat_block_abuse" class="ml-2 text-sm text-gray-700">⚠️ Abuse</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Confidence Threshold -->
+                            <div>
+                                <label for="threat_confidence_threshold" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Confidence Threshold (%)
+                                </label>
+                                <input type="number" name="threat_confidence_threshold" id="threat_confidence_threshold"
+                                       value="{{ old('threat_confidence_threshold', setting('threat_confidence_threshold', 70)) }}"
+                                       min="0" max="100"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <p class="mt-1 text-xs text-gray-500">
+                                    บล็อกเฉพาะ IP ที่มีคะแนนความน่าเชื่อถือมากกว่าหรือเท่ากับค่านี้
+                                </p>
+                            </div>
+
+                            <!-- API Keys -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                                <h4 class="text-md font-semibold text-gray-900 mb-4">🔑 API Keys (Optional)</h4>
+
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="abuseipdb_api_key" class="block text-sm font-medium text-gray-700 mb-2">
+                                            AbuseIPDB API Key
+                                        </label>
+                                        <input type="text" name="abuseipdb_api_key" id="abuseipdb_api_key"
+                                               value="{{ old('abuseipdb_api_key', env('ABUSEIPDB_API_KEY', '')) }}"
+                                               placeholder="Your AbuseIPDB API Key"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            Free tier: 1,000 requests/day • <a href="https://www.abuseipdb.com/api" target="_blank" class="text-blue-600 hover:underline">Get API Key</a>
+                                        </p>
+                                    </div>
+
+                                    <div>
+                                        <label for="ipqualityscore_api_key" class="block text-sm font-medium text-gray-700 mb-2">
+                                            IPQualityScore API Key
+                                        </label>
+                                        <input type="text" name="ipqualityscore_api_key" id="ipqualityscore_api_key"
+                                               value="{{ old('ipqualityscore_api_key', env('IPQUALITYSCORE_API_KEY', '')) }}"
+                                               placeholder="Your IPQualityScore API Key"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            Free tier: 5,000 requests/month • <a href="https://www.ipqualityscore.com/create-account" target="_blank" class="text-blue-600 hover:underline">Get API Key</a>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                                    <p class="text-xs text-yellow-800">
+                                        <strong>💡 หมายเหตุ:</strong> ระบบจะใช้ Firehol Blocklists (ฟรี) โดยอัตโนมัติ API keys ข้างต้นเป็น optional เพื่อเพิ่มความแม่นยำ
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Update Button -->
+                            <div class="flex items-center justify-between">
+                                <form method="POST" action="{{ route('admin.security.threat-intelligence.update') }}" class="inline">
+                                    @csrf
+                                    <button type="submit" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+                                        🔄 อัปเดตข้อมูลทันที
+                                    </button>
+                                </form>
+
+                                <button type="submit" class="px-6 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition">
+                                    บันทึกการตั้งค่า
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Info Box -->
+                    <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-6">
+                        <h4 class="text-md font-semibold text-gray-900 mb-3">📚 แหล่งข้อมูล Threat Intelligence</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <h5 class="font-semibold text-blue-900 mb-2">🆓 Firehol Blocklists</h5>
+                                <ul class="text-blue-800 space-y-1 text-xs">
+                                    <li>• ฟรี ไม่ต้อง API Key</li>
+                                    <li>• อัปเดตทุกวันเวลา 03:00</li>
+                                    <li>• บล็อกลิสต์ทั่วโลก</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h5 class="font-semibold text-blue-900 mb-2">🔍 AbuseIPDB</h5>
+                                <ul class="text-blue-800 space-y-1 text-xs">
+                                    <li>• Free: 1,000 req/day</li>
+                                    <li>• IP abuse reports</li>
+                                    <li>• Community-driven</li>
+                                </ul>
+                            </div>
+
+                            <div>
+                                <h5 class="font-semibold text-blue-900 mb-2">🛡️ IPQualityScore</h5>
+                                <ul class="text-blue-800 space-y-1 text-xs">
+                                    <li>• Free: 5,000 req/month</li>
+                                    <li>• VPN/Proxy detection</li>
+                                    <li>• Fraud scoring</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

@@ -72,6 +72,12 @@ Route::prefix('security')->name('security.')->group(function () {
     Route::delete('/ip/{id}', [SecurityController::class, 'unblockIp'])->name('ip.unblock');
     Route::get('/export/logs', [SecurityController::class, 'exportLogs'])->name('export.logs');
     Route::get('/export/analytics', [SecurityController::class, 'exportAnalytics'])->name('export.analytics');
+
+    // Threat Intelligence
+    Route::get('/threat-intelligence', [SecurityController::class, 'threatIntelligence'])->name('threat-intelligence');
+    Route::post('/threat-intelligence/update', [SecurityController::class, 'updateThreatIntelligence'])->name('threat-intelligence.update');
+    Route::post('/threat-intelligence/check', [SecurityController::class, 'checkIpThreat'])->name('threat-intelligence.check');
+    Route::put('/threat-intelligence/settings', [SecurityController::class, 'updateThreatSettings'])->name('threat-intelligence.settings');
 });
 
 // Header Editor
