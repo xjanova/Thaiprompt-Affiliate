@@ -123,12 +123,12 @@
                             <td class="px-6 py-4 text-sm text-gray-500">
                                 @if($log->metadata)
                                     <button type="button"
-                                            @click="$dispatch('open-modal', { data: @js($log->metadata) })"
-                                            class="text-indigo-600 hover:text-indigo-900">
+                                            onclick="showMetadata(@js($log->metadata))"
+                                            class="text-indigo-600 hover:text-indigo-900 underline">
                                         ดูรายละเอียด
                                     </button>
                                 @else
-                                    -
+                                    <span class="text-gray-400">-</span>
                                 @endif
                             </td>
                         </tr>
@@ -220,29 +220,25 @@
 </div>
 
 <!-- Modal for metadata -->
-<div x-data="{ showModal: false, modalData: {} }"
-     @open-modal.window="showModal = true; modalData = $event.detail.data"
-     @close-modal.window="showModal = false"
-     x-show="showModal"
-     x-cloak
-     class="fixed inset-0 z-50 overflow-y-auto"
-     style="display: none;">
+<div id="metadataModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="showModal = false"></div>
+        <!-- Background overlay -->
+        <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick="closeMetadataModal()"></div>
 
+        <!-- Modal panel -->
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
             <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div class="sm:flex sm:items-start">
                     <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
-                        <h3 class="text-lg font-medium text-gray-900 mb-4">รายละเอียด</h3>
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">รายละเอียด Metadata</h3>
                         <div class="mt-2">
-                            <pre class="bg-gray-100 p-4 rounded text-sm overflow-auto" x-text="JSON.stringify(modalData, null, 2)"></pre>
+                            <pre id="metadataContent" class="bg-gray-100 p-4 rounded text-sm overflow-auto max-h-96 text-left"></pre>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button type="button" @click="showModal = false"
+                <button type="button" onclick="closeMetadataModal()"
                         class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:w-auto sm:text-sm">
                     ปิด
                 </button>
@@ -250,4 +246,31 @@
         </div>
     </div>
 </div>
+
+<script>
+function showMetadata(data) {
+    const modal = document.getElementById('metadataModal');
+    const content = document.getElementById('metadataContent');
+
+    if (data && typeof data === 'object') {
+        content.textContent = JSON.stringify(data, null, 2);
+    } else {
+        content.textContent = 'ไม่มีข้อมูล';
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeMetadataModal() {
+    const modal = document.getElementById('metadataModal');
+    modal.classList.add('hidden');
+}
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeMetadataModal();
+    }
+});
+</script>
 @endsection
