@@ -71,12 +71,12 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">กรองข้อมูล</h3>
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">กรองข้อมูล</h3>
         <form method="GET" action="{{ route('admin.withdrawals.index') }}" class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">สถานะ</label>
-                <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สถานะ</label>
+                <select name="status" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500">
                     <option value="">ทั้งหมด</option>
                     <option value="pending" {{ $filters['status'] == 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
                     <option value="processing" {{ $filters['status'] == 'processing' ? 'selected' : '' }}>กำลังดำเนินการ</option>
@@ -87,18 +87,18 @@
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">วันที่เริ่มต้น</label>
-                <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วันที่เริ่มต้น</label>
+                <input type="date" name="date_from" value="{{ $filters['date_from'] }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">วันที่สิ้นสุด</label>
-                <input type="date" name="date_to" value="{{ $filters['date_to'] }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">วันที่สิ้นสุด</label>
+                <input type="date" name="date_to" value="{{ $filters['date_to'] }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500">
             </div>
 
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">ช่องทางรับเงิน</label>
-                <select name="payment_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ช่องทางรับเงิน</label>
+                <select name="payment_type" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500">
                     <option value="">ทั้งหมด</option>
                     <option value="promptpay" {{ $filters['payment_type'] == 'promptpay' ? 'selected' : '' }}>PromptPay</option>
                     <option value="bank_transfer" {{ $filters['payment_type'] == 'bank_transfer' ? 'selected' : '' }}>โอนธนาคาร</option>
@@ -116,40 +116,40 @@
     </div>
 
     <!-- Withdrawal Requests Table -->
-    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+                <thead class="bg-gray-50 dark:bg-slate-700">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสคำขอ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ผู้ขอถอน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ช่องทาง</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การจัดการ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">รหัสคำขอ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ผู้ขอถอน</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">จำนวน</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ช่องทาง</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">วันที่</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">การจัดการ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                     @forelse($withdrawals as $withdrawal)
-                    <tr class="hover:bg-gray-50 transition">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-700 transition">
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-sm font-bold text-gray-900">{{ $withdrawal->request_id }}</span>
+                            <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $withdrawal->request_id }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div>
-                                <div class="text-sm font-medium text-gray-900">{{ $withdrawal->user->name }}</div>
-                                <div class="text-xs text-gray-500">{{ $withdrawal->user->email }}</div>
+                                <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $withdrawal->user->name }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $withdrawal->user->email }}</div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="text-sm">
                                 <div class="font-bold text-indigo-600">{{ number_format($withdrawal->amount, 2) }} THB</div>
-                                <div class="text-xs text-gray-500">สุทธิ: {{ number_format($withdrawal->net_amount, 2) }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">สุทธิ: {{ number_format($withdrawal->net_amount, 2) }}</div>
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-sm text-gray-900">
+                            <span class="text-sm text-gray-900 dark:text-white">
                                 @if($withdrawal->paymentMethod)
                                     {{ $withdrawal->paymentMethod->type_label }}
                                 @else
@@ -168,7 +168,7 @@
                                 {{ $withdrawal->status_label }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {{ $withdrawal->created_at->format('d/m/Y H:i') }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -180,7 +180,7 @@
                     @empty
                     <tr>
                         <td colspan="7" class="px-6 py-8 text-center">
-                            <div class="text-gray-400">
+                            <div class="text-gray-400 dark:text-gray-500">
                                 <div class="text-4xl mb-2">📭</div>
                                 <p>ไม่มีคำขอถอนเงิน</p>
                             </div>
@@ -192,7 +192,7 @@
         </div>
 
         @if($withdrawals->hasPages())
-        <div class="px-6 py-4 bg-gray-50">
+        <div class="px-6 py-4 bg-gray-50 dark:bg-slate-700">
             {{ $withdrawals->links() }}
         </div>
         @endif

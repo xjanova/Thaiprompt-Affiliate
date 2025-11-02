@@ -7,10 +7,10 @@
     <!-- Header with Breadcrumb -->
     <div class="flex items-center justify-between">
         <div>
-            <a href="{{ route('admin.affiliates.index') }}" class="text-indigo-600 hover:text-indigo-900 flex items-center gap-2 mb-2">
+            <a href="{{ route('admin.affiliates.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 flex items-center gap-2 mb-2">
                 ← กลับไปรายการ Affiliates
             </a>
-            <h1 class="text-3xl font-bold text-gray-900">รายละเอียด Affiliate</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">รายละเอียด Affiliate</h1>
         </div>
         <div class="flex gap-3">
             <a href="{{ route('admin.affiliates.tree', $affiliate) }}"
@@ -72,43 +72,43 @@
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Referrals -->
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-blue-500 hover:shadow-lg transition">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-l-4 border-blue-500 hover:shadow-lg transition">
             <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-medium text-gray-600">Total Referrals</h3>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Referrals</h3>
                 <div class="text-3xl">👥</div>
             </div>
             <p class="text-3xl font-bold text-blue-600">{{ number_format($affiliate->total_referrals) }}</p>
-            <p class="text-sm text-gray-500 mt-1">เครือข่ายทั้งหมด</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">เครือข่ายทั้งหมด</p>
         </div>
 
         <!-- Direct Referrals -->
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-purple-500 hover:shadow-lg transition">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-l-4 border-purple-500 hover:shadow-lg transition">
             <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-medium text-gray-600">Direct Referrals</h3>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Direct Referrals</h3>
                 <div class="text-3xl">🎯</div>
             </div>
             <p class="text-3xl font-bold text-purple-600">{{ $affiliate->children->count() }}</p>
-            <p class="text-sm text-gray-500 mt-1">ผู้ใช้ที่แนะนำโดยตรง</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ผู้ใช้ที่แนะนำโดยตรง</p>
         </div>
 
         <!-- Total Earnings -->
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-green-500 hover:shadow-lg transition">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-l-4 border-green-500 hover:shadow-lg transition">
             <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-medium text-gray-600">Total Earnings</h3>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</h3>
                 <div class="text-3xl">💰</div>
             </div>
             <p class="text-3xl font-bold text-green-600">฿{{ number_format($affiliate->total_earnings, 2) }}</p>
-            <p class="text-sm text-gray-500 mt-1">รายได้ทั้งหมด</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">รายได้ทั้งหมด</p>
         </div>
 
         <!-- Commissions Count -->
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-orange-500 hover:shadow-lg transition">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-l-4 border-orange-500 hover:shadow-lg transition">
             <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-medium text-gray-600">Commissions</h3>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Commissions</h3>
                 <div class="text-3xl">📊</div>
             </div>
             <p class="text-3xl font-bold text-orange-600">{{ $affiliate->commissions->count() }}</p>
-            <p class="text-sm text-gray-500 mt-1">จำนวนคอมมิชชั่น</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">จำนวนคอมมิชชั่น</p>
         </div>
     </div>
 
@@ -122,44 +122,44 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Paid Commissions -->
-        <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 hover:shadow-lg transition">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-medium text-gray-600">คอมมิชชั่นที่จ่ายแล้ว</h3>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">คอมมิชชั่นที่จ่ายแล้ว</h3>
                 <div class="text-2xl">✅</div>
             </div>
             <p class="text-2xl font-bold text-green-600">฿{{ number_format($totalPaid, 2) }}</p>
-            <p class="text-sm text-gray-500 mt-1">{{ $paidCommissions->count() }} รายการ</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $paidCommissions->count() }} รายการ</p>
         </div>
 
         <!-- Pending Commissions -->
-        <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 hover:shadow-lg transition">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-medium text-gray-600">คอมมิชชั่นรอจ่าย</h3>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">คอมมิชชั่นรอจ่าย</h3>
                 <div class="text-2xl">⏳</div>
             </div>
             <p class="text-2xl font-bold text-yellow-600">฿{{ number_format($totalPending, 2) }}</p>
-            <p class="text-sm text-gray-500 mt-1">{{ $pendingCommissions->count() }} รายการ</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $pendingCommissions->count() }} รายการ</p>
         </div>
 
         <!-- Network Performance -->
-        <div class="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 hover:shadow-lg transition">
             <div class="flex items-center justify-between mb-3">
-                <h3 class="text-sm font-medium text-gray-600">ประสิทธิภาพเครือข่าย</h3>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">ประสิทธิภาพเครือข่าย</h3>
                 <div class="text-2xl">📈</div>
             </div>
             @php
                 $avgPerReferral = $affiliate->total_referrals > 0 ? $affiliate->total_earnings / $affiliate->total_referrals : 0;
             @endphp
             <p class="text-2xl font-bold text-indigo-600">฿{{ number_format($avgPerReferral, 2) }}</p>
-            <p class="text-sm text-gray-500 mt-1">เฉลี่ยต่อ referral</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">เฉลี่ยต่อ referral</p>
         </div>
     </div>
 
     <!-- Information Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Affiliate Information -->
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span class="text-2xl">📋</span>
                 ข้อมูล Affiliate
             </h3>
@@ -205,7 +205,7 @@
 
                 <div class="border-b border-gray-100 pb-3">
                     <dt class="text-sm font-medium text-gray-600 mb-1">วันที่สมัคร</dt>
-                    <dd class="text-sm text-gray-900 font-medium">
+                    <dd class="text-sm text-gray-900 dark:text-white font-medium">
                         {{ $affiliate->created_at->format('d/m/Y H:i') }}
                         <span class="text-xs text-gray-500">({{ $affiliate->created_at->diffForHumans() }})</span>
                     </dd>
@@ -213,7 +213,7 @@
 
                 <div>
                     <dt class="text-sm font-medium text-gray-600 mb-1">อัพเดทล่าสุด</dt>
-                    <dd class="text-sm text-gray-900">
+                    <dd class="text-sm text-gray-900 dark:text-white">
                         {{ $affiliate->updated_at->format('d/m/Y H:i') }}
                         <span class="text-xs text-gray-500">({{ $affiliate->updated_at->diffForHumans() }})</span>
                     </dd>
@@ -222,15 +222,15 @@
         </div>
 
         <!-- User Information -->
-        <div class="bg-white rounded-xl shadow-md p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                 <span class="text-2xl">👤</span>
                 ข้อมูลผู้ใช้
             </h3>
             <dl class="space-y-4">
                 <div class="border-b border-gray-100 pb-3">
                     <dt class="text-sm font-medium text-gray-600 mb-1">ชื่อผู้ใช้</dt>
-                    <dd class="text-sm text-gray-900 font-medium">{{ $affiliate->user->name }}</dd>
+                    <dd class="text-sm text-gray-900 dark:text-white font-medium">{{ $affiliate->user->name }}</dd>
                 </div>
 
                 <div class="border-b border-gray-100 pb-3">
@@ -253,7 +253,7 @@
 
                 <div class="border-b border-gray-100 pb-3">
                     <dt class="text-sm font-medium text-gray-600 mb-1">สร้างบัญชีเมื่อ</dt>
-                    <dd class="text-sm text-gray-900 font-medium">
+                    <dd class="text-sm text-gray-900 dark:text-white font-medium">
                         {{ $affiliate->user->created_at->format('d/m/Y H:i') }}
                         <span class="text-xs text-gray-500">({{ $affiliate->user->created_at->diffForHumans() }})</span>
                     </dd>
@@ -274,8 +274,8 @@
     </div>
 
     <!-- Commission History -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span class="text-2xl">💵</span>
             ประวัติคอมมิชชั่น
             @if($affiliate->commissions->count() > 0)
@@ -368,8 +368,8 @@
 
     <!-- Direct Referrals -->
     @if($affiliate->children->count() > 0)
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span class="text-2xl">👨‍👩‍👧‍👦</span>
             ผู้ใช้ที่แนะนำโดยตรง (Direct Referrals)
             <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
@@ -434,8 +434,8 @@
         </div>
     </div>
     @else
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span class="text-2xl">👨‍👩‍👧‍👦</span>
             ผู้ใช้ที่แนะนำโดยตรง (Direct Referrals)
         </h3>
