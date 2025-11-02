@@ -244,12 +244,87 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผู้ใช้</span>
                 </a>
 
-                <!-- Affiliates -->
-                <a href="{{ route('admin.affiliates.index') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌐</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">Affiliates</span>
-                </a>
+                <!-- Marketing System Dropdown -->
+                <div x-data="{ marketingMenuOpen: false }" class="relative mb-1">
+                    @php
+                        $marketingActive = request()->routeIs('admin.affiliates.*') ||
+                                          request()->routeIs('admin.retention.*') ||
+                                          request()->routeIs('admin.ranks.*');
+                    @endphp
+
+                    <!-- Main Marketing Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-pink-600 hover:to-rose-600 hover:text-white rounded-lg transition-all duration-200 group {{ $marketingActive ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg' : '' }}"
+                       @click="marketingMenuOpen = !marketingMenuOpen">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📈</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            ระบบการตลาด
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': marketingMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="marketingMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <!-- Affiliates Management -->
+                        <a href="{{ route('admin.affiliates.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.affiliates.*') && !request()->routeIs('admin.affiliates.tree') ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : '' }}">
+                            <span class="mr-2">🌐</span>
+                            <span>Affiliates</span>
+                        </a>
+
+                        <a href="{{ route('admin.affiliates.tree') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.affiliates.tree') ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : '' }}">
+                            <span class="mr-2">🌳</span>
+                            <span>โครงสร้างทีม</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Membership Retention -->
+                        <a href="{{ route('admin.retention.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.retention.*') ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : '' }}">
+                            <span class="mr-2">💖</span>
+                            <span>ระบบรักษายอด</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Rank Management -->
+                        <a href="{{ route('admin.ranks.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ranks.index') || request()->routeIs('admin.ranks.edit') || request()->routeIs('admin.ranks.create') ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : '' }}">
+                            <span class="mr-2">🏆</span>
+                            <span>จัดการระดับ Rank</span>
+                        </a>
+
+                        <a href="{{ route('admin.ranks.promotions.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-pink-500 hover:to-rose-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ranks.promotions.*') ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white' : '' }}">
+                            <span class="mr-2">⬆️</span>
+                            <span>การเลื่อนระดับ</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Marketing Settings -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">การตั้งค่า</span>
+                        </div>
+
+                        <!-- Affiliate Settings would go here if you have a dedicated settings page -->
+                        <!-- For now, these can be added later based on your requirements -->
+
+                    </div>
+                </div>
 
                 <!-- Commissions -->
                 <a href="{{ route('admin.commissions.index') }}"
@@ -348,16 +423,6 @@
                         </a>
                     </div>
                 </div>
-
-                <!-- Retention System (Marketing Section) -->
-                <a href="{{ route('admin.retention.index') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-rose-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.retention.*') ? 'bg-gradient-to-r from-rose-600 to-pink-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💖</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
-                        ระบบรักษายอด
-                        <span class="block text-[10px] opacity-75 -mt-0.5">Membership Retention</span>
-                    </span>
-                </a>
 
                 <!-- Divider -->
                 <div class="border-t border-gray-700/50 my-3"></div>
