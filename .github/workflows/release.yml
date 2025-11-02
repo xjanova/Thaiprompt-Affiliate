@@ -42,9 +42,11 @@ jobs:
         run: |
           # Get the latest tag
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          HAS_GIT_TAG="true"
 
           # If no tag exists, use VERSION file or package.json
           if [ -z "$LATEST_TAG" ]; then
+            HAS_GIT_TAG="false"
             if [ -f "VERSION" ]; then
               VERSION_FROM_FILE=$(cat VERSION | tr -d '\n\r' | sed 's/^/v/')
               LATEST_TAG="$VERSION_FROM_FILE"
@@ -62,13 +64,22 @@ jobs:
           fi
 
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "has_git_tag=$HAS_GIT_TAG" >> $GITHUB_OUTPUT
 
       - name: Check if version bump needed
         id: check_bump
         run: |
           # Count commits since last tag
-          COMMIT_COUNT=$(git rev-list ${{ steps.previoustag.outputs.tag }}..HEAD --count)
-          echo "Commits since last tag: $COMMIT_COUNT"
+          if [ "${{ steps.previoustag.outputs.has_git_tag }}" == "true" ]; then
+            # Has real git tag, count commits since that tag
+            COMMIT_COUNT=$(git rev-list ${{ steps.previoustag.outputs.tag }}..HEAD --count)
+            echo "Commits since git tag ${{ steps.previoustag.outputs.tag }}: $COMMIT_COUNT"
+          else
+            # No git tag, use VERSION file - always bump version
+            echo "No git tags found. Using VERSION file: ${{ steps.previoustag.outputs.tag }}"
+            echo "Will create first git tag and bump version."
+            COMMIT_COUNT=1  # Force bump
+          fi
 
           if [ "$COMMIT_COUNT" -eq "0" ]; then
             echo "No new commits since last tag. Skipping version bump."
@@ -83,7 +94,14 @@ jobs:
         if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           # Get commits since last tag
-          COMMITS=$(git log ${{ steps.previoustag.outputs.tag }}..HEAD --pretty=format:"%s")
+          if [ "${{ steps.previoustag.outputs.has_git_tag }}" == "true" ]; then
+            # Has git tag, get commits since that tag
+            COMMITS=$(git log ${{ steps.previoustag.outputs.tag }}..HEAD --pretty=format:"%s")
+          else
+            # No git tag, get recent commits (last 20)
+            COMMITS=$(git log -20 --pretty=format:"%s")
+          fi
+
           echo "📝 Commits since last tag:"
           echo "$COMMITS"
           echo ""
@@ -148,6 +166,7 @@ jobs:
           PREVIOUS_TAG="${{ steps.bump.outputs.previous_tag }}"
           NEW_TAG="${{ steps.bump.outputs.new_tag }}"
           RELEASE_DATE=$(date +%Y-%m-%d)
+          HAS_GIT_TAG="${{ steps.previoustag.outputs.has_git_tag }}"
 
           # Generate changelog for GitHub release
           echo "## 📋 What's Changed in ${NEW_TAG}" > CHANGELOG.txt
@@ -159,17 +178,29 @@ jobs:
 
           # Group commits by type
           echo "### ✨ Features" >> CHANGELOG.txt
-          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" >> CHANGELOG.txt || echo "- ไม่มีฟีเจอร์ใหม่" >> CHANGELOG.txt
+          if [ "$HAS_GIT_TAG" == "true" ]; then
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" >> CHANGELOG.txt 2>/dev/null || echo "- ไม่มีฟีเจอร์ใหม่" >> CHANGELOG.txt
+          else
+            git log -20 --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" >> CHANGELOG.txt 2>/dev/null || echo "- ไม่มีฟีเจอร์ใหม่" >> CHANGELOG.txt
+          fi
           echo "" >> CHANGELOG.txt
           echo "" >> CHANGELOG.txt
 
           echo "### 🐛 Bug Fixes" >> CHANGELOG.txt
-          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> CHANGELOG.txt || echo "- ไม่มีการแก้ไขบัก" >> CHANGELOG.txt
+          if [ "$HAS_GIT_TAG" == "true" ]; then
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> CHANGELOG.txt 2>/dev/null || echo "- ไม่มีการแก้ไขบัก" >> CHANGELOG.txt
+          else
+            git log -20 --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> CHANGELOG.txt 2>/dev/null || echo "- ไม่มีการแก้ไขบัก" >> CHANGELOG.txt
+          fi
           echo "" >> CHANGELOG.txt
           echo "" >> CHANGELOG.txt
 
           echo "### 🔧 Other Changes" >> CHANGELOG.txt
-          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> CHANGELOG.txt || echo "- ไม่มีการเปลี่ยนแปลงอื่นๆ" >> CHANGELOG.txt
+          if [ "$HAS_GIT_TAG" == "true" ]; then
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> CHANGELOG.txt 2>/dev/null || echo "- ไม่มีการเปลี่ยนแปลงอื่นๆ" >> CHANGELOG.txt
+          else
+            git log -20 --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> CHANGELOG.txt 2>/dev/null || echo "- ไม่มีการเปลี่ยนแปลงอื่นๆ" >> CHANGELOG.txt
+          fi
           echo "" >> CHANGELOG.txt
 
           # Output for release
@@ -181,6 +212,7 @@ jobs:
           PREVIOUS_TAG="${{ steps.bump.outputs.previous_tag }}"
           NEW_TAG="${{ steps.bump.outputs.new_tag }}"
           RELEASE_DATE=$(date +%Y-%m-%d)
+          HAS_GIT_TAG="${{ steps.previoustag.outputs.has_git_tag }}"
 
           # Create CHANGELOG.md if it doesn't exist
           if [ ! -f CHANGELOG.md ]; then
@@ -197,15 +229,27 @@ jobs:
 
           # Group commits by type
           echo "### ✨ Features" >> NEW_ENTRY.txt
-          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" >> NEW_ENTRY.txt || echo "- ไม่มีฟีเจอร์ใหม่" >> NEW_ENTRY.txt
+          if [ "$HAS_GIT_TAG" == "true" ]; then
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" >> NEW_ENTRY.txt 2>/dev/null || echo "- ไม่มีฟีเจอร์ใหม่" >> NEW_ENTRY.txt
+          else
+            git log -20 --pretty=format:"- %s (%h)" --grep="^feat" --grep="^feature" >> NEW_ENTRY.txt 2>/dev/null || echo "- ไม่มีฟีเจอร์ใหม่" >> NEW_ENTRY.txt
+          fi
           echo "" >> NEW_ENTRY.txt
 
           echo "### 🐛 Bug Fixes" >> NEW_ENTRY.txt
-          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> NEW_ENTRY.txt || echo "- ไม่มีการแก้ไขบัก" >> NEW_ENTRY.txt
+          if [ "$HAS_GIT_TAG" == "true" ]; then
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> NEW_ENTRY.txt 2>/dev/null || echo "- ไม่มีการแก้ไขบัก" >> NEW_ENTRY.txt
+          else
+            git log -20 --pretty=format:"- %s (%h)" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> NEW_ENTRY.txt 2>/dev/null || echo "- ไม่มีการแก้ไขบัก" >> NEW_ENTRY.txt
+          fi
           echo "" >> NEW_ENTRY.txt
 
           echo "### 🔧 Other Changes" >> NEW_ENTRY.txt
-          git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> NEW_ENTRY.txt || echo "- ไม่มีการเปลี่ยนแปลงอื่นๆ" >> NEW_ENTRY.txt
+          if [ "$HAS_GIT_TAG" == "true" ]; then
+            git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> NEW_ENTRY.txt 2>/dev/null || echo "- ไม่มีการเปลี่ยนแปลงอื่นๆ" >> NEW_ENTRY.txt
+          else
+            git log -20 --pretty=format:"- %s (%h)" --invert-grep --grep="^feat" --grep="^feature" --grep="^fix" --grep="^bugfix" --grep="^hotfix" >> NEW_ENTRY.txt 2>/dev/null || echo "- ไม่มีการเปลี่ยนแปลงอื่นๆ" >> NEW_ENTRY.txt
+          fi
           echo "" >> NEW_ENTRY.txt
 
           # Insert new entry after the header (after line 3)
