@@ -85,11 +85,12 @@ class AffiliateController extends Controller
      */
     private function getRecursiveRelations($depth = 10)
     {
-        $relations = ['user'];
+        $relations = ['user', 'rank'];
         $prefix = 'children';
 
         for ($i = 0; $i < $depth; $i++) {
             $relations[] = $prefix . '.user';
+            $relations[] = $prefix . '.rank';
             $prefix .= '.children';
         }
 
