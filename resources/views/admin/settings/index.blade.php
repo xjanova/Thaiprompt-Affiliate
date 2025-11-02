@@ -453,84 +453,213 @@
 
             <!-- Page Loader Settings Tab -->
             <div x-show="activeTab === 'pageloader'" style="display: none;">
-                <form action="{{ route('admin.settings.update') }}" method="POST" class="space-y-6">
-                    @csrf
-                    @method('PUT')
+                <div x-data="{
+                    loaderEnabled: {{ \App\Models\Setting::get('page_loader_enabled', true) ? 'true' : 'false' }},
+                    loaderType: '{{ \App\Models\Setting::get('page_loader_type', 'spinner') }}',
+                    loaderColor: '{{ \App\Models\Setting::get('page_loader_color', '#6366f1') }}',
+                    loaderColorSecondary: '{{ \App\Models\Setting::get('page_loader_color_secondary', '#8b5cf6') }}',
+                    gifPreview: null,
+                    handleGifUpload(event) {
+                        const file = event.target.files[0];
+                        if (file && file.type === 'image/gif') {
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                this.gifPreview = e.target.result;
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    }
+                }">
+                    <form action="{{ route('admin.settings.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+                        @csrf
+                        @method('PUT')
 
-                    <div class="mb-8">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-4">การตั้งค่าอนิเมชั่นโหลดหน้า</h3>
-                        <p class="text-gray-600 mb-6">กำหนดรูปแบบและการแสดงผลของอนิเมชั่นโหลดหน้า</p>
+                        <div class="mb-8">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">การตั้งค่าอนิเมชั่นโหลดหน้า</h3>
+                            <p class="text-gray-600 mb-6">กำหนดรูปแบบและการแสดงผลของอนิเมชั่นโหลดหน้าแบบมืออาชีพ</p>
 
-                        <!-- Enable/Disable -->
-                        <div class="mb-6 p-6 bg-gray-50 rounded-lg">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="checkbox" name="page_loader_enabled" value="1"
-                                       {{ \App\Models\Setting::get('page_loader_enabled', true) ? 'checked' : '' }}
-                                       class="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500 transition">
-                                <span class="ml-3 text-gray-700 font-medium">เปิดใช้งานอนิเมชั่นโหลดหน้า</span>
-                            </label>
-                            <p class="ml-8 mt-2 text-sm text-gray-500">แสดงอนิเมชั่นขณะโหลดหน้าเว็บ</p>
-                        </div>
-
-                        <!-- Loader Type -->
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-700 mb-3">รูปแบบอนิเมชั่น</label>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                @php
-                                    $currentType = \App\Models\Setting::get('page_loader_type', 'spinner');
-                                    $types = [
-                                        'spinner' => ['name' => 'วงล้อหมุน', 'icon' => '🔄'],
-                                        'dots' => ['name' => 'จุดกระโดด', 'icon' => '⚫'],
-                                        'pulse' => ['name' => 'พัลส์', 'icon' => '💫'],
-                                        'progress' => ['name' => 'แถบความคืบหน้า', 'icon' => '📊']
-                                    ];
-                                @endphp
-
-                                @foreach($types as $type => $info)
-                                <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all
-                                              {{ $currentType === $type ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300' }}">
-                                    <input type="radio" name="page_loader_type" value="{{ $type }}"
-                                           {{ $currentType === $type ? 'checked' : '' }}
-                                           class="form-radio h-5 w-5 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-3 flex items-center">
-                                        <span class="text-2xl mr-2">{{ $info['icon'] }}</span>
-                                        <span class="font-medium text-gray-700">{{ $info['name'] }}</span>
-                                    </span>
+                            <!-- Enable/Disable -->
+                            <div class="mb-6 p-6 bg-gray-50 rounded-lg">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="page_loader_enabled" value="1" x-model="loaderEnabled"
+                                           class="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500 transition">
+                                    <span class="ml-3 text-gray-700 font-medium">เปิดใช้งานอนิเมชั่นโหลดหน้า</span>
                                 </label>
-                                @endforeach
+                                <p class="ml-8 mt-2 text-sm text-gray-500">แสดงอนิเมชั่นขณะโหลดหน้าเว็บ</p>
+                            </div>
+
+                            <!-- Loader Type -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-3">รูปแบบอนิเมชั่น</label>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    @php
+                                        $types = [
+                                            'spinner' => ['name' => 'วงล้อหมุน', 'icon' => '🔄'],
+                                            'gradient_spinner' => ['name' => 'วงล้อ Gradient', 'icon' => '🌈'],
+                                            'dots' => ['name' => 'จุดกระโดด', 'icon' => '⚫'],
+                                            'pulse' => ['name' => 'พัลส์', 'icon' => '💫'],
+                                            'progress' => ['name' => 'แถบความคืบหน้า', 'icon' => '📊'],
+                                            'wave' => ['name' => 'คลื่น', 'icon' => '〰️'],
+                                            'bouncing_balls' => ['name' => 'ลูกบอลกระเด้ง', 'icon' => '⚽'],
+                                            'custom_gif' => ['name' => 'GIF ที่กำหนดเอง', 'icon' => '🎬']
+                                        ];
+                                    @endphp
+
+                                    @foreach($types as $type => $info)
+                                    <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
+                                           :class="loaderType === '{{ $type }}' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'">
+                                        <input type="radio" name="page_loader_type" value="{{ $type }}" x-model="loaderType"
+                                               class="form-radio h-5 w-5 text-indigo-600 focus:ring-indigo-500">
+                                        <span class="ml-3 flex items-center">
+                                            <span class="text-2xl mr-2">{{ $info['icon'] }}</span>
+                                            <span class="font-medium text-gray-700">{{ $info['name'] }}</span>
+                                        </span>
+                                    </label>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            <!-- Color Settings -->
+                            <div class="mb-6 p-6 bg-gray-50 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-3">การตั้งค่าสี</label>
+
+                                <!-- Primary Color -->
+                                <div class="mb-4">
+                                    <label class="block text-sm text-gray-600 mb-2">สีหลัก</label>
+                                    <div class="flex items-center space-x-4">
+                                        <input type="color" name="page_loader_color" x-model="loaderColor"
+                                               class="h-12 w-24 rounded cursor-pointer border-2 border-gray-300">
+                                        <input type="text" x-model="loaderColor"
+                                               placeholder="#6366f1"
+                                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                </div>
+
+                                <!-- Secondary Color (for gradients) -->
+                                <div x-show="['gradient_spinner', 'wave', 'progress'].includes(loaderType)" x-transition>
+                                    <label class="block text-sm text-gray-600 mb-2">สีรอง (สำหรับ Gradient)</label>
+                                    <div class="flex items-center space-x-4">
+                                        <input type="color" name="page_loader_color_secondary" x-model="loaderColorSecondary"
+                                               class="h-12 w-24 rounded cursor-pointer border-2 border-gray-300">
+                                        <input type="text" x-model="loaderColorSecondary"
+                                               placeholder="#8b5cf6"
+                                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    </div>
+                                    <p class="mt-2 text-xs text-gray-500">สีนี้จะถูกใช้เป็นสีที่สองใน gradient effect</p>
+                                </div>
+                            </div>
+
+                            <!-- GIF Upload (shown only when custom_gif is selected) -->
+                            <div x-show="loaderType === 'custom_gif'" x-transition class="mb-6 p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
+                                <label class="block text-sm font-medium text-gray-700 mb-3">อัพโหลด GIF</label>
+                                <input type="file" name="page_loader_gif" accept="image/gif" @change="handleGifUpload"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <p class="mt-2 text-xs text-gray-500">รองรับไฟล์ GIF เท่านั้น (สูงสุด 2MB)</p>
+
+                                @php
+                                    $existingGif = \App\Models\Setting::get('page_loader_gif');
+                                @endphp
+                                @if($existingGif)
+                                <div class="mt-4">
+                                    <p class="text-sm font-medium text-gray-700 mb-2">GIF ปัจจุบัน:</p>
+                                    <img src="{{ asset($existingGif) }}" alt="Current GIF" class="max-w-xs rounded-lg border-2 border-gray-300">
+                                </div>
+                                @endif
+
+                                <!-- GIF Preview -->
+                                <div x-show="gifPreview" x-transition class="mt-4">
+                                    <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่าง GIF ใหม่:</p>
+                                    <img :src="gifPreview" alt="Preview" class="max-w-xs rounded-lg border-2 border-purple-300">
+                                </div>
+                            </div>
+
+                            <!-- Live Preview Section -->
+                            <div class="mb-6 p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg border-2 border-gray-700">
+                                <h4 class="text-sm font-medium text-white mb-4 flex items-center">
+                                    <span class="mr-2">👁️</span>
+                                    ตัวอย่างแบบ Real-time
+                                </h4>
+                                <div class="flex items-center justify-center h-48 bg-white dark:bg-gray-900 rounded-lg relative overflow-hidden">
+                                    <!-- Spinner -->
+                                    <div x-show="loaderType === 'spinner'" class="relative">
+                                        <div class="w-20 h-20 border-4 border-gray-200 rounded-full animate-spin"
+                                             :style="`border-top-color: ${loaderColor}`">
+                                        </div>
+                                    </div>
+
+                                    <!-- Gradient Spinner -->
+                                    <div x-show="loaderType === 'gradient_spinner'" class="relative">
+                                        <div class="w-20 h-20 rounded-full animate-spin"
+                                             :style="`background: conic-gradient(from 0deg, ${loaderColor}, ${loaderColorSecondary}, ${loaderColor}); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px))`">
+                                        </div>
+                                    </div>
+
+                                    <!-- Dots -->
+                                    <div x-show="loaderType === 'dots'" class="flex space-x-2">
+                                        <div class="w-4 h-4 rounded-full animate-bounce" :style="`background-color: ${loaderColor}`"></div>
+                                        <div class="w-4 h-4 rounded-full animate-bounce" :style="`background-color: ${loaderColor}; animation-delay: 0.2s`"></div>
+                                        <div class="w-4 h-4 rounded-full animate-bounce" :style="`background-color: ${loaderColor}; animation-delay: 0.4s`"></div>
+                                    </div>
+
+                                    <!-- Pulse -->
+                                    <div x-show="loaderType === 'pulse'" class="relative">
+                                        <div class="w-20 h-20 rounded-full animate-ping absolute" :style="`background-color: ${loaderColor}; opacity: 0.3`"></div>
+                                        <div class="w-20 h-20 rounded-full animate-pulse" :style="`background-color: ${loaderColor}`"></div>
+                                    </div>
+
+                                    <!-- Progress Bar -->
+                                    <div x-show="loaderType === 'progress'" class="w-64">
+                                        <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
+                                            <div class="h-full rounded-full animate-pulse" :style="`background: linear-gradient(90deg, ${loaderColor}, ${loaderColorSecondary}); width: 70%`"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Wave -->
+                                    <div x-show="loaderType === 'wave'" class="flex items-end space-x-1">
+                                        <div class="w-2 h-8 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0s`"></div>
+                                        <div class="w-2 h-12 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0.1s`"></div>
+                                        <div class="w-2 h-16 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0.2s`"></div>
+                                        <div class="w-2 h-12 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0.3s`"></div>
+                                        <div class="w-2 h-8 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0.4s`"></div>
+                                    </div>
+
+                                    <!-- Bouncing Balls -->
+                                    <div x-show="loaderType === 'bouncing_balls'" class="flex space-x-1">
+                                        <div class="w-5 h-5 rounded-full animate-bounce" :style="`background-color: ${loaderColor}`"></div>
+                                        <div class="w-5 h-5 rounded-full animate-bounce" :style="`background-color: ${loaderColor}; animation-delay: 0.1s; opacity: 0.8`"></div>
+                                        <div class="w-5 h-5 rounded-full animate-bounce" :style="`background-color: ${loaderColor}; animation-delay: 0.2s; opacity: 0.6`"></div>
+                                    </div>
+
+                                    <!-- Custom GIF -->
+                                    <div x-show="loaderType === 'custom_gif'" class="text-center">
+                                        <template x-if="gifPreview">
+                                            <img :src="gifPreview" alt="Custom GIF" class="max-h-32 rounded-lg">
+                                        </template>
+                                        <template x-if="!gifPreview">
+                                            @if($existingGif ?? false)
+                                            <img src="{{ asset($existingGif) }}" alt="Current GIF" class="max-h-32 rounded-lg">
+                                            @else
+                                            <p class="text-gray-500">กรุณาอัพโหลด GIF</p>
+                                            @endif
+                                        </template>
+                                    </div>
+
+                                    <!-- Disabled Overlay -->
+                                    <div x-show="!loaderEnabled" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                                        <p class="text-white font-semibold">ปิดใช้งาน</p>
+                                    </div>
+                                </div>
+                                <p class="mt-3 text-xs text-gray-400">ตัวอย่างจะเปลี่ยนแปลงแบบ real-time ตามการตั้งค่าของคุณ</p>
                             </div>
                         </div>
 
-                        <!-- Loader Color -->
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-gray-700 mb-3">สีอนิเมชั่น</label>
-                            <div class="flex items-center space-x-4">
-                                <input type="color" name="page_loader_color"
-                                       value="{{ \App\Models\Setting::get('page_loader_color', '#6366f1') }}"
-                                       class="h-12 w-24 rounded cursor-pointer">
-                                <input type="text" name="page_loader_color_hex"
-                                       value="{{ \App\Models\Setting::get('page_loader_color', '#6366f1') }}"
-                                       placeholder="#6366f1"
-                                       class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-                            <p class="mt-2 text-sm text-gray-500">เลือกสีที่ต้องการสำหรับอนิเมชั่นโหลดหน้า</p>
+                        <div class="flex justify-end mt-6">
+                            <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg">
+                                💾 บันทึกการตั้งค่า
+                            </button>
                         </div>
-
-                        <!-- Preview Section -->
-                        <div class="mb-6 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200">
-                            <h4 class="text-sm font-medium text-gray-700 mb-4">ตัวอย่างอนิเมชั่น</h4>
-                            <div class="flex items-center justify-center h-40 bg-white rounded-lg">
-                                <p class="text-gray-500">ตัวอย่างจะแสดงตามการตั้งค่าที่เลือก</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end mt-6">
-                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                            บันทึกการตั้งค่า
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>

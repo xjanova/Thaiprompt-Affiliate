@@ -1,8 +1,10 @@
 @php
     // Get loader settings from database
     $loaderEnabled = \App\Models\Setting::get('page_loader_enabled', true);
-    $loaderType = \App\Models\Setting::get('page_loader_type', 'spinner'); // spinner, dots, pulse, progress
-    $loaderColor = \App\Models\Setting::get('page_loader_color', '#6366f1'); // indigo-500
+    $loaderType = \App\Models\Setting::get('page_loader_type', 'spinner');
+    $loaderColor = \App\Models\Setting::get('page_loader_color', '#6366f1');
+    $loaderColorSecondary = \App\Models\Setting::get('page_loader_color_secondary', '#8b5cf6');
+    $loaderGif = \App\Models\Setting::get('page_loader_gif');
 @endphp
 
 @if($loaderEnabled)
@@ -21,14 +23,24 @@
             @endif
         </div>
 
+    @elseif($loaderType === 'gradient_spinner')
+        <!-- Gradient Spinner Loader -->
+        <div class="relative w-20 h-20">
+            <div class="absolute inset-0 rounded-full animate-spin"
+                 style="background: conic-gradient(from 0deg, {{ $loaderColor }}, {{ $loaderColorSecondary }}, {{ $loaderColor }});
+                        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));
+                        mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px));">
+            </div>
+        </div>
+
     @elseif($loaderType === 'dots')
         <!-- Dots Loader -->
         <div class="flex space-x-2">
-            <div class="w-4 h-4 rounded-full animate-bounce"
+            <div class="w-4 h-4 rounded-full dot-bounce"
                  style="background-color: {{ $loaderColor }}; animation-delay: 0s"></div>
-            <div class="w-4 h-4 rounded-full animate-bounce"
+            <div class="w-4 h-4 rounded-full dot-bounce"
                  style="background-color: {{ $loaderColor }}; animation-delay: 0.2s"></div>
-            <div class="w-4 h-4 rounded-full animate-bounce"
+            <div class="w-4 h-4 rounded-full dot-bounce"
                  style="background-color: {{ $loaderColor }}; animation-delay: 0.4s"></div>
         </div>
 
@@ -42,12 +54,44 @@
         </div>
 
     @elseif($loaderType === 'progress')
-        <!-- Progress Bar Loader -->
+        <!-- Progress Bar Loader with Gradient -->
         <div class="w-64">
-            <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                 <div id="progress-bar" class="h-full rounded-full transition-all duration-300"
-                     style="background-color: {{ $loaderColor }}; width: 0%"></div>
+                     style="background: linear-gradient(90deg, {{ $loaderColor }}, {{ $loaderColorSecondary }}); width: 0%"></div>
             </div>
+        </div>
+
+    @elseif($loaderType === 'wave')
+        <!-- Wave Loader -->
+        <div class="flex items-end space-x-1">
+            <div class="w-2 h-8 rounded-full wave-bar"
+                 style="background: linear-gradient(180deg, {{ $loaderColor }}, {{ $loaderColorSecondary }}); animation-delay: 0s"></div>
+            <div class="w-2 h-12 rounded-full wave-bar"
+                 style="background: linear-gradient(180deg, {{ $loaderColor }}, {{ $loaderColorSecondary }}); animation-delay: 0.1s"></div>
+            <div class="w-2 h-16 rounded-full wave-bar"
+                 style="background: linear-gradient(180deg, {{ $loaderColor }}, {{ $loaderColorSecondary }}); animation-delay: 0.2s"></div>
+            <div class="w-2 h-12 rounded-full wave-bar"
+                 style="background: linear-gradient(180deg, {{ $loaderColor }}, {{ $loaderColorSecondary }}); animation-delay: 0.3s"></div>
+            <div class="w-2 h-8 rounded-full wave-bar"
+                 style="background: linear-gradient(180deg, {{ $loaderColor }}, {{ $loaderColorSecondary }}); animation-delay: 0.4s"></div>
+        </div>
+
+    @elseif($loaderType === 'bouncing_balls')
+        <!-- Bouncing Balls Loader -->
+        <div class="flex space-x-2">
+            <div class="w-5 h-5 rounded-full animate-bounce"
+                 style="background-color: {{ $loaderColor }}"></div>
+            <div class="w-5 h-5 rounded-full animate-bounce"
+                 style="background-color: {{ $loaderColor }}; animation-delay: 0.1s; opacity: 0.8"></div>
+            <div class="w-5 h-5 rounded-full animate-bounce"
+                 style="background-color: {{ $loaderColor }}; animation-delay: 0.2s; opacity: 0.6"></div>
+        </div>
+
+    @elseif($loaderType === 'custom_gif' && $loaderGif)
+        <!-- Custom GIF Loader -->
+        <div class="flex items-center justify-center">
+            <img src="{{ asset($loaderGif) }}" alt="Loading..." class="max-w-xs max-h-64 object-contain">
         </div>
     @endif
 </div>
@@ -98,8 +142,8 @@
 </script>
 
 <style>
-    /* Custom animation for smoother bounce */
-    @keyframes bounce {
+    /* Custom animations */
+    @keyframes dot-bounce {
         0%, 80%, 100% {
             transform: scale(0);
         }
@@ -108,18 +152,31 @@
         }
     }
 
-    #page-loader > div > div:nth-child(1) {
-        animation: bounce 1.4s infinite ease-in-out both;
+    .dot-bounce {
+        animation: dot-bounce 1.4s infinite ease-in-out both;
     }
 
-    #page-loader > div > div:nth-child(2) {
-        animation: bounce 1.4s infinite ease-in-out both;
-        animation-delay: 0.2s;
+    @keyframes wave-animation {
+        0%, 100% {
+            transform: scaleY(0.5);
+        }
+        50% {
+            transform: scaleY(1);
+        }
     }
 
-    #page-loader > div > div:nth-child(3) {
-        animation: bounce 1.4s infinite ease-in-out both;
-        animation-delay: 0.4s;
+    .wave-bar {
+        animation: wave-animation 1.2s infinite ease-in-out;
+        transform-origin: bottom;
+    }
+
+    /* Ensure gradient spinner works in all browsers */
+    @supports not (mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px))) {
+        .gradient-spinner-fallback {
+            border: 4px solid transparent;
+            border-image: conic-gradient(from 0deg, var(--loader-color, #6366f1), var(--loader-color-secondary, #8b5cf6), var(--loader-color, #6366f1)) 1;
+            border-radius: 50%;
+        }
     }
 </style>
 @endif
