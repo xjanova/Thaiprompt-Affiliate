@@ -25,7 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: read
+      pull-requests: write
+      packages: write
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -61,33 +63,58 @@ jobs:
 
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
 
+      - name: Check if version bump needed
+        id: check_bump
+        run: |
+          # Count commits since last tag
+          COMMIT_COUNT=$(git rev-list ${{ steps.previoustag.outputs.tag }}..HEAD --count)
+          echo "Commits since last tag: $COMMIT_COUNT"
+
+          if [ "$COMMIT_COUNT" -eq "0" ]; then
+            echo "No new commits since last tag. Skipping version bump."
+            echo "should_bump=false" >> $GITHUB_OUTPUT
+          else
+            echo "New commits found. Version bump required."
+            echo "should_bump=true" >> $GITHUB_OUTPUT
+          fi
+
       - name: Determine version bump
         id: bump
+        if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           # Get commits since last tag
           COMMITS=$(git log ${{ steps.previoustag.outputs.tag }}..HEAD --pretty=format:"%s")
-          echo "Commits since last tag:"
+          echo "📝 Commits since last tag:"
           echo "$COMMITS"
+          echo ""
 
-          # Default to patch
+          # Default to patch (bump ทุกครั้งที่มี commits ใหม่)
           BUMP_TYPE="patch"
 
           # Check for breaking changes (major version)
           if echo "$COMMITS" | grep -qiE "^(BREAKING CHANGE:|.*!:)"; then
             BUMP_TYPE="major"
+            echo "🔴 Found BREAKING CHANGE → MAJOR version bump"
           # Check for features (minor version)
           elif echo "$COMMITS" | grep -qiE "^(feat|feature):"; then
             BUMP_TYPE="minor"
+            echo "🟢 Found feat: → MINOR version bump"
           # Check for fixes (patch version)
           elif echo "$COMMITS" | grep -qiE "^(fix|bugfix|hotfix):"; then
             BUMP_TYPE="patch"
+            echo "🟡 Found fix: → PATCH version bump"
+          else
+            # ถ้าไม่มี feat: หรือ fix: ให้ bump patch อยู่ดี
+            BUMP_TYPE="patch"
+            echo "⚪ No conventional commits found → Default PATCH version bump"
           fi
 
           echo "bump=$BUMP_TYPE" >> $GITHUB_OUTPUT
-          echo "Version bump type: $BUMP_TYPE"
+          echo "🎯 Version bump type: $BUMP_TYPE"
 
       - name: Bump version and create tag
         id: tag_version
+        if: steps.check_bump.outputs.should_bump == 'true'
         uses: mathieudutour/github-tag-action@v6.2
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -98,6 +125,7 @@ jobs:
 
       - name: Generate changelog
         id: changelog
+        if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           PREVIOUS_TAG="${{ steps.previoustag.outputs.tag }}"
           NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
@@ -130,6 +158,7 @@ jobs:
           cat CHANGELOG.txt
 
       - name: Update CHANGELOG.md
+        if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           PREVIOUS_TAG="${{ steps.previoustag.outputs.tag }}"
           NEW_TAG="${{ steps.tag_version.outputs.new_tag }}"
@@ -173,6 +202,7 @@ jobs:
           echo "Updated CHANGELOG.md with ${NEW_TAG}"
 
       - name: Create GitHub Release
+        if: steps.check_bump.outputs.should_bump == 'true'
         uses: ncipollo/create-release@v1
         with:
           tag: ${{ steps.tag_version.outputs.new_tag }}
@@ -183,11 +213,13 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
+        if: steps.check_bump.outputs.should_bump == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
       - name: Update package.json version
+        if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           # Remove 'v' prefix from tag
           NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
@@ -198,6 +230,7 @@ jobs:
           echo "Updated package.json to version $NEW_VERSION"
 
       - name: Update VERSION file
+        if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           NEW_VERSION="${{ steps.tag_version.outputs.new_version }}"
 
@@ -207,6 +240,7 @@ jobs:
           echo "Updated VERSION file to $NEW_VERSION"
 
       - name: Commit version update and changelog
+        if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -233,6 +267,7 @@ jobs:
           fi
 
       - name: Output new version
+        if: steps.check_bump.outputs.should_bump == 'true'
         run: |
           echo "🎉 New version created: ${{ steps.tag_version.outputs.new_tag }}"
           echo "📦 Previous version: ${{ steps.previoustag.outputs.tag }}"
