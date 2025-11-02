@@ -107,7 +107,13 @@
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     overflow: hidden;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+/* Dark Mode Support */
+.dark .life-power-container {
+    background: linear-gradient(135deg, #5568d3 0%, #6d3d91 100%);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .life-power-container:hover {

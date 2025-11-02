@@ -119,7 +119,13 @@
     border-radius: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
     overflow: hidden;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+/* Dark Mode Support */
+.dark .rank-container {
+    background: linear-gradient(135deg, #d97706 0%, #c2410c 100%);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
 .rank-container:hover {

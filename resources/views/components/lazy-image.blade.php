@@ -4,12 +4,13 @@
     'class' => '',
     'width' => null,
     'height' => null,
-    'eager' => false
+    'eager' => true
 ])
 
 @php
-    $loadingAttr = $eager ? 'eager' : 'lazy';
-    $decoding = 'async';
+    // ปิดการใช้งาน lazy loading เพื่อแก้ปัญหาการแสดงผลไม่ครบ
+    $loadingAttr = 'eager';
+    $decoding = 'sync';
 @endphp
 
 <img
