@@ -42,6 +42,11 @@
     @endphp
 
     <style>
+        /* Alpine.js x-cloak */
+        [x-cloak] {
+            display: none !important;
+        }
+
         :root {
             --gradient-primary: linear-gradient(135deg, {{ $primaryStart }}, {{ $primaryEnd }});
             --gradient-secondary: linear-gradient(135deg, {{ $secondaryStart }}, {{ $secondaryEnd }});
