@@ -7,8 +7,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">จัดการการแจ้งเตือน</h1>
-            <p class="text-sm text-gray-600 mt-1">ส่งและจัดการการแจ้งเตือนให้กับสมาชิก</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">จัดการการแจ้งเตือน</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ส่งและจัดการการแจ้งเตือนให้กับสมาชิก</p>
         </div>
         <div class="flex gap-3">
             <a href="{{ route('admin.notifications.statistics') }}"
@@ -26,11 +26,11 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-lg shadow-md p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-4">
         <form method="GET" action="{{ route('admin.notifications.index') }}" class="flex flex-wrap gap-4">
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-sm font-medium text-gray-700 mb-1">ประเภท</label>
-                <select name="type" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภท</label>
+                <select name="type" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
                     <option value="">ทั้งหมด</option>
                     <option value="system" {{ request('type') === 'system' ? 'selected' : '' }}>ระบบ</option>
                     <option value="announcement" {{ request('type') === 'announcement' ? 'selected' : '' }}>ประกาศ</option>
@@ -42,8 +42,8 @@
             </div>
 
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-sm font-medium text-gray-700 mb-1">ระดับความสำคัญ</label>
-                <select name="priority" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ระดับความสำคัญ</label>
+                <select name="priority" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
                     <option value="">ทั้งหมด</option>
                     <option value="low" {{ request('priority') === 'low' ? 'selected' : '' }}>ต่ำ</option>
                     <option value="normal" {{ request('priority') === 'normal' ? 'selected' : '' }}>ปกติ</option>
@@ -53,8 +53,8 @@
             </div>
 
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-sm font-medium text-gray-700 mb-1">ประเภทการส่ง</label>
-                <select name="is_broadcast" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภทการส่ง</label>
+                <select name="is_broadcast" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
                     <option value="">ทั้งหมด</option>
                     <option value="1" {{ request('is_broadcast') === '1' ? 'selected' : '' }}>ประกาศทั่วไป</option>
                     <option value="0" {{ request('is_broadcast') === '0' ? 'selected' : '' }}>รายบุคคล</option>
@@ -70,29 +70,29 @@
     </div>
 
     <!-- Notifications Table -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden">
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+            <thead class="bg-gray-50 dark:bg-slate-700">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ไอคอน</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">หัวข้อ</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ผู้รับ</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ประเภท</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ความสำคัญ</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">สถานะ</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">วันที่สร้าง</th>
-                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">จัดการ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ไอคอน</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">หัวข้อ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ผู้รับ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ประเภท</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">ความสำคัญ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">สถานะ</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">วันที่สร้าง</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">จัดการ</th>
                 </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
                 @forelse($notifications as $notification)
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="text-2xl">{{ $notification->icon }}</span>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="text-sm font-medium text-gray-900">{{ $notification->title }}</div>
-                            <div class="text-sm text-gray-500">{{ Str::limit($notification->message, 50) }}</div>
+                            <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $notification->title }}</div>
+                            <div class="text-sm text-gray-500 dark:text-gray-400">{{ Str::limit($notification->message, 50) }}</div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             @if($notification->is_broadcast)
@@ -100,7 +100,7 @@
                                     ประกาศทั่วไป
                                 </span>
                             @else
-                                <span class="text-sm text-gray-900">{{ $notification->user->name ?? 'N/A' }}</span>
+                                <span class="text-sm text-gray-900 dark:text-white">{{ $notification->user->name ?? 'N/A' }}</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -130,7 +130,7 @@
                                 @endif
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {{ $notification->created_at->format('d/m/Y H:i') }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -149,7 +149,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="8" class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
                             ไม่มีการแจ้งเตือน
                         </td>
                     </tr>
@@ -159,7 +159,7 @@
 
         <!-- Pagination -->
         @if($notifications->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200">
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-slate-700">
                 {{ $notifications->links() }}
             </div>
         @endif
