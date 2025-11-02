@@ -148,14 +148,19 @@ class TreeController extends Controller
             $node['team_sales'] = $affiliate->team_sales;
         }
 
+        // Always initialize children array
+        $node['children'] = [];
+
         // Recursively add children if not at max depth
         if ($currentDepth < $maxDepth && $affiliate->children->count() > 0) {
-            $node['children'] = [];
             foreach ($affiliate->children as $child) {
                 $node['children'][] = $this->buildTreeNode($child, $currentDepth + 1, $maxDepth, $isAdmin);
             }
-        } else {
-            $node['_children'] = $affiliate->children->count(); // Collapsed children count
+        }
+
+        // Store collapsed children count if there are hidden children
+        if ($affiliate->children->count() > 0 && $currentDepth >= $maxDepth) {
+            $node['_children'] = $affiliate->children->count();
         }
 
         return $node;
