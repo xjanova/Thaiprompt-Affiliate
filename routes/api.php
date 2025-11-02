@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
+use App\Http\Controllers\Api\V1\TreeController;
 use App\Http\Controllers\Api\RankController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,12 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);
         Route::get('/dashboard/commissions', [DashboardController::class, 'commissions']);
         Route::get('/dashboard/referrals', [DashboardController::class, 'referrals']);
+
+        // Tree (Organization Chart)
+        Route::prefix('tree')->group(function () {
+            Route::get('/user', [TreeController::class, 'getUserTree']);
+            Route::get('/admin/{affiliateId?}', [TreeController::class, 'getAdminTree']);
+        });
 
         // Ranks
         Route::prefix('ranks')->group(function () {
