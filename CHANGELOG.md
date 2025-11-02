@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v1.5.5] - 2025-11-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #222 from xjanova/claude/fix-ranks-dashboard-view-011CUit738ChNG6kt6Bnsuru (c7dcc48)
+- fix: add missing user ranks leaderboard view (b017ad5)
+### 🔧 Other Changes
+- chore: bump version to 1.5.4 [skip ci] (de67fa6)
+
 ## [v1.5.4] - 2025-11-02
 
 ### ✨ Features
