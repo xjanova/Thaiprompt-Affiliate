@@ -21,7 +21,7 @@
     "dependencies": {
         "alpinejs": "^3.13.5",
         "chart.js": "^4.4.1",
-        "d3": "^7.9.0",
-        "gsap": "^3.12.5"
+        "gsap": "^3.12.5",
+        "vis-network": "^10.0.2"
     }
 }
