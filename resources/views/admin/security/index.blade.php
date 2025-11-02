@@ -3,7 +3,7 @@
 @section('title', 'ความปลอดภัย')
 
 @section('content')
-<div x-data="{ activeTab: 'dashboard', showAddIpModal: false }" class="space-y-6">
+<div x-data="{ activeTab: 'dashboard' }" class="space-y-6">
     <!-- Page Header -->
     <div class="flex justify-between items-center">
         <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🛡️ ระบบความปลอดภัย</h1>
@@ -822,7 +822,7 @@
 </div>
 
 <!-- Add IP Modal (Simple inline form - can be enhanced with Alpine.js modal) -->
-<div x-show="showAddIpModal" x-cloak
+<div x-data="{ showAddIpModal: false }" x-show="showAddIpModal" x-cloak
      class="fixed inset-0 z-50 overflow-y-auto"
      @keydown.escape.window="showAddIpModal = false">
     <div class="flex items-center justify-center min-h-screen px-4">
