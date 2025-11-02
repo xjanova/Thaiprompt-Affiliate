@@ -23,6 +23,12 @@ use App\Http\Controllers\Admin\RankController;
 use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\MembershipRetentionController as AdminRetentionController;
 use App\Http\Controllers\Admin\LineOaController;
+use App\Http\Controllers\Admin\LineBotAiController;
+use App\Http\Controllers\Admin\LineFlexMessageController;
+use App\Http\Controllers\Admin\LineRichMenuController;
+use App\Http\Controllers\Admin\LineChatWidgetController;
+use App\Http\Controllers\Admin\LineAvatarController;
+use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\OtpSettingsController;
 use Illuminate\Support\Facades\Route;
 
@@ -300,6 +306,76 @@ Route::prefix('line-oa')->name('line-oa.')->group(function () {
     Route::put('/update', [LineOaController::class, 'update'])->name('update');
     Route::post('/test-message', [LineOaController::class, 'testMessage'])->name('test-message');
     Route::get('/logs', [LineOaController::class, 'logs'])->name('logs');
+});
+
+// LINE Bot AI Management
+Route::prefix('line-bot')->name('line-bot.')->group(function () {
+    // AI Settings
+    Route::prefix('ai')->name('ai.')->group(function () {
+        Route::get('/', [LineBotAiController::class, 'index'])->name('index');
+        Route::get('/create', [LineBotAiController::class, 'create'])->name('create');
+        Route::post('/', [LineBotAiController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [LineBotAiController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [LineBotAiController::class, 'update'])->name('update');
+        Route::delete('/{id}', [LineBotAiController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/test', [LineBotAiController::class, 'test'])->name('test');
+
+        // Knowledge Base
+        Route::get('/{aiSettingId}/knowledge', [LineBotAiController::class, 'knowledgeIndex'])->name('knowledge.index');
+        Route::get('/{aiSettingId}/knowledge/create', [LineBotAiController::class, 'knowledgeCreate'])->name('knowledge.create');
+        Route::post('/{aiSettingId}/knowledge', [LineBotAiController::class, 'knowledgeStore'])->name('knowledge.store');
+        Route::delete('/{aiSettingId}/knowledge/{knowledgeId}', [LineBotAiController::class, 'knowledgeDestroy'])->name('knowledge.destroy');
+    });
+
+    // Flex Messages
+    Route::prefix('flex')->name('flex.')->group(function () {
+        Route::get('/', [LineFlexMessageController::class, 'index'])->name('index');
+        Route::get('/create', [LineFlexMessageController::class, 'create'])->name('create');
+        Route::post('/', [LineFlexMessageController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [LineFlexMessageController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [LineFlexMessageController::class, 'update'])->name('update');
+        Route::delete('/{id}', [LineFlexMessageController::class, 'destroy'])->name('destroy');
+        Route::get('/{id}/preview', [LineFlexMessageController::class, 'preview'])->name('preview');
+        Route::post('/{id}/test', [LineFlexMessageController::class, 'testSend'])->name('test');
+    });
+
+    // Rich Menus
+    Route::prefix('rich-menu')->name('rich-menu.')->group(function () {
+        Route::get('/', [LineRichMenuController::class, 'index'])->name('index');
+        Route::get('/create', [LineRichMenuController::class, 'create'])->name('create');
+        Route::post('/', [LineRichMenuController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [LineRichMenuController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [LineRichMenuController::class, 'update'])->name('update');
+        Route::delete('/{id}', [LineRichMenuController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/set-default', [LineRichMenuController::class, 'setDefault'])->name('set-default');
+    });
+
+    // Chat Widget
+    Route::prefix('chat-widget')->name('chat-widget.')->group(function () {
+        Route::get('/', [LineChatWidgetController::class, 'index'])->name('index');
+        Route::put('/', [LineChatWidgetController::class, 'update'])->name('update');
+    });
+
+    // Avatars
+    Route::prefix('avatar')->name('avatar.')->group(function () {
+        Route::get('/', [LineAvatarController::class, 'index'])->name('index');
+        Route::get('/create', [LineAvatarController::class, 'create'])->name('create');
+        Route::post('/', [LineAvatarController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [LineAvatarController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [LineAvatarController::class, 'update'])->name('update');
+        Route::delete('/{id}', [LineAvatarController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/set-default', [LineAvatarController::class, 'setDefault'])->name('set-default');
+    });
+
+    // Broadcast
+    Route::prefix('broadcast')->name('broadcast.')->group(function () {
+        Route::get('/', [LineBroadcastController::class, 'index'])->name('index');
+        Route::get('/create', [LineBroadcastController::class, 'create'])->name('create');
+        Route::post('/', [LineBroadcastController::class, 'store'])->name('store');
+        Route::get('/{id}', [LineBroadcastController::class, 'show'])->name('show');
+        Route::post('/{id}/send', [LineBroadcastController::class, 'send'])->name('send');
+        Route::delete('/{id}', [LineBroadcastController::class, 'destroy'])->name('destroy');
+    });
 });
 
 // OTP Settings Management
