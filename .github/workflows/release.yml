@@ -263,17 +263,30 @@ jobs:
 
           echo "Updated CHANGELOG.md with ${NEW_TAG}"
 
+      - name: Create and push git tag
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          NEW_TAG="${{ steps.bump.outputs.new_tag }}"
+          NEW_VERSION="${{ steps.bump.outputs.new_version }}"
+
+          # Create annotated tag
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
+
+          echo "✅ Created tag $NEW_TAG"
+
       - name: Create GitHub Release
         if: steps.check_bump.outputs.should_bump == 'true'
-        uses: ncipollo/create-release@v1
+        uses: softprops/action-gh-release@v1
         with:
-          tag: ${{ steps.bump.outputs.new_tag }}
+          tag_name: ${{ steps.bump.outputs.new_tag }}
           name: Release ${{ steps.bump.outputs.new_tag }}
-          bodyFile: CHANGELOG.txt
+          body_path: CHANGELOG.txt
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
-          makeLatest: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         if: steps.check_bump.outputs.should_bump == 'true'
