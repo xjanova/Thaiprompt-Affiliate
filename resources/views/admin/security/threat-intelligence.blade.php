@@ -14,13 +14,29 @@
             <a href="{{ route('admin.security.index') }}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
                 ← กลับ
             </a>
-            <form method="POST" action="{{ route('admin.security.threat-intelligence.update') }}" class="inline">
-                @csrf
-                <button type="submit" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition flex items-center gap-2">
-                    <span>🔄</span>
-                    <span>อัปเดตข้อมูล</span>
-                </button>
-            </form>
+            <button type="button" id="updateThreatBtn" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition flex items-center gap-2">
+                <span>🔄</span>
+                <span>อัปเดตข้อมูล</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Progress Bar (Hidden by default) -->
+    <div id="updateProgress" class="mb-6 bg-white rounded-lg border border-gray-200 p-6 hidden">
+        <div class="flex items-center gap-4 mb-4">
+            <div class="flex-shrink-0">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-semibold text-gray-900">กำลังอัปเดต Threat Intelligence</h3>
+                <p id="progressMessage" class="text-sm text-gray-600 mt-1">เริ่มต้นการอัปเดต...</p>
+            </div>
+            <div class="text-right">
+                <p id="progressPercentage" class="text-2xl font-bold text-green-600">0%</p>
+            </div>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+            <div id="progressBar" class="bg-green-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
         </div>
     </div>
 
@@ -272,3 +288,128 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const updateBtn = document.getElementById('updateThreatBtn');
+    const progressDiv = document.getElementById('updateProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressMessage = document.getElementById('progressMessage');
+    const progressPercentage = document.getElementById('progressPercentage');
+
+    let pollInterval = null;
+
+    // Update button click handler
+    updateBtn.addEventListener('click', function() {
+        // Disable button
+        updateBtn.disabled = true;
+        updateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        // Show progress div
+        progressDiv.classList.remove('hidden');
+
+        // Reset progress
+        updateProgress(0, 'เริ่มต้นการอัปเดต...');
+
+        // Start the update via AJAX
+        fetch('{{ route('admin.security.threat-intelligence.update') }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateProgress(100, data.message);
+                setTimeout(() => {
+                    // Reload page to show updated stats
+                    window.location.reload();
+                }, 2000);
+            } else {
+                showError(data.message || 'เกิดข้อผิดพลาดในการอัปเดต');
+            }
+        })
+        .catch(error => {
+            console.error('Update error:', error);
+            showError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+        });
+
+        // Start polling for progress
+        startPolling();
+    });
+
+    function startPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+        }
+
+        pollInterval = setInterval(() => {
+            fetch('{{ route('admin.security.threat-intelligence.progress') }}', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_running) {
+                    updateProgress(data.percentage, data.message);
+                } else if (data.percentage === 100) {
+                    updateProgress(100, data.message);
+                    stopPolling();
+                }
+            })
+            .catch(error => {
+                console.error('Polling error:', error);
+            });
+        }, 1000); // Poll every second
+    }
+
+    function stopPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+
+    function updateProgress(percentage, message) {
+        progressBar.style.width = percentage + '%';
+        progressPercentage.textContent = percentage + '%';
+        progressMessage.textContent = message;
+
+        // Change color based on percentage
+        if (percentage === 100) {
+            progressBar.classList.remove('bg-green-600');
+            progressBar.classList.add('bg-blue-600');
+            progressPercentage.classList.remove('text-green-600');
+            progressPercentage.classList.add('text-blue-600');
+        }
+    }
+
+    function showError(message) {
+        stopPolling();
+        progressDiv.classList.add('hidden');
+        updateBtn.disabled = false;
+        updateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+        // Show error alert
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg';
+        errorDiv.textContent = message;
+
+        // Insert after header
+        const header = document.querySelector('.container > div:first-child');
+        header.insertAdjacentElement('afterend', errorDiv);
+
+        // Remove after 5 seconds
+        setTimeout(() => {
+            errorDiv.remove();
+        }, 5000);
+    }
+});
+</script>
+@endpush

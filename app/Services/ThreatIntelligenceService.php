@@ -14,6 +14,9 @@ class ThreatIntelligenceService
      */
     public function updateAllSources(): array
     {
+        // Initialize progress
+        $this->updateProgress(0, 'เริ่มต้นการอัปเดต Threat Intelligence...');
+
         $results = [
             'firehol' => $this->updateFromFirehol(),
             'total_updated' => 0,
@@ -26,7 +29,39 @@ class ThreatIntelligenceService
         // Clear cache
         Cache::forget('threat_intelligence_stats');
 
+        // Mark as complete
+        $this->updateProgress(100, 'อัปเดตเสร็จสิ้น! อัปเดตทั้งหมด ' . number_format($results['total_updated']) . ' รายการ');
+
         return $results;
+    }
+
+    /**
+     * Update progress
+     */
+    protected function updateProgress(int $percentage, string $message, array $details = []): void
+    {
+        Cache::put('threat_update_progress', [
+            'percentage' => $percentage,
+            'message' => $message,
+            'details' => $details,
+            'updated_at' => now()->toIso8601String(),
+        ], 300); // Keep for 5 minutes
+    }
+
+    /**
+     * Get current progress
+     */
+    public function getProgress(): ?array
+    {
+        return Cache::get('threat_update_progress');
+    }
+
+    /**
+     * Clear progress
+     */
+    public function clearProgress(): void
+    {
+        Cache::forget('threat_update_progress');
     }
 
     /**
@@ -39,30 +74,49 @@ class ThreatIntelligenceService
                 'url' => 'https://iplists.firehol.org/files/firehol_level1.netset',
                 'type' => 'abuse',
                 'confidence' => 90,
+                'name' => 'Firehol Level 1 (Abuse IPs)',
             ],
             'proxies' => [
                 'url' => 'https://iplists.firehol.org/files/firehol_proxies.netset',
                 'type' => 'proxy',
                 'confidence' => 80,
+                'name' => 'Firehol Proxies',
             ],
             'webserver' => [
                 'url' => 'https://iplists.firehol.org/files/firehol_webserver.netset',
                 'type' => 'scanner',
                 'confidence' => 75,
+                'name' => 'Firehol Webserver Attacks',
             ],
         ];
 
         $results = [];
+        $totalLists = count($lists);
+        $currentList = 0;
 
         foreach ($lists as $name => $config) {
+            $currentList++;
+            $percentage = intval(($currentList / $totalLists) * 90); // Reserve 0-10% for initialization, 90-100% for completion
+
+            $this->updateProgress(
+                $percentage,
+                "กำลังดาวน์โหลด {$config['name']}... ({$currentList}/{$totalLists})"
+            );
+
             try {
                 $response = Http::timeout(30)->get($config['url']);
 
                 if ($response->successful()) {
+                    $this->updateProgress(
+                        $percentage,
+                        "กำลังประมวลผล {$config['name']}... ({$currentList}/{$totalLists})"
+                    );
+
                     $updated = $this->parseAndStoreFireholList(
                         $response->body(),
                         $config['type'],
-                        $config['confidence']
+                        $config['confidence'],
+                        $name
                     );
 
                     $results[$name] = [
@@ -99,7 +153,7 @@ class ThreatIntelligenceService
     /**
      * Parse and store Firehol list
      */
-    protected function parseAndStoreFireholList(string $content, string $type, int $confidence): int
+    protected function parseAndStoreFireholList(string $content, string $type, int $confidence, string $listName = ''): int
     {
         $lines = explode("\n", $content);
         $updated = 0;

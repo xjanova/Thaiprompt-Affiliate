@@ -1187,14 +1187,29 @@
                                 </div>
                             </div>
 
+                            <!-- Progress Bar (Hidden by default) -->
+                            <div id="threatUpdateProgress" class="mb-4 bg-white rounded-lg border border-gray-200 p-4 hidden">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-green-600"></div>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p id="threatProgressMessage" class="text-sm text-gray-600">กำลังอัปเดต Threat Intelligence...</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p id="threatProgressPercentage" class="text-lg font-bold text-green-600">0%</p>
+                                    </div>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                    <div id="threatProgressBar" class="bg-green-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+
                             <!-- Update Button -->
                             <div class="flex items-center justify-between">
-                                <form method="POST" action="{{ route('admin.security.threat-intelligence.update') }}" class="inline">
-                                    @csrf
-                                    <button type="submit" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
-                                        🔄 อัปเดตข้อมูลทันที
-                                    </button>
-                                </form>
+                                <button type="button" id="updateThreatBtnSettings" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition">
+                                    🔄 อัปเดตข้อมูลทันที
+                                </button>
 
                                 <button type="submit" class="px-6 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition">
                                     บันทึกการตั้งค่า
@@ -1311,3 +1326,123 @@
 </div>
 @endif
 @endsection
+
+@push('scripts')
+<script>
+// Threat Intelligence Update with Progress
+const updateThreatBtn = document.getElementById('updateThreatBtnSettings');
+if (updateThreatBtn) {
+    const progressDiv = document.getElementById('threatUpdateProgress');
+    const progressBar = document.getElementById('threatProgressBar');
+    const progressMessage = document.getElementById('threatProgressMessage');
+    const progressPercentage = document.getElementById('threatProgressPercentage');
+
+    let pollInterval = null;
+
+    updateThreatBtn.addEventListener('click', function() {
+        // Disable button
+        updateThreatBtn.disabled = true;
+        updateThreatBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        // Show progress
+        progressDiv.classList.remove('hidden');
+        updateThreatProgress(0, 'เริ่มต้นการอัปเดต...');
+
+        // Start update
+        fetch('{{ route('admin.security.threat-intelligence.update') }}', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateThreatProgress(100, data.message);
+                setTimeout(() => {
+                    progressDiv.classList.add('hidden');
+                    updateThreatBtn.disabled = false;
+                    updateThreatBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    showThreatSuccess(data.message);
+                }, 2000);
+            } else {
+                showThreatError(data.message || 'เกิดข้อผิดพลาด');
+            }
+        })
+        .catch(error => {
+            console.error('Update error:', error);
+            showThreatError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+        });
+
+        // Start polling
+        startThreatPolling();
+    });
+
+    function startThreatPolling() {
+        if (pollInterval) clearInterval(pollInterval);
+
+        pollInterval = setInterval(() => {
+            fetch('{{ route('admin.security.threat-intelligence.progress') }}', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.is_running) {
+                    updateThreatProgress(data.percentage, data.message);
+                } else if (data.percentage === 100) {
+                    updateThreatProgress(100, data.message);
+                    stopThreatPolling();
+                }
+            })
+            .catch(error => console.error('Polling error:', error));
+        }, 1000);
+    }
+
+    function stopThreatPolling() {
+        if (pollInterval) {
+            clearInterval(pollInterval);
+            pollInterval = null;
+        }
+    }
+
+    function updateThreatProgress(percentage, message) {
+        progressBar.style.width = percentage + '%';
+        progressPercentage.textContent = percentage + '%';
+        progressMessage.textContent = message;
+
+        if (percentage === 100) {
+            progressBar.classList.remove('bg-green-600');
+            progressBar.classList.add('bg-blue-600');
+            progressPercentage.classList.remove('text-green-600');
+            progressPercentage.classList.add('text-blue-600');
+        }
+    }
+
+    function showThreatSuccess(message) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        alertDiv.textContent = message;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+
+    function showThreatError(message) {
+        stopThreatPolling();
+        progressDiv.classList.add('hidden');
+        updateThreatBtn.disabled = false;
+        updateThreatBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        alertDiv.textContent = message;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => alertDiv.remove(), 5000);
+    }
+}
+</script>
+@endpush

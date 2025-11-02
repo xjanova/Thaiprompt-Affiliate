@@ -586,15 +586,56 @@ class SecurityController extends Controller
     /**
      * Update threat intelligence manually
      */
-    public function updateThreatIntelligence(ThreatIntelligenceService $service)
+    public function updateThreatIntelligence(Request $request, ThreatIntelligenceService $service)
     {
+        // If this is an AJAX request, run in foreground and return JSON
+        if ($request->ajax()) {
+            try {
+                $results = $service->updateAllSources();
+                return response()->json([
+                    'success' => true,
+                    'message' => "อัปเดต Threat Intelligence สำเร็จ! อัปเดต {$results['total_updated']} รายการ",
+                    'results' => $results,
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                ], 500);
+            }
+        }
+
+        // For regular requests, redirect with message
         try {
             $results = $service->updateAllSources();
-
             return back()->with('success', "อัปเดต Threat Intelligence สำเร็จ! อัปเดต {$results['total_updated']} รายการ");
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Get threat intelligence update progress
+     */
+    public function getThreatUpdateProgress(ThreatIntelligenceService $service)
+    {
+        $progress = $service->getProgress();
+
+        if (!$progress) {
+            return response()->json([
+                'percentage' => 0,
+                'message' => 'ไม่มีการอัปเดตอยู่',
+                'is_running' => false,
+            ]);
+        }
+
+        return response()->json([
+            'percentage' => $progress['percentage'],
+            'message' => $progress['message'],
+            'details' => $progress['details'] ?? [],
+            'is_running' => $progress['percentage'] < 100,
+            'updated_at' => $progress['updated_at'],
+        ]);
     }
 
     /**
