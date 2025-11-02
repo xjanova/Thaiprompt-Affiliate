@@ -215,7 +215,7 @@
             this.systemMenuOpen = false;
 
             // Open only the relevant menu based on current path
-            if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/otp')) {
+            if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/line-bot') || currentPath.includes('/admin/otp')) {
                 this.lineMenuOpen = true;
             } else if (currentPath.includes('/admin/affiliates') || currentPath.includes('/admin/retention') || currentPath.includes('/admin/ranks')) {
                 this.marketingMenuOpen = true;
@@ -548,10 +548,12 @@
                     </div>
                 </div>
 
-                <!-- LINE OA Management Dropdown -->
+                <!-- LINE Management Dropdown -->
                 <div class="relative mb-1">
                     @php
-                        $lineActive = request()->routeIs('admin.line-oa.*') || request()->routeIs('admin.otp.*');
+                        $lineActive = request()->routeIs('admin.line-oa.*') ||
+                                      request()->routeIs('admin.line-bot.*') ||
+                                      request()->routeIs('admin.otp.*');
                     @endphp
 
                     <!-- Main LINE Menu Button -->
@@ -564,7 +566,7 @@
                             </svg>
                         </span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
-                            LINE OA
+                            LINE
                         </span>
                         <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': lineMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -581,6 +583,11 @@
                          x-transition:leave-end="opacity-0"
                          class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
                          style="display: none;">
+
+                        <!-- LINE OA Settings Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">การตั้งค่า</span>
+                        </div>
 
                         <a href="{{ route('admin.line-oa.index') }}"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-oa.index') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
@@ -602,8 +609,66 @@
 
                         <div class="border-t border-gray-700/30 my-1"></div>
 
+                        <!-- AI Bot Section -->
                         <div class="px-2 py-1">
-                            <span class="text-[10px] text-gray-500 uppercase font-semibold">ข้อมูล</span>
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">AI Chat Bot</span>
+                        </div>
+
+                        <a href="{{ route('admin.line-bot.ai.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">🤖</span>
+                            <span>AI Settings</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Messages Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">ข้อความ & เมนู</span>
+                        </div>
+
+                        <a href="{{ route('admin.line-bot.flex.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.flex.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">💬</span>
+                            <span>Flex Messages</span>
+                        </a>
+
+                        <a href="{{ route('admin.line-bot.rich-menu.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.rich-menu.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">📱</span>
+                            <span>Rich Menus</span>
+                        </a>
+
+                        <a href="{{ route('admin.line-bot.broadcast.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.broadcast.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">📢</span>
+                            <span>Broadcast</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Widget Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">Chat Widget</span>
+                        </div>
+
+                        <a href="{{ route('admin.line-bot.chat-widget.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.chat-widget.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">💭</span>
+                            <span>ตั้งค่า Widget</span>
+                        </a>
+
+                        <a href="{{ route('admin.line-bot.avatar.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.avatar.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">🎭</span>
+                            <span>Avatars</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Resources Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">ทรัพยากร</span>
                         </div>
 
                         <a href="https://developers.line.biz/console/" target="_blank"
@@ -615,10 +680,10 @@
                             </svg>
                         </a>
 
-                        <a href="https://developers.line.biz/en/docs/line-login/" target="_blank"
+                        <a href="https://developers.line.biz/en/docs/messaging-api/flex-message-elements/" target="_blank"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200">
-                            <span class="mr-2">📚</span>
-                            <span class="flex-1">LINE Login Docs</span>
+                            <span class="mr-2">📖</span>
+                            <span class="flex-1">Flex Message Docs</span>
                             <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
