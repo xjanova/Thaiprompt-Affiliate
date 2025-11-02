@@ -252,11 +252,15 @@ class DashboardController extends Controller
         // Get depth of organization
         $maxDepth = $this->getMaxLevel($affiliate);
 
-        return view('user.organization', compact(
+        // Get commission depth setting (how many levels user can see)
+        $commissionDepth = (int) \App\Models\Setting::get('commission_depth', 10);
+
+        return view('user.organization-new', compact(
             'affiliate',
             'totalNetwork',
             'totalNetworkEarnings',
-            'maxDepth'
+            'maxDepth',
+            'commissionDepth'
         ));
     }
 

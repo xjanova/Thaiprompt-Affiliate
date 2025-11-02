@@ -126,6 +126,14 @@
                                        placeholder="กรอกรหัสแนะนำเริ่มต้น">
                                 <p class="text-xs text-gray-500 mt-1">ผู้สมัครที่ไม่มีรหัสแนะนำจะถูกต่อสายงานอัตโนมัติกับรหัสนี้</p>
                             </div>
+
+                            <div class="mb-4">
+                                <label for="commission_depth" class="block text-sm font-medium text-gray-700 mb-2">ความลึกคอมมิชชั่น (Commission Depth)</label>
+                                <input type="number" name="commission_depth" id="commission_depth" min="1" max="100"
+                                       value="{{ old('commission_depth', $settings->get('affiliate')->firstWhere('key', 'commission_depth')->value ?? 10) }}"
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">กำหนดจำนวนชั้นสายงานที่สมาชิกจะมองเห็นและได้รับคอมมิชชั่น (ค่าเริ่มต้น: 10 ชั้น)</p>
+                            </div>
                         </div>
 
                         <div class="flex justify-end">
