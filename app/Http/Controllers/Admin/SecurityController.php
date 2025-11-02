@@ -638,7 +638,20 @@ class SecurityController extends Controller
             'threat_confidence_threshold' => ['nullable', 'integer', 'min:0', 'max:100'],
             'abuseipdb_api_key' => ['nullable', 'string'],
             'ipqualityscore_api_key' => ['nullable', 'string'],
+            // Schedule settings
+            'threat_auto_update_enabled' => ['nullable', 'boolean'],
+            'threat_update_frequency' => ['nullable', 'string', 'in:hourly,daily,weekly,custom'],
+            'threat_update_time' => ['nullable', 'string', 'regex:/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/'],
+            'threat_update_day' => ['nullable', 'integer', 'min:0', 'max:6'],
+            'threat_update_cron' => ['nullable', 'string'],
         ]);
+
+        // Validate custom cron if selected
+        if ($request->input('threat_update_frequency') === 'custom' && $request->filled('threat_update_cron')) {
+            if (!$this->validateCronExpression($request->input('threat_update_cron'))) {
+                return back()->withErrors(['threat_update_cron' => 'รูปแบบ Cron Expression ไม่ถูกต้อง']);
+            }
+        }
 
         // Handle checkbox values
         $validated['threat_intelligence_enabled'] = $request->has('threat_intelligence_enabled');
@@ -646,6 +659,7 @@ class SecurityController extends Controller
         $validated['threat_block_vpn'] = $request->has('threat_block_vpn');
         $validated['threat_block_tor'] = $request->has('threat_block_tor');
         $validated['threat_block_abuse'] = $request->has('threat_block_abuse');
+        $validated['threat_auto_update_enabled'] = $request->has('threat_auto_update_enabled');
 
         foreach ($validated as $key => $value) {
             if ($value !== null) {
@@ -658,6 +672,29 @@ class SecurityController extends Controller
         $this->updateEnvFileThreatSettings($request);
 
         return back()->with('success', 'บันทึกการตั้งค่า Threat Intelligence เรียบร้อยแล้ว');
+    }
+
+    /**
+     * Validate cron expression
+     */
+    protected function validateCronExpression(string $cron): bool
+    {
+        // Basic cron expression validation (5 parts: minute hour day month weekday)
+        $parts = preg_split('/\s+/', trim($cron));
+
+        if (count($parts) !== 5) {
+            return false;
+        }
+
+        // Validate each part
+        foreach ($parts as $index => $part) {
+            // Allow *, numbers, ranges (1-5), steps (*/5), and lists (1,2,3)
+            if (!preg_match('/^(\*|[0-9,\-\/]+)$/', $part)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
