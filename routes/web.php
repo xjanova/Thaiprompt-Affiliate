@@ -14,6 +14,11 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Demo Routes
+Route::get('/demo/loading', function () {
+    return view('demo-loading');
+})->name('demo.loading');
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
