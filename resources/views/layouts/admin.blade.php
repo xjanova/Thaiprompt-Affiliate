@@ -181,7 +181,48 @@
 <body class="font-sans antialiased bg-gray-100">
     <!-- Page Loader -->
     <x-page-loader />
-    <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false, systemMenuOpen: false }">
+    <div class="min-h-screen" x-data="{
+        sidebarOpen: false,
+        sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
+        profileDropdown: false,
+        systemMenuOpen: false,
+        // Dropdown states with persistence
+        marketingMenuOpen: localStorage.getItem('marketingMenuOpen') === 'true',
+        walletOpen: localStorage.getItem('walletOpen') === 'true',
+        emailMenuOpen: localStorage.getItem('emailMenuOpen') === 'true',
+        lineMenuOpen: localStorage.getItem('lineMenuOpen') === 'true',
+        // Auto-open dropdown if current page is in submenu
+        init() {
+            this.checkActiveMenu();
+        },
+        toggleMenu(menuName) {
+            this[menuName] = !this[menuName];
+            localStorage.setItem(menuName, this[menuName]);
+        },
+        checkActiveMenu() {
+            const currentPath = window.location.pathname;
+            if (currentPath.includes('/admin/line-oa')) {
+                this.lineMenuOpen = true;
+                localStorage.setItem('lineMenuOpen', 'true');
+            }
+            if (currentPath.includes('/admin/affiliates') || currentPath.includes('/admin/retention') || currentPath.includes('/admin/ranks')) {
+                this.marketingMenuOpen = true;
+                localStorage.setItem('marketingMenuOpen', 'true');
+            }
+            if (currentPath.includes('/admin/wallet') || currentPath.includes('/admin/withdrawals')) {
+                this.walletOpen = true;
+                localStorage.setItem('walletOpen', 'true');
+            }
+            if (currentPath.includes('/admin/email')) {
+                this.emailMenuOpen = true;
+                localStorage.setItem('emailMenuOpen', 'true');
+            }
+            if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications')) {
+                this.systemMenuOpen = true;
+                localStorage.setItem('systemMenuOpen', 'true');
+            }
+        }
+    }">
         <!-- Overlay for mobile -->
         <div x-show="sidebarOpen"
              @click="sidebarOpen = false"
@@ -248,7 +289,7 @@
                 </a>
 
                 <!-- Marketing System Dropdown -->
-                <div x-data="{ marketingMenuOpen: false }" class="relative mb-1">
+                <div class="relative mb-1">
                     @php
                         $marketingActive = request()->routeIs('admin.affiliates.*') ||
                                           request()->routeIs('admin.retention.*') ||
@@ -258,7 +299,7 @@
                     <!-- Main Marketing Menu Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-pink-600 hover:to-rose-600 hover:text-white rounded-lg transition-all duration-200 group {{ $marketingActive ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-lg' : '' }}"
-                       @click="marketingMenuOpen = !marketingMenuOpen">
+                       @click="toggleMenu('marketingMenuOpen')">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📈</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             ระบบการตลาด
@@ -337,7 +378,7 @@
                 </a>
 
                 <!-- Wallet Dropdown Menu -->
-                <div x-data="{ walletOpen: false }" class="relative mb-1">
+                <div class="relative mb-1">
                     @php
                         $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*');
                         $pendingCount = \App\Models\WithdrawalRequest::pending()->count();
@@ -346,7 +387,7 @@
                     <!-- Main Wallet Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}"
-                       @click="walletOpen = !walletOpen">
+                       @click="toggleMenu('walletOpen')">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             กระเป๋าเงิน
@@ -438,7 +479,7 @@
                 </a>
 
                 <!-- Email Management Dropdown -->
-                <div x-data="{ emailMenuOpen: false }" class="relative mb-1">
+                <div class="relative mb-1">
                     @php
                         $emailActive = request()->routeIs('admin.email.*');
                     @endphp
@@ -446,7 +487,7 @@
                     <!-- Main Email Menu Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-600 hover:text-white rounded-lg transition-all duration-200 group {{ $emailActive ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : '' }}"
-                       @click="emailMenuOpen = !emailMenuOpen">
+                       @click="toggleMenu('emailMenuOpen')">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📧</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             จัดการอีเมล
@@ -495,8 +536,80 @@
                     </div>
                 </div>
 
+                <!-- LINE OA Management Dropdown -->
+                <div class="relative mb-1">
+                    @php
+                        $lineActive = request()->routeIs('admin.line-oa.*');
+                    @endphp
+
+                    <!-- Main LINE Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-emerald-600 hover:text-white rounded-lg transition-all duration-200 group {{ $lineActive ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('lineMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">
+                            <svg class="w-5 h-5 inline-block" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                            </svg>
+                        </span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            LINE OA
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': lineMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="lineMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('admin.line-oa.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-oa.index') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">⚙️</span>
+                            <span>ตั้งค่า LINE OA</span>
+                        </a>
+
+                        <a href="{{ route('admin.line-oa.logs') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-oa.logs') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>ประวัติการใช้งาน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">ข้อมูล</span>
+                        </div>
+
+                        <a href="https://developers.line.biz/console/" target="_blank"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200">
+                            <span class="mr-2">🔗</span>
+                            <span class="flex-1">LINE Developers</span>
+                            <svg class="w-3 h-3 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                        </a>
+
+                        <a href="{{ asset('docs/LINE_OA_SETUP.md') }}" target="_blank"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200">
+                            <span class="mr-2">📚</span>
+                            <span>คู่มือการใช้งาน</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="border-t border-gray-700/50 my-3"></div>
+
                 <!-- System Management Dropdown -->
-                <div x-data="{ systemMenuOpen: false }" class="relative mb-1">
+                <div class="relative mb-1">
                     @php
                         $systemActive = request()->routeIs('admin.premium-page.*') ||
                                        request()->routeIs('admin.header-editor.*') ||
@@ -513,7 +626,7 @@
                     <!-- Main System Menu Button -->
                     <button
                        class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-emerald-600 hover:to-teal-600 hover:text-white rounded-lg transition-all duration-200 group {{ $systemActive ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : '' }}"
-                       @click="systemMenuOpen = !systemMenuOpen">
+                       @click="toggleMenu('systemMenuOpen')">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">⚙️</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                             จัดการระบบ
