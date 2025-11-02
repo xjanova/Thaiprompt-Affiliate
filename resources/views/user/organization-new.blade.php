@@ -163,10 +163,11 @@ async function loadTreeData() {
         loading?.classList.remove('hidden');
         error?.classList.add('hidden');
 
-        const response = await fetch('/api/v1/tree/user', {
+        const response = await fetch('{{ route('user.organization.tree-data') }}', {
             headers: {
                 'Accept': 'application/json',
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                'X-Requested-With': 'XMLHttpRequest'
             },
             credentials: 'same-origin'
         });
