@@ -13,9 +13,8 @@ class LineAvatarController extends Controller
     public function index()
     {
         $avatars = LineAvatar::orderBy('created_at', 'desc')->get();
-        $types = LineAvatar::getTypes();
 
-        return view('admin.line-bot.avatar.index', compact('avatars', 'types'));
+        return view('admin.line-bot.avatars.index', compact('avatars'));
     }
 
     public function create()

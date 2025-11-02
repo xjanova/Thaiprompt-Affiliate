@@ -19,15 +19,13 @@ class LineFlexMessageController extends Controller
         }
 
         $templates = $query->orderBy('created_at', 'desc')->paginate(12);
-        $categories = LineFlexMessageTemplate::getCategories();
 
-        return view('admin.line-bot.flex.index', compact('templates', 'categories'));
+        return view('admin.line-bot.flex-messages.index', compact('templates'));
     }
 
     public function create()
     {
-        $categories = LineFlexMessageTemplate::getCategories();
-        return view('admin.line-bot.flex.create', compact('categories'));
+        return view('admin.line-bot.flex-messages.create');
     }
 
     public function store(Request $request)
@@ -52,9 +50,8 @@ class LineFlexMessageController extends Controller
     public function edit($id)
     {
         $template = LineFlexMessageTemplate::findOrFail($id);
-        $categories = LineFlexMessageTemplate::getCategories();
 
-        return view('admin.line-bot.flex.edit', compact('template', 'categories'));
+        return view('admin.line-bot.flex-messages.edit', compact('template'));
     }
 
     public function update(Request $request, $id)
