@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v1.5.2] - 2025-11-02
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #219 from xjanova/claude/fix-org-chart-loading-error-011CUieqgN7RZd5AdejhnJE7 (2fac552)
+- fix: แก้ไข tooltip และเพิ่มข้อมูลการรักษายอดในผังสายงาน (e4f8e5c)
+### 🔧 Other Changes
+- chore: bump version to 1.5.1 [skip ci] (7a10ed8)
+
 ## [v1.5.1] - 2025-11-02
 
 ### ✨ Features
