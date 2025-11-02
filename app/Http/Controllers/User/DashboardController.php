@@ -293,6 +293,106 @@ class DashboardController extends Controller
     }
 
     /**
+     * Get organization tree data via AJAX (for web session)
+     */
+    public function getOrganizationTreeData()
+    {
+        $user = Auth::user();
+        $affiliate = $user->affiliate;
+
+        if (!$affiliate) {
+            return response()->json([
+                'success' => false,
+                'message' => 'คุณยังไม่มีสิทธิ์ในระบบแอฟฟิลิเอท'
+            ], 404);
+        }
+
+        // Get max depth from commission settings
+        $maxDepth = (int) \App\Models\Setting::get('commission_depth', 10);
+
+        // Build tree data
+        $treeData = $this->buildTreeNode($affiliate, 0, $maxDepth);
+
+        return response()->json([
+            'success' => true,
+            'data' => $treeData,
+            'max_depth' => $maxDepth,
+            'stats' => [
+                'direct_referrals' => $affiliate->children->count(),
+                'total_network' => $this->countTotalNetwork($affiliate),
+                'total_earnings' => $this->sumNetworkEarnings($affiliate),
+                'max_level' => $this->getMaxLevel($affiliate),
+            ]
+        ]);
+    }
+
+    /**
+     * Build tree node recursively
+     */
+    protected function buildTreeNode($affiliate, $currentDepth = 0, $maxDepth = 10)
+    {
+        // Load necessary relationships
+        $affiliate->load(['user', 'rank', 'children' => function ($query) {
+            $query->with(['user', 'rank'])->orderBy('created_at', 'desc');
+        }]);
+
+        $node = [
+            'id' => $affiliate->id,
+            'name' => $affiliate->user->name,
+            'email' => $affiliate->user->email,
+            'avatar' => $this->getAvatar($affiliate->user),
+            'referral_code' => $affiliate->referral_code,
+            'level' => $affiliate->level,
+            'depth' => $currentDepth,
+            'status' => $affiliate->status,
+            'total_earnings' => $affiliate->total_earnings,
+            'total_referrals' => $affiliate->total_referrals,
+            'direct_children' => $affiliate->children->count(),
+            'created_at' => $affiliate->created_at->format('d/m/Y'),
+            'rank' => $affiliate->rank ? [
+                'name' => $affiliate->rank->display_name,
+                'color' => $affiliate->rank->color,
+                'level' => $affiliate->rank->level,
+            ] : null,
+        ];
+
+        // Always initialize children array
+        $node['children'] = [];
+
+        // Recursively add children if not at max depth
+        if ($currentDepth < $maxDepth && $affiliate->children->count() > 0) {
+            foreach ($affiliate->children as $child) {
+                $node['children'][] = $this->buildTreeNode($child, $currentDepth + 1, $maxDepth);
+            }
+        }
+
+        // Store collapsed children count if there are hidden children
+        if ($affiliate->children->count() > 0 && $currentDepth >= $maxDepth) {
+            $node['_children'] = $affiliate->children->count();
+        }
+
+        return $node;
+    }
+
+    /**
+     * Get user avatar (first letter or profile picture)
+     */
+    protected function getAvatar($user)
+    {
+        if ($user->profile_picture) {
+            return [
+                'type' => 'image',
+                'url' => asset($user->profile_picture)
+            ];
+        }
+
+        return [
+            'type' => 'text',
+            'text' => strtoupper(substr($user->name, 0, 1))
+        ];
+    }
+
+    /**
      * Update user password
      */
     public function updatePassword(Request $request)

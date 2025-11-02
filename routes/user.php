@@ -23,6 +23,9 @@ Route::get('/commissions', [DashboardController::class, 'commissions'])->name('c
 Route::get('/referrals', [DashboardController::class, 'referrals'])->name('referrals');
 Route::get('/organization', [DashboardController::class, 'organizationChart'])->name('organization');
 
+// Organization Tree API (for web session)
+Route::get('/organization/tree-data', [DashboardController::class, 'getOrganizationTreeData'])->name('organization.tree-data');
+
 // Wallet Management (User)
 Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/', [WalletController::class, 'index'])->name('index');
