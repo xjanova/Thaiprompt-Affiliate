@@ -32,7 +32,7 @@
                     <!-- Avatar with Rank -->
                     @php
                         $rank = $node->rank ?? null;
-                        $rankColor = $rank ? $rank->color : '#3B82F6';
+                        $rankColor = $rank ? $rank->color : '#CBD5E1'; // Gray color for no rank
                         $rankStars = $rank ? $rank->stars : 0;
                     @endphp
                     <div class="relative">
@@ -42,16 +42,19 @@
                             {{ strtoupper(substr($node->user->name, 0, 1)) }}
                         </div>
 
-                        <!-- Rank Stars -->
-                        @if($rankStars > 0)
-                            <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex gap-0.5 bg-white rounded-full px-1.5 py-0.5 shadow-sm border"
-                                 style="border-color: {{ $rankColor }};"
-                                 title="{{ $rank->display_name ?? '' }}">
+                        <!-- Rank Stars or Empty Stars -->
+                        <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex gap-0.5 bg-white rounded-full px-1.5 py-0.5 shadow-sm border"
+                             style="border-color: {{ $rankColor }};"
+                             title="{{ $rank ? $rank->display_name : 'ไม่มี Rank' }}">
+                            @if($rankStars > 0)
                                 @for($i = 0; $i < min($rankStars, 5); $i++)
                                     <span class="text-xs">⭐</span>
                                 @endfor
-                            </div>
-                        @endif
+                            @else
+                                <!-- Empty stars for no rank -->
+                                <span class="text-xs text-gray-300">☆</span>
+                            @endif
+                        </div>
                     </div>
 
                     <!-- Name & Info -->
@@ -63,6 +66,11 @@
                                       style="background-color: {{ $rankColor }};"
                                       title="{{ $rank->display_description ?? '' }}">
                                     {{ $rank->badge_icon ?? '🏆' }} {{ $rank->display_name }}
+                                </span>
+                            @else
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 border border-gray-300"
+                                      title="ยังไม่มี Rank">
+                                    ไม่มี Rank
                                 </span>
                             @endif
                         </div>
