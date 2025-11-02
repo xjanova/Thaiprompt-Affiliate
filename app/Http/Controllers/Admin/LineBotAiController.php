@@ -13,10 +13,9 @@ class LineBotAiController extends Controller
 {
     public function index()
     {
-        $settings = LineBotAiSetting::with('knowledgeBases')->get();
-        $activeSetting = LineBotAiSetting::getActive();
+        $aiSettings = LineBotAiSetting::with('knowledgeBases')->get();
 
-        return view('admin.line-bot.ai.index', compact('settings', 'activeSetting'));
+        return view('admin.line-bot.ai.index', compact('aiSettings'));
     }
 
     public function create()
@@ -56,8 +55,8 @@ class LineBotAiController extends Controller
 
     public function edit($id)
     {
-        $setting = LineBotAiSetting::with('knowledgeBases')->findOrFail($id);
-        return view('admin.line-bot.ai.edit', compact('setting'));
+        $aiSetting = LineBotAiSetting::with('knowledgeBases')->findOrFail($id);
+        return view('admin.line-bot.ai.edit', compact('aiSetting'));
     }
 
     public function update(Request $request, $id)
@@ -129,8 +128,9 @@ class LineBotAiController extends Controller
     // Knowledge Base Management
     public function knowledgeIndex($aiSettingId)
     {
-        $setting = LineBotAiSetting::with('knowledgeBases')->findOrFail($aiSettingId);
-        return view('admin.line-bot.ai.knowledge.index', compact('setting'));
+        $aiSetting = LineBotAiSetting::with('knowledgeBases')->findOrFail($aiSettingId);
+        $knowledgeBases = $aiSetting->knowledgeBases;
+        return view('admin.line-bot.ai.knowledge-base', compact('aiSetting', 'knowledgeBases'));
     }
 
     public function knowledgeCreate($aiSettingId)

@@ -12,13 +12,13 @@ class LineRichMenuController extends Controller
 {
     public function index()
     {
-        $menus = LineRichMenu::orderBy('created_at', 'desc')->get();
-        return view('admin.line-bot.rich-menu.index', compact('menus'));
+        $richMenus = LineRichMenu::orderBy('created_at', 'desc')->get();
+        return view('admin.line-bot.rich-menus.index', compact('richMenus'));
     }
 
     public function create()
     {
-        return view('admin.line-bot.rich-menu.create');
+        return view('admin.line-bot.rich-menus.create');
     }
 
     public function store(Request $request)
@@ -55,8 +55,8 @@ class LineRichMenuController extends Controller
 
     public function edit($id)
     {
-        $menu = LineRichMenu::findOrFail($id);
-        return view('admin.line-bot.rich-menu.edit', compact('menu'));
+        $richMenu = LineRichMenu::findOrFail($id);
+        return view('admin.line-bot.rich-menus.edit', compact('richMenu'));
     }
 
     public function update(Request $request, $id)

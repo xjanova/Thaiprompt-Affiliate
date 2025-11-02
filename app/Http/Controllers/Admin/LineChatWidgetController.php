@@ -11,11 +11,9 @@ class LineChatWidgetController extends Controller
 {
     public function index()
     {
-        $setting = LineChatWidgetSetting::first() ?? new LineChatWidgetSetting();
-        $avatars = LineAvatar::active()->get();
-        $positions = LineChatWidgetSetting::getPositions();
+        $settings = LineChatWidgetSetting::first() ?? new LineChatWidgetSetting();
 
-        return view('admin.line-bot.chat-widget.index', compact('setting', 'avatars', 'positions'));
+        return view('admin.line-bot.chat-widget.index', compact('settings'));
     }
 
     public function update(Request $request)
