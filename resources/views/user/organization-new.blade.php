@@ -191,7 +191,13 @@ async function loadTreeData() {
             });
         }
 
-        treeNetwork.loadData(result.data);
+        // Load data (even if user has no children, they should see themselves)
+        if (result.data) {
+            treeNetwork.loadData(result.data);
+        }
+
+        // Hide loading state
+        loading?.classList.add('hidden');
 
     } catch (err) {
         console.error('Error loading tree data:', err);
@@ -391,14 +397,15 @@ class TreeNetwork {
         if (!data) return { nodes, edges };
 
         const nodeId = data.id || `node_${nodes.length}`;
+        const nodeLabel = data.name || 'Unknown';
         const imageUrl = this.createAvatarDataUrl(
-            data.avatar?.text || data.name?.charAt(0)?.toUpperCase() || '?',
+            data.avatar?.text || nodeLabel.charAt(0)?.toUpperCase() || '?',
             this.getNodeColor(data)
         );
 
         nodes.push({
             id: nodeId,
-            label: data.name.length > 20 ? data.name.substring(0, 20) + '...' : data.name,
+            label: nodeLabel.length > 20 ? nodeLabel.substring(0, 20) + '...' : nodeLabel,
             image: imageUrl,
             title: this.createTooltipHtml(data),
             level: level,
@@ -410,7 +417,8 @@ class TreeNetwork {
             edges.push({ from: parentId, to: nodeId });
         }
 
-        if (data.children) {
+        // Process children if they exist and is an array
+        if (data.children && Array.isArray(data.children) && data.children.length > 0) {
             data.children.forEach(child => {
                 this.convertToNetwork(child, nodeId, nodes, edges, level + 1);
             });
@@ -443,11 +451,18 @@ class TreeNetwork {
     }
 
     createTooltipHtml(data) {
+        const name = data.name || 'Unknown';
+        const email = data.email || '-';
+        const referralCode = data.referral_code || '-';
+        const level = data.level || 0;
+        const directChildren = data.direct_children || 0;
+        const totalEarnings = data.total_earnings || 0;
+
         return `<div style="padding: 8px;">
-            <strong>${data.name}</strong><br>
-            ${data.email}<br>
-            รหัส: ${data.referral_code} | L${data.level || 0}<br>
-            ลูกทีม: ${data.direct_children || 0} | รายได้: ฿${(data.total_earnings || 0).toLocaleString()}
+            <strong>${name}</strong><br>
+            ${email}<br>
+            รหัส: ${referralCode} | L${level}<br>
+            ลูกทีม: ${directChildren} | รายได้: ฿${totalEarnings.toLocaleString('th-TH')}
         </div>`;
     }
 
