@@ -1046,6 +1046,108 @@
                                 </p>
                             </div>
 
+                            <!-- Auto Update Schedule -->
+                            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6" x-data="{
+                                frequency: '{{ setting('threat_update_frequency', 'daily') }}'
+                            }">
+                                <h4 class="text-md font-semibold text-gray-900 mb-4">⏰ ตั้งเวลาอัปเดตอัตโนมัติ</h4>
+
+                                <div class="space-y-4">
+                                    <!-- Enable Auto Update -->
+                                    <div class="flex items-center">
+                                        <input type="checkbox" name="threat_auto_update_enabled" id="threat_auto_update_enabled"
+                                               {{ setting('threat_auto_update_enabled', true) ? 'checked' : '' }}
+                                               class="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                                        <label for="threat_auto_update_enabled" class="ml-2 text-sm font-medium text-gray-900">
+                                            เปิดใช้งานการอัปเดตอัตโนมัติ
+                                        </label>
+                                    </div>
+
+                                    <!-- Frequency Selection -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            ความถี่ในการอัปเดต
+                                        </label>
+                                        <select name="threat_update_frequency"
+                                                x-model="frequency"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                            <option value="hourly">⏱️ ทุกชั่วโมง (Hourly)</option>
+                                            <option value="daily">📅 ทุกวัน (Daily)</option>
+                                            <option value="weekly">📆 ทุกสัปดาห์ (Weekly)</option>
+                                            <option value="custom">⚙️ กำหนดเอง (Custom Cron)</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Time Selection (for daily and weekly) -->
+                                    <div x-show="frequency === 'daily' || frequency === 'weekly'" x-transition>
+                                        <label for="threat_update_time" class="block text-sm font-medium text-gray-700 mb-2">
+                                            เวลาที่ต้องการอัปเดต
+                                        </label>
+                                        <input type="time" name="threat_update_time" id="threat_update_time"
+                                               value="{{ old('threat_update_time', setting('threat_update_time', '03:00')) }}"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                        <p class="mt-1 text-xs text-gray-500">
+                                            แนะนำ: 03:00 (ช่วงที่เซิร์ฟเวอร์ไม่ยุ่ง)
+                                        </p>
+                                    </div>
+
+                                    <!-- Day Selection (for weekly) -->
+                                    <div x-show="frequency === 'weekly'" x-transition>
+                                        <label for="threat_update_day" class="block text-sm font-medium text-gray-700 mb-2">
+                                            วันที่ต้องการอัปเดต
+                                        </label>
+                                        <select name="threat_update_day" id="threat_update_day"
+                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500">
+                                            <option value="0" {{ setting('threat_update_day', 0) == 0 ? 'selected' : '' }}>อาทิตย์ (Sunday)</option>
+                                            <option value="1" {{ setting('threat_update_day', 0) == 1 ? 'selected' : '' }}>จันทร์ (Monday)</option>
+                                            <option value="2" {{ setting('threat_update_day', 0) == 2 ? 'selected' : '' }}>อังคาร (Tuesday)</option>
+                                            <option value="3" {{ setting('threat_update_day', 0) == 3 ? 'selected' : '' }}>พุธ (Wednesday)</option>
+                                            <option value="4" {{ setting('threat_update_day', 0) == 4 ? 'selected' : '' }}>พฤหัสบดี (Thursday)</option>
+                                            <option value="5" {{ setting('threat_update_day', 0) == 5 ? 'selected' : '' }}>ศุกร์ (Friday)</option>
+                                            <option value="6" {{ setting('threat_update_day', 0) == 6 ? 'selected' : '' }}>เสาร์ (Saturday)</option>
+                                        </select>
+                                    </div>
+
+                                    <!-- Custom Cron Expression -->
+                                    <div x-show="frequency === 'custom'" x-transition>
+                                        <label for="threat_update_cron" class="block text-sm font-medium text-gray-700 mb-2">
+                                            Cron Expression
+                                        </label>
+                                        <input type="text" name="threat_update_cron" id="threat_update_cron"
+                                               value="{{ old('threat_update_cron', setting('threat_update_cron', '')) }}"
+                                               placeholder="0 3 * * *"
+                                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 font-mono">
+                                        <div class="mt-2 p-3 bg-blue-50 border border-blue-200 rounded">
+                                            <p class="text-xs text-blue-800 font-medium mb-2">📖 รูปแบบ Cron Expression:</p>
+                                            <code class="text-xs text-blue-900">* * * * *</code>
+                                            <p class="text-xs text-blue-700 mt-1">นาที ชั่วโมง วัน เดือน วันในสัปดาห์</p>
+                                            <div class="mt-2 space-y-1 text-xs text-blue-700">
+                                                <p>• <code>0 3 * * *</code> - ทุกวันเวลา 03:00</p>
+                                                <p>• <code>0 */6 * * *</code> - ทุก 6 ชั่วโมง</p>
+                                                <p>• <code>0 0 * * 0</code> - ทุกวันอาทิตย์เวลา 00:00</p>
+                                                <p>• <code>*/30 * * * *</code> - ทุก 30 นาที</p>
+                                            </div>
+                                            <p class="text-xs text-blue-600 mt-2">
+                                                🔗 <a href="https://crontab.guru/" target="_blank" class="underline hover:text-blue-800">ตรวจสอบ Cron Expression ที่ crontab.guru</a>
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Current Schedule Info -->
+                                    <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                                        <p class="text-xs text-yellow-800">
+                                            <strong>💡 สำคัญ:</strong> ต้องตั้งค่า Cron Job บนเซิร์ฟเวอร์ด้วย:
+                                        </p>
+                                        <code class="block mt-2 p-2 bg-gray-800 text-green-400 text-xs rounded font-mono">
+                                            * * * * * cd /path/to/project && php artisan schedule:run >> /dev/null 2>&1
+                                        </code>
+                                        <p class="text-xs text-yellow-700 mt-2">
+                                            Cron job นี้จะรันทุกนาทีและ Laravel จะจัดการ schedule ที่คุณตั้งค่าไว้
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- API Keys -->
                             <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
                                 <h4 class="text-md font-semibold text-gray-900 mb-4">🔑 API Keys (Optional)</h4>
