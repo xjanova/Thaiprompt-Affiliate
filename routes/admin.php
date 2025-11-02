@@ -357,7 +357,7 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
     });
 
     // Avatars
-    Route::prefix('avatar')->name('avatar.')->group(function () {
+    Route::prefix('avatars')->name('avatars.')->group(function () {
         Route::get('/', [LineAvatarController::class, 'index'])->name('index');
         Route::get('/create', [LineAvatarController::class, 'create'])->name('create');
         Route::post('/', [LineAvatarController::class, 'store'])->name('store');
