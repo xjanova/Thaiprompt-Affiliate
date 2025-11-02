@@ -329,6 +329,19 @@ jobs:
             fi
 
             echo "Pushing to branch: $TARGET_BRANCH"
+
+            # Pull with rebase to sync with remote changes
+            echo "Fetching latest changes from remote..."
+            git fetch origin $TARGET_BRANCH
+
+            echo "Rebasing on top of remote changes..."
+            git rebase origin/$TARGET_BRANCH || {
+              echo "Rebase failed, trying to abort and use merge strategy..."
+              git rebase --abort
+              git pull --no-rebase origin $TARGET_BRANCH
+            }
+
+            # Push the changes
             git push origin HEAD:$TARGET_BRANCH
           fi
 
