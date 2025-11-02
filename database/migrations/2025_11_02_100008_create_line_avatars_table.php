@@ -11,6 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip if table already exists (from SQL import)
+        if (Schema::hasTable('line_avatars')) {
+            $this->command->warn('Table line_avatars already exists, skipping...');
+            return;
+        }
+
         Schema::create('line_avatars', function (Blueprint $table) {
             $table->id();
             $table->string('name');

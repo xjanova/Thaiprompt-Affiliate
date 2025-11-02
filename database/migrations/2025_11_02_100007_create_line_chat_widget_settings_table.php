@@ -11,6 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Skip if table already exists (from SQL import)
+        if (Schema::hasTable('line_chat_widget_settings')) {
+            $this->command->warn('Table line_chat_widget_settings already exists, skipping...');
+            return;
+        }
+
         Schema::create('line_chat_widget_settings', function (Blueprint $table) {
             $table->id();
             $table->string('name')->default('Support Chat');
