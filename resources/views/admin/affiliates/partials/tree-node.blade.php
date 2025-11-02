@@ -29,14 +29,43 @@
             <!-- Info -->
             <div class="flex-1">
                 <div class="flex items-center gap-3 mb-2">
-                    <!-- Avatar -->
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-md">
-                        {{ strtoupper(substr($node->user->name, 0, 1)) }}
+                    <!-- Avatar with Rank -->
+                    @php
+                        $rank = $node->rank ?? null;
+                        $rankColor = $rank ? $rank->color : '#3B82F6';
+                        $rankStars = $rank ? $rank->stars : 0;
+                    @endphp
+                    <div class="relative">
+                        <!-- Avatar Circle -->
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-md"
+                             style="border: 3px solid {{ $rankColor }};">
+                            {{ strtoupper(substr($node->user->name, 0, 1)) }}
+                        </div>
+
+                        <!-- Rank Stars -->
+                        @if($rankStars > 0)
+                            <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex gap-0.5 bg-white rounded-full px-1.5 py-0.5 shadow-sm border"
+                                 style="border-color: {{ $rankColor }};"
+                                 title="{{ $rank->display_name ?? '' }}">
+                                @for($i = 0; $i < min($rankStars, 5); $i++)
+                                    <span class="text-xs">⭐</span>
+                                @endfor
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Name & Info -->
                     <div>
-                        <h3 class="text-lg font-bold text-gray-900">{{ $node->user->name }}</h3>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-lg font-bold text-gray-900">{{ $node->user->name }}</h3>
+                            @if($rank)
+                                <span class="px-2 py-0.5 rounded text-xs font-medium text-white shadow-sm"
+                                      style="background-color: {{ $rankColor }};"
+                                      title="{{ $rank->display_description ?? '' }}">
+                                    {{ $rank->badge_icon ?? '🏆' }} {{ $rank->display_name }}
+                                </span>
+                            @endif
+                        </div>
                         <p class="text-sm text-gray-600">{{ $node->user->email }}</p>
                     </div>
 
