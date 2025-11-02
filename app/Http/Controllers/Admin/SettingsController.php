@@ -50,7 +50,19 @@ class SettingsController extends Controller
             'turnstile_profile_update' => ['nullable', 'boolean'],
             'turnstile_withdrawal' => ['nullable', 'boolean'],
             'turnstile_affiliate_app' => ['nullable', 'boolean'],
+            // Page Loader Settings
+            'page_loader_enabled' => ['nullable', 'boolean'],
+            'page_loader_type' => ['nullable', 'string', 'in:spinner,dots,pulse,progress,gradient_spinner,wave,bouncing_balls,custom_gif'],
+            'page_loader_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'page_loader_color_secondary' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
         ]);
+
+        // Validate GIF file separately
+        if ($request->hasFile('page_loader_gif')) {
+            $request->validate([
+                'page_loader_gif' => ['required', 'image', 'mimes:gif', 'max:2048'],
+            ]);
+        }
 
         // Handle checkbox values
         $validated['google_translate_enabled'] = $request->has('google_translate_enabled');
@@ -66,6 +78,26 @@ class SettingsController extends Controller
         $validated['turnstile_withdrawal'] = $request->has('turnstile_withdrawal');
         $validated['turnstile_affiliate_app'] = $request->has('turnstile_affiliate_app');
 
+        // Handle Page Loader checkbox
+        $validated['page_loader_enabled'] = $request->has('page_loader_enabled');
+
+        // Handle GIF upload for page loader
+        if ($request->hasFile('page_loader_gif')) {
+            $gifPath = $request->file('page_loader_gif')->store('page-loaders', 'public');
+            $gifUrl = '/storage/' . $gifPath;
+
+            // Delete old GIF if exists
+            $oldGif = Setting::get('page_loader_gif');
+            if ($oldGif) {
+                $oldPath = str_replace('/storage/', '', $oldGif);
+                if (Storage::disk('public')->exists($oldPath)) {
+                    Storage::disk('public')->delete($oldPath);
+                }
+            }
+
+            $validated['page_loader_gif'] = $gifUrl;
+        }
+
         foreach ($validated as $key => $value) {
             if ($value !== null) {
                 $type = is_bool($value) ? 'boolean' : (is_numeric($value) ? 'integer' : 'string');
@@ -75,6 +107,8 @@ class SettingsController extends Controller
                     $group = 'affiliate';
                 } elseif (str_starts_with($key, 'turnstile_')) {
                     $group = 'security';
+                } elseif (str_starts_with($key, 'page_loader_')) {
+                    $group = 'appearance';
                 } else {
                     $group = 'general';
                 }
