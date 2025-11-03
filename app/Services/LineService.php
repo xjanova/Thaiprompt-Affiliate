@@ -28,7 +28,8 @@ class LineService
             throw new Exception('LINE OA settings not configured');
         }
 
-        $redirectUri = $redirectUri ?? route('line.callback');
+        // Use custom redirect_uri from settings if available, otherwise use route
+        $redirectUri = $redirectUri ?? $this->settings->redirect_uri ?? route('line.callback');
 
         $params = http_build_query([
             'response_type' => 'code',
@@ -51,7 +52,8 @@ class LineService
             throw new Exception('LINE OA settings not configured');
         }
 
-        $redirectUri = $redirectUri ?? route('line.callback');
+        // Use custom redirect_uri from settings if available, otherwise use route
+        $redirectUri = $redirectUri ?? $this->settings->redirect_uri ?? route('line.callback');
 
         $response = Http::asForm()->post(self::LINE_OAUTH_BASE . '/token', [
             'grant_type' => 'authorization_code',
