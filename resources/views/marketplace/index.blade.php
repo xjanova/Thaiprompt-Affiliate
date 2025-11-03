@@ -36,13 +36,13 @@
                     </select>
                 </div>
 
-                <!-- Category -->
+                <!-- Provider Filter -->
                 <div class="col-md-2">
-                    <select name="category" class="form-select">
-                        <option value="">ทุกหมวดหมู่</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category }}" {{ request('category') == $category ? 'selected' : '' }}>
-                                {{ $category }}
+                    <select name="provider" class="form-select">
+                        <option value="">ทุกผู้ให้บริการ</option>
+                        @foreach($providers as $provider)
+                            <option value="{{ $provider->id }}" {{ request('provider') == $provider->id ? 'selected' : '' }}>
+                                {{ $provider->name }}
                             </option>
                         @endforeach
                     </select>
@@ -100,11 +100,6 @@
                         <p class="text-muted small mb-2" style="height: 60px; overflow: hidden;">
                             {{ Str::limit($bot->description, 100) }}
                         </p>
-
-                        <!-- Category -->
-                        @if($bot->category)
-                            <span class="badge bg-secondary mb-2">{{ $bot->category }}</span>
-                        @endif
 
                         <!-- Provider -->
                         <div class="small text-muted mb-2">
