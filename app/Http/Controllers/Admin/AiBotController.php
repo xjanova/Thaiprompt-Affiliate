@@ -17,13 +17,27 @@ class AiBotController extends Controller
      */
     public function index()
     {
-        $bots = AiBotProfile::with(['provider', 'model', 'owner'])
-            ->where('owner_id', Auth::id())
-            ->orWhere('is_public', true)
+        $bots = AiBotProfile::with(['provider', 'model', 'owner', 'conversations', 'usageLogs'])
+            ->where(function($query) {
+                $query->where('owner_id', Auth::id())
+                      ->orWhere('is_public', true);
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        return view('admin.ai-bots.index', compact('bots'));
+        // สถิติรวม
+        $myBots = AiBotProfile::where('owner_id', Auth::id())->get();
+
+        $stats = [
+            'total_bots' => $myBots->count(),
+            'active_bots' => $myBots->where('is_active', true)->count(),
+            'total_conversations' => $myBots->sum(fn($bot) => $bot->conversations()->count()),
+            'total_messages' => $myBots->sum(fn($bot) => $bot->conversations()->sum('total_messages')),
+            'total_tokens' => $myBots->sum(fn($bot) => $bot->usageLogs()->sum('total_tokens')),
+            'total_cost' => $myBots->sum(fn($bot) => $bot->usageLogs()->sum('cost')),
+        ];
+
+        return view('admin.ai-bots.index', compact('bots', 'stats'));
     }
 
     /**
