@@ -646,4 +646,7 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         Route::post('/', [\App\Http\Controllers\Admin\MlmSettingController::class, 'store'])->name('store');
         Route::delete('/{setting}', [\App\Http\Controllers\Admin\MlmSettingController::class, 'destroy'])->name('destroy');
     });
+
+    // MLM Genealogy Viewer
+    Route::get('/genealogy', [\App\Http\Controllers\Admin\MlmPlanController::class, 'genealogy'])->name('genealogy.index');
 });

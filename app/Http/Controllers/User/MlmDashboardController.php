@@ -25,23 +25,21 @@ class MlmDashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $members = $user->mlmMembers()->with('plan')->get();
+        $member = $user->mlmMembers()->with('plan', 'rank')->first();
 
-        $dashboardData = [];
-
-        foreach ($members as $member) {
-            $statistics = $this->calculationService->getMemberStatistics($member);
-            $pvStats = $this->pvService->getMemberPvStatistics($member);
-
-            $dashboardData[] = [
-                'member' => $member,
-                'plan' => $member->plan,
-                'statistics' => $statistics,
-                'pv_stats' => $pvStats,
-            ];
+        if (!$member) {
+            return redirect()->route('user.dashboard')
+                ->with('info', 'You are not enrolled in any MLM plan yet.');
         }
 
-        return view('user.mlm.dashboard', compact('dashboardData'));
+        // Get recent commissions
+        $recentCommissions = $member->commissions()
+            ->with('plan')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return view('user.mlm.dashboard', compact('member', 'recentCommissions'));
     }
 
     public function plan($memberCode)
@@ -92,14 +90,52 @@ class MlmDashboardController extends Controller
         return view('user.mlm.commissions', compact('commissions', 'stats'));
     }
 
-    public function genealogy(Request $request, $memberCode)
+    public function genealogy(Request $request)
     {
         $user = Auth::user();
-        $member = $user->mlmMembers()->where('member_code', $memberCode)->firstOrFail();
+        $member = $user->mlmMembers()->with('plan')->first();
 
-        $treeType = $request->get('type', 'unilevel');
+        if (!$member) {
+            return redirect()->route('user.mlm.dashboard')
+                ->with('error', 'You are not enrolled in any MLM plan yet.');
+        }
+
+        $treeType = $request->get('type', $member->plan->type === 'binary' || $member->plan->type === 'hybrid' ? 'binary' : 'unilevel');
 
         return view('user.mlm.genealogy', compact('member', 'treeType'));
+    }
+
+    public function referral()
+    {
+        $user = Auth::user();
+        $member = $user->mlmMembers()->with('plan')->first();
+
+        if (!$member) {
+            return redirect()->route('user.mlm.dashboard')
+                ->with('error', 'You are not enrolled in any MLM plan yet.');
+        }
+
+        $referralUrl = route('register', ['ref' => $member->member_code]);
+
+        return view('user.mlm.referral', compact('member', 'referralUrl'));
+    }
+
+    public function team()
+    {
+        $user = Auth::user();
+        $member = $user->mlmMembers()->with('plan')->first();
+
+        if (!$member) {
+            return redirect()->route('user.mlm.dashboard')
+                ->with('error', 'You are not enrolled in any MLM plan yet.');
+        }
+
+        $directReferrals = $member->unilevelChildren()
+            ->with('user')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('user.mlm.team', compact('member', 'directReferrals'));
     }
 
     public function getTreeData(Request $request, $memberCode)

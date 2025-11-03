@@ -119,3 +119,12 @@ Route::prefix('retention')->name('retention.')->group(function () {
     Route::get('/advance-renewal', [MembershipRetentionController::class, 'showAdvanceRenewal'])->name('advance-renewal');
     Route::post('/advance-renewal', [MembershipRetentionController::class, 'processAdvanceRenewal'])->name('advance-renewal.process');
 });
+
+// MLM System (User)
+Route::prefix('mlm')->name('mlm.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\User\MlmDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/genealogy', [\App\Http\Controllers\User\MlmDashboardController::class, 'genealogy'])->name('genealogy');
+    Route::get('/commissions', [\App\Http\Controllers\User\MlmDashboardController::class, 'commissions'])->name('commissions');
+    Route::get('/referral', [\App\Http\Controllers\User\MlmDashboardController::class, 'referral'])->name('referral');
+    Route::get('/team', [\App\Http\Controllers\User\MlmDashboardController::class, 'team'])->name('team');
+});
