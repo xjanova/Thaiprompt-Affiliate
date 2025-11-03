@@ -129,12 +129,12 @@
         <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
             <h4 class="font-medium text-blue-900 dark:text-blue-100 mb-2">💡 Variables ที่ใช้ได้</h4>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm text-blue-800 dark:text-blue-200">
-                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{'{{'}}user_name{{'}}'}}</code>
-                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{'{{'}}user_email{{'}}'}}</code>
-                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{'{{'}}app_name{{'}}'}}</code>
-                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{'{{'}}app_url{{'}}'}}</code>
-                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{'{{'}}amount{{'}}'}}</code>
-                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">{{'{{'}}action_url{{'}}'}}</code>
+                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">@{{user_name}}</code>
+                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">@{{user_email}}</code>
+                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">@{{app_name}}</code>
+                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">@{{app_url}}</code>
+                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">@{{amount}}</code>
+                <code class="bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded">@{{action_url}}</code>
             </div>
         </div>
 
