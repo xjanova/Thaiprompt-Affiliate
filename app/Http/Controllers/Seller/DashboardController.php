@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,24 @@ class DashboardController extends Controller
         $user = Auth::user();
         $sellerId = $user->id;
 
+        // Get or create vendor store
+        $store = VendorStore::where('user_id', $sellerId)->first();
+
+        if (!$store) {
+            // Create default store for seller
+            $store = VendorStore::create([
+                'user_id' => $sellerId,
+                'store_name' => $user->name . "'s Store",
+                'store_slug' => \Str::slug($user->name . '-store-' . $sellerId),
+                'status' => 'active',
+                'subscription_status' => 'trial',
+                'trial_ends_at' => now()->addDays(30),
+            ]);
+        }
+
+        // Get package information
+        $package = $store->package;
+
         // Sales statistics
         $totalSales = OrderItem::where('seller_id', $sellerId)->count();
         $pendingSales = OrderItem::where('seller_id', $sellerId)
@@ -33,6 +52,14 @@ class DashboardController extends Controller
         $totalRevenue = OrderItem::where('seller_id', $sellerId)
             ->whereHas('order', function ($q) {
                 $q->where('payment_status', 'paid');
+            })
+            ->sum('seller_earning');
+
+        // Today's revenue
+        $todayRevenue = OrderItem::where('seller_id', $sellerId)
+            ->whereHas('order', function ($q) {
+                $q->where('payment_status', 'paid')
+                  ->whereDate('created_at', today());
             })
             ->sum('seller_earning');
 
@@ -80,11 +107,12 @@ class DashboardController extends Controller
         $totalProducts = Product::where('seller_id', $sellerId)->count();
         $activeProducts = Product::where('seller_id', $sellerId)->where('is_active', true)->count();
         $outOfStockProducts = Product::where('seller_id', $sellerId)->outOfStock()->count();
+        $lowStockProducts = Product::where('seller_id', $sellerId)->lowStock()->count();
 
         // Recent orders
         $recentOrders = Order::with(['items' => function ($q) use ($sellerId) {
             $q->where('seller_id', $sellerId);
-        }])
+        }, 'user'])
             ->whereHas('items', function ($q) use ($sellerId) {
                 $q->where('seller_id', $sellerId);
             })
@@ -98,19 +126,29 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
+        // Store visitors (last 30 days) - Mock data for now
+        $totalVisitors = rand(500, 5000);
+        $conversionRate = $totalSales > 0 ? ($completedSales / $totalSales) * 100 : 0;
+
         return view('seller.dashboard', compact(
             'user',
+            'store',
+            'package',
             'totalSales',
             'pendingSales',
             'completedSales',
             'totalRevenue',
+            'todayRevenue',
             'monthlyRevenue',
             'salesGrowth',
             'totalProducts',
             'activeProducts',
             'outOfStockProducts',
+            'lowStockProducts',
             'recentOrders',
-            'topProducts'
+            'topProducts',
+            'totalVisitors',
+            'conversionRate'
         ));
     }
 
