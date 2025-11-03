@@ -156,8 +156,12 @@
                                     <p class="font-semibold text-blue-900 mb-1">Important URLs</p>
                                     <ul class="text-blue-700 space-y-1">
                                         <li><strong>Callback URL:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ route('line.callback') }}</code></li>
-                                        <li><strong>Webhook URL:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ route('line.webhook') }}</code></li>
+                                        <li><strong>Webhook URL:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ url('/api/webhook/line') }}</code></li>
                                     </ul>
+                                    <p class="text-xs text-blue-600 mt-2">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                                        Note: Webhook URL changed to /api/webhook/line (no CSRF protection)
+                                    </p>
                                 </div>
                             </div>
                         </div>
