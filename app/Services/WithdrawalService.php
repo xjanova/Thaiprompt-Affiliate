@@ -216,10 +216,12 @@ class WithdrawalService
         }
 
         DB::transaction(function () use ($request, $admin, $transferSlipFile, $transferNote) {
-            // Upload transfer slip
+            // Upload transfer slip and convert to WebP
             $slipPath = null;
             if ($transferSlipFile) {
-                $slipPath = $transferSlipFile->store('withdrawal-slips', 'public');
+                $webpService = app(WebPService::class);
+                $result = $webpService->convertAndStore($transferSlipFile, 'withdrawal-slips', 85);
+                $slipPath = $result['path'];
             }
 
             $request->update([

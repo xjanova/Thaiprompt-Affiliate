@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Frontend\HomeController;
+use App\Http\Controllers\Frontend\PageController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\SetupController;
@@ -79,6 +80,9 @@ Route::prefix('otp')->name('otp.')->group(function () {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
+
+// Dynamic Page Routes (Privacy Policy, Terms, etc.)
+Route::get('/page/{slug}', [PageController::class, 'show'])->name('page.show');
 
 // Marketplace Routes (Public browsing, Auth for renting)
 Route::prefix('marketplace')->name('marketplace.')->group(function () {

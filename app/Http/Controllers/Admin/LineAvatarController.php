@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LineAvatar;
+use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -29,7 +30,7 @@ class LineAvatarController extends Controller
             'name' => 'required|string|max:255',
             'type' => 'required|in:image,gif,lottie,video',
             'source_type' => 'required|in:upload,url',
-            'file' => 'required_if:source_type,upload|file|mimes:jpg,jpeg,png,gif,json,mp4,webm|max:5120',
+            'file' => 'required_if:source_type,upload|file|mimes:jpg,jpeg,png,gif,json,mp4,webm,webp|max:5120',
             'file_url' => 'required_if:source_type,url|url',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
@@ -38,11 +39,24 @@ class LineAvatarController extends Controller
 
         if ($request->source_type === 'upload' && $request->hasFile('file')) {
             $file = $request->file('file');
-            $path = $file->store('avatars', 'public');
+            $extension = strtolower($file->getClientOriginalExtension());
 
-            $validated['file_path'] = $path;
-            $validated['file_size'] = $file->getSize();
-            $validated['file_url'] = Storage::url($path);
+            // Convert to WebP for static images only (not GIFs, videos, or lottie JSON)
+            if ($request->type === 'image' && in_array($extension, ['jpg', 'jpeg', 'png'])) {
+                $webpService = app(WebPService::class);
+                $result = $webpService->convertAndStore($file, 'avatars', 85);
+
+                $validated['file_path'] = $result['path'];
+                $validated['file_size'] = Storage::disk('public')->size($result['path']);
+                $validated['file_url'] = $result['url'];
+            } else {
+                // Keep original format for GIFs, videos, and lottie animations
+                $path = $file->store('avatars', 'public');
+
+                $validated['file_path'] = $path;
+                $validated['file_size'] = $file->getSize();
+                $validated['file_url'] = Storage::url($path);
+            }
         } else {
             $validated['file_path'] = $request->file_url;
         }
