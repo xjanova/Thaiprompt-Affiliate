@@ -196,6 +196,7 @@
         walletOpen: localStorage.getItem('walletOpen') === 'true',
         emailMenuOpen: localStorage.getItem('emailMenuOpen') === 'true',
         lineMenuOpen: localStorage.getItem('lineMenuOpen') === 'true',
+        ecommerceMenuOpen: localStorage.getItem('ecommerceMenuOpen') === 'true',
         // Auto-open dropdown if current page is in submenu
         init() {
             this.checkActiveMenu();
@@ -213,6 +214,7 @@
             this.emailMenuOpen = false;
             this.lineMenuOpen = false;
             this.systemMenuOpen = false;
+            this.ecommerceMenuOpen = false;
 
             // Open only the relevant menu based on current path
             if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/line-bot') || currentPath.includes('/admin/otp') || currentPath.includes('/admin/ai-bots') || currentPath.includes('/admin/ai-providers') || currentPath.includes('/admin/ai-monitoring') || currentPath.includes('/admin/ai-installation')) {
@@ -223,6 +225,8 @@
                 this.walletOpen = true;
             } else if (currentPath.includes('/admin/email')) {
                 this.emailMenuOpen = true;
+            } else if (currentPath.includes('/admin/ecommerce')) {
+                this.ecommerceMenuOpen = true;
             } else if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications')) {
                 this.systemMenuOpen = true;
             }
@@ -232,6 +236,7 @@
             localStorage.setItem('walletOpen', this.walletOpen);
             localStorage.setItem('emailMenuOpen', this.emailMenuOpen);
             localStorage.setItem('lineMenuOpen', this.lineMenuOpen);
+            localStorage.setItem('ecommerceMenuOpen', this.ecommerceMenuOpen);
             localStorage.setItem('systemMenuOpen', this.systemMenuOpen);
         }
     }">
@@ -731,6 +736,78 @@
 
                 <!-- Divider -->
                 <div class="border-t border-gray-700/50 my-3"></div>
+
+                <!-- E-Commerce Management Dropdown -->
+                <div class="relative mb-1">
+                    @php
+                        $ecommerceActive = request()->routeIs('admin.ecommerce.*');
+                    @endphp
+
+                    <!-- Main E-Commerce Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-orange-600 hover:to-yellow-600 hover:text-white rounded-lg transition-all duration-200 group {{ $ecommerceActive ? 'bg-gradient-to-r from-orange-600 to-yellow-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('ecommerceMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🛒</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            E-Commerce
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': ecommerceMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="ecommerceMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('admin.ecommerce.dashboard') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ecommerce.dashboard') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.ecommerce.products.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ecommerce.products.*') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">📦</span>
+                            <span>จัดการสินค้า</span>
+                        </a>
+
+                        <a href="{{ route('admin.ecommerce.orders.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ecommerce.orders.*') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">📋</span>
+                            <span>จัดการคำสั่งซื้อ</span>
+                        </a>
+
+                        <a href="{{ route('admin.ecommerce.categories.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ecommerce.categories.*') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">🏷️</span>
+                            <span>หมวดหมู่สินค้า</span>
+                        </a>
+
+                        <a href="{{ route('admin.ecommerce.reviews.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ecommerce.reviews.*') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">⭐</span>
+                            <span>รีวิวสินค้า</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.ecommerce.reports') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ecommerce.reports') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">📈</span>
+                            <span>รายงานยอดขาย</span>
+                        </a>
+                    </div>
+                </div>
 
                 <!-- System Management Dropdown -->
                 <div class="relative mb-1">
