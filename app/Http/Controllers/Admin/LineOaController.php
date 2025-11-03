@@ -26,9 +26,10 @@ class LineOaController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'channel_id' => ['nullable', 'string', 'max:255'],
+            'login_channel_id' => ['nullable', 'string', 'max:255'],
             'channel_secret' => ['nullable', 'string', 'max:255'],
             'redirect_uri' => ['nullable', 'url', 'max:500'],
+            'messaging_channel_id' => ['nullable', 'string', 'max:255'],
             'channel_access_token' => ['nullable', 'string'],
             'liff_id' => ['nullable', 'string', 'max:255'],
             'require_line_registration' => ['boolean'],

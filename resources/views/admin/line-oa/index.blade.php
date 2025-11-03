@@ -98,64 +98,98 @@
                     </div>
                 </div>
 
-                <!-- LINE Channel Configuration -->
+                <!-- LINE Login Channel Configuration -->
                 <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
                     <div class="bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-4">
                         <h3 class="text-lg font-bold text-white flex items-center">
-                            <i class="fas fa-key mr-2"></i>
-                            LINE Channel Credentials
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            LINE Login Channel (OAuth)
                         </h3>
                     </div>
                     <div class="p-6 space-y-4">
-                        <p class="text-sm text-gray-600 mb-4">Enter your LINE Developer credentials to connect</p>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="fas fa-id-card text-blue-500 mr-1"></i> Channel ID <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" name="channel_id" value="{{ old('channel_id', $settings->channel_id) }}"
-                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                placeholder="1234567890">
-                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → Channel Basic Settings</p>
+                        <div class="p-3 bg-blue-50 rounded-lg border border-blue-200 mb-4">
+                            <p class="text-xs text-blue-800">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <strong>Note:</strong> LINE Login Channel is used for user authentication (login/register). This is different from Messaging API Channel.
+                            </p>
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="fas fa-lock text-blue-500 mr-1"></i> Channel Secret <span class="text-red-500">*</span>
+                                <i class="fas fa-id-card text-blue-500 mr-1"></i> LINE Login Channel ID <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="login_channel_id" value="{{ old('login_channel_id', $settings->login_channel_id) }}"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder="1234567890">
+                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → LINE Login Channel → Basic Settings</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-lock text-blue-500 mr-1"></i> LINE Login Channel Secret <span class="text-red-500">*</span>
                             </label>
                             <input type="password" name="channel_secret" value="{{ old('channel_secret', $settings->channel_secret) }}"
                                 class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                                 placeholder="••••••••••••••••">
-                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → Channel Basic Settings</p>
+                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → LINE Login Channel → Basic Settings</p>
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="fas fa-link text-blue-500 mr-1"></i> Redirect URI (Callback URL)
+                                <i class="fas fa-link text-blue-500 mr-1"></i> Redirect URI (Callback URL) <span class="text-red-500">*</span>
                             </label>
                             <input type="url" name="redirect_uri" value="{{ old('redirect_uri', $settings->redirect_uri) }}"
                                 class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                placeholder="{{ route('line.callback') }}">
+                                placeholder="{{ route('line.callback') }}"
+                                required>
                             <p class="text-xs text-gray-500 mt-1">
-                                <strong>Default:</strong> <code class="bg-gray-100 px-2 py-0.5 rounded text-xs">{{ route('line.callback') }}</code><br>
-                                Leave empty to use default. Set custom URL for production if APP_URL differs.
+                                <strong>Suggested:</strong> <code class="bg-gray-100 px-2 py-0.5 rounded text-xs">{{ route('line.callback') }}</code>
                             </p>
-                            <div class="mt-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-                                <p class="text-xs text-yellow-800">
+                            <div class="mt-2 p-3 bg-red-50 rounded-lg border border-red-200">
+                                <p class="text-xs text-red-800">
                                     <i class="fas fa-exclamation-triangle mr-1"></i>
-                                    <strong>Important:</strong> This URL must be registered in LINE Developers Console → LINE Login settings → Callback URL
+                                    <strong>REQUIRED:</strong> This exact URL must be registered in LINE Developers Console → LINE Login Channel → Callback URL.
+                                    If not set correctly, you will get "400 Bad Request - Invalid redirect_uri" error.
                                 </p>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LINE Messaging API Configuration -->
+                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-green-500 to-teal-600 px-6 py-4">
+                        <h3 class="text-lg font-bold text-white flex items-center">
+                            <i class="fas fa-comments mr-2"></i>
+                            LINE Messaging API Channel (Optional)
+                        </h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="p-3 bg-green-50 rounded-lg border border-green-200 mb-4">
+                            <p class="text-xs text-green-800">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                <strong>Note:</strong> LINE Messaging API Channel is used for sending messages to users. This is separate from LINE Login Channel.
+                            </p>
                         </div>
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="fas fa-ticket-alt text-blue-500 mr-1"></i> Channel Access Token (Long-lived)
+                                <i class="fas fa-hashtag text-green-500 mr-1"></i> Messaging API Channel ID (Optional)
+                            </label>
+                            <input type="text" name="messaging_channel_id" value="{{ old('messaging_channel_id', $settings->messaging_channel_id) }}"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                                placeholder="1234567890">
+                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → Messaging API Channel → Basic Settings (for reference only)</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-ticket-alt text-green-500 mr-1"></i> Channel Access Token (Long-lived)
                             </label>
                             <textarea name="channel_access_token" rows="3"
-                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all font-mono text-sm"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all font-mono text-sm"
                                 placeholder="Enter your long-lived channel access token here">{{ old('channel_access_token', $settings->channel_access_token) }}</textarea>
-                            <p class="text-xs text-gray-500 mt-1">For Messaging API → From Messaging API tab</p>
+                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → Messaging API Channel → Messaging API tab</p>
                         </div>
 
                         <div>
@@ -168,18 +202,17 @@
                             <p class="text-xs text-gray-500 mt-1">For LIFF (LINE Front-end Framework) applications</p>
                         </div>
 
-                        <div class="mt-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+                        <div class="mt-4 p-4 bg-gradient-to-r from-green-50 to-teal-50 rounded-xl border border-green-200">
                             <div class="flex items-start gap-3">
-                                <i class="fas fa-info-circle text-blue-500 text-xl mt-0.5"></i>
+                                <i class="fas fa-info-circle text-green-500 text-xl mt-0.5"></i>
                                 <div class="text-sm">
-                                    <p class="font-semibold text-blue-900 mb-1">Important URLs</p>
-                                    <ul class="text-blue-700 space-y-1">
-                                        <li><strong>Callback URL:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ route('line.callback') }}</code></li>
+                                    <p class="font-semibold text-green-900 mb-1">Webhook URL</p>
+                                    <ul class="text-green-700 space-y-1">
                                         <li><strong>Webhook URL:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ url('/api/webhook/line') }}</code></li>
                                     </ul>
-                                    <p class="text-xs text-blue-600 mt-2">
+                                    <p class="text-xs text-green-600 mt-2">
                                         <i class="fas fa-exclamation-triangle mr-1"></i>
-                                        Note: Webhook URL changed to /api/webhook/line (no CSRF protection)
+                                        Register this URL in LINE Developers Console → Messaging API Channel → Webhook settings
                                     </p>
                                 </div>
                             </div>
@@ -314,8 +347,8 @@
                         </div>
 
                         <div class="flex items-center justify-between p-3 bg-white/10 backdrop-blur-sm rounded-lg">
-                            <span class="text-sm">Channel:</span>
-                            @if($settings->channel_id)
+                            <span class="text-sm">Login:</span>
+                            @if($settings->login_channel_id)
                                 <span class="px-3 py-1 bg-white/20 rounded-full text-xs font-bold">Connected</span>
                             @else
                                 <span class="px-3 py-1 bg-red-500 rounded-full text-xs font-bold">Not Set</span>

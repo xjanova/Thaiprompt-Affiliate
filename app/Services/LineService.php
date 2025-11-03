@@ -33,7 +33,7 @@ class LineService
 
         $params = http_build_query([
             'response_type' => 'code',
-            'client_id' => $this->settings->channel_id,
+            'client_id' => $this->settings->login_channel_id,
             'redirect_uri' => $redirectUri,
             'state' => $state,
             'scope' => 'profile openid email',
@@ -59,7 +59,7 @@ class LineService
             'grant_type' => 'authorization_code',
             'code' => $code,
             'redirect_uri' => $redirectUri,
-            'client_id' => $this->settings->channel_id,
+            'client_id' => $this->settings->login_channel_id,
             'client_secret' => $this->settings->channel_secret,
         ]);
 
@@ -321,7 +321,7 @@ class LineService
     public function isConfigured(): bool
     {
         return $this->settings
-            && !empty($this->settings->channel_id)
+            && !empty($this->settings->login_channel_id)
             && !empty($this->settings->channel_secret)
             && $this->settings->is_active;
     }
@@ -361,10 +361,10 @@ class LineService
         ];
 
         // Test 2: Check if required fields are filled
-        if (empty($this->settings->channel_id) || empty($this->settings->channel_secret)) {
+        if (empty($this->settings->login_channel_id) || empty($this->settings->channel_secret)) {
             $results['tests']['credentials'] = [
                 'status' => 'error',
-                'message' => 'Channel ID or Secret is missing',
+                'message' => 'LINE Login Channel ID or Secret is missing',
             ];
             $results['overall_status'] = 'error';
             return $results;
@@ -372,7 +372,7 @@ class LineService
 
         $results['tests']['credentials'] = [
             'status' => 'success',
-            'message' => 'Channel ID and Secret are configured',
+            'message' => 'LINE Login Channel ID and Secret are configured',
         ];
 
         // Test 3: Test messaging API (if access token is configured)
