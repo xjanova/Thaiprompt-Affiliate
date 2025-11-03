@@ -189,7 +189,100 @@
                         </div>
                     @endif
 
-                    <form method="POST" action="{{ route('register') }}">
+                    @php
+                        $lineSettings = \App\Models\LineOaSetting::getActive();
+                        $lineRequired = $lineSettings && $lineSettings->require_line_registration;
+                        $showLineRegister = $lineSettings && $lineSettings->login_channel_id && $lineSettings->channel_secret;
+                    @endphp
+
+                    @if($lineRequired && $showLineRegister)
+                        <!-- LINE Required Registration Mode -->
+                        <div class="text-center space-y-6">
+                            <div class="p-4 md:p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl">
+                                <div class="mb-4">
+                                    <div class="w-16 h-16 md:w-20 md:h-20 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <svg class="w-10 h-10 md:w-12 md:h-12 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-lg md:text-xl font-bold text-gray-800 mb-2">ต้องการ LINE เพื่อสมัครสมาชิก</h3>
+                                    <p class="text-sm md:text-base text-gray-600">กรุณาทำตามขั้นตอนด้านล่างเพื่อสมัครสมาชิก</p>
+                                </div>
+
+                                <div class="bg-white rounded-lg p-4 md:p-6 space-y-4">
+                                    <div class="flex items-start text-left space-x-3">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">1</div>
+                                        <div class="flex-1">
+                                            <p class="font-semibold text-gray-800 text-sm md:text-base">เพิ่มเพื่อน LINE Official Account</p>
+                                            <p class="text-xs md:text-sm text-gray-600 mt-1">สแกน QR Code หรือกดปุ่มเพิ่มเพื่อนด้านล่าง</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- QR Code and Add Friend Button -->
+                                    @if($lineSettings->messaging_channel_id)
+                                    <div class="flex flex-col items-center space-y-4 py-4">
+                                        <!-- QR Code -->
+                                        <div class="bg-white p-4 rounded-xl border-2 border-gray-200 shadow-md">
+                                            <img src="https://qr-official.line.me/gs/M_{{ $lineSettings->messaging_channel_id }}_GW.png"
+                                                 alt="LINE OA QR Code"
+                                                 class="w-48 h-48 md:w-56 md:h-56">
+                                        </div>
+
+                                        <!-- Add Friend Button -->
+                                        <a href="#"
+                                           onclick="addLineFriend(event)"
+                                           class="w-full max-w-xs px-6 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold text-base md:text-lg hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center">
+                                            <i class="fas fa-user-plus mr-2"></i>
+                                            <span id="addFriendText">เพิ่มเพื่อน LINE</span>
+                                        </a>
+                                    </div>
+                                    @endif
+
+                                    <div class="flex items-start text-left space-x-3">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold text-sm">2</div>
+                                        <div class="flex-1">
+                                            <p class="font-semibold text-gray-800 text-sm md:text-base">กดปุ่มสมัครด้วย LINE</p>
+                                            <p class="text-xs md:text-sm text-gray-600 mt-1">หลังจากเพิ่มเพื่อนแล้ว กดปุ่มด้านล่างเพื่อสมัครสมาชิก</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LINE Register Button -->
+                            <a href="{{ route('line.login') }}{{ request('ref') ? '?ref=' . request('ref') : '' }}"
+                               class="block w-full px-6 py-4 border-2 border-green-500 rounded-xl text-green-700 bg-white hover:bg-green-50 font-bold text-base md:text-lg shadow-md hover:shadow-lg transition duration-300 group transform hover:scale-105">
+                                <svg class="w-6 h-6 md:w-7 md:h-7 inline-block mr-3" viewBox="0 0 24 24" fill="#06C755">
+                                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                                </svg>
+                                <span class="group-hover:text-green-800 transition">สมัครสมาชิกด้วย LINE</span>
+                            </a>
+
+                            <div class="text-xs md:text-sm text-gray-500 italic">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                ต้องเพิ่มเพื่อน LINE Official Account ก่อนจึงจะสมัครสมาชิกได้
+                            </div>
+                        </div>
+
+                        <script>
+                        function addLineFriend(event) {
+                            event.preventDefault();
+                            const lineId = '{{ $lineSettings->messaging_channel_id }}';
+
+                            // Detect if mobile
+                            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                            if (isMobile) {
+                                // On mobile: Open LINE app to add friend
+                                window.location.href = 'https://line.me/R/ti/p/@' + lineId;
+                            } else {
+                                // On desktop: Show message to scan QR code
+                                alert('กรุณาใช้โทรศัพท์สแกน QR Code เพื่อเพิ่มเพื่อน หรือค้นหา @' + lineId + ' ในแอพ LINE');
+                            }
+                        }
+                        </script>
+                    @else
+                        <!-- Normal Registration Form -->
+                        <form method="POST" action="{{ route('register') }}">
                         @csrf
 
                         @if (!empty($referralCode))
@@ -277,31 +370,27 @@
                         </div>
                         @endif
 
-                        <button type="submit" class="mt-6 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 md:py-4 rounded-xl font-bold text-base md:text-lg hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl">
-                            <i class="fas fa-rocket mr-2"></i> สมัครสมาชิกเลย!
-                        </button>
-                    </form>
+                            <button type="submit" class="mt-6 w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 md:py-4 rounded-xl font-bold text-base md:text-lg hover:from-purple-700 hover:to-pink-700 transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl">
+                                <i class="fas fa-rocket mr-2"></i> สมัครสมาชิกเลย!
+                            </button>
+                        </form>
 
-                    @php
-                        $lineSettings = \App\Models\LineOaSetting::getActive();
-                        $showLineRegister = $lineSettings && $lineSettings->channel_id && $lineSettings->channel_secret;
-                    @endphp
+                        @if($showLineRegister)
+                        <div class="mt-4 md:mt-6">
+                            <div class="relative flex items-center justify-center">
+                                <div class="border-t border-gray-300 w-full"></div>
+                                <span class="glass-effect px-3 md:px-4 text-gray-500 text-xs md:text-sm font-medium absolute">หรือ</span>
+                            </div>
 
-                    @if($showLineRegister)
-                    <div class="mt-4 md:mt-6">
-                        <div class="relative flex items-center justify-center">
-                            <div class="border-t border-gray-300 w-full"></div>
-                            <span class="glass-effect px-3 md:px-4 text-gray-500 text-xs md:text-sm font-medium absolute">หรือ</span>
+                            <a href="{{ route('line.login') }}{{ request('ref') ? '?ref=' . request('ref') : '' }}"
+                               class="mt-4 md:mt-6 w-full flex items-center justify-center px-4 md:px-6 py-3 md:py-4 border-2 border-gray-300 rounded-xl text-gray-700 bg-white hover:bg-gray-50 font-bold text-base md:text-lg shadow-md hover:shadow-lg transition duration-300 group transform hover:scale-105">
+                                <svg class="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" viewBox="0 0 24 24" fill="#06C755">
+                                    <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                                </svg>
+                                <span class="group-hover:text-gray-900 transition">สมัครด้วย LINE</span>
+                            </a>
                         </div>
-
-                        <a href="{{ route('line.login') }}{{ request('ref') ? '?ref=' . request('ref') : '' }}"
-                           class="mt-4 md:mt-6 w-full flex items-center justify-center px-4 md:px-6 py-3 md:py-4 border-2 border-gray-300 rounded-xl text-gray-700 bg-white hover:bg-gray-50 font-bold text-base md:text-lg shadow-md hover:shadow-lg transition duration-300 group transform hover:scale-105">
-                            <svg class="w-5 h-5 md:w-6 md:h-6 mr-2 md:mr-3" viewBox="0 0 24 24" fill="#06C755">
-                                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
-                            </svg>
-                            <span class="group-hover:text-gray-900 transition">สมัครด้วย LINE</span>
-                        </a>
-                    </div>
+                        @endif
                     @endif
 
                     <div class="mt-4 md:mt-6 text-center space-y-2 md:space-y-3">

@@ -24,20 +24,6 @@ class RegisterController extends Controller
     {
         $referralCode = $request->query('ref');
 
-        // Check if LINE registration is required
-        $lineRequired = LineOaSetting::isRequired();
-        $lineProfile = Session::get('line_temp_profile');
-
-        // If LINE is required and no LINE profile, redirect to LINE login
-        if ($lineRequired && !$lineProfile) {
-            $redirectUrl = route('line.redirect');
-            if ($referralCode) {
-                $redirectUrl .= '?ref=' . $referralCode;
-            }
-            return redirect($redirectUrl)
-                ->with('info', 'กรุณาเข้าสู่ระบบด้วย LINE เพื่อสมัครสมาชิก');
-        }
-
         // Get default sponsor info
         $defaultSponsorName = null;
         if (empty($referralCode)) {
@@ -50,7 +36,10 @@ class RegisterController extends Controller
             }
         }
 
-        return view('auth.register', compact('referralCode', 'defaultSponsorName', 'lineRequired', 'lineProfile'));
+        // Check if LINE profile exists in session (for LINE registration flow)
+        $lineProfile = Session::get('line_temp_profile');
+
+        return view('auth.register', compact('referralCode', 'defaultSponsorName', 'lineProfile'));
     }
 
     /**
