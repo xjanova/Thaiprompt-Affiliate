@@ -19,6 +19,43 @@
         </a>
     </div>
 
+    <!-- Overpay Warning Alert -->
+    @if(isset($currentCommissionPercentage))
+    <div class="mb-6 rounded-lg p-4 border
+        {{ $currentCommissionPercentage > 50 ? 'bg-red-50 border-red-200' : ($currentCommissionPercentage > 40 ? 'bg-yellow-50 border-yellow-200' : 'bg-green-50 border-green-200') }}">
+        <div class="flex items-start">
+            <svg class="w-6 h-6 mt-0.5 mr-3
+                {{ $currentCommissionPercentage > 50 ? 'text-red-500' : ($currentCommissionPercentage > 40 ? 'text-yellow-500' : 'text-green-500') }}"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                @if($currentCommissionPercentage > 50)
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                @elseif($currentCommissionPercentage > 40)
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                @else
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                @endif
+            </svg>
+            <div class="flex-1">
+                <h3 class="text-sm font-semibold
+                    {{ $currentCommissionPercentage > 50 ? 'text-red-800' : ($currentCommissionPercentage > 40 ? 'text-yellow-800' : 'text-green-800') }}">
+                    ประมาณการเปอร์เซ็นต์คอมมิชชั่นรวม: {{ number_format($currentCommissionPercentage, 2) }}%
+                </h3>
+                <p class="text-sm mt-1
+                    {{ $currentCommissionPercentage > 50 ? 'text-red-700' : ($currentCommissionPercentage > 40 ? 'text-yellow-700' : 'text-green-700') }}">
+                    @if($currentCommissionPercentage > 50)
+                        <strong>⚠️ อันตราย - Overpay!</strong> เปอร์เซ็นต์คอมมิชชั่นรวมเกิน 50% อาจทำให้ขาดทุน
+                        <br>แนะนำ: ลดเปอร์เซ็นต์ Unilevel หรือ Binary เพื่อควบคุมต้นทุน
+                    @elseif($currentCommissionPercentage > 40)
+                        <strong>⚡ คำเตือน</strong> เปอร์เซ็นต์คอมมิชชั่นใกล้ขีดจำกัด กรุณาตรวจสอบการคำนวณอีกครั้ง
+                    @else
+                        <strong>✓ ปลอดภัย</strong> เปอร์เซ็นต์คอมมิชชั่นอยู่ในเกณฑ์ที่เหมาะสม
+                    @endif
+                </p>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Info Alert -->
     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <div class="flex items-start">

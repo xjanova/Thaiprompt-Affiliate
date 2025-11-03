@@ -18,7 +18,7 @@ class MlmPlanController extends Controller
 
     public function create()
     {
-        return view('admin.mlm.plans.create-premium');
+        return view('admin.mlm.plans.create-package');
     }
 
     public function genealogy()
@@ -34,65 +34,48 @@ class MlmPlanController extends Controller
             'name_th' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'description_th' => 'nullable|string',
-            'type' => 'required|in:unilevel,binary,hybrid',
             'color' => 'nullable|string|max:20',
+            'icon' => 'nullable|string|max:50',
             'joining_fee' => 'nullable|numeric|min:0',
+            'sort_order' => 'nullable|integer|min:0',
             'requires_joining_fee' => 'boolean',
-            'use_pv_system' => 'boolean',
-            'global_pv_rate' => 'required|numeric|min:0',
-            'global_commission_per_pv' => 'required|numeric|min:0',
-            'max_total_commission_percentage' => 'nullable|numeric|min:0|max:100',
-            'enable_overpay_protection' => 'boolean',
-
-            // Unilevel
-            'unilevel_levels' => 'nullable|array',
-            'unilevel_max_depth' => 'nullable|integer|min:1|max:50',
-            'unilevel_compression' => 'boolean',
-            'unilevel_max_commission_per_level' => 'nullable|numeric|min:0',
-            'unilevel_max_commission_per_order' => 'nullable|numeric|min:0',
-
-            // Binary
-            'binary_pair_commission' => 'nullable|numeric|min:0',
-            'binary_match_percentage' => 'nullable|numeric|min:0|max:100',
-            'binary_max_pairs_per_day' => 'nullable|numeric|min:0',
-            'binary_max_commission_per_day' => 'nullable|numeric|min:0',
-            'binary_min_pv_for_commission' => 'nullable|numeric|min:0',
-            'binary_flush_percentage' => 'nullable|numeric|min:0|max:100',
-            'binary_flush_enabled' => 'boolean',
-            'binary_flush_mode' => 'nullable|in:percentage,full,none',
-            'binary_carry_forward_pv' => 'boolean',
-            'binary_carry_forward_days' => 'nullable|integer|min:1',
-            'binary_spillover' => 'boolean',
-            'binary_pairing_type' => 'nullable|in:1:1,2:1',
-            'binary_placement_preference' => 'nullable|in:left_first,right_first,fill_level,weak_leg,balanced',
-            'binary_placement_fill_level_first' => 'boolean',
-
-            // Auto Placement
-            'auto_placement' => 'boolean',
-            'auto_placement_type' => 'nullable|in:left_to_right,balanced,weak_leg',
+            'is_active' => 'boolean',
+            'is_default' => 'boolean',
+            'products' => 'nullable|array',
+            'products.*.id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
+            'products.*.discount_percentage' => 'nullable|numeric|min:0|max:100',
+            'products.*.sort_order' => 'nullable|integer|min:0',
         ]);
 
+        // Generate slug
         $validated['slug'] = Str::slug($validated['name']);
 
-        // Transform unilevel_levels to proper format
-        if (isset($validated['unilevel_levels']) && is_array($validated['unilevel_levels'])) {
-            $levels = [];
-            foreach ($validated['unilevel_levels'] as $level => $percentage) {
-                if ($percentage > 0) {
-                    $levels[] = [
-                        'level' => (int)$level,
-                        'percentage' => (float)$percentage
-                    ];
-                }
+        // Set default type to 'hybrid' (uses global MLM settings)
+        $validated['type'] = 'hybrid';
+
+        // Create the plan
+        $plan = MlmPlan::create($validated);
+
+        // Attach products if any
+        if (!empty($validated['products'])) {
+            foreach ($validated['products'] as $product) {
+                $plan->products()->attach($product['id'], [
+                    'quantity' => $product['quantity'],
+                    'discount_percentage' => $product['discount_percentage'] ?? 0,
+                    'sort_order' => $product['sort_order'] ?? 0,
+                ]);
             }
-            $validated['unilevel_levels'] = $levels;
         }
 
-        $plan = MlmPlan::create($validated);
+        // If this is set as default, unset other defaults
+        if ($plan->is_default) {
+            MlmPlan::where('id', '!=', $plan->id)->update(['is_default' => false]);
+        }
 
         return redirect()
             ->route('admin.mlm.plans.index')
-            ->with('success', 'MLM Plan created successfully');
+            ->with('success', 'MLM Package created successfully');
     }
 
     public function edit(MlmPlan $plan)
