@@ -186,13 +186,17 @@
                 <!-- Principal Growth Chart -->
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">📈 กราฟการเติบโตของเงินต้น</h3>
-                    <canvas id="principal-chart" height="300"></canvas>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="principal-chart"></canvas>
+                    </div>
                 </div>
 
                 <!-- Dividend Breakdown -->
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">🥧 สัดส่วนผลตอบแทน</h3>
-                    <canvas id="dividend-breakdown-chart" height="300"></canvas>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="dividend-breakdown-chart"></canvas>
+                    </div>
                 </div>
             </div>
 

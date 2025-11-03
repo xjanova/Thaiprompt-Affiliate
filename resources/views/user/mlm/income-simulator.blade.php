@@ -187,13 +187,17 @@
                 <!-- Income Growth Chart -->
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">📈 กราฟการเติบโตของรายได้</h3>
-                    <canvas id="income-chart" height="300"></canvas>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="income-chart"></canvas>
+                    </div>
                 </div>
 
                 <!-- Income Breakdown Pie -->
                 <div class="bg-white rounded-2xl shadow-2xl p-6">
                     <h3 class="text-xl font-bold text-gray-800 mb-4">🥧 สัดส่วนรายได้</h3>
-                    <canvas id="breakdown-chart" height="300"></canvas>
+                    <div style="position: relative; height: 300px;">
+                        <canvas id="breakdown-chart"></canvas>
+                    </div>
                 </div>
             </div>
 
