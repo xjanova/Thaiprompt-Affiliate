@@ -22,8 +22,8 @@ return new class extends Migration
             $table->string('currency', 3)->default('THB');
 
             // Period
-            $table->timestamp('started_at');
-            $table->timestamp('expires_at');
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('expires_at')->nullable();
             $table->timestamp('cancelled_at')->nullable();
 
             // Payment
