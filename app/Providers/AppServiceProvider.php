@@ -29,5 +29,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Register Commission Observer for Retention System
         \App\Models\Commission::observe(\App\Observers\CommissionObserver::class);
+
+        // Register Order Observer for MLM System
+        \App\Models\Order::observe(\App\Observers\OrderObserver::class);
     }
 }

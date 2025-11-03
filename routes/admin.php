@@ -560,3 +560,80 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
     // Reports
     Route::get('/reports', [ECommerceController::class, 'reports'])->name('reports');
 });
+
+// MLM System Management
+Route::prefix('mlm')->name('mlm.')->group(function () {
+    // MLM Plans
+    Route::prefix('plans')->name('plans.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MlmPlanController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\MlmPlanController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\MlmPlanController::class, 'store'])->name('store');
+        Route::get('/{plan}/edit', [\App\Http\Controllers\Admin\MlmPlanController::class, 'edit'])->name('edit');
+        Route::put('/{plan}', [\App\Http\Controllers\Admin\MlmPlanController::class, 'update'])->name('update');
+        Route::delete('/{plan}', [\App\Http\Controllers\Admin\MlmPlanController::class, 'destroy'])->name('destroy');
+        Route::post('/{plan}/toggle-status', [\App\Http\Controllers\Admin\MlmPlanController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{plan}/set-default', [\App\Http\Controllers\Admin\MlmPlanController::class, 'setDefault'])->name('set-default');
+    });
+
+    // MLM Members
+    Route::prefix('members')->name('members.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MlmMemberController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\MlmMemberController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\MlmMemberController::class, 'store'])->name('store');
+        Route::get('/{member}', [\App\Http\Controllers\Admin\MlmMemberController::class, 'show'])->name('show');
+        Route::post('/{member}/status', [\App\Http\Controllers\Admin\MlmMemberController::class, 'updateStatus'])->name('status');
+        Route::post('/{member}/toggle-qualification', [\App\Http\Controllers\Admin\MlmMemberController::class, 'toggleQualification'])->name('toggle-qualification');
+        Route::get('/{member}/genealogy', [\App\Http\Controllers\Admin\MlmMemberController::class, 'genealogy'])->name('genealogy');
+        Route::get('/{member}/tree-data', [\App\Http\Controllers\Admin\MlmMemberController::class, 'getTreeData'])->name('tree-data');
+        Route::get('/{member}/statistics', [\App\Http\Controllers\Admin\MlmMemberController::class, 'statistics'])->name('statistics');
+    });
+
+    // MLM Commissions
+    Route::prefix('commissions')->name('commissions.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MlmCommissionController::class, 'index'])->name('index');
+        Route::get('/{commission}', [\App\Http\Controllers\Admin\MlmCommissionController::class, 'show'])->name('show');
+        Route::post('/approve', [\App\Http\Controllers\Admin\MlmCommissionController::class, 'approve'])->name('approve');
+        Route::post('/approve-all', [\App\Http\Controllers\Admin\MlmCommissionController::class, 'approveAll'])->name('approve-all');
+        Route::post('/{commission}/reject', [\App\Http\Controllers\Admin\MlmCommissionController::class, 'reject'])->name('reject');
+        Route::post('/pay', [\App\Http\Controllers\Admin\MlmCommissionController::class, 'pay'])->name('pay');
+        Route::post('/pay-all', [\App\Http\Controllers\Admin\MlmCommissionController::class, 'payAll'])->name('pay-all');
+        Route::post('/bulk-action', [\App\Http\Controllers\Admin\MlmCommissionController::class, 'bulkAction'])->name('bulk-action');
+    });
+
+    // Product PV Management
+    Route::prefix('product-pv')->name('product-pv.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'store'])->name('store');
+        Route::get('/{productPv}/edit', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'edit'])->name('edit');
+        Route::put('/{productPv}', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'update'])->name('update');
+        Route::delete('/{productPv}', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'destroy'])->name('destroy');
+        Route::get('/products/{product}/preview', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'preview'])->name('preview');
+        Route::post('/bulk-create', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'bulkCreate'])->name('bulk-create');
+        Route::post('/bulk-update', [\App\Http\Controllers\Admin\MlmProductPvController::class, 'bulkUpdate'])->name('bulk-update');
+    });
+
+    // MLM Reports & Analytics
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MlmReportController::class, 'index'])->name('index');
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\MlmReportController::class, 'dashboard'])->name('dashboard');
+        Route::get('/member-growth', [\App\Http\Controllers\Admin\MlmReportController::class, 'memberGrowth'])->name('member-growth');
+        Route::get('/commission-trends', [\App\Http\Controllers\Admin\MlmReportController::class, 'commissionTrends'])->name('commission-trends');
+        Route::get('/pv-analytics', [\App\Http\Controllers\Admin\MlmReportController::class, 'pvAnalytics'])->name('pv-analytics');
+        Route::get('/top-performers', [\App\Http\Controllers\Admin\MlmReportController::class, 'topPerformers'])->name('top-performers');
+        Route::get('/commission-by-type', [\App\Http\Controllers\Admin\MlmReportController::class, 'commissionByType'])->name('commission-by-type');
+        Route::get('/level-analysis', [\App\Http\Controllers\Admin\MlmReportController::class, 'levelAnalysis'])->name('level-analysis');
+        Route::get('/binary-analysis', [\App\Http\Controllers\Admin\MlmReportController::class, 'binaryAnalysis'])->name('binary-analysis');
+        Route::get('/export-members', [\App\Http\Controllers\Admin\MlmReportController::class, 'exportMembers'])->name('export-members');
+        Route::get('/export-commissions', [\App\Http\Controllers\Admin\MlmReportController::class, 'exportCommissions'])->name('export-commissions');
+    });
+
+    // MLM Settings
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\MlmSettingController::class, 'index'])->name('index');
+        Route::put('/', [\App\Http\Controllers\Admin\MlmSettingController::class, 'update'])->name('update');
+        Route::get('/create', [\App\Http\Controllers\Admin\MlmSettingController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\MlmSettingController::class, 'store'])->name('store');
+        Route::delete('/{setting}', [\App\Http\Controllers\Admin\MlmSettingController::class, 'destroy'])->name('destroy');
+    });
+});
