@@ -231,7 +231,7 @@
                 this.ecommerceMenuOpen = true;
             } else if (currentPath.includes('/admin/mlm')) {
                 this.mlmMenuOpen = true;
-            } else if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications')) {
+            } else if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications') || currentPath.includes('/admin/roles')) {
                 this.systemMenuOpen = true;
             }
 
@@ -920,7 +920,8 @@
                                        request()->routeIs('admin.notifications.*') ||
                                        request()->routeIs('admin.notification-templates.*') ||
                                        request()->routeIs('admin.settings.index') ||
-                                       request()->routeIs('admin.webp.*');
+                                       request()->routeIs('admin.webp.*') ||
+                                       request()->routeIs('admin.roles.*');
                     @endphp
 
                     <!-- Main System Menu Button -->
@@ -1001,6 +1002,14 @@
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.notification-templates.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
                             <span class="mr-2">📋</span>
                             <span>เทมเพลตการแจ้งเตือน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.roles.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.roles.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🔐</span>
+                            <span>จัดการบทบาทและสิทธิ์</span>
                         </a>
 
                         <div class="border-t border-gray-700/30 my-1"></div>
