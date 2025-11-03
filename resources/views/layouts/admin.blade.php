@@ -223,7 +223,7 @@
                 this.lineMenuOpen = true;
             } else if (currentPath.includes('/admin/affiliates') || currentPath.includes('/admin/retention') || currentPath.includes('/admin/ranks')) {
                 this.marketingMenuOpen = true;
-            } else if (currentPath.includes('/admin/wallet') || currentPath.includes('/admin/withdrawals')) {
+            } else if (currentPath.includes('/admin/wallet') || currentPath.includes('/admin/withdrawals') || currentPath.includes('/admin/payment-gateways')) {
                 this.walletOpen = true;
             } else if (currentPath.includes('/admin/email')) {
                 this.emailMenuOpen = true;
@@ -417,7 +417,7 @@
                 <!-- Wallet Dropdown Menu -->
                 <div class="relative mb-1">
                     @php
-                        $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*');
+                        $walletActive = request()->routeIs('admin.wallet.*') || request()->routeIs('admin.withdrawals.*') || request()->routeIs('admin.wallet-settings.*') || request()->routeIs('admin.payment-gateways.*');
                         $pendingCount = \App\Models\WithdrawalRequest::pending()->count();
                     @endphp
 
@@ -494,6 +494,14 @@
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.wallet-settings.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">⚙️</span>
                             <span>ตั้งค่าระบบ</span>
+                        </a>
+                        @endif
+
+                        @if(auth()->user()->hasPermission('manage_payment_settings') || auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.payment-gateways.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.payment-gateways.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">💳</span>
+                            <span>Payment Gateways</span>
                         </a>
                         @endif
 
