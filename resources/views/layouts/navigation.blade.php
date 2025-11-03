@@ -64,6 +64,9 @@ $gradientClass = $gradientDirections[$headerGradientDirection] ?? 'bg-gradient-t
 
 $logo = \App\Models\Setting::get('logo');
 $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+
+// Get dynamic menu items from database
+$menuItems = \App\Models\MenuItem::getForLocation('header');
 @endphp
 
 <nav class="header-navigation {{ $currentShadow }}"
@@ -150,52 +153,68 @@ $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 
             <!-- Desktop Navigation Links -->
             <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                <a href="{{ route('home') }}"
-                   class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                   style="color: {{ $headerTextColor }};"
-                   onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                   onmouseout="this.style.color='{{ $headerTextColor }}';">
-                    หน้าแรก
-                </a>
-                <a href="{{ route('marketplace.index') }}"
-                   class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                   style="color: {{ $headerTextColor }};"
-                   onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                   onmouseout="this.style.color='{{ $headerTextColor }}';">
-                    🤖 ตลาดบอท
-                </a>
-                @auth
-                    <a href="{{ route('my-rentals.index') }}"
+                @if($menuItems && $menuItems->count() > 0)
+                    @foreach($menuItems as $menuItem)
+                        @if($menuItem->shouldDisplay())
+                            <a href="{{ $menuItem->url ?? '#' }}"
+                               class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                               style="color: {{ $headerTextColor }};"
+                               onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                               onmouseout="this.style.color='{{ $headerTextColor }}';"
+                               @if($menuItem->target === '_blank') target="_blank" rel="noopener noreferrer" @endif>
+                                @if($menuItem->icon){{ $menuItem->icon }} @endif{{ $menuItem->title }}
+                            </a>
+                        @endif
+                    @endforeach
+                @else
+                    {{-- Fallback to hardcoded menu if no database items --}}
+                    <a href="{{ route('home') }}"
                        class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
                        style="color: {{ $headerTextColor }};"
                        onmouseover="this.style.color='{{ $headerHoverColor }}';"
                        onmouseout="this.style.color='{{ $headerTextColor }}';">
-                        💼 การเช่าของฉัน
+                        หน้าแรก
                     </a>
-                    @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
-                        <a href="{{ route('owner-dashboard.index') }}"
+                    <a href="{{ route('marketplace.index') }}"
+                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                       style="color: {{ $headerTextColor }};"
+                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                       onmouseout="this.style.color='{{ $headerTextColor }}';">
+                        🤖 ตลาดบอท
+                    </a>
+                    @auth
+                        <a href="{{ route('my-rentals.index') }}"
                            class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
                            style="color: {{ $headerTextColor }};"
                            onmouseover="this.style.color='{{ $headerHoverColor }}';"
                            onmouseout="this.style.color='{{ $headerTextColor }}';">
-                            📊 Dashboard เจ้าของ
+                            💼 การเช่าของฉัน
                         </a>
-                    @endif
-                @endauth
-                <a href="{{ route('about') }}"
-                   class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                   style="color: {{ $headerTextColor }};"
-                   onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                   onmouseout="this.style.color='{{ $headerTextColor }}';">
-                    เกี่ยวกับเรา
-                </a>
-                <a href="{{ route('contact') }}"
-                   class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                   style="color: {{ $headerTextColor }};"
-                   onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                   onmouseout="this.style.color='{{ $headerTextColor }}';">
-                    ติดต่อเรา
-                </a>
+                        @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
+                            <a href="{{ route('owner-dashboard.index') }}"
+                               class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                               style="color: {{ $headerTextColor }};"
+                               onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                               onmouseout="this.style.color='{{ $headerTextColor }}';">
+                                📊 Dashboard เจ้าของ
+                            </a>
+                        @endif
+                    @endauth
+                    <a href="{{ route('about') }}"
+                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                       style="color: {{ $headerTextColor }};"
+                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                       onmouseout="this.style.color='{{ $headerTextColor }}';">
+                        เกี่ยวกับเรา
+                    </a>
+                    <a href="{{ route('contact') }}"
+                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                       style="color: {{ $headerTextColor }};"
+                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                       onmouseout="this.style.color='{{ $headerTextColor }}';">
+                        ติดต่อเรา
+                    </a>
+                @endif
             </div>
 
             <!-- Right Side: Language + Auth -->
@@ -263,40 +282,54 @@ $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
     <!-- Responsive Mobile Navigation Menu -->
     <div :class="{'block': open, 'hidden': !open}" class="hidden sm:hidden">
         <div class="pt-2 pb-3 space-y-1">
-            <a href="{{ route('home') }}"
-               class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
-               style="color: {{ $headerTextColor }};">
-                หน้าแรก
-            </a>
-            <a href="{{ route('marketplace.index') }}"
-               class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
-               style="color: {{ $headerTextColor }};">
-                🤖 ตลาดบอท
-            </a>
-            @auth
-                <a href="{{ route('my-rentals.index') }}"
+            @if($menuItems && $menuItems->count() > 0)
+                @foreach($menuItems as $menuItem)
+                    @if($menuItem->shouldDisplay())
+                        <a href="{{ $menuItem->url ?? '#' }}"
+                           class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                           style="color: {{ $headerTextColor }};"
+                           @if($menuItem->target === '_blank') target="_blank" rel="noopener noreferrer" @endif>
+                            @if($menuItem->icon){{ $menuItem->icon }} @endif{{ $menuItem->title }}
+                        </a>
+                    @endif
+                @endforeach
+            @else
+                {{-- Fallback to hardcoded menu if no database items --}}
+                <a href="{{ route('home') }}"
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};">
-                    💼 การเช่าของฉัน
+                    หน้าแรก
                 </a>
-                @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
-                    <a href="{{ route('owner-dashboard.index') }}"
+                <a href="{{ route('marketplace.index') }}"
+                   class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                   style="color: {{ $headerTextColor }};">
+                    🤖 ตลาดบอท
+                </a>
+                @auth
+                    <a href="{{ route('my-rentals.index') }}"
                        class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                        style="color: {{ $headerTextColor }};">
-                        📊 Dashboard เจ้าของ
+                        💼 การเช่าของฉัน
                     </a>
-                @endif
-            @endauth
-            <a href="{{ route('about') }}"
-               class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
-               style="color: {{ $headerTextColor }};">
-                เกี่ยวกับเรา
-            </a>
-            <a href="{{ route('contact') }}"
-               class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
-               style="color: {{ $headerTextColor }};">
-                ติดต่อเรา
-            </a>
+                    @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
+                        <a href="{{ route('owner-dashboard.index') }}"
+                           class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                           style="color: {{ $headerTextColor }};">
+                            📊 Dashboard เจ้าของ
+                        </a>
+                    @endif
+                @endauth
+                <a href="{{ route('about') }}"
+                   class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                   style="color: {{ $headerTextColor }};">
+                    เกี่ยวกับเรา
+                </a>
+                <a href="{{ route('contact') }}"
+                   class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                   style="color: {{ $headerTextColor }};">
+                    ติดต่อเรา
+                </a>
+            @endif
         </div>
 
         <!-- Mobile Language Switcher -->
