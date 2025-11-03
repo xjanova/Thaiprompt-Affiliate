@@ -131,7 +131,29 @@
                 <i class="fas fa-robot mr-2"></i>ข้อมูลที่ตรวจจับได้จากบัตร (OCR)
             </h2>
 
+            <!-- Document Type Badge -->
+            @if(!empty($kycVerification->extracted_data['document_type']))
+                <div class="mb-4">
+                    @if($kycVerification->extracted_data['document_type'] === 'driver_license')
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
+                            <i class="fas fa-id-card-alt mr-2"></i>ใบขับขี่
+                        </span>
+                    @else
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300">
+                            <i class="fas fa-id-card mr-2"></i>บัตรประชาชน
+                        </span>
+                    @endif
+                </div>
+            @endif
+
             <div class="grid md:grid-cols-2 gap-4">
+                @if(!empty($kycVerification->extracted_data['license_number']))
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">เลขที่ใบอนุญาต</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['license_number'] }}</p>
+                    </div>
+                @endif
+
                 @if(!empty($kycVerification->extracted_data['id_card_number']))
                     <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
                         <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">เลขบัตรประชาชน</p>
@@ -201,6 +223,13 @@
                         <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['address'] }}</p>
                     </div>
                 @endif
+
+                @if(!empty($kycVerification->extracted_data['license_type']))
+                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 md:col-span-2">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ประเภทรถที่สามารถขับได้</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['license_type'] }}</p>
+                    </div>
+                @endif
             </div>
 
             <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
@@ -229,11 +258,15 @@
             <!-- ID Card Image -->
             <div>
                 <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    <i class="fas fa-id-card mr-1"></i>รูปบัตรประชาชน
+                    @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
+                        <i class="fas fa-id-card-alt mr-1"></i>รูปใบขับขี่
+                    @else
+                        <i class="fas fa-id-card mr-1"></i>รูปบัตรประชาชน
+                    @endif
                 </h3>
                 <div class="border dark:border-slate-700 rounded-lg overflow-hidden">
                     <img src="{{ asset('storage/' . $kycVerification->id_card_image) }}"
-                         alt="ID Card"
+                         alt="ID Document"
                          class="w-full h-auto cursor-pointer hover:opacity-90 transition"
                          onclick="openImageModal(this.src)">
                 </div>
@@ -245,7 +278,11 @@
             <!-- Selfie Image -->
             <div>
                 <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน
+                    @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
+                        <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมใบขับขี่
+                    @else
+                        <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน
+                    @endif
                 </h3>
                 <div class="border dark:border-slate-700 rounded-lg overflow-hidden">
                     <img src="{{ asset('storage/' . $kycVerification->selfie_image) }}"

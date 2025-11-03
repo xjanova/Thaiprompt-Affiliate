@@ -50,7 +50,7 @@
             <!-- ID Card Example -->
             <div class="bg-white rounded-lg p-4 shadow-sm">
                 <h4 class="font-semibold text-indigo-900 mb-3 text-center">
-                    <i class="fas fa-id-card text-indigo-600 mr-2"></i>รูปบัตรประชาชน
+                    <i class="fas fa-id-card text-indigo-600 mr-2"></i>รูปบัตรประชาชน / ใบขับขี่
                 </h4>
                 <div class="bg-gray-100 rounded-lg p-6 mb-3 border-2 border-dashed border-gray-300">
                     <svg class="w-full h-32" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -139,7 +139,7 @@
             <div class="flex items-start">
                 <i class="fas fa-check-circle text-blue-600 mr-2 mt-1"></i>
                 <div>
-                    <p class="font-semibold text-blue-900">บัตรประชาชนต้องไม่หมดอายุ</p>
+                    <p class="font-semibold text-blue-900">บัตรประชาชน หรือ ใบขับขี่ ต้องไม่หมดอายุ</p>
                     <p class="text-sm text-blue-700">ตรวจสอบวันหมดอายุบนบัตร</p>
                 </div>
             </div>
@@ -169,7 +169,7 @@
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2">
                     <i class="fas fa-id-card mr-1"></i>
-                    รูปบัตรประชาชน <span class="text-red-500">*</span>
+                    รูปบัตรประชาชน / ใบขับขี่ <span class="text-red-500">*</span>
                 </label>
 
                 <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition"
@@ -177,7 +177,7 @@
                     <template x-if="!idCardPreview">
                         <div>
                             <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                            <p class="text-sm text-gray-600 mb-2">คลิกเพื่ออัปโหลดรูปบัตรประชาชน</p>
+                            <p class="text-sm text-gray-600 mb-2">คลิกเพื่ออัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่</p>
                             <p class="text-xs text-gray-500">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
                         </div>
                     </template>

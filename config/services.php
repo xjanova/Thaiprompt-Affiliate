@@ -21,11 +21,12 @@ return [
     ],
 
     'google' => [
+        'credentials_path' => env('GOOGLE_APPLICATION_CREDENTIALS', storage_path('app/google-credentials.json')),
         'translate' => [
             'enabled' => env('GOOGLE_TRANSLATE_ENABLED', false),
             'api_key' => env('GOOGLE_TRANSLATE_API_KEY', ''),
             'project_id' => env('GOOGLE_TRANSLATE_PROJECT_ID', ''),
-            'credentials' => env('GOOGLE_TRANSLATE_CREDENTIALS', 'storage/app/google-credentials.json'),
+            'credentials' => env('GOOGLE_TRANSLATE_CREDENTIALS', storage_path('app/google-credentials.json')),
         ],
     ],
 
