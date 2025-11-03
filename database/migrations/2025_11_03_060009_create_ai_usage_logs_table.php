@@ -25,8 +25,9 @@ return new class extends Migration
             $table->foreignId('message_id')->nullable()->constrained('ai_messages')->onDelete('set null');
 
             // Usage Details
-            $table->string('provider');
-            $table->string('model');
+            $table->foreignId('provider_id')->nullable()->constrained('ai_providers')->onDelete('set null');
+            $table->foreignId('model_id')->nullable()->constrained('ai_models')->onDelete('set null');
+            $table->string('request_type')->nullable();
             $table->integer('prompt_tokens')->default(0);
             $table->integer('completion_tokens')->default(0);
             $table->integer('total_tokens')->default(0);
@@ -36,8 +37,9 @@ return new class extends Migration
 
             // Performance
             $table->integer('response_time_ms')->nullable();
-            $table->boolean('success')->default(true);
+            $table->enum('status', ['success', 'error', 'pending'])->default('success');
             $table->text('error_message')->nullable();
+            $table->json('metadata')->nullable();
 
             $table->timestamps();
 
