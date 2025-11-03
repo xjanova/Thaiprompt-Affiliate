@@ -307,6 +307,7 @@ Route::prefix('line-oa')->name('line-oa.')->group(function () {
     Route::put('/update', [LineOaController::class, 'update'])->name('update');
     Route::post('/test-message', [LineOaController::class, 'testMessage'])->name('test-message');
     Route::post('/test-connection', [LineOaController::class, 'testConnection'])->name('test-connection');
+    Route::get('/line-users', [LineOaController::class, 'getLineUsers'])->name('line-users');
     Route::get('/logs', [LineOaController::class, 'logs'])->name('logs');
 });
 

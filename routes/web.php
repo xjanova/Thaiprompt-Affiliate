@@ -67,9 +67,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/auth/line/unlink', [LineLoginController::class, 'unlink'])->name('line.unlink');
 });
 
-// LINE Webhook (no auth required)
-Route::post('/webhook/line', [LineWebhookController::class, 'handle'])->name('line.webhook');
-
 // OTP Routes
 Route::prefix('otp')->name('otp.')->group(function () {
     Route::post('/send', [OtpController::class, 'send'])->name('send');

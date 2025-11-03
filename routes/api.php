@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\TreeController;
 use App\Http\Controllers\Api\RankController;
+use App\Http\Controllers\LineWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Route;
 | API Routes
 |--------------------------------------------------------------------------
 */
+
+// LINE Webhook (no CSRF, no auth)
+Route::post('/webhook/line', [LineWebhookController::class, 'handle'])->name('api.line.webhook');
 
 // API v1
 Route::prefix('v1')->group(function () {

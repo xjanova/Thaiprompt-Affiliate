@@ -449,8 +449,8 @@
 </div>
 
 <!-- Test Message Modal -->
-<div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all">
+<div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4" x-data="{ tab: 'select' }">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full overflow-hidden transform transition-all max-h-[90vh] flex flex-col">
         <div class="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -463,30 +463,90 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('admin.line-oa.test-message') }}" class="p-6 space-y-4">
-            @csrf
-            <div id="test-alert" class="hidden p-3 rounded-lg"></div>
+        <!-- Tabs -->
+        <div class="flex border-b border-gray-200 px-6">
+            <button type="button" @click="tab = 'select'"
+                    class="px-6 py-3 font-semibold transition-colors border-b-2"
+                    :class="tab === 'select' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                <i class="fas fa-users mr-2"></i>Select User
+            </button>
+            <button type="button" @click="tab = 'manual'"
+                    class="px-6 py-3 font-semibold transition-colors border-b-2"
+                    :class="tab === 'manual' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700'">
+                <i class="fas fa-keyboard mr-2"></i>Manual Input
+            </button>
+        </div>
 
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
-                    <i class="fas fa-user text-green-500 mr-1"></i> LINE User ID
-                </label>
-                <input type="text" name="line_user_id" required
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
-                    placeholder="U1234567890abcdef1234567890abcdef">
-                <p class="text-xs text-gray-500 mt-2">The LINE User ID of the recipient</p>
+        <div class="flex-1 overflow-y-auto">
+            <!-- Select User Tab -->
+            <div x-show="tab === 'select'" class="p-6 space-y-4">
+                <!-- Search Box -->
+                <div>
+                    <input type="text" id="userSearch" placeholder="Search users by name, email, or LINE display name..."
+                           class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all">
+                </div>
+
+                <!-- Users Table -->
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div id="usersTableLoading" class="p-8 text-center">
+                        <i class="fas fa-spinner fa-spin text-2xl text-green-500 mb-2"></i>
+                        <p class="text-gray-600">Loading users...</p>
+                    </div>
+
+                    <div id="usersTableContent" class="hidden">
+                        <div class="max-h-96 overflow-y-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">User</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">LINE Display</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
+                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody" class="divide-y divide-gray-200">
+                                    <!-- Users will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="usersTableEmpty" class="hidden p-8 text-center">
+                        <i class="fas fa-users-slash text-4xl text-gray-300 mb-3"></i>
+                        <p class="text-gray-600">No users with LINE account found</p>
+                    </div>
+                </div>
             </div>
+
+            <!-- Manual Input Tab -->
+            <div x-show="tab === 'manual'" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                        <i class="fas fa-user text-green-500 mr-1"></i> LINE User ID
+                    </label>
+                    <input type="text" id="manualLineUserId"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
+                        placeholder="U1234567890abcdef1234567890abcdef">
+                    <p class="text-xs text-gray-500 mt-2">The LINE User ID of the recipient</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Message Form (Common) -->
+        <form method="POST" action="{{ route('admin.line-oa.test-message') }}" class="p-6 border-t border-gray-200 space-y-4">
+            @csrf
+            <input type="hidden" name="line_user_id" id="selectedLineUserId">
 
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">
                     <i class="fas fa-comment text-green-500 mr-1"></i> Test Message
                 </label>
-                <textarea name="message" rows="4" required
+                <textarea name="message" rows="3" required
                     class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
                     placeholder="Enter your test message here...">ทดสอบการส่งข้อความจากระบบ</textarea>
             </div>
 
-            <div class="flex gap-3 pt-4">
+            <div class="flex gap-3">
                 <button type="button" onclick="closeTestModal()"
                         class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
                     Cancel
@@ -522,16 +582,137 @@
 </style>
 
 <script>
+let lineUsersData = [];
+
 // Show/close test modal
 function showTestModal() {
     document.getElementById('testModal').classList.remove('hidden');
     document.getElementById('testModal').classList.add('flex');
+    loadLineUsers();
 }
 
 function closeTestModal() {
     document.getElementById('testModal').classList.add('hidden');
     document.getElementById('testModal').classList.remove('flex');
 }
+
+// Load LINE users
+async function loadLineUsers() {
+    const loading = document.getElementById('usersTableLoading');
+    const content = document.getElementById('usersTableContent');
+    const empty = document.getElementById('usersTableEmpty');
+
+    loading.classList.remove('hidden');
+    content.classList.add('hidden');
+    empty.classList.add('hidden');
+
+    try {
+        const response = await fetch('{{ route('admin.line-oa.line-users') }}');
+        const data = await response.json();
+
+        lineUsersData = data.data;
+
+        if (lineUsersData.length === 0) {
+            loading.classList.add('hidden');
+            empty.classList.remove('hidden');
+            return;
+        }
+
+        renderUsersTable(lineUsersData);
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+    } catch (error) {
+        console.error('Error loading users:', error);
+        loading.classList.add('hidden');
+        empty.classList.remove('hidden');
+    }
+}
+
+// Render users table
+function renderUsersTable(users) {
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = '';
+
+    users.forEach(user => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50';
+        tr.innerHTML = `
+            <td class="px-4 py-3">
+                <div class="flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center text-white font-bold mr-3">
+                        ${user.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <p class="font-semibold text-gray-800">${user.name}</p>
+                        <p class="text-xs text-gray-500">${user.email}</p>
+                    </div>
+                </div>
+            </td>
+            <td class="px-4 py-3">
+                <p class="text-sm text-gray-800">${user.line_display_name || 'N/A'}</p>
+                <p class="text-xs text-gray-400 font-mono">${user.line_user_id.substring(0, 20)}...</p>
+            </td>
+            <td class="px-4 py-3">
+                ${user.line_verified ?
+                    '<span class="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded"><i class="fas fa-check-circle mr-1"></i>Verified</span>' :
+                    '<span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded">Unverified</span>'
+                }
+            </td>
+            <td class="px-4 py-3 text-center">
+                <button type="button" onclick="selectUser('${user.line_user_id}', '${user.name}')"
+                        class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition font-semibold">
+                    <i class="fas fa-check mr-1"></i>Select
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// Select user
+function selectUser(lineUserId, userName) {
+    document.getElementById('selectedLineUserId').value = lineUserId;
+
+    // Show confirmation
+    alert(`Selected user: ${userName}\nLINE User ID: ${lineUserId}`);
+}
+
+// Search users
+let searchTimeout;
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('userSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filtered = lineUsersData.filter(user => {
+                    return user.name.toLowerCase().includes(searchTerm) ||
+                           user.email.toLowerCase().includes(searchTerm) ||
+                           (user.line_display_name && user.line_display_name.toLowerCase().includes(searchTerm)) ||
+                           user.line_user_id.toLowerCase().includes(searchTerm);
+                });
+                renderUsersTable(filtered);
+
+                if (filtered.length === 0) {
+                    document.getElementById('usersTableContent').classList.add('hidden');
+                    document.getElementById('usersTableEmpty').classList.remove('hidden');
+                } else {
+                    document.getElementById('usersTableContent').classList.remove('hidden');
+                    document.getElementById('usersTableEmpty').classList.add('hidden');
+                }
+            }, 300);
+        });
+    }
+
+    // Handle manual input
+    const manualInput = document.getElementById('manualLineUserId');
+    if (manualInput) {
+        manualInput.addEventListener('input', function(e) {
+            document.getElementById('selectedLineUserId').value = e.target.value;
+        });
+    }
+});
 
 // Connection test modal
 function closeConnectionTestModal() {
