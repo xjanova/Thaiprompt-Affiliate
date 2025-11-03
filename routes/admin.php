@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\LineChatWidgetController;
 use App\Http\Controllers\Admin\LineAvatarController;
 use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\OtpSettingsController;
+use App\Http\Controllers\Admin\WebPManagementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -65,6 +66,13 @@ Route::get('settings', [SettingsController::class, 'index'])->name('settings.ind
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
 Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
+
+// WebP Management
+Route::prefix('webp')->name('webp.')->group(function () {
+    Route::get('/', [WebPManagementController::class, 'index'])->name('index');
+    Route::post('/convert', [WebPManagementController::class, 'convert'])->name('convert');
+    Route::get('/directory-details', [WebPManagementController::class, 'directoryDetails'])->name('directory-details');
+});
 
 // Security Management
 Route::prefix('security')->name('security.')->group(function () {
