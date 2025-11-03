@@ -15,7 +15,7 @@ class DemoPagesSeeder extends Seeder
         $this->command->info('🌱 Creating demo pages...');
 
         // About Us
-        Page::firstOrCreate(
+        Page::updateOrCreate(
             ['slug' => 'about-us'],
             [
                 'title' => 'เกี่ยวกับเรา',
@@ -32,7 +32,7 @@ class DemoPagesSeeder extends Seeder
         );
 
         // FAQ
-        Page::firstOrCreate(
+        Page::updateOrCreate(
             ['slug' => 'faq'],
             [
                 'title' => 'คำถามที่พบบ่อย',
@@ -59,7 +59,7 @@ class DemoPagesSeeder extends Seeder
         );
 
         // Contact
-        Page::firstOrCreate(
+        Page::updateOrCreate(
             ['slug' => 'contact'],
             [
                 'title' => 'ติดต่อเรา',
@@ -88,7 +88,7 @@ class DemoPagesSeeder extends Seeder
         );
 
         // Terms of Service
-        Page::firstOrCreate(
+        Page::updateOrCreate(
             ['slug' => 'terms'],
             [
                 'title' => 'ข้อกำหนดการใช้งาน',
@@ -375,7 +375,7 @@ class DemoPagesSeeder extends Seeder
         );
 
         // Privacy Policy
-        Page::firstOrCreate(
+        Page::updateOrCreate(
             ['slug' => 'privacy'],
             [
                 'title' => 'นโยบายความเป็นส่วนตัว',
@@ -602,7 +602,7 @@ class DemoPagesSeeder extends Seeder
         );
 
         // Cookie Policy
-        Page::firstOrCreate(
+        Page::updateOrCreate(
             ['slug' => 'cookie-policy'],
             [
                 'title' => 'นโยบายคุ๊กกี้',
