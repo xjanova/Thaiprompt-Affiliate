@@ -131,6 +131,25 @@
 
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-link text-blue-500 mr-1"></i> Redirect URI (Callback URL)
+                            </label>
+                            <input type="url" name="redirect_uri" value="{{ old('redirect_uri', $settings->redirect_uri) }}"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder="{{ route('line.callback') }}">
+                            <p class="text-xs text-gray-500 mt-1">
+                                <strong>Default:</strong> <code class="bg-gray-100 px-2 py-0.5 rounded text-xs">{{ route('line.callback') }}</code><br>
+                                Leave empty to use default. Set custom URL for production if APP_URL differs.
+                            </p>
+                            <div class="mt-2 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                                <p class="text-xs text-yellow-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    <strong>Important:</strong> This URL must be registered in LINE Developers Console → LINE Login settings → Callback URL
+                                </p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-ticket-alt text-blue-500 mr-1"></i> Channel Access Token (Long-lived)
                             </label>
                             <textarea name="channel_access_token" rows="3"

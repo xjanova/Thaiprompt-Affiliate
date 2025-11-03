@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LineOaSetting;
+use App\Models\User;
 use App\Services\LineService;
 use Illuminate\Http\Request;
 
@@ -27,6 +28,7 @@ class LineOaController extends Controller
         $validated = $request->validate([
             'channel_id' => ['nullable', 'string', 'max:255'],
             'channel_secret' => ['nullable', 'string', 'max:255'],
+            'redirect_uri' => ['nullable', 'url', 'max:500'],
             'channel_access_token' => ['nullable', 'string'],
             'liff_id' => ['nullable', 'string', 'max:255'],
             'require_line_registration' => ['boolean'],

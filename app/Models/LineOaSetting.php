@@ -13,6 +13,7 @@ class LineOaSetting extends Model
     protected $fillable = [
         'channel_id',
         'channel_secret',
+        'redirect_uri',
         'channel_access_token',
         'liff_id',
         'require_line_registration',
