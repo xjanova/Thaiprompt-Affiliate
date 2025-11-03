@@ -195,6 +195,15 @@ class DashboardController extends Controller
     }
 
     /**
+     * Display seller marketing
+     */
+    public function marketing()
+    {
+        $user = Auth::user();
+        return view('seller.marketing', compact('user'));
+    }
+
+    /**
      * Display seller profile
      */
     public function profile()
