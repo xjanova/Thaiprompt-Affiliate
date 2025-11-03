@@ -116,4 +116,33 @@ class LineOaController extends Controller
 
         return response()->json($results);
     }
+
+    /**
+     * Get users with LINE User ID
+     */
+    public function getLineUsers(Request $request)
+    {
+        $query = User::whereNotNull('line_user_id')
+            ->where('line_user_id', '!=', '')
+            ->select('id', 'name', 'email', 'line_user_id', 'line_display_name', 'line_verified')
+            ->orderBy('name', 'asc');
+
+        // Search filter
+        if ($request->has('search') && !empty($request->search)) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('line_display_name', 'like', "%{$search}%")
+                  ->orWhere('line_user_id', 'like', "%{$search}%");
+            });
+        }
+
+        $users = $query->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $users,
+        ]);
+    }
 }
