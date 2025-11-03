@@ -137,4 +137,9 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/income-comparison', function () {
         return view('user.mlm.income-comparison');
     })->name('income-comparison');
+
+    // Dividend Simulator - Marketing Tool
+    Route::get('/dividend-simulator', function () {
+        return view('user.mlm.dividend-simulator');
+    })->name('dividend-simulator');
 });

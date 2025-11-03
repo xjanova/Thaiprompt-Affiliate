@@ -431,6 +431,58 @@
                     </div>
                 </div>
 
+                <!-- Marketing Tools Dropdown Menu -->
+                <div x-data="{ marketingToolsOpen: false }" class="relative mb-1">
+                    @php
+                        $marketingToolsActive = request()->routeIs('user.mlm.income-simulator') ||
+                                                request()->routeIs('user.mlm.income-comparison') ||
+                                                request()->routeIs('user.mlm.dividend-simulator');
+                    @endphp
+
+                    <!-- Main Marketing Tools Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-yellow-600 hover:to-orange-600 hover:text-white rounded-lg transition-all duration-200 group {{ $marketingToolsActive ? 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white shadow-lg' : '' }}"
+                       @click="marketingToolsOpen = !marketingToolsOpen">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🛠️</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            เครื่องมือการตลาด
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': marketingToolsOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="marketingToolsOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('user.mlm.income-simulator') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.mlm.income-simulator') ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">💰</span>
+                            <span>จำลองรายได้</span>
+                        </a>
+
+                        <a href="{{ route('user.mlm.income-comparison') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.mlm.income-comparison') ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>เปรียบเทียบรายได้</span>
+                        </a>
+
+                        <a href="{{ route('user.mlm.dividend-simulator') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.mlm.dividend-simulator') ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">💎</span>
+                            <span>จำลองการปันผล</span>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- System Info -->
                 <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                     <div class="bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30 dark:border-gray-600/30">
