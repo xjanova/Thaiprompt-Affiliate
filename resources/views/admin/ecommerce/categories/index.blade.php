@@ -11,6 +11,18 @@
         </button>
     </div>
 
+    @if(session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{ session('success') }}</span>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{ session('error') }}</span>
+        </div>
+    @endif
+
     <!-- Categories Table -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden">
         <div class="overflow-x-auto">
@@ -96,6 +108,23 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
                     <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white"></textarea>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL รูปภาพ</label>
+                    <input type="text" name="image_url" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลำดับการแสดงผล</label>
+                    <input type="number" name="sort_order" value="0" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หมวดหมู่แม่</label>
+                    <select name="parent_id" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                        <option value="">ไม่มี (หมวดหมู่หลัก)</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="flex items-center">
                     <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
                     <label class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้งาน</label>
@@ -113,9 +142,77 @@
     </div>
 </div>
 
+<!-- Edit Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md">
+        <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">แก้ไขหมวดหมู่</h2>
+        <form id="editForm" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อหมวดหมู่</label>
+                    <input type="text" id="edit_name" name="name" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug (เว้นว่างไว้เพื่อสร้างอัตโนมัติ)</label>
+                    <input type="text" id="edit_slug" name="slug" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
+                    <textarea id="edit_description" name="description" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL รูปภาพ</label>
+                    <input type="text" id="edit_image_url" name="image_url" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลำดับการแสดงผล</label>
+                    <input type="number" id="edit_sort_order" name="sort_order" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หมวดหมู่แม่</label>
+                    <select id="edit_parent_id" name="parent_id" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                        <option value="">ไม่มี (หมวดหมู่หลัก)</option>
+                        @foreach($categories as $cat)
+                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="flex items-center">
+                    <input type="checkbox" id="edit_is_active" name="is_active" value="1" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+                    <label class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้งาน</label>
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 mt-6">
+                <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600">
+                    ยกเลิก
+                </button>
+                <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                    บันทึกการแก้ไข
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
 function editCategory(category) {
-    alert('Edit functionality coming soon for: ' + category.name);
+    // Set form action
+    const form = document.getElementById('editForm');
+    form.action = `/admin/ecommerce/categories/${category.id}`;
+
+    // Populate form fields
+    document.getElementById('edit_name').value = category.name || '';
+    document.getElementById('edit_slug').value = category.slug || '';
+    document.getElementById('edit_description').value = category.description || '';
+    document.getElementById('edit_image_url').value = category.image_url || '';
+    document.getElementById('edit_sort_order').value = category.sort_order || 0;
+    document.getElementById('edit_parent_id').value = category.parent_id || '';
+    document.getElementById('edit_is_active').checked = category.is_active;
+
+    // Show modal
+    document.getElementById('editModal').classList.remove('hidden');
 }
 </script>
 @endsection
