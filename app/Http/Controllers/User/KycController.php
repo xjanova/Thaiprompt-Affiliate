@@ -5,6 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\KycVerification;
 use App\Services\OCR\ThaiIdCardOcrService;
+use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -69,9 +70,24 @@ class KycController extends Controller
             'selfie_image.max' => 'ขนาดไฟล์รูปถ่ายตัวเองต้องไม่เกิน 5MB',
         ]);
 
-        // Store images
-        $idCardPath = $request->file('id_card_image')->store('kyc/id-cards', 'public');
-        $selfiePath = $request->file('selfie_image')->store('kyc/selfies', 'public');
+        // Store images with WebP conversion
+        $webpService = new WebPService();
+
+        // Convert ID card image to WebP
+        $idCardResult = $webpService->convertAndStore(
+            $request->file('id_card_image'),
+            'kyc/id-cards',
+            90 // High quality for ID cards
+        );
+        $idCardPath = $idCardResult['path'];
+
+        // Convert selfie image to WebP
+        $selfieResult = $webpService->convertAndStore(
+            $request->file('selfie_image'),
+            'kyc/selfies',
+            90 // High quality for selfies
+        );
+        $selfiePath = $selfieResult['path'];
 
         // Extract data from ID card using OCR
         $extractedData = null;

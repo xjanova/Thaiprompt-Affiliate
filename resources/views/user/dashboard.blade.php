@@ -4,21 +4,167 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Welcome Header with Premium Gradient -->
+    <!-- Welcome Header with Premium Gradient & Avatar -->
     <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
         <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
         <div class="absolute top-1/2 right-1/4 w-24 h-24 bg-white opacity-5 rounded-full"></div>
         <div class="relative z-10">
-            <h1 class="text-3xl md:text-4xl font-bold mb-2">👋 สวัสดี, {{ $user->name }}!</h1>
-            <p class="text-indigo-100 text-lg">ยินดีต้อนรับสู่ระบบ Premium Affiliate Dashboard - {{ now()->format('d/m/Y') }}</p>
-            @if($affiliate)
-                <div class="mt-4 inline-flex items-center px-4 py-2 bg-white bg-opacity-20 rounded-xl">
-                    <span class="text-sm font-semibold">รหัสแนะนำ: {{ $affiliate->referral_code }}</span>
+            <div class="flex flex-col md:flex-row items-start md:items-center gap-6">
+                <!-- Profile Avatar with Rank Frame -->
+                <div class="relative">
+                    @php
+                        $rankColor = 'gray';
+                        $rankStars = 0;
+                        if ($user->currentRank) {
+                            $rankLevel = $user->currentRank->level ?? 0;
+                            if ($rankLevel >= 7) {
+                                $rankColor = 'purple';
+                                $rankStars = 5;
+                            } elseif ($rankLevel >= 5) {
+                                $rankColor = 'yellow';
+                                $rankStars = 4;
+                            } elseif ($rankLevel >= 3) {
+                                $rankColor = 'blue';
+                                $rankStars = 3;
+                            } elseif ($rankLevel >= 2) {
+                                $rankColor = 'green';
+                                $rankStars = 2;
+                            } elseif ($rankLevel >= 1) {
+                                $rankColor = 'gray';
+                                $rankStars = 1;
+                            }
+                        }
+
+                        $frameColors = [
+                            'gray' => 'from-gray-400 to-gray-600',
+                            'green' => 'from-green-400 to-green-600',
+                            'blue' => 'from-blue-400 to-blue-600',
+                            'purple' => 'from-purple-400 to-purple-600',
+                            'yellow' => 'from-yellow-300 to-yellow-500',
+                        ];
+                    @endphp
+
+                    <div class="relative w-28 h-28 md:w-32 md:h-32">
+                        <!-- Rank Frame -->
+                        <div class="absolute inset-0 bg-gradient-to-br {{ $frameColors[$rankColor] ?? 'from-gray-400 to-gray-600' }} rounded-full p-1.5 shadow-2xl animate-pulse-slow">
+                            <div class="w-full h-full bg-white rounded-full p-1">
+                                @if($user->line_picture_url || $user->profile_picture)
+                                    <img src="{{ $user->line_picture_url ?? asset($user->profile_picture) }}"
+                                         alt="{{ $user->name }}"
+                                         class="w-full h-full object-cover rounded-full">
+                                @else
+                                    <div class="w-full h-full rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold">
+                                        {{ strtoupper(substr($user->name, 0, 1)) }}
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Stars -->
+                        @if($rankStars > 0)
+                            <div class="absolute -bottom-2 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+                                @for ($i = 0; $i < $rankStars; $i++)
+                                    <div class="text-yellow-300 text-sm drop-shadow-lg">⭐</div>
+                                @endfor
+                            </div>
+                        @endif
+
+                        <!-- KYC Badge -->
+                        <div class="absolute -top-1 -right-1">
+                            @if($user->kyc_status === 'approved')
+                                <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg" title="ยืนยันตัวตนแล้ว">
+                                    <i class="fas fa-check text-white text-xs"></i>
+                                </div>
+                            @elseif($user->kyc_status === 'pending')
+                                <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg animate-pulse" title="รอการตรวจสอบ">
+                                    <i class="fas fa-clock text-white text-xs"></i>
+                                </div>
+                            @elseif($user->kyc_status === 'rejected')
+                                <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg" title="ไม่ผ่านการตรวจสอบ">
+                                    <i class="fas fa-times text-white text-xs"></i>
+                                </div>
+                            @else
+                                <a href="{{ route('user.kyc.create') }}" class="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg hover:bg-gray-600 transition" title="ยังไม่ได้ยืนยันตัวตน - คลิกเพื่อยืนยัน">
+                                    <i class="fas fa-exclamation text-white text-xs"></i>
+                                </a>
+                            @endif
+                        </div>
+                    </div>
                 </div>
-            @endif
+
+                <!-- Welcome Text -->
+                <div class="flex-1">
+                    <div class="flex items-center gap-3 mb-2">
+                        <h1 class="text-3xl md:text-4xl font-bold">👋 สวัสดี, {{ $user->name }}!</h1>
+                        @if($user->currentRank)
+                            <span class="px-3 py-1 bg-white bg-opacity-20 rounded-lg text-sm font-semibold">
+                                {{ $user->currentRank->name }}
+                            </span>
+                        @endif
+                    </div>
+                    <p class="text-indigo-100 text-lg">ยินดีต้อนรับสู่ระบบ Premium Affiliate Dashboard - {{ now()->format('d/m/Y') }}</p>
+                    @if($affiliate)
+                        <div class="mt-4 inline-flex items-center px-4 py-2 bg-white bg-opacity-20 rounded-xl">
+                            <span class="text-sm font-semibold">รหัสแนะนำ: {{ $affiliate->referral_code }}</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- KYC Status Widget -->
+    @if($user->kyc_status !== 'approved')
+        <div class="bg-gradient-to-r
+            @if($user->kyc_status === 'pending') from-yellow-500 to-orange-500
+            @elseif($user->kyc_status === 'rejected') from-red-500 to-pink-500
+            @else from-gray-500 to-gray-600 @endif
+            rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-start gap-4">
+                <div class="text-5xl">
+                    @if($user->kyc_status === 'pending')
+                        ⏳
+                    @elseif($user->kyc_status === 'rejected')
+                        ❌
+                    @else
+                        🪪
+                    @endif
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-xl font-bold mb-2">
+                        @if($user->kyc_status === 'pending')
+                            การยืนยันตัวตนของคุณกำลังรอการตรวจสอบ
+                        @elseif($user->kyc_status === 'rejected')
+                            การยืนยันตัวตนไม่ผ่านการตรวจสอบ
+                        @else
+                            ยืนยันตัวตนเพื่อเพิ่มความน่าเชื่อถือ
+                        @endif
+                    </h3>
+                    <p class="text-white text-opacity-90 text-sm mb-4">
+                        @if($user->kyc_status === 'pending')
+                            เอกสารของคุณกำลังอยู่ระหว่างการตรวจสอบโดยแอดมิน กรุณารอสักครู่
+                        @elseif($user->kyc_status === 'rejected')
+                            เอกสารของคุณไม่ผ่านการตรวจสอบ กรุณาส่งเอกสารใหม่อีกครั้ง
+                        @else
+                            ยืนยันตัวตนด้วยบัตรประชาชนเพื่อเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชี
+                        @endif
+                    </p>
+                    <a href="{{ $user->kyc_status === 'not_submitted' ? route('user.kyc.create') : route('user.kyc.index') }}"
+                       class="inline-flex items-center px-4 py-2 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition">
+                        <i class="fas fa-arrow-right mr-2"></i>
+                        @if($user->kyc_status === 'pending')
+                            ดูสถานะ
+                        @elseif($user->kyc_status === 'rejected')
+                            ส่งเอกสารใหม่
+                        @else
+                            เริ่มยืนยันตัวตน
+                        @endif
+                    </a>
+                </div>
+            </div>
+        </div>
+    @endif
 
     <!-- Rank & Retention Widgets -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
