@@ -18,7 +18,13 @@ class MlmPlanController extends Controller
 
     public function create()
     {
-        return view('admin.mlm.plans.create');
+        return view('admin.mlm.plans.create-premium');
+    }
+
+    public function genealogy()
+    {
+        $members = \App\Models\MlmMember::with('user')->orderBy('created_at', 'desc')->limit(100)->get();
+        return view('admin.mlm.genealogy.index', compact('members'));
     }
 
     public function store(Request $request)
