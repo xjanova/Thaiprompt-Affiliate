@@ -431,11 +431,36 @@ Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
     Route::get('/logs/{installationId}', [AiInstallationController::class, 'getInstallationLog'])->name('logs');
 });
 
-// Learning Center
+// Learning Center - User View
 Route::prefix('learning-center')->name('learning-center.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\LearningCenterController::class, 'index'])->name('index');
-    Route::get('/category/{category}', [\App\Http\Controllers\Admin\LearningCenterController::class, 'category'])->name('category');
-    Route::get('/article/{id}', [\App\Http\Controllers\Admin\LearningCenterController::class, 'article'])->name('article');
+    Route::get('/category/{slug}', [\App\Http\Controllers\Admin\LearningCenterController::class, 'category'])->name('category');
+    Route::get('/article/{slug}', [\App\Http\Controllers\Admin\LearningCenterController::class, 'article'])->name('article');
+    Route::post('/article/{slug}/complete', [\App\Http\Controllers\Admin\LearningCenterController::class, 'complete'])->name('article.complete');
+    Route::post('/article/{slug}/progress', [\App\Http\Controllers\Admin\LearningCenterController::class, 'updateProgress'])->name('article.progress');
+});
+
+// Article Management - Admin Only
+Route::prefix('articles')->name('articles.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'store'])->name('store');
+    Route::get('/{article}/edit', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'edit'])->name('edit');
+    Route::put('/{article}', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'update'])->name('update');
+    Route::delete('/{article}', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'destroy'])->name('destroy');
+    Route::get('/{article}/permissions', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'permissions'])->name('permissions');
+    Route::put('/{article}/permissions', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'updatePermissions'])->name('permissions.update');
+});
+
+// Category Management - Admin Only
+Route::prefix('categories')->name('categories.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\CategoryManagementController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\CategoryManagementController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\CategoryManagementController::class, 'store'])->name('store');
+    Route::get('/{category}/edit', [\App\Http\Controllers\Admin\CategoryManagementController::class, 'edit'])->name('edit');
+    Route::put('/{category}', [\App\Http\Controllers\Admin\CategoryManagementController::class, 'update'])->name('update');
+    Route::delete('/{category}', [\App\Http\Controllers\Admin\CategoryManagementController::class, 'destroy'])->name('destroy');
+    Route::post('/reorder', [\App\Http\Controllers\Admin\CategoryManagementController::class, 'reorder'])->name('reorder');
 });
 
 // AI Provider Management
