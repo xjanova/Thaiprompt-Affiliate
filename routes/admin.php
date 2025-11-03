@@ -30,6 +30,7 @@ use App\Http\Controllers\Admin\LineChatWidgetController;
 use App\Http\Controllers\Admin\LineAvatarController;
 use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\OtpSettingsController;
+use App\Http\Controllers\Admin\AiInstallationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -386,4 +387,33 @@ Route::prefix('otp')->name('otp.')->group(function () {
     Route::get('/settings', [OtpSettingsController::class, 'index'])->name('settings');
     Route::put('/settings', [OtpSettingsController::class, 'update'])->name('settings.update');
     Route::post('/test', [OtpSettingsController::class, 'test'])->name('test');
+});
+
+// AI Installation & Management
+Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
+    // Installation Wizard
+    Route::get('/', [AiInstallationController::class, 'index'])->name('index');
+
+    // System Requirements
+    Route::get('/check-requirements', [AiInstallationController::class, 'checkRequirements'])->name('check-requirements');
+    Route::get('/recommendations', [AiInstallationController::class, 'getRecommendations'])->name('recommendations');
+    Route::post('/analyze-model', [AiInstallationController::class, 'analyzeModel'])->name('analyze-model');
+    Route::post('/calculate-disk-space', [AiInstallationController::class, 'calculateDiskSpace'])->name('calculate-disk-space');
+    Route::post('/optimal-settings', [AiInstallationController::class, 'getOptimalSettings'])->name('optimal-settings');
+
+    // Installation Process
+    Route::post('/start', [AiInstallationController::class, 'startInstallation'])->name('start');
+    Route::get('/progress/{installationId}', [AiInstallationController::class, 'getProgress'])->name('progress');
+    Route::post('/cancel/{installationId}', [AiInstallationController::class, 'cancelInstallation'])->name('cancel');
+
+    // Model Management
+    Route::get('/installed-models', [AiInstallationController::class, 'getInstalledModels'])->name('installed-models');
+    Route::post('/uninstall', [AiInstallationController::class, 'uninstallModel'])->name('uninstall');
+
+    // Ollama Status
+    Route::get('/ollama-status', [AiInstallationController::class, 'checkOllamaStatus'])->name('ollama-status');
+
+    // Installation History
+    Route::get('/history', [AiInstallationController::class, 'getInstallationHistory'])->name('history');
+    Route::get('/logs/{installationId}', [AiInstallationController::class, 'getInstallationLog'])->name('logs');
 });
