@@ -3,6 +3,7 @@
 use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\ProductController;
 use App\Http\Controllers\Seller\OrderManagementController;
+use App\Http\Controllers\Seller\PackageController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -17,6 +18,17 @@ Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analy
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
 Route::get('/products', [DashboardController::class, 'products'])->name('products');
 Route::get('/sales', [DashboardController::class, 'sales'])->name('sales');
+
+// ========================================
+// VENDOR PACKAGES & SUBSCRIPTIONS
+// ========================================
+Route::get('/packages', [PackageController::class, 'index'])->name('packages');
+Route::prefix('packages')->name('packages.')->group(function () {
+    Route::post('/{packageId}/subscribe', [PackageController::class, 'subscribe'])->name('subscribe');
+    Route::get('/payment/{subscriptionId}', [PackageController::class, 'payment'])->name('payment');
+    Route::post('/payment/{subscriptionId}/process', [PackageController::class, 'processPayment'])->name('process-payment');
+    Route::post('/cancel', [PackageController::class, 'cancel'])->name('cancel');
+});
 
 // ========================================
 // E-COMMERCE PRODUCT MANAGEMENT
