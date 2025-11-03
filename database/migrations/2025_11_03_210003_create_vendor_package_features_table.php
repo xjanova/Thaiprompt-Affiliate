@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('vendor_package_features');
         Schema::create('vendor_package_features', function (Blueprint $table) {
             $table->id();
 
