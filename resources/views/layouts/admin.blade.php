@@ -490,6 +490,13 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ความปลอดภัย</span>
                 </a>
 
+                <!-- Learning Center -->
+                <a href="{{ route('admin.learning-center.index') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.learning-center.*') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📚</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ศูนย์เรียนรู้</span>
+                </a>
+
                 <!-- Email Management Dropdown -->
                 <div class="relative mb-1">
                     @php
