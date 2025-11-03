@@ -31,6 +31,8 @@ use App\Http\Controllers\Admin\LineAvatarController;
 use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\OtpSettingsController;
 use App\Http\Controllers\Admin\AiInstallationController;
+use App\Http\Controllers\Admin\AiProviderManagementController;
+use App\Http\Controllers\Admin\AiMonitoringController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -416,4 +418,35 @@ Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
     // Installation History
     Route::get('/history', [AiInstallationController::class, 'getInstallationHistory'])->name('history');
     Route::get('/logs/{installationId}', [AiInstallationController::class, 'getInstallationLog'])->name('logs');
+});
+
+// AI Provider Management
+Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
+    Route::get('/', [AiProviderManagementController::class, 'index'])->name('index');
+    Route::post('/{id}/toggle', [AiProviderManagementController::class, 'toggleProvider'])->name('toggle');
+    Route::put('/{id}/config', [AiProviderManagementController::class, 'updateConfig'])->name('config');
+    Route::post('/{id}/test', [AiProviderManagementController::class, 'testConnection'])->name('test');
+    Route::get('/{id}/models', [AiProviderManagementController::class, 'getProviderModels'])->name('models');
+    Route::post('/models/{id}/toggle', [AiProviderManagementController::class, 'toggleModel'])->name('models.toggle');
+    
+    // Local AI Control
+    Route::post('/local/start', [AiProviderManagementController::class, 'startLocalAi'])->name('local.start');
+    Route::post('/local/stop', [AiProviderManagementController::class, 'stopLocalAi'])->name('local.stop');
+    Route::post('/local/restart', [AiProviderManagementController::class, 'restartLocalAi'])->name('local.restart');
+    Route::get('/local/status', [AiProviderManagementController::class, 'getLocalAiStatus'])->name('local.status');
+    Route::post('/local/load-model', [AiProviderManagementController::class, 'loadModel'])->name('local.load-model');
+});
+
+// AI Monitoring & Analytics
+Route::prefix('ai-monitoring')->name('ai-monitoring.')->group(function () {
+    Route::get('/', [AiMonitoringController::class, 'index'])->name('index');
+    Route::get('/realtime', [AiMonitoringController::class, 'getRealtimeMetrics'])->name('realtime');
+    Route::get('/system', [AiMonitoringController::class, 'getSystemMetrics'])->name('system');
+    Route::get('/requests', [AiMonitoringController::class, 'getRequestMetrics'])->name('requests');
+    Route::get('/conversations', [AiMonitoringController::class, 'getConversationMetrics'])->name('conversations');
+    Route::get('/models', [AiMonitoringController::class, 'getModelMetrics'])->name('models');
+    Route::get('/providers', [AiMonitoringController::class, 'getProviderMetrics'])->name('providers');
+    Route::get('/timeseries', [AiMonitoringController::class, 'getTimeSeriesData'])->name('timeseries');
+    Route::post('/record', [AiMonitoringController::class, 'recordMetrics'])->name('record');
+    Route::get('/dashboard-summary', [AiMonitoringController::class, 'getDashboardSummary'])->name('dashboard-summary');
 });
