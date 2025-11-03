@@ -18,7 +18,7 @@ class ProductCategorySeeder extends Seeder
                 'slug' => 'ai-courses',
                 'description' => 'คอร์สเรียนเกี่ยวกับปัญญาประดิษฐ์และ Machine Learning',
                 'is_active' => true,
-                'image' => null,
+                'image_url' => null,
                 'parent_id' => null,
             ],
             [
@@ -26,7 +26,7 @@ class ProductCategorySeeder extends Seeder
                 'slug' => 'ebooks',
                 'description' => 'หนังสืออิเล็กทรอนิกส์ด้านเทคโนโลยีและธุรกิจ',
                 'is_active' => true,
-                'image' => null,
+                'image_url' => null,
                 'parent_id' => null,
             ],
             [
@@ -34,7 +34,7 @@ class ProductCategorySeeder extends Seeder
                 'slug' => 'templates',
                 'description' => 'เทมเพลตสำหรับงานต่างๆ',
                 'is_active' => true,
-                'image' => null,
+                'image_url' => null,
                 'parent_id' => null,
             ],
             [
@@ -42,7 +42,7 @@ class ProductCategorySeeder extends Seeder
                 'slug' => 'prompt-engineering',
                 'description' => 'คอร์สและเครื่องมือสำหรับ Prompt Engineering',
                 'is_active' => true,
-                'image' => null,
+                'image_url' => null,
                 'parent_id' => 1, // Sub-category of AI Courses
             ],
             [
@@ -50,7 +50,7 @@ class ProductCategorySeeder extends Seeder
                 'slug' => 'chatgpt-mastery',
                 'description' => 'เรียนรู้การใช้งาน ChatGPT อย่างมืออาชีพ',
                 'is_active' => true,
-                'image' => null,
+                'image_url' => null,
                 'parent_id' => 1, // Sub-category of AI Courses
             ],
             [
@@ -58,7 +58,7 @@ class ProductCategorySeeder extends Seeder
                 'slug' => 'business-templates',
                 'description' => 'เทมเพลตสำหรับธุรกิจ',
                 'is_active' => true,
-                'image' => null,
+                'image_url' => null,
                 'parent_id' => 3, // Sub-category of Templates
             ],
             [
@@ -66,7 +66,7 @@ class ProductCategorySeeder extends Seeder
                 'slug' => 'marketing-materials',
                 'description' => 'สื่อการตลาดและเครื่องมือ',
                 'is_active' => true,
-                'image' => null,
+                'image_url' => null,
                 'parent_id' => null,
             ],
             [
@@ -74,7 +74,7 @@ class ProductCategorySeeder extends Seeder
                 'slug' => 'software-tools',
                 'description' => 'ซอฟต์แวร์และเครื่องมือต่างๆ',
                 'is_active' => true,
-                'image' => null,
+                'image_url' => null,
                 'parent_id' => null,
             ],
         ];
