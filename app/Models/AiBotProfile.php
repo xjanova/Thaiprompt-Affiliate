@@ -86,7 +86,7 @@ class AiBotProfile extends Model
      */
     public function knowledgeBases(): HasMany
     {
-        return $this->hasMany(AiKnowledgeBase::class, 'bot_profile_id');
+        return $this->hasMany(KnowledgeBase::class, 'bot_profile_id');
     }
 
     /**
