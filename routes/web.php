@@ -131,6 +131,12 @@ Route::prefix('store')->name('vendor.store.')->group(function () {
     Route::get('/{slug}', [\App\Http\Controllers\VendorStoreController::class, 'show'])->name('show');
 });
 
+// Admin Store Routes (Public browsing of admin's official store)
+Route::prefix('admin-store')->name('admin-store.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\AdminStoreController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\AdminStoreController::class, 'show'])->name('show');
+});
+
 // Cart Routes (Authenticated)
 Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [\App\Http\Controllers\CartController::class, 'index'])->name('index');
