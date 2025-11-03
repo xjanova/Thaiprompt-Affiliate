@@ -435,11 +435,11 @@ Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
 Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
     Route::get('/', [AiProviderManagementController::class, 'index'])->name('index');
     Route::post('/{id}/toggle', [AiProviderManagementController::class, 'toggleProvider'])->name('toggle');
-    Route::put('/{id}/config', [AiProviderManagementController::class, 'updateConfig'])->name('config');
+    Route::match(['post', 'put'], '/{id}/config', [AiProviderManagementController::class, 'updateConfig'])->name('config');
     Route::post('/{id}/test', [AiProviderManagementController::class, 'testConnection'])->name('test');
     Route::get('/{id}/models', [AiProviderManagementController::class, 'getProviderModels'])->name('models');
     Route::post('/models/{id}/toggle', [AiProviderManagementController::class, 'toggleModel'])->name('models.toggle');
-    
+
     // Local AI Control
     Route::post('/local/start', [AiProviderManagementController::class, 'startLocalAi'])->name('local.start');
     Route::post('/local/stop', [AiProviderManagementController::class, 'stopLocalAi'])->name('local.stop');
