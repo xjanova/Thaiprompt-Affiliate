@@ -28,7 +28,7 @@ class AiMonitoringController extends Controller
     /**
      * ดึง Real-time Metrics (สำหรับ AJAX polling)
      */
-    public function getRealtime Metrics()
+    public function getRealtimeMetrics()
     {
         $metrics = $this->monitoringService->getAllMetrics();
 
