@@ -33,7 +33,7 @@ class AiInstallationController extends Controller
 
         // ดึง installation logs ล่าสุด
         $recentLogs = AiInstallationLog::where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc')
+            ->orderBy('started_at', 'desc')
             ->limit(5)
             ->get();
 
@@ -240,7 +240,7 @@ class AiInstallationController extends Controller
     public function getInstallationHistory()
     {
         $logs = AiInstallationLog::where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc')
+            ->orderBy('started_at', 'desc')
             ->paginate(20);
 
         return response()->json([
