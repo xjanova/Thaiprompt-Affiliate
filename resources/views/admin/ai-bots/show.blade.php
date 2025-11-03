@@ -7,11 +7,16 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between">
                     <h5>{{ $bot->display_name }}</h5>
-                    @if($bot->owner_id === Auth::id())
-                    <a href="{{ route('admin.ai-bots.edit', $bot->id) }}" class="btn btn-sm btn-warning">
-                        <i class="fas fa-edit"></i> แก้ไข
-                    </a>
-                    @endif
+                    <div>
+                        @if($bot->owner_id === Auth::id())
+                        <a href="{{ route('admin.knowledge-bases.index', $bot->id) }}" class="btn btn-sm btn-info me-2">
+                            <i class="fas fa-book"></i> Knowledge Base
+                        </a>
+                        <a href="{{ route('admin.ai-bots.edit', $bot->id) }}" class="btn btn-sm btn-warning">
+                            <i class="fas fa-edit"></i> แก้ไข
+                        </a>
+                        @endif
+                    </div>
                 </div>
                 <div class="card-body">
                     <p><strong>Provider:</strong> {{ $bot->provider->display_name }}</p>

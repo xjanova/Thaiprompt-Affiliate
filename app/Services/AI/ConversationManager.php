@@ -12,11 +12,15 @@ class ConversationManager
 {
     private BaseAiService $aiService;
     private AiBotProfile $bot;
+    private ?RagService $ragService;
 
     public function __construct(AiBotProfile $bot)
     {
         $this->bot = $bot;
         $this->aiService = AiServiceFactory::createFromBot($bot);
+
+        // Initialize RAG service if knowledge base is enabled
+        $this->ragService = $bot->enable_knowledge_base ? new RagService() : null;
     }
 
     /**
@@ -42,10 +46,29 @@ class ConversationManager
         array $options = []
     ): array {
         // บันทึกข้อความจากผู้ใช้
-        $conversation->addMessage('user', $userMessage);
+        $userMessageModel = $conversation->addMessage('user', $userMessage);
 
         // ดึง context (ข้อความล่าสุด)
         $messages = $this->buildContext($conversation, $options);
+
+        // RAG: Search and inject context if enabled
+        $ragResult = null;
+        if ($this->ragService && $this->bot->enable_knowledge_base) {
+            $ragResult = $this->ragService->getContextForMessage(
+                $this->bot,
+                $userMessage,
+                $options['rag_max_tokens'] ?? 2000
+            );
+
+            // Inject RAG context before user message if found
+            if (!empty($ragResult['context'])) {
+                // Insert RAG context as system message before the last user message
+                array_splice($messages, -1, 0, [[
+                    'role' => 'system',
+                    'content' => $ragResult['context']
+                ]]);
+            }
+        }
 
         // ส่ง request ไปยัง AI
         $startTime = microtime(true);
@@ -70,7 +93,7 @@ class ConversationManager
         }
 
         // บันทึกคำตอบจาก AI
-        $conversation->addMessage('assistant', $response['content'], [
+        $assistantMessage = $conversation->addMessage('assistant', $response['content'], [
             'tokens_used' => $response['usage']['total_tokens'] ?? 0,
             'model_used' => $this->bot->model->model_identifier,
             'provider_used' => $this->bot->provider->display_name,
@@ -86,11 +109,23 @@ class ConversationManager
             'success'
         );
 
+        // Log RAG usage if applicable
+        if ($ragResult && !empty($ragResult['chunks_used']) && $ragResult['chunks_used']->isNotEmpty()) {
+            $this->ragService->logUsage(
+                $conversation,
+                $assistantMessage,
+                $userMessage,
+                $ragResult
+            );
+        }
+
         return [
             'success' => true,
             'message' => $response['content'],
             'tokens_used' => $response['usage']['total_tokens'] ?? 0,
             'finish_reason' => $response['finish_reason'] ?? 'stop',
+            'rag_used' => $ragResult && !empty($ragResult['context']),
+            'rag_chunks' => $ragResult ? $ragResult['stats']['chunks_retrieved'] : 0,
         ];
     }
 
