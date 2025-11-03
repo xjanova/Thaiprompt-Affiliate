@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -62,7 +63,7 @@ class SettingsController extends Controller
         // Validate GIF file separately
         if ($request->hasFile('page_loader_gif')) {
             $request->validate([
-                'page_loader_gif' => ['required', 'image', 'mimes:gif', 'max:2048'],
+                'page_loader_gif' => ['required', 'image', 'mimes:gif,webp', 'max:2048'],
             ]);
         }
 
@@ -85,10 +86,21 @@ class SettingsController extends Controller
 
         // Handle GIF upload for page loader
         if ($request->hasFile('page_loader_gif')) {
-            $gifPath = $request->file('page_loader_gif')->store('page-loaders', 'public');
-            $gifUrl = '/storage/' . $gifPath;
+            $webpService = app(WebPService::class);
 
-            // Delete old GIF if exists
+            // Note: GIFs are not converted to WebP to preserve animation
+            $extension = strtolower($request->file('page_loader_gif')->getClientOriginalExtension());
+            if ($extension === 'gif') {
+                // Keep GIF as is for animation support
+                $gifPath = $request->file('page_loader_gif')->store('page-loaders', 'public');
+                $gifUrl = '/storage/' . $gifPath;
+            } else {
+                // Convert static images to WebP
+                $result = $webpService->convertAndStore($request->file('page_loader_gif'), 'page-loaders', 85);
+                $gifUrl = $result['url'];
+            }
+
+            // Delete old file if exists
             $oldGif = Setting::get('page_loader_gif');
             if ($oldGif) {
                 $oldPath = str_replace('/storage/', '', $oldGif);
@@ -190,15 +202,17 @@ class SettingsController extends Controller
         }
 
         $validated = $request->validate([
-            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,svg', 'max:2048'],
-            'favicon' => ['nullable', 'image', 'mimes:png,jpg,jpeg,ico', 'max:512'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,svg,webp', 'max:2048'],
+            'favicon' => ['nullable', 'image', 'mimes:png,jpg,jpeg,ico,webp', 'max:512'],
         ]);
+
+        $webpService = app(WebPService::class);
 
         // Handle logo upload
         if ($request->hasFile('logo')) {
-            // Store in storage/app/public/branding (persistent across deployments)
-            $logoPath = $request->file('logo')->store('branding', 'public');
-            $logoUrl = '/storage/' . $logoPath;
+            // Convert to WebP and store in storage/app/public/branding
+            $result = $webpService->convertAndStore($request->file('logo'), 'branding', 90);
+            $logoUrl = $result['url'];
 
             // Delete old logo if exists
             $oldLogo = Setting::get('logo');
@@ -215,9 +229,9 @@ class SettingsController extends Controller
 
         // Handle favicon upload
         if ($request->hasFile('favicon')) {
-            // Store in storage/app/public/branding (persistent across deployments)
-            $faviconPath = $request->file('favicon')->store('branding', 'public');
-            $faviconUrl = '/storage/' . $faviconPath;
+            // Convert to WebP and store in storage/app/public/branding
+            $result = $webpService->convertAndStore($request->file('favicon'), 'branding', 90);
+            $faviconUrl = $result['url'];
 
             // Delete old favicon if exists
             $oldFavicon = Setting::get('favicon');

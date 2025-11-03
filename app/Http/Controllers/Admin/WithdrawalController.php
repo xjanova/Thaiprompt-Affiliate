@@ -122,7 +122,7 @@ class WithdrawalController extends Controller
         }
 
         $request->validate([
-            'transfer_slip' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            'transfer_slip' => 'required|image|mimes:jpeg,png,jpg,webp|max:5120',
             'transfer_note' => 'nullable|string|max:500',
         ]);
 
