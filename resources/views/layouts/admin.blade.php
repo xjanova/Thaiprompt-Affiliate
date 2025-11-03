@@ -310,6 +310,21 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผู้ใช้</span>
                 </a>
 
+                <!-- KYC Verification -->
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->hasPermission('view_kyc_verifications'))
+                    @php
+                        $pendingKycCount = \App\Models\KycVerification::pending()->count();
+                    @endphp
+                    <a href="{{ route('admin.kyc.index') }}"
+                       class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.kyc.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🪪</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ยืนยันตัวตน (KYC)</span>
+                        @if($pendingKycCount > 0)
+                            <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 animate-pulse" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $pendingKycCount }}</span>
+                        @endif
+                    </a>
+                @endif
+
                 <!-- Marketing System Dropdown -->
                 <div class="relative mb-1">
                     @php

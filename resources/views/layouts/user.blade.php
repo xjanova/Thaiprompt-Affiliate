@@ -272,6 +272,20 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">โปรไฟล์</span>
                 </a>
 
+                <!-- KYC Verification -->
+                <a href="{{ route('user.kyc.index') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.kyc.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🪪</span>
+                    <span class="ml-3 text-sm font-medium transition-all flex-1" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ยืนยันตัวตน (KYC)</span>
+                    @if(auth()->user()->kyc_status === 'pending')
+                        <span class="ml-auto bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 animate-pulse" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">รอตรวจสอบ</span>
+                    @elseif(auth()->user()->kyc_status === 'approved')
+                        <span class="ml-auto bg-green-500 text-white text-xs rounded-full px-1.5 py-0.5" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">✓</span>
+                    @elseif(auth()->user()->kyc_status === 'rejected')
+                        <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">!</span>
+                    @endif
+                </a>
+
                 <!-- Commissions -->
                 <a href="{{ route('user.commissions') }}"
                    class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.commissions') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
