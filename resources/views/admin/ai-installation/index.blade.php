@@ -4,282 +4,518 @@
 
 @push('styles')
 <style>
-.ai-hero {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
-    padding: 40px;
-    color: white;
-    margin-bottom: 30px;
-    position: relative;
-    overflow: hidden;
+/* LINE OA Color Scheme */
+:root {
+    --line-green: #06C755;
+    --line-green-dark: #00B900;
+    --line-green-light: #E8F7EF;
+    --line-gray: #F7F7F7;
+    --line-border: #E0E0E0;
+    --line-text: #333333;
+    --line-text-light: #6C6C6C;
 }
 
-.ai-hero::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 300px;
-    background: rgba(255,255,255,0.1);
-    border-radius: 50%;
-    transform: translate(50%, -50%);
+/* Main Container */
+.ai-installation-container {
+    background: #FAFAFA;
+    min-height: 100vh;
 }
 
-.ai-hero h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 15px;
-}
-
-.ai-hero p {
-    font-size: 1.1rem;
-    opacity: 0.95;
-    margin-bottom: 25px;
-}
-
-.feature-card {
-    border: none;
-    border-radius: 15px;
-    transition: all 0.3s ease;
-    height: 100%;
+/* Navigation Tabs */
+.line-tabs {
     background: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    border-bottom: 1px solid var(--line-border);
+    margin-bottom: 0;
 }
 
-.feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+.line-tabs .nav-link {
+    color: var(--line-text-light);
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 15px 24px;
+    font-weight: 500;
+    transition: all 0.2s;
 }
 
-.feature-icon {
-    width: 60px;
-    height: 60px;
-    border-radius: 12px;
+.line-tabs .nav-link:hover {
+    color: var(--line-green);
+    border-bottom-color: var(--line-green-light);
+}
+
+.line-tabs .nav-link.active {
+    color: var(--line-green);
+    border-bottom-color: var(--line-green);
+    background: transparent;
+}
+
+/* Header Section */
+.line-header {
+    background: white;
+    padding: 24px;
+    border-bottom: 1px solid var(--line-border);
+    margin-bottom: 24px;
+}
+
+.line-header h1 {
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--line-text);
+    margin-bottom: 8px;
+}
+
+.line-header p {
+    color: var(--line-text-light);
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Info Banner */
+.line-info-banner {
+    background: var(--line-green-light);
+    border: 1px solid #C8E6D5;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+}
+
+.line-info-banner .icon {
+    width: 40px;
+    height: 40px;
+    background: white;
+    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
-    margin-bottom: 15px;
+    color: var(--line-green);
+    font-size: 20px;
 }
 
-.icon-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-.icon-green { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; }
-.icon-orange { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
-.icon-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
-
-.pricing-card {
-    border: 2px solid #e9ecef;
-    border-radius: 15px;
-    padding: 25px;
-    transition: all 0.3s ease;
+/* Feature Cards */
+.line-feature-card {
+    background: white;
+    border: 1px solid var(--line-border);
+    border-radius: 8px;
+    padding: 20px;
     height: 100%;
+    transition: all 0.2s;
 }
 
-.pricing-card.highlight {
-    border-color: #667eea;
-    background: linear-gradient(135deg, rgba(102,126,234,0.05) 0%, rgba(118,75,162,0.05) 100%);
+.line-feature-card:hover {
+    border-color: var(--line-green);
+    box-shadow: 0 2px 8px rgba(6, 199, 85, 0.1);
+}
+
+.line-feature-card .icon {
+    width: 48px;
+    height: 48px;
+    background: var(--line-green-light);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--line-green);
+    font-size: 24px;
+    margin-bottom: 16px;
+}
+
+.line-feature-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--line-text);
+    margin-bottom: 8px;
+}
+
+.line-feature-card p {
+    font-size: 14px;
+    color: var(--line-text-light);
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Comparison Table */
+.line-comparison-card {
+    background: white;
+    border: 1px solid var(--line-border);
+    border-radius: 8px;
+    padding: 24px;
+    height: 100%;
+    transition: all 0.2s;
+}
+
+.line-comparison-card.highlight {
+    border: 2px solid var(--line-green);
     position: relative;
 }
 
-.pricing-card.highlight::before {
-    content: 'แนะนำ';
+.line-comparison-card.highlight::before {
+    content: '推奨';
     position: absolute;
     top: -12px;
-    right: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--line-green);
     color: white;
-    padding: 4px 15px;
-    border-radius: 20px;
+    padding: 4px 16px;
+    border-radius: 12px;
     font-size: 12px;
     font-weight: 600;
 }
 
-.pricing-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+.line-comparison-card h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--line-text);
+    margin-bottom: 16px;
 }
 
-.price-tag {
-    font-size: 2.5rem;
+.line-comparison-card .price {
+    font-size: 32px;
     font-weight: 700;
-    color: #667eea;
-    margin: 20px 0;
+    color: var(--line-green);
+    margin-bottom: 20px;
 }
 
-.price-tag small {
-    font-size: 1rem;
-    color: #6c757d;
+.line-comparison-card .price small {
+    font-size: 14px;
     font-weight: 400;
+    color: var(--line-text-light);
 }
 
-.wizard-steps {
+/* Wizard Steps */
+.line-wizard-steps {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 30px;
+    margin-bottom: 32px;
     position: relative;
+    padding: 0 60px;
 }
 
-.wizard-steps::before {
+.line-wizard-steps::before {
     content: '';
     position: absolute;
     top: 20px;
-    left: 50px;
-    right: 50px;
+    left: 60px;
+    right: 60px;
     height: 2px;
-    background: #e9ecef;
+    background: var(--line-border);
     z-index: 0;
 }
 
-.wizard-step-item {
+.line-wizard-step {
     flex: 1;
     text-align: center;
     position: relative;
     z-index: 1;
 }
 
-.step-circle {
+.line-wizard-step .circle {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: #e9ecef;
-    color: #6c757d;
+    background: white;
+    border: 2px solid var(--line-border);
+    color: var(--line-text-light);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     font-weight: 600;
-    margin-bottom: 10px;
-    transition: all 0.3s ease;
+    margin-bottom: 8px;
+    transition: all 0.2s;
 }
 
-.wizard-step-item.active .step-circle {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    box-shadow: 0 3px 10px rgba(102,126,234,0.4);
-}
-
-.wizard-step-item.completed .step-circle {
-    background: #28a745;
+.line-wizard-step.active .circle {
+    background: var(--line-green);
+    border-color: var(--line-green);
     color: white;
 }
 
-.step-label {
+.line-wizard-step.completed .circle {
+    background: var(--line-green);
+    border-color: var(--line-green);
+    color: white;
+}
+
+.line-wizard-step .label {
     font-size: 13px;
-    color: #6c757d;
+    color: var(--line-text-light);
 }
 
-.wizard-step-item.active .step-label {
-    color: #667eea;
+.line-wizard-step.active .label {
+    color: var(--line-green);
     font-weight: 600;
 }
 
-.model-card {
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
+/* Stats Card */
+.line-stats-card {
+    background: white;
+    border: 1px solid var(--line-border);
+    border-radius: 8px;
     padding: 20px;
-    transition: all 0.3s ease;
-    cursor: pointer;
     height: 100%;
 }
 
-.model-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 5px 15px rgba(102,126,234,0.2);
-    transform: translateY(-3px);
+.line-stats-card .header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
 }
 
-.model-card.selected {
-    border-color: #667eea;
-    background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
-}
-
-.badge-recommended {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.badge-possible {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.progress-modern {
-    height: 30px;
-    border-radius: 15px;
-    background: #e9ecef;
-    overflow: hidden;
-}
-
-.progress-modern .progress-bar {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.line-stats-card .icon {
+    width: 40px;
+    height: 40px;
+    background: var(--line-green-light);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
+    color: var(--line-green);
+    margin-right: 12px;
+}
+
+.line-stats-card h3 {
     font-size: 14px;
+    font-weight: 600;
+    color: var(--line-text);
+    margin: 0;
 }
 
-.stats-card {
-    background: white;
-    border-radius: 12px;
-    padding: 20px;
-    border-left: 4px solid #667eea;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-}
-
-.stats-value {
-    font-size: 2rem;
+.line-stats-card .value {
+    font-size: 24px;
     font-weight: 700;
-    color: #667eea;
+    color: var(--line-text);
+    margin-bottom: 4px;
 }
 
-.btn-gradient {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.line-stats-card .description {
+    font-size: 13px;
+    color: var(--line-text-light);
+}
+
+/* Model Card */
+.line-model-card {
+    background: white;
+    border: 1px solid var(--line-border);
+    border-radius: 8px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    height: 100%;
+}
+
+.line-model-card:hover {
+    border-color: var(--line-green);
+    box-shadow: 0 2px 8px rgba(6, 199, 85, 0.1);
+}
+
+.line-model-card.selected {
+    border: 2px solid var(--line-green);
+    background: var(--line-green-light);
+}
+
+.line-model-card h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--line-text);
+    margin-bottom: 8px;
+}
+
+.line-model-card .badge {
+    background: var(--line-green);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.line-model-card .badge.secondary {
+    background: #F0F0F0;
+    color: var(--line-text);
+}
+
+/* Progress Bar */
+.line-progress {
+    height: 8px;
+    background: var(--line-gray);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.line-progress .bar {
+    height: 100%;
+    background: var(--line-green);
+    transition: width 0.3s ease;
+}
+
+/* Buttons */
+.btn-line {
+    background: var(--line-green);
     border: none;
     color: white;
-    padding: 12px 30px;
-    border-radius: 25px;
+    padding: 10px 24px;
+    border-radius: 4px;
     font-weight: 600;
-    transition: all 0.3s ease;
+    font-size: 14px;
+    transition: all 0.2s;
 }
 
-.btn-gradient:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+.btn-line:hover {
+    background: var(--line-green-dark);
     color: white;
 }
 
-.installation-log {
-    background: #1e1e1e;
-    color: #d4d4d4;
+.btn-line-outline {
+    background: white;
+    border: 1px solid var(--line-border);
+    color: var(--line-text);
+    padding: 10px 24px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.btn-line-outline:hover {
+    border-color: var(--line-green);
+    color: var(--line-green);
+}
+
+.btn-line-lg {
+    padding: 12px 32px;
+    font-size: 16px;
+}
+
+/* Installation Log */
+.line-log {
+    background: #2D2D2D;
+    border: 1px solid #404040;
     border-radius: 8px;
-    padding: 15px;
+    padding: 16px;
     max-height: 300px;
     overflow-y: auto;
     font-family: 'Courier New', monospace;
     font-size: 12px;
+    color: #E0E0E0;
 }
 
-.installation-log::-webkit-scrollbar {
-    width: 8px;
+.line-log::-webkit-scrollbar {
+    width: 6px;
 }
 
-.installation-log::-webkit-scrollbar-track {
-    background: #2d2d2d;
+.line-log::-webkit-scrollbar-track {
+    background: #1e1e1e;
+}
+
+.line-log::-webkit-scrollbar-thumb {
+    background: var(--line-green);
+    border-radius: 3px;
+}
+
+/* Alerts */
+.line-alert {
+    border: 1px solid;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.line-alert.success {
+    background: var(--line-green-light);
+    border-color: #C8E6D5;
+    color: var(--line-text);
+}
+
+.line-alert.info {
+    background: #E3F2FD;
+    border-color: #BBDEFB;
+    color: var(--line-text);
+}
+
+.line-alert.warning {
+    background: #FFF3E0;
+    border-color: #FFE0B2;
+    color: var(--line-text);
+}
+
+.line-alert.error {
+    background: #FFEBEE;
+    border-color: #FFCDD2;
+    color: var(--line-text);
+}
+
+/* Content Section */
+.line-section {
+    background: white;
+    border: 1px solid var(--line-border);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+}
+
+.line-section-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.line-section-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--line-text);
+    margin: 0;
+}
+
+/* Table */
+.line-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.line-table thead th {
+    background: var(--line-gray);
+    color: var(--line-text);
+    font-weight: 600;
+    font-size: 13px;
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-border);
+}
+
+.line-table tbody td {
+    padding: 16px;
+    border-bottom: 1px solid var(--line-border);
+    font-size: 14px;
+    color: var(--line-text);
+}
+
+.line-table tbody tr:hover {
+    background: var(--line-gray);
+}
+
+/* Badge */
+.line-badge {
+    display: inline-block;
+    padding: 4px 8px;
     border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
 }
 
-.installation-log::-webkit-scrollbar-thumb {
-    background: #667eea;
-    border-radius: 4px;
+.line-badge.success {
+    background: var(--line-green-light);
+    color: var(--line-green-dark);
+}
+
+.line-badge.warning {
+    background: #FFF3E0;
+    color: #F57C00;
+}
+
+.line-badge.error {
+    background: #FFEBEE;
+    color: #D32F2F;
 }
 
 @keyframes pulse {
@@ -294,241 +530,248 @@
 @endpush
 
 @section('content')
-<div class="container-fluid py-4">
-    <!-- Hero Section -->
-    <div class="ai-hero">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <h1>ติดตั้ง AI ของตัวเอง (Self-Hosted)</h1>
-                <p class="mb-4">
-                    ติดตั้ง DeepSeek AI บนเซิร์ฟเวอร์ของคุณเอง ใช้งานฟรี ไม่จำกัด ไม่มีค่าใช้จ่ายรายเดือน
-                    ควบคุมข้อมูลของคุณได้เอง 100% และประหยัดค่าใช้จ่ายได้มากกว่า 90%
-                </p>
-                <button type="button" class="btn btn-light btn-lg" onclick="startNewInstallation()" style="border-radius: 25px; padding: 12px 35px;">
-                    <i class="fas fa-rocket me-2"></i>
-                    เริ่มติดตั้งเลย
+<div class="ai-installation-container">
+    <!-- Navigation Tabs -->
+    <ul class="nav line-tabs">
+        <li class="nav-item">
+            <a class="nav-link active" href="#">
+                <i class="fas fa-home me-2"></i>ภาพรวม
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#" onclick="startNewInstallation(); return false;">
+                <i class="fas fa-download me-2"></i>ติดตั้งโมเดล
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="#">
+                <i class="fas fa-cog me-2"></i>ตั้งค่า
+            </a>
+        </li>
+    </ul>
+
+    <div class="container-fluid" style="padding: 24px;">
+        <!-- Header -->
+        <div class="line-header">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1>ติดตั้ง AI ของตัวเอง (Self-Hosted)</h1>
+                    <p>ติดตั้ง DeepSeek AI บนเซิร์ฟเวอร์ของคุณเอง ใช้งานฟรี ไม่จำกัด ไม่มีค่าใช้จ่ายรายเดือน</p>
+                </div>
+                <button type="button" class="btn-line btn-line-lg" onclick="startNewInstallation()">
+                    <i class="fas fa-plus me-2"></i>ติดตั้งโมเดลใหม่
                 </button>
             </div>
-            <div class="col-lg-4 text-end">
-                <i class="fas fa-server" style="font-size: 120px; opacity: 0.2;"></i>
+        </div>
+
+        <!-- Info Banner -->
+        <div class="line-info-banner">
+            <div class="d-flex align-items-center">
+                <div class="icon">
+                    <i class="fas fa-info"></i>
+                </div>
+                <div class="ms-3">
+                    <strong>ประหยัดค่าใช้จ่ายได้มากกว่า 90%</strong>
+                    <p class="mb-0" style="font-size: 14px;">เมื่อเปรียบเทียบกับ ChatGPT API หรือ Claude API พร้อมความเป็นส่วนตัวและปลอดภัย 100%</p>
+                </div>
             </div>
         </div>
-    </div>
 
-    <!-- Features Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h4 class="mb-3">ทำไมต้อง Self-Hosted AI?</h4>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="feature-card">
-                <div class="card-body">
-                    <div class="feature-icon icon-purple">
+        <!-- Features -->
+        <div class="row mb-4">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="line-feature-card">
+                    <div class="icon">
                         <i class="fas fa-infinity"></i>
                     </div>
-                    <h5>ใช้งานไม่จำกัด</h5>
-                    <p class="text-muted mb-0">ไม่มีข้อจำกัดจำนวนคำถาม ไม่มีค่าใช้จ่ายรายเดือน ใช้งานได้เท่าที่ต้องการ</p>
+                    <h3>ใช้งานไม่จำกัด</h3>
+                    <p>ไม่มีข้อจำกัดจำนวนคำถาม ไม่มีค่าใช้จ่ายรายเดือน ใช้งานได้เท่าที่ต้องการ</p>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="feature-card">
-                <div class="card-body">
-                    <div class="feature-icon icon-green">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="line-feature-card">
+                    <div class="icon">
                         <i class="fas fa-shield-alt"></i>
                     </div>
-                    <h5>ปลอดภัย 100%</h5>
-                    <p class="text-muted mb-0">ข้อมูลอยู่บนเซิร์ฟเวอร์ของคุณ ไม่ส่งข้อมูลออกไปภายนอก รับรองความเป็นส่วนตัว</p>
+                    <h3>ปลอดภัย 100%</h3>
+                    <p>ข้อมูลอยู่บนเซิร์ฟเวอร์ของคุณ ไม่ส่งข้อมูลออกไปภายนอก รับรองความเป็นส่วนตัว</p>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="feature-card">
-                <div class="card-body">
-                    <div class="feature-icon icon-orange">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="line-feature-card">
+                    <div class="icon">
                         <i class="fas fa-piggy-bank"></i>
                     </div>
-                    <h5>ประหยัดงบ 90%+</h5>
-                    <p class="text-muted mb-0">เทียบกับ ChatGPT API หรือ Claude ประหยัดได้หลักหมื่นบาทต่อเดือน</p>
+                    <h3>ประหยัดงบ 90%+</h3>
+                    <p>เทียบกับ ChatGPT API หรือ Claude ประหยัดได้หลักหมื่นบาทต่อเดือน</p>
                 </div>
             </div>
-        </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="feature-card">
-                <div class="card-body">
-                    <div class="feature-icon icon-blue">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <div class="line-feature-card">
+                    <div class="icon">
                         <i class="fas fa-tachometer-alt"></i>
                     </div>
-                    <h5>รวดเร็ว ทันใจ</h5>
-                    <p class="text-muted mb-0">ติดตั้งบนเซิร์ฟเวอร์ของคุณ ไม่ต้องรอคิว ตอบสนองเร็วกว่า Cloud API</p>
+                    <h3>รวดเร็ว ทันใจ</h3>
+                    <p>ติดตั้งบนเซิร์ฟเวอร์ของคุณ ไม่ต้องรอคิว ตอบสนองเร็วกว่า Cloud API</p>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Pricing Comparison -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <h4 class="mb-3">เปรียบเทียบค่าใช้จ่าย</h4>
-        </div>
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="pricing-card">
-                <h5>ChatGPT API</h5>
-                <div class="price-tag">$20-200<small>/เดือน</small></div>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>จำกัดจำนวนคำถาม</li>
-                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ค่าใช้จ่ายสูง</li>
-                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ข้อมูลถูกส่งออกไป</li>
-                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ต้องพึ่งพา API ภายนอก</li>
-                </ul>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="pricing-card highlight">
-                <h5>Self-Hosted AI</h5>
-                <div class="price-tag">฿0<small>/เดือน</small></div>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ใช้ไม่จำกัด ฟรี!</li>
-                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ไม่มีค่าใช้จ่ายรายเดือน</li>
-                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ข้อมูลอยู่กับคุณ 100%</li>
-                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i>ควบคุมได้เองทั้งหมด</li>
-                </ul>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6 mb-3">
-            <div class="pricing-card">
-                <h5>Claude API</h5>
-                <div class="price-tag">$15-150<small>/เดือน</small></div>
-                <ul class="list-unstyled">
-                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>คิดตามจำนวน tokens</li>
-                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ราคาแพง</li>
-                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ข้อมูลส่งไป Anthropic</li>
-                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>มีข้อจำกัด rate limit</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card" style="border: none; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
-                <div class="card-header pb-0" style="background: transparent; border: none;">
-                    <div class="d-flex align-items-center justify-content-between">
-                        <div>
-                            <h5>จัดการ AI โมเดล</h5>
-                            <p class="text-sm mb-0 text-muted">ติดตั้งและจัดการโมเดล AI ที่คุณต้องการ</p>
-                        </div>
-                        <button type="button" class="btn btn-gradient" onclick="startNewInstallation()">
-                            <i class="fas fa-download me-1"></i>
-                            ติดตั้งโมเดลใหม่
-                        </button>
+        <!-- Pricing Comparison -->
+        <div class="line-section">
+            <h2 class="mb-4" style="font-size: 18px; font-weight: 600;">เปรียบเทียบค่าใช้จ่าย</h2>
+            <div class="row">
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="line-comparison-card">
+                        <h3>ChatGPT API</h3>
+                        <div class="price">$20-200<small>/เดือน</small></div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>จำกัดจำนวนคำถาม</li>
+                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ค่าใช้จ่ายสูง</li>
+                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ข้อมูลถูกส่งออกไป</li>
+                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ต้องพึ่งพา API ภายนอก</li>
+                        </ul>
                     </div>
                 </div>
-                <div class="card-body">
-                    <!-- Ollama Status -->
-                    <div class="alert alert-info" id="ollama-status">
-                        <div class="d-flex align-items-center">
-                            <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                            <span>กำลังตรวจสอบสถานะ Ollama...</span>
-                        </div>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="line-comparison-card highlight">
+                        <h3>Self-Hosted AI</h3>
+                        <div class="price">฿0<small>/เดือน</small></div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-check me-2" style="color: var(--line-green);"></i>ใช้ไม่จำกัด ฟรี!</li>
+                            <li class="mb-2"><i class="fas fa-check me-2" style="color: var(--line-green);"></i>ไม่มีค่าใช้จ่ายรายเดือน</li>
+                            <li class="mb-2"><i class="fas fa-check me-2" style="color: var(--line-green);"></i>ข้อมูลอยู่กับคุณ 100%</li>
+                            <li class="mb-2"><i class="fas fa-check me-2" style="color: var(--line-green);"></i>ควบคุมได้เองทั้งหมด</li>
+                        </ul>
                     </div>
-
-                    <!-- Installed Models -->
-                    <div class="mt-4">
-                        <h6>โมเดลที่ติดตั้งแล้ว</h6>
-                        <div id="installed-models" class="table-responsive">
-                            <div class="text-center py-4">
-                                <div class="spinner-border" role="status"></div>
-                                <p class="mt-2">กำลังโหลด...</p>
-                            </div>
-                        </div>
+                </div>
+                <div class="col-lg-4 col-md-6 mb-3">
+                    <div class="line-comparison-card">
+                        <h3>Claude API</h3>
+                        <div class="price">$15-150<small>/เดือน</small></div>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>คิดตามจำนวน tokens</li>
+                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ราคาแพง</li>
+                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ข้อมูลส่งไป Anthropic</li>
+                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>มีข้อจำกัด rate limit</li>
+                        </ul>
                     </div>
-
-                    <!-- Recent Installation Logs -->
-                    @if($recentLogs->count() > 0)
-                    <div class="mt-4">
-                        <h6>ประวัติการติดตั้งล่าสุด</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm">
-                                <thead>
-                                    <tr>
-                                        <th>เวลา</th>
-                                        <th>โมเดล</th>
-                                        <th>สถานะ</th>
-                                        <th>Progress</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($recentLogs as $log)
-                                    <tr>
-                                        <td>{{ $log->created_at->diffForHumans() }}</td>
-                                        <td>{{ $log->config['model_id'] ?? 'N/A' }}</td>
-                                        <td>
-                                            <span class="badge badge-{{ $log->isCompleted() ? 'success' : ($log->isFailed() ? 'danger' : 'warning') }}">
-                                                {{ $log->getStatusMessage() }}
-                                            </span>
-                                        </td>
-                                        <td>{{ $log->progress_percentage }}%</td>
-                                        <td>
-                                            <button class="btn btn-sm btn-info" onclick="viewLog({{ $log->id }})">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    @endif
                 </div>
             </div>
         </div>
+
+        <!-- Main Content -->
+        <div class="line-section">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2>จัดการ AI โมเดล</h2>
+                    <p class="text-muted mb-0" style="font-size: 14px;">ติดตั้งและจัดการโมเดล AI ที่คุณต้องการ</p>
+                </div>
+            </div>
+            <!-- Ollama Status -->
+            <div id="ollama-status" class="line-alert info">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                    <span>กำลังตรวจสอบสถานะ Ollama...</span>
+                </div>
+            </div>
+
+            <!-- Installed Models -->
+            <div class="mt-4">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">โมเดลที่ติดตั้งแล้ว</h3>
+                <div id="installed-models">
+                    <div class="text-center py-4">
+                        <div class="spinner-border" role="status" style="color: var(--line-green);"></div>
+                        <p class="mt-2 text-muted">กำลังโหลด...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Installation Logs -->
+            @if($recentLogs->count() > 0)
+            <div class="mt-4">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">ประวัติการติดตั้งล่าสุด</h3>
+                <div class="table-responsive">
+                    <table class="line-table">
+                        <thead>
+                            <tr>
+                                <th>เวลา</th>
+                                <th>โมเดล</th>
+                                <th>สถานะ</th>
+                                <th>Progress</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($recentLogs as $log)
+                            <tr>
+                                <td>{{ $log->created_at->diffForHumans() }}</td>
+                                <td>{{ $log->config['model_id'] ?? 'N/A' }}</td>
+                                <td>
+                                    <span class="line-badge {{ $log->isCompleted() ? 'success' : ($log->isFailed() ? 'error' : 'warning') }}">
+                                        {{ $log->getStatusMessage() }}
+                                    </span>
+                                </td>
+                                <td>{{ $log->progress_percentage }}%</td>
+                                <td>
+                                    <button class="btn-line-outline" style="padding: 6px 12px; font-size: 13px;" onclick="viewLog({{ $log->id }})">
+                                        <i class="fas fa-eye me-1"></i>ดูรายละเอียด
+                                    </button>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            @endif
+        </div>
     </div>
+</div>
 </div>
 
 <!-- Installation Wizard Modal -->
 <div class="modal fade" id="installationWizard" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
-        <div class="modal-content" style="border: none; border-radius: 20px;">
-            <div class="modal-header" style="border: none; padding: 30px 30px 20px;">
+        <div class="modal-content" style="border: none; border-radius: 8px;">
+            <div class="modal-header" style="border-bottom: 1px solid var(--line-border); padding: 24px;">
                 <div class="w-100">
-                    <h4 class="modal-title mb-0">ติดตั้ง AI โมเดล</h4>
-                    <p class="text-muted mb-3 mt-1">ติดตั้งและกำหนดค่า AI โมเดลของคุณภายใน 3 ขั้นตอน</p>
+                    <h4 class="modal-title mb-0" style="font-size: 20px; font-weight: 600; color: var(--line-text);">ติดตั้ง AI โมเดล</h4>
+                    <p class="text-muted mb-4 mt-2" style="font-size: 14px;">ติดตั้งและกำหนดค่า AI โมเดลของคุณภายใน 4 ขั้นตอน</p>
 
                     <!-- Step Indicator -->
-                    <div class="wizard-steps">
-                        <div class="wizard-step-item" id="wizard-step-1">
-                            <div class="step-circle">1</div>
-                            <div class="step-label">ตรวจสอบระบบ</div>
+                    <div class="line-wizard-steps">
+                        <div class="line-wizard-step" id="wizard-step-1">
+                            <div class="circle">1</div>
+                            <div class="label">ตรวจสอบระบบ</div>
                         </div>
-                        <div class="wizard-step-item" id="wizard-step-2">
-                            <div class="step-circle">2</div>
-                            <div class="step-label">เลือกโมเดล</div>
+                        <div class="line-wizard-step" id="wizard-step-2">
+                            <div class="circle">2</div>
+                            <div class="label">เลือกโมเดล</div>
                         </div>
-                        <div class="wizard-step-item" id="wizard-step-3">
-                            <div class="step-circle">3</div>
-                            <div class="step-label">กำลังติดตั้ง</div>
+                        <div class="line-wizard-step" id="wizard-step-3">
+                            <div class="circle">3</div>
+                            <div class="label">กำลังติดตั้ง</div>
                         </div>
-                        <div class="wizard-step-item" id="wizard-step-4">
-                            <div class="step-circle">4</div>
-                            <div class="step-label">เสร็จสิ้น</div>
+                        <div class="line-wizard-step" id="wizard-step-4">
+                            <div class="circle">4</div>
+                            <div class="label">เสร็จสิ้น</div>
                         </div>
                     </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="cancelWizard()"></button>
             </div>
-            <div class="modal-body" style="padding: 20px 30px 30px;">
+            <div class="modal-body" style="padding: 24px;">
                 <!-- Step 1: Check Requirements -->
                 <div id="step-requirements" class="wizard-step">
                     <div id="requirements-result">
                         <div class="text-center py-5">
-                            <i class="fas fa-server" style="font-size: 80px; color: #667eea; opacity: 0.3;"></i>
-                            <h5 class="mt-4 mb-3">ตรวจสอบความพร้อมของระบบ</h5>
-                            <p class="text-muted mb-4">เราจะตรวจสอบ CPU, RAM, GPU, และพื้นที่ว่างเพื่อแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ</p>
-                            <button class="btn btn-gradient btn-lg" onclick="checkRequirements()">
+                            <div style="width: 80px; height: 80px; background: var(--line-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                                <i class="fas fa-server" style="font-size: 40px; color: var(--line-green);"></i>
+                            </div>
+                            <h5 class="mb-3" style="font-size: 18px; font-weight: 600; color: var(--line-text);">ตรวจสอบความพร้อมของระบบ</h5>
+                            <p class="text-muted mb-4" style="font-size: 14px;">เราจะตรวจสอบ CPU, RAM, GPU, และพื้นที่ว่างเพื่อแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ</p>
+                            <button class="btn-line btn-line-lg" onclick="checkRequirements()">
                                 <i class="fas fa-check-circle me-2"></i>
                                 เริ่มตรวจสอบระบบ
                             </button>
@@ -539,8 +782,8 @@
                 <!-- Step 2: Select Model -->
                 <div id="step-model" class="wizard-step" style="display:none;">
                     <div class="mb-4">
-                        <h5>เลือกโมเดล AI ที่ต้องการติดตั้ง</h5>
-                        <p class="text-muted">เราแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ คุณสามารถเลือกโมเดลอื่นได้ตามต้องการ</p>
+                        <h5 style="font-size: 18px; font-weight: 600; color: var(--line-text);">เลือกโมเดล AI ที่ต้องการติดตั้ง</h5>
+                        <p class="text-muted" style="font-size: 14px;">เราแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ คุณสามารถเลือกโมเดลอื่นได้ตามต้องการ</p>
                     </div>
                     <div id="model-recommendations"></div>
                 </div>
@@ -548,9 +791,11 @@
                 <!-- Step 3: Installing -->
                 <div id="step-installing" class="wizard-step" style="display:none;">
                     <div class="text-center mb-4">
-                        <i class="fas fa-cog fa-spin" style="font-size: 60px; color: #667eea;"></i>
-                        <h5 class="mt-3 mb-2">กำลังติดตั้งโมเดล AI</h5>
-                        <p class="text-muted">กรุณารอสักครู่ การติดตั้งอาจใช้เวลาหลายนาทีขึ้นอยู่กับขนาดโมเดล</p>
+                        <div style="width: 80px; height: 80px; background: var(--line-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                            <i class="fas fa-cog fa-spin" style="font-size: 40px; color: var(--line-green);"></i>
+                        </div>
+                        <h5 class="mb-2" style="font-size: 18px; font-weight: 600; color: var(--line-text);">กำลังติดตั้งโมเดล AI</h5>
+                        <p class="text-muted" style="font-size: 14px;">กรุณารอสักครู่ การติดตั้งอาจใช้เวลาหลายนาทีขึ้นอยู่กับขนาดโมเดล</p>
                     </div>
                     <div id="installation-progress"></div>
                 </div>
@@ -558,17 +803,17 @@
                 <!-- Step 4: Complete -->
                 <div id="step-complete" class="wizard-step" style="display:none;">
                     <div class="text-center py-5">
-                        <div class="mb-4">
-                            <i class="fas fa-check-circle" style="font-size: 80px; color: #28a745;"></i>
+                        <div style="width: 100px; height: 100px; background: var(--line-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                            <i class="fas fa-check-circle" style="font-size: 50px; color: var(--line-green);"></i>
                         </div>
-                        <h3 class="mb-3">ติดตั้งสำเร็จ!</h3>
-                        <p class="text-muted mb-4">โมเดล AI ของคุณพร้อมใช้งานแล้ว คุณสามารถเริ่มใช้งาน AI ในระบบได้ทันที</p>
+                        <h3 class="mb-3" style="font-size: 24px; font-weight: 600; color: var(--line-text);">ติดตั้งสำเร็จ!</h3>
+                        <p class="text-muted mb-4" style="font-size: 14px;">โมเดล AI ของคุณพร้อมใช้งานแล้ว คุณสามารถเริ่มใช้งาน AI ในระบบได้ทันที</p>
                         <div class="d-flex justify-content-center gap-3">
-                            <button class="btn btn-gradient" onclick="closeWizard()">
+                            <button class="btn-line btn-line-lg" onclick="closeWizard()">
                                 <i class="fas fa-check me-2"></i>
                                 เสร็จสิ้น
                             </button>
-                            <button class="btn btn-outline-primary" onclick="startNewInstallation()">
+                            <button class="btn-line-outline btn-line-lg" onclick="startNewInstallation()">
                                 <i class="fas fa-plus me-2"></i>
                                 ติดตั้งโมเดลอื่น
                             </button>
@@ -600,21 +845,21 @@ function checkOllamaStatus() {
 
         if (status.installed && status.running) {
             html = `
-                <div class="alert alert-success">
+                <div class="line-alert success">
                     <i class="fas fa-check-circle me-2"></i>
                     Ollama กำลังทำงาน (${status.version})
                 </div>
             `;
         } else if (status.installed && !status.running) {
             html = `
-                <div class="alert alert-warning">
+                <div class="line-alert warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
                     Ollama ติดตั้งแล้วแต่ไม่ได้ทำงาน กรุณาเริ่ม Ollama service
                 </div>
             `;
         } else {
             html = `
-                <div class="alert alert-info">
+                <div class="line-alert info">
                     <i class="fas fa-info-circle me-2"></i>
                     Ollama ยังไม่ได้ติดตั้ง จะติดตั้งอัตโนมัติเมื่อเริ่มติดตั้งโมเดล
                 </div>
@@ -631,7 +876,7 @@ function loadInstalledModels() {
 
         if (models.length === 0) {
             $('#installed-models').html(`
-                <div class="alert alert-info">
+                <div class="line-alert info">
                     <i class="fas fa-info-circle me-2"></i>
                     ยังไม่มีโมเดลที่ติดตั้ง
                 </div>
@@ -640,14 +885,14 @@ function loadInstalledModels() {
         }
 
         let html = `
-            <table class="table table-sm">
+            <table class="line-table">
                 <thead>
                     <tr>
                         <th>โมเดล</th>
                         <th>ID</th>
                         <th>ขนาด</th>
                         <th>แก้ไขล่าสุด</th>
-                        <th>Action</th>
+                        <th>การจัดการ</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -656,13 +901,13 @@ function loadInstalledModels() {
         models.forEach(model => {
             html += `
                 <tr>
-                    <td>${model.name}</td>
+                    <td><strong>${model.name}</strong></td>
                     <td><small class="text-muted">${model.id}</small></td>
                     <td>${model.size}</td>
                     <td>${model.modified}</td>
                     <td>
-                        <button class="btn btn-sm btn-danger" onclick="uninstallModel('${model.name}')">
-                            <i class="fas fa-trash"></i> ลบ
+                        <button class="btn-line-outline" style="padding: 6px 12px; font-size: 13px;" onclick="uninstallModel('${model.name}')">
+                            <i class="fas fa-trash me-1"></i> ลบ
                         </button>
                     </td>
                 </tr>
@@ -687,10 +932,12 @@ function startNewInstallation() {
     // Reset requirements result
     $('#requirements-result').html(`
         <div class="text-center py-5">
-            <i class="fas fa-server" style="font-size: 80px; color: #667eea; opacity: 0.3;"></i>
-            <h5 class="mt-4 mb-3">ตรวจสอบความพร้อมของระบบ</h5>
-            <p class="text-muted mb-4">เราจะตรวจสอบ CPU, RAM, GPU, และพื้นที่ว่างเพื่อแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ</p>
-            <button class="btn btn-gradient btn-lg" onclick="checkRequirements()">
+            <div style="width: 80px; height: 80px; background: var(--line-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
+                <i class="fas fa-server" style="font-size: 40px; color: var(--line-green);"></i>
+            </div>
+            <h5 class="mb-3" style="font-size: 18px; font-weight: 600; color: var(--line-text);">ตรวจสอบความพร้อมของระบบ</h5>
+            <p class="text-muted mb-4" style="font-size: 14px;">เราจะตรวจสอบ CPU, RAM, GPU, และพื้นที่ว่างเพื่อแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ</p>
+            <button class="btn-line btn-line-lg" onclick="checkRequirements()">
                 <i class="fas fa-check-circle me-2"></i>
                 เริ่มตรวจสอบระบบ
             </button>
@@ -702,7 +949,7 @@ function startNewInstallation() {
 
 function updateWizardStep(step) {
     // Reset all steps
-    $('.wizard-step-item').removeClass('active completed');
+    $('.line-wizard-step').removeClass('active completed');
 
     // Mark completed steps
     for (let i = 1; i < step; i++) {
