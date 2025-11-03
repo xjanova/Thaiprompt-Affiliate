@@ -12,6 +12,8 @@ class BotRental extends Model
 {
     use HasFactory, SoftDeletes;
 
+    protected $table = 'ai_bot_rentals';
+
     protected $fillable = [
         'bot_profile_id',
         'renter_id',
