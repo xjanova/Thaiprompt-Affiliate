@@ -41,9 +41,11 @@ return new class extends Migration
             $table->longText('log_output')->nullable();
             $table->text('error_log')->nullable();
 
-            $table->timestamp('started_at');
+            $table->timestamp('started_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamp('failed_at')->nullable();
+
+            $table->timestamps();
 
             $table->index(['user_id', 'status']);
             $table->index('status');
