@@ -153,6 +153,16 @@
                                 </p>
                             </div>
                         </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                <i class="fas fa-window-maximize text-blue-500 mr-1"></i> LIFF ID (Optional)
+                            </label>
+                            <input type="text" name="liff_id" value="{{ old('liff_id', $settings->liff_id) }}"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                                placeholder="1234567890-abcdefgh">
+                            <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → LINE Login Channel → LIFF tab</p>
+                        </div>
                     </div>
                 </div>
 
@@ -190,16 +200,6 @@
                                 class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all font-mono text-sm"
                                 placeholder="Enter your long-lived channel access token here">{{ old('channel_access_token', $settings->channel_access_token) }}</textarea>
                             <p class="text-xs text-gray-500 mt-1">From LINE Developers Console → Messaging API Channel → Messaging API tab</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
-                                <i class="fas fa-window-maximize text-blue-500 mr-1"></i> LIFF ID (Optional)
-                            </label>
-                            <input type="text" name="liff_id" value="{{ old('liff_id', $settings->liff_id) }}"
-                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                                placeholder="1234567890-abcdefgh">
-                            <p class="text-xs text-gray-500 mt-1">For LIFF (LINE Front-end Framework) applications</p>
                         </div>
 
                         <div class="mt-4 p-4 bg-gradient-to-r from-green-50 to-teal-50 rounded-xl border border-green-200">
