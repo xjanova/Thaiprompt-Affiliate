@@ -418,6 +418,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get all AI bot profiles owned by this user
+     */
+    public function ownedBots()
+    {
+        return $this->hasMany(\App\Models\AiBotProfile::class, 'owner_id');
+    }
+
+    /**
      * MLM Relationships
      */
 
