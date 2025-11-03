@@ -75,8 +75,9 @@ class MlmMemberController extends Controller
     {
         $plans = MlmPlan::active()->get();
         $users = User::whereDoesntHave('mlmMembers')->get();
+        $members = MlmMember::with('user')->where('status', 'active')->get();
 
-        return view('admin.mlm.members.create', compact('plans', 'users'));
+        return view('admin.mlm.members.create', compact('plans', 'users', 'members'));
     }
 
     public function store(Request $request)
