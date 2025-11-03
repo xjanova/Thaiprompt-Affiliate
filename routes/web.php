@@ -126,6 +126,11 @@ Route::prefix('shop')->name('shop.')->group(function () {
     Route::get('/{slug}', [\App\Http\Controllers\ShopController::class, 'show'])->name('show');
 });
 
+// Vendor Store Routes (Public browsing of individual vendor stores)
+Route::prefix('store')->name('vendor.store.')->group(function () {
+    Route::get('/{slug}', [\App\Http\Controllers\VendorStoreController::class, 'show'])->name('show');
+});
+
 // Cart Routes (Authenticated)
 Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
     Route::get('/', [\App\Http\Controllers\CartController::class, 'index'])->name('index');
