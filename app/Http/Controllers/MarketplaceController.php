@@ -62,9 +62,9 @@ class MarketplaceController extends Controller
             });
         }
 
-        // Category filter
-        if ($request->filled('category')) {
-            $query->where('category', $request->category);
+        // Provider filter (using provider as category)
+        if ($request->filled('provider')) {
+            $query->where('provider_id', $request->provider);
         }
 
         // Sort
@@ -90,16 +90,12 @@ class MarketplaceController extends Controller
 
         $bots = $query->paginate(12)->withQueryString();
 
-        // Categories for filter
-        $categories = AiBotProfile::distinct()
-            ->where('is_rentable', true)
-            ->pluck('category')
-            ->filter()
-            ->unique()
-            ->sort()
-            ->values();
+        // Get providers for filter (using providers as categories)
+        $providers = \App\Models\AiProvider::whereHas('botProfiles', function ($q) {
+            $q->where('is_rentable', true)->where('is_active', true);
+        })->get();
 
-        return view('marketplace.index', compact('bots', 'categories'));
+        return view('marketplace.index', compact('bots', 'providers'));
     }
 
     /**
