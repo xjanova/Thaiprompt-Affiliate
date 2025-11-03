@@ -6,6 +6,12 @@
 <div class="space-y-6">
     <div class="flex justify-between items-center">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">📦 จัดการสินค้า</h1>
+        <button onclick="document.getElementById('createProductModal').classList.remove('hidden')" class="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            เพิ่มสินค้าใหม่
+        </button>
     </div>
 
     <!-- Filters -->
@@ -102,6 +108,88 @@
         <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700">
             {{ $products->links() }}
         </div>
+    </div>
+</div>
+
+<!-- Create Product Modal -->
+<div id="createProductModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 my-8">
+        <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">เพิ่มสินค้าใหม่</h2>
+        <form action="{{ route('admin.ecommerce.products.store') }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อสินค้า *</label>
+                    <input type="text" name="name" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">หมวดหมู่ *</label>
+                    <select name="category_id" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                        <option value="">เลือกหมวดหมู่</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU</label>
+                    <input type="text" name="sku" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
+                    <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ราคา *</label>
+                        <input type="number" name="price" step="0.01" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ราคาเทียบเคียง</label>
+                        <input type="number" name="compare_at_price" step="0.01" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำนวนสต็อก</label>
+                        <input type="number" name="stock_quantity" value="0" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">% คอมมิชชั่น</label>
+                        <input type="number" name="commission_rate" step="0.01" value="15" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้งาน</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="is_featured" value="1" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">สินค้าแนะนำ</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" name="track_inventory" value="1" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ติดตามสต็อก</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <button type="button" onclick="document.getElementById('createProductModal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600">
+                    ยกเลิก
+                </button>
+                <button type="submit" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700">
+                    บันทึก
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 @endsection

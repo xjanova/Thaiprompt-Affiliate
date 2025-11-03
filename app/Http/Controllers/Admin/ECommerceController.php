@@ -148,6 +148,43 @@ class ECommerceController extends Controller
     }
 
     /**
+     * Store new product
+     */
+    public function storeProduct(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'category_id' => 'required|exists:product_categories,id',
+            'sku' => 'nullable|string|max:100|unique:products,sku',
+            'description' => 'nullable|string',
+            'price' => 'required|numeric|min:0',
+            'compare_at_price' => 'nullable|numeric|min:0',
+            'stock_quantity' => 'nullable|integer|min:0',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'is_active' => 'boolean',
+            'is_featured' => 'boolean',
+            'track_inventory' => 'boolean',
+        ]);
+
+        // Generate slug
+        $validated['slug'] = \Str::slug($validated['name']);
+
+        // Set seller_id to first user or current user
+        $validated['seller_id'] = auth()->id() ?? 1;
+
+        // Set defaults
+        $validated['is_active'] = $request->has('is_active');
+        $validated['is_featured'] = $request->has('is_featured');
+        $validated['track_inventory'] = $request->has('track_inventory');
+        $validated['stock_status'] = $validated['track_inventory'] && ($validated['stock_quantity'] ?? 0) > 0 ? 'in_stock' : 'out_of_stock';
+
+        Product::create($validated);
+
+        return redirect()->route('admin.ecommerce.products.index')
+            ->with('success', 'เพิ่มสินค้าเรียบร้อยแล้ว');
+    }
+
+    /**
      * Show product details
      */
     public function showProduct(Product $product)

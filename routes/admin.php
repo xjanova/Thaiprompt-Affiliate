@@ -503,6 +503,7 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
     // Products Management
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/', [ECommerceController::class, 'products'])->name('index');
+        Route::post('/', [ECommerceController::class, 'storeProduct'])->name('store');
         Route::get('/{product}', [ECommerceController::class, 'showProduct'])->name('show');
         Route::put('/{product}', [ECommerceController::class, 'updateProduct'])->name('update');
         Route::delete('/{product}', [ECommerceController::class, 'deleteProduct'])->name('delete');
