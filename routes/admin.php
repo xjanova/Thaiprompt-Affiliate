@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\AiBotController;
 use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\WebPManagementController;
+use App\Http\Controllers\Admin\ECommerceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -517,4 +518,44 @@ Route::prefix('ai-bots/{botId}/knowledge-bases')->name('knowledge-bases.')->grou
     Route::get('/{id}', [KnowledgeBaseController::class, 'show'])->name('show');
     Route::delete('/{id}', [KnowledgeBaseController::class, 'destroy'])->name('destroy');
     Route::post('/test-search', [KnowledgeBaseController::class, 'testSearch'])->name('test-search');
+});
+
+// E-Commerce Management
+Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [ECommerceController::class, 'dashboard'])->name('dashboard');
+
+    // Products Management
+    Route::prefix('products')->name('products.')->group(function () {
+        Route::get('/', [ECommerceController::class, 'products'])->name('index');
+        Route::get('/{product}', [ECommerceController::class, 'showProduct'])->name('show');
+        Route::put('/{product}', [ECommerceController::class, 'updateProduct'])->name('update');
+        Route::delete('/{product}', [ECommerceController::class, 'deleteProduct'])->name('delete');
+    });
+
+    // Orders Management
+    Route::prefix('orders')->name('orders.')->group(function () {
+        Route::get('/', [ECommerceController::class, 'orders'])->name('index');
+        Route::get('/{order}', [ECommerceController::class, 'showOrder'])->name('show');
+        Route::post('/{order}/status', [ECommerceController::class, 'updateOrderStatus'])->name('status.update');
+        Route::post('/{order}/payment-status', [ECommerceController::class, 'updatePaymentStatus'])->name('payment-status.update');
+    });
+
+    // Categories Management
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [ECommerceController::class, 'categories'])->name('index');
+        Route::post('/', [ECommerceController::class, 'storeCategory'])->name('store');
+        Route::put('/{category}', [ECommerceController::class, 'updateCategory'])->name('update');
+        Route::delete('/{category}', [ECommerceController::class, 'deleteCategory'])->name('delete');
+    });
+
+    // Reviews Management
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/', [ECommerceController::class, 'reviews'])->name('index');
+        Route::post('/{review}/status', [ECommerceController::class, 'updateReviewStatus'])->name('status.update');
+        Route::delete('/{review}', [ECommerceController::class, 'deleteReview'])->name('delete');
+    });
+
+    // Reports
+    Route::get('/reports', [ECommerceController::class, 'reports'])->name('reports');
 });
