@@ -24,6 +24,7 @@ class KycVerification extends Model
         'reviewed_at',
         'rejection_reason',
         'submitted_at',
+        'extracted_data',
     ];
 
     /**
@@ -34,6 +35,7 @@ class KycVerification extends Model
     protected $casts = [
         'reviewed_at' => 'datetime',
         'submitted_at' => 'datetime',
+        'extracted_data' => 'array',
     ];
 
     /**

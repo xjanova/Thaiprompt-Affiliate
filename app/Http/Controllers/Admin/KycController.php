@@ -88,13 +88,55 @@ class KycController extends Controller
             'rejection_reason' => null,
         ]);
 
-        // Update user's KYC status
-        $kycVerification->user->update([
+        // Prepare user data update
+        $userData = [
             'kyc_status' => 'approved',
             'kyc_verified_at' => now(),
-        ]);
+        ];
 
-        return back()->with('success', 'อนุมัติการยืนยันตัวตนเรียบร้อยแล้ว');
+        // Auto-fill profile from extracted OCR data if available
+        if (!empty($kycVerification->extracted_data)) {
+            $extractedData = $kycVerification->extracted_data;
+
+            // Map extracted data to user fields
+            $fieldMapping = [
+                'id_card_number' => 'id_card_number',
+                'thai_first_name' => 'thai_first_name',
+                'thai_last_name' => 'thai_last_name',
+                'english_first_name' => 'english_first_name',
+                'english_last_name' => 'english_last_name',
+                'birth_date' => 'id_card_birth_date',
+                'religion' => 'id_card_religion',
+                'address' => 'id_card_address',
+                'issue_date' => 'id_card_issue_date',
+                'expiry_date' => 'id_card_expiry_date',
+            ];
+
+            foreach ($fieldMapping as $extractedKey => $userField) {
+                if (!empty($extractedData[$extractedKey])) {
+                    $userData[$userField] = $extractedData[$extractedKey];
+                }
+            }
+
+            // Also update date_of_birth if not already set
+            if (!empty($extractedData['birth_date']) && empty($kycVerification->user->date_of_birth)) {
+                $userData['date_of_birth'] = $extractedData['birth_date'];
+            }
+
+            // Update name if not already set (use Thai name or English name)
+            if (empty($kycVerification->user->name)) {
+                if (!empty($extractedData['thai_first_name']) && !empty($extractedData['thai_last_name'])) {
+                    $userData['name'] = $extractedData['thai_first_name'] . ' ' . $extractedData['thai_last_name'];
+                } elseif (!empty($extractedData['english_first_name']) && !empty($extractedData['english_last_name'])) {
+                    $userData['name'] = $extractedData['english_first_name'] . ' ' . $extractedData['english_last_name'];
+                }
+            }
+        }
+
+        // Update user's KYC status and profile data
+        $kycVerification->user->update($userData);
+
+        return back()->with('success', 'อนุมัติการยืนยันตัวตนเรียบร้อยแล้ว และข้อมูลโปรไฟล์ได้ถูกอัปเดตอัตโนมัติ');
     }
 
     /**
