@@ -25,6 +25,7 @@ class AiProvidersSeeder extends Seeder
             'config' => [
                 'api_key_required' => true,
                 'organization_id_supported' => true,
+                'logo_url' => 'https://cdn.simpleicons.org/openai/412991',
             ],
             'pricing' => [
                 'currency' => 'USD',
@@ -95,6 +96,7 @@ class AiProvidersSeeder extends Seeder
             'config' => [
                 'api_key_required' => true,
                 'anthropic_version' => '2023-06-01',
+                'logo_url' => 'https://cdn.simpleicons.org/anthropic/191919',
             ],
             'pricing' => [
                 'currency' => 'USD',
@@ -165,6 +167,7 @@ class AiProvidersSeeder extends Seeder
             'config' => [
                 'api_key_required' => true,
                 'supports_self_hosted' => true,
+                'logo_url' => 'https://avatars.githubusercontent.com/u/165193168',
             ],
             'pricing' => [
                 'currency' => 'USD',
@@ -217,6 +220,7 @@ class AiProvidersSeeder extends Seeder
             'is_available' => true,
             'config' => [
                 'api_key_required' => true,
+                'logo_url' => 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg',
             ],
             'pricing' => [
                 'currency' => 'USD',
@@ -270,6 +274,7 @@ class AiProvidersSeeder extends Seeder
             'config' => [
                 'api_key_required' => false,
                 'installation_required' => true,
+                'logo_url' => 'https://cdn.simpleicons.org/ollama/000000',
             ],
             'pricing' => [
                 'currency' => 'USD',

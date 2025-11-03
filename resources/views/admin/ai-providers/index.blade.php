@@ -71,6 +71,14 @@
         position: relative;
     }
 
+    .provider-logo {
+        transition: all 0.3s ease;
+    }
+
+    .provider-card-modern:hover .provider-logo {
+        transform: scale(1.1) rotate(5deg);
+    }
+
     .provider-card-modern::before {
         content: '';
         position: absolute;
@@ -380,8 +388,11 @@
     <div class="glass-card p-8 mb-8">
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-2xl">
-                    <i class="fas fa-microchip"></i>
+                <div class="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg p-2 border border-gray-100">
+                    <img src="https://cdn.simpleicons.org/ollama/000000"
+                         alt="Ollama"
+                         class="w-full h-full object-contain provider-logo"
+                         onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas fa-microchip text-2xl text-gray-400\'></i>';">
                 </div>
                 <div>
                     <h3 class="text-2xl font-bold text-gray-800">Local AI Server</h3>
@@ -444,11 +455,14 @@
                 <!-- Provider Header -->
                 <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-6">
                     <div class="flex items-center gap-6">
-                        <div class="w-20 h-20 rounded-2xl bg-gradient-to-br {{ $provider->provider_type === 'cloud' ? 'from-blue-500 to-cyan-500' : 'from-green-500 to-emerald-500' }} flex items-center justify-center text-white text-3xl shadow-lg">
-                            @if($provider->provider_type === 'cloud')
-                                <i class="fas fa-cloud"></i>
+                        <div class="w-20 h-20 rounded-2xl bg-white flex items-center justify-center shadow-lg p-3 border border-gray-100">
+                            @if(isset($provider->config['logo_url']))
+                                <img src="{{ $provider->config['logo_url'] }}"
+                                     alt="{{ $provider->display_name }}"
+                                     class="w-full h-full object-contain provider-logo"
+                                     onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas {{ $provider->provider_type === \'cloud\' ? \'fa-cloud\' : \'fa-server\' }} text-3xl text-gray-400\'></i>';">
                             @else
-                                <i class="fas fa-server"></i>
+                                <i class="fas {{ $provider->provider_type === 'cloud' ? 'fa-cloud' : 'fa-server' }} text-3xl text-gray-400"></i>
                             @endif
                         </div>
                         <div>
