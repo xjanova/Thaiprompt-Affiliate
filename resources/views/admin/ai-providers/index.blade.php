@@ -392,7 +392,7 @@
                     <img src="https://cdn.simpleicons.org/ollama/000000"
                          alt="Ollama"
                          class="w-full h-full object-contain provider-logo"
-                         onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas fa-microchip text-2xl text-gray-400\'></i>';">
+                         onerror="this.onerror=null; this.parentElement.innerHTML='<i class=&quot;fas fa-microchip text-2xl text-gray-400&quot;></i>';">
                 </div>
                 <div>
                     <h3 class="text-2xl font-bold text-gray-800">Local AI Server</h3>
@@ -460,7 +460,7 @@
                                 <img src="{{ $provider->config['logo_url'] }}"
                                      alt="{{ $provider->display_name }}"
                                      class="w-full h-full object-contain provider-logo"
-                                     onerror="this.onerror=null; this.parentElement.innerHTML='<i class=\'fas {{ $provider->provider_type === \'cloud\' ? \'fa-cloud\' : \'fa-server\' }} text-3xl text-gray-400\'></i>';">
+                                     onerror="this.onerror=null; this.parentElement.innerHTML='<i class=&quot;fas {{ $provider->provider_type === 'cloud' ? 'fa-cloud' : 'fa-server' }} text-3xl text-gray-400&quot;></i>';">
                             @else
                                 <i class="fas {{ $provider->provider_type === 'cloud' ? 'fa-cloud' : 'fa-server' }} text-3xl text-gray-400"></i>
                             @endif
