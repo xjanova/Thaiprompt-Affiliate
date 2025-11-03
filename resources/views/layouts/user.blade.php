@@ -293,6 +293,13 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">คอมมิชชั่น</span>
                 </a>
 
+                <!-- Shop -->
+                <a href="{{ route('user.shop.index') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.shop.*') ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🛒</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ไปช๊อปปิ้ง</span>
+                </a>
+
                 <!-- Wallet Dropdown Menu -->
                 <div x-data="{ walletOpen: false }" class="relative mb-1">
                     @php
