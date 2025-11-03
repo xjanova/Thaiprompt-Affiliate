@@ -370,21 +370,136 @@ class AiInstallationService
     }
 
     /**
-     * ลบโมเดลที่ติดตั้งแล้ว
+     * ลบโมเดลที่ติดตั้งแล้ว (ปลอดภัย - ตรวจสอบว่าไม่มีการใช้งานอยู่)
      */
-    public function uninstallModel(string $modelId): bool
+    public function uninstallModel(string $modelId): array
     {
         try {
-            $result = Process::run('ollama rm ' . $modelId);
+            Log::info('Starting model uninstallation', ['model_id' => $modelId]);
 
-            return $result->successful();
+            // ตรวจสอบว่ามีโมเดลนี้ติดตั้งอยู่จริงหรือไม่
+            $installedModels = $this->getInstalledModels();
+            $modelExists = false;
+
+            foreach ($installedModels as $model) {
+                if ($model['name'] === $modelId) {
+                    $modelExists = true;
+                    break;
+                }
+            }
+
+            if (!$modelExists) {
+                return [
+                    'success' => false,
+                    'message' => 'ไม่พบโมเดลนี้ในระบบ',
+                    'code' => 'MODEL_NOT_FOUND',
+                ];
+            }
+
+            // ตรวจสอบว่า Ollama กำลังรันอยู่หรือไม่
+            $ollamaStatus = $this->checkOllamaStatus();
+
+            if (!$ollamaStatus['running']) {
+                return [
+                    'success' => false,
+                    'message' => 'Ollama ไม่ได้รันอยู่ กรุณาเริ่ม Ollama Service ก่อน',
+                    'code' => 'OLLAMA_NOT_RUNNING',
+                ];
+            }
+
+            // เช็คว่ามี bot ที่กำลังใช้โมเดลนี้อยู่หรือไม่
+            $activeBots = \App\Models\AiBotProfile::where('is_active', true)
+                ->whereHas('model', function($query) use ($modelId) {
+                    // ตรวจสอบว่า model_identifier มีชื่อโมเดลที่คล้ายกัน
+                    $query->where('model_identifier', 'LIKE', '%' . explode(':', $modelId)[0] . '%');
+                })
+                ->count();
+
+            if ($activeBots > 0) {
+                return [
+                    'success' => false,
+                    'message' => "พบ {$activeBots} AI Bot ที่กำลังใช้โมเดลนี้อยู่\n\nกรุณาปิดการใช้งาน หรือเปลี่ยนโมเดลของ Bot เหล่านั้นก่อน",
+                    'code' => 'MODEL_IN_USE',
+                    'active_bots_count' => $activeBots,
+                ];
+            }
+
+            // ลบโมเดล
+            Log::info('Executing ollama rm command', ['model_id' => $modelId]);
+            $result = Process::timeout(60)->run('ollama rm ' . $modelId);
+
+            if ($result->successful()) {
+                Log::info('Model uninstalled successfully', ['model_id' => $modelId]);
+
+                // ลบจาก provider config
+                $this->removeModelFromProviderConfig($modelId);
+
+                return [
+                    'success' => true,
+                    'message' => 'ถอนการติดตั้งโมเดลเรียบร้อยแล้ว',
+                    'output' => $result->output(),
+                ];
+            } else {
+                Log::warning('Model uninstallation failed', [
+                    'model_id' => $modelId,
+                    'error' => $result->errorOutput(),
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => 'ไม่สามารถถอนการติดตั้งได้: ' . $result->errorOutput(),
+                    'code' => 'UNINSTALL_FAILED',
+                ];
+            }
         } catch (\Exception $e) {
             Log::error('Failed to uninstall model', [
                 'model_id' => $modelId,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return false;
+            return [
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'code' => 'EXCEPTION',
+            ];
+        }
+    }
+
+    /**
+     * ลบโมเดลออกจาก Provider config
+     */
+    private function removeModelFromProviderConfig(string $modelId): void
+    {
+        try {
+            $provider = \App\Models\AiProvider::where('name', 'deepseek-local')
+                ->orWhere('provider_type', 'ollama')
+                ->first();
+
+            if ($provider && isset($provider->config['installed_models'])) {
+                $installedModels = $provider->config['installed_models'];
+
+                // ลบโมเดลออกจาก array
+                $installedModels = array_filter($installedModels, function($model) use ($modelId) {
+                    return !str_contains($model, $modelId) && !str_contains($modelId, $model);
+                });
+
+                $config = $provider->config;
+                $config['installed_models'] = array_values($installedModels);
+                $provider->config = $config;
+                $provider->save();
+
+                Log::info('Removed model from provider config', [
+                    'model_id' => $modelId,
+                    'provider_id' => $provider->id,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Failed to update provider config after uninstall', [
+                'model_id' => $modelId,
+                'error' => $e->getMessage(),
+            ]);
+            // ไม่ throw error เพราะโมเดลลบออกแล้ว
         }
     }
 
