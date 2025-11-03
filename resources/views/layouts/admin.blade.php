@@ -197,6 +197,7 @@
         emailMenuOpen: localStorage.getItem('emailMenuOpen') === 'true',
         lineMenuOpen: localStorage.getItem('lineMenuOpen') === 'true',
         ecommerceMenuOpen: localStorage.getItem('ecommerceMenuOpen') === 'true',
+        mlmMenuOpen: localStorage.getItem('mlmMenuOpen') === 'true',
         // Auto-open dropdown if current page is in submenu
         init() {
             this.checkActiveMenu();
@@ -215,6 +216,7 @@
             this.lineMenuOpen = false;
             this.systemMenuOpen = false;
             this.ecommerceMenuOpen = false;
+            this.mlmMenuOpen = false;
 
             // Open only the relevant menu based on current path
             if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/line-bot') || currentPath.includes('/admin/otp') || currentPath.includes('/admin/ai-bots') || currentPath.includes('/admin/ai-providers') || currentPath.includes('/admin/ai-monitoring') || currentPath.includes('/admin/ai-installation')) {
@@ -227,6 +229,8 @@
                 this.emailMenuOpen = true;
             } else if (currentPath.includes('/admin/ecommerce')) {
                 this.ecommerceMenuOpen = true;
+            } else if (currentPath.includes('/admin/mlm')) {
+                this.mlmMenuOpen = true;
             } else if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications')) {
                 this.systemMenuOpen = true;
             }
@@ -237,6 +241,7 @@
             localStorage.setItem('emailMenuOpen', this.emailMenuOpen);
             localStorage.setItem('lineMenuOpen', this.lineMenuOpen);
             localStorage.setItem('ecommerceMenuOpen', this.ecommerceMenuOpen);
+            localStorage.setItem('mlmMenuOpen', this.mlmMenuOpen);
             localStorage.setItem('systemMenuOpen', this.systemMenuOpen);
         }
     }">
@@ -805,6 +810,76 @@
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ecommerce.reports') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
                             <span class="mr-2">📈</span>
                             <span>รายงานยอดขาย</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- MLM System Management Dropdown -->
+                <div class="relative mb-1">
+                    @php
+                        $mlmActive = request()->routeIs('admin.mlm.*');
+                    @endphp
+
+                    <!-- Main MLM Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ $mlmActive ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('mlmMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏆</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            ระบบ MLM
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': mlmMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="mlmMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('admin.mlm.plans.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.mlm.plans.*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">📋</span>
+                            <span>แผน MLM</span>
+                        </a>
+
+                        <a href="{{ route('admin.mlm.members.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.mlm.members.*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">👥</span>
+                            <span>สมาชิก MLM</span>
+                        </a>
+
+                        <a href="{{ route('admin.mlm.commissions.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.mlm.commissions.*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">💰</span>
+                            <span>คอมมิชชั่น MLM</span>
+                        </a>
+
+                        <a href="{{ route('admin.mlm.product-pv.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.mlm.product-pv.*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">🎯</span>
+                            <span>กำหนด PV สินค้า</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.mlm.reports.dashboard') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.mlm.reports.*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>รายงาน & สถิติ</span>
+                        </a>
+
+                        <a href="{{ route('admin.mlm.settings.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.mlm.settings.*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">⚙️</span>
+                            <span>ตั้งค่า MLM</span>
                         </a>
                     </div>
                 </div>
