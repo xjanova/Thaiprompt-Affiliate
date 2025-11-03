@@ -60,6 +60,9 @@ class AiBotController extends Controller
             'rental_price_per_month' => 'nullable|numeric|min:0',
             'rental_price_per_message' => 'nullable|numeric|min:0',
             'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'line_oa_channel_id' => 'nullable|string|max:255',
+            'line_oa_channel_secret' => 'nullable|string|max:255',
+            'line_oa_access_token' => 'nullable|string',
         ]);
 
         $validated['owner_id'] = Auth::id();
@@ -144,6 +147,9 @@ class AiBotController extends Controller
             'rental_price_per_month' => 'nullable|numeric|min:0',
             'rental_price_per_message' => 'nullable|numeric|min:0',
             'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'line_oa_channel_id' => 'nullable|string|max:255',
+            'line_oa_channel_secret' => 'nullable|string|max:255',
+            'line_oa_access_token' => 'nullable|string',
         ]);
 
         $bot->update($validated);
