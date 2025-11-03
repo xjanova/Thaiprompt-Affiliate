@@ -201,6 +201,11 @@
     background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.05) 100%);
 }
 
+.model-card.not-recommended {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
 .model-header {
     padding: 24px;
     background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(129, 140, 248, 0.04) 100%);
@@ -208,16 +213,24 @@
     position: relative;
 }
 
-.model-icon {
+.model-logo {
     width: 64px;
     height: 64px;
     border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
     margin-bottom: 16px;
     box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    overflow: hidden;
+    background: white;
+}
+
+.model-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 8px;
 }
 
 .model-name {
@@ -282,6 +295,28 @@
     color: var(--primary);
 }
 
+.spec-item strong {
+    color: var(--text-dark);
+}
+
+.requirements-box {
+    background: rgba(99, 102, 241, 0.05);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 16px;
+}
+
+.requirements-box h6 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 8px;
+}
+
+.requirements-box .spec-item {
+    margin-bottom: 4px;
+}
+
 .model-footer {
     padding: 20px 24px;
     border-top: 1px solid var(--border);
@@ -315,6 +350,10 @@
 
 .install-btn.installed {
     background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+}
+
+.install-btn.force-install {
+    background: linear-gradient(135deg, var(--warning) 0%, var(--accent-light) 100%);
 }
 
 .badge-recommended {
@@ -588,7 +627,28 @@
     animation: float 3s ease-in-out infinite;
 }
 
+/* Models Grid - Center Alignment */
+.models-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: center;
+    align-items: stretch;
+}
+
+.models-grid .model-card-wrapper {
+    width: calc(33.333% - 16px);
+    min-width: 320px;
+    max-width: 400px;
+}
+
 /* Responsive */
+@media (max-width: 1200px) {
+    .models-grid .model-card-wrapper {
+        width: calc(50% - 12px);
+    }
+}
+
 @media (max-width: 768px) {
     .premium-hero h1 {
         font-size: 2rem;
@@ -598,8 +658,9 @@
         font-size: 0.95rem;
     }
 
-    .model-card {
-        margin-bottom: 20px;
+    .models-grid .model-card-wrapper {
+        width: 100%;
+        max-width: 100%;
     }
 }
 </style>
@@ -695,6 +756,20 @@
 let systemInfo = null;
 let recommendations = null;
 let installedModels = [];
+let isInstalling = false;
+
+// DeepSeek Logo SVG
+const DEEPSEEK_LOGO = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="deepseek-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#212555;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#424aaa;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <circle cx="100" cy="100" r="90" fill="url(#deepseek-gradient)"/>
+    <path d="M60 80 L100 100 L140 80 M60 120 L100 100 L140 120" stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <circle cx="100" cy="100" r="12" fill="white"/>
+</svg>`;
 
 // Load everything on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -739,7 +814,7 @@ function displaySystemInfo(info) {
         statusClass = 'warning';
         statusIcon = 'fa-exclamation-circle';
         statusColor = 'var(--warning)';
-        statusText = 'ใช้งาน CPU เท่านั้น (ช้ากว่า GPU)';
+        statusText = 'ใช้งาน CPU เท่านั้น (ช้ากว่า GPU มาก แต่ยังใช้งานได้)';
     } else if (totalVram < 8) {
         statusClass = 'warning';
         statusIcon = 'fa-exclamation-circle';
@@ -865,22 +940,22 @@ function displayModels(recommendations) {
 
     const html = `
         ${recommendations.recommended.length > 0 ? `
-            <div class="mb-4">
-                <h4 style="font-size: 18px; font-weight: 700; color: var(--success); margin-bottom: 16px;">
+            <div class="mb-5">
+                <h4 style="font-size: 18px; font-weight: 700; color: var(--success); margin-bottom: 24px; text-align: center;">
                     <i class="fas fa-star me-2"></i>แนะนำสำหรับคุณ
                 </h4>
-                <div class="row g-4">
+                <div class="models-grid">
                     ${recommendations.recommended.map(model => createModelCard(model, 'recommended')).join('')}
                 </div>
             </div>
         ` : ''}
 
         ${recommendations.possible.length > 0 ? `
-            <div class="mb-4">
-                <h4 style="font-size: 18px; font-weight: 700; color: var(--warning); margin-bottom: 16px;">
+            <div class="mb-5">
+                <h4 style="font-size: 18px; font-weight: 700; color: var(--warning); margin-bottom: 24px; text-align: center;">
                     <i class="fas fa-exclamation-triangle me-2"></i>ใช้งานได้ แต่อาจช้า
                 </h4>
-                <div class="row g-4">
+                <div class="models-grid">
                     ${recommendations.possible.map(model => createModelCard(model, 'possible')).join('')}
                 </div>
             </div>
@@ -888,10 +963,10 @@ function displayModels(recommendations) {
 
         ${recommendations.not_recommended.length > 0 ? `
             <div>
-                <h4 style="font-size: 18px; font-weight: 700; color: var(--danger); margin-bottom: 16px;">
-                    <i class="fas fa-times-circle me-2"></i>ไม่แนะนำ (ทรัพยากรไม่เพียงพอ)
+                <h4 style="font-size: 18px; font-weight: 700; color: var(--danger); margin-bottom: 24px; text-align: center;">
+                    <i class="fas fa-times-circle me-2"></i>ทรัพยากรไม่เพียงพอ (แต่สามารถติดตั้งแบบบังคับได้)
                 </h4>
-                <div class="row g-4">
+                <div class="models-grid">
                     ${recommendations.not_recommended.map(model => createModelCard(model, 'not_recommended')).join('')}
                 </div>
             </div>
@@ -903,21 +978,11 @@ function displayModels(recommendations) {
 
 // Create model card
 function createModelCard(model, status) {
-    const icons = {
-        'deepseek-coder-33b-instruct': '💻',
-        'deepseek-coder-6.7b-instruct': '⚡',
-        'deepseek-coder-1.3b-instruct': '🚀',
-        'deepseek-llm-7b-chat': '💬',
-        'deepseek-llm-67b-chat': '🧠'
-    };
-
-    const icon = icons[model.model_id] || '🤖';
-
     const badgeHtml = status === 'recommended' ?
         '<span class="badge-recommended">⭐ แนะนำ</span>' :
         status === 'possible' ?
         '<span class="badge-warning">⚠️ อาจช้า</span>' :
-        '<span class="badge-not-recommended">❌ ไม่แนะนำ</span>';
+        '<span class="badge-not-recommended">⚠️ ทรัพยากรไม่เพียงพอ</span>';
 
     const capabilityLabels = {
         'coding': '💻 Coding',
@@ -939,16 +1004,23 @@ function createModelCard(model, status) {
     const ramReq = model.best_quantization ? model.best_quantization.ram_required : 0;
     const useGpu = model.best_quantization ? model.best_quantization.use_gpu : false;
 
-    const canInstall = status !== 'not_recommended';
+    const canInstall = true; // อนุญาตให้ติดตั้งได้ทุกโมเดล
+    const isForceInstall = status === 'not_recommended';
+
+    // Get minimum requirements
+    const allQuants = model.all_quantizations || [];
+    const minQuant = allQuants.length > 0 ? allQuants[allQuants.length - 1] : null;
+    const minRam = minQuant ? minQuant.ram_required : ramReq;
+    const minVram = minQuant ? minQuant.vram_required : vramReq;
 
     return `
-        <div class="col-lg-4 col-md-6">
-            <div class="model-card ${status === 'recommended' ? 'recommended' : ''}" onclick="${canInstall ? `openInstallModal('${model.model_id}')` : ''}">
+        <div class="model-card-wrapper">
+            <div class="model-card ${status === 'recommended' ? 'recommended' : ''} ${status === 'not_recommended' ? 'not-recommended' : ''}" onclick="openInstallModal('${model.model_id}')">
                 ${badgeHtml}
 
                 <div class="model-header">
-                    <div class="model-icon" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);">
-                        ${icon}
+                    <div class="model-logo">
+                        ${DEEPSEEK_LOGO}
                     </div>
                     <div class="model-name">${model.model_name}</div>
                     <div class="model-size">${model.model_size} Parameters</div>
@@ -959,6 +1031,24 @@ function createModelCard(model, status) {
 
                     <div class="model-capabilities">
                         ${capabilities}
+                    </div>
+
+                    <div class="requirements-box">
+                        <h6><i class="fas fa-exclamation-circle me-1"></i> สเปคขั้นต่ำ</h6>
+                        <div class="spec-item">
+                            <i class="fas fa-memory"></i>
+                            <span><strong>RAM:</strong> ${minRam} GB ขึ้นไป</span>
+                        </div>
+                        ${useGpu ? `
+                        <div class="spec-item">
+                            <i class="fas fa-server"></i>
+                            <span><strong>VRAM:</strong> ${minVram} GB (หรือใช้ CPU)</span>
+                        </div>
+                        ` : ''}
+                        <div class="spec-item">
+                            <i class="fas fa-hdd"></i>
+                            <span><strong>พื้นที่:</strong> ${Math.ceil(minRam * 1.5)} GB</span>
+                        </div>
                     </div>
 
                     <div class="model-specs">
@@ -980,19 +1070,20 @@ function createModelCard(model, status) {
                         </div>
                     </div>
 
-                    ${model.reasons && model.reasons.length > 0 ? `
+                    ${model.features && model.features.length > 0 ? `
                         <div style="margin-top: 12px; padding: 10px; background: rgba(99, 102, 241, 0.05); border-radius: 8px; font-size: 12px; color: var(--text-light);">
+                            <strong style="display: block; margin-bottom: 6px; color: var(--text-dark);">✨ ความสามารถ:</strong>
                             <ul style="margin: 0; padding-left: 20px;">
-                                ${model.reasons.map(reason => `<li>${reason}</li>`).join('')}
+                                ${model.features.slice(0, 3).map(feature => `<li>${feature}</li>`).join('')}
                             </ul>
                         </div>
                     ` : ''}
                 </div>
 
                 <div class="model-footer">
-                    <button class="install-btn" ${!canInstall ? 'disabled' : ''}>
-                        <i class="fas ${canInstall ? 'fa-download' : 'fa-ban'} me-2"></i>
-                        ${canInstall ? 'คลิกเพื่อติดตั้ง' : 'ทรัพยากรไม่เพียงพอ'}
+                    <button class="install-btn ${isForceInstall ? 'force-install' : ''}">
+                        <i class="fas ${isForceInstall ? 'fa-exclamation-triangle' : 'fa-download'} me-2"></i>
+                        ${isForceInstall ? 'ติดตั้งแบบบังคับ (จะช้า)' : 'คลิกเพื่อติดตั้ง'}
                     </button>
                 </div>
             </div>
@@ -1016,6 +1107,11 @@ function showModelsError() {
 
 // Open install modal
 async function openInstallModal(modelId) {
+    if (isInstalling) {
+        alert('⚠️ กำลังติดตั้งโมเดลอยู่ กรุณารอให้เสร็จก่อน');
+        return;
+    }
+
     const model = [...recommendations.recommended, ...recommendations.possible, ...recommendations.not_recommended]
         .find(m => m.model_id === modelId);
 
@@ -1028,7 +1124,7 @@ async function openInstallModal(modelId) {
 
     title.textContent = `ติดตั้ง ${model.model_name}`;
 
-    const quantizations = model.all_quantizations.filter(q => q.can_run);
+    const quantizations = model.all_quantizations || [];
 
     body.innerHTML = `
         <div class="alert alert-info">
@@ -1041,13 +1137,14 @@ async function openInstallModal(modelId) {
 
         <div style="max-height: 400px; overflow-y: auto;">
             ${quantizations.map(quant => `
-                <div class="model-card" style="margin-bottom: 16px; cursor: pointer;" onclick="startInstallation('${modelId}', '${quant.name}')">
+                <div class="model-card" style="margin-bottom: 16px; cursor: pointer; ${!quant.can_run ? 'opacity: 0.6;' : ''}" onclick="startInstallation('${modelId}', '${quant.name}', ${quant.can_run})">
                     <div style="padding: 20px;">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
                             <div>
                                 <h5 style="font-size: 16px; font-weight: 700; margin-bottom: 4px;">${quant.name}</h5>
                                 <p style="font-size: 13px; color: var(--text-light); margin: 0;">
                                     ${quant.use_gpu ? '🎮 GPU Mode' : '🖥️ CPU Mode'}
+                                    ${!quant.can_run ? ' - ⚠️ ทรัพยากรไม่เพียงพอ' : ''}
                                 </p>
                             </div>
                             <span class="capability-badge" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
@@ -1077,7 +1174,7 @@ async function openInstallModal(modelId) {
                             <div class="col-6">
                                 <div class="spec-item">
                                     <i class="fas fa-clock"></i>
-                                    ${quant.speed_estimate.time_for_500_tokens} (500 tokens)
+                                    ${quant.speed_estimate.time_for_500_tokens}
                                 </div>
                             </div>
                         </div>
@@ -1107,8 +1204,19 @@ function closeInstallModal() {
 }
 
 // Start installation
-async function startInstallation(modelId, quantization) {
+async function startInstallation(modelId, quantization, canRun = true) {
+    if (isInstalling) {
+        alert('⚠️ กำลังติดตั้งโมเดลอยู่ กรุณารอให้เสร็จก่อน');
+        return;
+    }
+
+    if (!canRun) {
+        const confirmed = confirm('⚠️ ทรัพยากรไม่เพียงพอ แต่คุณยังสามารถติดตั้งได้ (อาจช้ามาก)\n\nต้องการดำเนินการต่อหรือไม่?');
+        if (!confirmed) return;
+    }
+
     closeInstallModal();
+    isInstalling = true;
 
     // Show progress bar
     const progressBar = document.getElementById('installProgressBar');
@@ -1140,6 +1248,7 @@ async function startInstallation(modelId, quantization) {
         console.error('Installation error:', error);
         alert('เกิดข้อผิดพลาดในการติดตั้ง: ' + error.message);
         progressBar.classList.remove('active');
+        isInstalling = false;
     }
 }
 
@@ -1162,11 +1271,16 @@ function monitorInstallation(logId) {
                 if (status === 'completed') {
                     clearInterval(interval);
                     progressBar.classList.remove('active');
-                    alert('ติดตั้งสำเร็จ! 🎉');
+                    isInstalling = false;
+
+                    // Show post-installation instructions
+                    showPostInstallInstructions(data.data);
+
                     loadRecommendations(); // Reload to update status
                 } else if (status === 'failed' || status === 'cancelled') {
                     clearInterval(interval);
                     progressBar.classList.remove('active');
+                    isInstalling = false;
                     alert('การติดตั้งล้มเหลว: ' + (data.data.error_message || 'Unknown error'));
                 }
             }
@@ -1174,6 +1288,66 @@ function monitorInstallation(logId) {
             console.error('Progress check error:', error);
         }
     }, 2000);
+}
+
+// Show post-installation instructions
+function showPostInstallInstructions(installData) {
+    const modal = document.getElementById('installModal');
+    const backdrop = document.getElementById('modalBackdrop');
+    const title = document.getElementById('installModalTitle');
+    const body = document.getElementById('installModalBody');
+
+    title.textContent = '🎉 ติดตั้งสำเร็จ!';
+
+    body.innerHTML = `
+        <div class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <div>
+                <strong>ติดตั้งโมเดลเรียบร้อยแล้ว!</strong><br>
+                <small>โมเดลพร้อมใช้งาน ทำตามขั้นตอนด้านล่างเพื่อตั้งค่า</small>
+            </div>
+        </div>
+
+        <h6 style="font-weight: 700; margin-bottom: 16px;">📋 ขั้นตอนการตั้งค่า:</h6>
+
+        <div style="background: var(--bg-light); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+            <p style="margin: 0 0 12px; font-weight: 600;">1. ไปที่หน้า AI Providers</p>
+            <a href="{{ route('admin.ai-providers.index') }}" class="btn-premium" style="display: inline-block; text-decoration: none; padding: 10px 24px;">
+                <i class="fas fa-cog me-2"></i>เปิดหน้า AI Providers
+            </a>
+        </div>
+
+        <div style="background: var(--bg-light); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+            <p style="margin: 0 0 8px; font-weight: 600;">2. เปิดใช้งาน Local AI (Ollama)</p>
+            <p style="margin: 0; font-size: 13px; color: var(--text-light);">
+                คลิกปุ่ม "Start" เพื่อเริ่ม Ollama service
+            </p>
+        </div>
+
+        <div style="background: var(--bg-light); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+            <p style="margin: 0 0 8px; font-weight: 600;">3. สร้าง AI Bot Profile</p>
+            <p style="margin: 0; font-size: 13px; color: var(--text-light);">
+                ไปที่เมนู "AI Bots" เพื่อสร้าง Bot และเลือกโมเดลที่ติดตั้ง
+            </p>
+        </div>
+
+        <div style="background: var(--bg-light); padding: 16px; border-radius: 12px;">
+            <p style="margin: 0 0 8px; font-weight: 600;">4. ทดสอบการทำงาน</p>
+            <p style="margin: 0; font-size: 13px; color: var(--text-light);">
+                ใช้ฟีเจอร์ "Test" ใน AI Bot เพื่อทดสอบว่าโมเดลทำงานปกติ
+            </p>
+        </div>
+
+        <div style="margin-top: 20px; padding: 16px; background: rgba(59, 130, 246, 0.1); border-radius: 12px; border-left: 4px solid var(--info);">
+            <p style="margin: 0; font-size: 13px; color: var(--info);">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>เคล็ดลับ:</strong> ระบบ Monitoring จะเริ่มทำงานอัตโนมัติหลังจากคุณเริ่มใช้งาน Bot
+            </p>
+        </div>
+    `;
+
+    modal.classList.add('show');
+    backdrop.classList.add('show');
 }
 
 // Check Ollama status

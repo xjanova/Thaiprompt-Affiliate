@@ -147,67 +147,72 @@ class SystemRequirementsChecker
 
         try {
             // ตรวจสอบ NVIDIA GPU ด้วย nvidia-smi
-            $result = Process::run('which nvidia-smi');
-            if ($result->successful()) {
-                $nvidiaSmiResult = Process::run('nvidia-smi --query-gpu=name,memory.total,memory.free,driver_version --format=csv,noheader,nounits');
+            $result = Process::run('which nvidia-smi', timeout: 5);
+            if ($result->successful() && !empty(trim($result->output()))) {
+                $nvidiaSmiResult = Process::run('nvidia-smi --query-gpu=name,memory.total,memory.free,driver_version --format=csv,noheader,nounits 2>/dev/null', timeout: 10);
 
-                if ($nvidiaSmiResult->successful()) {
+                if ($nvidiaSmiResult->successful() && !empty(trim($nvidiaSmiResult->output()))) {
                     $gpuInfo['available'] = true;
                     $gpuInfo['type'] = 'nvidia';
 
-                    $lines = explode("\n", trim($nvidiaSmiResult->output()));
+                    $lines = array_filter(explode("\n", trim($nvidiaSmiResult->output())));
                     $gpuInfo['count'] = count($lines);
 
                     foreach ($lines as $line) {
                         $parts = array_map('trim', explode(',', $line));
                         if (count($parts) >= 3) {
+                            $memoryTotal = (float) $parts[1];
+                            $memoryFree = (float) $parts[2];
+
                             $gpuInfo['gpus'][] = [
                                 'name' => $parts[0],
-                                'memory_total_mb' => (int) $parts[1],
-                                'memory_free_mb' => (int) $parts[2],
-                                'memory_total_gb' => round($parts[1] / 1024, 2),
-                                'memory_free_gb' => round($parts[2] / 1024, 2),
+                                'memory_total_mb' => (int) $memoryTotal,
+                                'memory_free_mb' => (int) $memoryFree,
+                                'memory_total_gb' => round($memoryTotal / 1024, 2),
+                                'memory_free_gb' => round($memoryFree / 1024, 2),
                                 'driver_version' => $parts[3] ?? 'Unknown',
                             ];
                         }
                     }
 
                     // ตรวจสอบ CUDA version
-                    $cudaResult = Process::run('nvcc --version | grep "release" | awk \'{print $5}\' | cut -d "," -f1');
-                    if ($cudaResult->successful()) {
+                    $cudaResult = Process::run('nvcc --version 2>/dev/null | grep "release" | awk \'{print $5}\' | cut -d "," -f1', timeout: 5);
+                    if ($cudaResult->successful() && !empty(trim($cudaResult->output()))) {
                         $gpuInfo['cuda_version'] = trim($cudaResult->output());
                     }
 
                     // กำหนด status ตาม VRAM
-                    $totalVram = array_sum(array_column($gpuInfo['gpus'], 'memory_total_gb'));
+                    if (!empty($gpuInfo['gpus'])) {
+                        $totalVram = array_sum(array_column($gpuInfo['gpus'], 'memory_total_gb'));
 
-                    if ($totalVram >= 24) {
-                        $gpuInfo['status'] = 'excellent';
-                        $gpuInfo['message'] = 'GPU มี VRAM เพียงพอสำหรับโมเดลขนาดใหญ่มาก (30B-70B)';
-                        $gpuInfo['recommended_models'] = ['30B', '70B'];
-                    } elseif ($totalVram >= 16) {
-                        $gpuInfo['status'] = 'very_good';
-                        $gpuInfo['message'] = 'GPU มี VRAM เพียงพอสำหรับโมเดลขนาดใหญ่ (13B-30B)';
-                        $gpuInfo['recommended_models'] = ['13B', '30B'];
-                    } elseif ($totalVram >= 8) {
-                        $gpuInfo['status'] = 'good';
-                        $gpuInfo['message'] = 'GPU มี VRAM เพียงพอสำหรับโมเดลขนาดกลาง (7B-13B)';
-                        $gpuInfo['recommended_models'] = ['7B', '13B'];
-                    } elseif ($totalVram >= 4) {
-                        $gpuInfo['status'] = 'fair';
-                        $gpuInfo['message'] = 'GPU มี VRAM เพียงพอสำหรับโมเดลขนาดเล็ก (3B-7B)';
-                        $gpuInfo['recommended_models'] = ['3B', '7B'];
-                    } else {
-                        $gpuInfo['status'] = 'insufficient';
-                        $gpuInfo['message'] = 'GPU มี VRAM ไม่เพียงพอ ควรใช้ CPU inference';
-                        $gpuInfo['recommended_models'] = [];
+                        if ($totalVram >= 24) {
+                            $gpuInfo['status'] = 'excellent';
+                            $gpuInfo['message'] = 'GPU มี VRAM เพียงพอสำหรับโมเดลขนาดใหญ่มาก (30B-70B)';
+                            $gpuInfo['recommended_models'] = ['30B', '70B'];
+                        } elseif ($totalVram >= 16) {
+                            $gpuInfo['status'] = 'very_good';
+                            $gpuInfo['message'] = 'GPU มี VRAM เพียงพอสำหรับโมเดลขนาดใหญ่ (13B-30B)';
+                            $gpuInfo['recommended_models'] = ['13B', '30B'];
+                        } elseif ($totalVram >= 8) {
+                            $gpuInfo['status'] = 'good';
+                            $gpuInfo['message'] = 'GPU มี VRAM เพียงพอสำหรับโมเดลขนาดกลาง (7B-13B)';
+                            $gpuInfo['recommended_models'] = ['7B', '13B'];
+                        } elseif ($totalVram >= 4) {
+                            $gpuInfo['status'] = 'fair';
+                            $gpuInfo['message'] = 'GPU มี VRAM เพียงพอสำหรับโมเดลขนาดเล็ก (3B-7B)';
+                            $gpuInfo['recommended_models'] = ['3B', '7B'];
+                        } else {
+                            $gpuInfo['status'] = 'insufficient';
+                            $gpuInfo['message'] = 'GPU มี VRAM ไม่เพียงพอ ควรใช้ CPU inference';
+                            $gpuInfo['recommended_models'] = [];
+                        }
                     }
                 }
             }
 
             // ถ้าไม่มี NVIDIA ลองตรวจสอบ AMD GPU
             if (!$gpuInfo['available']) {
-                $result = Process::run('lspci | grep -i "VGA.*AMD"');
+                $result = Process::run('lspci 2>/dev/null | grep -i "VGA.*AMD"', timeout: 5);
                 if ($result->successful() && !empty(trim($result->output()))) {
                     $gpuInfo['available'] = true;
                     $gpuInfo['type'] = 'amd';
@@ -219,12 +224,14 @@ class SystemRequirementsChecker
             // ถ้าไม่มี GPU เลย
             if (!$gpuInfo['available']) {
                 $gpuInfo['status'] = 'none';
-                $gpuInfo['message'] = 'ไม่พบ GPU จะใช้ CPU inference (ช้ากว่า GPU)';
-                $gpuInfo['recommended_models'] = ['3B', '7B (quantized)'];
+                $gpuInfo['message'] = 'ไม่พบ GPU จะใช้ CPU inference (ช้ากว่า GPU มาก แต่ยังใช้งานได้)';
+                $gpuInfo['recommended_models'] = ['1.3B', '3B', '7B (quantized)'];
             }
         } catch (\Exception $e) {
-            $gpuInfo['status'] = 'error';
-            $gpuInfo['message'] = 'ไม่สามารถตรวจสอบ GPU ได้: ' . $e->getMessage();
+            \Log::warning('GPU detection error: ' . $e->getMessage());
+            $gpuInfo['status'] = 'none';
+            $gpuInfo['message'] = 'ไม่สามารถตรวจสอบ GPU ได้ จะใช้ CPU inference';
+            $gpuInfo['recommended_models'] = ['1.3B', '3B', '7B (quantized)'];
         }
 
         return $gpuInfo;
