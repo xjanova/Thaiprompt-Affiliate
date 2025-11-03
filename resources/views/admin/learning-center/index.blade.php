@@ -390,7 +390,7 @@
         <div class="row g-4">
             @foreach($categories as $category)
             <div class="col-lg-4 col-md-6">
-                <div class="lc-category-card" onclick="window.location.href='#'">
+                <div class="lc-category-card" onclick="window.location.href='{{ route('admin.learning-center.category', $category['slug']) }}'">
                     @php
                         $gradients = ['lc-gradient-purple', 'lc-gradient-blue', 'lc-gradient-red', 'lc-gradient-amber', 'lc-gradient-green', 'lc-gradient-yellow'];
                         $gradientClass = $gradients[$loop->index % 6];
@@ -428,7 +428,7 @@
         <div class="row g-3">
             @foreach($popular_articles as $article)
             <div class="col-12">
-                <div class="lc-article-card">
+                <div class="lc-article-card" onclick="window.location.href='{{ route('admin.learning-center.article', $article['slug']) }}'">
                     <div class="row align-items-center">
                         <div class="col-lg-8">
                             <div class="lc-article-meta">
@@ -449,7 +449,7 @@
                                     <i class="fas fa-eye me-1"></i>{{ number_format($article['views']) }} views
                                 </span>
                                 <button class="lc-btn-read">
-                                    อ่านเลย
+                                    เริ่มเรียน
                                 </button>
                             </div>
                         </div>
