@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\AiBotController;
 use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\WebPManagementController;
+use App\Http\Controllers\Admin\KnowledgeBaseController;
 use Illuminate\Support\Facades\Route;
 
 /*
