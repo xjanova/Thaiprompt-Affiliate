@@ -32,7 +32,7 @@ use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\OtpSettingsController;
 use App\Http\Controllers\Admin\AiInstallationController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
-use AppHttpControllersAdminAiBotController;
+use App\Http\Controllers\Admin\AiBotController;
 use App\Http\Controllers\Admin\AiMonitoringController;
 use Illuminate\Support\Facades\Route;
 
