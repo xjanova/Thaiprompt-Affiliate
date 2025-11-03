@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\OtpSettingsController;
 use App\Http\Controllers\Admin\AiInstallationController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
+use AppHttpControllersAdminAiBotController;
 use App\Http\Controllers\Admin\AiMonitoringController;
 use Illuminate\Support\Facades\Route;
 
@@ -449,4 +450,19 @@ Route::prefix('ai-monitoring')->name('ai-monitoring.')->group(function () {
     Route::get('/timeseries', [AiMonitoringController::class, 'getTimeSeriesData'])->name('timeseries');
     Route::post('/record', [AiMonitoringController::class, 'recordMetrics'])->name('record');
     Route::get('/dashboard-summary', [AiMonitoringController::class, 'getDashboardSummary'])->name('dashboard-summary');
+});
+
+// AI Bot Management (CRUD for Bot Profiles)
+Route::prefix('ai-bots')->name('ai-bots.')->group(function () {
+    Route::get('/', [AiBotController::class, 'index'])->name('index');
+    Route::get('/create', [AiBotController::class, 'create'])->name('create');
+    Route::post('/', [AiBotController::class, 'store'])->name('store');
+    Route::get('/{id}', [AiBotController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [AiBotController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [AiBotController::class, 'update'])->name('update');
+    Route::delete('/{id}', [AiBotController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/toggle', [AiBotController::class, 'toggle'])->name('toggle');
+    Route::post('/{id}/test', [AiBotController::class, 'test'])->name('test');
+    Route::post('/{id}/duplicate', [AiBotController::class, 'duplicate'])->name('duplicate');
+    Route::get('/providers/{providerId}/models', [AiBotController::class, 'getModelsByProvider'])->name('providers.models');
 });
