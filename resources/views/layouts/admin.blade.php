@@ -215,7 +215,7 @@
             this.systemMenuOpen = false;
 
             // Open only the relevant menu based on current path
-            if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/line-bot') || currentPath.includes('/admin/otp')) {
+            if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/line-bot') || currentPath.includes('/admin/otp') || currentPath.includes('/admin/ai-bots') || currentPath.includes('/admin/ai-providers') || currentPath.includes('/admin/ai-monitoring') || currentPath.includes('/admin/ai-installation')) {
                 this.lineMenuOpen = true;
             } else if (currentPath.includes('/admin/affiliates') || currentPath.includes('/admin/retention') || currentPath.includes('/admin/ranks')) {
                 this.marketingMenuOpen = true;
@@ -617,7 +617,38 @@
                         <a href="{{ route('admin.line-bot.ai.index') }}"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
                             <span class="mr-2">🤖</span>
-                            <span>AI Settings</span>
+                            <span>AI Settings (Old)</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- AI System Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">ระบบ AI</span>
+                        </div>
+
+                        <a href="{{ route('admin.ai-bots.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ai-bots.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">🤖</span>
+                            <span>AI Bots</span>
+                        </a>
+
+                        <a href="{{ route('admin.ai-providers.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ai-providers.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">🔌</span>
+                            <span>AI Providers</span>
+                        </a>
+
+                        <a href="{{ route('admin.ai-monitoring.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ai-monitoring.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>AI Monitoring</span>
+                        </a>
+
+                        <a href="{{ route('admin.ai-installation.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.ai-installation.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">⚙️</span>
+                            <span>AI Installation</span>
                         </a>
 
                         <div class="border-t border-gray-700/30 my-1"></div>

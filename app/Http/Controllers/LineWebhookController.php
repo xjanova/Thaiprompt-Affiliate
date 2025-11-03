@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\LineOaSetting;
 use App\Models\User;
+use App\Models\AiBotProfile;
 use App\Services\LineService;
+use App\Services\AI\ConversationManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -116,13 +118,15 @@ class LineWebhookController extends Controller
             return;
         }
 
-        // Check if AI Bot is enabled
-        $aiSetting = \App\Models\LineBotAiSetting::getActive();
+        // Check if AI Bot is linked to this LINE OA
+        $bot = AiBotProfile::where('line_oa_channel_id', $settings->channel_id)
+            ->where('is_active', true)
+            ->first();
 
-        if ($aiSetting && $aiSetting->is_active) {
-            $this->handleAiChat($lineUserId, $messageText, $user, $aiSetting);
+        if ($bot) {
+            $this->handleAiBotChat($lineUserId, $messageText, $user, $bot);
         } else {
-            // Default response when AI is not enabled
+            // Default response when AI Bot is not linked
             $lineService->sendPushMessage(
                 $lineUserId,
                 "ขอบคุณสำหรับข้อความของคุณ 😊\n\nพิมพ์ 'info' หรือ 'ข้อมูล' เพื่อดูข้อมูลบัญชีของคุณ"
@@ -131,58 +135,52 @@ class LineWebhookController extends Controller
     }
 
     /**
-     * Handle AI chat
+     * Handle AI Bot chat (New version with ConversationManager)
      */
-    private function handleAiChat(
+    private function handleAiBotChat(
         string $lineUserId,
         string $messageText,
         ?User $user,
-        \App\Models\LineBotAiSetting $aiSetting
+        AiBotProfile $bot
     ): void {
         try {
-            // Get or create conversation
-            $conversation = \App\Models\LineBotConversation::where('line_user_id', $lineUserId)
-                ->where('status', 'active')
-                ->first();
+            // Create Conversation Manager
+            $manager = new ConversationManager($bot);
 
-            if (!$conversation) {
-                $conversation = \App\Models\LineBotConversation::create([
+            // Find or create conversation
+            $conversation = $manager->findOrCreateConversation($user, $lineUserId);
+
+            // Send message to AI and get response
+            $result = $manager->sendMessage($conversation, $messageText);
+
+            if ($result['success']) {
+                // Send AI response to LINE
+                $lineService = app(LineService::class);
+                $lineService->sendPushMessage($lineUserId, $result['message']);
+
+                Log::info('AI response sent to LINE', [
                     'line_user_id' => $lineUserId,
-                    'user_id' => $user?->id,
-                    'ai_setting_id' => $aiSetting->id,
-                    'status' => 'active',
+                    'bot_id' => $bot->id,
+                    'tokens_used' => $result['tokens_used'],
                 ]);
+            } else {
+                // Error occurred
+                throw new \Exception($result['error']);
             }
 
-            // Save user message
-            $conversation->addMessage('user', $messageText);
-
-            // Generate AI response
-            $aiService = new \App\Services\LineBotAiService($aiSetting);
-            $response = $aiService->generateResponse($messageText, $conversation);
-
-            // Save AI response
-            $conversation->addMessage('assistant', $response['message'], [
-                'tokens_used' => $response['tokens_used'],
-                'response_time' => $response['response_time'],
-                'provider' => $response['provider'],
-                'is_ai_generated' => true,
-            ]);
-
-            // Send response to user
-            $lineService = app(LineService::class);
-            $lineService->sendPushMessage($lineUserId, $response['message']);
-
         } catch (\Exception $e) {
-            Log::error('AI chat error', [
+            Log::error('AI Bot chat error', [
                 'error' => $e->getMessage(),
                 'line_user_id' => $lineUserId,
+                'bot_id' => $bot->id,
             ]);
 
             // Send fallback message
-            $fallbackMessage = $aiSetting->fallback_message;
             $lineService = app(LineService::class);
-            $lineService->sendPushMessage($lineUserId, $fallbackMessage);
+            $lineService->sendPushMessage(
+                $lineUserId,
+                "ขออภัยค่ะ ขณะนี้ระบบ AI ประสบปัญหาชั่วคราว กรุณาลองใหม่อีกครั้งในภายหลัง 🙏"
+            );
         }
     }
 

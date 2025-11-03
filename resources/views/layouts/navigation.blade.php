@@ -157,6 +157,31 @@ $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
                    onmouseout="this.style.color='{{ $headerTextColor }}';">
                     หน้าแรก
                 </a>
+                <a href="{{ route('marketplace.index') }}"
+                   class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                   style="color: {{ $headerTextColor }};"
+                   onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                   onmouseout="this.style.color='{{ $headerTextColor }}';">
+                    🤖 ตลาดบอท
+                </a>
+                @auth
+                    <a href="{{ route('my-rentals.index') }}"
+                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                       style="color: {{ $headerTextColor }};"
+                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                       onmouseout="this.style.color='{{ $headerTextColor }}';">
+                        💼 การเช่าของฉัน
+                    </a>
+                    @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
+                        <a href="{{ route('owner-dashboard.index') }}"
+                           class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                           style="color: {{ $headerTextColor }};"
+                           onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                           onmouseout="this.style.color='{{ $headerTextColor }}';">
+                            📊 Dashboard เจ้าของ
+                        </a>
+                    @endif
+                @endauth
                 <a href="{{ route('about') }}"
                    class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};"
@@ -243,6 +268,25 @@ $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
                style="color: {{ $headerTextColor }};">
                 หน้าแรก
             </a>
+            <a href="{{ route('marketplace.index') }}"
+               class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+               style="color: {{ $headerTextColor }};">
+                🤖 ตลาดบอท
+            </a>
+            @auth
+                <a href="{{ route('my-rentals.index') }}"
+                   class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                   style="color: {{ $headerTextColor }};">
+                    💼 การเช่าของฉัน
+                </a>
+                @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
+                    <a href="{{ route('owner-dashboard.index') }}"
+                       class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                       style="color: {{ $headerTextColor }};">
+                        📊 Dashboard เจ้าของ
+                    </a>
+                @endif
+            @endauth
             <a href="{{ route('about') }}"
                class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                style="color: {{ $headerTextColor }};">

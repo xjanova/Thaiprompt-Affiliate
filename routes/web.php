@@ -84,6 +84,36 @@ Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 // Dynamic Page Routes (Privacy Policy, Terms, etc.)
 Route::get('/page/{slug}', [PageController::class, 'show'])->name('page.show');
 
+// Marketplace Routes (Public browsing, Auth for renting)
+Route::prefix('marketplace')->name('marketplace.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\MarketplaceController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\MarketplaceController::class, 'show'])->name('show');
+
+    // Authenticated routes
+    Route::middleware('auth')->group(function () {
+        Route::post('/{id}/rent', [\App\Http\Controllers\MarketplaceController::class, 'rent'])->name('rent');
+        Route::get('/rent-success/{rentalId}', [\App\Http\Controllers\MarketplaceController::class, 'rentSuccess'])->name('rent-success');
+    });
+});
+
+// My Rentals Routes (Authenticated users)
+Route::middleware('auth')->prefix('my-rentals')->name('my-rentals.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\RentalManagementController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\RentalManagementController::class, 'show'])->name('show');
+    Route::post('/{id}/cancel', [\App\Http\Controllers\RentalManagementController::class, 'cancel'])->name('cancel');
+    Route::post('/{id}/toggle-auto-renew', [\App\Http\Controllers\RentalManagementController::class, 'toggleAutoRenew'])->name('toggle-auto-renew');
+    Route::get('/transactions/all', [\App\Http\Controllers\RentalManagementController::class, 'transactions'])->name('transactions');
+});
+
+// Owner Dashboard Routes (Bot owners)
+Route::middleware('auth')->prefix('owner-dashboard')->name('owner-dashboard.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\OwnerDashboardController::class, 'index'])->name('index');
+    Route::get('/earnings', [\App\Http\Controllers\OwnerDashboardController::class, 'earnings'])->name('earnings');
+    Route::get('/rentals', [\App\Http\Controllers\OwnerDashboardController::class, 'rentals'])->name('rentals');
+    Route::get('/payouts', [\App\Http\Controllers\OwnerDashboardController::class, 'payouts'])->name('payouts');
+    Route::post('/request-payout', [\App\Http\Controllers\OwnerDashboardController::class, 'requestPayout'])->name('request-payout');
+});
+
 // User Routes (Protected by auth middleware and role check)
 Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
     require __DIR__.'/user.php';

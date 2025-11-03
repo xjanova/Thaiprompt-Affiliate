@@ -30,6 +30,10 @@ use App\Http\Controllers\Admin\LineChatWidgetController;
 use App\Http\Controllers\Admin\LineAvatarController;
 use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\OtpSettingsController;
+use App\Http\Controllers\Admin\AiInstallationController;
+use App\Http\Controllers\Admin\AiProviderManagementController;
+use App\Http\Controllers\Admin\AiBotController;
+use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\WebPManagementController;
 use Illuminate\Support\Facades\Route;
 
@@ -395,4 +399,91 @@ Route::prefix('otp')->name('otp.')->group(function () {
     Route::get('/settings', [OtpSettingsController::class, 'index'])->name('settings');
     Route::put('/settings', [OtpSettingsController::class, 'update'])->name('settings.update');
     Route::post('/test', [OtpSettingsController::class, 'test'])->name('test');
+});
+
+// AI Installation & Management
+Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
+    // Installation Wizard
+    Route::get('/', [AiInstallationController::class, 'index'])->name('index');
+
+    // System Requirements
+    Route::get('/check-requirements', [AiInstallationController::class, 'checkRequirements'])->name('check-requirements');
+    Route::get('/recommendations', [AiInstallationController::class, 'getRecommendations'])->name('recommendations');
+    Route::post('/analyze-model', [AiInstallationController::class, 'analyzeModel'])->name('analyze-model');
+    Route::post('/calculate-disk-space', [AiInstallationController::class, 'calculateDiskSpace'])->name('calculate-disk-space');
+    Route::post('/optimal-settings', [AiInstallationController::class, 'getOptimalSettings'])->name('optimal-settings');
+
+    // Installation Process
+    Route::post('/start', [AiInstallationController::class, 'startInstallation'])->name('start');
+    Route::get('/progress/{installationId}', [AiInstallationController::class, 'getProgress'])->name('progress');
+    Route::post('/cancel/{installationId}', [AiInstallationController::class, 'cancelInstallation'])->name('cancel');
+
+    // Model Management
+    Route::get('/installed-models', [AiInstallationController::class, 'getInstalledModels'])->name('installed-models');
+    Route::post('/uninstall', [AiInstallationController::class, 'uninstallModel'])->name('uninstall');
+
+    // Ollama Status
+    Route::get('/ollama-status', [AiInstallationController::class, 'checkOllamaStatus'])->name('ollama-status');
+
+    // Installation History
+    Route::get('/history', [AiInstallationController::class, 'getInstallationHistory'])->name('history');
+    Route::get('/logs/{installationId}', [AiInstallationController::class, 'getInstallationLog'])->name('logs');
+});
+
+// AI Provider Management
+Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
+    Route::get('/', [AiProviderManagementController::class, 'index'])->name('index');
+    Route::post('/{id}/toggle', [AiProviderManagementController::class, 'toggleProvider'])->name('toggle');
+    Route::put('/{id}/config', [AiProviderManagementController::class, 'updateConfig'])->name('config');
+    Route::post('/{id}/test', [AiProviderManagementController::class, 'testConnection'])->name('test');
+    Route::get('/{id}/models', [AiProviderManagementController::class, 'getProviderModels'])->name('models');
+    Route::post('/models/{id}/toggle', [AiProviderManagementController::class, 'toggleModel'])->name('models.toggle');
+    
+    // Local AI Control
+    Route::post('/local/start', [AiProviderManagementController::class, 'startLocalAi'])->name('local.start');
+    Route::post('/local/stop', [AiProviderManagementController::class, 'stopLocalAi'])->name('local.stop');
+    Route::post('/local/restart', [AiProviderManagementController::class, 'restartLocalAi'])->name('local.restart');
+    Route::get('/local/status', [AiProviderManagementController::class, 'getLocalAiStatus'])->name('local.status');
+    Route::post('/local/load-model', [AiProviderManagementController::class, 'loadModel'])->name('local.load-model');
+});
+
+// AI Monitoring & Analytics
+Route::prefix('ai-monitoring')->name('ai-monitoring.')->group(function () {
+    Route::get('/', [AiMonitoringController::class, 'index'])->name('index');
+    Route::get('/realtime', [AiMonitoringController::class, 'getRealtimeMetrics'])->name('realtime');
+    Route::get('/system', [AiMonitoringController::class, 'getSystemMetrics'])->name('system');
+    Route::get('/requests', [AiMonitoringController::class, 'getRequestMetrics'])->name('requests');
+    Route::get('/conversations', [AiMonitoringController::class, 'getConversationMetrics'])->name('conversations');
+    Route::get('/models', [AiMonitoringController::class, 'getModelMetrics'])->name('models');
+    Route::get('/providers', [AiMonitoringController::class, 'getProviderMetrics'])->name('providers');
+    Route::get('/timeseries', [AiMonitoringController::class, 'getTimeSeriesData'])->name('timeseries');
+    Route::post('/record', [AiMonitoringController::class, 'recordMetrics'])->name('record');
+    Route::get('/dashboard-summary', [AiMonitoringController::class, 'getDashboardSummary'])->name('dashboard-summary');
+});
+
+// AI Bot Management (CRUD for Bot Profiles)
+Route::prefix('ai-bots')->name('ai-bots.')->group(function () {
+    Route::get('/', [AiBotController::class, 'index'])->name('index');
+    Route::get('/create', [AiBotController::class, 'create'])->name('create');
+    Route::post('/', [AiBotController::class, 'store'])->name('store');
+    Route::get('/{id}', [AiBotController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [AiBotController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [AiBotController::class, 'update'])->name('update');
+    Route::delete('/{id}', [AiBotController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/toggle', [AiBotController::class, 'toggle'])->name('toggle');
+    Route::post('/{id}/test', [AiBotController::class, 'test'])->name('test');
+    Route::post('/{id}/duplicate', [AiBotController::class, 'duplicate'])->name('duplicate');
+    Route::get('/providers/{providerId}/models', [AiBotController::class, 'getModelsByProvider'])->name('providers.models');
+});
+
+// Knowledge Base Management (RAG System)
+Route::prefix('ai-bots/{botId}/knowledge-bases')->name('knowledge-bases.')->group(function () {
+    use App\Http\Controllers\Admin\KnowledgeBaseController;
+    
+    Route::get('/', [KnowledgeBaseController::class, 'index'])->name('index');
+    Route::get('/create', [KnowledgeBaseController::class, 'create'])->name('create');
+    Route::post('/', [KnowledgeBaseController::class, 'store'])->name('store');
+    Route::get('/{id}', [KnowledgeBaseController::class, 'show'])->name('show');
+    Route::delete('/{id}', [KnowledgeBaseController::class, 'destroy'])->name('destroy');
+    Route::post('/test-search', [KnowledgeBaseController::class, 'testSearch'])->name('test-search');
 });
