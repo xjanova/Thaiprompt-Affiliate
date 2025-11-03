@@ -124,6 +124,101 @@
         </div>
     </div>
 
+    <!-- Extracted Data Card (OCR) -->
+    @if(!empty($kycVerification->extracted_data))
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+            <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">
+                <i class="fas fa-robot mr-2"></i>ข้อมูลที่ตรวจจับได้จากบัตร (OCR)
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-4">
+                @if(!empty($kycVerification->extracted_data['id_card_number']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">เลขบัตรประชาชน</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['id_card_number'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['thai_first_name']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ชื่อ (ไทย)</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['thai_first_name'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['thai_last_name']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">นามสกุล (ไทย)</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['thai_last_name'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['english_first_name']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">First Name</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['english_first_name'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['english_last_name']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">Last Name</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['english_last_name'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['birth_date']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">วันเกิด</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['birth_date'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['religion']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ศาสนา</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['religion'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['issue_date']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">วันออกบัตร</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['issue_date'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['expiry_date']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">วันหมดอายุ</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['expiry_date'] }}</p>
+                    </div>
+                @endif
+
+                @if(!empty($kycVerification->extracted_data['address']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 md:col-span-2">
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-1">ที่อยู่</p>
+                        <p class="font-medium text-gray-900 dark:text-white">{{ $kycVerification->extracted_data['address'] }}</p>
+                    </div>
+                @endif
+            </div>
+
+            <div class="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <p class="text-xs text-yellow-800 dark:text-yellow-300">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <strong>หมายเหตุ:</strong> ข้อมูลนี้ถูกตรวจจับโดยระบบ OCR อัตโนมัติ กรุณาตรวจสอบความถูกต้องก่อนอนุมัติ
+                </p>
+            </div>
+        </div>
+    @else
+        <div class="bg-gray-50 dark:bg-slate-700 rounded-lg shadow-md p-6">
+            <p class="text-center text-gray-600 dark:text-gray-400">
+                <i class="fas fa-robot text-2xl mb-2"></i><br>
+                ไม่สามารถตรวจจับข้อมูลจากบัตรประชาชนได้ กรุณาตรวจสอบข้อมูลจากภาพด้านล่าง
+            </p>
+        </div>
+    @endif
+
     <!-- Documents Card -->
     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
         <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">

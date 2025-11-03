@@ -4,8 +4,10 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\KycVerification;
+use App\Services\OCR\ThaiIdCardOcrService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class KycController extends Controller
 {
@@ -71,6 +73,24 @@ class KycController extends Controller
         $idCardPath = $request->file('id_card_image')->store('kyc/id-cards', 'public');
         $selfiePath = $request->file('selfie_image')->store('kyc/selfies', 'public');
 
+        // Extract data from ID card using OCR
+        $extractedData = null;
+        try {
+            $ocrService = new ThaiIdCardOcrService();
+            $extractedData = $ocrService->extractData($idCardPath);
+
+            // Validate ID card number if extracted
+            if (!empty($extractedData['id_card_number'])) {
+                if (!$ocrService->validateIdCardNumber($extractedData['id_card_number'])) {
+                    Log::warning('Invalid ID card number checksum: ' . $extractedData['id_card_number']);
+                }
+            }
+
+            Log::info('OCR extracted data', ['data' => $extractedData]);
+        } catch (\Exception $e) {
+            Log::error('OCR extraction failed: ' . $e->getMessage());
+        }
+
         // Create KYC verification record
         $kycVerification = KycVerification::create([
             'user_id' => $user->id,
@@ -78,6 +98,7 @@ class KycController extends Controller
             'selfie_image' => $selfiePath,
             'status' => 'pending',
             'submitted_at' => now(),
+            'extracted_data' => $extractedData,
         ]);
 
         // Update user's KYC status

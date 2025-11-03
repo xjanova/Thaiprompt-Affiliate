@@ -59,6 +59,17 @@ class User extends Authenticatable
         // KYC fields
         'kyc_status',
         'kyc_verified_at',
+        // Thai ID Card fields
+        'id_card_number',
+        'thai_first_name',
+        'thai_last_name',
+        'english_first_name',
+        'english_last_name',
+        'id_card_birth_date',
+        'id_card_religion',
+        'id_card_address',
+        'id_card_issue_date',
+        'id_card_expiry_date',
     ];
 
     /**
@@ -105,6 +116,9 @@ class User extends Authenticatable
             'phone_verified_at' => 'datetime',
             'date_of_birth' => 'date',
             'kyc_verified_at' => 'datetime',
+            'id_card_birth_date' => 'date',
+            'id_card_issue_date' => 'date',
+            'id_card_expiry_date' => 'date',
         ];
     }
 
