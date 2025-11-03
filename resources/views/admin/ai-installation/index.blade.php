@@ -830,7 +830,7 @@ function showSystemError() {
 // Load recommendations
 async function loadRecommendations() {
     try {
-        const response = await fetch('{{ route("admin.ai-installation.get-recommendations") }}');
+        const response = await fetch('{{ route("admin.ai-installation.recommendations") }}');
         const data = await response.json();
 
         if (data.success) {
@@ -1115,7 +1115,7 @@ async function startInstallation(modelId, quantization) {
     progressBar.classList.add('active');
 
     try {
-        const response = await fetch('{{ route("admin.ai-installation.start-installation") }}', {
+        const response = await fetch('{{ route("admin.ai-installation.start") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1150,7 +1150,7 @@ function monitorInstallation(logId) {
 
     const interval = setInterval(async () => {
         try {
-            const response = await fetch(`{{ url('admin/ai-installation/progress') }}/${logId}`);
+            const response = await fetch(`{{ route('admin.ai-installation.progress', ['installationId' => '__ID__']) }}`.replace('__ID__', logId));
             const data = await response.json();
 
             if (data.success) {
