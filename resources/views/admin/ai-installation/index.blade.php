@@ -593,10 +593,10 @@
                     <i class="fas fa-rocket me-2"></i>
                     เริ่มติดตั้งเลย
                 </button>
-                <button type="button" class="btn-premium-outline" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
-                    <i class="fas fa-info-circle me-2"></i>
-                    เรียนรู้เพิ่มเติม
-                </button>
+                <a href="{{ route('admin.learning-center.index') }}" class="btn-premium-outline" style="text-decoration: none;">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    ศูนย์เรียนรู้
+                </a>
             </div>
         </div>
     </div>
@@ -613,99 +613,137 @@
 
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <div class="feature-card-premium" style="padding: 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(129, 140, 248, 0.03) 100%);">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="feature-icon-premium icon-gradient-1 me-3" style="width: 48px; height: 48px; font-size: 20px;">
-                                    <i class="fas fa-brain"></i>
+                        <div class="feature-card-premium" style="padding: 24px; background: linear-gradient(135deg, rgba(33, 37, 85, 0.05) 0%, rgba(66, 74, 170, 0.05) 100%); border: 2px solid rgba(99, 102, 241, 0.1);">
+                            <div class="d-flex align-items-center mb-3">
+                                <div style="width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, #212555 0%, #424aaa 100%); display: flex; align-items: center; justify-content: center; margin-right: 16px; box-shadow: 0 8px 20px rgba(66, 74, 170, 0.3);">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" opacity="0.9"/>
+                                        <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+                                        <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+                                    </svg>
                                 </div>
-                                <h5 class="mb-0" style="font-weight: 700;">DeepSeek</h5>
+                                <div>
+                                    <h5 class="mb-0" style="font-weight: 700; font-size: 18px;">DeepSeek</h5>
+                                    <small class="text-muted">DeepSeek AI</small>
+                                </div>
                             </div>
-                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดล Reasoning ที่ทรงพลัง</p>
-                            <div style="font-size: 12px; color: var(--text-light);">
-                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">R1 (1.5B-671B)</span>
-                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">V3</span>
-                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">Coder</span>
+                            <p class="text-muted mb-3" style="font-size: 13px; line-height: 1.6;">โมเดล Reasoning ที่ทรงพลัง เหมาะสำหรับงานที่ต้องการการคิดวิเคราะห์ลึก</p>
+                            <div style="font-size: 11px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(66, 74, 170, 0.15); color: #424aaa; margin: 2px; padding: 4px 10px;">R1 (1.5B-671B)</span>
+                                <span class="badge-premium" style="background: rgba(66, 74, 170, 0.15); color: #424aaa; margin: 2px; padding: 4px 10px;">V3</span>
+                                <span class="badge-premium" style="background: rgba(66, 74, 170, 0.15); color: #424aaa; margin: 2px; padding: 4px 10px;">Coder</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
-                        <div class="feature-card-premium" style="padding: 20px; background: linear-gradient(135deg, rgba(249, 115, 22, 0.03) 0%, rgba(251, 146, 60, 0.03) 100%);">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="feature-icon-premium icon-gradient-2 me-3" style="width: 48px; height: 48px; font-size: 20px;">
-                                    <i class="fab fa-meta"></i>
+                        <div class="feature-card-premium" style="padding: 24px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.05) 0%, rgba(0, 153, 255, 0.05) 100%); border: 2px solid rgba(0, 102, 255, 0.1);">
+                            <div class="d-flex align-items-center mb-3">
+                                <div style="width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, #0066FF 0%, #0099FF 100%); display: flex; align-items: center; justify-content: center; margin-right: 16px; box-shadow: 0 8px 20px rgba(0, 102, 255, 0.3);">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M8 3L4 7V17L8 21L12 17L16 21L20 17V7L16 3L12 7L8 3Z" fill="white" opacity="0.9"/>
+                                    </svg>
                                 </div>
-                                <h5 class="mb-0" style="font-weight: 700;">Llama</h5>
+                                <div>
+                                    <h5 class="mb-0" style="font-weight: 700; font-size: 18px;">Llama</h5>
+                                    <small class="text-muted">Meta AI</small>
+                                </div>
                             </div>
-                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดล Open Source จาก Meta</p>
-                            <div style="font-size: 12px; color: var(--text-light);">
-                                <span class="badge-premium" style="background: rgba(249, 115, 22, 0.1); color: #f97316; margin: 2px;">3.3 (70B)</span>
-                                <span class="badge-premium" style="background: rgba(249, 115, 22, 0.1); color: #f97316; margin: 2px;">3.2 (1B-3B)</span>
-                                <span class="badge-premium" style="background: rgba(249, 115, 22, 0.1); color: #f97316; margin: 2px;">3.1 (8B-405B)</span>
+                            <p class="text-muted mb-3" style="font-size: 13px; line-height: 1.6;">โมเดล Open Source จาก Meta ที่ได้รับความนิยมสูง มีประสิทธิภาพดีเยี่ยม</p>
+                            <div style="font-size: 11px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(0, 102, 255, 0.15); color: #0066FF; margin: 2px; padding: 4px 10px;">3.3 (70B)</span>
+                                <span class="badge-premium" style="background: rgba(0, 102, 255, 0.15); color: #0066FF; margin: 2px; padding: 4px 10px;">3.2 (1B-3B)</span>
+                                <span class="badge-premium" style="background: rgba(0, 102, 255, 0.15); color: #0066FF; margin: 2px; padding: 4px 10px;">3.1 (8B-405B)</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
-                        <div class="feature-card-premium" style="padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.03) 0%, rgba(52, 211, 153, 0.03) 100%);">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="feature-icon-premium icon-gradient-3 me-3" style="width: 48px; height: 48px; font-size: 20px;">
-                                    <i class="fas fa-robot"></i>
+                        <div class="feature-card-premium" style="padding: 24px; background: linear-gradient(135deg, rgba(255, 102, 0, 0.05) 0%, rgba(255, 153, 0, 0.05) 100%); border: 2px solid rgba(255, 102, 0, 0.1);">
+                            <div class="d-flex align-items-center mb-3">
+                                <div style="width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, #FF6600 0%, #FF9900 100%); display: flex; align-items: center; justify-content: center; margin-right: 16px; box-shadow: 0 8px 20px rgba(255, 102, 0, 0.3);">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="12" cy="12" r="3" fill="white"/>
+                                        <path d="M12 2V6M12 18V22M22 12H18M6 12H2M19.07 4.93L16.24 7.76M7.76 16.24L4.93 19.07M19.07 19.07L16.24 16.24M7.76 7.76L4.93 4.93" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
                                 </div>
-                                <h5 class="mb-0" style="font-weight: 700;">Qwen</h5>
+                                <div>
+                                    <h5 class="mb-0" style="font-weight: 700; font-size: 18px;">Qwen</h5>
+                                    <small class="text-muted">Alibaba Cloud</small>
+                                </div>
                             </div>
-                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดลหลากภาษาจาก Alibaba</p>
-                            <div style="font-size: 12px; color: var(--text-light);">
-                                <span class="badge-premium" style="background: rgba(16, 185, 129, 0.1); color: var(--success); margin: 2px;">2.5 (0.5B-72B)</span>
-                                <span class="badge-premium" style="background: rgba(16, 185, 129, 0.1); color: var(--success); margin: 2px;">QwQ (32B)</span>
+                            <p class="text-muted mb-3" style="font-size: 13px; line-height: 1.6;">โมเดลหลากภาษาจาก Alibaba รองรับภาษาไทยและหลายภาษาได้ดี</p>
+                            <div style="font-size: 11px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(255, 102, 0, 0.15); color: #FF6600; margin: 2px; padding: 4px 10px;">2.5 (0.5B-72B)</span>
+                                <span class="badge-premium" style="background: rgba(255, 102, 0, 0.15); color: #FF6600; margin: 2px; padding: 4px 10px;">QwQ (32B)</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
-                        <div class="feature-card-premium" style="padding: 20px;">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="feature-icon-premium icon-gradient-4 me-3" style="width: 48px; height: 48px; font-size: 20px;">
-                                    <i class="fas fa-wind"></i>
+                        <div class="feature-card-premium" style="padding: 24px; background: linear-gradient(135deg, rgba(255, 90, 0, 0.05) 0%, rgba(255, 140, 60, 0.05) 100%); border: 2px solid rgba(255, 90, 0, 0.1);">
+                            <div class="d-flex align-items-center mb-3">
+                                <div style="width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, #FF5A00 0%, #FF8C3C 100%); display: flex; align-items: center; justify-content: center; margin-right: 16px; box-shadow: 0 8px 20px rgba(255, 90, 0, 0.3);">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M3 3L12 21L21 3" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M7 9L12 3L17 9" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                                    </svg>
                                 </div>
-                                <h5 class="mb-0" style="font-weight: 700;">Mistral</h5>
+                                <div>
+                                    <h5 class="mb-0" style="font-weight: 700; font-size: 18px;">Mistral</h5>
+                                    <small class="text-muted">Mistral AI</small>
+                                </div>
                             </div>
-                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดลเร็วและมีประสิทธิภาพ</p>
-                            <div style="font-size: 12px; color: var(--text-light);">
-                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">7B</span>
-                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">Small (22B)</span>
-                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">Mixtral (8x7B, 8x22B)</span>
+                            <p class="text-muted mb-3" style="font-size: 13px; line-height: 1.6;">โมเดลที่เร็วและมีประสิทธิภาพสูง เหมาะสำหรับงานทั่วไป</p>
+                            <div style="font-size: 11px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(255, 90, 0, 0.15); color: #FF5A00; margin: 2px; padding: 4px 10px;">7B</span>
+                                <span class="badge-premium" style="background: rgba(255, 90, 0, 0.15); color: #FF5A00; margin: 2px; padding: 4px 10px;">Small (22B)</span>
+                                <span class="badge-premium" style="background: rgba(255, 90, 0, 0.15); color: #FF5A00; margin: 2px; padding: 4px 10px;">Mixtral (8x7B)</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
-                        <div class="feature-card-premium" style="padding: 20px;">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="feature-icon-premium icon-gradient-1 me-3" style="width: 48px; height: 48px; font-size: 20px; background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);">
-                                    <i class="fab fa-microsoft"></i>
+                        <div class="feature-card-premium" style="padding: 24px; background: linear-gradient(135deg, rgba(0, 120, 212, 0.05) 0%, rgba(91, 192, 235, 0.05) 100%); border: 2px solid rgba(0, 120, 212, 0.1);">
+                            <div class="d-flex align-items-center mb-3">
+                                <div style="width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, #0078D4 0%, #5BC0EB 100%); display: flex; align-items: center; justify-content: center; margin-right: 16px; box-shadow: 0 8px 20px rgba(0, 120, 212, 0.3);">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="3" y="3" width="8" height="8" fill="white" opacity="0.9"/>
+                                        <rect x="13" y="3" width="8" height="8" fill="white" opacity="0.7"/>
+                                        <rect x="3" y="13" width="8" height="8" fill="white" opacity="0.7"/>
+                                        <rect x="13" y="13" width="8" height="8" fill="white" opacity="0.9"/>
+                                    </svg>
                                 </div>
-                                <h5 class="mb-0" style="font-weight: 700;">Phi</h5>
+                                <div>
+                                    <h5 class="mb-0" style="font-weight: 700; font-size: 18px;">Phi</h5>
+                                    <small class="text-muted">Microsoft</small>
+                                </div>
                             </div>
-                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดลขนาดเล็กจาก Microsoft</p>
-                            <div style="font-size: 12px; color: var(--text-light);">
-                                <span class="badge-premium" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; margin: 2px;">Phi-3 (3B-14B)</span>
-                                <span class="badge-premium" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; margin: 2px;">Phi-4 (14B)</span>
+                            <p class="text-muted mb-3" style="font-size: 13px; line-height: 1.6;">โมเดลขนาดเล็ก ใช้ทรัพยากรน้อย เหมาะสำหรับ CPU</p>
+                            <div style="font-size: 11px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(0, 120, 212, 0.15); color: #0078D4; margin: 2px; padding: 4px 10px;">Phi-3 (3B-14B)</span>
+                                <span class="badge-premium" style="background: rgba(0, 120, 212, 0.15); color: #0078D4; margin: 2px; padding: 4px 10px;">Phi-4 (14B)</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-md-4">
-                        <div class="feature-card-premium" style="padding: 20px;">
-                            <div class="d-flex align-items-center mb-2">
-                                <div class="feature-icon-premium icon-gradient-2 me-3" style="width: 48px; height: 48px; font-size: 20px;">
-                                    <i class="fab fa-google"></i>
+                        <div class="feature-card-premium" style="padding: 24px; background: linear-gradient(135deg, rgba(66, 133, 244, 0.05) 0%, rgba(234, 67, 53, 0.03) 50%, rgba(251, 188, 5, 0.03) 100%); border: 2px solid rgba(66, 133, 244, 0.1);">
+                            <div class="d-flex align-items-center mb-3">
+                                <div style="width: 56px; height: 56px; border-radius: 12px; background: linear-gradient(135deg, #4285F4 0%, #34A853 25%, #FBBC05 50%, #EA4335 75%, #4285F4 100%); display: flex; align-items: center; justify-content: center; margin-right: 16px; box-shadow: 0 8px 20px rgba(66, 133, 244, 0.3);">
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M12 2L2 8L12 14L22 8L12 2Z" fill="white" opacity="0.9"/>
+                                        <path d="M2 16L12 22L22 16" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.8"/>
+                                    </svg>
                                 </div>
-                                <h5 class="mb-0" style="font-weight: 700;">Gemma</h5>
+                                <div>
+                                    <h5 class="mb-0" style="font-weight: 700; font-size: 18px;">Gemma</h5>
+                                    <small class="text-muted">Google</small>
+                                </div>
                             </div>
-                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดลขนาดกะทัดรัดจาก Google</p>
-                            <div style="font-size: 12px; color: var(--text-light);">
-                                <span class="badge-premium" style="background: rgba(249, 115, 22, 0.1); color: #f97316; margin: 2px;">Gemma2 (2B-27B)</span>
+                            <p class="text-muted mb-3" style="font-size: 13px; line-height: 1.6;">โมเดลขนาดกะทัดรัด ประสิทธิภาพดี จาก Google DeepMind</p>
+                            <div style="font-size: 11px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(66, 133, 244, 0.15); color: #4285F4; margin: 2px; padding: 4px 10px;">Gemma2 (2B-27B)</span>
                             </div>
                         </div>
                     </div>
