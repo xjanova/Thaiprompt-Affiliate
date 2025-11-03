@@ -11,10 +11,11 @@ class LineOaSetting extends Model
     use HasFactory;
 
     protected $fillable = [
-        'channel_id',
-        'channel_secret',
-        'redirect_uri',
-        'channel_access_token',
+        'login_channel_id',        // LINE Login Channel ID (for OAuth)
+        'channel_secret',          // LINE Login Channel Secret (for OAuth)
+        'redirect_uri',            // LINE Login callback URL
+        'messaging_channel_id',    // LINE Messaging API Channel ID (optional)
+        'channel_access_token',    // LINE Messaging API Access Token
         'liff_id',
         'require_line_registration',
         'enable_line_messaging',
