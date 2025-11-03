@@ -64,4 +64,41 @@ class ShoppingCart extends Model
 
         return $this->product->stock_quantity >= $this->quantity;
     }
+
+    /**
+     * Scope to get cart items for a specific user
+     */
+    public function scopeForUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    /**
+     * Get cart total for user
+     */
+    public static function getTotalForUser($userId)
+    {
+        return static::forUser($userId)
+            ->with('product')
+            ->get()
+            ->sum(function ($item) {
+                return $item->product->price * $item->quantity;
+            });
+    }
+
+    /**
+     * Get cart item count for user
+     */
+    public static function getCountForUser($userId)
+    {
+        return static::forUser($userId)->sum('quantity');
+    }
+
+    /**
+     * Clear cart for user
+     */
+    public static function clearForUser($userId)
+    {
+        return static::forUser($userId)->delete();
+    }
 }
