@@ -198,7 +198,7 @@ class AiInstallationController extends Controller
     }
 
     /**
-     * ลบโมเดล
+     * ลบโมเดล (ปลอดภัย - มีการตรวจสอบ)
      */
     public function uninstallModel(Request $request)
     {
@@ -206,18 +206,20 @@ class AiInstallationController extends Controller
             'model_id' => 'required|string',
         ]);
 
-        $success = $this->installationService->uninstallModel($request->model_id);
+        $result = $this->installationService->uninstallModel($request->model_id);
 
-        if ($success) {
-            return response()->json([
-                'success' => true,
-                'message' => 'ลบโมเดลเรียบร้อยแล้ว',
-            ]);
+        if ($result['success']) {
+            return response()->json($result);
         } else {
-            return response()->json([
-                'success' => false,
-                'message' => 'ไม่สามารถลบโมเดลได้',
-            ], 500);
+            // ส่ง status code ตามประเภทของ error
+            $statusCode = match($result['code'] ?? 'UNKNOWN') {
+                'MODEL_IN_USE' => 409, // Conflict
+                'MODEL_NOT_FOUND' => 404, // Not Found
+                'OLLAMA_NOT_RUNNING' => 503, // Service Unavailable
+                default => 500, // Internal Server Error
+            };
+
+            return response()->json($result, $statusCode);
         }
     }
 

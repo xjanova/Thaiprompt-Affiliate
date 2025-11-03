@@ -642,6 +642,74 @@
     max-width: 400px;
 }
 
+/* Installed Model Card */
+.installed-model-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    border: 2px solid var(--success);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+}
+
+.installed-model-card:hover {
+    box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+    transform: translateY(-2px);
+}
+
+.installed-model-info {
+    flex: 1;
+}
+
+.installed-model-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+
+.installed-model-details {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-light);
+}
+
+.installed-model-details span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.uninstall-btn {
+    background: white;
+    color: var(--danger);
+    border: 2px solid var(--danger);
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.uninstall-btn:hover {
+    background: var(--danger);
+    color: white;
+    transform: scale(1.05);
+}
+
+.uninstall-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* Responsive */
 @media (max-width: 1200px) {
     .models-grid .model-card-wrapper {
@@ -661,6 +729,19 @@
     .models-grid .model-card-wrapper {
         width: 100%;
         max-width: 100%;
+    }
+
+    .installed-model-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .installed-model-details {
+        flex-wrap: wrap;
+    }
+
+    .uninstall-btn {
+        width: 100%;
     }
 }
 </style>
@@ -708,6 +789,26 @@
                             <div class="spinner-border" style="color: var(--primary);" role="status"></div>
                             <p class="mt-2 mb-0" style="color: var(--text-light); font-size: 14px;">กำลังตรวจสอบระบบ...</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Installed Models Section -->
+            <div class="glass-card p-4 mb-4" id="installedModelsSection" style="display: none;">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h3 style="font-size: 20px; font-weight: 800; color: var(--text-dark); margin: 0;">
+                        <i class="fas fa-check-circle me-2" style="color: var(--success);"></i>
+                        โมเดลที่ติดตั้งแล้ว
+                    </h3>
+                    <button type="button" class="btn-premium-outline" style="padding: 8px 20px; font-size: 13px;" onclick="loadInstalledModels()">
+                        <i class="fas fa-sync-alt me-1"></i> รีเฟรช
+                    </button>
+                </div>
+
+                <div id="installedModelsContainer">
+                    <div class="text-center py-3">
+                        <div class="spinner-border" style="color: var(--primary); width: 30px; height: 30px;" role="status"></div>
+                        <p class="mt-2 mb-0" style="color: var(--text-light); font-size: 13px;">กำลังโหลดโมเดลที่ติดตั้ง...</p>
                     </div>
                 </div>
             </div>
@@ -1358,9 +1459,190 @@ async function checkOllamaStatus() {
 
         if (data.success && data.data.installed) {
             console.log('Ollama is installed and running');
+            // Load installed models if Ollama is running
+            loadInstalledModels();
         }
     } catch (error) {
         console.error('Ollama status check error:', error);
+    }
+}
+
+// Load installed models
+async function loadInstalledModels() {
+    try {
+        const response = await fetch('{{ route("admin.ai-installation.installed-models") }}');
+        const data = await response.json();
+
+        if (data.success && data.data && data.data.length > 0) {
+            installedModels = data.data;
+            displayInstalledModels(installedModels);
+        } else {
+            // Hide section if no installed models
+            document.getElementById('installedModelsSection').style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Failed to load installed models:', error);
+        document.getElementById('installedModelsSection').style.display = 'none';
+    }
+}
+
+// Display installed models
+function displayInstalledModels(models) {
+    const container = document.getElementById('installedModelsContainer');
+    const section = document.getElementById('installedModelsSection');
+
+    if (!models || models.length === 0) {
+        section.style.display = 'none';
+        return;
+    }
+
+    section.style.display = 'block';
+
+    container.innerHTML = models.map(model => `
+        <div class="installed-model-card">
+            <div class="installed-model-info">
+                <div class="installed-model-name">
+                    <i class="fas fa-brain me-2" style="color: var(--primary);"></i>
+                    ${model.name}
+                </div>
+                <div class="installed-model-details">
+                    <span>
+                        <i class="fas fa-tag"></i>
+                        ID: ${model.id}
+                    </span>
+                    <span>
+                        <i class="fas fa-hdd"></i>
+                        ${model.size}
+                    </span>
+                    <span>
+                        <i class="fas fa-clock"></i>
+                        ${model.modified || 'ไม่ทราบ'}
+                    </span>
+                </div>
+            </div>
+            <button class="uninstall-btn" onclick="confirmUninstall('${model.name}')">
+                <i class="fas fa-trash-alt me-2"></i>
+                ถอนการติดตั้ง
+            </button>
+        </div>
+    `).join('');
+}
+
+// Confirm uninstall
+function confirmUninstall(modelName) {
+    if (isInstalling) {
+        alert('⚠️ กำลังติดตั้งโมเดลอยู่ กรุณารอให้เสร็จก่อน');
+        return;
+    }
+
+    const modal = document.getElementById('installModal');
+    const backdrop = document.getElementById('modalBackdrop');
+    const title = document.getElementById('installModalTitle');
+    const body = document.getElementById('installModalBody');
+
+    title.innerHTML = '<i class="fas fa-exclamation-triangle me-2" style="color: var(--warning);"></i>ยืนยันการถอนการติดตั้ง';
+
+    body.innerHTML = `
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <strong>คำเตือน!</strong><br>
+                <small>คุณกำลังจะถอนการติดตั้งโมเดล <strong>${modelName}</strong></small>
+            </div>
+        </div>
+
+        <div style="background: var(--bg-light); padding: 16px; border-radius: 12px; margin-bottom: 16px;">
+            <h6 style="font-weight: 700; margin-bottom: 12px; color: var(--text-dark);">
+                <i class="fas fa-info-circle me-2"></i>สิ่งที่จะเกิดขึ้น:
+            </h6>
+            <ul style="margin: 0; padding-left: 24px; color: var(--text-light); font-size: 14px;">
+                <li>โมเดลจะถูกลบออกจากระบบโดยสมบูรณ์</li>
+                <li>พื้นที่ดิสก์จะถูกคืนกลับ</li>
+                <li>AI Bot ที่ใช้โมเดลนี้จะไม่สามารถทำงานได้</li>
+                <li>สามารถติดตั้งใหม่ได้ทุกเมื่อ</li>
+            </ul>
+        </div>
+
+        <div style="background: rgba(239, 68, 68, 0.1); padding: 16px; border-radius: 12px; border-left: 4px solid var(--danger);">
+            <p style="margin: 0; font-size: 13px; color: var(--danger);">
+                <i class="fas fa-shield-alt me-2"></i>
+                <strong>ความปลอดภัย:</strong> การถอนการติดตั้งจะไม่ทำให้ระบบอื่นเสียหาย
+            </p>
+        </div>
+
+        <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: flex-end;">
+            <button class="btn-premium-outline" onclick="closeInstallModal()">
+                <i class="fas fa-times me-2"></i>ยกเลิก
+            </button>
+            <button class="uninstall-btn" onclick="uninstallModel('${modelName}')">
+                <i class="fas fa-trash-alt me-2"></i>ยืนยันถอนการติดตั้ง
+            </button>
+        </div>
+    `;
+
+    modal.classList.add('show');
+    backdrop.classList.add('show');
+}
+
+// Uninstall model
+async function uninstallModel(modelName) {
+    closeInstallModal();
+
+    // Show progress
+    const progressBar = document.getElementById('installProgressBar');
+    progressBar.classList.add('active');
+    const progressFill = progressBar.querySelector('.progress-bar-fill');
+    progressFill.style.width = '30%';
+
+    try {
+        const response = await fetch('{{ route("admin.ai-installation.uninstall") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                model_id: modelName
+            })
+        });
+
+        const data = await response.json();
+
+        progressFill.style.width = '100%';
+
+        if (data.success) {
+            // Success
+            setTimeout(() => {
+                progressBar.classList.remove('active');
+                alert('✅ ถอนการติดตั้งโมเดลเรียบร้อยแล้ว!\n\n' + modelName + ' ถูกลบออกจากระบบแล้ว');
+
+                // Reload installed models
+                loadInstalledModels();
+
+                // Reload recommendations to update status
+                loadRecommendations();
+            }, 500);
+        } else {
+            // Error
+            progressBar.classList.remove('active');
+
+            let errorMessage = data.message || 'ไม่สามารถถอนการติดตั้งได้';
+
+            // Handle specific error codes
+            if (data.code === 'MODEL_IN_USE') {
+                errorMessage = '❌ ไม่สามารถถอนการติดตั้งได้\n\n' +
+                    data.message + '\n\n' +
+                    'กรุณาปิดการใช้งาน หรือเปลี่ยนโมเดลของ AI Bot เหล่านั้นก่อน';
+            } else if (data.code === 'OLLAMA_NOT_RUNNING') {
+                errorMessage = '❌ Ollama Service ไม่ได้ทำงานอยู่\n\n' + data.message;
+            }
+
+            alert(errorMessage);
+        }
+    } catch (error) {
+        progressBar.classList.remove('active');
+        console.error('Uninstall error:', error);
+        alert('เกิดข้อผิดพลาดในการถอนการติดตั้ง: ' + error.message);
     }
 }
 </script>
