@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('vendor_analytics');
         Schema::create('vendor_analytics', function (Blueprint $table) {
             $table->id();
             $table->foreignId('store_id')->constrained('vendor_stores')->onDelete('cascade');
