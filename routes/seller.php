@@ -18,8 +18,6 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
 Route::get('/marketing', [DashboardController::class, 'marketing'])->name('marketing');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
-Route::get('/products', [DashboardController::class, 'products'])->name('products');
-Route::get('/sales', [DashboardController::class, 'sales'])->name('sales');
 
 // ========================================
 // VENDOR PACKAGES & SUBSCRIPTIONS
