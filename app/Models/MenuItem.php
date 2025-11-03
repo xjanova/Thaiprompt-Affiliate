@@ -89,8 +89,12 @@ class MenuItem extends Model
     public function getUrlAttribute($value)
     {
         // If route is set, use it
-        if ($this->route && route($this->route, [], false)) {
-            return route($this->route);
+        if (!empty($this->attributes['route'])) {
+            try {
+                return route($this->attributes['route']);
+            } catch (\Exception $e) {
+                // Route doesn't exist, fall back to URL
+            }
         }
 
         // Otherwise use the URL value
