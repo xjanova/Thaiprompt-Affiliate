@@ -28,6 +28,15 @@
         </div>
 
         <div class="mt-8 border-t border-gray-700 pt-8">
+            <div class="text-center mb-4">
+                <div class="flex flex-wrap justify-center gap-4 text-sm">
+                    <a href="{{ route('page.show', 'privacy') }}" class="text-gray-400 hover:text-white transition">นโยบายความเป็นส่วนตัว</a>
+                    <span class="text-gray-600">|</span>
+                    <a href="{{ route('page.show', 'terms') }}" class="text-gray-400 hover:text-white transition">ข้อกำหนดการใช้งาน</a>
+                    <span class="text-gray-600">|</span>
+                    <a href="{{ route('page.show', 'cookie-policy') }}" class="text-gray-400 hover:text-white transition">นโยบายคุ๊กกี้</a>
+                </div>
+            </div>
             <p class="text-center text-gray-400 text-sm">
                 &copy; {{ date('Y') }} {{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}. สงวนลิขสิทธิ์.
             </p>
