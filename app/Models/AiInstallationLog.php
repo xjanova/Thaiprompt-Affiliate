@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AiInstallationLog extends Model
 {
+    public $timestamps = false;
+
     protected $fillable = [
         'user_id',
         'installation_type',
