@@ -182,6 +182,13 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                        onmouseout="this.style.color='{{ $headerTextColor }}';">
                         🤖 ตลาดบอท
                     </a>
+                    <a href="{{ route('shop.index') }}"
+                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                       style="color: {{ $headerTextColor }};"
+                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                       onmouseout="this.style.color='{{ $headerTextColor }}';">
+                        🛍️ ช๊อปปิ้ง
+                    </a>
                     @auth
                         <a href="{{ route('my-rentals.index') }}"
                            class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
@@ -223,6 +230,40 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                 <div class="relative z-50">
                     <x-language-switcher-pro />
                 </div>
+
+                <!-- Shopping Cart Icon -->
+                @auth
+                <div class="relative" x-data="{ cartCount: 0 }" x-init="
+                    // Fetch cart count on load
+                    fetch('{{ route('cart.count') }}')
+                        .then(response => response.json())
+                        .then(data => cartCount = data.count)
+                        .catch(error => console.error('Error fetching cart count:', error));
+
+                    // Refresh cart count every 30 seconds
+                    setInterval(() => {
+                        fetch('{{ route('cart.count') }}')
+                            .then(response => response.json())
+                            .then(data => cartCount = data.count)
+                            .catch(error => console.error('Error fetching cart count:', error));
+                    }, 30000);
+                ">
+                    <a href="{{ route('cart.index') }}"
+                       class="relative inline-flex items-center p-2 text-sm font-medium rounded-lg hover:bg-gray-100 transition duration-150 ease-in-out"
+                       style="color: {{ $headerTextColor }};"
+                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
+                       onmouseout="this.style.color='{{ $headerTextColor }}';"
+                       title="ตะกร้าสินค้า">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span x-show="cartCount > 0"
+                              x-text="cartCount"
+                              class="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform bg-red-600 rounded-full min-w-[1.25rem]">
+                        </span>
+                    </a>
+                </div>
+                @endauth
 
                 @auth
                     <div class="ml-3 relative" x-data="{ open: false }">
@@ -305,6 +346,11 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                    style="color: {{ $headerTextColor }};">
                     🤖 ตลาดบอท
                 </a>
+                <a href="{{ route('shop.index') }}"
+                   class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                   style="color: {{ $headerTextColor }};">
+                    🛍️ ช๊อปปิ้ง
+                </a>
                 @auth
                     <a href="{{ route('my-rentals.index') }}"
                        class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
@@ -341,6 +387,26 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
         </div>
 
         <!-- Mobile Auth Links -->
+        @auth
+            <div class="pt-4 pb-3 border-t" style="border-color: {{ $headerBorderColor }};"
+                 x-data="{ cartCount: 0 }" x-init="
+                    fetch('{{ route('cart.count') }}')
+                        .then(response => response.json())
+                        .then(data => cartCount = data.count)
+                        .catch(error => console.error('Error fetching cart count:', error));
+                ">
+                <a href="{{ route('cart.index') }}"
+                   class="flex items-center justify-between pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium"
+                   style="color: {{ $headerTextColor }};">
+                    <span>🛒 ตะกร้าสินค้า</span>
+                    <span x-show="cartCount > 0"
+                          x-text="cartCount"
+                          class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full min-w-[1.25rem]">
+                    </span>
+                </a>
+            </div>
+        @endauth
+
         @guest
             <div class="pt-4 pb-3 border-t" style="border-color: {{ $headerBorderColor }};">
                 <div class="space-y-1">

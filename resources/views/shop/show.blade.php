@@ -511,14 +511,102 @@ function decrementQty() {
 
 function addToCart() {
     const quantity = document.getElementById('quantity').value;
-    // TODO: Implement add to cart functionality
-    alert('เพิ่ม ' + quantity + ' ชิ้นลงตะกร้าแล้ว!');
+
+    @guest
+    // Redirect to login if not authenticated
+    if (confirm('กรุณาเข้าสู่ระบบเพื่อเพิ่มสินค้าลงตะกร้า')) {
+        window.location.href = '{{ route("login") }}';
+    }
+    return;
+    @endguest
+
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '⏳ กำลังเพิ่มลงตะกร้า...';
+
+    // Send request to add to cart
+    fetch('{{ route("cart.add") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            product_id: {{ $product->id }},
+            quantity: parseInt(quantity),
+            attributes: {}
+        })
+    })
+    .then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Redirect to cart page
+        window.location.href = '{{ route("cart.index") }}';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า');
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
 }
 
 function buyNow() {
     const quantity = document.getElementById('quantity').value;
-    // TODO: Implement buy now functionality
-    alert('กำลังไปยังหน้าชำระเงิน...');
+
+    @guest
+    // Redirect to login if not authenticated
+    if (confirm('กรุณาเข้าสู่ระบบเพื่อทำการสั่งซื้อ')) {
+        window.location.href = '{{ route("login") }}';
+    }
+    return;
+    @endguest
+
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '⏳ กำลังดำเนินการ...';
+
+    // Add to cart first, then redirect to checkout
+    fetch('{{ route("cart.add") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+            product_id: {{ $product->id }},
+            quantity: parseInt(quantity),
+            attributes: {}
+        })
+    })
+    .then(response => {
+        if (response.redirected) {
+            window.location.href = response.url;
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        // Redirect directly to checkout
+        window.location.href = '{{ route("checkout.index") }}';
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการทำรายการ');
+        button.disabled = false;
+        button.innerHTML = originalText;
+    });
 }
 
 function shareProduct() {
