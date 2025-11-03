@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('knowledge_chunks')) {
+            echo "Table 'knowledge_chunks' already exists, skipping creation.\n";
+            return;
+        }
+
         Schema::create('knowledge_chunks', function (Blueprint $table) {
             $table->id();
             $table->foreignId('knowledge_base_id')->constrained('knowledge_bases')->onDelete('cascade');
