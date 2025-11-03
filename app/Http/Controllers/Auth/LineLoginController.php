@@ -127,29 +127,14 @@ class LineLoginController extends Controller
                     ->with('success', 'เข้าสู่ระบบด้วย LINE สำเร็จ!');
             }
 
-            // New user - redirect to registration with LINE info
-            Session::put('line_temp_profile', [
-                'line_user_id' => $lineUserId,
-                'line_display_name' => $displayName,
-                'line_picture_url' => $pictureUrl,
-                'line_access_token' => $accessToken,
-                'line_email' => $email,
-            ]);
-
+            // New user - redirect to LINE registration guide
             // Log action
-            LineLoginLog::logAction($lineUserId, 'register_initiated', null, [
+            LineLoginLog::logAction($lineUserId, 'register_required', null, [
                 'display_name' => $displayName,
             ]);
 
-            // Get referral code from session
-            $referralCode = Session::get('line_login_referral');
-            $registerUrl = route('register');
-            if ($referralCode) {
-                $registerUrl .= '?ref=' . $referralCode;
-            }
-
-            return redirect($registerUrl)
-                ->with('info', 'กรุณากรอกข้อมูลเพิ่มเติมเพื่อสมัครสมาชิก');
+            return redirect()->route('line.register.guide')
+                ->with('info', 'กรุณาเพิ่มเพื่อน LINE Official Account และแชทกับบอทเพื่อสมัครสมาชิก');
 
         } catch (\Exception $e) {
             Log::error('LINE Login callback error', [
