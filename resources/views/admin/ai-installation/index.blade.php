@@ -604,6 +604,129 @@
     <!-- Content Wrapper -->
     <div class="content-wrapper">
         <div class="container">
+            <!-- Supported Models Info -->
+            <div class="glass-card p-5 mb-5">
+                <div class="text-center mb-4">
+                    <h2 style="font-size: 32px; font-weight: 800; color: var(--text-dark);">โมเดล AI ที่รองรับ</h2>
+                    <p style="color: var(--text-light); font-size: 16px;">เราจะแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณโดยอัตโนมัติ</p>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="feature-card-premium" style="padding: 20px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(129, 140, 248, 0.03) 100%);">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="feature-icon-premium icon-gradient-1 me-3" style="width: 48px; height: 48px; font-size: 20px;">
+                                    <i class="fas fa-brain"></i>
+                                </div>
+                                <h5 class="mb-0" style="font-weight: 700;">DeepSeek</h5>
+                            </div>
+                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดล Reasoning ที่ทรงพลัง</p>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">R1 (1.5B-671B)</span>
+                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">V3</span>
+                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">Coder</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="feature-card-premium" style="padding: 20px; background: linear-gradient(135deg, rgba(249, 115, 22, 0.03) 0%, rgba(251, 146, 60, 0.03) 100%);">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="feature-icon-premium icon-gradient-2 me-3" style="width: 48px; height: 48px; font-size: 20px;">
+                                    <i class="fab fa-meta"></i>
+                                </div>
+                                <h5 class="mb-0" style="font-weight: 700;">Llama</h5>
+                            </div>
+                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดล Open Source จาก Meta</p>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(249, 115, 22, 0.1); color: #f97316; margin: 2px;">3.3 (70B)</span>
+                                <span class="badge-premium" style="background: rgba(249, 115, 22, 0.1); color: #f97316; margin: 2px;">3.2 (1B-3B)</span>
+                                <span class="badge-premium" style="background: rgba(249, 115, 22, 0.1); color: #f97316; margin: 2px;">3.1 (8B-405B)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="feature-card-premium" style="padding: 20px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.03) 0%, rgba(52, 211, 153, 0.03) 100%);">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="feature-icon-premium icon-gradient-3 me-3" style="width: 48px; height: 48px; font-size: 20px;">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <h5 class="mb-0" style="font-weight: 700;">Qwen</h5>
+                            </div>
+                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดลหลากภาษาจาก Alibaba</p>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(16, 185, 129, 0.1); color: var(--success); margin: 2px;">2.5 (0.5B-72B)</span>
+                                <span class="badge-premium" style="background: rgba(16, 185, 129, 0.1); color: var(--success); margin: 2px;">QwQ (32B)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="feature-card-premium" style="padding: 20px;">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="feature-icon-premium icon-gradient-4 me-3" style="width: 48px; height: 48px; font-size: 20px;">
+                                    <i class="fas fa-wind"></i>
+                                </div>
+                                <h5 class="mb-0" style="font-weight: 700;">Mistral</h5>
+                            </div>
+                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดลเร็วและมีประสิทธิภาพ</p>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">7B</span>
+                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">Small (22B)</span>
+                                <span class="badge-premium" style="background: rgba(99, 102, 241, 0.1); color: var(--primary); margin: 2px;">Mixtral (8x7B, 8x22B)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="feature-card-premium" style="padding: 20px;">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="feature-icon-premium icon-gradient-1 me-3" style="width: 48px; height: 48px; font-size: 20px; background: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);">
+                                    <i class="fab fa-microsoft"></i>
+                                </div>
+                                <h5 class="mb-0" style="font-weight: 700;">Phi</h5>
+                            </div>
+                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดลขนาดเล็กจาก Microsoft</p>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; margin: 2px;">Phi-3 (3B-14B)</span>
+                                <span class="badge-premium" style="background: rgba(139, 92, 246, 0.1); color: #8b5cf6; margin: 2px;">Phi-4 (14B)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="feature-card-premium" style="padding: 20px;">
+                            <div class="d-flex align-items-center mb-2">
+                                <div class="feature-icon-premium icon-gradient-2 me-3" style="width: 48px; height: 48px; font-size: 20px;">
+                                    <i class="fab fa-google"></i>
+                                </div>
+                                <h5 class="mb-0" style="font-weight: 700;">Gemma</h5>
+                            </div>
+                            <p class="text-muted mb-2" style="font-size: 13px;">โมเดลขนาดกะทัดรัดจาก Google</p>
+                            <div style="font-size: 12px; color: var(--text-light);">
+                                <span class="badge-premium" style="background: rgba(249, 115, 22, 0.1); color: #f97316; margin: 2px;">Gemma2 (2B-27B)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert-premium info mt-4">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-lightbulb me-3" style="font-size: 24px; color: var(--info);"></i>
+                        <div>
+                            <h6 class="mb-1" style="font-weight: 700;">เคล็ดลับ: เลือกโมเดลที่เหมาะสม</h6>
+                            <ul class="mb-0 ps-3" style="font-size: 14px;">
+                                <li><strong>มี GPU:</strong> แนะนำ DeepSeek R1, Llama 3.3, Qwen 2.5 ขนาด 7B-70B</li>
+                                <li><strong>ใช้ CPU:</strong> แนะนำ Phi-3, Gemma2, Qwen 2.5 ขนาด 0.5B-3B หรือใช้ Quantization ระดับ Q4/Q3</li>
+                                <li><strong>RAM น้อย:</strong> เลือกโมเดลขนาดเล็ก (1B-3B) หรือใช้ Quantization ต่ำกว่า</li>
+                                <li><strong>ต้องการ Coding:</strong> ลอง DeepSeek Coder, Qwen2.5-Coder, หรือ Codestral</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Features Section -->
             <div id="features" class="row g-4 mb-5">
                 <div class="col-lg-3 col-md-6">
@@ -768,7 +891,7 @@
             <div class="modal-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; border: none; padding: 32px;">
                 <div class="w-100">
                     <h4 class="modal-title mb-0" style="font-size: 28px; font-weight: 800;">ติดตั้ง AI โมเดล</h4>
-                    <p class="mb-4 mt-2" style="opacity: 0.9; font-size: 16px;">ติดตั้งและกำหนดค่า AI โมเดลของคุณภายใน 4 ขั้นตอน</p>
+                    <p class="mb-4 mt-2" style="opacity: 0.9; font-size: 16px;">ติดตั้งและกำหนดค่า AI โมเดลของคุณภายใน 5 ขั้นตอน</p>
 
                     <!-- Step Indicator -->
                     <div class="wizard-steps-premium">
@@ -782,10 +905,14 @@
                         </div>
                         <div class="wizard-step-premium" id="wizard-step-3">
                             <div class="circle">3</div>
-                            <div class="label">กำลังติดตั้ง</div>
+                            <div class="label">ตั้งค่า</div>
                         </div>
                         <div class="wizard-step-premium" id="wizard-step-4">
                             <div class="circle">4</div>
+                            <div class="label">กำลังติดตั้ง</div>
+                        </div>
+                        <div class="wizard-step-premium" id="wizard-step-5">
+                            <div class="circle">5</div>
                             <div class="label">เสร็จสิ้น</div>
                         </div>
                     </div>
@@ -816,10 +943,153 @@
                         <h5 style="font-size: 24px; font-weight: 700; color: var(--text-dark);">เลือกโมเดล AI ที่ต้องการติดตั้ง</h5>
                         <p class="text-muted" style="font-size: 16px;">เราแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ คุณสามารถเลือกโมเดลอื่นได้ตามต้องการ</p>
                     </div>
+
+                    <!-- Resource Summary -->
+                    <div class="alert-premium info mb-4" id="resource-summary">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-server me-3" style="font-size: 24px; color: var(--info);"></i>
+                            <div id="resource-info">กำลังโหลดข้อมูลทรัพยากร...</div>
+                        </div>
+                    </div>
+
                     <div id="model-recommendations"></div>
                 </div>
 
-                <!-- Step 3: Installing -->
+                <!-- Step 3: Configure Settings -->
+                <div id="step-configure" class="wizard-step" style="display:none;">
+                    <div class="mb-4">
+                        <h5 style="font-size: 24px; font-weight: 700; color: var(--text-dark);">ตั้งค่าการติดตั้ง</h5>
+                        <p class="text-muted" style="font-size: 16px;">กำหนดค่าต่างๆ สำหรับโมเดลที่เลือก เพื่อประสิทธิภาพที่ดีที่สุด</p>
+                    </div>
+
+                    <!-- Selected Model Info -->
+                    <div class="glass-card p-4 mb-4" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(129, 140, 248, 0.05) 100%); border: 2px solid var(--primary);">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h6 class="mb-1" style="font-weight: 700;">โมเดลที่เลือก:</h6>
+                                <h4 class="mb-0" style="color: var(--primary);" id="selected-model-name">-</h4>
+                            </div>
+                            <button class="btn-premium-outline" style="padding: 8px 16px; font-size: 13px;" onclick="showStep('step-model'); updateWizardStep(2);">
+                                <i class="fas fa-edit me-1"></i>เปลี่ยน
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Form -->
+                    <div class="row g-4">
+                        <!-- Quantization -->
+                        <div class="col-12">
+                            <div class="glass-card p-4">
+                                <label class="form-label" style="font-weight: 700; font-size: 16px; color: var(--text-dark);">
+                                    <i class="fas fa-compress-arrows-alt me-2" style="color: var(--primary);"></i>
+                                    Quantization Level (ระดับการบีบอัด)
+                                </label>
+                                <p class="text-muted mb-3" style="font-size: 14px;">
+                                    ยิ่งบีบอัดมาก ใช้ RAM น้อยลงแต่ความแม่นยำอาจลดลง
+                                </p>
+                                <select class="form-select" id="quantization-select" style="border: 2px solid var(--border); padding: 12px; border-radius: 12px; font-size: 14px;">
+                                    <option value="">กำลังโหลด...</option>
+                                </select>
+                                <div class="mt-3 p-3" style="background: rgba(99, 102, 241, 0.05); border-radius: 12px; border-left: 4px solid var(--primary);">
+                                    <small id="quantization-info">เลือก Quantization Level เพื่อดูรายละเอียด</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- GPU Selection -->
+                        <div class="col-md-6">
+                            <div class="glass-card p-4">
+                                <label class="form-label" style="font-weight: 700; font-size: 16px; color: var(--text-dark);">
+                                    <i class="fas fa-microchip me-2" style="color: var(--success);"></i>
+                                    อุปกรณ์ที่ใช้
+                                </label>
+                                <select class="form-select" id="device-select" style="border: 2px solid var(--border); padding: 12px; border-radius: 12px; font-size: 14px;">
+                                    <option value="auto">อัตโนมัติ (แนะนำ)</option>
+                                    <option value="gpu">GPU เท่านั้น</option>
+                                    <option value="cpu">CPU เท่านั้น</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Context Length -->
+                        <div class="col-md-6">
+                            <div class="glass-card p-4">
+                                <label class="form-label" style="font-weight: 700; font-size: 16px; color: var(--text-dark);">
+                                    <i class="fas fa-align-left me-2" style="color: var(--warning);"></i>
+                                    Context Length
+                                </label>
+                                <select class="form-select" id="context-select" style="border: 2px solid var(--border); padding: 12px; border-radius: 12px; font-size: 14px;">
+                                    <option value="2048">2,048 tokens (เร็ว, RAM น้อย)</option>
+                                    <option value="4096" selected>4,096 tokens (สมดุล)</option>
+                                    <option value="8192">8,192 tokens (ใช้ RAM มาก)</option>
+                                    <option value="16384">16,384 tokens (ใช้ RAM มากที่สุด)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Options Checkbox -->
+                        <div class="col-12">
+                            <div class="form-check" style="padding-left: 2rem;">
+                                <input class="form-check-input" type="checkbox" id="show-advanced" onclick="toggleAdvancedOptions()" style="width: 20px; height: 20px; margin-top: 2px;">
+                                <label class="form-check-label" for="show-advanced" style="font-weight: 600; font-size: 15px; margin-left: 8px;">
+                                    แสดงตัวเลือกขั้นสูง (Advanced)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Advanced Options -->
+                        <div class="col-12" id="advanced-options" style="display: none;">
+                            <div class="glass-card p-4" style="background: rgba(245, 158, 11, 0.03); border: 2px dashed var(--warning);">
+                                <h6 class="mb-3" style="font-weight: 700; color: var(--warning);">
+                                    <i class="fas fa-wrench me-2"></i>การตั้งค่าขั้นสูง
+                                </h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" style="font-size: 14px; font-weight: 600;">Temperature</label>
+                                        <input type="number" class="form-control" id="temperature" value="0.7" min="0" max="2" step="0.1" style="border: 2px solid var(--border); padding: 10px; border-radius: 10px;">
+                                        <small class="text-muted">0 = เฉพาะเจาะจง, 2 = สร้างสรรค์</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" style="font-size: 14px; font-weight: 600;">Top P</label>
+                                        <input type="number" class="form-control" id="top-p" value="0.9" min="0" max="1" step="0.1" style="border: 2px solid var(--border); padding: 10px; border-radius: 10px;">
+                                        <small class="text-muted">การเลือกคำที่หลากหลาย</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" style="font-size: 14px; font-weight: 600;">Max Tokens</label>
+                                        <input type="number" class="form-control" id="max-tokens" value="2048" min="128" max="4096" step="128" style="border: 2px solid var(--border); padding: 10px; border-radius: 10px;">
+                                        <small class="text-muted">จำนวนคำตอบสูงสุด</small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" style="font-size: 14px; font-weight: 600;">Repeat Penalty</label>
+                                        <input type="number" class="form-control" id="repeat-penalty" value="1.1" min="0" max="2" step="0.1" style="border: 2px solid var(--border); padding: 10px; border-radius: 10px;">
+                                        <small class="text-muted">ป้องกันการพูดซ้ำ</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resource Check -->
+                    <div class="alert-premium mt-4" id="config-resource-check">
+                        <div class="d-flex align-items-center">
+                            <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+                            <span>กำลังตรวจสอบทรัพยากร...</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        <button class="btn-premium-outline" onclick="showStep('step-model'); updateWizardStep(2);" style="padding: 12px 32px;">
+                            <i class="fas fa-arrow-left me-2"></i>ย้อนกลับ
+                        </button>
+                        <button class="btn-premium" id="btn-start-install" onclick="confirmAndInstall()" style="padding: 12px 32px;">
+                            เริ่มติดตั้ง
+                            <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 4: Installing -->
                 <div id="step-installing" class="wizard-step" style="display:none;">
                     <div class="text-center mb-4">
                         <div style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px;">
@@ -831,14 +1101,38 @@
                     <div id="installation-progress"></div>
                 </div>
 
-                <!-- Step 4: Complete -->
+                <!-- Step 5: Complete -->
                 <div id="step-complete" class="wizard-step" style="display:none;">
                     <div class="text-center py-5">
                         <div style="width: 120px; height: 120px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.1) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px;">
                             <i class="fas fa-check-circle" style="font-size: 60px; color: var(--success);"></i>
                         </div>
                         <h3 class="mb-3" style="font-size: 32px; font-weight: 800; color: var(--text-dark);">ติดตั้งสำเร็จ!</h3>
-                        <p class="text-muted mb-5" style="font-size: 18px;">โมเดล AI ของคุณพร้อมใช้งานแล้ว คุณสามารถเริ่มใช้งาน AI ในระบบได้ทันที</p>
+                        <p class="text-muted mb-4" style="font-size: 18px;">โมเดล AI ของคุณพร้อมใช้งานแล้ว คุณสามารถเริ่มใช้งาน AI ในระบบได้ทันที</p>
+
+                        <!-- Installation Summary -->
+                        <div class="glass-card p-4 mb-4" style="max-width: 600px; margin: 0 auto; text-align: left;">
+                            <h6 class="mb-3" style="font-weight: 700;">สรุปการติดตั้ง:</h6>
+                            <div id="installation-summary">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>โมเดล:</span>
+                                    <strong id="summary-model">-</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Quantization:</span>
+                                    <strong id="summary-quant">-</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>ขนาดไฟล์:</span>
+                                    <strong id="summary-size">-</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>เวลาที่ใช้:</span>
+                                    <strong id="summary-time">-</strong>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="d-flex justify-content-center gap-3">
                             <button class="btn-premium" onclick="closeWizard()">
                                 <i class="fas fa-check me-2"></i>
@@ -862,6 +1156,9 @@
 <script>
 let installationId = null;
 let progressInterval = null;
+let selectedModelData = null;
+let systemResources = null;
+let installStartTime = null;
 
 // Load initial data
 $(document).ready(function() {
@@ -902,55 +1199,99 @@ function checkOllamaStatus() {
 }
 
 function loadInstalledModels() {
-    $.get('{{ route('admin.ai-installation.installed-models') }}', function(response) {
-        const models = response.data;
+    $('#installed-models').html(`
+        <div class="text-center py-4">
+            <div class="spinner-border" style="color: var(--primary);" role="status"></div>
+            <p class="mt-3 mb-0" style="color: var(--text-light);">กำลังโหลดรายการโมเดล...</p>
+        </div>
+    `);
 
-        if (models.length === 0) {
+    $.ajax({
+        url: '{{ route('admin.ai-installation.installed-models') }}',
+        method: 'GET',
+        timeout: 10000, // 10 second timeout
+        success: function(response) {
+            const models = response.data;
+
+            if (!models || models.length === 0) {
+                $('#installed-models').html(`
+                    <div class="alert-premium info">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle me-3" style="font-size: 24px; color: var(--info);"></i>
+                            <div>
+                                <h6 class="mb-1" style="font-weight: 700;">ยังไม่มีโมเดลที่ติดตั้ง</h6>
+                                <small>คลิกปุ่ม "ติดตั้งโมเดลใหม่" เพื่อเริ่มติดตั้ง AI โมเดล</small>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = `
+                <div class="table-responsive">
+                    <table class="table-premium">
+                        <thead>
+                            <tr>
+                                <th>โมเดล</th>
+                                <th>ID</th>
+                                <th>ขนาด</th>
+                                <th>แก้ไขล่าสุด</th>
+                                <th>การจัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            models.forEach(model => {
+                html += `
+                    <tr>
+                        <td><strong>${model.name}</strong></td>
+                        <td><small class="text-muted">${model.id}</small></td>
+                        <td><span class="badge-premium info">${model.size}</span></td>
+                        <td>${model.modified}</td>
+                        <td>
+                            <button class="btn-premium-outline" style="padding: 8px 16px; font-size: 13px; color: var(--danger); border-color: var(--danger);" onclick="uninstallModel('${model.name}')">
+                                <i class="fas fa-trash me-1"></i> ลบ
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            $('#installed-models').html(html);
+        },
+        error: function(xhr, status, error) {
+            let errorMsg = 'ไม่สามารถโหลดรายการโมเดลได้';
+            if (status === 'timeout') {
+                errorMsg = 'หมดเวลาในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง';
+            } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMsg = xhr.responseJSON.message;
+            }
+
             $('#installed-models').html(`
-                <div class="alert-premium info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    ยังไม่มีโมเดลที่ติดตั้ง
+                <div class="alert-premium warning">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-exclamation-triangle me-3" style="font-size: 24px; color: var(--warning);"></i>
+                        <div>
+                            <h6 class="mb-1" style="font-weight: 700;">${errorMsg}</h6>
+                            <small>Ollama อาจยังไม่ได้ทำงาน หรือยังไม่ได้ติดตั้งโมเดลใดๆ</small>
+                            <div class="mt-2">
+                                <button class="btn-premium-outline" style="padding: 6px 14px; font-size: 12px;" onclick="loadInstalledModels()">
+                                    <i class="fas fa-sync me-1"></i>ลองใหม่
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `);
-            return;
         }
-
-        let html = `
-            <table class="table-premium">
-                <thead>
-                    <tr>
-                        <th>โมเดล</th>
-                        <th>ID</th>
-                        <th>ขนาด</th>
-                        <th>แก้ไขล่าสุด</th>
-                        <th>การจัดการ</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        models.forEach(model => {
-            html += `
-                <tr>
-                    <td><strong>${model.name}</strong></td>
-                    <td><small class="text-muted">${model.id}</small></td>
-                    <td>${model.size}</td>
-                    <td>${model.modified}</td>
-                    <td>
-                        <button class="btn-premium-outline" style="padding: 8px 16px; font-size: 13px; color: var(--danger); border-color: var(--danger);" onclick="uninstallModel('${model.name}')">
-                            <i class="fas fa-trash me-1"></i> ลบ
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        html += `
-                </tbody>
-            </table>
-        `;
-
-        $('#installed-models').html(html);
     });
 }
 
@@ -1027,6 +1368,9 @@ function checkRequirements() {
 }
 
 function displayRequirements(data) {
+    // Store system resources for later use
+    systemResources = data;
+
     let html = '<div class="row g-3">';
 
     // CPU
@@ -1217,9 +1561,10 @@ function displayModelRecommendations(data) {
 }
 
 function createModelCard(model, isRecommended) {
+    const modelData = encodeURIComponent(JSON.stringify(model));
     return `
         <div class="col-lg-6">
-            <div class="model-card-premium" onclick="selectModelCard(this, '${model.model_id}', '${model.best_quantization.name}')">
+            <div class="model-card-premium" onclick="selectModelCard(this, '${model.model_id}')">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
                         <h5 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text-dark);">${model.model_name}</h5>
@@ -1269,9 +1614,9 @@ function createModelCard(model, isRecommended) {
                     </div>
                 </div>
 
-                <button class="btn-premium w-100" onclick="event.stopPropagation(); installModel('${model.model_id}', '${model.best_quantization.name}')">
-                    <i class="fas fa-download me-2"></i>
-                    ติดตั้งโมเดลนี้
+                <button class="btn-premium w-100" onclick="event.stopPropagation(); selectModelForConfig('${modelData}')">
+                    <i class="fas fa-cog me-2"></i>
+                    เลือกและตั้งค่า
                 </button>
             </div>
         </div>
@@ -1312,13 +1657,25 @@ function startProgressTracking() {
                 clearInterval(progressInterval);
 
                 if (data.is_completed) {
+                    // Calculate installation time
+                    const installTime = Math.floor((Date.now() - installStartTime) / 1000);
+                    const minutes = Math.floor(installTime / 60);
+                    const seconds = installTime % 60;
+                    const timeStr = minutes > 0 ? `${minutes} นาที ${seconds} วินาที` : `${seconds} วินาที`;
+
+                    // Update summary
+                    $('#summary-model').text(selectedModelData?.model_name || '-');
+                    $('#summary-quant').text($('#quantization-select').val() || '-');
+                    $('#summary-size').text(selectedModelData?.best_quantization?.disk_space_gb ? `${selectedModelData.best_quantization.disk_space_gb} GB` : '-');
+                    $('#summary-time').text(timeStr);
+
                     showStep('step-complete');
-                    updateWizardStep(4);
+                    updateWizardStep(5);
                     loadInstalledModels();
                 } else {
                     alert('การติดตั้งล้มเหลว: ' + data.error_message);
-                    showStep('step-model');
-                    updateWizardStep(2);
+                    showStep('step-configure');
+                    updateWizardStep(3);
                 }
             }
         });
@@ -1410,5 +1767,226 @@ function uninstallModel(modelName) {
 function viewLog(logId) {
     window.location.href = `/admin/ai-installation/logs/${logId}`;
 }
+
+// New functions for enhanced wizard
+function selectModelForConfig(modelDataEncoded) {
+    try {
+        const modelData = JSON.parse(decodeURIComponent(modelDataEncoded));
+        selectedModelData = modelData;
+
+        // Update selected model name
+        $('#selected-model-name').text(modelData.model_name);
+
+        // Populate quantization options
+        if (modelData.available_quantizations && modelData.available_quantizations.length > 0) {
+            let quantOptions = '';
+            modelData.available_quantizations.forEach(quant => {
+                const selected = quant.name === modelData.best_quantization.name ? 'selected' : '';
+                quantOptions += `<option value="${quant.name}" ${selected}
+                    data-ram="${quant.ram_required_gb}"
+                    data-size="${quant.disk_space_gb}"
+                    data-gpu="${quant.use_gpu}">
+                    ${quant.name} - RAM: ${quant.ram_required_gb} GB, Size: ${quant.disk_space_gb} GB
+                </option>`;
+            });
+            $('#quantization-select').html(quantOptions);
+            updateQuantizationInfo();
+        }
+
+        // Update resource summary
+        updateResourceSummary();
+
+        // Show configure step
+        showStep('step-configure');
+        updateWizardStep(3);
+
+        // Check resources
+        checkConfigResources();
+    } catch (e) {
+        console.error('Error parsing model data:', e);
+        alert('เกิดข้อผิดพลาดในการเลือกโมเดล');
+    }
+}
+
+function toggleAdvancedOptions() {
+    const advOptions = document.getElementById('advanced-options');
+    const checkbox = document.getElementById('show-advanced');
+
+    if (checkbox.checked) {
+        $(advOptions).slideDown(300);
+    } else {
+        $(advOptions).slideUp(300);
+    }
+}
+
+function updateQuantizationInfo() {
+    const select = document.getElementById('quantization-select');
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (selectedOption) {
+        const ram = selectedOption.dataset.ram;
+        const size = selectedOption.dataset.size;
+        const useGpu = selectedOption.dataset.gpu === 'true';
+
+        $('#quantization-info').html(`
+            <div class="row g-2">
+                <div class="col-auto">
+                    <i class="fas fa-memory" style="color: var(--primary);"></i>
+                    <strong>${ram} GB</strong> RAM ต้องการ
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-hdd" style="color: var(--info);"></i>
+                    <strong>${size} GB</strong> พื้นที่
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-${useGpu ? 'bolt' : 'server'}" style="color: ${useGpu ? 'var(--warning)' : 'var(--success)'}"></i>
+                    ใช้ <strong>${useGpu ? 'GPU' : 'CPU'}</strong>
+                </div>
+            </div>
+        `);
+
+        checkConfigResources();
+    }
+}
+
+function updateResourceSummary() {
+    if (!systemResources) return;
+
+    const totalModels = 0; // TODO: Get from installed models
+    const html = `
+        <div>
+            <h6 class="mb-2" style="font-weight: 700;">ทรัพยากรระบบ:</h6>
+            <div class="row g-2" style="font-size: 14px;">
+                <div class="col-auto">
+                    <i class="fas fa-memory me-1" style="color: var(--primary);"></i>
+                    RAM: <strong>${systemResources.ram.available_gb} GB</strong> พร้อมใช้
+                </div>
+                <div class="col-auto">
+                    <i class="fas fa-hdd me-1" style="color: var(--info);"></i>
+                    Disk: <strong>${systemResources.disk.available_gb} GB</strong> ว่าง
+                </div>
+                ${systemResources.gpu.available ? `
+                <div class="col-auto">
+                    <i class="fas fa-bolt me-1" style="color: var(--warning);"></i>
+                    GPU: <strong>พร้อมใช้งาน</strong>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+
+    $('#resource-info').html(html);
+}
+
+function checkConfigResources() {
+    if (!systemResources || !selectedModelData) {
+        $('#config-resource-check').html(`
+            <div class="d-flex align-items-center">
+                <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+                <span>กำลังตรวจสอบทรัพยากร...</span>
+            </div>
+        `);
+        return;
+    }
+
+    const select = document.getElementById('quantization-select');
+    const selectedOption = select.options[select.selectedIndex];
+    const ramNeeded = parseFloat(selectedOption.dataset.ram);
+    const diskNeeded = parseFloat(selectedOption.dataset.size);
+
+    const ramAvailable = systemResources.ram.available_gb;
+    const diskAvailable = systemResources.disk.available_gb;
+
+    const ramOk = ramAvailable >= ramNeeded;
+    const diskOk = diskAvailable >= diskNeeded;
+
+    if (ramOk && diskOk) {
+        $('#config-resource-check').html(`
+            <div class="alert-premium success">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-check-circle me-3" style="font-size: 24px; color: var(--success);"></i>
+                    <div>
+                        <h6 class="mb-1" style="font-weight: 700;">ทรัพยากรเพียงพอ!</h6>
+                        <small>RAM จะเหลือ <strong>${(ramAvailable - ramNeeded).toFixed(1)} GB</strong>
+                        และ Disk จะเหลือ <strong>${(diskAvailable - diskNeeded).toFixed(1)} GB</strong> หลังการติดตั้ง</small>
+                    </div>
+                </div>
+            </div>
+        `);
+        $('#btn-start-install').prop('disabled', false);
+    } else {
+        let errors = [];
+        if (!ramOk) errors.push(`ต้องการ RAM ${ramNeeded} GB แต่มีเพียง ${ramAvailable} GB`);
+        if (!diskOk) errors.push(`ต้องการ Disk ${diskNeeded} GB แต่มีเพียง ${diskAvailable} GB`);
+
+        $('#config-resource-check').html(`
+            <div class="alert-premium danger">
+                <div class="d-flex align-items-start">
+                    <i class="fas fa-exclamation-triangle me-3" style="font-size: 24px; color: var(--danger);"></i>
+                    <div>
+                        <h6 class="mb-2" style="font-weight: 700;">ทรัพยากรไม่เพียงพอ!</h6>
+                        <ul class="mb-0 ps-3">
+                            ${errors.map(e => `<li>${e}</li>`).join('')}
+                        </ul>
+                        <small class="d-block mt-2">กรุณาเลือก Quantization ที่ต่ำกว่าหรืออัพเกรดเซิร์ฟเวอร์</small>
+                    </div>
+                </div>
+            </div>
+        `);
+        $('#btn-start-install').prop('disabled', true);
+    }
+}
+
+function confirmAndInstall() {
+    if (!selectedModelData) {
+        alert('กรุณาเลือกโมเดล');
+        return;
+    }
+
+    const quantization = $('#quantization-select').val();
+    const device = $('#device-select').val();
+    const contextLength = $('#context-select').val();
+
+    const config = {
+        model_id: selectedModelData.model_id,
+        quantization: quantization,
+        device: device,
+        context_length: parseInt(contextLength),
+        temperature: parseFloat($('#temperature').val() || 0.7),
+        top_p: parseFloat($('#top-p').val() || 0.9),
+        max_tokens: parseInt($('#max-tokens').val() || 2048),
+        repeat_penalty: parseFloat($('#repeat-penalty').val() || 1.1)
+    };
+
+    // Show installing step
+    showStep('step-installing');
+    updateWizardStep(4);
+    installStartTime = Date.now();
+
+    // Start installation
+    $.post('{{ route('admin.ai-installation.start') }}', {
+        installation_type: 'ollama',
+        ...config,
+        _token: '{{ csrf_token() }}'
+    }, function(response) {
+        installationId = response.installation_id;
+        startProgressTracking();
+    }).fail(function(xhr) {
+        alert('เกิดข้อผิดพลาด: ' + (xhr.responseJSON?.message || 'Unknown error'));
+        showStep('step-configure');
+        updateWizardStep(3);
+    });
+}
+
+// Update installModel to use new flow
+function installModel(modelId, quantization) {
+    // This function is deprecated, use selectModelForConfig instead
+    alert('กรุณาใช้ปุ่ม "เลือกและตั้งค่า" เพื่อตั้งค่าก่อนติดตั้ง');
+}
+
+// Add event listener for quantization change
+$(document).on('change', '#quantization-select', function() {
+    updateQuantizationInfo();
+});
 </script>
 @endpush
