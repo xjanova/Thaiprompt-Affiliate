@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AiBotController;
 use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\WebPManagementController;
+use App\Http\Controllers\Admin\KnowledgeBaseController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -478,8 +479,6 @@ Route::prefix('ai-bots')->name('ai-bots.')->group(function () {
 
 // Knowledge Base Management (RAG System)
 Route::prefix('ai-bots/{botId}/knowledge-bases')->name('knowledge-bases.')->group(function () {
-    use App\Http\Controllers\Admin\KnowledgeBaseController;
-    
     Route::get('/', [KnowledgeBaseController::class, 'index'])->name('index');
     Route::get('/create', [KnowledgeBaseController::class, 'create'])->name('create');
     Route::post('/', [KnowledgeBaseController::class, 'store'])->name('store');
