@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('rental_transactions', function (Blueprint $table) {
+        Schema::create('ai_rental_transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('rental_id')->constrained('bot_rentals')->onDelete('cascade');
+            $table->foreignId('rental_id')->constrained('ai_bot_rentals')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
 
             // Transaction Type
@@ -55,6 +55,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('rental_transactions');
+        Schema::dropIfExists('ai_rental_transactions');
     }
 };

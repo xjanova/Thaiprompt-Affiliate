@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bot_rentals', function (Blueprint $table) {
+        Schema::create('ai_bot_rentals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('bot_profile_id')->constrained('ai_bot_profiles')->onDelete('cascade');
             $table->foreignId('renter_id')->constrained('users')->onDelete('cascade');
@@ -56,6 +56,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bot_rentals');
+        Schema::dropIfExists('ai_bot_rentals');
     }
 };
