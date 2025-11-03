@@ -4,6 +4,7 @@ use App\Http\Controllers\User\DashboardController;
 use App\Http\Controllers\User\WalletController;
 use App\Http\Controllers\User\RankController;
 use App\Http\Controllers\User\MembershipRetentionController;
+use App\Http\Controllers\User\KycController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -26,6 +27,14 @@ Route::get('/organization', [DashboardController::class, 'organizationChart'])->
 
 // Organization Tree API (for web session)
 Route::get('/organization/tree-data', [DashboardController::class, 'getOrganizationTreeData'])->name('organization.tree-data');
+
+// KYC Verification
+Route::prefix('kyc')->name('kyc.')->group(function () {
+    Route::get('/', [KycController::class, 'index'])->name('index');
+    Route::get('/create', [KycController::class, 'create'])->name('create');
+    Route::post('/', [KycController::class, 'store'])->name('store');
+    Route::get('/{kycVerification}', [KycController::class, 'show'])->name('show');
+});
 
 // Wallet Management (User)
 Route::prefix('wallet')->name('wallet.')->group(function () {

@@ -37,6 +37,7 @@ use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\WebPManagementController;
 use App\Http\Controllers\Admin\ECommerceController;
+use App\Http\Controllers\Admin\KycController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -66,6 +67,15 @@ Route::resource('commissions', CommissionController::class);
 Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
 Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
 Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
+
+// KYC Verification Management
+Route::prefix('kyc')->name('kyc.')->group(function () {
+    Route::get('/', [KycController::class, 'index'])->name('index');
+    Route::get('/{kycVerification}', [KycController::class, 'show'])->name('show');
+    Route::post('/{kycVerification}/approve', [KycController::class, 'approve'])->name('approve');
+    Route::post('/{kycVerification}/reject', [KycController::class, 'reject'])->name('reject');
+    Route::delete('/{kycVerification}', [KycController::class, 'destroy'])->name('destroy');
+});
 
 // Settings
 Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');

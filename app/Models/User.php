@@ -56,6 +56,9 @@ class User extends Authenticatable
         // Additional profile
         'date_of_birth',
         'gender',
+        // KYC fields
+        'kyc_status',
+        'kyc_verified_at',
     ];
 
     /**
@@ -101,6 +104,7 @@ class User extends Authenticatable
             'phone_verified' => 'boolean',
             'phone_verified_at' => 'datetime',
             'date_of_birth' => 'date',
+            'kyc_verified_at' => 'datetime',
         ];
     }
 
@@ -198,6 +202,38 @@ class User extends Authenticatable
     public function retentionTransactions()
     {
         return $this->hasMany(MembershipRetentionTransaction::class);
+    }
+
+    /**
+     * Get KYC verification records
+     */
+    public function kycVerifications()
+    {
+        return $this->hasMany(KycVerification::class);
+    }
+
+    /**
+     * Get the latest KYC verification
+     */
+    public function latestKycVerification()
+    {
+        return $this->hasOne(KycVerification::class)->latestOfMany();
+    }
+
+    /**
+     * Check if user has KYC verified
+     */
+    public function isKycVerified(): bool
+    {
+        return $this->kyc_status === 'approved';
+    }
+
+    /**
+     * Check if user has KYC pending
+     */
+    public function isKycPending(): bool
+    {
+        return $this->kyc_status === 'pending';
     }
 
     /**
@@ -335,6 +371,9 @@ class User extends Authenticatable
             'manage_ranks',
             'approve_rank_promotions',
             'view_rank_analytics',
+            'view_kyc_verifications',
+            'approve_kyc',
+            'manage_kyc',
         ];
     }
 
