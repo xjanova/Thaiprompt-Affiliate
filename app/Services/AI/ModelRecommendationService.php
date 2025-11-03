@@ -11,9 +11,16 @@ class ModelRecommendationService
         'deepseek-coder-33b-instruct' => [
             'name' => 'DeepSeek Coder 33B Instruct',
             'size' => '33B',
-            'description' => 'โมเดลขนาดใหญ่ ประสิทธิภาพสูงสุด เหมาะสำหรับงานซับซ้อน',
+            'description' => 'โมเดล Coding ขนาดใหญ่ที่ทรงพลัง เขียนโค้ดได้หลายภาษา มีความสามารถในการวิเคราะห์และแก้ไขโค้ดที่ซับซ้อน เหมาะสำหรับโปรเจกต์ขนาดใหญ่',
             'capabilities' => ['coding', 'reasoning', 'multilingual'],
             'context_window' => 16384,
+            'features' => [
+                'เขียนโค้ด Python, JavaScript, Java, C++, Go และอื่นๆ',
+                'วิเคราะห์และแก้ไข Bug ในโค้ด',
+                'สร้าง Unit Tests อัตโนมัติ',
+                'Refactor Code และปรับปรุงประสิทธิภาพ',
+                'อธิบายโค้ดและสร้างเอกสาร'
+            ],
             'quantizations' => [
                 'FP16' => [
                     'vram_required' => 66,
@@ -44,9 +51,16 @@ class ModelRecommendationService
         'deepseek-coder-6.7b-instruct' => [
             'name' => 'DeepSeek Coder 6.7B Instruct',
             'size' => '7B',
-            'description' => 'โมเดลขนาดกลาง สมดุลระหว่างประสิทธิภาพและความเร็ว',
+            'description' => 'โมเดล Coding ขนาดกลางที่มีความสมดุลดี ใช้ทรัพยากรไม่มาก แต่ให้ประสิทธิภาพที่ดีเยี่ยม เหมาะสำหรับงาน Coding ทั่วไป',
             'capabilities' => ['coding', 'reasoning', 'multilingual'],
             'context_window' => 16384,
+            'features' => [
+                'เขียนและแก้ไขโค้ดได้หลายภาษา',
+                'แนะนำวิธีแก้ไข Bug',
+                'สร้าง Code Snippets ที่มีประสิทธิภาพ',
+                'ตรวจสอบ Code Quality',
+                'รองรับภาษาไทยและภาษาอื่นๆ'
+            ],
             'quantizations' => [
                 'FP16' => [
                     'vram_required' => 14,
@@ -82,10 +96,17 @@ class ModelRecommendationService
         ],
         'deepseek-coder-1.3b-instruct' => [
             'name' => 'DeepSeek Coder 1.3B Instruct',
-            'size' => '3B',
-            'description' => 'โมเดลขนาดเล็ก เร็วและใช้ทรัพยากรน้อย',
+            'size' => '1.3B',
+            'description' => 'โมเดล Coding ขนาดเล็ก เร็วและประหยัดทรัพยากร เหมาะสำหรับคอมพิวเตอร์ที่มี RAM น้อย หรือต้องการความเร็วสูง',
             'capabilities' => ['coding', 'basic_reasoning'],
             'context_window' => 16384,
+            'features' => [
+                'เขียนโค้ดพื้นฐานได้หลายภาษา',
+                'แก้ไข Bug ง่ายๆ',
+                'สร้าง Function และ Class ทั่วไป',
+                'ความเร็วสูง ตอบสนองเร็ว',
+                'ใช้ RAM เพียง 2-4 GB'
+            ],
             'quantizations' => [
                 'FP16' => [
                     'vram_required' => 3,
@@ -110,9 +131,16 @@ class ModelRecommendationService
         'deepseek-llm-7b-chat' => [
             'name' => 'DeepSeek LLM 7B Chat',
             'size' => '7B',
-            'description' => 'โมเดล chat ทั่วไป เหมาะสำหรับสนทนา',
+            'description' => 'โมเดล Chat ทั่วไป สำหรับการสนทนา ตอบคำถาม และช่วยเหลือในงานต่างๆ รองรับภาษาไทยและหลายภาษา',
             'capabilities' => ['chat', 'reasoning', 'multilingual'],
             'context_window' => 4096,
+            'features' => [
+                'สนทนาและตอบคำถามได้อย่างธรรมชาติ',
+                'ช่วยวางแผนและให้คำแนะนำ',
+                'แปลภาษาและสรุปเนื้อหา',
+                'ค้นหาข้อมูลและวิเคราะห์',
+                'เขียนเนื้อหา Email, บทความ'
+            ],
             'quantizations' => [
                 'FP16' => [
                     'vram_required' => 14,
@@ -137,9 +165,16 @@ class ModelRecommendationService
         'deepseek-llm-67b-chat' => [
             'name' => 'DeepSeek LLM 67B Chat',
             'size' => '67B',
-            'description' => 'โมเดล chat ขนาดใหญ่มาก ประสิทธิภาพสูงสุด',
+            'description' => 'โมเดล Chat ขนาดใหญ่ที่ทรงพลังที่สุด สำหรับงานซับซ้อนและต้องการคุณภาพสูงสุด มีความสามารถในการวิเคราะห์ลึกและแก้ปัญหายาก',
             'capabilities' => ['chat', 'reasoning', 'multilingual', 'complex_tasks'],
             'context_window' => 4096,
+            'features' => [
+                'สนทนาและวิเคราะห์ในระดับสูง',
+                'แก้ปัญหาที่ซับซ้อนและต้องการการคิดลึก',
+                'วางแผนและสร้างกลยุทธ์',
+                'วิจัยและวิเคราะห์ข้อมูลขนาดใหญ่',
+                'เขียนเนื้อหาคุณภาพสูงระดับมืออาชีพ'
+            ],
             'quantizations' => [
                 'Q5_K_M' => [
                     'vram_required' => 45,
@@ -312,6 +347,7 @@ class ModelRecommendationService
             'model_size' => $modelInfo['size'],
             'description' => $modelInfo['description'],
             'capabilities' => $modelInfo['capabilities'],
+            'features' => $modelInfo['features'] ?? [],
             'context_window' => $modelInfo['context_window'],
             'status' => $status,
             'score' => round($score, 1),
