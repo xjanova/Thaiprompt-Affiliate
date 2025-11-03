@@ -335,4 +335,26 @@ class Product extends Model
             $this->save();
         }
     }
+
+    /**
+     * MLM Relationships
+     */
+
+    /**
+     * Get MLM PV configurations
+     */
+    public function mlmProductPv(): HasMany
+    {
+        return $this->hasMany(\App\Models\MlmProductPv::class);
+    }
+
+    /**
+     * Get MLM PV for a specific plan
+     */
+    public function getMlmPv($planId)
+    {
+        return $this->mlmProductPv()
+            ->where('mlm_plan_id', $planId)
+            ->first();
+    }
 }

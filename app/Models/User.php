@@ -363,4 +363,35 @@ class User extends Authenticatable
 
         return $nextRank->checkUserEligibility($this);
     }
+
+    /**
+     * MLM Relationships
+     */
+
+    /**
+     * Get all MLM memberships for this user
+     */
+    public function mlmMembers()
+    {
+        return $this->hasMany(\App\Models\MlmMember::class);
+    }
+
+    /**
+     * Get all MLM commissions for this user
+     */
+    public function mlmCommissions()
+    {
+        return $this->hasMany(\App\Models\MlmCommission::class);
+    }
+
+    /**
+     * Get active MLM membership for a specific plan
+     */
+    public function getMlmMember($planId)
+    {
+        return $this->mlmMembers()
+            ->where('mlm_plan_id', $planId)
+            ->where('status', 'active')
+            ->first();
+    }
 }
