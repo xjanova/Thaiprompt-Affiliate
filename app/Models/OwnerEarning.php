@@ -10,6 +10,8 @@ class OwnerEarning extends Model
 {
     use HasFactory;
 
+    protected $table = 'ai_owner_earnings';
+
     protected $fillable = [
         'owner_id',
         'bot_profile_id',

@@ -10,6 +10,8 @@ class RentalTransaction extends Model
 {
     use HasFactory;
 
+    protected $table = 'ai_rental_transactions';
+
     protected $fillable = [
         'rental_id',
         'user_id',
