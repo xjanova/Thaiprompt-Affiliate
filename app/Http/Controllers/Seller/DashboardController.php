@@ -153,30 +153,6 @@ class DashboardController extends Controller
     }
 
     /**
-     * Display seller products
-     */
-    public function products()
-    {
-        $user = Auth::user();
-        // Products list will be implemented later
-        $products = collect();
-
-        return view('seller.products', compact('products', 'user'));
-    }
-
-    /**
-     * Display seller sales
-     */
-    public function sales()
-    {
-        $user = Auth::user();
-        // Sales list will be implemented later
-        $sales = collect();
-
-        return view('seller.sales', compact('sales', 'user'));
-    }
-
-    /**
      * Display seller analytics
      */
     public function analytics()
