@@ -148,12 +148,95 @@
                     GIF และ SVG จะไม่ถูกแปลงเพื่อรักษาคุณภาพ
                 </p>
                 <button type="submit"
+                        @click="startConversion"
                         class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all duration-200 shadow-lg hover:shadow-xl flex items-center">
                     <i class="fas fa-magic mr-2"></i>
                     เริ่มแปลง
                 </button>
             </div>
         </form>
+
+        <!-- Progress Modal -->
+        <div x-show="showProgress"
+             x-cloak
+             class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+             style="display: none;">
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-8 max-w-2xl w-full mx-4">
+                <div class="text-center mb-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full mb-4">
+                        <i class="fas fa-sync-alt text-blue-600 dark:text-blue-400 text-2xl"
+                           :class="{ 'fa-spin': progressData.status === 'processing' }"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
+                        กำลังแปลงรูปภาพเป็น WebP
+                    </h3>
+                    <p class="text-gray-600 dark:text-gray-400" x-text="progressData.message">
+                        กำลังเริ่มต้น...
+                    </p>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            ความคืบหน้า
+                        </span>
+                        <span class="text-sm font-bold text-blue-600 dark:text-blue-400" x-text="progressData.percentage + '%'">
+                            0%
+                        </span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                        <div class="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-300 ease-out"
+                             :style="{ width: progressData.percentage + '%' }"></div>
+                    </div>
+                </div>
+
+                <!-- Details (when completed) -->
+                <div x-show="progressData.status === 'completed' && progressData.details"
+                     class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-green-800 dark:text-green-300 mb-3 flex items-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        สรุปผลการแปลง
+                    </h4>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div class="bg-white dark:bg-gray-800 rounded p-2">
+                            <span class="text-gray-600 dark:text-gray-400">ไฟล์ทั้งหมด:</span>
+                            <span class="font-bold text-gray-800 dark:text-white ml-1" x-text="progressData.details?.total_files || 0"></span>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 rounded p-2">
+                            <span class="text-gray-600 dark:text-gray-400">แปลงสำเร็จ:</span>
+                            <span class="font-bold text-green-600 dark:text-green-400 ml-1" x-text="progressData.details?.converted || 0"></span>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 rounded p-2">
+                            <span class="text-gray-600 dark:text-gray-400">อัพเดต DB:</span>
+                            <span class="font-bold text-blue-600 dark:text-blue-400 ml-1" x-text="progressData.details?.database_updates?.total_updated || 0"></span>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 rounded p-2">
+                            <span class="text-gray-600 dark:text-gray-400">ข้อผิดพลาด:</span>
+                            <span class="font-bold text-red-600 dark:text-red-400 ml-1" x-text="progressData.details?.errors || 0"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error (when failed) -->
+                <div x-show="progressData.status === 'failed'"
+                     class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                    <p class="text-red-700 dark:text-red-400 flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span x-text="progressData.message">เกิดข้อผิดพลาด</span>
+                    </p>
+                </div>
+
+                <!-- Close Button -->
+                <button @click="closeProgress"
+                        :disabled="progressData.status === 'processing'"
+                        class="w-full bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="progressData.status === 'processing'">กำลังดำเนินการ...</span>
+                    <span x-show="progressData.status === 'completed'">เสร็จสิ้น - รีโหลดหน้า</span>
+                    <span x-show="progressData.status === 'failed'">ปิด</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Directory Details -->
@@ -250,7 +333,78 @@
 <script>
 function webpManagement() {
     return {
-        // Add any Alpine.js functionality here if needed
+        showProgress: false,
+        jobId: '{{ session("job_id") }}' || null,
+        progressInterval: null,
+        progressData: {
+            percentage: 0,
+            message: 'กำลังเริ่มต้น...',
+            status: 'pending', // pending, processing, completed, failed
+            details: null
+        },
+
+        init() {
+            // Check if there's a job_id from session (redirect after form submit)
+            if (this.jobId) {
+                this.showProgress = true;
+                this.startPolling();
+            }
+        },
+
+        startConversion() {
+            // Show progress modal immediately
+            this.showProgress = true;
+            this.progressData = {
+                percentage: 0,
+                message: 'กำลังเริ่มต้น...',
+                status: 'processing',
+                details: null
+            };
+        },
+
+        startPolling() {
+            // Poll every 1 second
+            this.progressInterval = setInterval(() => {
+                this.fetchProgress();
+            }, 1000);
+        },
+
+        async fetchProgress() {
+            try {
+                const response = await fetch(`{{ route('admin.webp.progress') }}?job_id=${this.jobId}`);
+                const data = await response.json();
+
+                this.progressData = data;
+
+                // Stop polling when completed or failed
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(this.progressInterval);
+
+                    // Auto reload after 3 seconds if completed
+                    if (data.status === 'completed') {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 3000);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching progress:', error);
+            }
+        },
+
+        closeProgress() {
+            this.showProgress = false;
+
+            // Clear interval if still running
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+            }
+
+            // Reload page if completed
+            if (this.progressData.status === 'completed') {
+                window.location.reload();
+            }
+        }
     }
 }
 </script>

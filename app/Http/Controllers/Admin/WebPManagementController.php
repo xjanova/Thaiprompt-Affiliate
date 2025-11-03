@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ConvertImagesToWebPJob;
 use App\Services\WebPService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
@@ -96,7 +97,7 @@ class WebPManagementController extends Controller
     }
 
     /**
-     * Convert images to WebP
+     * Convert images to WebP using Job Queue
      */
     public function convert(Request $request)
     {
@@ -111,38 +112,56 @@ class WebPManagementController extends Controller
         $deleteOriginal = $validated['delete_original'] ?? false;
 
         try {
-            // Build artisan command
-            $command = 'images:convert-webp';
-            $params = ['--quality' => $quality];
+            // Generate unique job ID
+            $jobId = uniqid('webp_', true);
 
-            if ($directory !== 'all') {
-                $params['--directory'] = $directory;
-            }
+            // Dispatch job to queue
+            ConvertImagesToWebPJob::dispatch(
+                $directory,
+                $quality,
+                $deleteOriginal,
+                $jobId
+            );
 
-            if ($deleteOriginal) {
-                $params['--delete-original'] = true;
-            }
+            // Store job ID in session for tracking
+            session(['webp_job_id' => $jobId]);
 
-            // Run command
-            $exitCode = Artisan::call($command, $params);
+            return redirect()->route('admin.webp.index')
+                ->with('success', 'เริ่มกระบวนการแปลงรูปภาพแล้ว กรุณารอสักครู่...')
+                ->with('job_id', $jobId);
 
-            if ($exitCode === 0) {
-                // Get command output
-                $output = Artisan::output();
-
-                return redirect()->route('admin.webp.index')
-                    ->with('success', 'แปลงรูปภาพเป็น WebP สำเร็จแล้ว!')
-                    ->with('command_output', $output);
-            } else {
-                return redirect()->route('admin.webp.index')
-                    ->with('error', 'เกิดข้อผิดพลาดในการแปลงรูปภาพ');
-            }
         } catch (\Exception $e) {
-            Log::error('WebP conversion error: ' . $e->getMessage());
+            Log::error('WebP conversion dispatch error: ' . $e->getMessage());
 
             return redirect()->route('admin.webp.index')
                 ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Get job progress (AJAX endpoint)
+     */
+    public function progress(Request $request)
+    {
+        $jobId = $request->input('job_id');
+
+        if (!$jobId) {
+            return response()->json(['error' => 'Job ID required'], 400);
+        }
+
+        // Get progress from cache
+        $progress = Cache::get("webp_job:{$jobId}");
+
+        if (!$progress) {
+            return response()->json([
+                'percentage' => 0,
+                'message' => 'กำลังเริ่มต้น...',
+                'status' => 'pending',
+                'details' => [],
+            ]);
+        }
+
+        return response()->json($progress);
     }
 
     /**
