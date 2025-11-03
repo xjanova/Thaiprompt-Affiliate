@@ -431,6 +431,13 @@ Route::prefix('ai-installation')->name('ai-installation.')->group(function () {
     Route::get('/logs/{installationId}', [AiInstallationController::class, 'getInstallationLog'])->name('logs');
 });
 
+// Learning Center
+Route::prefix('learning-center')->name('learning-center.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\LearningCenterController::class, 'index'])->name('index');
+    Route::get('/category/{category}', [\App\Http\Controllers\Admin\LearningCenterController::class, 'category'])->name('category');
+    Route::get('/article/{id}', [\App\Http\Controllers\Admin\LearningCenterController::class, 'article'])->name('article');
+});
+
 // AI Provider Management
 Route::prefix('ai-providers')->name('ai-providers.')->group(function () {
     Route::get('/', [AiProviderManagementController::class, 'index'])->name('index');
