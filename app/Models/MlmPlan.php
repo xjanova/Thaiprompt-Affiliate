@@ -115,6 +115,17 @@ class MlmPlan extends Model
     }
 
     /**
+     * Get products included in this package
+     */
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'mlm_plan_products')
+            ->withPivot('quantity', 'discount_percentage', 'sort_order')
+            ->withTimestamps()
+            ->orderBy('mlm_plan_products.sort_order');
+    }
+
+    /**
      * Get display name based on current locale
      */
     public function getDisplayNameAttribute()

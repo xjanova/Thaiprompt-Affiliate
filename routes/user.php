@@ -127,4 +127,14 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/commissions', [\App\Http\Controllers\User\MlmDashboardController::class, 'commissions'])->name('commissions');
     Route::get('/referral', [\App\Http\Controllers\User\MlmDashboardController::class, 'referral'])->name('referral');
     Route::get('/team', [\App\Http\Controllers\User\MlmDashboardController::class, 'team'])->name('team');
+
+    // Income Simulator - Marketing Tool
+    Route::get('/income-simulator', function () {
+        return view('user.mlm.income-simulator');
+    })->name('income-simulator');
+
+    // Income Comparison - Marketing Tool
+    Route::get('/income-comparison', function () {
+        return view('user.mlm.income-comparison');
+    })->name('income-comparison');
 });
