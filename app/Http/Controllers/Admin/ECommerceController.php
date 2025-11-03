@@ -194,12 +194,14 @@ class ECommerceController extends Controller
         // Get product statistics
         $stats = [
             'total_sales' => $product->orderItems()->sum('quantity'),
-            'total_revenue' => $product->orderItems()->sum(DB::raw('quantity * price')),
+            'total_revenue' => $product->orderItems()->sum('total'), // Use 'total' column instead of 'price'
             'total_reviews' => $product->reviews()->count(),
             'average_rating' => $product->reviews()->avg('rating'),
         ];
 
-        return view('admin.ecommerce.products.show', compact('product', 'stats'));
+        $categories = ProductCategory::orderBy('name')->get();
+
+        return view('admin.ecommerce.products.show', compact('product', 'stats', 'categories'));
     }
 
     /**
@@ -209,6 +211,7 @@ class ECommerceController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:100|unique:products,sku,' . $product->id,
             'description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'compare_at_price' => 'nullable|numeric|min:0',
@@ -221,6 +224,30 @@ class ECommerceController extends Controller
             'category_id' => 'nullable|exists:product_categories,id',
             'commission_rate' => 'nullable|numeric|min:0|max:100',
         ]);
+
+        // Handle checkboxes
+        $validated['is_active'] = $request->has('is_active');
+        $validated['is_featured'] = $request->has('is_featured');
+        $validated['track_inventory'] = $request->has('track_inventory');
+
+        // Update slug if name changed
+        if ($validated['name'] !== $product->name) {
+            $validated['slug'] = \Str::slug($validated['name']);
+        }
+
+        // Update stock status
+        if (isset($validated['track_inventory']) && $validated['track_inventory']) {
+            $qty = $validated['stock_quantity'] ?? $product->stock_quantity;
+            $threshold = $validated['low_stock_threshold'] ?? $product->low_stock_threshold ?? 10;
+
+            if ($qty <= 0) {
+                $validated['stock_status'] = 'out_of_stock';
+            } elseif ($qty <= $threshold) {
+                $validated['stock_status'] = 'low_stock';
+            } else {
+                $validated['stock_status'] = 'in_stock';
+            }
+        }
 
         $product->update($validated);
 
@@ -367,8 +394,12 @@ class ECommerceController extends Controller
             'slug' => 'nullable|string|max:255|unique:product_categories,slug',
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:product_categories,id',
-            'is_active' => 'boolean',
+            'sort_order' => 'nullable|integer',
+            'image_url' => 'nullable|string|max:500',
         ]);
+
+        // Handle checkbox properly
+        $validated['is_active'] = $request->has('is_active');
 
         // Auto-generate slug if not provided
         if (empty($validated['slug'])) {
@@ -390,8 +421,17 @@ class ECommerceController extends Controller
             'slug' => 'nullable|string|max:255|unique:product_categories,slug,' . $category->id,
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:product_categories,id',
-            'is_active' => 'boolean',
+            'sort_order' => 'nullable|integer',
+            'image_url' => 'nullable|string|max:500',
         ]);
+
+        // Handle checkbox properly
+        $validated['is_active'] = $request->has('is_active');
+
+        // Auto-generate slug if name changed and slug is empty
+        if ($validated['name'] !== $category->name && empty($validated['slug'])) {
+            $validated['slug'] = \Str::slug($validated['name']);
+        }
 
         $category->update($validated);
 
