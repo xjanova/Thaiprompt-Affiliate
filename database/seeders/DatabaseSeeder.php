@@ -24,6 +24,7 @@ class DatabaseSeeder extends Seeder
             SeoMetaSeeder::class,          // สร้าง SEO meta data
             TestUsersSeeder::class,        // สร้างผู้ใช้ทดสอบเพิ่มเติม (backward compatibility)
             EmailTemplateSeeder::class,    // สร้าง Email Templates สำหรับระบบส่งอีเมล
+            AiProvidersSeeder::class,      // สร้าง AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
         ]);
 
         $this->command->info('');
