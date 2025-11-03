@@ -4,6 +4,7 @@ use App\Http\Controllers\Seller\DashboardController;
 use App\Http\Controllers\Seller\ProductController;
 use App\Http\Controllers\Seller\OrderManagementController;
 use App\Http\Controllers\Seller\PackageController;
+use App\Http\Controllers\Seller\StoreController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,14 @@ Route::prefix('packages')->name('packages.')->group(function () {
     Route::get('/payment/{subscriptionId}', [PackageController::class, 'payment'])->name('payment');
     Route::post('/payment/{subscriptionId}/process', [PackageController::class, 'processPayment'])->name('process-payment');
     Route::post('/cancel', [PackageController::class, 'cancel'])->name('cancel');
+});
+
+// ========================================
+// VENDOR STORE SETTINGS
+// ========================================
+Route::prefix('store')->name('store.')->group(function () {
+    Route::get('/settings', [StoreController::class, 'settings'])->name('settings');
+    Route::put('/settings', [StoreController::class, 'update'])->name('update');
 });
 
 // ========================================
