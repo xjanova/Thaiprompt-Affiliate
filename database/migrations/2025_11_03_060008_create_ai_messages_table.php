@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('ai_messages')) {
+            echo "Table 'ai_messages' already exists, skipping creation.\n";
+            return;
+        }
+
         Schema::create('ai_messages', function (Blueprint $table) {
             $table->id();
             $table->foreignId('conversation_id')->constrained('ai_conversations')->onDelete('cascade');

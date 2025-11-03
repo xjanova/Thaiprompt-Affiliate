@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('knowledge_bases')) {
+            echo "Table 'knowledge_bases' already exists, skipping creation.\n";
+            return;
+        }
+
         Schema::create('knowledge_bases', function (Blueprint $table) {
             $table->id();
             $table->foreignId('bot_profile_id')->constrained('ai_bot_profiles')->onDelete('cascade');

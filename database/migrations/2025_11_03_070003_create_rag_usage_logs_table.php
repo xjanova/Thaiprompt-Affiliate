@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('rag_usage_logs')) {
+            echo "Table 'rag_usage_logs' already exists, skipping creation.\n";
+            return;
+        }
+
         Schema::create('rag_usage_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('conversation_id')->constrained('ai_conversations')->onDelete('cascade');
