@@ -10,7 +10,7 @@ class MlmGlobalSettingController extends Controller
 {
     public function index()
     {
-        $settingsByGroup = MlmGlobalSetting::where('is_visible', true)
+        $settings = MlmGlobalSetting::where('is_visible', true)
             ->orderBy('group')
             ->orderBy('sort_order')
             ->get()
@@ -19,7 +19,7 @@ class MlmGlobalSettingController extends Controller
         // Calculate current commission percentage for overpay warning
         $currentCommissionPercentage = $this->calculateTotalCommissionPercentage();
 
-        return view('admin.mlm.settings.index', compact('settingsByGroup', 'currentCommissionPercentage'));
+        return view('admin.mlm.settings.index', compact('settings', 'currentCommissionPercentage'));
     }
 
     public function update(Request $request)

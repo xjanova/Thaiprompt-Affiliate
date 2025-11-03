@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\WebPManagementController;
 use App\Http\Controllers\Admin\ECommerceController;
 use App\Http\Controllers\Admin\KycController;
+use App\Http\Controllers\Admin\MlmGlobalSettingController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -638,13 +639,12 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         Route::get('/export-commissions', [\App\Http\Controllers\Admin\MlmReportController::class, 'exportCommissions'])->name('export-commissions');
     });
 
-    // MLM Settings
+    // MLM Global Settings
     Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\MlmSettingController::class, 'index'])->name('index');
-        Route::put('/', [\App\Http\Controllers\Admin\MlmSettingController::class, 'update'])->name('update');
-        Route::get('/create', [\App\Http\Controllers\Admin\MlmSettingController::class, 'create'])->name('create');
-        Route::post('/', [\App\Http\Controllers\Admin\MlmSettingController::class, 'store'])->name('store');
-        Route::delete('/{setting}', [\App\Http\Controllers\Admin\MlmSettingController::class, 'destroy'])->name('destroy');
+        Route::get('/', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'index'])->name('index');
+        Route::put('/', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'update'])->name('update');
+        Route::post('/preview-calculation', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'previewCalculation'])->name('preview-calculation');
+        Route::get('/get-settings', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'getSettings'])->name('get-settings');
     });
 
     // MLM Genealogy Viewer
