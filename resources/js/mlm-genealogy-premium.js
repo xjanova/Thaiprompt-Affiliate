@@ -720,14 +720,43 @@ class MlmGenealogyPremium {
 
     drawNode(parent, node, x, y) {
         const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        g.setAttribute('class', `mlm-node mlm-node-${node.status}`);
+        g.setAttribute('class', `mlm-node mlm-node-${node.retention_status || node.status}`);
         g.setAttribute('data-node-id', node.id);
         g.setAttribute('transform', `translate(${x - this.options.nodeWidth / 2}, ${y})`);
 
-        const statusColor = node.status === 'active' ? '#10b981' : '#6b7280';
-        const cardGradient = node.status === 'active'
-            ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-            : 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+        // Determine colors based on retention status
+        const retentionStatus = node.retention_status || node.status;
+        let statusColor, cardGradient, borderColor, statusBg, statusText;
+
+        switch (retentionStatus) {
+            case 'active':
+                statusColor = '#10b981';
+                cardGradient = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+                borderColor = '#10b981';
+                statusBg = '#dcfce7';
+                statusText = '#059669';
+                break;
+            case 'grace_period':
+                statusColor = '#f59e0b';
+                cardGradient = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+                borderColor = '#f59e0b';
+                statusBg = '#fef3c7';
+                statusText = '#d97706';
+                break;
+            case 'inactive':
+                statusColor = '#ef4444';
+                cardGradient = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+                borderColor = '#ef4444';
+                statusBg = '#fee2e2';
+                statusText = '#dc2626';
+                break;
+            default:
+                statusColor = '#6b7280';
+                cardGradient = 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)';
+                borderColor = '#6b7280';
+                statusBg = '#f3f4f6';
+                statusText = '#6b7280';
+        }
 
         g.innerHTML = `
             <foreignObject width="${this.options.nodeWidth}" height="${this.options.nodeHeight}">
@@ -739,6 +768,7 @@ class MlmGenealogyPremium {
                     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
                     overflow: hidden;
                     font-family: system-ui, -apple-system, sans-serif;
+                    border: 3px solid ${borderColor};
                 ">
                     <div style="
                         background: ${cardGradient};
@@ -755,15 +785,15 @@ class MlmGenealogyPremium {
                     <div style="padding: 12px; font-size: 11px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                             <span style="color: #6b7280;">PV:</span>
-                            <span style="font-weight: 700; color: #7c3aed;">${node.total_pv || 0}</span>
+                            <span style="font-weight: 700; color: #7c3aed;">${node.monthly_pv || node.total_pv || 0}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
                             <span style="color: #6b7280;">Refs:</span>
                             <span style="font-weight: 700;">${node.direct_referrals || 0}</span>
                         </div>
                         <div style="
-                            background: ${node.status === 'active' ? '#dcfce7' : '#f3f4f6'};
-                            color: ${node.status === 'active' ? '#059669' : '#6b7280'};
+                            background: ${statusBg};
+                            color: ${statusText};
                             text-align: center;
                             padding: 4px;
                             border-radius: 6px;
@@ -771,7 +801,7 @@ class MlmGenealogyPremium {
                             font-weight: 600;
                             text-transform: uppercase;
                         ">
-                            ${node.status}
+                            ${retentionStatus === 'grace_period' ? '⚠️ Grace' : retentionStatus === 'inactive' ? '❌ Inactive' : '✓ Active'}
                         </div>
                     </div>
                 </div>

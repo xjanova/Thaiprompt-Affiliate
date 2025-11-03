@@ -97,26 +97,58 @@ class MlmGlobalSettingController extends Controller
     {
         $validated = $request->validate([
             'sales_amount' => 'required|numeric|min:0',
+            'pv_rate' => 'nullable|numeric|min:0',
+            'member_depth' => 'nullable|integer|min:1',
+            'binary_pairs' => 'nullable|integer|min:0',
+            'use_constraints' => 'nullable|boolean',
+            'check_overpay' => 'nullable|boolean',
         ]);
 
         $salesAmount = $validated['sales_amount'];
-        $pvRate = MlmGlobalSetting::get('global_pv_rate', 1);
+        $pvRate = $validated['pv_rate'] ?? MlmGlobalSetting::get('global_pv_rate', 1);
+        $memberDepth = $validated['member_depth'] ?? 10;
+        $binaryPairs = $validated['binary_pairs'] ?? 0;
+        $useConstraints = $validated['use_constraints'] ?? true;
+        $checkOverpay = $validated['check_overpay'] ?? true;
+
         $commissionPerPv = MlmGlobalSetting::get('commission_per_pv', 1);
         $unilevelLevels = MlmGlobalSetting::get('unilevel_levels', []);
         $binaryPairCommission = MlmGlobalSetting::get('binary_pair_commission', 100);
         $binaryMatchPercentage = MlmGlobalSetting::get('binary_match_percentage', 50);
 
-        $pv = $salesAmount * $pvRate;
+        // Get constraints
+        $maxPerLevel = MlmGlobalSetting::get('unilevel_max_commission_per_level', null);
+        $maxPerDay = MlmGlobalSetting::get('binary_max_commission_per_day', null);
+        $maxPairsPerDay = MlmGlobalSetting::get('binary_max_pairs_per_day', null);
 
-        // Unilevel calculation
+        $pv = $salesAmount / $pvRate;
+
+        // Unilevel calculation with constraints
         $unilevelCommissions = [];
         $unilevelTotal = 0;
+        $breakdown = [];
+        $constraintsApplied = 0;
 
         if (is_array($unilevelLevels)) {
             foreach ($unilevelLevels as $level) {
                 $levelNum = $level['level'] ?? 0;
+
+                if ($levelNum > $memberDepth) {
+                    continue;
+                }
+
                 $percentage = $level['percentage'] ?? 0;
-                $commission = ($pv * $commissionPerPv * $percentage) / 100;
+                $commission = ($pv * $percentage) / 100;
+                $originalCommission = $commission;
+
+                $constraintUsed = null;
+
+                // Apply level constraint
+                if ($useConstraints && $maxPerLevel && $commission > $maxPerLevel) {
+                    $commission = $maxPerLevel;
+                    $constraintUsed = "Max/Level: ฿{$maxPerLevel}";
+                    $constraintsApplied++;
+                }
 
                 $unilevelCommissions[] = [
                     'level' => $levelNum,
@@ -124,37 +156,64 @@ class MlmGlobalSettingController extends Controller
                     'commission' => $commission,
                 ];
 
+                $breakdown[] = [
+                    'label' => "Unilevel Level {$levelNum}",
+                    'percentage' => $percentage,
+                    'amount_before_constraint' => $originalCommission,
+                    'constraint_used' => $constraintUsed,
+                    'final_amount' => $commission,
+                ];
+
                 $unilevelTotal += $commission;
             }
         }
 
-        // Binary calculation (estimate)
-        $weakLegPv = $pv * 0.5; // Assume 50% balance
-        $pairs = floor($weakLegPv);
-        $binaryCommission = $pairs * $binaryPairCommission;
+        // Binary calculation with constraints
+        $actualPairs = min($binaryPairs, floor($pv * 0.5)); // Can't have more pairs than available PV
+        $originalBinaryCommission = $actualPairs * $binaryPairCommission;
+        $binaryCommission = $originalBinaryCommission;
+        $binaryConstraintUsed = null;
+
+        // Apply binary constraints
+        if ($useConstraints) {
+            if ($maxPairsPerDay && $actualPairs > $maxPairsPerDay) {
+                $actualPairs = $maxPairsPerDay;
+                $binaryCommission = $actualPairs * $binaryPairCommission;
+                $binaryConstraintUsed = "Max Pairs/Day: {$maxPairsPerDay}";
+                $constraintsApplied++;
+            }
+
+            if ($maxPerDay && $binaryCommission > $maxPerDay) {
+                $binaryCommission = $maxPerDay;
+                $binaryConstraintUsed = "Max/Day: ฿{$maxPerDay}";
+                $constraintsApplied++;
+            }
+        }
+
+        if ($binaryCommission > 0) {
+            $breakdown[] = [
+                'label' => "Binary Commission ({$actualPairs} pairs)",
+                'percentage' => $binaryMatchPercentage,
+                'amount_before_constraint' => $originalBinaryCommission,
+                'constraint_used' => $binaryConstraintUsed,
+                'final_amount' => $binaryCommission,
+            ];
+        }
 
         $totalCommission = $unilevelTotal + $binaryCommission;
-        $totalPercentage = ($totalCommission / $salesAmount) * 100;
+        $totalPercentage = $salesAmount > 0 ? ($totalCommission / $salesAmount) * 100 : 0;
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'sales_amount' => $salesAmount,
-                'pv' => $pv,
-                'unilevel' => [
-                    'commissions' => $unilevelCommissions,
-                    'total' => $unilevelTotal,
-                ],
-                'binary' => [
-                    'weak_leg_pv' => $weakLegPv,
-                    'pairs' => $pairs,
-                    'commission' => $binaryCommission,
-                ],
-                'total_commission' => $totalCommission,
-                'total_percentage' => $totalPercentage,
-                'is_overpay' => $totalPercentage > 50,
-                'warning_level' => $totalPercentage > 50 ? 'danger' : ($totalPercentage > 40 ? 'warning' : 'safe'),
-            ],
+            'total_pv' => $pv,
+            'unilevel_commission' => $unilevelTotal,
+            'binary_commission' => $binaryCommission,
+            'total_commission' => $totalCommission,
+            'total_percentage' => $totalPercentage,
+            'is_overpay' => $checkOverpay && $totalPercentage > 50,
+            'warning_level' => $totalPercentage > 50 ? 'danger' : ($totalPercentage > 40 ? 'warning' : 'safe'),
+            'constraints_applied' => $constraintsApplied,
+            'breakdown' => $breakdown,
         ]);
     }
 }

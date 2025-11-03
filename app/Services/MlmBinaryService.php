@@ -296,6 +296,10 @@ class MlmBinaryService
             return null;
         }
 
+        // Get retention status from commission service
+        $commissionService = app(MlmCommissionService::class);
+        $retentionData = $commissionService->getMemberRetentionStatus($member);
+
         $node = [
             'id' => $member->id,
             'user_id' => $member->user_id,
@@ -304,9 +308,12 @@ class MlmBinaryService
             'position' => $member->binary_position,
             'depth' => $currentDepth,
             'total_pv' => $member->total_pv,
+            'monthly_pv' => $retentionData['monthly_pv'],
             'left_leg_pv' => $member->left_leg_pv,
             'right_leg_pv' => $member->right_leg_pv,
             'status' => $member->status,
+            'retention_status' => $retentionData['status'],
+            'direct_referrals' => $member->total_direct_referrals ?? 0,
             'left' => null,
             'right' => null,
         ];

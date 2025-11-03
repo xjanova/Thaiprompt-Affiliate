@@ -649,4 +649,14 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
 
     // MLM Genealogy Viewer
     Route::get('/genealogy', [\App\Http\Controllers\Admin\MlmPlanController::class, 'genealogy'])->name('genealogy.index');
+
+    // MLM Placement Examples
+    Route::get('/placement-examples', function () {
+        return view('admin.mlm.placement-examples');
+    })->name('placement-examples');
+
+    // MLM Smart Calculator
+    Route::get('/calculator', function () {
+        return view('admin.mlm.calculator');
+    })->name('calculator');
 });
