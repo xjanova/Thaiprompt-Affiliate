@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\LineRichMenu;
+use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -30,14 +31,15 @@ class LineRichMenuController extends Controller
             'selected' => 'boolean',
             'chat_bar_text' => 'required|string|max:14',
             'areas' => 'required|json',
-            'image' => 'required|image|mimes:jpg,jpeg,png|max:1024',
+            'image' => 'required|image|mimes:jpg,jpeg,png,webp|max:1024',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('rich-menus', 'public');
-            $validated['image_path'] = $path;
+            $webpService = app(WebPService::class);
+            $result = $webpService->convertAndStore($request->file('image'), 'rich-menus', 90);
+            $validated['image_path'] = $result['path'];
         }
 
         $validated['areas'] = json_decode($validated['areas'], true);
@@ -70,7 +72,7 @@ class LineRichMenuController extends Controller
             'selected' => 'boolean',
             'chat_bar_text' => 'required|string|max:14',
             'areas' => 'required|json',
-            'image' => 'nullable|image|mimes:jpg,jpeg,png|max:1024',
+            'image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:1024',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);
@@ -79,8 +81,9 @@ class LineRichMenuController extends Controller
             if ($menu->image_path) {
                 Storage::disk('public')->delete($menu->image_path);
             }
-            $path = $request->file('image')->store('rich-menus', 'public');
-            $validated['image_path'] = $path;
+            $webpService = app(WebPService::class);
+            $result = $webpService->convertAndStore($request->file('image'), 'rich-menus', 90);
+            $validated['image_path'] = $result['path'];
         }
 
         $validated['areas'] = json_decode($validated['areas'], true);
