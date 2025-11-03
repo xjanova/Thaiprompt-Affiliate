@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Seller\DashboardController;
+use App\Http\Controllers\Seller\ProductController;
+use App\Http\Controllers\Seller\OrderManagementController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -11,10 +13,34 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-Route::get('/products', [DashboardController::class, 'products'])->name('products');
-Route::get('/sales', [DashboardController::class, 'sales'])->name('sales');
 Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
+
+// ========================================
+// E-COMMERCE PRODUCT MANAGEMENT
+// ========================================
+Route::prefix('products')->name('products.')->group(function () {
+    Route::get('/', [ProductController::class, 'index'])->name('index');
+    Route::get('/create', [ProductController::class, 'create'])->name('create');
+    Route::post('/', [ProductController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [ProductController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [ProductController::class, 'update'])->name('update');
+    Route::delete('/{id}', [ProductController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/toggle-status', [ProductController::class, 'toggleStatus'])->name('toggle-status');
+    Route::put('/{id}/stock', [ProductController::class, 'updateStock'])->name('update-stock');
+    Route::delete('/{productId}/images/{imageId}', [ProductController::class, 'deleteImage'])->name('delete-image');
+});
+
+// ========================================
+// E-COMMERCE ORDER MANAGEMENT
+// ========================================
+Route::prefix('orders')->name('orders.')->group(function () {
+    Route::get('/', [OrderManagementController::class, 'index'])->name('index');
+    Route::get('/{id}', [OrderManagementController::class, 'show'])->name('show');
+    Route::put('/{orderId}/items/{itemId}/status', [OrderManagementController::class, 'updateItemStatus'])->name('update-item-status');
+    Route::post('/{orderId}/tracking', [OrderManagementController::class, 'addTracking'])->name('add-tracking');
+    Route::get('/{id}/print', [OrderManagementController::class, 'print'])->name('print');
+});
 
 // Notifications
 Route::prefix('notifications')->name('notifications.')->group(function () {

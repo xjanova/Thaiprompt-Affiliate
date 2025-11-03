@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
+use App\Models\Order;
+use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -14,36 +18,85 @@ class DashboardController extends Controller
     public function index()
     {
         $user = Auth::user();
+        $sellerId = $user->id;
 
-        // Sales statistics (placeholder - will be implemented later)
-        $totalSales = 0;
-        $pendingSales = 0;
-        $completedSales = 0;
-        $totalRevenue = 0;
+        // Sales statistics
+        $totalSales = OrderItem::where('seller_id', $sellerId)->count();
+        $pendingSales = OrderItem::where('seller_id', $sellerId)
+            ->whereIn('status', ['pending', 'processing'])
+            ->count();
+        $completedSales = OrderItem::where('seller_id', $sellerId)
+            ->where('status', 'completed')
+            ->count();
+
+        // Revenue statistics
+        $totalRevenue = OrderItem::where('seller_id', $sellerId)
+            ->whereHas('order', function ($q) {
+                $q->where('payment_status', 'paid');
+            })
+            ->sum('seller_earning');
+
+        // Previous month revenue for growth calculation
+        $currentMonthRevenue = OrderItem::where('seller_id', $sellerId)
+            ->whereHas('order', function ($q) {
+                $q->where('payment_status', 'paid')
+                  ->whereMonth('created_at', now()->month)
+                  ->whereYear('created_at', now()->year);
+            })
+            ->sum('seller_earning');
+
+        $previousMonthRevenue = OrderItem::where('seller_id', $sellerId)
+            ->whereHas('order', function ($q) {
+                $q->where('payment_status', 'paid')
+                  ->whereMonth('created_at', now()->subMonth()->month)
+                  ->whereYear('created_at', now()->subMonth()->year);
+            })
+            ->sum('seller_earning');
+
+        $salesGrowth = 0;
+        if ($previousMonthRevenue > 0) {
+            $salesGrowth = (($currentMonthRevenue - $previousMonthRevenue) / $previousMonthRevenue) * 100;
+        }
 
         // Monthly revenue for the last 12 months
         $monthlyRevenue = collect();
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
+            $revenue = OrderItem::where('seller_id', $sellerId)
+                ->whereHas('order', function ($q) use ($date) {
+                    $q->where('payment_status', 'paid')
+                      ->whereMonth('created_at', $date->month)
+                      ->whereYear('created_at', $date->year);
+                })
+                ->sum('seller_earning');
+
             $monthlyRevenue->push([
                 'month' => $date->format('M Y'),
-                'total' => 0 // Placeholder
+                'total' => $revenue
             ]);
         }
 
-        // Sales growth
-        $salesGrowth = 0;
-
         // Product stats
-        $totalProducts = 0;
-        $activeProducts = 0;
-        $outOfStockProducts = 0;
+        $totalProducts = Product::where('seller_id', $sellerId)->count();
+        $activeProducts = Product::where('seller_id', $sellerId)->where('is_active', true)->count();
+        $outOfStockProducts = Product::where('seller_id', $sellerId)->outOfStock()->count();
 
-        // Recent orders (placeholder)
-        $recentOrders = collect();
+        // Recent orders
+        $recentOrders = Order::with(['items' => function ($q) use ($sellerId) {
+            $q->where('seller_id', $sellerId);
+        }])
+            ->whereHas('items', function ($q) use ($sellerId) {
+                $q->where('seller_id', $sellerId);
+            })
+            ->latest()
+            ->take(10)
+            ->get();
 
-        // Top selling products (placeholder)
-        $topProducts = collect();
+        // Top selling products
+        $topProducts = Product::where('seller_id', $sellerId)
+            ->orderBy('sales_count', 'desc')
+            ->take(5)
+            ->get();
 
         return view('seller.dashboard', compact(
             'user',

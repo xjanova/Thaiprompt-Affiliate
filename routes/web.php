@@ -114,6 +114,47 @@ Route::middleware('auth')->prefix('owner-dashboard')->name('owner-dashboard.')->
     Route::post('/request-payout', [\App\Http\Controllers\OwnerDashboardController::class, 'requestPayout'])->name('request-payout');
 });
 
+// ========================================
+// E-COMMERCE ROUTES (Shop System)
+// ========================================
+
+// Shop Routes (Public browsing)
+Route::prefix('shop')->name('shop.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ShopController::class, 'index'])->name('index');
+    Route::get('/category/{slug}', [\App\Http\Controllers\ShopController::class, 'category'])->name('category');
+    Route::get('/search', [\App\Http\Controllers\ShopController::class, 'quickSearch'])->name('search');
+    Route::get('/{slug}', [\App\Http\Controllers\ShopController::class, 'show'])->name('show');
+});
+
+// Cart Routes (Authenticated)
+Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\CartController::class, 'index'])->name('index');
+    Route::post('/add', [\App\Http\Controllers\CartController::class, 'add'])->name('add');
+    Route::put('/{id}', [\App\Http\Controllers\CartController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\CartController::class, 'remove'])->name('remove');
+    Route::delete('/', [\App\Http\Controllers\CartController::class, 'clear'])->name('clear');
+    Route::get('/count', [\App\Http\Controllers\CartController::class, 'count'])->name('count');
+});
+
+// Checkout Routes (Authenticated)
+Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('index');
+    Route::post('/process', [\App\Http\Controllers\CheckoutController::class, 'process'])->name('process');
+    Route::get('/success/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('success');
+});
+
+// Orders Routes (Customer orders - Authenticated)
+Route::middleware('auth')->prefix('orders')->name('orders.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\OrderController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\OrderController::class, 'show'])->name('show');
+    Route::post('/{id}/cancel', [\App\Http\Controllers\OrderController::class, 'cancel'])->name('cancel');
+    Route::post('/{id}/confirm-received', [\App\Http\Controllers\OrderController::class, 'confirmReceived'])->name('confirm-received');
+
+    // Reviews
+    Route::get('/{orderId}/items/{itemId}/review', [\App\Http\Controllers\OrderController::class, 'showReviewForm'])->name('review.form');
+    Route::post('/{orderId}/items/{itemId}/review', [\App\Http\Controllers\OrderController::class, 'submitReview'])->name('review.submit');
+});
+
 // User Routes (Protected by auth middleware and role check)
 Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
     require __DIR__.'/user.php';
