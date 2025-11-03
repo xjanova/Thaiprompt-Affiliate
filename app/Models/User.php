@@ -22,6 +22,7 @@ class User extends Authenticatable
         'password',
         'profile_picture',
         'role',
+        'role_id',
         'is_super_admin',
         'affiliate_id',
         'current_rank_id',
@@ -128,6 +129,14 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->is_super_admin === true;
+    }
+
+    /**
+     * Get the role associated with the user
+     */
+    public function roleModel()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
     }
 
     /**
@@ -322,7 +331,12 @@ class User extends Authenticatable
             return true;
         }
 
-        // Check permissions array
+        // Check role-based permissions (new system)
+        if ($this->roleModel && $this->roleModel->hasPermission($permission)) {
+            return true;
+        }
+
+        // Fallback to old permissions array for backward compatibility
         $permissions = $this->permissions ?? [];
         return in_array($permission, $permissions);
     }
@@ -389,6 +403,42 @@ class User extends Authenticatable
             'approve_kyc',
             'manage_kyc',
         ];
+    }
+
+    /**
+     * Get all permissions for this user (from role)
+     */
+    public function getAllPermissions(): array
+    {
+        if ($this->isSuperAdmin()) {
+            return static::availablePermissions();
+        }
+
+        if ($this->roleModel) {
+            return $this->roleModel->getPermissionNames();
+        }
+
+        // Fallback to old permissions array
+        return $this->permissions ?? [];
+    }
+
+    /**
+     * Get the display name of the user's role
+     */
+    public function getRoleDisplayName(): string
+    {
+        if ($this->roleModel) {
+            return $this->roleModel->display_name;
+        }
+
+        // Fallback to old role field
+        return match($this->role) {
+            'user' => 'ผู้ใช้ทั่วไป',
+            'seller' => 'ผู้ขาย',
+            'admin' => 'ผู้ดูแลระบบ',
+            'super_admin' => 'ผู้ดูแลระบบสูงสุด',
+            default => $this->role,
+        };
     }
 
     /**

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -55,6 +56,11 @@ Route::resource('users', UserController::class);
 Route::get('users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
 Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
 Route::get('users/{user}/dashboard', [UserController::class, 'viewDashboard'])->name('users.dashboard');
+
+// Role Management
+Route::resource('roles', RoleController::class);
+Route::get('roles/{role}/permissions', [RoleController::class, 'permissions'])->name('roles.permissions');
+Route::put('roles/{role}/permissions', [RoleController::class, 'updatePermissions'])->name('roles.permissions.update');
 
 // Affiliate Management
 // Note: Specific routes must be defined BEFORE Route::resource to avoid conflicts
