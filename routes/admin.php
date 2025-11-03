@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\WebPManagementController;
 use App\Http\Controllers\Admin\ECommerceController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\MlmGlobalSettingController;
+use App\Http\Controllers\Admin\PaymentGatewayController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -210,6 +211,16 @@ Route::prefix('wallet-settings')->name('wallet-settings.')->group(function () {
     Route::post('/{id}/toggle', [WalletSettingsController::class, 'toggle'])->name('toggle');
     Route::post('/calculate-fee', [WalletSettingsController::class, 'calculateFee'])->name('calculate-fee');
     Route::post('/reset-defaults', [WalletSettingsController::class, 'resetToDefaults'])->name('reset-defaults');
+});
+
+// Payment Gateway Management
+Route::prefix('payment-gateways')->name('payment-gateways.')->group(function () {
+    Route::get('/', [PaymentGatewayController::class, 'index'])->name('index');
+    Route::get('/{paymentGateway}/edit', [PaymentGatewayController::class, 'edit'])->name('edit');
+    Route::put('/{paymentGateway}', [PaymentGatewayController::class, 'update'])->name('update');
+    Route::post('/{paymentGateway}/toggle', [PaymentGatewayController::class, 'toggle'])->name('toggle');
+    Route::post('/{paymentGateway}/test', [PaymentGatewayController::class, 'testConnection'])->name('test');
+    Route::post('/update-order', [PaymentGatewayController::class, 'updateOrder'])->name('update-order');
 });
 
 // Language Settings
