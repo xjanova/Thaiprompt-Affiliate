@@ -71,6 +71,7 @@ Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('
 Route::prefix('webp')->name('webp.')->group(function () {
     Route::get('/', [WebPManagementController::class, 'index'])->name('index');
     Route::post('/convert', [WebPManagementController::class, 'convert'])->name('convert');
+    Route::get('/progress', [WebPManagementController::class, 'progress'])->name('progress');
     Route::get('/directory-details', [WebPManagementController::class, 'directoryDetails'])->name('directory-details');
 });
 
