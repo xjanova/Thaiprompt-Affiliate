@@ -4,774 +4,805 @@
 
 @push('styles')
 <style>
-/* LINE OA Color Scheme */
+/* Premium Modern Color Palette */
 :root {
-    --line-green: #06C755;
-    --line-green-dark: #00B900;
-    --line-green-light: #E8F7EF;
-    --line-gray: #F7F7F7;
-    --line-border: #E0E0E0;
-    --line-text: #333333;
-    --line-text-light: #6C6C6C;
+    --primary: #6366F1;
+    --primary-dark: #4F46E5;
+    --primary-light: #818CF8;
+    --accent: #F59E0B;
+    --accent-light: #FBBF24;
+    --success: #10B981;
+    --success-light: #34D399;
+    --danger: #EF4444;
+    --warning: #F59E0B;
+    --info: #3B82F6;
+
+    --bg-dark: #0F172A;
+    --bg-light: #F8FAFC;
+    --text-dark: #1E293B;
+    --text-light: #64748B;
+    --border: #E2E8F0;
+
+    --glass-bg: rgba(255, 255, 255, 0.1);
+    --glass-border: rgba(255, 255, 255, 0.2);
 }
 
-/* Main Container */
-.ai-installation-container {
-    background: #FAFAFA;
+/* Animated Gradient Background */
+.premium-container {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Navigation Tabs */
-.line-tabs {
-    background: white;
-    border-bottom: 1px solid var(--line-border);
-    margin-bottom: 0;
+.premium-container::before {
+    content: '';
+    position: absolute;
+    width: 200%;
+    height: 200%;
+    top: -50%;
+    left: -50%;
+    background: linear-gradient(
+        45deg,
+        transparent 0%,
+        rgba(255,255,255,0.05) 25%,
+        transparent 50%,
+        rgba(255,255,255,0.05) 75%,
+        transparent 100%
+    );
+    animation: shimmer 15s linear infinite;
+    pointer-events: none;
 }
 
-.line-tabs .nav-link {
-    color: var(--line-text-light);
+@keyframes shimmer {
+    0% { transform: translateX(-50%) translateY(-50%) rotate(0deg); }
+    100% { transform: translateX(-50%) translateY(-50%) rotate(360deg); }
+}
+
+/* Glass Morphism Card */
+.glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow:
+        0 8px 32px 0 rgba(31, 38, 135, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+    transform: translateY(-4px);
+    box-shadow:
+        0 20px 60px 0 rgba(31, 38, 135, 0.25),
+        0 0 0 1px rgba(255, 255, 255, 0.2) inset;
+}
+
+/* Premium Hero */
+.premium-hero {
+    position: relative;
+    padding: 60px 0;
+    text-align: center;
+    color: white;
+    z-index: 1;
+}
+
+.premium-hero h1 {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.premium-hero p {
+    font-size: 1.25rem;
+    opacity: 0.95;
+    max-width: 800px;
+    margin: 0 auto 40px;
+    line-height: 1.8;
+}
+
+/* Premium Button */
+.btn-premium {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-light) 100%);
     border: none;
-    border-bottom: 3px solid transparent;
-    padding: 15px 24px;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.line-tabs .nav-link:hover {
-    color: var(--line-green);
-    border-bottom-color: var(--line-green-light);
-}
-
-.line-tabs .nav-link.active {
-    color: var(--line-green);
-    border-bottom-color: var(--line-green);
-    background: transparent;
-}
-
-/* Header Section */
-.line-header {
-    background: white;
-    padding: 24px;
-    border-bottom: 1px solid var(--line-border);
-    margin-bottom: 24px;
-}
-
-.line-header h1 {
-    font-size: 24px;
+    color: white;
+    padding: 16px 48px;
+    border-radius: 50px;
     font-weight: 600;
-    color: var(--line-text);
-    margin-bottom: 8px;
-}
-
-.line-header p {
-    color: var(--line-text-light);
-    font-size: 14px;
-    margin: 0;
-}
-
-/* Info Banner */
-.line-info-banner {
-    background: var(--line-green-light);
-    border: 1px solid #C8E6D5;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 24px;
-}
-
-.line-info-banner .icon {
-    width: 40px;
-    height: 40px;
-    background: white;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--line-green);
-    font-size: 20px;
-}
-
-/* Feature Cards */
-.line-feature-card {
-    background: white;
-    border: 1px solid var(--line-border);
-    border-radius: 8px;
-    padding: 20px;
-    height: 100%;
-    transition: all 0.2s;
-}
-
-.line-feature-card:hover {
-    border-color: var(--line-green);
-    box-shadow: 0 2px 8px rgba(6, 199, 85, 0.1);
-}
-
-.line-feature-card .icon {
-    width: 48px;
-    height: 48px;
-    background: var(--line-green-light);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--line-green);
-    font-size: 24px;
-    margin-bottom: 16px;
-}
-
-.line-feature-card h3 {
     font-size: 16px;
+    box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-premium::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.btn-premium:hover::before {
+    left: 100%;
+}
+
+.btn-premium:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 15px 40px rgba(245, 158, 11, 0.5);
+    color: white;
+}
+
+.btn-premium-outline {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 14px 40px;
+    border-radius: 50px;
     font-weight: 600;
-    color: var(--line-text);
-    margin-bottom: 8px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
 }
 
-.line-feature-card p {
-    font-size: 14px;
-    color: var(--line-text-light);
-    margin: 0;
-    line-height: 1.5;
+.btn-premium-outline:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-2px);
+    color: white;
 }
 
-/* Comparison Table */
-.line-comparison-card {
+/* Feature Card */
+.feature-card-premium {
     background: white;
-    border: 1px solid var(--line-border);
-    border-radius: 8px;
+    border-radius: 20px;
+    padding: 32px;
+    height: 100%;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+}
+
+.feature-card-premium::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+}
+
+.feature-card-premium:hover::before {
+    transform: scaleX(1);
+}
+
+.feature-card-premium:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+}
+
+.feature-icon-premium {
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin-bottom: 24px;
+    position: relative;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+.icon-gradient-1 {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.icon-gradient-2 {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
+
+.icon-gradient-3 {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
+
+.icon-gradient-4 {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+/* Stats Card */
+.stats-card-premium {
+    background: white;
+    border-radius: 16px;
     padding: 24px;
     height: 100%;
-    transition: all 0.2s;
+    border-left: 4px solid var(--primary);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+    transition: all 0.3s ease;
 }
 
-.line-comparison-card.highlight {
-    border: 2px solid var(--line-green);
+.stats-card-premium:hover {
+    transform: translateX(4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+/* Model Card */
+.model-card-premium {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 100%;
     position: relative;
 }
 
-.line-comparison-card.highlight::before {
-    content: '推奨';
-    position: absolute;
-    top: -12px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--line-green);
+.model-card-premium:hover {
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.2);
+}
+
+.model-card-premium.selected {
+    border-color: var(--primary);
+    border-width: 3px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(129, 140, 248, 0.05) 100%);
+}
+
+.model-card-premium .badge-recommended {
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
     color: white;
-    padding: 4px 16px;
-    border-radius: 12px;
+    padding: 6px 14px;
+    border-radius: 20px;
     font-size: 12px;
     font-weight: 600;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
-.line-comparison-card h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--line-text);
-    margin-bottom: 16px;
+/* Progress Bar */
+.progress-premium {
+    height: 12px;
+    background: rgba(99, 102, 241, 0.1);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
 }
 
-.line-comparison-card .price {
-    font-size: 32px;
-    font-weight: 700;
-    color: var(--line-green);
-    margin-bottom: 20px;
+.progress-premium .progress-bar-premium {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-light));
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    position: relative;
+    overflow: hidden;
 }
 
-.line-comparison-card .price small {
-    font-size: 14px;
-    font-weight: 400;
-    color: var(--line-text-light);
+.progress-premium .progress-bar-premium::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    animation: progress-shimmer 2s infinite;
+}
+
+@keyframes progress-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
 }
 
 /* Wizard Steps */
-.line-wizard-steps {
+.wizard-steps-premium {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 32px;
+    margin-bottom: 40px;
     position: relative;
     padding: 0 60px;
 }
 
-.line-wizard-steps::before {
+.wizard-steps-premium::before {
     content: '';
     position: absolute;
-    top: 20px;
-    left: 60px;
-    right: 60px;
-    height: 2px;
-    background: var(--line-border);
+    top: 24px;
+    left: 80px;
+    right: 80px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--border) 0%, var(--border) 100%);
     z-index: 0;
 }
 
-.line-wizard-step {
+.wizard-step-premium {
     flex: 1;
     text-align: center;
     position: relative;
     z-index: 1;
 }
 
-.line-wizard-step .circle {
-    width: 40px;
-    height: 40px;
+.wizard-step-premium .circle {
+    width: 48px;
+    height: 48px;
     border-radius: 50%;
     background: white;
-    border: 2px solid var(--line-border);
-    color: var(--line-text-light);
+    border: 3px solid var(--border);
+    color: var(--text-light);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
-    margin-bottom: 8px;
-    transition: all 0.2s;
-}
-
-.line-wizard-step.active .circle {
-    background: var(--line-green);
-    border-color: var(--line-green);
-    color: white;
-}
-
-.line-wizard-step.completed .circle {
-    background: var(--line-green);
-    border-color: var(--line-green);
-    color: white;
-}
-
-.line-wizard-step .label {
-    font-size: 13px;
-    color: var(--line-text-light);
-}
-
-.line-wizard-step.active .label {
-    color: var(--line-green);
-    font-weight: 600;
-}
-
-/* Stats Card */
-.line-stats-card {
-    background: white;
-    border: 1px solid var(--line-border);
-    border-radius: 8px;
-    padding: 20px;
-    height: 100%;
-}
-
-.line-stats-card .header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 16px;
-}
-
-.line-stats-card .icon {
-    width: 40px;
-    height: 40px;
-    background: var(--line-green-light);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--line-green);
-    margin-right: 12px;
-}
-
-.line-stats-card h3 {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--line-text);
-    margin: 0;
-}
-
-.line-stats-card .value {
-    font-size: 24px;
     font-weight: 700;
-    color: var(--line-text);
-    margin-bottom: 4px;
+    margin-bottom: 12px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.line-stats-card .description {
-    font-size: 13px;
-    color: var(--line-text-light);
-}
-
-/* Model Card */
-.line-model-card {
-    background: white;
-    border: 1px solid var(--line-border);
-    border-radius: 8px;
-    padding: 20px;
-    cursor: pointer;
-    transition: all 0.2s;
-    height: 100%;
-}
-
-.line-model-card:hover {
-    border-color: var(--line-green);
-    box-shadow: 0 2px 8px rgba(6, 199, 85, 0.1);
-}
-
-.line-model-card.selected {
-    border: 2px solid var(--line-green);
-    background: var(--line-green-light);
-}
-
-.line-model-card h3 {
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--line-text);
-    margin-bottom: 8px;
-}
-
-.line-model-card .badge {
-    background: var(--line-green);
+.wizard-step-premium.active .circle {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    border-color: var(--primary);
     color: white;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.4);
+    transform: scale(1.1);
 }
 
-.line-model-card .badge.secondary {
-    background: #F0F0F0;
-    color: var(--line-text);
-}
-
-/* Progress Bar */
-.line-progress {
-    height: 8px;
-    background: var(--line-gray);
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-.line-progress .bar {
-    height: 100%;
-    background: var(--line-green);
-    transition: width 0.3s ease;
-}
-
-/* Buttons */
-.btn-line {
-    background: var(--line-green);
-    border: none;
+.wizard-step-premium.completed .circle {
+    background: linear-gradient(135deg, var(--success) 0%, var(--success-light) 100%);
+    border-color: var(--success);
     color: white;
-    padding: 10px 24px;
-    border-radius: 4px;
-    font-weight: 600;
+}
+
+.wizard-step-premium .label {
     font-size: 14px;
-    transition: all 0.2s;
+    color: var(--text-light);
+    font-weight: 500;
 }
 
-.btn-line:hover {
-    background: var(--line-green-dark);
-    color: white;
-}
-
-.btn-line-outline {
-    background: white;
-    border: 1px solid var(--line-border);
-    color: var(--line-text);
-    padding: 10px 24px;
-    border-radius: 4px;
-    font-weight: 600;
-    font-size: 14px;
-    transition: all 0.2s;
-}
-
-.btn-line-outline:hover {
-    border-color: var(--line-green);
-    color: var(--line-green);
-}
-
-.btn-line-lg {
-    padding: 12px 32px;
-    font-size: 16px;
+.wizard-step-premium.active .label {
+    color: var(--primary);
+    font-weight: 700;
 }
 
 /* Installation Log */
-.line-log {
-    background: #2D2D2D;
-    border: 1px solid #404040;
-    border-radius: 8px;
-    padding: 16px;
-    max-height: 300px;
-    overflow-y: auto;
-    font-family: 'Courier New', monospace;
-    font-size: 12px;
-    color: #E0E0E0;
-}
-
-.line-log::-webkit-scrollbar {
-    width: 6px;
-}
-
-.line-log::-webkit-scrollbar-track {
+.installation-log-premium {
     background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 12px;
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+    font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    font-size: 13px;
+    color: #e0e0e0;
+    line-height: 1.6;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2) inset;
 }
 
-.line-log::-webkit-scrollbar-thumb {
-    background: var(--line-green);
-    border-radius: 3px;
+.installation-log-premium::-webkit-scrollbar {
+    width: 8px;
 }
 
-/* Alerts */
-.line-alert {
-    border: 1px solid;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 16px;
+.installation-log-premium::-webkit-scrollbar-track {
+    background: #2d2d2d;
+    border-radius: 4px;
 }
 
-.line-alert.success {
-    background: var(--line-green-light);
-    border-color: #C8E6D5;
-    color: var(--line-text);
+.installation-log-premium::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border-radius: 4px;
 }
 
-.line-alert.info {
-    background: #E3F2FD;
-    border-color: #BBDEFB;
-    color: var(--line-text);
-}
-
-.line-alert.warning {
-    background: #FFF3E0;
-    border-color: #FFE0B2;
-    color: var(--line-text);
-}
-
-.line-alert.error {
-    background: #FFEBEE;
-    border-color: #FFCDD2;
-    color: var(--line-text);
-}
-
-/* Content Section */
-.line-section {
-    background: white;
-    border: 1px solid var(--line-border);
-    border-radius: 8px;
-    padding: 24px;
-    margin-bottom: 16px;
-}
-
-.line-section-header {
-    display: flex;
-    justify-content: between;
-    align-items: center;
+/* Alert Premium */
+.alert-premium {
+    border-radius: 16px;
+    padding: 20px 24px;
+    border: none;
     margin-bottom: 20px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
 }
 
-.line-section-header h2 {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--line-text);
-    margin: 0;
+.alert-premium.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.1) 100%);
+    border-left: 4px solid var(--success);
 }
 
-/* Table */
-.line-table {
+.alert-premium.info {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(96, 165, 250, 0.1) 100%);
+    border-left: 4px solid var(--info);
+}
+
+.alert-premium.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.1) 100%);
+    border-left: 4px solid var(--warning);
+}
+
+.alert-premium.danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(248, 113, 113, 0.1) 100%);
+    border-left: 4px solid var(--danger);
+}
+
+/* Table Premium */
+.table-premium {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
 }
 
-.line-table thead th {
-    background: var(--line-gray);
-    color: var(--line-text);
-    font-weight: 600;
+.table-premium thead th {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    color: var(--text-dark);
+    font-weight: 700;
     font-size: 13px;
-    padding: 12px 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 16px 20px;
     text-align: left;
-    border-bottom: 1px solid var(--line-border);
+    border-bottom: 2px solid var(--border);
 }
 
-.line-table tbody td {
-    padding: 16px;
-    border-bottom: 1px solid var(--line-border);
+.table-premium tbody td {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
     font-size: 14px;
-    color: var(--line-text);
+    color: var(--text-dark);
 }
 
-.line-table tbody tr:hover {
-    background: var(--line-gray);
+.table-premium tbody tr:last-child td {
+    border-bottom: none;
 }
 
-/* Badge */
-.line-badge {
+.table-premium tbody tr {
+    transition: all 0.2s ease;
+}
+
+.table-premium tbody tr:hover {
+    background: rgba(99, 102, 241, 0.02);
+}
+
+/* Badge Premium */
+.badge-premium {
     display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 8px;
     font-size: 12px;
     font-weight: 600;
 }
 
-.line-badge.success {
-    background: var(--line-green-light);
-    color: var(--line-green-dark);
+.badge-premium.success {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(52, 211, 153, 0.15) 100%);
+    color: var(--success);
 }
 
-.line-badge.warning {
-    background: #FFF3E0;
-    color: #F57C00;
+.badge-premium.warning {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.15) 100%);
+    color: var(--warning);
 }
 
-.line-badge.error {
-    background: #FFEBEE;
-    color: #D32F2F;
+.badge-premium.danger {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(248, 113, 113, 0.15) 100%);
+    color: var(--danger);
 }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
+/* Comparison Card */
+.comparison-card-premium {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    height: 100%;
+    transition: all 0.3s ease;
+    position: relative;
 }
 
-.pulse-animation {
-    animation: pulse 2s infinite;
+.comparison-card-premium.highlight {
+    border-color: var(--primary);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.03) 0%, rgba(129, 140, 248, 0.03) 100%);
+    transform: scale(1.05);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.15);
+}
+
+.comparison-card-premium.highlight::before {
+    content: '⭐ แนะนำ';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color: white;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+}
+
+.comparison-card-premium .price {
+    font-size: 3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 20px 0;
+}
+
+/* Floating Animation */
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Pulse Animation */
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.4); }
+    50% { box-shadow: 0 0 40px rgba(99, 102, 241, 0.8); }
+}
+
+.content-wrapper {
+    position: relative;
+    z-index: 1;
+    padding: 40px 0;
 }
 </style>
 @endpush
 
 @section('content')
-<div class="ai-installation-container">
-    <!-- Navigation Tabs -->
-    <ul class="nav line-tabs">
-        <li class="nav-item">
-            <a class="nav-link active" href="#">
-                <i class="fas fa-home me-2"></i>ภาพรวม
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="#" onclick="startNewInstallation(); return false;">
-                <i class="fas fa-download me-2"></i>ติดตั้งโมเดล
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="#">
-                <i class="fas fa-cog me-2"></i>ตั้งค่า
-            </a>
-        </li>
-    </ul>
-
-    <div class="container-fluid" style="padding: 24px;">
-        <!-- Header -->
-        <div class="line-header">
-            <div class="d-flex justify-content-between align-items-start">
-                <div>
-                    <h1>ติดตั้ง AI ของตัวเอง (Self-Hosted)</h1>
-                    <p>ติดตั้ง DeepSeek AI บนเซิร์ฟเวอร์ของคุณเอง ใช้งานฟรี ไม่จำกัด ไม่มีค่าใช้จ่ายรายเดือน</p>
-                </div>
-                <button type="button" class="btn-line btn-line-lg" onclick="startNewInstallation()">
-                    <i class="fas fa-plus me-2"></i>ติดตั้งโมเดลใหม่
+<div class="premium-container">
+    <!-- Premium Hero -->
+    <div class="premium-hero">
+        <div class="container">
+            <div class="float-animation" style="display: inline-block;">
+                <i class="fas fa-server" style="font-size: 80px; margin-bottom: 30px; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3));"></i>
+            </div>
+            <h1>ติดตั้ง AI ของตัวเอง</h1>
+            <p>
+                ติดตั้ง DeepSeek AI บนเซิร์ฟเวอร์ของคุณเอง ใช้งานฟรี ไม่จำกัด ไม่มีค่าใช้จ่ายรายเดือน<br>
+                ควบคุมข้อมูลของคุณได้เอง 100% และประหยัดค่าใช้จ่ายได้มากกว่า 90%
+            </p>
+            <div class="d-flex gap-3 justify-content-center">
+                <button type="button" class="btn-premium" onclick="startNewInstallation()">
+                    <i class="fas fa-rocket me-2"></i>
+                    เริ่มติดตั้งเลย
+                </button>
+                <button type="button" class="btn-premium-outline" onclick="document.getElementById('features').scrollIntoView({behavior: 'smooth'})">
+                    <i class="fas fa-info-circle me-2"></i>
+                    เรียนรู้เพิ่มเติม
                 </button>
             </div>
         </div>
+    </div>
 
-        <!-- Info Banner -->
-        <div class="line-info-banner">
-            <div class="d-flex align-items-center">
-                <div class="icon">
-                    <i class="fas fa-info"></i>
-                </div>
-                <div class="ms-3">
-                    <strong>ประหยัดค่าใช้จ่ายได้มากกว่า 90%</strong>
-                    <p class="mb-0" style="font-size: 14px;">เมื่อเปรียบเทียบกับ ChatGPT API หรือ Claude API พร้อมความเป็นส่วนตัวและปลอดภัย 100%</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Features -->
-        <div class="row mb-4">
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="line-feature-card">
-                    <div class="icon">
-                        <i class="fas fa-infinity"></i>
-                    </div>
-                    <h3>ใช้งานไม่จำกัด</h3>
-                    <p>ไม่มีข้อจำกัดจำนวนคำถาม ไม่มีค่าใช้จ่ายรายเดือน ใช้งานได้เท่าที่ต้องการ</p>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="line-feature-card">
-                    <div class="icon">
-                        <i class="fas fa-shield-alt"></i>
-                    </div>
-                    <h3>ปลอดภัย 100%</h3>
-                    <p>ข้อมูลอยู่บนเซิร์ฟเวอร์ของคุณ ไม่ส่งข้อมูลออกไปภายนอก รับรองความเป็นส่วนตัว</p>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="line-feature-card">
-                    <div class="icon">
-                        <i class="fas fa-piggy-bank"></i>
-                    </div>
-                    <h3>ประหยัดงบ 90%+</h3>
-                    <p>เทียบกับ ChatGPT API หรือ Claude ประหยัดได้หลักหมื่นบาทต่อเดือน</p>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6 mb-3">
-                <div class="line-feature-card">
-                    <div class="icon">
-                        <i class="fas fa-tachometer-alt"></i>
-                    </div>
-                    <h3>รวดเร็ว ทันใจ</h3>
-                    <p>ติดตั้งบนเซิร์ฟเวอร์ของคุณ ไม่ต้องรอคิว ตอบสนองเร็วกว่า Cloud API</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Pricing Comparison -->
-        <div class="line-section">
-            <h2 class="mb-4" style="font-size: 18px; font-weight: 600;">เปรียบเทียบค่าใช้จ่าย</h2>
-            <div class="row">
-                <div class="col-lg-4 col-md-6 mb-3">
-                    <div class="line-comparison-card">
-                        <h3>ChatGPT API</h3>
-                        <div class="price">$20-200<small>/เดือน</small></div>
-                        <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>จำกัดจำนวนคำถาม</li>
-                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ค่าใช้จ่ายสูง</li>
-                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ข้อมูลถูกส่งออกไป</li>
-                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ต้องพึ่งพา API ภายนอก</li>
-                        </ul>
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <div class="container">
+            <!-- Features Section -->
+            <div id="features" class="row g-4 mb-5">
+                <div class="col-lg-3 col-md-6">
+                    <div class="feature-card-premium">
+                        <div class="feature-icon-premium icon-gradient-1">
+                            <i class="fas fa-infinity"></i>
+                        </div>
+                        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--text-dark);">ใช้งานไม่จำกัด</h3>
+                        <p style="color: var(--text-light); margin: 0; line-height: 1.6;">ไม่มีข้อจำกัดจำนวนคำถาม ไม่มีค่าใช้จ่ายรายเดือน ใช้งานได้เท่าที่ต้องการ</p>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-6 mb-3">
-                    <div class="line-comparison-card highlight">
-                        <h3>Self-Hosted AI</h3>
-                        <div class="price">฿0<small>/เดือน</small></div>
-                        <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><i class="fas fa-check me-2" style="color: var(--line-green);"></i>ใช้ไม่จำกัด ฟรี!</li>
-                            <li class="mb-2"><i class="fas fa-check me-2" style="color: var(--line-green);"></i>ไม่มีค่าใช้จ่ายรายเดือน</li>
-                            <li class="mb-2"><i class="fas fa-check me-2" style="color: var(--line-green);"></i>ข้อมูลอยู่กับคุณ 100%</li>
-                            <li class="mb-2"><i class="fas fa-check me-2" style="color: var(--line-green);"></i>ควบคุมได้เองทั้งหมด</li>
-                        </ul>
+                <div class="col-lg-3 col-md-6">
+                    <div class="feature-card-premium">
+                        <div class="feature-icon-premium icon-gradient-2">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--text-dark);">ปลอดภัย 100%</h3>
+                        <p style="color: var(--text-light); margin: 0; line-height: 1.6;">ข้อมูลอยู่บนเซิร์ฟเวอร์ของคุณ ไม่ส่งข้อมูลออกไปภายนอก รับรองความเป็นส่วนตัว</p>
                     </div>
                 </div>
-                <div class="col-lg-4 col-md-6 mb-3">
-                    <div class="line-comparison-card">
-                        <h3>Claude API</h3>
-                        <div class="price">$15-150<small>/เดือน</small></div>
-                        <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>คิดตามจำนวน tokens</li>
-                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ราคาแพง</li>
-                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>ข้อมูลส่งไป Anthropic</li>
-                            <li class="mb-2"><i class="fas fa-times text-danger me-2"></i>มีข้อจำกัด rate limit</li>
-                        </ul>
+                <div class="col-lg-3 col-md-6">
+                    <div class="feature-card-premium">
+                        <div class="feature-icon-premium icon-gradient-3">
+                            <i class="fas fa-piggy-bank"></i>
+                        </div>
+                        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--text-dark);">ประหยัดงบ 90%+</h3>
+                        <p style="color: var(--text-light); margin: 0; line-height: 1.6;">เทียบกับ ChatGPT API หรือ Claude ประหยัดได้หลักหมื่นบาทต่อเดือน</p>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="line-section">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h2>จัดการ AI โมเดล</h2>
-                    <p class="text-muted mb-0" style="font-size: 14px;">ติดตั้งและจัดการโมเดล AI ที่คุณต้องการ</p>
-                </div>
-            </div>
-            <!-- Ollama Status -->
-            <div id="ollama-status" class="line-alert info">
-                <div class="d-flex align-items-center">
-                    <div class="spinner-border spinner-border-sm me-2" role="status"></div>
-                    <span>กำลังตรวจสอบสถานะ Ollama...</span>
-                </div>
-            </div>
-
-            <!-- Installed Models -->
-            <div class="mt-4">
-                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">โมเดลที่ติดตั้งแล้ว</h3>
-                <div id="installed-models">
-                    <div class="text-center py-4">
-                        <div class="spinner-border" role="status" style="color: var(--line-green);"></div>
-                        <p class="mt-2 text-muted">กำลังโหลด...</p>
+                <div class="col-lg-3 col-md-6">
+                    <div class="feature-card-premium">
+                        <div class="feature-icon-premium icon-gradient-4">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--text-dark);">รวดเร็ว ทันใจ</h3>
+                        <p style="color: var(--text-light); margin: 0; line-height: 1.6;">ติดตั้งบนเซิร์ฟเวอร์ของคุณ ไม่ต้องรอคิว ตอบสนองเร็วกว่า Cloud API</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Installation Logs -->
-            @if($recentLogs->count() > 0)
-            <div class="mt-4">
-                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px;">ประวัติการติดตั้งล่าสุด</h3>
-                <div class="table-responsive">
-                    <table class="line-table">
-                        <thead>
-                            <tr>
-                                <th>เวลา</th>
-                                <th>โมเดล</th>
-                                <th>สถานะ</th>
-                                <th>Progress</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($recentLogs as $log)
-                            <tr>
-                                <td>{{ $log->created_at->diffForHumans() }}</td>
-                                <td>{{ $log->config['model_id'] ?? 'N/A' }}</td>
-                                <td>
-                                    <span class="line-badge {{ $log->isCompleted() ? 'success' : ($log->isFailed() ? 'error' : 'warning') }}">
-                                        {{ $log->getStatusMessage() }}
-                                    </span>
-                                </td>
-                                <td>{{ $log->progress_percentage }}%</td>
-                                <td>
-                                    <button class="btn-line-outline" style="padding: 6px 12px; font-size: 13px;" onclick="viewLog({{ $log->id }})">
-                                        <i class="fas fa-eye me-1"></i>ดูรายละเอียด
-                                    </button>
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+            <!-- Pricing Comparison -->
+            <div class="glass-card p-5 mb-5">
+                <h2 class="text-center mb-4" style="font-size: 32px; font-weight: 800; color: var(--text-dark);">เปรียบเทียบค่าใช้จ่าย</h2>
+                <div class="row g-4">
+                    <div class="col-lg-4">
+                        <div class="comparison-card-premium">
+                            <h3 style="font-size: 22px; font-weight: 700; color: var(--text-dark);">ChatGPT API</h3>
+                            <div class="price">$20-200<small style="font-size: 1rem; opacity: 0.6;">/เดือน</small></div>
+                            <ul class="list-unstyled" style="line-height: 2;">
+                                <li><i class="fas fa-times-circle text-danger me-2"></i>จำกัดจำนวนคำถาม</li>
+                                <li><i class="fas fa-times-circle text-danger me-2"></i>ค่าใช้จ่ายสูง</li>
+                                <li><i class="fas fa-times-circle text-danger me-2"></i>ข้อมูลถูกส่งออกไป</li>
+                                <li><i class="fas fa-times-circle text-danger me-2"></i>ต้องพึ่งพา API ภายนอก</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="comparison-card-premium highlight">
+                            <h3 style="font-size: 22px; font-weight: 700; color: var(--text-dark);">Self-Hosted AI</h3>
+                            <div class="price">฿0<small style="font-size: 1rem; opacity: 0.6;">/เดือน</small></div>
+                            <ul class="list-unstyled" style="line-height: 2;">
+                                <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>ใช้ไม่จำกัด ฟรี!</li>
+                                <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>ไม่มีค่าใช้จ่ายรายเดือน</li>
+                                <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>ข้อมูลอยู่กับคุณ 100%</li>
+                                <li><i class="fas fa-check-circle me-2" style="color: var(--success);"></i>ควบคุมได้เองทั้งหมด</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="comparison-card-premium">
+                            <h3 style="font-size: 22px; font-weight: 700; color: var(--text-dark);">Claude API</h3>
+                            <div class="price">$15-150<small style="font-size: 1rem; opacity: 0.6;">/เดือน</small></div>
+                            <ul class="list-unstyled" style="line-height: 2;">
+                                <li><i class="fas fa-times-circle text-danger me-2"></i>คิดตามจำนวน tokens</li>
+                                <li><i class="fas fa-times-circle text-danger me-2"></i>ราคาแพง</li>
+                                <li><i class="fas fa-times-circle text-danger me-2"></i>ข้อมูลส่งไป Anthropic</li>
+                                <li><i class="fas fa-times-circle text-danger me-2"></i>มีข้อจำกัด rate limit</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
             </div>
-            @endif
+
+            <!-- Management Section -->
+            <div class="glass-card p-5">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2 style="font-size: 28px; font-weight: 800; color: var(--text-dark); margin-bottom: 8px;">จัดการ AI โมเดล</h2>
+                        <p style="color: var(--text-light); margin: 0;">ติดตั้งและจัดการโมเดล AI ที่คุณต้องการ</p>
+                    </div>
+                    <button type="button" class="btn-premium" onclick="startNewInstallation()">
+                        <i class="fas fa-plus me-2"></i>ติดตั้งโมเดลใหม่
+                    </button>
+                </div>
+
+                <!-- Ollama Status -->
+                <div id="ollama-status" class="alert-premium info">
+                    <div class="d-flex align-items-center">
+                        <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+                        <span>กำลังตรวจสอบสถานะ Ollama...</span>
+                    </div>
+                </div>
+
+                <!-- Installed Models -->
+                <div class="mt-4">
+                    <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; color: var(--text-dark);">โมเดลที่ติดตั้งแล้ว</h3>
+                    <div id="installed-models">
+                        <div class="text-center py-5">
+                            <div class="spinner-border" style="color: var(--primary);" role="status"></div>
+                            <p class="mt-3" style="color: var(--text-light);">กำลังโหลด...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Installation Logs -->
+                @if($recentLogs->count() > 0)
+                <div class="mt-5">
+                    <h3 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; color: var(--text-dark);">ประวัติการติดตั้งล่าสุด</h3>
+                    <div class="table-responsive">
+                        <table class="table-premium">
+                            <thead>
+                                <tr>
+                                    <th>เวลา</th>
+                                    <th>โมเดล</th>
+                                    <th>สถานะ</th>
+                                    <th>Progress</th>
+                                    <th>การจัดการ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($recentLogs as $log)
+                                <tr>
+                                    <td>{{ $log->created_at->diffForHumans() }}</td>
+                                    <td><strong>{{ $log->config['model_id'] ?? 'N/A' }}</strong></td>
+                                    <td>
+                                        <span class="badge-premium {{ $log->isCompleted() ? 'success' : ($log->isFailed() ? 'danger' : 'warning') }}">
+                                            {{ $log->getStatusMessage() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ $log->progress_percentage }}%</td>
+                                    <td>
+                                        <button class="btn-premium-outline" style="padding: 8px 16px; font-size: 13px;" onclick="viewLog({{ $log->id }})">
+                                            <i class="fas fa-eye me-1"></i>ดูรายละเอียด
+                                        </button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                @endif
+            </div>
         </div>
     </div>
-</div>
 </div>
 
 <!-- Installation Wizard Modal -->
 <div class="modal fade" id="installationWizard" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-xl">
-        <div class="modal-content" style="border: none; border-radius: 8px;">
-            <div class="modal-header" style="border-bottom: 1px solid var(--line-border); padding: 24px;">
+        <div class="modal-content" style="border: none; border-radius: 24px; overflow: hidden;">
+            <div class="modal-header" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; border: none; padding: 32px;">
                 <div class="w-100">
-                    <h4 class="modal-title mb-0" style="font-size: 20px; font-weight: 600; color: var(--line-text);">ติดตั้ง AI โมเดล</h4>
-                    <p class="text-muted mb-4 mt-2" style="font-size: 14px;">ติดตั้งและกำหนดค่า AI โมเดลของคุณภายใน 4 ขั้นตอน</p>
+                    <h4 class="modal-title mb-0" style="font-size: 28px; font-weight: 800;">ติดตั้ง AI โมเดล</h4>
+                    <p class="mb-4 mt-2" style="opacity: 0.9; font-size: 16px;">ติดตั้งและกำหนดค่า AI โมเดลของคุณภายใน 4 ขั้นตอน</p>
 
                     <!-- Step Indicator -->
-                    <div class="line-wizard-steps">
-                        <div class="line-wizard-step" id="wizard-step-1">
+                    <div class="wizard-steps-premium">
+                        <div class="wizard-step-premium" id="wizard-step-1">
                             <div class="circle">1</div>
                             <div class="label">ตรวจสอบระบบ</div>
                         </div>
-                        <div class="line-wizard-step" id="wizard-step-2">
+                        <div class="wizard-step-premium" id="wizard-step-2">
                             <div class="circle">2</div>
                             <div class="label">เลือกโมเดล</div>
                         </div>
-                        <div class="line-wizard-step" id="wizard-step-3">
+                        <div class="wizard-step-premium" id="wizard-step-3">
                             <div class="circle">3</div>
                             <div class="label">กำลังติดตั้ง</div>
                         </div>
-                        <div class="line-wizard-step" id="wizard-step-4">
+                        <div class="wizard-step-premium" id="wizard-step-4">
                             <div class="circle">4</div>
                             <div class="label">เสร็จสิ้น</div>
                         </div>
                     </div>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" onclick="cancelWizard()"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="cancelWizard()"></button>
             </div>
-            <div class="modal-body" style="padding: 24px;">
+            <div class="modal-body" style="padding: 40px;">
                 <!-- Step 1: Check Requirements -->
                 <div id="step-requirements" class="wizard-step">
                     <div id="requirements-result">
                         <div class="text-center py-5">
-                            <div style="width: 80px; height: 80px; background: var(--line-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-                                <i class="fas fa-server" style="font-size: 40px; color: var(--line-green);"></i>
+                            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px;">
+                                <i class="fas fa-server" style="font-size: 48px; color: var(--primary);"></i>
                             </div>
-                            <h5 class="mb-3" style="font-size: 18px; font-weight: 600; color: var(--line-text);">ตรวจสอบความพร้อมของระบบ</h5>
-                            <p class="text-muted mb-4" style="font-size: 14px;">เราจะตรวจสอบ CPU, RAM, GPU, และพื้นที่ว่างเพื่อแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ</p>
-                            <button class="btn-line btn-line-lg" onclick="checkRequirements()">
+                            <h5 class="mb-3" style="font-size: 24px; font-weight: 700; color: var(--text-dark);">ตรวจสอบความพร้อมของระบบ</h5>
+                            <p class="text-muted mb-4" style="font-size: 16px; max-width: 600px; margin: 0 auto 32px;">เราจะตรวจสอบ CPU, RAM, GPU, และพื้นที่ว่างเพื่อแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ</p>
+                            <button class="btn-premium" onclick="checkRequirements()">
                                 <i class="fas fa-check-circle me-2"></i>
                                 เริ่มตรวจสอบระบบ
                             </button>
@@ -782,8 +813,8 @@
                 <!-- Step 2: Select Model -->
                 <div id="step-model" class="wizard-step" style="display:none;">
                     <div class="mb-4">
-                        <h5 style="font-size: 18px; font-weight: 600; color: var(--line-text);">เลือกโมเดล AI ที่ต้องการติดตั้ง</h5>
-                        <p class="text-muted" style="font-size: 14px;">เราแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ คุณสามารถเลือกโมเดลอื่นได้ตามต้องการ</p>
+                        <h5 style="font-size: 24px; font-weight: 700; color: var(--text-dark);">เลือกโมเดล AI ที่ต้องการติดตั้ง</h5>
+                        <p class="text-muted" style="font-size: 16px;">เราแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ คุณสามารถเลือกโมเดลอื่นได้ตามต้องการ</p>
                     </div>
                     <div id="model-recommendations"></div>
                 </div>
@@ -791,11 +822,11 @@
                 <!-- Step 3: Installing -->
                 <div id="step-installing" class="wizard-step" style="display:none;">
                     <div class="text-center mb-4">
-                        <div style="width: 80px; height: 80px; background: var(--line-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-                            <i class="fas fa-cog fa-spin" style="font-size: 40px; color: var(--line-green);"></i>
+                        <div style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px;">
+                            <i class="fas fa-cog fa-spin" style="font-size: 48px; color: var(--primary);"></i>
                         </div>
-                        <h5 class="mb-2" style="font-size: 18px; font-weight: 600; color: var(--line-text);">กำลังติดตั้งโมเดล AI</h5>
-                        <p class="text-muted" style="font-size: 14px;">กรุณารอสักครู่ การติดตั้งอาจใช้เวลาหลายนาทีขึ้นอยู่กับขนาดโมเดล</p>
+                        <h5 class="mb-2" style="font-size: 24px; font-weight: 700; color: var(--text-dark);">กำลังติดตั้งโมเดล AI</h5>
+                        <p class="text-muted" style="font-size: 16px;">กรุณารอสักครู่ การติดตั้งอาจใช้เวลาหลายนาทีขึ้นอยู่กับขนาดโมเดล</p>
                     </div>
                     <div id="installation-progress"></div>
                 </div>
@@ -803,17 +834,17 @@
                 <!-- Step 4: Complete -->
                 <div id="step-complete" class="wizard-step" style="display:none;">
                     <div class="text-center py-5">
-                        <div style="width: 100px; height: 100px; background: var(--line-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-                            <i class="fas fa-check-circle" style="font-size: 50px; color: var(--line-green);"></i>
+                        <div style="width: 120px; height: 120px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(52, 211, 153, 0.1) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px;">
+                            <i class="fas fa-check-circle" style="font-size: 60px; color: var(--success);"></i>
                         </div>
-                        <h3 class="mb-3" style="font-size: 24px; font-weight: 600; color: var(--line-text);">ติดตั้งสำเร็จ!</h3>
-                        <p class="text-muted mb-4" style="font-size: 14px;">โมเดล AI ของคุณพร้อมใช้งานแล้ว คุณสามารถเริ่มใช้งาน AI ในระบบได้ทันที</p>
+                        <h3 class="mb-3" style="font-size: 32px; font-weight: 800; color: var(--text-dark);">ติดตั้งสำเร็จ!</h3>
+                        <p class="text-muted mb-5" style="font-size: 18px;">โมเดล AI ของคุณพร้อมใช้งานแล้ว คุณสามารถเริ่มใช้งาน AI ในระบบได้ทันที</p>
                         <div class="d-flex justify-content-center gap-3">
-                            <button class="btn-line btn-line-lg" onclick="closeWizard()">
+                            <button class="btn-premium" onclick="closeWizard()">
                                 <i class="fas fa-check me-2"></i>
                                 เสร็จสิ้น
                             </button>
-                            <button class="btn-line-outline btn-line-lg" onclick="startNewInstallation()">
+                            <button class="btn-premium-outline" onclick="startNewInstallation()" style="color: var(--primary); border-color: var(--primary);">
                                 <i class="fas fa-plus me-2"></i>
                                 ติดตั้งโมเดลอื่น
                             </button>
@@ -845,23 +876,23 @@ function checkOllamaStatus() {
 
         if (status.installed && status.running) {
             html = `
-                <div class="line-alert success">
+                <div class="alert-premium success">
                     <i class="fas fa-check-circle me-2"></i>
-                    Ollama กำลังทำงาน (${status.version})
+                    <strong>Ollama กำลังทำงาน</strong> (${status.version})
                 </div>
             `;
         } else if (status.installed && !status.running) {
             html = `
-                <div class="line-alert warning">
+                <div class="alert-premium warning">
                     <i class="fas fa-exclamation-triangle me-2"></i>
-                    Ollama ติดตั้งแล้วแต่ไม่ได้ทำงาน กรุณาเริ่ม Ollama service
+                    <strong>Ollama ติดตั้งแล้วแต่ไม่ได้ทำงาน</strong> กรุณาเริ่ม Ollama service
                 </div>
             `;
         } else {
             html = `
-                <div class="line-alert info">
+                <div class="alert-premium info">
                     <i class="fas fa-info-circle me-2"></i>
-                    Ollama ยังไม่ได้ติดตั้ง จะติดตั้งอัตโนมัติเมื่อเริ่มติดตั้งโมเดล
+                    <strong>Ollama ยังไม่ได้ติดตั้ง</strong> จะติดตั้งอัตโนมัติเมื่อเริ่มติดตั้งโมเดล
                 </div>
             `;
         }
@@ -876,7 +907,7 @@ function loadInstalledModels() {
 
         if (models.length === 0) {
             $('#installed-models').html(`
-                <div class="line-alert info">
+                <div class="alert-premium info">
                     <i class="fas fa-info-circle me-2"></i>
                     ยังไม่มีโมเดลที่ติดตั้ง
                 </div>
@@ -885,7 +916,7 @@ function loadInstalledModels() {
         }
 
         let html = `
-            <table class="line-table">
+            <table class="table-premium">
                 <thead>
                     <tr>
                         <th>โมเดล</th>
@@ -906,7 +937,7 @@ function loadInstalledModels() {
                     <td>${model.size}</td>
                     <td>${model.modified}</td>
                     <td>
-                        <button class="btn-line-outline" style="padding: 6px 12px; font-size: 13px;" onclick="uninstallModel('${model.name}')">
+                        <button class="btn-premium-outline" style="padding: 8px 16px; font-size: 13px; color: var(--danger); border-color: var(--danger);" onclick="uninstallModel('${model.name}')">
                             <i class="fas fa-trash me-1"></i> ลบ
                         </button>
                     </td>
@@ -932,12 +963,12 @@ function startNewInstallation() {
     // Reset requirements result
     $('#requirements-result').html(`
         <div class="text-center py-5">
-            <div style="width: 80px; height: 80px; background: var(--line-green-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;">
-                <i class="fas fa-server" style="font-size: 40px; color: var(--line-green);"></i>
+            <div style="width: 100px; height: 100px; background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(129, 140, 248, 0.1) 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 32px;">
+                <i class="fas fa-server" style="font-size: 48px; color: var(--primary);"></i>
             </div>
-            <h5 class="mb-3" style="font-size: 18px; font-weight: 600; color: var(--line-text);">ตรวจสอบความพร้อมของระบบ</h5>
-            <p class="text-muted mb-4" style="font-size: 14px;">เราจะตรวจสอบ CPU, RAM, GPU, และพื้นที่ว่างเพื่อแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ</p>
-            <button class="btn-line btn-line-lg" onclick="checkRequirements()">
+            <h5 class="mb-3" style="font-size: 24px; font-weight: 700; color: var(--text-dark);">ตรวจสอบความพร้อมของระบบ</h5>
+            <p class="text-muted mb-4" style="font-size: 16px; max-width: 600px; margin: 0 auto 32px;">เราจะตรวจสอบ CPU, RAM, GPU, และพื้นที่ว่างเพื่อแนะนำโมเดลที่เหมาะสมกับเซิร์ฟเวอร์ของคุณ</p>
+            <button class="btn-premium" onclick="checkRequirements()">
                 <i class="fas fa-check-circle me-2"></i>
                 เริ่มตรวจสอบระบบ
             </button>
@@ -949,7 +980,7 @@ function startNewInstallation() {
 
 function updateWizardStep(step) {
     // Reset all steps
-    $('.line-wizard-step').removeClass('active completed');
+    $('.wizard-step-premium').removeClass('active completed');
 
     // Mark completed steps
     for (let i = 1; i < step; i++) {
@@ -979,9 +1010,9 @@ function cancelWizard() {
 
 function checkRequirements() {
     $('#requirements-result').html(`
-        <div class="text-center py-4">
-            <div class="spinner-border" role="status"></div>
-            <p class="mt-2">กำลังตรวจสอบ...</p>
+        <div class="text-center py-5">
+            <div class="spinner-border" style="color: var(--primary);" role="status"></div>
+            <p class="mt-3" style="color: var(--text-light);">กำลังตรวจสอบ...</p>
         </div>
     `);
 
@@ -996,52 +1027,52 @@ function checkRequirements() {
 }
 
 function displayRequirements(data) {
-    let html = '<div class="row">';
+    let html = '<div class="row g-3">';
 
     // CPU
-    const cpuStatusColor = data.cpu.status === 'excellent' ? 'success' : (data.cpu.status === 'good' ? 'info' : 'warning');
+    const cpuColor = data.cpu.status === 'excellent' ? 'success' : 'warning';
     html += `
-        <div class="col-lg-6 mb-3">
-            <div class="stats-card">
+        <div class="col-lg-6">
+            <div class="stats-card-premium">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="feature-icon icon-purple me-3" style="width: 50px; height: 50px;">
+                    <div class="feature-icon-premium icon-gradient-1 me-3" style="width: 56px; height: 56px; font-size: 24px;">
                         <i class="fas fa-microchip"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0">CPU</h6>
+                        <h6 class="mb-0" style="font-weight: 700;">CPU</h6>
                         <small class="text-muted">${data.cpu.model}</small>
                     </div>
                 </div>
                 <div class="mb-2">
                     <div class="d-flex justify-content-between mb-1">
-                        <span><i class="fas fa-server me-1"></i> Cores</span>
+                        <span>Cores</span>
                         <strong>${data.cpu.cores} cores</strong>
                     </div>
                 </div>
-                <span class="badge bg-${cpuStatusColor}">${data.cpu.message}</span>
+                <span class="badge-premium ${cpuColor}">${data.cpu.message}</span>
             </div>
         </div>
     `;
 
     // RAM
-    const ramStatusColor = data.ram.status === 'excellent' ? 'success' : (data.ram.status === 'good' ? 'info' : 'warning');
-    const ramPercentUsed = ((data.ram.total_gb - data.ram.available_gb) / data.ram.total_gb * 100).toFixed(1);
+    const ramColor = data.ram.status === 'excellent' ? 'success' : (data.ram.status === 'good' ? 'warning' : 'danger');
+    const ramPercent = ((data.ram.total_gb - data.ram.available_gb) / data.ram.total_gb * 100).toFixed(1);
     html += `
-        <div class="col-lg-6 mb-3">
-            <div class="stats-card" style="border-left-color: #11998e;">
+        <div class="col-lg-6">
+            <div class="stats-card-premium" style="border-left-color: var(--success);">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="feature-icon icon-green me-3" style="width: 50px; height: 50px;">
+                    <div class="feature-icon-premium icon-gradient-2 me-3" style="width: 56px; height: 56px; font-size: 24px;">
                         <i class="fas fa-memory"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0">RAM</h6>
+                        <h6 class="mb-0" style="font-weight: 700;">RAM</h6>
                         <small class="text-muted">${data.ram.available_gb} GB / ${data.ram.total_gb} GB พร้อมใช้งาน</small>
                     </div>
                 </div>
-                <div class="progress mb-2" style="height: 8px;">
-                    <div class="progress-bar bg-${ramStatusColor}" style="width: ${ramPercentUsed}%"></div>
+                <div class="progress-premium mb-2">
+                    <div class="progress-bar-premium" style="width: ${ramPercent}%"></div>
                 </div>
-                <span class="badge bg-${ramStatusColor}">${data.ram.message}</span>
+                <span class="badge-premium ${ramColor}">${data.ram.message}</span>
             </div>
         </div>
     `;
@@ -1049,68 +1080,67 @@ function displayRequirements(data) {
     // GPU
     if (data.gpu.available) {
         data.gpu.gpus.forEach((gpu, index) => {
-            const gpuPercentUsed = ((gpu.memory_total_gb - gpu.memory_free_gb) / gpu.memory_total_gb * 100).toFixed(1);
+            const gpuPercent = ((gpu.memory_total_gb - gpu.memory_free_gb) / gpu.memory_total_gb * 100).toFixed(1);
             html += `
-                <div class="col-lg-6 mb-3">
-                    <div class="stats-card" style="border-left-color: #f5576c;">
+                <div class="col-lg-6">
+                    <div class="stats-card-premium" style="border-left-color: var(--warning);">
                         <div class="d-flex align-items-center mb-3">
-                            <div class="feature-icon icon-orange me-3" style="width: 50px; height: 50px;">
+                            <div class="feature-icon-premium icon-gradient-3 me-3" style="width: 56px; height: 56px; font-size: 24px;">
                                 <i class="fas fa-bolt"></i>
                             </div>
                             <div>
-                                <h6 class="mb-0">GPU ${index + 1}</h6>
+                                <h6 class="mb-0" style="font-weight: 700;">GPU ${index + 1}</h6>
                                 <small class="text-muted">${gpu.name}</small>
                             </div>
                         </div>
                         <div class="mb-2">
                             <div class="d-flex justify-content-between mb-1">
-                                <span><i class="fas fa-memory me-1"></i> VRAM</span>
+                                <span>VRAM</span>
                                 <strong>${gpu.memory_free_gb} GB / ${gpu.memory_total_gb} GB</strong>
                             </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-success" style="width: ${gpuPercentUsed}%"></div>
+                            <div class="progress-premium">
+                                <div class="progress-bar-premium" style="width: ${gpuPercent}%"></div>
                             </div>
                         </div>
-                        <span class="badge bg-success"><i class="fas fa-check me-1"></i>พร้อมใช้งาน</span>
+                        <span class="badge-premium success"><i class="fas fa-check me-1"></i>พร้อมใช้งาน</span>
                     </div>
                 </div>
             `;
         });
     } else {
         html += `
-            <div class="col-lg-6 mb-3">
-                <div class="stats-card" style="border-left-color: #f5576c;">
+            <div class="col-lg-6">
+                <div class="stats-card-premium" style="border-left-color: var(--text-light);">
                     <div class="d-flex align-items-center mb-3">
-                        <div class="feature-icon icon-orange me-3" style="width: 50px; height: 50px;">
+                        <div class="feature-icon-premium icon-gradient-3 me-3" style="width: 56px; height: 56px; font-size: 24px; opacity: 0.5;">
                             <i class="fas fa-bolt"></i>
                         </div>
                         <div>
-                            <h6 class="mb-0">GPU</h6>
+                            <h6 class="mb-0" style="font-weight: 700;">GPU</h6>
                             <small class="text-muted">ไม่พบการ์ดจอ</small>
                         </div>
                     </div>
-                    <p class="text-muted mb-2">ไม่พบ GPU - จะใช้ CPU inference แทน</p>
-                    <span class="badge bg-secondary">ใช้งาน CPU</span>
+                    <p class="text-muted mb-0">ไม่พบ GPU - จะใช้ CPU inference แทน</p>
                 </div>
             </div>
         `;
     }
 
     // Disk
-    const diskStatusColor = data.disk.status === 'excellent' ? 'success' : (data.disk.status === 'good' ? 'info' : 'warning');
+    const diskColor = data.disk.status === 'excellent' ? 'success' : 'warning';
     html += `
-        <div class="col-lg-6 mb-3">
-            <div class="stats-card" style="border-left-color: #4facfe;">
+        <div class="col-lg-6">
+            <div class="stats-card-premium" style="border-left-color: var(--info);">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="feature-icon icon-blue me-3" style="width: 50px; height: 50px;">
+                    <div class="feature-icon-premium icon-gradient-4 me-3" style="width: 56px; height: 56px; font-size: 24px;">
                         <i class="fas fa-hdd"></i>
                     </div>
                     <div>
-                        <h6 class="mb-0">Disk Space</h6>
+                        <h6 class="mb-0" style="font-weight: 700;">Disk Space</h6>
                         <small class="text-muted">${data.disk.available_gb} GB พร้อมใช้งาน</small>
                     </div>
                 </div>
-                <span class="badge bg-${diskStatusColor}">${data.disk.message}</span>
+                <span class="badge-premium ${diskColor}">${data.disk.message}</span>
             </div>
         </div>
     `;
@@ -1120,29 +1150,29 @@ function displayRequirements(data) {
     // Overall Status
     if (data.overall_status.ready) {
         html += `
-            <div class="alert alert-success mt-3" style="border-radius: 12px; border-left: 4px solid #28a745;">
+            <div class="alert-premium success mt-4">
                 <div class="d-flex align-items-center">
-                    <i class="fas fa-check-circle me-3" style="font-size: 24px;"></i>
+                    <i class="fas fa-check-circle me-3" style="font-size: 28px; color: var(--success);"></i>
                     <div>
-                        <h6 class="mb-0">ระบบพร้อมใช้งาน!</h6>
+                        <h6 class="mb-0" style="font-weight: 700;">ระบบพร้อมใช้งาน!</h6>
                         <small>เซิร์ฟเวอร์ของคุณมีทรัพยากรเพียงพอสำหรับการติดตั้ง AI</small>
                     </div>
                 </div>
             </div>
             <div class="text-center mt-4">
-                <button class="btn btn-gradient btn-lg" onclick="showStep('step-model'); updateWizardStep(2);">
-                    <i class="fas fa-arrow-right me-2"></i>
+                <button class="btn-premium" onclick="showStep('step-model'); updateWizardStep(2);">
                     ถัดไป: เลือกโมเดล AI
+                    <i class="fas fa-arrow-right ms-2"></i>
                 </button>
             </div>
         `;
     } else {
         html += `
-            <div class="alert alert-danger mt-3" style="border-radius: 12px; border-left: 4px solid #dc3545;">
+            <div class="alert-premium danger mt-4">
                 <div class="d-flex align-items-start">
-                    <i class="fas fa-exclamation-triangle me-3" style="font-size: 24px;"></i>
+                    <i class="fas fa-exclamation-triangle me-3" style="font-size: 28px; color: var(--danger);"></i>
                     <div>
-                        <h6 class="mb-2">พบปัญหากับระบบ</h6>
+                        <h6 class="mb-2" style="font-weight: 700;">พบปัญหากับระบบ</h6>
                         <p class="mb-2">${data.overall_status.message}</p>
                         <ul class="mb-0 ps-3">
                             ${data.overall_status.errors.map(e => `<li>${e}</li>`).join('')}
@@ -1164,21 +1194,21 @@ function loadModelRecommendations() {
 }
 
 function displayModelRecommendations(data) {
-    let html = '<div class="row">';
+    let html = '<div class="row g-4">';
 
     // Recommended Models
-    if (data.recommended.length > 0) {
-        html += '<h6 class="text-success">แนะนำสำหรับคุณ:</h6>';
+    if (data.recommended && data.recommended.length > 0) {
+        html += '<div class="col-12"><h6 style="font-size: 18px; font-weight: 700; color: var(--success);">⭐ แนะนำสำหรับคุณ:</h6></div>';
         data.recommended.forEach(model => {
-            html += createModelCard(model);
+            html += createModelCard(model, true);
         });
     }
 
     // Possible Models
-    if (data.possible.length > 0) {
-        html += '<h6 class="text-warning mt-3">ติดตั้งได้แต่อาจช้า:</h6>';
+    if (data.possible && data.possible.length > 0) {
+        html += '<div class="col-12 mt-3"><h6 style="font-size: 18px; font-weight: 700; color: var(--warning);">⚡ ติดตั้งได้แต่อาจช้า:</h6></div>';
         data.possible.forEach(model => {
-            html += createModelCard(model);
+            html += createModelCard(model, false);
         });
     }
 
@@ -1186,64 +1216,60 @@ function displayModelRecommendations(data) {
     $('#model-recommendations').html(html);
 }
 
-function createModelCard(model) {
-    const isRecommended = model.category === 'recommended';
-    const badgeClass = isRecommended ? 'badge-recommended' : 'badge-possible';
-    const badgeText = isRecommended ? '⭐ แนะนำ' : '⚡ เป็นไปได้';
-
+function createModelCard(model, isRecommended) {
     return `
-        <div class="col-lg-6 mb-3">
-            <div class="model-card" onclick="selectModelCard(this, '${model.model_id}', '${model.best_quantization.name}')">
+        <div class="col-lg-6">
+            <div class="model-card-premium" onclick="selectModelCard(this, '${model.model_id}', '${model.best_quantization.name}')">
                 <div class="d-flex justify-content-between align-items-start mb-3">
                     <div>
-                        <h5 class="mb-1">${model.model_name}</h5>
-                        <span class="${badgeClass}">${badgeText}</span>
+                        <h5 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: var(--text-dark);">${model.model_name}</h5>
+                        ${isRecommended ? '<span class="badge-recommended">⭐ แนะนำ</span>' : '<span class="badge-premium warning">⚡ เป็นไปได้</span>'}
                     </div>
-                    <i class="fas fa-robot" style="font-size: 32px; color: #667eea; opacity: 0.3;"></i>
+                    <i class="fas fa-robot" style="font-size: 36px; color: var(--primary); opacity: 0.2;"></i>
                 </div>
 
-                <p class="text-muted mb-3" style="font-size: 14px;">${model.description}</p>
+                <p class="text-muted mb-3" style="font-size: 14px; line-height: 1.6;">${model.description}</p>
 
                 <div class="row g-2 mb-3">
                     <div class="col-6">
                         <div class="d-flex align-items-center">
-                            <i class="fas fa-microchip me-2" style="color: #667eea;"></i>
+                            <i class="fas fa-microchip me-2" style="color: var(--primary);"></i>
                             <div>
-                                <small class="text-muted d-block">Quantization</small>
+                                <small class="text-muted d-block" style="font-size: 11px;">Quantization</small>
                                 <strong style="font-size: 13px;">${model.best_quantization.name}</strong>
                             </div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="d-flex align-items-center">
-                            <i class="fas fa-${model.best_quantization.use_gpu ? 'bolt' : 'server'} me-2" style="color: ${model.best_quantization.use_gpu ? '#f5576c' : '#4facfe'};"></i>
+                            <i class="fas fa-${model.best_quantization.use_gpu ? 'bolt' : 'server'} me-2" style="color: ${model.best_quantization.use_gpu ? 'var(--warning)' : 'var(--info)'};"></i>
                             <div>
-                                <small class="text-muted d-block">Device</small>
+                                <small class="text-muted d-block" style="font-size: 11px;">Device</small>
                                 <strong style="font-size: 13px;">${model.best_quantization.use_gpu ? 'GPU' : 'CPU'}</strong>
                             </div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="d-flex align-items-center">
-                            <i class="fas fa-tachometer-alt me-2" style="color: #11998e;"></i>
+                            <i class="fas fa-tachometer-alt me-2" style="color: var(--success);"></i>
                             <div>
-                                <small class="text-muted d-block">Speed</small>
-                                <strong style="font-size: 13px;">~${model.estimated_speed.tokens_per_second} tokens/s</strong>
+                                <small class="text-muted d-block" style="font-size: 11px;">Speed</small>
+                                <strong style="font-size: 13px;">~${model.estimated_speed.tokens_per_second} tok/s</strong>
                             </div>
                         </div>
                     </div>
                     <div class="col-6">
                         <div class="d-flex align-items-center">
-                            <i class="fas fa-hdd me-2" style="color: #667eea;"></i>
+                            <i class="fas fa-hdd me-2" style="color: var(--primary);"></i>
                             <div>
-                                <small class="text-muted d-block">Size</small>
+                                <small class="text-muted d-block" style="font-size: 11px;">Size</small>
                                 <strong style="font-size: 13px;">${model.best_quantization.disk_space_gb || 'N/A'} GB</strong>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <button class="btn btn-gradient w-100" onclick="event.stopPropagation(); installModel('${model.model_id}', '${model.best_quantization.name}')">
+                <button class="btn-premium w-100" onclick="event.stopPropagation(); installModel('${model.model_id}', '${model.best_quantization.name}')">
                     <i class="fas fa-download me-2"></i>
                     ติดตั้งโมเดลนี้
                 </button>
@@ -1253,9 +1279,7 @@ function createModelCard(model) {
 }
 
 function selectModelCard(element, modelId, quantization) {
-    // Remove selected class from all cards
-    $('.model-card').removeClass('selected');
-    // Add selected class to clicked card
+    $('.model-card-premium').removeClass('selected');
     $(element).addClass('selected');
 }
 
@@ -1316,39 +1340,37 @@ function displayProgress(data) {
 
     const html = `
         <div class="mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                    <h6 class="mb-0">
-                        <i class="fas ${statusIcon} me-2" style="color: #667eea;"></i>
+                    <h6 class="mb-0" style="font-size: 18px; font-weight: 700;">
+                        <i class="fas ${statusIcon} me-2" style="color: var(--primary);"></i>
                         ${data.current_step || 'กำลังดำเนินการ...'}
                     </h6>
                 </div>
                 <div>
-                    <span class="badge bg-primary">${data.progress_percentage}%</span>
+                    <span class="badge-premium" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%); color: white; padding: 8px 16px; font-size: 14px;">${data.progress_percentage}%</span>
                 </div>
             </div>
-            <div class="progress-modern">
-                <div class="progress-bar" role="progressbar" style="width: ${data.progress_percentage}%">
-                    ${data.progress_percentage}%
-                </div>
+            <div class="progress-premium" style="height: 16px;">
+                <div class="progress-bar-premium" role="progressbar" style="width: ${data.progress_percentage}%"></div>
             </div>
         </div>
 
         <div class="mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <h6 class="mb-0">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0" style="font-weight: 700;">
                     <i class="fas fa-terminal me-2"></i>
                     Installation Log
                 </h6>
                 <small class="text-muted">Real-time output</small>
             </div>
-            <div class="installation-log">
-                ${data.log_output || '<span class="pulse-animation">กำลังเริ่มต้นการติดตั้ง...</span>'}
+            <div class="installation-log-premium">
+                ${data.log_output || '<span style="opacity: 0.5;">กำลังเริ่มต้นการติดตั้ง...</span>'}
             </div>
         </div>
 
         ${data.is_failed ? `
-            <div class="alert alert-danger">
+            <div class="alert-premium danger">
                 <i class="fas fa-exclamation-triangle me-2"></i>
                 <strong>เกิดข้อผิดพลาด:</strong> ${data.error_message || 'Unknown error'}
             </div>
@@ -1358,7 +1380,7 @@ function displayProgress(data) {
     $('#installation-progress').html(html);
 
     // Auto scroll log to bottom
-    const logElement = document.querySelector('.installation-log');
+    const logElement = document.querySelector('.installation-log-premium');
     if (logElement) {
         logElement.scrollTop = logElement.scrollHeight;
     }
