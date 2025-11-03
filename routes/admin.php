@@ -466,3 +466,15 @@ Route::prefix('ai-bots')->name('ai-bots.')->group(function () {
     Route::post('/{id}/duplicate', [AiBotController::class, 'duplicate'])->name('duplicate');
     Route::get('/providers/{providerId}/models', [AiBotController::class, 'getModelsByProvider'])->name('providers.models');
 });
+
+// Knowledge Base Management (RAG System)
+Route::prefix('ai-bots/{botId}/knowledge-bases')->name('knowledge-bases.')->group(function () {
+    use App\Http\Controllers\Admin\KnowledgeBaseController;
+    
+    Route::get('/', [KnowledgeBaseController::class, 'index'])->name('index');
+    Route::get('/create', [KnowledgeBaseController::class, 'create'])->name('create');
+    Route::post('/', [KnowledgeBaseController::class, 'store'])->name('store');
+    Route::get('/{id}', [KnowledgeBaseController::class, 'show'])->name('show');
+    Route::delete('/{id}', [KnowledgeBaseController::class, 'destroy'])->name('destroy');
+    Route::post('/test-search', [KnowledgeBaseController::class, 'testSearch'])->name('test-search');
+});
