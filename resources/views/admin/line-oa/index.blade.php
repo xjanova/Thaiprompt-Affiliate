@@ -25,7 +25,11 @@
                     </div>
                 </div>
             </div>
-            <div>
+            <div class="flex gap-3">
+                <button type="button" onclick="testConnection()"
+                        class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-xl hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <i class="fas fa-plug me-2"></i>Test Connection
+                </button>
                 <button type="button" onclick="showTestModal()"
                         class="px-6 py-3 bg-white/20 backdrop-blur-md border border-white/30 text-white rounded-xl hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                     <i class="fas fa-paper-plane me-2"></i>Test Message
@@ -408,6 +412,42 @@
     </form>
 </div>
 
+<!-- Test Connection Results Modal -->
+<div id="connectionTestModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all">
+        <div class="bg-gradient-to-r from-blue-500 to-cyan-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-xl font-bold text-white flex items-center">
+                    <i class="fas fa-plug mr-2"></i>
+                    LINE API Connection Test
+                </h3>
+                <button onclick="closeConnectionTestModal()" class="text-white/80 hover:text-white transition">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <div id="connectionTestLoading" class="text-center py-8">
+                <i class="fas fa-spinner fa-spin text-4xl text-blue-500 mb-4"></i>
+                <p class="text-gray-600 font-semibold">Testing connection...</p>
+            </div>
+
+            <div id="connectionTestResults" class="hidden space-y-4">
+                <div id="overallStatus" class="p-4 rounded-xl"></div>
+                <div id="testDetails" class="space-y-3"></div>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 px-6 py-4 flex justify-end">
+            <button onclick="closeConnectionTestModal()"
+                    class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Test Message Modal -->
 <div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden transform transition-all">
@@ -493,10 +533,117 @@ function closeTestModal() {
     document.getElementById('testModal').classList.remove('flex');
 }
 
+// Connection test modal
+function closeConnectionTestModal() {
+    document.getElementById('connectionTestModal').classList.add('hidden');
+    document.getElementById('connectionTestModal').classList.remove('flex');
+}
+
+// Test LINE API connection
+async function testConnection() {
+    const modal = document.getElementById('connectionTestModal');
+    const loading = document.getElementById('connectionTestLoading');
+    const results = document.getElementById('connectionTestResults');
+    const overallStatus = document.getElementById('overallStatus');
+    const testDetails = document.getElementById('testDetails');
+
+    // Show modal with loading state
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    loading.classList.remove('hidden');
+    results.classList.add('hidden');
+
+    try {
+        const response = await fetch('{{ route('admin.line-oa.test-connection') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        });
+
+        const data = await response.json();
+
+        // Hide loading, show results
+        loading.classList.add('hidden');
+        results.classList.remove('hidden');
+
+        // Display overall status
+        const statusColors = {
+            'success': 'bg-green-100 border-green-300 text-green-800',
+            'warning': 'bg-yellow-100 border-yellow-300 text-yellow-800',
+            'error': 'bg-red-100 border-red-300 text-red-800'
+        };
+
+        const statusIcons = {
+            'success': 'fa-check-circle text-green-600',
+            'warning': 'fa-exclamation-triangle text-yellow-600',
+            'error': 'fa-times-circle text-red-600'
+        };
+
+        overallStatus.className = `p-4 rounded-xl border ${statusColors[data.overall_status]}`;
+        overallStatus.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${statusIcons[data.overall_status]} text-2xl mr-3"></i>
+                <div>
+                    <h4 class="font-bold text-lg">Overall Status: ${data.overall_status.toUpperCase()}</h4>
+                    <p class="text-sm">Connection test completed</p>
+                </div>
+            </div>
+        `;
+
+        // Display test details
+        testDetails.innerHTML = '';
+        for (const [key, test] of Object.entries(data.tests)) {
+            const testCard = document.createElement('div');
+            testCard.className = `p-4 rounded-lg border ${statusColors[test.status]}`;
+
+            let detailsHtml = '';
+            if (test.bot_info) {
+                detailsHtml = `
+                    <div class="mt-2 text-sm space-y-1">
+                        <p><strong>Bot Name:</strong> ${test.bot_info.displayName}</p>
+                        <p class="text-xs opacity-75">User ID: ${test.bot_info.userId}</p>
+                    </div>
+                `;
+            }
+
+            testCard.innerHTML = `
+                <div class="flex items-start">
+                    <i class="fas ${statusIcons[test.status]} text-xl mr-3 mt-1"></i>
+                    <div class="flex-1">
+                        <h5 class="font-bold capitalize">${key.replace(/_/g, ' ')}</h5>
+                        <p class="text-sm mt-1">${test.message}</p>
+                        ${detailsHtml}
+                    </div>
+                </div>
+            `;
+            testDetails.appendChild(testCard);
+        }
+
+    } catch (error) {
+        loading.classList.add('hidden');
+        results.classList.remove('hidden');
+
+        overallStatus.className = 'p-4 rounded-xl border bg-red-100 border-red-300 text-red-800';
+        overallStatus.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-times-circle text-red-600 text-2xl mr-3"></i>
+                <div>
+                    <h4 class="font-bold text-lg">Connection Test Failed</h4>
+                    <p class="text-sm">${error.message}</p>
+                </div>
+            </div>
+        `;
+        testDetails.innerHTML = '';
+    }
+}
+
 // Close modal on ESC
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeTestModal();
+        closeConnectionTestModal();
     }
 });
 </script>

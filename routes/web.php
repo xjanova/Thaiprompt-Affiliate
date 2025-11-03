@@ -52,8 +52,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegisterController::class, 'register'])->middleware('turnstile:register');
 
     // LINE Login Routes
-    Route::get('/auth/line', [LineLoginController::class, 'redirect'])->name('line.redirect');
+    Route::get('/auth/line', [LineLoginController::class, 'redirect'])->name('line.login');
     Route::get('/auth/line/callback', [LineLoginController::class, 'callback'])->name('line.callback');
+    Route::get('/auth/line/register-guide', function () {
+        return view('auth.line-register-guide');
+    })->name('line.register.guide');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');

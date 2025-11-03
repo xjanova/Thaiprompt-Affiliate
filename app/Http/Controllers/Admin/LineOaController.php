@@ -105,4 +105,15 @@ class LineOaController extends Controller
 
         return view('admin.line-oa.logs', compact('logs'));
     }
+
+    /**
+     * Test LINE API connection
+     */
+    public function testConnection()
+    {
+        $lineService = new LineService();
+        $results = $lineService->testConnection();
+
+        return response()->json($results);
+    }
 }

@@ -331,4 +331,108 @@ class LineService
     {
         return $this->settings;
     }
+
+    /**
+     * Test LINE API connection
+     * Returns array with test results
+     */
+    public function testConnection(): array
+    {
+        $results = [
+            'overall_status' => 'success',
+            'tests' => [],
+        ];
+
+        // Test 1: Check if settings are configured
+        if (!$this->settings) {
+            $results['tests']['settings'] = [
+                'status' => 'error',
+                'message' => 'LINE OA settings not configured',
+            ];
+            $results['overall_status'] = 'error';
+            return $results;
+        }
+
+        $results['tests']['settings'] = [
+            'status' => 'success',
+            'message' => 'LINE OA settings found',
+        ];
+
+        // Test 2: Check if required fields are filled
+        if (empty($this->settings->channel_id) || empty($this->settings->channel_secret)) {
+            $results['tests']['credentials'] = [
+                'status' => 'error',
+                'message' => 'Channel ID or Secret is missing',
+            ];
+            $results['overall_status'] = 'error';
+            return $results;
+        }
+
+        $results['tests']['credentials'] = [
+            'status' => 'success',
+            'message' => 'Channel ID and Secret are configured',
+        ];
+
+        // Test 3: Test messaging API (if access token is configured)
+        if (!empty($this->settings->channel_access_token)) {
+            try {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+                ])->get('https://api.line.me/v2/bot/info');
+
+                if ($response->successful()) {
+                    $botInfo = $response->json();
+                    $results['tests']['messaging_api'] = [
+                        'status' => 'success',
+                        'message' => 'Messaging API connection successful',
+                        'bot_info' => [
+                            'displayName' => $botInfo['displayName'] ?? 'N/A',
+                            'userId' => $botInfo['userId'] ?? 'N/A',
+                        ],
+                    ];
+                } else {
+                    $results['tests']['messaging_api'] = [
+                        'status' => 'warning',
+                        'message' => 'Messaging API connection failed: ' . $response->status(),
+                        'details' => $response->body(),
+                    ];
+                    if ($results['overall_status'] === 'success') {
+                        $results['overall_status'] = 'warning';
+                    }
+                }
+            } catch (Exception $e) {
+                $results['tests']['messaging_api'] = [
+                    'status' => 'error',
+                    'message' => 'Messaging API test failed: ' . $e->getMessage(),
+                ];
+                $results['overall_status'] = 'error';
+            }
+        } else {
+            $results['tests']['messaging_api'] = [
+                'status' => 'warning',
+                'message' => 'Channel Access Token not configured (required for messaging)',
+            ];
+            if ($results['overall_status'] === 'success') {
+                $results['overall_status'] = 'warning';
+            }
+        }
+
+        // Test 4: Verify LINE Login configuration
+        try {
+            $authUrl = $this->getAuthorizationUrl('test_state_' . time());
+            $results['tests']['line_login'] = [
+                'status' => 'success',
+                'message' => 'LINE Login configuration is valid',
+                'auth_url' => substr($authUrl, 0, 100) . '...',
+            ];
+        } catch (Exception $e) {
+            $results['tests']['line_login'] = [
+                'status' => 'error',
+                'message' => 'LINE Login test failed: ' . $e->getMessage(),
+            ];
+            $results['overall_status'] = 'error';
+        }
+
+        return $results;
+    }
 }
