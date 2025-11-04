@@ -55,7 +55,8 @@
     "extra": {
         "laravel": {
             "dont-discover": [
-                "laravel/sail"
+                "laravel/sail",
+                "nunomaduro/collision"
             ]
         }
     },
