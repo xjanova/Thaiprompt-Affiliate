@@ -61,6 +61,15 @@
                         อนิเมชั่นโหลดหน้า
                     </span>
                 </button>
+
+                <button @click="activeTab = 'ocr'"
+                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'ocr', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'ocr' }"
+                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
+                    <span class="flex items-center">
+                        <span class="text-lg mr-2">📸</span>
+                        OCR / KYC
+                    </span>
+                </button>
             </nav>
         </div>
 
@@ -715,6 +724,246 @@
                             </button>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            <!-- OCR Settings Tab -->
+            <div x-show="activeTab === 'ocr'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
+                <div class="space-y-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">การตั้งค่า OCR (Optical Character Recognition)</h3>
+                        <p class="text-gray-600 dark:text-gray-400">ระบบอ่านข้อความจากภาพ สำหรับการตรวจจับข้อมูลบัตรประชาชนและใบขับขี่</p>
+                    </div>
+
+                    <!-- Status Card -->
+                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 rounded-lg p-6 border border-blue-200 dark:border-slate-600">
+                        <div class="flex items-start justify-between">
+                            <div class="flex items-start space-x-4">
+                                <div class="flex-shrink-0">
+                                    <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <span class="text-3xl">📸</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Google Cloud Vision API</h4>
+                                    <p class="text-gray-700 dark:text-gray-300 mb-4">
+                                        ใช้สำหรับอ่านข้อมูลจากบัตรประชาชนและใบขับขี่แบบอัตโนมัติในระบบ KYC (Know Your Customer)
+                                    </p>
+
+                                    <!-- Status Badge -->
+                                    <div class="flex items-center space-x-3 mb-4">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">สถานะ:</span>
+                                        @if(\App\Models\Setting::get('google_vision_enabled'))
+                                            <span class="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm font-semibold">
+                                                <i class="fas fa-check-circle mr-1"></i>เปิดใช้งาน
+                                            </span>
+                                        @else
+                                            <span class="px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm font-semibold">
+                                                <i class="fas fa-times-circle mr-1"></i>ปิดใช้งาน
+                                            </span>
+                                        @endif
+                                    </div>
+
+                                    <!-- Features List -->
+                                    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4">
+                                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ฟีเจอร์:</p>
+                                        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                                            <li class="flex items-center">
+                                                <i class="fas fa-check text-green-600 mr-2"></i>
+                                                อ่านข้อมูลบัตรประชาชนไทย (เลขบัตร, ชื่อ-นามสกุล, วันเกิด, ที่อยู่)
+                                            </li>
+                                            <li class="flex items-center">
+                                                <i class="fas fa-check text-green-600 mr-2"></i>
+                                                อ่านข้อมูลใบขับขี่ (เลขใบขับขี่, ประเภทรถ, วันหมดอายุ)
+                                            </li>
+                                            <li class="flex items-center">
+                                                <i class="fas fa-check text-green-600 mr-2"></i>
+                                                ตรวจจับประเภทเอกสารอัตโนมัติ
+                                            </li>
+                                            <li class="flex items-center">
+                                                <i class="fas fa-check text-green-600 mr-2"></i>
+                                                รองรับทั้งภาษาไทยและภาษาอังกฤษ
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Quick Info -->
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <!-- Credentials Status -->
+                        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-key text-2xl text-indigo-600 mr-3"></i>
+                                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Service Account</h4>
+                            </div>
+                            @php
+                                $credentialsPath = \App\Models\Setting::get('google_vision_credentials_path');
+                                $credentialsExists = !empty($credentialsPath) && file_exists($credentialsPath);
+                            @endphp
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">ไฟล์ Credentials:</span>
+                                    @if($credentialsExists)
+                                        <span class="text-green-600 dark:text-green-400 font-semibold">
+                                            <i class="fas fa-check-circle"></i> พบไฟล์แล้ว
+                                        </span>
+                                    @else
+                                        <span class="text-yellow-600 dark:text-yellow-400 font-semibold">
+                                            <i class="fas fa-exclamation-triangle"></i> ยังไม่ได้อัปโหลด
+                                        </span>
+                                    @endif
+                                </div>
+                                @if($credentialsExists)
+                                    @php
+                                        try {
+                                            $content = file_get_contents($credentialsPath);
+                                            $json = json_decode($content, true);
+                                            $projectId = $json['project_id'] ?? 'N/A';
+                                        } catch (\Exception $e) {
+                                            $projectId = 'N/A';
+                                        }
+                                    @endphp
+                                    <div class="mt-2 p-3 bg-gray-50 dark:bg-slate-700 rounded">
+                                        <p class="text-xs text-gray-600 dark:text-gray-400">Project ID:</p>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white break-all">{{ $projectId }}</p>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-cog text-2xl text-indigo-600 mr-3"></i>
+                                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">การจัดการ</h4>
+                            </div>
+                            <div class="space-y-3">
+                                <a href="{{ route('admin.settings.ocr') }}"
+                                   class="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition group">
+                                    <span class="flex items-center text-indigo-700 dark:text-indigo-300 font-medium">
+                                        <i class="fas fa-tools mr-2"></i>
+                                        ตั้งค่า OCR แบบเต็ม
+                                    </span>
+                                    <i class="fas fa-arrow-right text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition"></i>
+                                </a>
+
+                                <a href="{{ route('admin.settings.ocr.setup-guide') }}"
+                                   target="_blank"
+                                   class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition group">
+                                    <span class="flex items-center text-blue-700 dark:text-blue-300 font-medium">
+                                        <i class="fas fa-book mr-2"></i>
+                                        คู่มือการติดตั้ง
+                                    </span>
+                                    <i class="fas fa-external-link-alt text-blue-600 dark:text-blue-400"></i>
+                                </a>
+
+                                <a href="{{ route('admin.kyc.index') }}"
+                                   class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition group">
+                                    <span class="flex items-center text-green-700 dark:text-green-300 font-medium">
+                                        <i class="fas fa-users mr-2"></i>
+                                        จัดการ KYC
+                                    </span>
+                                    <i class="fas fa-arrow-right text-green-600 dark:text-green-400 group-hover:translate-x-1 transition"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Setup Guide Preview -->
+                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                            <i class="fas fa-list-ol text-indigo-600 mr-2"></i>
+                            ขั้นตอนการตั้งค่า Google Cloud Vision API
+                        </h4>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="space-y-3">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
+                                        1
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">สร้างโปรเจกต์ใน Google Cloud Console</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">เลือกหรือสร้างโปรเจกต์ใหม่</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
+                                        2
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">เปิดใช้งาน Cloud Vision API</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">ค้นหาและเปิดใช้งาน API</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
+                                        3
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">สร้าง Service Account</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">ใน IAM & Admin</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
+                                        4
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">ดาวน์โหลดไฟล์ Key (JSON)</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">สร้างและดาวน์โหลด JSON key</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
+                                        5
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">อัปโหลดไฟล์ในหน้าตั้งค่า</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">อัปโหลดไฟล์ที่ดาวน์โหลดมา</p>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
+                                        6
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900 dark:text-white">ทดสอบการเชื่อมต่อ</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">ตรวจสอบว่าทำงานได้ถูกต้อง</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <div class="flex items-start">
+                                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-1 mr-3"></i>
+                                <div class="text-sm text-blue-800 dark:text-blue-300">
+                                    <p class="font-semibold mb-1">หมายเหตุ:</p>
+                                    <p>การใช้งาน Google Cloud Vision API อาจมีค่าใช้จ่าย กรุณาตรวจสอบราคาที่ <a href="https://cloud.google.com/vision/pricing" target="_blank" class="underline hover:text-blue-900">Google Cloud Pricing</a></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CTA Button -->
+                    <div class="flex justify-center">
+                        <a href="{{ route('admin.settings.ocr') }}"
+                           class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-blue-700 transition shadow-lg flex items-center space-x-2">
+                            <i class="fas fa-cog"></i>
+                            <span>เข้าสู่หน้าตั้งค่า OCR แบบเต็ม</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
