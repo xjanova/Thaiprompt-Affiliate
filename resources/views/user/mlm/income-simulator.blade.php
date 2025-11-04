@@ -19,7 +19,7 @@
             <!-- Rank Selection -->
             <div class="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-300">
                 <label class="block text-sm font-bold text-gray-700 mb-3">
-                    ⭐ ระดับยศของคุณ (Rank)
+                    ⭐ ระดับยศของคุณ (Rank) - <span class="text-sm font-normal text-gray-500">ไม่บังคับ</span>
                 </label>
                 <select id="user_rank" onchange="updateRankInfo()"
                         class="w-full px-4 py-3 text-lg font-semibold border-2 border-yellow-400 rounded-xl focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 bg-white">
@@ -38,6 +38,13 @@
                         <div class="bg-white p-3 rounded-lg shadow">
                             <div class="text-gray-600 mb-1">ระดับ</div>
                             <div class="text-2xl font-bold text-orange-600"><span id="rank-level">1</span> / 5</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="no-rank-info" class="mt-3 hidden">
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div class="text-sm text-blue-700">
+                            💡 <strong>ไม่ได้เลือกยศ:</strong> จะคำนวณ Unilevel และ Binary แบบพื้นฐาน (ไม่มีโบนัสจากยศ)
                         </div>
                     </div>
                 </div>
@@ -147,14 +154,14 @@
                 <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
                     <div class="text-sm font-semibold mb-2 opacity-90">📦 คอมมิชชั่นส่วนตัว</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="personal-income">0</span></div>
-                    <div class="text-sm opacity-75">จาก PV ของคุณ</div>
+                    <div class="text-sm opacity-75" id="personal-income-label">จาก PV ของคุณ (ต้องมียศ)</div>
                 </div>
 
                 <!-- Team Commission -->
                 <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
                     <div class="text-sm font-semibold mb-2 opacity-90">👥 คอมมิชชั่นจากทีม</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="team-income">0</span></div>
-                    <div class="text-sm opacity-75">Unilevel + Binary (รวม Rank Bonus)</div>
+                    <div class="text-sm opacity-75" id="team-income-label">Unilevel + Binary</div>
                 </div>
 
                 <!-- Total Income -->
@@ -340,7 +347,7 @@ async function loadRanks() {
         simulationData.ranks = data.data || data;
 
         const select = document.getElementById('user_rank');
-        select.innerHTML = '<option value="">เลือกระดับยศ...</option>';
+        select.innerHTML = '<option value="">ไม่เลือกยศ (คำนวณแบบพื้นฐาน)</option>';
 
         simulationData.ranks.forEach(rank => {
             const option = document.createElement('option');
@@ -350,14 +357,12 @@ async function loadRanks() {
             select.appendChild(option);
         });
 
-        // Select first rank by default
-        if (simulationData.ranks.length > 0) {
-            select.value = simulationData.ranks[0].id;
-            updateRankInfo();
-        }
+        // Don't auto-select any rank - let user choose
+        updateRankInfo();
     } catch (error) {
         console.error('Failed to load ranks:', error);
-        document.getElementById('user_rank').innerHTML = '<option value="">ไม่สามารถโหลดข้อมูล Rank ได้</option>';
+        document.getElementById('user_rank').innerHTML = '<option value="">ไม่สามารถโหลดข้อมูล Rank ได้ - จะคำนวณแบบพื้นฐาน</option>';
+        updateRankInfo();
     }
 }
 
@@ -365,9 +370,15 @@ function updateRankInfo() {
     const select = document.getElementById('user_rank');
     const selectedOption = select.options[select.selectedIndex];
 
-    if (!selectedOption || !selectedOption.dataset.rank) {
+    if (!selectedOption || !selectedOption.dataset.rank || !selectedOption.value) {
+        // No rank selected
         document.getElementById('rank-info').classList.add('hidden');
+        document.getElementById('no-rank-info').classList.remove('hidden');
         simulationData.selectedRank = null;
+
+        // Update labels for no rank
+        document.getElementById('personal-income-label').textContent = 'ไม่มี (ต้องมียศ)';
+        document.getElementById('team-income-label').textContent = 'Unilevel + Binary (แบบพื้นฐาน)';
         return;
     }
 
@@ -378,6 +389,11 @@ function updateRankInfo() {
     document.getElementById('rank-multiplier').textContent = (rank.bonus_multiplier || 1).toFixed(2);
     document.getElementById('rank-level').textContent = rank.level || 1;
     document.getElementById('rank-info').classList.remove('hidden');
+    document.getElementById('no-rank-info').classList.add('hidden');
+
+    // Update labels with rank
+    document.getElementById('personal-income-label').textContent = `จาก PV × ${rank.commission_rate}%`;
+    document.getElementById('team-income-label').textContent = `Unilevel + Binary × ${(rank.bonus_multiplier || 1).toFixed(2)}x`;
 }
 
 async function startSimulation() {
@@ -422,11 +438,12 @@ async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
     const personalPv = personalSales * pvRate;
     const teamPv = totalTeamSales * pvRate;
 
-    // Get rank multiplier
+    // Get rank multiplier and commission rate
+    // If no rank selected, multiplier = 1 (no bonus), commission rate = 0 (no personal commission)
     const rankMultiplier = simulationData.selectedRank ? parseFloat(simulationData.selectedRank.bonus_multiplier || 1) : 1;
     const rankCommissionRate = simulationData.selectedRank ? parseFloat(simulationData.selectedRank.commission_rate || 0) : 0;
 
-    // Unilevel calculation with rank multiplier
+    // Unilevel calculation
     const unilevelLevels = simulationData.settings.unilevel_levels || [];
     let unilevelCommission = 0;
 
@@ -438,7 +455,7 @@ async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
         });
     }
 
-    // Apply rank multiplier to unilevel
+    // Apply rank multiplier to unilevel (if no rank, multiplier = 1 so no bonus)
     unilevelCommission *= rankMultiplier;
 
     // Binary calculation (more realistic)
@@ -467,14 +484,15 @@ async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
             binaryCommission = (weakLegPv * binaryMatchPercentage) / 100;
         }
 
-        // Apply rank multiplier to binary
+        // Apply rank multiplier to binary (if no rank, multiplier = 1 so no bonus)
         binaryCommission *= rankMultiplier;
     }
 
     // Personal PV commission (based on personal volume only)
+    // If no rank selected, this will be 0 because rankCommissionRate = 0
     const personalCommission = (personalPv * rankCommissionRate) / 100;
 
-    // Total commission income (no retail profit assumption)
+    // Total commission income
     const totalIncome = personalCommission + unilevelCommission + binaryCommission;
 
     // Animate income display
@@ -640,10 +658,15 @@ function createCharts() {
     const totalUnilevel = simulationData.months.reduce((sum, m) => sum + m.unilevel, 0);
     const totalBinary = simulationData.months.reduce((sum, m) => sum + m.binary, 0);
 
+    const hasRank = simulationData.selectedRank !== null;
+    const labels = hasRank
+        ? ['Com.ส่วนตัว (จากยศ)', 'Unilevel (รวม Rank Bonus)', 'Binary (รวม Rank Bonus)']
+        : ['Com.ส่วนตัว (ไม่มี)', 'Unilevel (แบบพื้นฐาน)', 'Binary (แบบพื้นฐาน)'];
+
     breakdownChart = new Chart(ctx2, {
         type: 'doughnut',
         data: {
-            labels: ['Com.ส่วนตัว', 'Unilevel (รวม Rank)', 'Binary (รวม Rank)'],
+            labels: labels,
             datasets: [{
                 data: [totalPersonal, totalUnilevel, totalBinary],
                 backgroundColor: [
