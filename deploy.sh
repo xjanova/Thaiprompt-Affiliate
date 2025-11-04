@@ -593,6 +593,22 @@ if ! composer show google/cloud-vision &>/dev/null; then
     print_warning "Google Cloud Vision not found, installing..."
     if composer require google/cloud-vision --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
         print_success "Google Cloud Vision installed successfully"
+
+        # Auto-commit composer.lock if it was updated
+        if [ -f "composer.lock" ] && git diff --quiet composer.lock 2>/dev/null; then
+            :  # No changes, do nothing
+        elif [ -f "composer.lock" ]; then
+            print_info "Committing updated composer.lock..."
+            git add composer.lock 2>/dev/null || true
+            git commit -m "chore: update composer.lock after google/cloud-vision installation [skip ci]" 2>/dev/null || true
+
+            # Try to push (may fail if no git credentials, but that's okay)
+            if git push origin "$BRANCH" 2>/dev/null; then
+                print_success "composer.lock committed and pushed"
+            else
+                print_warning "composer.lock committed locally (push manually later)"
+            fi
+        fi
     else
         print_warning "Google Cloud Vision installation failed (non-critical, continuing...)"
         log "Warning: google/cloud-vision installation failed but continuing deployment"
