@@ -25,6 +25,9 @@ Route::prefix('v1')->group(function () {
     // App settings (public)
     Route::get('/settings', [DashboardController::class, 'settings']);
 
+    // Ranks (public - for marketing tools)
+    Route::get('/ranks', [RankController::class, 'index']);
+
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         // Auth

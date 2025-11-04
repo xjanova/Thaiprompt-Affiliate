@@ -16,6 +16,33 @@
 
         <!-- Control Panel -->
         <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+            <!-- Rank Selection -->
+            <div class="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-300">
+                <label class="block text-sm font-bold text-gray-700 mb-3">
+                    ⭐ ระดับยศของคุณ (Rank)
+                </label>
+                <select id="user_rank" onchange="updateRankInfo()"
+                        class="w-full px-4 py-3 text-lg font-semibold border-2 border-yellow-400 rounded-xl focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 bg-white">
+                    <option value="">กำลังโหลด...</option>
+                </select>
+                <div id="rank-info" class="mt-3 hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                        <div class="bg-white p-3 rounded-lg shadow">
+                            <div class="text-gray-600 mb-1">ค่าคอมมิชชั่นพื้นฐาน</div>
+                            <div class="text-2xl font-bold text-blue-600"><span id="rank-commission-rate">0</span>%</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow">
+                            <div class="text-gray-600 mb-1">ตัวคูณโบนัส</div>
+                            <div class="text-2xl font-bold text-purple-600"><span id="rank-multiplier">1.0</span>x</div>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg shadow">
+                            <div class="text-gray-600 mb-1">ระดับ</div>
+                            <div class="text-2xl font-bold text-orange-600"><span id="rank-level">1</span> / 5</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <!-- Personal Sales -->
                 <div>
@@ -116,25 +143,25 @@
 
             <!-- Real-time Calculation Display -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <!-- Personal Sales Income -->
+                <!-- Personal Commission -->
                 <div class="bg-gradient-to-br from-green-400 to-green-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
-                    <div class="text-sm font-semibold mb-2 opacity-90">📦 รายได้จากยอดขายตัวเอง</div>
+                    <div class="text-sm font-semibold mb-2 opacity-90">📦 คอมมิชชั่นส่วนตัว</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="personal-income">0</span></div>
-                    <div class="text-sm opacity-75">เดือนนี้</div>
+                    <div class="text-sm opacity-75">จาก PV ของคุณ</div>
                 </div>
 
                 <!-- Team Commission -->
                 <div class="bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105">
                     <div class="text-sm font-semibold mb-2 opacity-90">👥 คอมมิชชั่นจากทีม</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="team-income">0</span></div>
-                    <div class="text-sm opacity-75">Unilevel + Binary</div>
+                    <div class="text-sm opacity-75">Unilevel + Binary (รวม Rank Bonus)</div>
                 </div>
 
                 <!-- Total Income -->
                 <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-2xl p-6 text-white transform transition-all duration-300 hover:scale-105 animate-pulse">
-                    <div class="text-sm font-semibold mb-2 opacity-90">💰 รวมรายได้</div>
+                    <div class="text-sm font-semibold mb-2 opacity-90">💰 รวมคอมมิชชั่น</div>
                     <div class="text-4xl font-bold mb-2">฿<span id="total-income">0</span></div>
-                    <div class="text-sm opacity-75">รายได้รวมเดือนนี้</div>
+                    <div class="text-sm opacity-75">รวมทั้งหมดเดือนนี้</div>
                 </div>
             </div>
 
@@ -163,6 +190,7 @@
                                 <th class="px-4 py-4 text-left font-bold">เดือน</th>
                                 <th class="px-4 py-4 text-right font-bold">ยอดขายตัวเอง</th>
                                 <th class="px-4 py-4 text-right font-bold">ยอดขายทีม</th>
+                                <th class="px-4 py-4 text-right font-bold">Com.ส่วนตัว</th>
                                 <th class="px-4 py-4 text-right font-bold">Unilevel</th>
                                 <th class="px-4 py-4 text-right font-bold">Binary</th>
                                 <th class="px-4 py-4 text-right font-bold">รวม</th>
@@ -288,6 +316,8 @@
 let simulationData = {
     months: [],
     settings: {},
+    ranks: [],
+    selectedRank: null,
     isRunning: false,
 };
 
@@ -301,6 +331,53 @@ async function loadSettings() {
     } catch (error) {
         console.error('Failed to load settings:', error);
     }
+}
+
+async function loadRanks() {
+    try {
+        const response = await fetch('/api/v1/ranks');
+        const data = await response.json();
+        simulationData.ranks = data.data || data;
+
+        const select = document.getElementById('user_rank');
+        select.innerHTML = '<option value="">เลือกระดับยศ...</option>';
+
+        simulationData.ranks.forEach(rank => {
+            const option = document.createElement('option');
+            option.value = rank.id;
+            option.textContent = `${rank.name_th || rank.name} (${rank.commission_rate}% + ${rank.bonus_multiplier}x)`;
+            option.dataset.rank = JSON.stringify(rank);
+            select.appendChild(option);
+        });
+
+        // Select first rank by default
+        if (simulationData.ranks.length > 0) {
+            select.value = simulationData.ranks[0].id;
+            updateRankInfo();
+        }
+    } catch (error) {
+        console.error('Failed to load ranks:', error);
+        document.getElementById('user_rank').innerHTML = '<option value="">ไม่สามารถโหลดข้อมูล Rank ได้</option>';
+    }
+}
+
+function updateRankInfo() {
+    const select = document.getElementById('user_rank');
+    const selectedOption = select.options[select.selectedIndex];
+
+    if (!selectedOption || !selectedOption.dataset.rank) {
+        document.getElementById('rank-info').classList.add('hidden');
+        simulationData.selectedRank = null;
+        return;
+    }
+
+    const rank = JSON.parse(selectedOption.dataset.rank);
+    simulationData.selectedRank = rank;
+
+    document.getElementById('rank-commission-rate').textContent = rank.commission_rate || 0;
+    document.getElementById('rank-multiplier').textContent = (rank.bonus_multiplier || 1).toFixed(2);
+    document.getElementById('rank-level').textContent = rank.level || 1;
+    document.getElementById('rank-info').classList.remove('hidden');
 }
 
 async function startSimulation() {
@@ -336,37 +413,72 @@ async function startSimulation() {
 
 async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
     // Calculate growth factor (team grows over time)
-    const growthFactor = 1 + (month * 0.05); // 5% growth per month
+    const growthFactor = 1 + (month * 0.03); // 3% growth per month (more realistic)
     const currentTeamSize = Math.floor(teamSize * growthFactor);
     const totalTeamSales = currentTeamSize * teamAvgSales;
 
-    // Calculate commissions
+    // Calculate PV (Personal Volume)
     const pvRate = parseFloat(simulationData.settings.global_pv_rate || 1);
-    const personalPv = personalSales / pvRate;
-    const teamPv = totalTeamSales / pvRate;
+    const personalPv = personalSales * pvRate;
+    const teamPv = totalTeamSales * pvRate;
 
-    // Unilevel calculation
+    // Get rank multiplier
+    const rankMultiplier = simulationData.selectedRank ? parseFloat(simulationData.selectedRank.bonus_multiplier || 1) : 1;
+    const rankCommissionRate = simulationData.selectedRank ? parseFloat(simulationData.selectedRank.commission_rate || 0) : 0;
+
+    // Unilevel calculation with rank multiplier
     const unilevelLevels = simulationData.settings.unilevel_levels || [];
     let unilevelCommission = 0;
 
     if (Array.isArray(unilevelLevels)) {
         unilevelLevels.forEach(level => {
             const percentage = level.percentage || 0;
-            unilevelCommission += (teamPv * percentage) / 100;
+            const levelCommission = (teamPv * percentage) / 100;
+            unilevelCommission += levelCommission;
         });
     }
 
-    // Binary calculation (simplified)
-    const binaryPairCommission = parseFloat(simulationData.settings.binary_pair_commission || 100);
-    const weakLegPv = teamPv * 0.4; // Assume 40% in weak leg
-    const pairs = Math.floor(weakLegPv);
-    const binaryCommission = Math.min(pairs * binaryPairCommission, teamPv * 0.1); // Cap at 10%
+    // Apply rank multiplier to unilevel
+    unilevelCommission *= rankMultiplier;
 
-    const personalIncome = personalSales * 0.2; // Assume 20% retail profit
-    const totalIncome = personalIncome + unilevelCommission + binaryCommission;
+    // Binary calculation (more realistic)
+    let binaryCommission = 0;
+    if (simulationData.settings.binary_enabled !== false) {
+        // Simulate left and right leg distribution (60/40 split)
+        const leftLegPv = teamPv * 0.6;
+        const rightLegPv = teamPv * 0.4;
+        const weakLegPv = Math.min(leftLegPv, rightLegPv);
+
+        // Calculate pairs
+        const pairRatio = parseFloat(simulationData.settings.binary_pair_ratio || 1);
+        const pairsAvailable = Math.floor(weakLegPv / pairRatio);
+
+        // Daily pair limit
+        const dailyPairLimit = parseInt(simulationData.settings.binary_daily_pair_limit || 100);
+        const pairsToPay = Math.min(pairsAvailable, dailyPairLimit);
+
+        // Commission per pair
+        const binaryPairCommission = parseFloat(simulationData.settings.binary_pair_commission || 0);
+        const binaryMatchPercentage = parseFloat(simulationData.settings.binary_match_percentage || 0);
+
+        if (binaryPairCommission > 0) {
+            binaryCommission = pairsToPay * binaryPairCommission;
+        } else if (binaryMatchPercentage > 0) {
+            binaryCommission = (weakLegPv * binaryMatchPercentage) / 100;
+        }
+
+        // Apply rank multiplier to binary
+        binaryCommission *= rankMultiplier;
+    }
+
+    // Personal PV commission (based on personal volume only)
+    const personalCommission = (personalPv * rankCommissionRate) / 100;
+
+    // Total commission income (no retail profit assumption)
+    const totalIncome = personalCommission + unilevelCommission + binaryCommission;
 
     // Animate income display
-    animateNumber('personal-income', personalIncome);
+    animateNumber('personal-income', personalCommission);
     animateNumber('team-income', unilevelCommission + binaryCommission);
     animateNumber('total-income', totalIncome);
 
@@ -381,9 +493,12 @@ async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
         personalSales,
         teamSales: totalTeamSales,
         teamSize: currentTeamSize,
+        personalPv,
+        teamPv,
         unilevel: unilevelCommission,
         binary: binaryCommission,
-        personal: personalIncome,
+        personal: personalCommission,
+        rankMultiplier,
         total: totalIncome,
         accumulated
     });
@@ -453,8 +568,9 @@ function showResults() {
             <td class="px-4 py-3 font-semibold">เดือน ${month.month}</td>
             <td class="px-4 py-3 text-right">฿${Math.floor(month.personalSales).toLocaleString()}</td>
             <td class="px-4 py-3 text-right">฿${Math.floor(month.teamSales).toLocaleString()}</td>
+            <td class="px-4 py-3 text-right text-green-600 font-semibold">฿${Math.floor(month.personal).toLocaleString()}</td>
             <td class="px-4 py-3 text-right text-blue-600 font-semibold">฿${Math.floor(month.unilevel).toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-green-600 font-semibold">฿${Math.floor(month.binary).toLocaleString()}</td>
+            <td class="px-4 py-3 text-right text-indigo-600 font-semibold">฿${Math.floor(month.binary).toLocaleString()}</td>
             <td class="px-4 py-3 text-right text-purple-600 font-bold text-lg">฿${Math.floor(month.total).toLocaleString()}</td>
             <td class="px-4 py-3 text-right text-gray-600">฿${Math.floor(month.accumulated).toLocaleString()}</td>
         </tr>
@@ -527,13 +643,13 @@ function createCharts() {
     breakdownChart = new Chart(ctx2, {
         type: 'doughnut',
         data: {
-            labels: ['ยอดขายตัวเอง', 'Unilevel', 'Binary'],
+            labels: ['Com.ส่วนตัว', 'Unilevel (รวม Rank)', 'Binary (รวม Rank)'],
             datasets: [{
                 data: [totalPersonal, totalUnilevel, totalBinary],
                 backgroundColor: [
                     'rgb(34, 197, 94)',
                     'rgb(59, 130, 246)',
-                    'rgb(236, 72, 153)'
+                    'rgb(99, 102, 241)'
                 ]
             }]
         },
@@ -543,6 +659,18 @@ function createCharts() {
             plugins: {
                 legend: {
                     position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += '฿' + Math.floor(context.parsed).toLocaleString();
+                            return label;
+                        }
+                    }
                 }
             }
         }
@@ -570,7 +698,12 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Load settings on page load
-loadSettings();
+// Load settings and ranks on page load
+async function initializeSimulator() {
+    await loadSettings();
+    await loadRanks();
+}
+
+initializeSimulator();
 </script>
 @endsection
