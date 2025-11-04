@@ -154,6 +154,17 @@ Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function
     Route::get('/success/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('success');
 });
 
+// Shipping Addresses Routes (Authenticated)
+Route::middleware('auth')->prefix('shipping-addresses')->name('shipping-addresses.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\ShippingAddressController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\ShippingAddressController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\ShippingAddressController::class, 'store'])->name('store');
+    Route::get('/{id}/edit', [\App\Http\Controllers\ShippingAddressController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [\App\Http\Controllers\ShippingAddressController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\ShippingAddressController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/set-default', [\App\Http\Controllers\ShippingAddressController::class, 'setDefault'])->name('set-default');
+});
+
 // Orders Routes (Customer orders - Authenticated)
 Route::middleware('auth')->prefix('orders')->name('orders.')->group(function () {
     Route::get('/', [\App\Http\Controllers\OrderController::class, 'index'])->name('index');
