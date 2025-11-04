@@ -587,6 +587,20 @@ if [ -f "composer.lock" ]; then
         print_warning "Composer.lock validation failed"
 fi
 
+# Step 7.5: Ensure Google Cloud Vision is installed (for OCR/KYC)
+print_info "[7.5/20] Checking Google Cloud Vision for OCR..."
+if ! composer show google/cloud-vision &>/dev/null; then
+    print_warning "Google Cloud Vision not found, installing..."
+    if composer require google/cloud-vision --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+        print_success "Google Cloud Vision installed successfully"
+    else
+        print_warning "Google Cloud Vision installation failed (non-critical, continuing...)"
+        log "Warning: google/cloud-vision installation failed but continuing deployment"
+    fi
+else
+    print_success "Google Cloud Vision already installed"
+fi
+
 # Step 8: Install/Reinstall Laravel Sanctum
 print_info "[8/20] Installing Laravel Sanctum..."
 if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
