@@ -238,6 +238,12 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('languages/reorder', [LanguageSettingController::class, 'reorder'])->name('languages.reorder');
     Route::get('languages/switcher', [LanguageSettingController::class, 'getSwitcherSettings'])->name('languages.switcher');
     Route::put('languages/switcher', [LanguageSettingController::class, 'updateSwitcherSettings'])->name('languages.switcher.update');
+
+    // OCR Settings
+    Route::get('ocr', [SettingsController::class, 'ocr'])->name('ocr');
+    Route::post('ocr', [SettingsController::class, 'updateOcr'])->name('ocr.update');
+    Route::post('ocr/test', [SettingsController::class, 'testOcrConnection'])->name('ocr.test');
+    Route::get('ocr/setup-guide', [SettingsController::class, 'setupGuide'])->name('ocr.setup-guide');
 });
 
 // Translation Mapping Management (Custom Translations)

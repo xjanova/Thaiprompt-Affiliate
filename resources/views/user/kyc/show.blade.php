@@ -80,15 +80,34 @@
     <div class="bg-white rounded-xl shadow-md p-6">
         <h2 class="text-lg font-bold text-gray-900 mb-4">เอกสารที่ส่ง</h2>
 
+        <!-- Document Type Badge -->
+        @if(!empty($kycVerification->extracted_data['document_type']))
+            <div class="mb-4">
+                @if($kycVerification->extracted_data['document_type'] === 'driver_license')
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                        <i class="fas fa-id-card-alt mr-2"></i>ใบขับขี่
+                    </span>
+                @else
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        <i class="fas fa-id-card mr-2"></i>บัตรประชาชน
+                    </span>
+                @endif
+            </div>
+        @endif
+
         <div class="grid md:grid-cols-2 gap-6">
             <!-- ID Card Image -->
             <div>
                 <h3 class="text-sm font-medium text-gray-700 mb-3">
-                    <i class="fas fa-id-card mr-1"></i>รูปบัตรประชาชน
+                    @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
+                        <i class="fas fa-id-card-alt mr-1"></i>รูปใบขับขี่
+                    @else
+                        <i class="fas fa-id-card mr-1"></i>รูปบัตรประชาชน
+                    @endif
                 </h3>
                 <div class="border rounded-lg overflow-hidden">
                     <img src="{{ asset('storage/' . $kycVerification->id_card_image) }}"
-                         alt="ID Card"
+                         alt="ID Document"
                          class="w-full h-auto cursor-pointer hover:opacity-90 transition"
                          onclick="openImageModal(this.src)">
                 </div>
@@ -97,11 +116,15 @@
             <!-- Selfie Image -->
             <div>
                 <h3 class="text-sm font-medium text-gray-700 mb-3">
-                    <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน
+                    @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
+                        <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมใบขับขี่
+                    @else
+                        <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมบัตรประชาชน
+                    @endif
                 </h3>
                 <div class="border rounded-lg overflow-hidden">
                     <img src="{{ asset('storage/' . $kycVerification->selfie_image) }}"
-                         alt="Selfie with ID Card"
+                         alt="Selfie with ID"
                          class="w-full h-auto cursor-pointer hover:opacity-90 transition"
                          onclick="openImageModal(this.src)">
                 </div>
