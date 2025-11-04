@@ -39,8 +39,15 @@ Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,
 });
 
 // Setup Wizard (First time installation)
-Route::get('/setup', [SetupController::class, 'index'])->name('setup.index');
-Route::post('/setup', [SetupController::class, 'store'])->name('setup.store');
+Route::prefix('setup')->name('setup.')->group(function () {
+    Route::get('/', [SetupController::class, 'index'])->name('index');
+    Route::get('/check-requirements', [SetupController::class, 'checkRequirements'])->name('check-requirements');
+    Route::post('/verify-license', [SetupController::class, 'verifyLicense'])->name('verify-license');
+    Route::post('/create-admin', [SetupController::class, 'createAdmin'])->name('create-admin');
+    Route::post('/seed-data', [SetupController::class, 'seedData'])->name('seed-data');
+    Route::post('/finalize', [SetupController::class, 'finalize'])->name('finalize');
+    Route::get('/info', [SetupController::class, 'info'])->name('info');
+});
 
 // Authentication Routes
 Route::middleware('guest')->group(function () {
