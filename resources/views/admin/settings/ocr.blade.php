@@ -55,7 +55,7 @@
                     <div>
                         <h3 class="font-semibold text-gray-900 dark:text-white">Google Cloud Vision API</h3>
                         <p class="text-sm text-gray-600 dark:text-gray-400">สถานะ:
-                            @if(Setting::get('google_vision_enabled'))
+                            @if(\App\Models\Setting::get('google_vision_enabled'))
                                 <span class="text-green-600 font-semibold">เปิดใช้งาน</span>
                             @else
                                 <span class="text-red-600 font-semibold">ปิดใช้งาน</span>
@@ -120,7 +120,7 @@
                 <input type="checkbox"
                        name="google_vision_enabled"
                        value="1"
-                       {{ Setting::get('google_vision_enabled') ? 'checked' : '' }}
+                       {{ \App\Models\Setting::get('google_vision_enabled') ? 'checked' : '' }}
                        class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
                 <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white">
                     เปิดใช้งาน Google Cloud Vision API
@@ -139,7 +139,7 @@
             <input type="text"
                    name="google_vision_project_id"
                    id="google_vision_project_id"
-                   value="{{ Setting::get('google_vision_project_id') }}"
+                   value="{{ \App\Models\Setting::get('google_vision_project_id') }}"
                    placeholder="my-project-id"
                    class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent dark:bg-slate-700 dark:text-white">
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
