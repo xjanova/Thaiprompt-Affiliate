@@ -287,4 +287,137 @@ class SettingsController extends Controller
 
         return false;
     }
+
+    /**
+     * Show OCR settings page
+     */
+    public function ocr()
+    {
+        $ocrSettings = Setting::all()->where('group', 'ocr');
+
+        // Check if credentials file exists
+        $credentialsPath = Setting::get('google_vision_credentials_path');
+        $credentialsExists = !empty($credentialsPath) && file_exists($credentialsPath);
+
+        // Get credentials info if file exists
+        $credentialsInfo = null;
+        if ($credentialsExists) {
+            try {
+                $content = file_get_contents($credentialsPath);
+                $json = json_decode($content, true);
+                if ($json) {
+                    $credentialsInfo = [
+                        'project_id' => $json['project_id'] ?? 'N/A',
+                        'client_email' => $json['client_email'] ?? 'N/A',
+                        'type' => $json['type'] ?? 'N/A',
+                    ];
+                }
+            } catch (\Exception $e) {
+                $credentialsInfo = null;
+            }
+        }
+
+        return view('admin.settings.ocr', compact('ocrSettings', 'credentialsExists', 'credentialsInfo'));
+    }
+
+    /**
+     * Update OCR settings
+     */
+    public function updateOcr(Request $request)
+    {
+        $validated = $request->validate([
+            'google_vision_enabled' => 'nullable|boolean',
+            'google_vision_project_id' => 'nullable|string|max:255',
+            'credentials_file' => 'nullable|file|mimes:json|max:1024', // Max 1MB
+        ]);
+
+        // Update enabled status
+        Setting::set('google_vision_enabled', $request->has('google_vision_enabled') ? '1' : '0', 'boolean', 'ocr');
+
+        // Update project ID
+        if ($request->filled('google_vision_project_id')) {
+            Setting::set('google_vision_project_id', $request->google_vision_project_id, 'string', 'ocr');
+        }
+
+        // Upload credentials file if provided
+        if ($request->hasFile('credentials_file')) {
+            $file = $request->file('credentials_file');
+
+            // Validate JSON content
+            $content = file_get_contents($file->getRealPath());
+            $json = json_decode($content, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return back()->with('error', 'ไฟล์ JSON ไม่ถูกต้อง กรุณาตรวจสอบไฟล์อีกครั้ง');
+            }
+
+            // Check if it's a valid service account key
+            if (!isset($json['type']) || $json['type'] !== 'service_account') {
+                return back()->with('error', 'ไฟล์นี้ไม่ใช่ Service Account Key ที่ถูกต้อง');
+            }
+
+            // Save the file
+            $fileName = 'google-credentials.json';
+            $path = storage_path('app/' . $fileName);
+
+            // Backup old file if exists
+            if (file_exists($path)) {
+                $backupPath = storage_path('app/google-credentials-backup-' . date('Y-m-d-His') . '.json');
+                copy($path, $backupPath);
+            }
+
+            // Save new file
+            file_put_contents($path, $content);
+
+            // Update setting
+            Setting::set('google_vision_credentials_path', $path, 'string', 'ocr');
+
+            return back()->with('success', 'บันทึกการตั้งค่า OCR เรียบร้อยแล้ว และอัปโหลดไฟล์ credentials สำเร็จ');
+        }
+
+        return back()->with('success', 'บันทึกการตั้งค่า OCR เรียบร้อยแล้ว');
+    }
+
+    /**
+     * Test Google Cloud Vision API connection
+     */
+    public function testOcrConnection()
+    {
+        try {
+            $credentialsPath = Setting::get('google_vision_credentials_path');
+
+            if (!file_exists($credentialsPath)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบไฟล์ credentials กรุณาอัปโหลดไฟล์ก่อน',
+                ], 400);
+            }
+
+            // Try to initialize Google Cloud Vision client
+            $client = new \Google\Cloud\Vision\V1\ImageAnnotatorClient([
+                'credentials' => $credentialsPath
+            ]);
+
+            // Close the client
+            $client->close();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ!',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เชื่อมต่อ Google Cloud Vision API ไม่สำเร็จ: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Show setup guide
+     */
+    public function setupGuide()
+    {
+        return view('admin.settings.setup-guide');
+    }
 }

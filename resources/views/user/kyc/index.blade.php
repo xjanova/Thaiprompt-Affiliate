@@ -147,7 +147,7 @@
             </li>
             <li class="flex items-start">
                 <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
-                <span>คุณจะต้องอัปโหลดรูปบัตรประชาชนและรูปถ่ายตัวเองพร้อมบัตรประชาชน</span>
+                <span>คุณจะต้องอัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่ และรูปถ่ายตัวเองพร้อมบัตร</span>
             </li>
             <li class="flex items-start">
                 <i class="fas fa-check-circle mt-1 mr-2 text-blue-600"></i>
