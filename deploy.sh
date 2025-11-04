@@ -587,34 +587,14 @@ if [ -f "composer.lock" ]; then
         print_warning "Composer.lock validation failed"
 fi
 
-# Step 7.5: Ensure Google Cloud Vision is installed (for OCR/KYC)
-print_info "[7.5/20] Checking Google Cloud Vision for OCR..."
-if ! composer show google/cloud-vision &>/dev/null; then
-    print_warning "Google Cloud Vision not found, installing..."
-    if composer require google/cloud-vision --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
-        print_success "Google Cloud Vision installed successfully"
-
-        # Auto-commit composer.lock if it was updated
-        if [ -f "composer.lock" ] && git diff --quiet composer.lock 2>/dev/null; then
-            :  # No changes, do nothing
-        elif [ -f "composer.lock" ]; then
-            print_info "Committing updated composer.lock..."
-            git add composer.lock 2>/dev/null || true
-            git commit -m "chore: update composer.lock after google/cloud-vision installation [skip ci]" 2>/dev/null || true
-
-            # Try to push (may fail if no git credentials, but that's okay)
-            if git push origin "$BRANCH" 2>/dev/null; then
-                print_success "composer.lock committed and pushed"
-            else
-                print_warning "composer.lock committed locally (push manually later)"
-            fi
-        fi
-    else
-        print_warning "Google Cloud Vision installation failed (non-critical, continuing...)"
-        log "Warning: google/cloud-vision installation failed but continuing deployment"
-    fi
+# Step 7.5: Verify Google Cloud Vision is installed (for OCR/KYC)
+print_info "[7.5/20] Verifying Google Cloud Vision for OCR..."
+if composer show google/cloud-vision &>/dev/null; then
+    VISION_VERSION=$(composer show google/cloud-vision 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
+    print_success "Google Cloud Vision installed (${VISION_VERSION})"
 else
-    print_success "Google Cloud Vision already installed"
+    print_warning "Google Cloud Vision not found! OCR/KYC features will not work."
+    log "Warning: google/cloud-vision is missing. Run 'composer require google/cloud-vision' locally and commit composer.lock"
 fi
 
 # Step 8: Install/Reinstall Laravel Sanctum
