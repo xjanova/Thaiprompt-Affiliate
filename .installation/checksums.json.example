@@ -1,0 +1,14 @@
+{
+  "note": "This file contains SHA-256 checksums of critical files to prevent tampering",
+  "generated_at": "2025-11-04T00:00:00Z",
+  "version": "1.144.0",
+  "checksums": {
+    "app/Services/LicenseService.php": "GENERATED_ON_DISTRIBUTION",
+    "app/Services/IntegrityService.php": "GENERATED_ON_DISTRIBUTION",
+    "app/Console/Commands/LicenseCheckCommand.php": "GENERATED_ON_DISTRIBUTION",
+    "app/Console/Commands/LicenseActivateCommand.php": "GENERATED_ON_DISTRIBUTION",
+    "app/Console/Commands/UpdateCommand.php": "GENERATED_ON_DISTRIBUTION",
+    "config/license.php": "GENERATED_ON_DISTRIBUTION"
+  },
+  "instructions": "Run 'php artisan app:integrity-check --generate-checksums' before distribution"
+}
