@@ -384,12 +384,38 @@ class SettingsController extends Controller
     public function testOcrConnection()
     {
         try {
+            // Check if Google Cloud Vision library is installed
+            if (!class_exists('\Google\Cloud\Vision\V1\ImageAnnotatorClient')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Google Cloud Vision library กรุณาติดตั้งด้วย: composer require google/cloud-vision',
+                ], 500);
+            }
+
             $credentialsPath = Setting::get('google_vision_credentials_path');
 
-            if (!file_exists($credentialsPath)) {
+            if (empty($credentialsPath) || !file_exists($credentialsPath)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'ไม่พบไฟล์ credentials กรุณาอัปโหลดไฟล์ก่อน',
+                ], 400);
+            }
+
+            // Validate JSON file
+            $jsonContent = file_get_contents($credentialsPath);
+            $credentials = json_decode($jsonContent, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไฟล์ credentials ไม่ใช่ JSON ที่ถูกต้อง',
+                ], 400);
+            }
+
+            if (!isset($credentials['type']) || $credentials['type'] !== 'service_account') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไฟล์นี้ไม่ใช่ Service Account Key ที่ถูกต้อง',
                 ], 400);
             }
 
@@ -403,7 +429,7 @@ class SettingsController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ!',
+                'message' => 'เชื่อมต่อ Google Cloud Vision API สำเร็จ! Project: ' . ($credentials['project_id'] ?? 'N/A'),
             ]);
         } catch (\Exception $e) {
             return response()->json([
