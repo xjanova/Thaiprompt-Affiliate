@@ -5,6 +5,7 @@ use App\Http\Controllers\User\WalletController;
 use App\Http\Controllers\User\RankController;
 use App\Http\Controllers\User\MembershipRetentionController;
 use App\Http\Controllers\User\KycController;
+use App\Http\Controllers\User\ShopController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -142,4 +143,10 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/dividend-simulator', function () {
         return view('user.mlm.dividend-simulator');
     })->name('dividend-simulator');
+});
+
+// Shop (Main Store - System Products)
+Route::prefix('shop')->name('shop.')->group(function () {
+    Route::get('/', [ShopController::class, 'index'])->name('index');
+    Route::get('/{slug}', [ShopController::class, 'show'])->name('show');
 });
