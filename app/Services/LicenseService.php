@@ -25,12 +25,20 @@ class LicenseService
      */
     public function validate(): array
     {
-        // Developer Mode - ข้าม License check
-        if (config('license.developer_mode')) {
+        // File integrity check - ป้องกันการแก้ไขโค้ดข้าม license
+        $integrityService = app(\App\Services\IntegrityService::class);
+        $integrityCheck = $integrityService->verify();
+
+        if (!$integrityCheck['valid']) {
+            Log::critical('License validation blocked due to file integrity violations', [
+                'violations' => $integrityCheck['violations'],
+                'ip' => request()->ip(),
+            ]);
+
             return [
-                'valid' => true,
-                'developer_mode' => true,
-                'message' => 'Developer mode enabled',
+                'valid' => false,
+                'error' => 'integrity_violation',
+                'message' => 'System integrity check failed. Please reinstall the application.',
             ];
         }
 

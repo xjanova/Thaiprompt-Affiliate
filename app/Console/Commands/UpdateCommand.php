@@ -173,48 +173,44 @@ class UpdateCommand extends Command
         }
 
         // Check license
-        if (!config('license.developer_mode')) {
-            $this->info('Checking license...');
-            $licenseStatus = $this->licenseService->status();
+        $this->info('Checking license...');
+        $licenseStatus = $this->licenseService->status();
 
-            if (!$licenseStatus['is_active']) {
-                $this->error('✗ No active license found');
-                $this->newLine();
-                $this->comment('Updates require an active license.');
-                $this->line('Activate your license with: php artisan license:activate {key}');
-                return false;
+        if (!$licenseStatus['is_active']) {
+            $this->error('✗ No active license found');
+            $this->newLine();
+            $this->comment('Updates require an active license.');
+            $this->line('Activate your license with: php artisan license:activate {key}');
+            return false;
+        }
+
+        // Validate with server
+        $validation = $this->licenseService->validate();
+
+        if (!$validation['valid']) {
+            $this->error('✗ License validation failed');
+            $this->newLine();
+            $error = $validation['error'] ?? 'unknown_error';
+            $message = $validation['message'] ?? 'License is invalid';
+
+            $this->error("Error: {$error}");
+            $this->line($message);
+            $this->newLine();
+
+            if ($error === 'expired_license') {
+                $this->comment('Your license has expired. Renew at: https://xman4289.com/renew');
+            } else {
+                $this->comment('Contact support: https://xman4289.com/support');
             }
 
-            // Validate with server
-            $validation = $this->licenseService->validate();
+            return false;
+        }
 
-            if (!$validation['valid']) {
-                $this->error('✗ License validation failed');
-                $this->newLine();
-                $error = $validation['error'] ?? 'unknown_error';
-                $message = $validation['message'] ?? 'License is invalid';
+        $this->info('✓ License is valid');
 
-                $this->error("Error: {$error}");
-                $this->line($message);
-                $this->newLine();
-
-                if ($error === 'expired_license') {
-                    $this->comment('Your license has expired. Renew at: https://xman4289.com/renew');
-                } else {
-                    $this->comment('Contact support: https://xman4289.com/support');
-                }
-
-                return false;
-            }
-
-            $this->info('✓ License is valid');
-
-            // Warn if expiring soon
-            if ($this->licenseService->isExpiringSoon(30)) {
-                $this->warn('⚠ Your license is expiring soon. Renew at: https://xman4289.com/renew');
-            }
-        } else {
-            $this->warn('⚠ Developer mode enabled - license check skipped');
+        // Warn if expiring soon
+        if ($this->licenseService->isExpiringSoon(30)) {
+            $this->warn('⚠ Your license is expiring soon. Renew at: https://xman4289.com/renew');
         }
 
         $this->newLine();

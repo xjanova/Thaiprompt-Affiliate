@@ -83,14 +83,4 @@ return [
 
     'allow_offline' => env('LICENSE_ALLOW_OFFLINE', false),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Developer Mode
-    |--------------------------------------------------------------------------
-    |
-    | โหมด Developer (ไม่ตรวจสอบ License)
-    |
-    */
-
-    'developer_mode' => env('LICENSE_DEVELOPER_MODE', false),
 ];

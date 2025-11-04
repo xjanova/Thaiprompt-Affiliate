@@ -89,10 +89,6 @@ class LicenseCheckCommand extends Command
                 $rows[] = ['Source', $result['cached'] ? '📦 Cached' : '🌐 Server'];
             }
 
-            if (isset($result['developer_mode']) && $result['developer_mode']) {
-                $rows[] = ['Mode', '🛠️  Developer Mode'];
-            }
-
             $this->table(['Property', 'Value'], $rows);
 
             // Check if expiring soon
