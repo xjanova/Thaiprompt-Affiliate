@@ -649,18 +649,30 @@
 
                         <div class="border-t border-gray-700/30 my-1"></div>
 
-                        <!-- AI Bot Section -->
-                        <div class="px-2 py-1">
-                            <span class="text-[10px] text-gray-500 uppercase font-semibold">AI Chat Bot</span>
+                        <!-- AI Chat Bot Section -->
+                        <div class="px-2 py-1 mt-1">
+                            <span class="text-[10px] text-purple-400 uppercase font-bold tracking-wider">🤖 AI Chat Bot</span>
                         </div>
 
                         <a href="{{ route('admin.line-bot.ai.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
-                            <span class="mr-2">🤖</span>
-                            <span>AI Settings (Old)</span>
+                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 hover:text-white rounded-lg transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : '' }}">
+                            <span class="mr-2">⚡</span>
+                            <span class="font-semibold">AI Settings</span>
                         </a>
 
-                        <div class="border-t border-gray-700/30 my-1"></div>
+                        <a href="{{ route('admin.line-bot.ai.conversations') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.conversations') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">💬</span>
+                            <span>Conversations</span>
+                        </a>
+
+                        <a href="{{ route('admin.line-bot.ai.analytics') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.analytics') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>Analytics</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-2"></div>
 
                         <!-- AI System Section -->
                         <div class="px-2 py-1">
