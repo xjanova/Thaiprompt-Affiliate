@@ -14,8 +14,27 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
-// LINE Webhook (no CSRF, no auth)
+// Webhooks (no CSRF, no auth)
 Route::post('/webhook/line', [LineWebhookController::class, 'handle'])->name('api.line.webhook');
+
+// Payment Gateway Webhooks
+Route::prefix('webhook')->name('api.webhook.')->group(function () {
+    Route::post('/paysolutions', [\App\Http\Controllers\PaymentWebhookController::class, 'handlePaySolutions'])
+        ->middleware('webhook.verify:paysolutions')
+        ->name('paysolutions');
+
+    Route::post('/promptpay', [\App\Http\Controllers\PaymentWebhookController::class, 'handlePromptPay'])
+        ->middleware('webhook.verify:promptpay')
+        ->name('promptpay');
+
+    Route::post('/stripe', [\App\Http\Controllers\PaymentWebhookController::class, 'handleStripe'])
+        ->middleware('webhook.verify:stripe')
+        ->name('stripe');
+
+    Route::post('/omise', [\App\Http\Controllers\PaymentWebhookController::class, 'handleOmise'])
+        ->middleware('webhook.verify:omise')
+        ->name('omise');
+});
 
 // API v1
 Route::prefix('v1')->group(function () {

@@ -29,6 +29,7 @@ class PaymentService
         $this->providers['credit_card'] = new CreditCardProvider();
         $this->providers['bank_transfer'] = new BankTransferProvider();
         $this->providers['cash_on_delivery'] = new CashOnDeliveryProvider();
+        $this->providers['paysolutions'] = new PaySolutionsProvider();
     }
 
     /**
@@ -92,6 +93,21 @@ class PaymentService
     public function processPayment(PaymentTransaction $transaction, array $paymentData = [])
     {
         try {
+            // SECURITY: Validate transaction amount hasn't been tampered with
+            if (isset($paymentData['amount']) && $paymentData['amount'] != $transaction->amount) {
+                throw new Exception('Payment amount mismatch. Possible tampering detected.');
+            }
+
+            // SECURITY: Check transaction hasn't expired
+            if ($transaction->isExpired()) {
+                throw new Exception('Payment transaction has expired');
+            }
+
+            // SECURITY: Check transaction is in valid state
+            if (!in_array($transaction->status, ['pending', 'processing'])) {
+                throw new Exception('Invalid transaction status for processing: ' . $transaction->status);
+            }
+
             $provider = $this->getProvider($transaction->payment_method);
 
             // Validate payment
@@ -310,7 +326,7 @@ class PaymentService
      */
     public function getAvailablePaymentMethods(): array
     {
-        return [
+        $methods = [
             [
                 'id' => 'wallet',
                 'name' => 'Wallet',
@@ -347,5 +363,26 @@ class PaymentService
                 'enabled' => true,
             ],
         ];
+
+        // Add PaySolutions if configured and active
+        $paymentGateway = \App\Models\PaymentGateway::findByCode('paysolutions');
+        if ($paymentGateway && $paymentGateway->is_active && $paymentGateway->isConfigured()) {
+            $methods[] = [
+                'id' => 'paysolutions',
+                'name' => 'PaySolutions',
+                'description' => 'ชำระเงินผ่าน PaySolutions (QR, Card, E-Wallet)',
+                'icon' => '💳',
+                'enabled' => true,
+                'submethods' => [
+                    'qr' => 'QR Code Payment',
+                    'card' => 'Credit/Debit Card',
+                    'bank_transfer' => 'Bank Transfer',
+                    'ewallet' => 'E-Wallet',
+                    'installment' => 'Installment',
+                ],
+            ];
+        }
+
+        return $methods;
     }
 }
