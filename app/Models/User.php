@@ -244,6 +244,66 @@ class User extends Authenticatable
     }
 
     /**
+     * Accounting System Relationships
+     */
+
+    /**
+     * Get accounting settings for the user
+     */
+    public function accountingSettings()
+    {
+        return $this->hasOne(\App\Models\AccountingSetting::class);
+    }
+
+    /**
+     * Get accounting companies for the user
+     */
+    public function accountingCompanies()
+    {
+        return $this->hasMany(\App\Models\AccountingCompany::class);
+    }
+
+    /**
+     * Get accounting contacts for the user
+     */
+    public function accountingContacts()
+    {
+        return $this->hasMany(\App\Models\AccountingContact::class);
+    }
+
+    /**
+     * Get accounting products for the user
+     */
+    public function accountingProducts()
+    {
+        return $this->hasMany(\App\Models\AccountingProduct::class);
+    }
+
+    /**
+     * Get accounting invoices for the user
+     */
+    public function accountingInvoices()
+    {
+        return $this->hasMany(\App\Models\AccountingInvoice::class);
+    }
+
+    /**
+     * Get accounting expenses for the user
+     */
+    public function accountingExpenses()
+    {
+        return $this->hasMany(\App\Models\AccountingExpense::class);
+    }
+
+    /**
+     * Get FlowAccount connection for the user
+     */
+    public function flowAccountConnection()
+    {
+        return $this->hasOne(\App\Models\AccountingFlowaccountConnection::class);
+    }
+
+    /**
      * Check if user has KYC verified
      */
     public function isKycVerified(): bool
