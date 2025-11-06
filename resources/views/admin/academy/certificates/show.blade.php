@@ -473,7 +473,7 @@
                     </p>
                 </div>
 
-                <a href="{{ route('admin.article-management.edit', $certificate->article->id) }}"
+                <a href="{{ route('admin.articles.edit', $certificate->article->id) }}"
                    class="btn btn-secondary"
                    style="width: 100%; justify-content: center;">
                     📝 จัดการคอร์ส
