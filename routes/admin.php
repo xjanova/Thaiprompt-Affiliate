@@ -849,20 +849,35 @@ Route::prefix('hrm')->name('hrm.')->group(function () {
 
     // Performance Management
     Route::prefix('performance')->name('performance.')->group(function () {
+        // Performance Reviews
         Route::resource('reviews', \App\Http\Controllers\Admin\PerformanceReviewController::class);
+
+        // Performance Goals
         Route::resource('goals', \App\Http\Controllers\Admin\PerformanceGoalController::class);
+
+        // Performance Templates
+        Route::resource('templates', \App\Http\Controllers\Admin\PerformanceTemplateController::class);
     });
 
     // Recruitment Management
     Route::prefix('recruitment')->name('recruitment.')->group(function () {
+        // Job Postings
         Route::resource('jobs', \App\Http\Controllers\Admin\JobPostingController::class);
+
+        // Job Applications
         Route::resource('applications', \App\Http\Controllers\Admin\JobApplicationController::class);
     });
 
     // Training Management
     Route::prefix('training')->name('training.')->group(function () {
+        // Training Courses
         Route::resource('courses', \App\Http\Controllers\Admin\TrainingCourseController::class);
+
+        // Training Enrollments (also accessible as schedules)
         Route::resource('enrollments', \App\Http\Controllers\Admin\TrainingEnrollmentController::class);
+
+        // Alias for schedules (maps to enrollments)
+        Route::get('/schedules', [\App\Http\Controllers\Admin\TrainingEnrollmentController::class, 'index'])->name('schedules');
     });
 });
 
