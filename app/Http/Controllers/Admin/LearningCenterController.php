@@ -64,22 +64,33 @@ class LearningCenterController extends Controller
             ->get();
 
         // Get user's stats
-        $userStats = [
-            'completed' => UserArticleProgress::where('user_id', $user->id)
-                ->completed()
-                ->count(),
-            'in_progress' => UserArticleProgress::where('user_id', $user->id)
-                ->inProgress()
-                ->count(),
-            'total_time' => UserArticleProgress::where('user_id', $user->id)
-                ->sum('time_spent'),
+        $completedCount = UserArticleProgress::where('user_id', $user->id)
+            ->completed()
+            ->count();
+
+        $inProgressCount = UserArticleProgress::where('user_id', $user->id)
+            ->inProgress()
+            ->count();
+
+        $totalTimeSpent = UserArticleProgress::where('user_id', $user->id)
+            ->sum('time_spent');
+
+        // Convert total time to hours
+        $totalHours = $totalTimeSpent > 0 ? round($totalTimeSpent / 3600, 1) : 0;
+
+        // User stats for dashboard
+        $user_stats = [
+            'completed_courses' => $completedCount,
+            'in_progress' => $inProgressCount,
+            'total_hours' => $totalHours,
+            'certificates' => $completedCount, // For now, each completed course = 1 certificate
         ];
 
         return view('admin.learning-center.index', compact(
             'categories',
             'popular_articles',
             'featured_articles',
-            'userStats'
+            'user_stats'
         ));
     }
 
