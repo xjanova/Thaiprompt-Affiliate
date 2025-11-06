@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "36d78a9f77bd0bb21a5f10e671901f93",
+    "content-hash": "b236e89d2a810158ef421e63f73adb16",
     "packages": [
         {
             "name": "brick/math",
@@ -828,22 +828,22 @@
         },
         {
             "name": "google/cloud-vision",
-            "version": "v2.1.1",
+            "version": "v1.10.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/googleapis/google-cloud-php-vision.git",
-                "reference": "da05f701b12c1865282ecd66d5853016286f9c9e"
+                "reference": "8d01d61c04571e2cf85f6823af45f9fcbe693b9f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/googleapis/google-cloud-php-vision/zipball/da05f701b12c1865282ecd66d5853016286f9c9e",
-                "reference": "da05f701b12c1865282ecd66d5853016286f9c9e",
+                "url": "https://api.github.com/repos/googleapis/google-cloud-php-vision/zipball/8d01d61c04571e2cf85f6823af45f9fcbe693b9f",
+                "reference": "8d01d61c04571e2cf85f6823af45f9fcbe693b9f",
                 "shasum": ""
             },
             "require": {
                 "google/cloud-core": "^1.57",
-                "google/gax": "^1.38.0",
-                "php": "^8.1"
+                "google/gax": "^1.36.0",
+                "php": "^8.0"
             },
             "require-dev": {
                 "erusev/parsedown": "^1.6",
@@ -880,9 +880,9 @@
             ],
             "description": "Cloud Vision Client for PHP",
             "support": {
-                "source": "https://github.com/googleapis/google-cloud-php-vision/tree/v2.1.1"
+                "source": "https://github.com/googleapis/google-cloud-php-vision/tree/v1.10.3"
             },
-            "time": "2025-10-07T18:41:09+00:00"
+            "time": "2025-01-24T21:24:06+00:00"
         },
         {
             "name": "google/common-protos",
