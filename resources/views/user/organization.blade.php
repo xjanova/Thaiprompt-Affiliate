@@ -195,6 +195,14 @@
             </div>
         </div>
     </div>
+
+    <!-- Switch View Link -->
+    <div class="text-center">
+        <a href="{{ route('user.organization.binary') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+            <span>🌲</span>
+            <span>ดูผังสายงานแบบ Binary</span>
+        </a>
+    </div>
 </div>
 
 @push('scripts')

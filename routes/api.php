@@ -62,6 +62,10 @@ Route::prefix('v1')->group(function () {
         Route::prefix('tree')->group(function () {
             Route::get('/user', [TreeController::class, 'getUserTree']);
             Route::get('/admin/{affiliateId?}', [TreeController::class, 'getAdminTree']);
+
+            // Binary Tree
+            Route::get('/binary', [TreeController::class, 'getUserBinaryTree']);
+            Route::get('/binary/admin/{affiliateId?}', [TreeController::class, 'getAdminBinaryTree']);
         });
 
         // Ranks
