@@ -597,14 +597,14 @@
                             <span class="text-[10px] text-gray-500 uppercase font-semibold">จัดการคอร์ส</span>
                         </div>
 
-                        <a href="{{ route('admin.article-management.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.article-management.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                        <a href="{{ route('admin.articles.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.articles.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
                             <span class="mr-2">📝</span>
                             <span>จัดการคอร์ส</span>
                         </a>
 
-                        <a href="{{ route('admin.category-management.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.category-management.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                        <a href="{{ route('admin.categories.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.categories.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
                             <span class="mr-2">📂</span>
                             <span>หมวดหมู่</span>
                         </a>
