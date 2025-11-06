@@ -662,12 +662,12 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         Route::get('/export-commissions', [\App\Http\Controllers\Admin\MlmReportController::class, 'exportCommissions'])->name('export-commissions');
     });
 
-    // MLM Global Settings
+    // MLM Global Settings (Premium Edition)
     Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'index'])->name('index');
-        Route::put('/', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'update'])->name('update');
-        Route::post('/preview-calculation', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'previewCalculation'])->name('preview-calculation');
-        Route::get('/get-settings', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'getSettings'])->name('get-settings');
+        Route::get('/', [MlmGlobalSettingController::class, 'index'])->name('index');
+        Route::put('/', [MlmGlobalSettingController::class, 'update'])->name('update');
+        Route::post('/preview-calculation', [MlmGlobalSettingController::class, 'previewCalculation'])->name('preview-calculation');
+        Route::get('/get-settings', [MlmGlobalSettingController::class, 'getSettings'])->name('get-settings');
     });
 
     // MLM Genealogy Viewer
