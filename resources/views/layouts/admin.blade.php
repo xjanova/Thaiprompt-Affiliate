@@ -890,6 +890,180 @@
                 <!-- Divider -->
                 <div class="border-t border-gray-700/50 my-3"></div>
 
+                <!-- HRM System Dropdown -->
+                <div class="relative mb-1">
+                    @php
+                        $hrmActive = request()->routeIs('admin.hrm.*');
+                    @endphp
+
+                    <!-- Main HRM Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-600 hover:text-white rounded-lg transition-all duration-200 group {{ $hrmActive ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('hrmMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👥</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            ระบบ HRM
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': hrmMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- HRM Submenu -->
+                    <div x-show="hrmMenuOpen"
+                         x-collapse
+                         class="pl-6 mt-1 space-y-0.5"
+                         :class="{ 'md:hidden': sidebarCollapsed }"
+                         style="display: {{ $hrmActive ? 'block' : 'none' }};">
+
+                        <!-- Dashboard -->
+                        <a href="{{ route('admin.hrm.dashboard') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.dashboard') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Employee Management Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">จัดการพนักงาน</span>
+                        </div>
+
+                        <a href="{{ route('admin.hrm.employees.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.employees.index') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">👤</span>
+                            <span>รายชื่อพนักงาน</span>
+                        </a>
+
+                        <a href="{{ route('admin.hrm.employees.create') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.employees.create') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">➕</span>
+                            <span>เพิ่มพนักงานใหม่</span>
+                        </a>
+
+                        <a href="{{ route('admin.hrm.departments.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.departments.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">🏢</span>
+                            <span>แผนก</span>
+                        </a>
+
+                        <a href="{{ route('admin.hrm.positions.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.positions.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">💼</span>
+                            <span>ตำแหน่งงาน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Attendance Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">เวลาเข้างาน</span>
+                        </div>
+
+                        <a href="{{ route('admin.hrm.attendance.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.attendance.index') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">🕐</span>
+                            <span>บันทึกเวลา</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Leave Management Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">จัดการลา</span>
+                        </div>
+
+                        <a href="{{ route('admin.hrm.leave.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.leave.index') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📅</span>
+                            <span>คำขอลา</span>
+                        </a>
+
+                        <a href="{{ route('admin.hrm.leave.calendar') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.leave.calendar') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">🗓️</span>
+                            <span>ปฏิทินการลา</span>
+                        </a>
+
+                        <a href="{{ route('admin.hrm.leave.types') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.leave.types*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📋</span>
+                            <span>ประเภทการลา</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Payroll Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">เงินเดือน</span>
+                        </div>
+
+                        <a href="{{ route('admin.hrm.payroll.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.payroll.index') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">💰</span>
+                            <span>เงินเดือนพนักงาน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Performance Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">ประเมินผล</span>
+                        </div>
+
+                        <a href="{{ route('admin.hrm.performance.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.performance.index') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">⭐</span>
+                            <span>ประเมินผลงาน</span>
+                        </a>
+
+                        <a href="{{ route('admin.hrm.performance.templates.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.performance.templates.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📄</span>
+                            <span>แบบฟอร์มประเมิน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Recruitment Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">สรรหา</span>
+                        </div>
+
+                        <a href="{{ route('admin.hrm.recruitment.positions') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.recruitment.positions*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📢</span>
+                            <span>ตำแหน่งว่าง</span>
+                        </a>
+
+                        <a href="{{ route('admin.hrm.recruitment.applications') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.recruitment.applications*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📨</span>
+                            <span>ใบสมัครงาน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Training Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">พัฒนาบุคลากร</span>
+                        </div>
+
+                        <a href="{{ route('admin.hrm.training.programs') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.training.programs*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">🎓</span>
+                            <span>หลักสูตรฝึกอบรม</span>
+                        </a>
+
+                        <a href="{{ route('admin.hrm.training.schedules') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.training.schedules*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📆</span>
+                            <span>กำหนดการอบรม</span>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Accounting System Dropdown -->
                 @if(config('license.addons.accounting.enabled') && (auth()->user()->hasPermission('accounting.view_dashboard') || auth()->user()->isSuperAdmin()))
                 <div class="relative mb-1">

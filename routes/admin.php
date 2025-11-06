@@ -772,6 +772,7 @@ Route::prefix('academy')->name('academy.')->group(function () {
     });
 });
 
+
 // HRM (Human Resource Management) System
 Route::prefix('hrm')->name('hrm.')->group(function () {
     // HRM Dashboard
