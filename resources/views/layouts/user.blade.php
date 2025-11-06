@@ -383,9 +383,16 @@
 
                 <!-- Organization -->
                 <a href="{{ route('user.organization') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.organization') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.organization') && !request()->routeIs('user.organization.binary') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
                     <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌳</span>
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผังสายงาน</span>
+                </a>
+
+                <!-- Binary Organization -->
+                <a href="{{ route('user.organization.binary') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.organization.binary') ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🌲</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ผัง Binary</span>
                 </a>
 
                 <!-- Retention Dropdown Menu -->
