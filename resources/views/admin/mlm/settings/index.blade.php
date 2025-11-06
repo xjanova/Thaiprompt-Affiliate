@@ -114,7 +114,7 @@
                                     ? $setting->description_th
                                     : $setting->description }}
                             </p>
-                            <div class="flex items-center gap-2 mt-2">
+                            <div class="flex items-center gap-2 mt-2 flex-wrap">
                                 <span class="px-2 py-1 text-xs rounded-full
                                     {{ $setting->type === 'string' ? 'bg-blue-100 text-blue-800' : '' }}
                                     {{ $setting->type === 'number' ? 'bg-green-100 text-green-800' : '' }}
@@ -122,6 +122,43 @@
                                     {{ $setting->type === 'json' ? 'bg-pink-100 text-pink-800' : '' }}">
                                     {{ $setting->type }}
                                 </span>
+
+                                <!-- Visual Help Triggers -->
+                                @if($setting->key === 'default_placement_strategy')
+                                    <button type="button" onclick="showPlacementDemo('{{ $setting->value }}')"
+                                            class="visual-help-trigger">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        ดูแอนิเมชั่น
+                                    </button>
+                                @elseif(str_contains($setting->key, 'compression') || str_contains($setting->key, 'rollup'))
+                                    <button type="button" onclick="showRollupDemo()"
+                                            class="visual-help-trigger">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        ดูแอนิเมชั่น Roll-up
+                                    </button>
+                                @elseif(str_contains($setting->key, 'binary'))
+                                    <button type="button" onclick="showBinaryDemo()"
+                                            class="visual-help-trigger">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h4a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 011-1V5a1 1 0 011-1h4a1 1 0 011 1v14a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5z"/>
+                                        </svg>
+                                        ดู Binary Tree
+                                    </button>
+                                @elseif($setting->key === 'unilevel_levels')
+                                    <button type="button" onclick="showUnilevelDemo()"
+                                            class="visual-help-trigger">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/>
+                                        </svg>
+                                        ดู Unilevel Tree
+                                    </button>
+                                @endif
                             </div>
                         </div>
 
@@ -331,6 +368,110 @@
         </div>
     </div>
 
+    <!-- Visual Learning Section -->
+    <div class="mt-8 bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 rounded-3xl shadow-2xl p-8 text-white">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm">
+                <span class="text-3xl">🎬</span>
+            </div>
+            <div>
+                <h3 class="text-2xl font-bold">เรียนรู้ผ่านภาพเคลื่อนไหว</h3>
+                <p class="text-white/80 text-sm">คลิกเพื่อดูแอนิเมชั่นอธิบายแนวคิดต่างๆ ของระบบ MLM</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Placement Strategies -->
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+                 onclick="showPlacementDemo('manual')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">📍</span>
+                    </div>
+                    <h4 class="font-bold text-lg">Manual Placement</h4>
+                </div>
+                <p class="text-sm text-white/80">วางตำแหน่งด้วยตนเอง</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+                 onclick="showPlacementDemo('fill_left')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">⬅️</span>
+                    </div>
+                    <h4 class="font-bold text-lg">Fill Left</h4>
+                </div>
+                <p class="text-sm text-white/80">เติมซ้ายก่อนเสมอ</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+                 onclick="showPlacementDemo('fill_right')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">➡️</span>
+                    </div>
+                    <h4 class="font-bold text-lg">Fill Right</h4>
+                </div>
+                <p class="text-sm text-white/80">เติมขวาก่อนเสมอ</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+                 onclick="showPlacementDemo('weak_leg')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">⚖️</span>
+                    </div>
+                    <h4 class="font-bold text-lg">Weak Leg</h4>
+                </div>
+                <p class="text-sm text-white/80">เติมขาอ่อนเพื่อสมดุล</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+                 onclick="showPlacementDemo('strong_leg')">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">💪</span>
+                    </div>
+                    <h4 class="font-bold text-lg">Strong Leg</h4>
+                </div>
+                <p class="text-sm text-white/80">เติมขาแข็งสร้างโมเมนตัม</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+                 onclick="showRollupDemo()">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">↗️</span>
+                    </div>
+                    <h4 class="font-bold text-lg">Roll-up</h4>
+                </div>
+                <p class="text-sm text-white/80">การยกคอมมิชชั่นข้าม Inactive</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+                 onclick="showBinaryDemo()">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">🔄</span>
+                    </div>
+                    <h4 class="font-bold text-lg">Binary Tree</h4>
+                </div>
+                <p class="text-sm text-white/80">โครงสร้างแบบ 2 ขา</p>
+            </div>
+
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-5 hover:bg-white/20 transition-all duration-200 cursor-pointer border border-white/20"
+                 onclick="showUnilevelDemo()">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                        <span class="text-2xl">📊</span>
+                    </div>
+                    <h4 class="font-bold text-lg">Unilevel Tree</h4>
+                </div>
+                <p class="text-sm text-white/80">โครงสร้างแบบไม่จำกัดกิ่ง</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Common Settings Reference -->
     <div class="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-lg p-6">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">การตั้งค่าทั่วไป</h3>
@@ -351,6 +492,25 @@
                     <li>• <code class="bg-white px-2 py-0.5 rounded">enable_carry_forward</code> - เปิดใช้งาน Carry Forward</li>
                 </ul>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Animated Visualizations Modal -->
+<div id="visualModal" class="modal-overlay" onclick="closeModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="sticky top-0 bg-white border-b border-gray-200 px-8 py-6 rounded-t-3xl z-10">
+            <div class="flex justify-between items-center">
+                <h2 id="modalTitle" class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent"></h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div id="modalBody" class="p-8">
+            <!-- Content will be injected here -->
         </div>
     </div>
 </div>
@@ -610,6 +770,416 @@ function updateDashboard(total, unilevel, binary) {
         `;
     }
 }
+
+// ============= Visual Demonstration Functions =============
+
+function closeModal(event) {
+    if (event && event.target !== event.currentTarget && event.type !== 'click') return;
+    document.getElementById('visualModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function showPlacementDemo(strategy) {
+    const modal = document.getElementById('visualModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    const strategyInfo = {
+        'manual': {
+            title: '📍 Manual Placement - วางตำแหน่งด้วยตนเอง',
+            description: 'ผู้สนับสนุนเลือกตำแหน่งที่จะวางสมาชิกใหม่ด้วยตนเอง มีความยืดหยุ่นสูงสุด',
+            color: '#3b82f6'
+        },
+        'fill_left': {
+            title: '⬅️ Fill Left - เติมซ้ายก่อน',
+            description: 'วางสมาชิกใหม่ทางซ้ายก่อนเสมอ จนกว่าจะเต็ม แล้วค่อยไปขวา',
+            color: '#10b981'
+        },
+        'fill_right': {
+            title: '➡️ Fill Right - เติมขวาก่อน',
+            description: 'วางสมาชิกใหม่ทางขวาก่อนเสมอ จนกว่าจะเต็ม แล้วค่อยไปซ้าย',
+            color: '#f59e0b'
+        },
+        'weak_leg': {
+            title: '⚖️ Weak Leg - เติมขาอ่อน',
+            description: 'วางสมาชิกใหม่ในขาที่มี PV น้อยกว่า เพื่อสร้างความสมดุล',
+            color: '#ec4899'
+        },
+        'strong_leg': {
+            title: '💪 Strong Leg - เติมขาแข็ง',
+            description: 'วางสมาชิกใหม่ในขาที่มี PV มากกว่า เพื่อสร้างโมเมนตัม',
+            color: '#9333ea'
+        }
+    };
+
+    const info = strategyInfo[strategy] || strategyInfo['manual'];
+
+    modalTitle.textContent = info.title;
+    modalBody.innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-200">
+                <p class="text-gray-700 text-lg">${info.description}</p>
+            </div>
+
+            <div class="placement-demo" id="placementDemoContainer">
+                <svg width="100%" height="300" style="position: absolute; top: 0; left: 0;">
+                    <!-- Lines will be drawn here -->
+                    <line x1="50%" y1="60" x2="30%" y2="150" stroke="${info.color}" stroke-width="3" opacity="0.6" class="placement-line" />
+                    <line x1="50%" y1="60" x2="70%" y2="150" stroke="${info.color}" stroke-width="3" opacity="0.6" class="placement-line" />
+                    <line x1="30%" y1="150" x2="20%" y2="240" stroke="${info.color}" stroke-width="2" opacity="0.4" class="placement-line" />
+                    <line x1="30%" y1="150" x2="40%" y2="240" stroke="${info.color}" stroke-width="2" opacity="0.4" class="placement-line" />
+                </svg>
+
+                <!-- Sponsor Node -->
+                <div class="placement-node sponsor" style="top: 30px; left: calc(50% - 25px);">
+                    <span>👤</span>
+                </div>
+
+                <!-- Level 1 Nodes -->
+                <div class="placement-node member" style="top: 120px; left: calc(30% - 25px);">
+                    <span>A</span>
+                </div>
+                <div class="placement-node member" style="top: 120px; left: calc(70% - 25px);">
+                    <span>B</span>
+                </div>
+
+                <!-- Level 2 Nodes -->
+                <div class="placement-node inactive" style="top: 210px; left: calc(20% - 25px);">
+                    <span>?</span>
+                </div>
+                <div class="placement-node inactive" style="top: 210px; left: calc(40% - 25px);">
+                    <span>?</span>
+                </div>
+
+                <!-- New Member (animated) -->
+                <div class="placement-node new" id="newMemberNode" style="top: 210px; left: calc(60% - 25px); display: none;">
+                    <span>NEW</span>
+                </div>
+            </div>
+
+            <div class="flex justify-center">
+                <button onclick="animatePlacement('${strategy}')"
+                        class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold text-lg shadow-lg transition-all duration-200 transform hover:scale-105 flex items-center gap-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    เล่นอนิเมชั่น
+                </button>
+            </div>
+
+            <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl p-6">
+                <h4 class="font-bold text-blue-900 mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    เมื่อไหร่ควรใช้?
+                </h4>
+                <p class="text-blue-800 text-sm leading-relaxed" id="strategyAdvice">
+                    ${getStrategyAdvice(strategy)}
+                </p>
+            </div>
+        </div>
+    `;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    // Auto-play animation
+    setTimeout(() => animatePlacement(strategy), 500);
+}
+
+function animatePlacement(strategy) {
+    const newNode = document.getElementById('newMemberNode');
+    if (!newNode) return;
+
+    // Reset
+    newNode.style.display = 'none';
+
+    // Determine position based on strategy
+    let positions = {
+        'manual': { left: 'calc(60% - 25px)', top: '210px' },
+        'fill_left': { left: 'calc(20% - 25px)', top: '210px' },
+        'fill_right': { left: 'calc(70% - 25px)', top: '210px' },
+        'weak_leg': { left: 'calc(60% - 25px)', top: '210px' },
+        'strong_leg': { left: 'calc(20% - 25px)', top: '210px' }
+    };
+
+    let pos = positions[strategy] || positions['manual'];
+
+    setTimeout(() => {
+        newNode.style.left = pos.left;
+        newNode.style.top = pos.top;
+        newNode.style.display = 'flex';
+    }, 100);
+}
+
+function getStrategyAdvice(strategy) {
+    const advice = {
+        'manual': 'เหมาะสำหรับทีมเล็ก หรือต้องการควบคุมโครงสร้างแบบละเอียด สามารถสร้างกลยุทธ์เฉพาะสำหรับสมาชิกแต่ละคน',
+        'fill_left': 'เหมาะสำหรับระบบ Binary ที่ต้องการสร้างความลึกก่อน ช่วยให้ Binary matching เกิดได้เร็ว',
+        'fill_right': 'เหมาะสำหรับระบบที่มีกลยุทธ์พิเศษ หรือต้องการสร้างทีมในขาเฉพาะ',
+        'weak_leg': 'เหมาะสำหรับระบบ Binary ที่ต้องการความสมดุล ช่วยให้ทั้งสองขามีการเติบโตใกล้เคียงกัน',
+        'strong_leg': 'เหมาะสำหรับสร้างโมเมนตัมและกำลังใจให้ทีม แต่อาจทำให้เกิดความไม่สมดุล'
+    };
+    return advice[strategy] || advice['manual'];
+}
+
+function showRollupDemo() {
+    const modal = document.getElementById('visualModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.textContent = '↗️ Roll-up / Compression - การยกคอมมิชชั่น';
+    modalBody.innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-6 border-2 border-yellow-300">
+                <p class="text-gray-700 text-lg">
+                    เมื่อสมาชิกในสายไม่มี PV หรือไม่ active คอมมิชชันจะถูก "ยกขึ้น" ไปให้ผู้บริหารคนแรกที่ active
+                </p>
+            </div>
+
+            <div class="rollup-demo" style="background: white; border: 3px solid #e5e7eb;">
+                <svg width="100%" height="350">
+                    <!-- Main Line -->
+                    <line x1="50%" y1="40" x2="50%" y2="310" stroke="#d1d5db" stroke-width="4" stroke-dasharray="8" />
+
+                    <!-- Commission Flow Lines (animated) -->
+                    <line x1="50%" y1="130" x2="50%" y2="70" stroke="#10b981" stroke-width="5" class="commission-flow" />
+                    <line x1="50%" y1="220" x2="50%" y2="70" stroke="#10b981" stroke-width="5" class="commission-flow" style="animation-delay: 0.3s;" />
+                    <line x1="50%" y1="310" x2="50%" y2="70" stroke="#10b981" stroke-width="5" class="commission-flow" style="animation-delay: 0.6s;" />
+
+                    <!-- Nodes -->
+                    <!-- Active Sponsor -->
+                    <circle cx="50%" cy="40" r="35" fill="url(#gradientActive)" stroke="#10b981" stroke-width="3" />
+                    <text x="50%" y="48" text-anchor="middle" fill="white" font-size="16" font-weight="bold">✓ Active</text>
+
+                    <!-- Inactive 1 -->
+                    <circle cx="50%" cy="130" r="30" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2" />
+                    <text x="50%" y="137" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="bold">✗ Inactive</text>
+
+                    <!-- Inactive 2 -->
+                    <circle cx="50%" cy="220" r="30" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2" />
+                    <text x="50%" y="227" text-anchor="middle" fill="#6b7280" font-size="14" font-weight="bold">✗ Inactive</text>
+
+                    <!-- Member with Sales -->
+                    <circle cx="50%" cy="310" r="30" fill="url(#gradientMember)" stroke="#3b82f6" stroke-width="3" />
+                    <text x="50%" y="317" text-anchor="middle" fill="white" font-size="14" font-weight="bold">💰 Sales</text>
+
+                    <!-- Gradients -->
+                    <defs>
+                        <linearGradient id="gradientActive" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#34d399;stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="gradientMember" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#60a5fa;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Arrows -->
+                    <polygon points="48%,90 50%,80 52%,90" fill="#10b981" />
+                    <polygon points="48%,180 50%,170 52%,180" fill="#10b981" style="animation: rollupFloat 2s ease-in-out infinite; animation-delay: 0.3s;" />
+                    <polygon points="48%,270 50%,260 52%,270" fill="#10b981" style="animation: rollupFloat 2s ease-in-out infinite; animation-delay: 0.6s;" />
+                </svg>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-green-50 border-2 border-green-200 rounded-xl p-4">
+                    <h4 class="font-bold text-green-900 mb-2 flex items-center gap-2">
+                        ✓ ข้อดี
+                    </h4>
+                    <ul class="text-sm text-green-800 space-y-1">
+                        <li>• รักษา Commission Flow ให้ต่อเนื่อง</li>
+                        <li>• ป้องกันรายได้หาย</li>
+                        <li>• สร้างแรงจูงใจให้รักษาความ active</li>
+                    </ul>
+                </div>
+
+                <div class="bg-orange-50 border-2 border-orange-200 rounded-xl p-4">
+                    <h4 class="font-bold text-orange-900 mb-2 flex items-center gap-2">
+                        ⚠️ ข้อควรระวัง
+                    </h4>
+                    <ul class="text-sm text-orange-800 space-y-1">
+                        <li>• อาจทำให้ผู้นำได้รับมากเกิน</li>
+                        <li>• ต้องมีเงื่อนไขที่ชัดเจน</li>
+                        <li>• อาจทำให้สายล่างท้อใจ</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function showBinaryDemo() {
+    const modal = document.getElementById('visualModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.textContent = '🔄 Binary Tree Structure - โครงสร้างแบบ Binary';
+    modalBody.innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-6 border-2 border-pink-200">
+                <p class="text-gray-700 text-lg">
+                    โครงสร้างแบบ Binary แต่ละคนมีได้เพียง 2 ขา (ซ้าย-ขวา) คอมมิชชันคำนวณจากขาที่อ่อนกว่า (Weak Leg)
+                </p>
+            </div>
+
+            <div style="background: white; padding: 40px; border-radius: 16px; border: 2px solid #e5e7eb;">
+                <svg width="100%" height="300" viewBox="0 0 600 300">
+                    <!-- Lines -->
+                    <line x1="300" y1="50" x2="150" y2="130" stroke="#9333ea" stroke-width="3" opacity="0.5" />
+                    <line x1="300" y1="50" x2="450" y2="130" stroke="#ec4899" stroke-width="3" opacity="0.5" />
+                    <line x1="150" y1="130" x2="75" y2="210" stroke="#9333ea" stroke-width="2" opacity="0.4" />
+                    <line x1="150" y1="130" x2="225" y2="210" stroke="#9333ea" stroke-width="2" opacity="0.4" />
+                    <line x1="450" y1="130" x2="375" y2="210" stroke="#ec4899" stroke-width="2" opacity="0.4" />
+                    <line x1="450" y1="130" x2="525" y2="210" stroke="#ec4899" stroke-width="2" opacity="0.4" />
+
+                    <!-- You -->
+                    <circle cx="300" cy="50" r="35" class="tree-node level-1" />
+                    <text x="300" y="58" text-anchor="middle" fill="white" font-size="18" font-weight="bold">YOU</text>
+
+                    <!-- Level 1 Left -->
+                    <circle cx="150" cy="130" r="30" class="tree-node level-2" />
+                    <text x="150" y="137" text-anchor="middle" fill="white" font-size="16" font-weight="bold">L</text>
+                    <text x="150" y="170" text-anchor="middle" fill="#9333ea" font-size="12" font-weight="bold">Weak Leg</text>
+                    <text x="150" y="185" text-anchor="middle" fill="#9333ea" font-size="11">1,000 PV</text>
+
+                    <!-- Level 1 Right -->
+                    <circle cx="450" cy="130" r="30" class="tree-node level-2" />
+                    <text x="450" y="137" text-anchor="middle" fill="white" font-size="16" font-weight="bold">R</text>
+                    <text x="450" y="170" text-anchor="middle" fill="#ec4899" font-size="12" font-weight="bold">Strong Leg</text>
+                    <text x="450" y="185" text-anchor="middle" fill="#ec4899" font-size="11">3,500 PV</text>
+
+                    <!-- Level 2 -->
+                    <circle cx="75" cy="210" r="25" class="tree-node level-3" />
+                    <text x="75" y="217" text-anchor="middle" fill="white" font-size="14" font-weight="bold">A</text>
+
+                    <circle cx="225" cy="210" r="25" class="tree-node level-3" />
+                    <text x="225" y="217" text-anchor="middle" fill="white" font-size="14" font-weight="bold">B</text>
+
+                    <circle cx="375" cy="210" r="25" class="tree-node level-4" />
+                    <text x="375" y="217" text-anchor="middle" fill="white" font-size="14" font-weight="bold">C</text>
+
+                    <circle cx="525" cy="210" r="25" class="tree-node level-4" />
+                    <text x="525" y="217" text-anchor="middle" fill="white" font-size="14" font-weight="bold">D</text>
+
+                    <!-- Commission Arrow -->
+                    <path d="M 280 80 Q 250 105 180 130" stroke="#10b981" stroke-width="4" fill="none" stroke-dasharray="5" />
+                    <polygon points="175,132 180,130 178,125" fill="#10b981" />
+                    <text x="230" y="100" fill="#10b981" font-size="13" font-weight="bold">คำนวณจากขานี้!</text>
+                </svg>
+            </div>
+
+            <div class="bg-purple-50 border-2 border-purple-200 rounded-xl p-5">
+                <h4 class="font-bold text-purple-900 mb-3">💡 วิธีคำนวณ Binary Commission</h4>
+                <div class="space-y-2 text-sm text-purple-800">
+                    <p class="font-medium">1. นับ PV แต่ละขา: ซ้าย 1,000 PV | ขวา 3,500 PV</p>
+                    <p class="font-medium">2. เลือกขาอ่อน (Weak Leg): ขวาซ้าย (1,000 PV)</p>
+                    <p class="font-medium">3. คำนวณ: 1,000 PV × 12% = <span class="text-purple-600 font-bold">120 บาท</span></p>
+                    <p class="text-xs text-purple-600 mt-2">* ขาแข็ง (Strong Leg) เหลือ 2,500 PV ยกไปงวดหน้า (Carry Forward)</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function showUnilevelDemo() {
+    const modal = document.getElementById('visualModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.textContent = '📊 Unilevel Structure - โครงสร้างแบบ Unilevel';
+    modalBody.innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-2xl p-6 border-2 border-purple-200">
+                <p class="text-gray-700 text-lg">
+                    โครงสร้างแบบ Unilevel ไม่จำกัดจำนวนคนต่อชั้น ได้คอมมิชชั่นจากทุกคนในสายโดยตรง ตามเปอร์เซ็นต์แต่ละชั้น
+                </p>
+            </div>
+
+            <div style="background: white; padding: 40px; border-radius: 16px; border: 2px solid #e5e7eb;">
+                <svg width="100%" height="350" viewBox="0 0 700 350">
+                    <!-- You -->
+                    <circle cx="350" cy="40" r="35" class="tree-node level-1" />
+                    <text x="350" y="48" text-anchor="middle" fill="white" font-size="18" font-weight="bold">YOU</text>
+
+                    <!-- Level 1 (5 people) -->
+                    <g>
+                        <text x="350" y="95" text-anchor="middle" fill="#9333ea" font-size="13" font-weight="bold">ชั้นที่ 1 (10%)</text>
+                        <line x1="350" y1="75" x2="150" y2="125" stroke="#9333ea" stroke-width="2" opacity="0.5" />
+                        <line x1="350" y1="75" x2="250" y2="125" stroke="#9333ea" stroke-width="2" opacity="0.5" />
+                        <line x1="350" y1="75" x2="350" y2="125" stroke="#9333ea" stroke-width="2" opacity="0.5" />
+                        <line x1="350" y1="75" x2="450" y2="125" stroke="#9333ea" stroke-width="2" opacity="0.5" />
+                        <line x1="350" y1="75" x2="550" y2="125" stroke="#9333ea" stroke-width="2" opacity="0.5" />
+
+                        <circle cx="150" cy="130" r="25" class="tree-node level-1" />
+                        <circle cx="250" cy="130" r="25" class="tree-node level-1" />
+                        <circle cx="350" cy="130" r="25" class="tree-node level-1" />
+                        <circle cx="450" cy="130" r="25" class="tree-node level-1" />
+                        <circle cx="550" cy="130" r="25" class="tree-node level-1" />
+                    </g>
+
+                    <!-- Level 2 (3 people shown) -->
+                    <g>
+                        <text x="350" y="185" text-anchor="middle" fill="#ec4899" font-size="13" font-weight="bold">ชั้นที่ 2 (6%)</text>
+                        <line x1="250" y1="155" x2="200" y2="215" stroke="#ec4899" stroke-width="2" opacity="0.5" />
+                        <line x1="350" y1="155" x2="300" y2="215" stroke="#ec4899" stroke-width="2" opacity="0.5" />
+                        <line x1="350" y1="155" x2="400" y2="215" stroke="#ec4899" stroke-width="2" opacity="0.5" />
+
+                        <circle cx="200" cy="220" r="22" class="tree-node level-2" />
+                        <circle cx="300" cy="220" r="22" class="tree-node level-2" />
+                        <circle cx="400" cy="220" r="22" class="tree-node level-2" />
+                        <text x="500" y="225" fill="#6b7280" font-size="12">...</text>
+                    </g>
+
+                    <!-- Level 3 (2 people shown) -->
+                    <g>
+                        <text x="350" y="270" text-anchor="middle" fill="#f59e0b" font-size="13" font-weight="bold">ชั้นที่ 3 (4%)</text>
+                        <line x1="300" y1="242" x2="280" y2="300" stroke="#f59e0b" stroke-width="2" opacity="0.5" />
+                        <line x1="300" y1="242" x2="360" y2="300" stroke="#f59e0b" stroke-width="2" opacity="0.5" />
+
+                        <circle cx="280" cy="305" r="20" class="tree-node level-3" />
+                        <circle cx="360" cy="305" r="20" class="tree-node level-3" />
+                        <text x="420" y="310" fill="#6b7280" font-size="12">...</text>
+                    </g>
+                </svg>
+            </div>
+
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-5">
+                <h4 class="font-bold text-purple-900 mb-3">💡 ตัวอย่างการคำนวณ</h4>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+                        <span class="text-sm font-medium text-gray-700">ชั้น 1: 5 คน × 1,000 PV × 10%</span>
+                        <span class="text-lg font-bold text-purple-600">= 500 บาท</span>
+                    </div>
+                    <div class="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+                        <span class="text-sm font-medium text-gray-700">ชั้น 2: 15 คน × 1,000 PV × 6%</span>
+                        <span class="text-lg font-bold text-pink-600">= 900 บาท</span>
+                    </div>
+                    <div class="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+                        <span class="text-sm font-medium text-gray-700">ชั้น 3: 45 คน × 1,000 PV × 4%</span>
+                        <span class="text-lg font-bold text-orange-600">= 1,800 บาท</span>
+                    </div>
+                    <div class="flex items-center justify-between bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-4 border-2 border-purple-300">
+                        <span class="text-base font-bold text-gray-800">รวมทั้งหมด</span>
+                        <span class="text-2xl font-bold text-purple-600">3,200 บาท</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
 </script>
 
 @php
@@ -704,6 +1274,272 @@ input, select, textarea, button {
 
 .animate-pulse-subtle {
     animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Modal Styles */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 24px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Placement Animation Styles */
+.placement-demo {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.placement-node {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+}
+
+.placement-node.sponsor {
+    background: linear-gradient(135deg, #9333ea, #ec4899);
+    color: white;
+}
+
+.placement-node.member {
+    background: linear-gradient(135deg, #60a5fa, #3b82f6);
+    color: white;
+}
+
+.placement-node.new {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: white;
+    animation: nodeAppear 0.5s ease-out;
+}
+
+.placement-node.inactive {
+    background: #e5e7eb;
+    color: #9ca3af;
+}
+
+@keyframes nodeAppear {
+    from {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+}
+
+.placement-line {
+    position: absolute;
+    background: linear-gradient(90deg, #9333ea, #ec4899);
+    height: 3px;
+    transform-origin: left center;
+    opacity: 0.6;
+    animation: lineGrow 0.5s ease-out;
+}
+
+@keyframes lineGrow {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+/* Rollup Animation */
+.rollup-demo {
+    position: relative;
+    width: 100%;
+    height: 350px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rollup-arrow {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    animation: rollupFloat 2s ease-in-out infinite;
+}
+
+@keyframes rollupFloat {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-60px) scale(1.2);
+        opacity: 0.6;
+    }
+}
+
+.commission-flow {
+    stroke-dasharray: 10;
+    stroke-dashoffset: 0;
+    animation: flowAnimation 2s linear infinite;
+}
+
+@keyframes flowAnimation {
+    to {
+        stroke-dashoffset: 100;
+    }
+}
+
+/* Tree Structure Animations */
+.tree-node {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    font-weight: bold;
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: nodePulse 2s ease-in-out infinite;
+}
+
+@keyframes nodePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    50% {
+        transform: scale(1.05);
+        box-shadow: 0 8px 20px rgba(147, 51, 234, 0.4);
+    }
+}
+
+.tree-node.level-1 { background: linear-gradient(135deg, #9333ea, #a855f7); }
+.tree-node.level-2 { background: linear-gradient(135deg, #ec4899, #f472b6); }
+.tree-node.level-3 { background: linear-gradient(135deg, #f59e0b, #fbbf24); }
+.tree-node.level-4 { background: linear-gradient(135deg, #10b981, #34d399); }
+.tree-node.level-5 { background: linear-gradient(135deg, #3b82f6, #60a5fa); }
+
+/* Help Icon */
+.help-icon {
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #9333ea, #ec4899);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
+}
+
+.help-icon:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.5);
+}
+
+/* Line OA Style Cards */
+.setting-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.setting-card:hover {
+    border-color: #9333ea;
+    box-shadow: 0 4px 12px rgba(147, 51, 234, 0.1);
+}
+
+.setting-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.setting-description {
+    font-size: 13px;
+    color: #6b7280;
+    margin-bottom: 12px;
+    line-height: 1.5;
+}
+
+.visual-help-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, #f3e8ff, #fce7f3);
+    border: 1px solid #e9d5ff;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #7c3aed;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-top: 8px;
+}
+
+.visual-help-trigger:hover {
+    background: linear-gradient(135deg, #e9d5ff, #fbcfe8);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(124, 58, 237, 0.2);
 }
 </style>
 
