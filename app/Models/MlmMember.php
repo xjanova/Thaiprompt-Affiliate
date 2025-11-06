@@ -13,6 +13,7 @@ class MlmMember extends Model
     protected $fillable = [
         'user_id',
         'mlm_plan_id',
+        'package_id',
         'unilevel_sponsor_id',
         'unilevel_level',
         'unilevel_path',
@@ -69,11 +70,19 @@ class MlmMember extends Model
     }
 
     /**
-     * Get the MLM plan
+     * Get the MLM plan (commission plan - single default plan for all members)
      */
     public function plan()
     {
         return $this->belongsTo(MlmPlan::class, 'mlm_plan_id');
+    }
+
+    /**
+     * Get the MLM package (membership package - Bronze, Silver, Gold, etc.)
+     */
+    public function package()
+    {
+        return $this->belongsTo(MlmPackage::class, 'package_id');
     }
 
     /**
