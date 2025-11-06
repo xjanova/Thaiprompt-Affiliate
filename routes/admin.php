@@ -482,6 +482,26 @@ Route::prefix('instructor')->name('instructor.')->group(function () {
     Route::get('/earnings', [\App\Http\Controllers\Admin\InstructorDashboardController::class, 'earnings'])->name('earnings');
 });
 
+// Quiz - Student View
+Route::prefix('quiz')->name('quiz.')->group(function () {
+    Route::get('/{id}', [\App\Http\Controllers\Admin\QuizController::class, 'show'])->name('show');
+    Route::post('/{id}/submit', [\App\Http\Controllers\Admin\QuizController::class, 'submit'])->name('submit');
+    Route::get('/results/{attemptId}', [\App\Http\Controllers\Admin\QuizController::class, 'results'])->name('results');
+    Route::get('/article/{articleSlug}', [\App\Http\Controllers\Admin\QuizController::class, 'index'])->name('index');
+});
+
+// Quiz Management - Instructor/Admin
+Route::prefix('quiz-management')->name('quiz-management.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\QuizManagementController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\QuizManagementController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\QuizManagementController::class, 'store'])->name('store');
+    Route::get('/{id}', [\App\Http\Controllers\Admin\QuizManagementController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [\App\Http\Controllers\Admin\QuizManagementController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [\App\Http\Controllers\Admin\QuizManagementController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\Admin\QuizManagementController::class, 'destroy'])->name('destroy');
+    Route::get('/{id}/attempts', [\App\Http\Controllers\Admin\QuizManagementController::class, 'attempts'])->name('attempts');
+});
+
 // Article Management - Admin Only
 Route::prefix('articles')->name('articles.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'index'])->name('index');

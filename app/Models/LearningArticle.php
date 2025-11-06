@@ -146,6 +146,30 @@ class LearningArticle extends Model
     }
 
     /**
+     * Get quizzes for this article
+     */
+    public function quizzes()
+    {
+        return $this->hasMany(Quiz::class, 'article_id')->orderBy('order');
+    }
+
+    /**
+     * Get active quizzes
+     */
+    public function activeQuizzes()
+    {
+        return $this->quizzes()->where('is_active', true);
+    }
+
+    /**
+     * Get required quizzes
+     */
+    public function requiredQuizzes()
+    {
+        return $this->quizzes()->where('is_required', true)->where('is_active', true);
+    }
+
+    /**
      * Scope: published articles
      */
     public function scopePublished($query)
