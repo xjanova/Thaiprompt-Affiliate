@@ -724,3 +724,66 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         return view('admin.mlm.calculator');
     })->name('calculator');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Accounting System Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('accounting')->name('accounting.')->group(function () {
+    use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
+    use App\Http\Controllers\Admin\Accounting\InvoiceController;
+    use App\Http\Controllers\Admin\Accounting\ExpenseController;
+    use App\Http\Controllers\Admin\Accounting\ContactController;
+    use App\Http\Controllers\Admin\Accounting\ProductController;
+    use App\Http\Controllers\Admin\Accounting\ReportController;
+    use App\Http\Controllers\Admin\Accounting\FlowAccountController;
+
+    // Dashboard
+    Route::get('/', [AccountingDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/setup', [AccountingDashboardController::class, 'setup'])->name('setup');
+    Route::post('/setup', [AccountingDashboardController::class, 'saveSetup'])->name('setup.save');
+
+    // Invoices
+    Route::resource('invoices', InvoiceController::class);
+    Route::post('invoices/{invoice}/items', [InvoiceController::class, 'addItem'])->name('invoices.items.add');
+    Route::delete('invoices/{invoice}/items/{item}', [InvoiceController::class, 'removeItem'])->name('invoices.items.remove');
+    Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('invoices.payments');
+    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+    Route::post('invoices/{invoice}/send', [InvoiceController::class, 'sendEmail'])->name('invoices.send');
+
+    // Expenses
+    Route::resource('expenses', ExpenseController::class);
+    Route::post('expenses/{expense}/items', [ExpenseController::class, 'addItem'])->name('expenses.items.add');
+    Route::delete('expenses/{expense}/items/{item}', [ExpenseController::class, 'removeItem'])->name('expenses.items.remove');
+    Route::post('expenses/{expense}/payments', [ExpenseController::class, 'recordPayment'])->name('expenses.payments');
+
+    // Contacts (Customers & Vendors)
+    Route::resource('contacts', ContactController::class);
+    Route::get('contacts/{contact}/statement', [ContactController::class, 'statement'])->name('contacts.statement');
+
+    // Products & Services
+    Route::resource('products', ProductController::class);
+    Route::post('products/bulk-import', [ProductController::class, 'bulkImport'])->name('products.bulk-import');
+
+    // Reports
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::get('/profit-loss', [ReportController::class, 'profitLoss'])->name('profit-loss');
+        Route::get('/balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
+        Route::get('/cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
+        Route::get('/sales', [ReportController::class, 'sales'])->name('sales');
+        Route::get('/expenses', [ReportController::class, 'expenses'])->name('expenses');
+        Route::get('/tax', [ReportController::class, 'tax'])->name('tax');
+    });
+
+    // FlowAccount Integration
+    Route::prefix('flowaccount')->name('flowaccount.')->group(function () {
+        Route::get('/', [FlowAccountController::class, 'index'])->name('index');
+        Route::post('/connect', [FlowAccountController::class, 'connect'])->name('connect');
+        Route::get('/callback', [FlowAccountController::class, 'callback'])->name('callback');
+        Route::post('/disconnect', [FlowAccountController::class, 'disconnect'])->name('disconnect');
+        Route::post('/sync', [FlowAccountController::class, 'sync'])->name('sync');
+        Route::post('/sync/{type}', [FlowAccountController::class, 'syncType'])->name('sync.type');
+    });
+});

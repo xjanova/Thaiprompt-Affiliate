@@ -70,6 +70,13 @@ return [
             'license_key' => env('ADDON_ANALYTICS_LICENSE_KEY'),
             'enabled' => env('ADDON_ANALYTICS_ENABLED', false),
         ],
+        'accounting' => [
+            'name' => 'Accounting System Add-on',
+            'slug' => 'accounting',
+            'description' => 'ระบบบัญชีครบวงจร เชื่อมต่อกับ FlowAccount',
+            'license_key' => env('ADDON_ACCOUNTING_LICENSE_KEY'),
+            'enabled' => env('ADDON_ACCOUNTING_ENABLED', true), // Enable by default for testing
+        ],
     ],
 
     /*
