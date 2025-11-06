@@ -26,6 +26,12 @@ class Affiliate extends Model
         'rank_points',
         'monthly_sales',
         'team_sales',
+        // Binary tree fields
+        'binary_parent_id',
+        'binary_position',
+        'binary_level',
+        'binary_left_count',
+        'binary_right_count',
     ];
 
     /**
@@ -80,6 +86,75 @@ class Affiliate extends Model
     public function rank()
     {
         return $this->belongsTo(Rank::class);
+    }
+
+    /**
+     * Binary Tree Relationships
+     */
+
+    /**
+     * Get the binary parent affiliate
+     */
+    public function binaryParent()
+    {
+        return $this->belongsTo(Affiliate::class, 'binary_parent_id');
+    }
+
+    /**
+     * Get left child in binary tree
+     */
+    public function binaryLeftChild()
+    {
+        return $this->hasOne(Affiliate::class, 'binary_parent_id')
+            ->where('binary_position', 'left');
+    }
+
+    /**
+     * Get right child in binary tree
+     */
+    public function binaryRightChild()
+    {
+        return $this->hasOne(Affiliate::class, 'binary_parent_id')
+            ->where('binary_position', 'right');
+    }
+
+    /**
+     * Get all binary children (left and right)
+     */
+    public function binaryChildren()
+    {
+        return $this->hasMany(Affiliate::class, 'binary_parent_id');
+    }
+
+    /**
+     * Get all binary descendants recursively
+     */
+    public function binaryDescendants()
+    {
+        return $this->binaryChildren()->with('binaryDescendants');
+    }
+
+    /**
+     * Check if has space for new child in binary tree
+     */
+    public function hasBinarySpace(): bool
+    {
+        return $this->binaryLeftChild()->exists() === false ||
+               $this->binaryRightChild()->exists() === false;
+    }
+
+    /**
+     * Get available binary position (left or right)
+     */
+    public function getAvailableBinaryPosition(): ?string
+    {
+        if (!$this->binaryLeftChild()->exists()) {
+            return 'left';
+        }
+        if (!$this->binaryRightChild()->exists()) {
+            return 'right';
+        }
+        return null;
     }
 
     /**

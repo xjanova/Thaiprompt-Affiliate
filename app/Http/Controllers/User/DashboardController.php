@@ -480,4 +480,56 @@ class DashboardController extends Controller
 
         return back()->with('success', 'เปลี่ยนรหัสผ่านสำเร็จ');
     }
+
+    /**
+     * Display user binary organization chart
+     */
+    public function binaryOrganizationChart()
+    {
+        $user = Auth::user();
+        $affiliate = $user->affiliate;
+
+        if (!$affiliate) {
+            return redirect()->route('user.dashboard')
+                ->with('error', 'คุณยังไม่มีสิทธิ์ในระบบแอฟฟิลิเอท');
+        }
+
+        // Load binary children recursively
+        $affiliate->load(['binaryLeftChild', 'binaryRightChild']);
+
+        // Get max binary depth
+        $maxBinaryDepth = $this->getMaxBinaryLevel($affiliate);
+
+        return view('user.organization-binary', compact(
+            'affiliate',
+            'maxBinaryDepth'
+        ));
+    }
+
+    /**
+     * Get maximum binary level depth
+     */
+    private function getMaxBinaryLevel($affiliate, $level = 1)
+    {
+        $leftChild = $affiliate->binaryLeftChild;
+        $rightChild = $affiliate->binaryRightChild;
+
+        if (!$leftChild && !$rightChild) {
+            return $level;
+        }
+
+        $maxLevel = $level;
+
+        if ($leftChild) {
+            $leftLevel = $this->getMaxBinaryLevel($leftChild, $level + 1);
+            $maxLevel = max($maxLevel, $leftLevel);
+        }
+
+        if ($rightChild) {
+            $rightLevel = $this->getMaxBinaryLevel($rightChild, $level + 1);
+            $maxLevel = max($maxLevel, $rightLevel);
+        }
+
+        return $maxLevel;
+    }
 }

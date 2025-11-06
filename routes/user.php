@@ -26,6 +26,7 @@ Route::post('/profile/update-password', [DashboardController::class, 'updatePass
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
 Route::get('/referrals', [DashboardController::class, 'referrals'])->name('referrals');
 Route::get('/organization', [DashboardController::class, 'organizationChart'])->name('organization');
+Route::get('/organization-binary', [DashboardController::class, 'binaryOrganizationChart'])->name('organization.binary');
 
 // Organization Tree API (for web session)
 Route::get('/organization/tree-data', [DashboardController::class, 'getOrganizationTreeData'])->name('organization.tree-data');
