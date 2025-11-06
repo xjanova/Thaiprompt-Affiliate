@@ -312,13 +312,24 @@ class AiInstallationService
      */
     private function activateLocalProvider(string $modelId, array $config): void
     {
-        $provider = AiProvider::where('name', 'deepseek-local')->first();
+        // หา Ollama provider
+        $provider = AiProvider::where('provider_type', 'ollama')
+            ->orWhere('name', 'LIKE', '%ollama%')
+            ->orWhere('name', 'LIKE', '%local%')
+            ->first();
 
         if ($provider) {
             $provider->is_active = true;
             $provider->is_available = true;
+
+            // เพิ่มโมเดลเข้าไปในรายการ installed_models
+            $installedModels = $provider->config['installed_models'] ?? [];
+            if (!in_array($modelId, $installedModels)) {
+                $installedModels[] = $modelId;
+            }
+
             $provider->config = array_merge($provider->config ?? [], [
-                'installed_models' => [$modelId],
+                'installed_models' => $installedModels,
                 'ollama_endpoint' => 'http://localhost:11434',
                 'last_installed_at' => now()->toDateTimeString(),
             ]);
@@ -331,19 +342,16 @@ class AiInstallationService
      */
     private function convertToOllamaModelName(string $modelId, string $quantization): string
     {
-        // สำหรับ DeepSeek models
-        // Format: deepseek-coder:6.7b-instruct-q4_k_m
+        // โมเดลใหม่ใช้ชื่อตรงกับ Ollama เลย ไม่ต้องแปลง
+        // Format: qwen2.5:0.5b, gemma2:2b, llama3.2:3b, phi3:3.8b
 
-        $modelName = str_replace('deepseek-coder-', 'deepseek-coder:', $modelId);
-        $modelName = str_replace('deepseek-llm-', 'deepseek-llm:', $modelName);
-        $modelName = str_replace('-instruct', '-instruct', $modelName);
-        $modelName = str_replace('-chat', '-chat', $modelName);
+        // ถ้ามี : แสดงว่าชื่อถูกต้องแล้ว ใช้เลย
+        if (str_contains($modelId, ':')) {
+            return $modelId;
+        }
 
-        // เพิ่ม quantization tag
-        $quantLower = strtolower(str_replace('_', '_', $quantization));
-        $modelName .= '-' . $quantLower;
-
-        return $modelName;
+        // Fallback: ถ้าไม่มี : ให้เพิ่ม quantization
+        return $modelId;
     }
 
     /**

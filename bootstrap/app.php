@@ -30,6 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'turnstile' => \App\Http\Middleware\VerifyCloudfareTurnstile::class,
             'throttle.login' => \App\Http\Middleware\ThrottleLogin::class,
             'check.blocked.ip' => \App\Http\Middleware\CheckBlockedIp::class,
+            // Payment security middleware
+            'payment.ratelimit' => \App\Http\Middleware\PaymentRateLimiter::class,
+            'idempotency' => \App\Http\Middleware\IdempotencyMiddleware::class,
+            'webhook.verify' => \App\Http\Middleware\VerifyWebhookSignature::class,
         ]);
 
         // Global middleware for IP blocking

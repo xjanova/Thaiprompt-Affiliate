@@ -232,7 +232,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="form-label">AI Provider <span class="text-red-500">*</span></label>
-                        <select name="provider_id" class="form-select" required @change="loadModels($event.target.value)">
+                        <select name="provider_id" class="form-select" required onchange="loadModels(this.value)" id="provider_select">
                             <option value="">-- เลือก Provider --</option>
                             @foreach($providers as $provider)
                             <option value="{{ $provider->id }}" {{ old('provider_id') == $provider->id ? 'selected' : '' }}>
@@ -405,33 +405,68 @@
 
 @push('scripts')
 <script>
+// Global loadModels function
+async function loadModels(providerId) {
+    const modelSelect = document.getElementById('model_select');
+
+    if (!providerId) {
+        modelSelect.innerHTML = '<option value="">-- เลือก Model --</option>';
+        return;
+    }
+
+    // Show loading state
+    modelSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
+    modelSelect.disabled = true;
+
+    try {
+        console.log('Loading models for provider:', providerId);
+        const response = await fetch(`/admin/ai-bots/providers/${providerId}/models`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Models loaded:', data);
+
+        if (!data.success || !data.data) {
+            throw new Error('Invalid response format');
+        }
+
+        let options = '<option value="">-- เลือก Model --</option>';
+
+        if (data.data.length === 0) {
+            options = '<option value="">-- ไม่มีโมเดลสำหรับ Provider นี้ --</option>';
+        } else {
+            data.data.forEach(model => {
+                const contextInfo = model.context_window ? ` (${model.context_window.toLocaleString()} tokens)` : '';
+                options += `<option value="${model.id}">${model.display_name}${contextInfo}</option>`;
+            });
+        }
+
+        modelSelect.innerHTML = options;
+        modelSelect.disabled = false;
+
+        // Restore previously selected model if exists
+        const oldModelId = '{{ old('model_id') }}';
+        if (oldModelId) {
+            modelSelect.value = oldModelId;
+        }
+
+    } catch (error) {
+        console.error('Error loading models:', error);
+        modelSelect.innerHTML = '<option value="">-- เกิดข้อผิดพลาด กรุณาลองใหม่ --</option>';
+        modelSelect.disabled = false;
+        alert('ไม่สามารถโหลดรายการ Model ได้: ' + error.message);
+    }
+}
+
 function botCreator() {
     return {
         temperature: {{ old('temperature', '0.7') }},
         maxTokens: {{ old('max_tokens', '2000') }},
         topP: {{ old('top_p', '1') }},
-        showAdvanced: false,
-
-        async loadModels(providerId) {
-            if (!providerId) {
-                $('#model_select').html('<option value="">-- เลือก Model --</option>');
-                return;
-            }
-
-            try {
-                const response = await fetch(`/admin/ai-bots/providers/${providerId}/models`);
-                const data = await response.json();
-
-                let options = '<option value="">-- เลือก Model --</option>';
-                data.data.forEach(model => {
-                    options += `<option value="${model.id}">${model.display_name}</option>`;
-                });
-
-                $('#model_select').html(options);
-            } catch (error) {
-                console.error('Error loading models:', error);
-            }
-        }
+        showAdvanced: false
     }
 }
 
@@ -439,15 +474,8 @@ function botCreator() {
 document.addEventListener('DOMContentLoaded', function() {
     const providerSelect = document.querySelector('select[name="provider_id"]');
     if (providerSelect && providerSelect.value) {
-        Alpine.store('botCreator').loadModels(providerSelect.value);
-
-        // Wait a bit and then set the selected model
-        setTimeout(() => {
-            const oldModelId = '{{ old('model_id') }}';
-            if (oldModelId) {
-                document.getElementById('model_select').value = oldModelId;
-            }
-        }, 500);
+        console.log('Provider pre-selected:', providerSelect.value);
+        loadModels(providerSelect.value);
     }
 });
 </script>

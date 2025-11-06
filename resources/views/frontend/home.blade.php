@@ -29,7 +29,7 @@
                     </p>
 
                     <!-- CTA Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
                         @guest
                             <a href="{{ route('register') }}" class="group relative inline-flex items-center justify-center px-8 py-4 bg-white text-indigo-600 font-bold rounded-xl shadow-2xl hover:shadow-white/50 transition-all duration-300 transform hover:scale-105">
                                 <span class="relative z-10">เริ่มต้นฟรีวันนี้</span>
@@ -45,6 +45,19 @@
                                 เข้าสู่แดชบอร์ด
                             </a>
                         @endguest
+                    </div>
+
+                    <!-- Platform Details Link (Premium) -->
+                    <div class="mb-12">
+                        <a href="{{ route('about.professional') }}" class="group inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 animate-pulse">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>📊 ดูรายละเอียดแพลตฟอร์มแบบครบถ้วน</span>
+                            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
                     </div>
 
                     <!-- Trust Badges -->
@@ -79,6 +92,96 @@
             </div>
         </section>
     @endif
+
+    <!-- Platform Overview Banner -->
+    <section class="py-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-2 gap-8 items-center">
+                <div class="text-white">
+                    <div class="inline-block mb-4">
+                        <span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold border border-white/30">
+                            🚀 Enterprise Platform
+                        </span>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">
+                        แพลตฟอร์มระดับมืออาชีพ
+                    </h2>
+                    <p class="text-lg text-blue-100 mb-6">
+                        สร้างด้วยเทคโนโลยีที่ทันสมัยที่สุด มีฟีเจอร์ครบครัน 113+ Models, 105 Tables, 91 Controllers
+                        พร้อมระบบ MLM, E-Commerce, AI Chatbot และอื่นๆ อีกมากมาย
+                    </p>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">✓</div>
+                            <div>
+                                <div class="font-semibold">MLM System</div>
+                                <div class="text-sm text-blue-200">Unilevel & Binary</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">✓</div>
+                            <div>
+                                <div class="font-semibold">E-Commerce</div>
+                                <div class="text-sm text-blue-200">Multi-Vendor</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">✓</div>
+                            <div>
+                                <div class="font-semibold">AI Integration</div>
+                                <div class="text-sm text-blue-200">LINE Bot + RAG</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">✓</div>
+                            <div>
+                                <div class="font-semibold">Production Ready</div>
+                                <div class="text-sm text-blue-200">v1.159.0</div>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{{ route('about.professional') }}" class="inline-flex items-center px-6 py-3 bg-white text-indigo-600 font-bold rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
+                        <span>อ่านรายละเอียดทั้งหมด</span>
+                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                    </a>
+                </div>
+
+                <div class="hidden md:block">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-4 bg-white/10 rounded-lg">
+                                <span class="font-semibold text-white">Database Models</span>
+                                <span class="text-2xl font-bold text-yellow-300">113+</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-white/10 rounded-lg">
+                                <span class="font-semibold text-white">Database Tables</span>
+                                <span class="text-2xl font-bold text-yellow-300">105</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-white/10 rounded-lg">
+                                <span class="font-semibold text-white">HTTP Controllers</span>
+                                <span class="text-2xl font-bold text-yellow-300">91</span>
+                            </div>
+                            <div class="flex items-center justify-between p-4 bg-white/10 rounded-lg">
+                                <span class="font-semibold text-white">Migrations</span>
+                                <span class="text-2xl font-bold text-yellow-300">136</span>
+                            </div>
+                            <div class="text-center pt-2">
+                                <span class="inline-block px-4 py-2 bg-green-500 text-white rounded-full text-sm font-semibold animate-pulse">
+                                    ✓ Production Ready
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
     @if($premiumSections['statistics'])
         <!-- Live Statistics Section - แสดงสถิติแบบ Real-time -->

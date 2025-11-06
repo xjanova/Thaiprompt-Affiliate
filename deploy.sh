@@ -302,6 +302,12 @@ backup_critical_files() {
         cp -r storage/app/public "$CRITICAL_BACKUP_DIR/storage_public" 2>/dev/null || true
     fi
 
+    # Backup Google credentials for OCR/KYC (if exists)
+    if [ -f "storage/app/google-credentials.json" ]; then
+        cp storage/app/google-credentials.json "$CRITICAL_BACKUP_DIR/google-credentials.json" && \
+            print_success "✓ Backed up Google credentials"
+    fi
+
     echo "$CRITICAL_BACKUP_DIR" > /tmp/deploy_backup_path_$$
     log "Critical files backed up to: $CRITICAL_BACKUP_DIR"
 }
@@ -337,6 +343,13 @@ restore_critical_files() {
                 mkdir -p storage/app
                 cp -r "$backup_path/storage_public" storage/app/public 2>/dev/null || true
                 print_success "✓ Restored uploaded files"
+            fi
+
+            # Restore Google credentials for OCR/KYC (if exists)
+            if [ -f "$backup_path/google-credentials.json" ]; then
+                mkdir -p storage/app
+                cp "$backup_path/google-credentials.json" storage/app/google-credentials.json 2>/dev/null || true
+                print_success "✓ Restored Google credentials"
             fi
         fi
 
