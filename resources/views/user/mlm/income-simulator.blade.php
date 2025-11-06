@@ -443,22 +443,46 @@ async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
     const rankMultiplier = simulationData.selectedRank ? parseFloat(simulationData.selectedRank.bonus_multiplier || 1) : 1;
     const rankCommissionRate = simulationData.selectedRank ? parseFloat(simulationData.selectedRank.commission_rate || 0) : 0;
 
-    // Unilevel calculation
+    // Unilevel calculation - CORRECTED
+    // In real system, each sponsor gets commission from downline's PV
+    // We simulate by distributing team PV across levels with realistic distribution
     const unilevelLevels = simulationData.settings.unilevel_levels || [];
     let unilevelCommission = 0;
 
-    if (Array.isArray(unilevelLevels)) {
-        unilevelLevels.forEach(level => {
+    if (Array.isArray(unilevelLevels) && unilevelLevels.length > 0) {
+        // Distribute team members across levels (realistic distribution)
+        // Level 1: 40%, Level 2: 25%, Level 3: 15%, Level 4-6: 10%, Level 7-10: 10%
+        const levelDistribution = {
+            0: 0.40,  // Level 1
+            1: 0.25,  // Level 2
+            2: 0.15,  // Level 3
+            3: 0.07,  // Level 4
+            4: 0.05,  // Level 5
+            5: 0.03,  // Level 6
+            6: 0.02,  // Level 7
+            7: 0.01,  // Level 8
+            8: 0.01,  // Level 9
+            9: 0.01,  // Level 10
+        };
+
+        unilevelLevels.forEach((level, index) => {
             const percentage = level.percentage || 0;
-            const levelCommission = (teamPv * percentage) / 100;
-            unilevelCommission += levelCommission;
+            if (percentage > 0) {
+                // Calculate PV for this level based on distribution
+                const distribution = levelDistribution[index] || 0;
+                const levelPv = teamPv * distribution;
+
+                // Commission = level PV × percentage
+                const levelCommission = (levelPv * percentage) / 100;
+                unilevelCommission += levelCommission;
+            }
         });
+
+        // Apply rank multiplier to unilevel (if no rank, multiplier = 1 so no bonus)
+        unilevelCommission *= rankMultiplier;
     }
 
-    // Apply rank multiplier to unilevel (if no rank, multiplier = 1 so no bonus)
-    unilevelCommission *= rankMultiplier;
-
-    // Binary calculation (more realistic)
+    // Binary calculation - CORRECTED
     let binaryCommission = 0;
     if (simulationData.settings.binary_enabled !== false) {
         // Simulate left and right leg distribution (60/40 split)
@@ -466,23 +490,19 @@ async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
         const rightLegPv = teamPv * 0.4;
         const weakLegPv = Math.min(leftLegPv, rightLegPv);
 
-        // Calculate pairs
+        // Calculate pairs (1 PV = 1 pair by default)
         const pairRatio = parseFloat(simulationData.settings.binary_pair_ratio || 1);
         const pairsAvailable = Math.floor(weakLegPv / pairRatio);
 
         // Daily pair limit
-        const dailyPairLimit = parseInt(simulationData.settings.binary_daily_pair_limit || 100);
+        const dailyPairLimit = parseInt(simulationData.settings.binary_max_pairs_per_day || 999999);
         const pairsToPay = Math.min(pairsAvailable, dailyPairLimit);
 
-        // Commission per pair
-        const binaryPairCommission = parseFloat(simulationData.settings.binary_pair_commission || 0);
-        const binaryMatchPercentage = parseFloat(simulationData.settings.binary_match_percentage || 0);
+        // Commission per pair (use binary_pair_commission, NOT binary_match_percentage)
+        const binaryPairCommission = parseFloat(simulationData.settings.binary_pair_commission || 100);
 
-        if (binaryPairCommission > 0) {
-            binaryCommission = pairsToPay * binaryPairCommission;
-        } else if (binaryMatchPercentage > 0) {
-            binaryCommission = (weakLegPv * binaryMatchPercentage) / 100;
-        }
+        // Calculate total binary commission
+        binaryCommission = pairsToPay * binaryPairCommission;
 
         // Apply rank multiplier to binary (if no rank, multiplier = 1 so no bonus)
         binaryCommission *= rankMultiplier;
