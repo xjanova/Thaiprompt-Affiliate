@@ -22,6 +22,8 @@ class OtpSettingsController extends Controller
             $settings = OtpSetting::create([
                 'provider' => 'twilio',
                 'enabled' => false,
+                'enable_line_otp' => false,
+                'line_otp_message_template' => 'รหัสยืนยันของคุณคือ: {code}\nใช้งานได้ใน {expiry} นาที',
                 'otp_length' => 6,
                 'otp_expiry_minutes' => 5,
                 'max_attempts' => 3,
@@ -41,8 +43,10 @@ class OtpSettingsController extends Controller
     public function update(Request $request)
     {
         $rules = [
-            'provider' => ['required', 'in:twilio,nexmo,custom'],
+            'provider' => ['required', 'in:twilio,nexmo,custom,line'],
             'enabled' => ['boolean'],
+            'enable_line_otp' => ['boolean'],
+            'line_otp_message_template' => ['nullable', 'string'],
             'otp_length' => ['required', 'integer', 'min:4', 'max:8'],
             'otp_expiry_minutes' => ['required', 'integer', 'min:1', 'max:60'],
             'max_attempts' => ['required', 'integer', 'min:1', 'max:10'],
@@ -83,6 +87,8 @@ class OtpSettingsController extends Controller
         $data = [
             'provider' => $request->input('provider'),
             'enabled' => $request->boolean('enabled'),
+            'enable_line_otp' => $request->boolean('enable_line_otp'),
+            'line_otp_message_template' => $request->input('line_otp_message_template'),
             'otp_length' => $request->input('otp_length'),
             'otp_expiry_minutes' => $request->input('otp_expiry_minutes'),
             'max_attempts' => $request->input('max_attempts'),

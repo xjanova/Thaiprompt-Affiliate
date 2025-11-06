@@ -34,6 +34,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'payment.ratelimit' => \App\Http\Middleware\PaymentRateLimiter::class,
             'idempotency' => \App\Http\Middleware\IdempotencyMiddleware::class,
             'webhook.verify' => \App\Http\Middleware\VerifyWebhookSignature::class,
+            // Two-Factor Authentication middleware
+            'two-factor' => \App\Http\Middleware\RequireTwoFactor::class,
         ]);
 
         // Global middleware for IP blocking

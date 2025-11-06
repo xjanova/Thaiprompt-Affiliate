@@ -6,6 +6,7 @@ use App\Http\Controllers\User\RankController;
 use App\Http\Controllers\User\MembershipRetentionController;
 use App\Http\Controllers\User\KycController;
 use App\Http\Controllers\User\ShopController;
+use App\Http\Controllers\User\TwoFactorController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -148,6 +149,21 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/dividend-simulator', function () {
         return view('user.mlm.dividend-simulator');
     })->name('dividend-simulator');
+});
+
+// Two-Factor Authentication Management
+Route::prefix('two-factor')->name('two-factor.')->group(function () {
+    Route::get('/setup', [TwoFactorController::class, 'setup'])->name('setup');
+    Route::post('/enable', [TwoFactorController::class, 'enable'])->name('enable');
+    Route::post('/disable', [TwoFactorController::class, 'disable'])->name('disable');
+    Route::get('/verify', [TwoFactorController::class, 'verify'])->name('verify');
+    Route::post('/send-code', [TwoFactorController::class, 'sendCode'])->name('send-code');
+    Route::post('/verify-code', [TwoFactorController::class, 'verifyCode'])->name('verify-code');
+    Route::post('/verify-recovery-code', [TwoFactorController::class, 'verifyRecoveryCode'])->name('verify-recovery-code');
+    Route::get('/recovery-codes', [TwoFactorController::class, 'showRecoveryCodes'])->name('recovery-codes');
+    Route::post('/regenerate-recovery-codes', [TwoFactorController::class, 'regenerateRecoveryCodes'])->name('regenerate-recovery-codes');
+    Route::delete('/trusted-devices/{fingerprint}', [TwoFactorController::class, 'removeTrustedDevice'])->name('remove-trusted-device');
+    Route::delete('/trusted-devices', [TwoFactorController::class, 'removeAllTrustedDevices'])->name('remove-all-trusted-devices');
 });
 
 // Shop (Main Store - System Products)
