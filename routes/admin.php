@@ -41,6 +41,13 @@ use App\Http\Controllers\Admin\ECommerceController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\MlmGlobalSettingController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
+use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
+use App\Http\Controllers\Admin\Accounting\InvoiceController;
+use App\Http\Controllers\Admin\Accounting\ExpenseController;
+use App\Http\Controllers\Admin\Accounting\ContactController;
+use App\Http\Controllers\Admin\Accounting\ProductController;
+use App\Http\Controllers\Admin\Accounting\ReportController;
+use App\Http\Controllers\Admin\Accounting\FlowAccountController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -817,14 +824,6 @@ Route::prefix('hrm')->name('hrm.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('accounting')->name('accounting.')->group(function () {
-    use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
-    use App\Http\Controllers\Admin\Accounting\InvoiceController;
-    use App\Http\Controllers\Admin\Accounting\ExpenseController;
-    use App\Http\Controllers\Admin\Accounting\ContactController;
-    use App\Http\Controllers\Admin\Accounting\ProductController;
-    use App\Http\Controllers\Admin\Accounting\ReportController;
-    use App\Http\Controllers\Admin\Accounting\FlowAccountController;
-
     // Dashboard
     Route::get('/', [AccountingDashboardController::class, 'index'])->name('dashboard');
     Route::get('/setup', [AccountingDashboardController::class, 'setup'])->name('setup');
