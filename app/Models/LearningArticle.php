@@ -170,6 +170,14 @@ class LearningArticle extends Model
     }
 
     /**
+     * Get certificates for this article
+     */
+    public function certificates()
+    {
+        return $this->hasMany(Certificate::class, 'article_id');
+    }
+
+    /**
      * Scope: published articles
      */
     public function scopePublished($query)

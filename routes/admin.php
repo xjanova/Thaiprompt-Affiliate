@@ -502,6 +502,14 @@ Route::prefix('quiz-management')->name('quiz-management.')->group(function () {
     Route::get('/{id}/attempts', [\App\Http\Controllers\Admin\QuizManagementController::class, 'attempts'])->name('attempts');
 });
 
+// Certificates - User Certificates
+Route::prefix('certificates')->name('certificates.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\CertificateController::class, 'index'])->name('index');
+    Route::post('/generate/{articleId}', [\App\Http\Controllers\Admin\CertificateController::class, 'generate'])->name('generate');
+    Route::get('/{id}', [\App\Http\Controllers\Admin\CertificateController::class, 'show'])->name('show');
+    Route::get('/{id}/download', [\App\Http\Controllers\Admin\CertificateController::class, 'download'])->name('download');
+});
+
 // Article Management - Admin Only
 Route::prefix('articles')->name('articles.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'index'])->name('index');
