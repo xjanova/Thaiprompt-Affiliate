@@ -183,6 +183,154 @@
         </div>
     </section>
 
+    <!-- Epic Wiki Hero Section - Knowledge Base Entry Point -->
+    <section class="py-20 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
+        <!-- Animated Grid Background -->
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute inset-0" style="background-image:
+                linear-gradient(to right, rgba(147, 51, 234, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(147, 51, 234, 0.1) 1px, transparent 1px);
+                background-size: 50px 50px;"></div>
+        </div>
+
+        <!-- Floating Orbs -->
+        <div class="absolute top-20 left-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div class="absolute top-40 right-10 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <!-- Badge -->
+                <div class="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-8 animate-fade-in-down">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-white font-semibold">📚 สารานุกรมความรู้ฉบับสมบูรณ์</span>
+                </div>
+
+                <!-- Main Heading -->
+                <h2 class="text-5xl md:text-7xl font-black mb-6 leading-tight">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-200 to-pink-200">
+                        Platform Wiki
+                    </span>
+                    <br>
+                    <span class="text-white">องค์ความรู้ที่คุณต้องรู้</span>
+                </h2>
+
+                <p class="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto mb-12 leading-relaxed">
+                    เจาะลึกทุกระบบ อธิบายหลักการ วิเคราะห์เทคโนโลยี พร้อมข้อมูลวิจัยและบริบทสังคมไทย
+                    <br>
+                    <span class="text-purple-300 font-semibold">เหมือนได้อ่านตำราเรียนเล่มใหญ่ แต่สนุกกว่า</span>
+                </p>
+
+                <!-- Features Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 max-w-6xl mx-auto">
+                    <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-white/30 transition-all duration-300 transform hover:scale-105">
+                        <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🔍</div>
+                        <h3 class="text-white font-bold mb-2">เจาะลึกทุกระบบ</h3>
+                        <p class="text-gray-400 text-sm">อธิบายทุก Feature พร้อมตัวอย่าง Code</p>
+                    </div>
+
+                    <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-white/30 transition-all duration-300 transform hover:scale-105">
+                        <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">📊</div>
+                        <h3 class="text-white font-bold mb-2">ข้อมูลวิจัย</h3>
+                        <p class="text-gray-400 text-sm">สถิติจริง ตัวเลขจริง อ้างอิงได้</p>
+                    </div>
+
+                    <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-white/30 transition-all duration-300 transform hover:scale-105">
+                        <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">🇹🇭</div>
+                        <h3 class="text-white font-bold mb-2">บริบทไทย</h3>
+                        <p class="text-gray-400 text-sm">วิเคราะห์ปัญหาและโอกาสในสังคมไทย</p>
+                    </div>
+
+                    <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-white/30 transition-all duration-300 transform hover:scale-105">
+                        <div class="text-4xl mb-3 group-hover:scale-110 transition-transform">📖</div>
+                        <h3 class="text-white font-bold mb-2">อ่านง่าย</h3>
+                        <p class="text-gray-400 text-sm">Sidebar Navigation แบบ Wikipedia</p>
+                    </div>
+                </div>
+
+                <!-- Epic CTA Button -->
+                <div class="relative inline-block">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full blur-lg opacity-75 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+                    <a href="{{ route('platform.wiki') }}" class="relative inline-flex items-center gap-3 px-12 py-6 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xl font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105 group">
+                        <svg class="w-8 h-8 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                        </svg>
+                        <span>เปิดอ่าน Platform Wiki</span>
+                        <svg class="w-6 h-6 group-hover:translate-x-2 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
+                    </a>
+                </div>
+
+                <!-- Sub Text -->
+                <p class="text-gray-400 text-sm mt-6">
+                    💡 <strong>เหมาะสำหรับ:</strong> Developer, นักลงทุน, ผู้สนใจเทคโนโลยี และทุกคนที่อยากเข้าใจระบบแบบลึกซึ้ง
+                </p>
+            </div>
+
+            <!-- Preview Cards - What's Inside -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all">
+                    <h3 class="text-white text-2xl font-bold mb-4">🔄 MLM System</h3>
+                    <ul class="text-gray-300 space-y-2 text-sm">
+                        <li>• ทำไมต้องมี 2 Plans?</li>
+                        <li>• หลักการคำนวณ Commission</li>
+                        <li>• Commission Engine Deep Dive</li>
+                        <li>• พร้อม Code Examples</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all">
+                    <h3 class="text-white text-2xl font-bold mb-4">🛒 E-Commerce</h3>
+                    <ul class="text-gray-300 space-y-2 text-sm">
+                        <li>• ทำไมต้อง Multi-Vendor?</li>
+                        <li>• รูปแบบการสร้างรายได้</li>
+                        <li>• สถิติ E-Commerce ไทย</li>
+                        <li>• 6 ส่วนหลักของระบบ</li>
+                    </ul>
+                </div>
+
+                <div class="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 transition-all">
+                    <h3 class="text-white text-2xl font-bold mb-4">🧠 Technology</h3>
+                    <ul class="text-gray-300 space-y-2 text-sm">
+                        <li>• สถาปัตยกรรมระบบ</li>
+                        <li>• Database Design Philosophy</li>
+                        <li>• Security Architecture</li>
+                        <li>• AI Integration Strategy</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <style>
+        @keyframes blob {
+            0% { transform: translate(0px, 0px) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+            100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+        @keyframes fade-in-down {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-down {
+            animation: fade-in-down 1s ease-out;
+        }
+    </style>
+
     @if($premiumSections['statistics'])
         <!-- Live Statistics Section - แสดงสถิติแบบ Real-time -->
         <section class="py-20 bg-white relative overflow-hidden">
