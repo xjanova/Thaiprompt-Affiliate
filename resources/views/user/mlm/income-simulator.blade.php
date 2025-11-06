@@ -104,6 +104,41 @@
             </div>
         </div>
 
+        <!-- System Settings Display -->
+        <div id="settings-info" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 mb-6 hidden">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">⚙️ การตั้งค่าระบบที่ใช้</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="bg-white p-3 rounded-lg">
+                    <div class="text-gray-600 mb-1">🔢 PV Rate</div>
+                    <div class="font-bold text-blue-600"><span id="setting-pv-rate">-</span> PV/บาท</div>
+                </div>
+                <div class="bg-white p-3 rounded-lg">
+                    <div class="text-gray-600 mb-1">📊 Unilevel Max Depth</div>
+                    <div class="font-bold text-blue-600"><span id="setting-max-depth">-</span> ชั้น</div>
+                </div>
+                <div class="bg-white p-3 rounded-lg">
+                    <div class="text-gray-600 mb-1">💰 Binary Commission</div>
+                    <div class="font-bold text-blue-600">฿<span id="setting-binary-commission">-</span>/คู่</div>
+                </div>
+                <div class="bg-white p-3 rounded-lg">
+                    <div class="text-gray-600 mb-1">🔄 Binary Pairing</div>
+                    <div class="font-bold text-blue-600"><span id="setting-pairing-type">-</span></div>
+                </div>
+                <div class="bg-white p-3 rounded-lg">
+                    <div class="text-gray-600 mb-1">📅 Max Pairs/Day</div>
+                    <div class="font-bold text-blue-600"><span id="setting-max-pairs">-</span></div>
+                </div>
+                <div class="bg-white p-3 rounded-lg">
+                    <div class="text-gray-600 mb-1">🛡️ Max Commission/Day</div>
+                    <div class="font-bold text-blue-600"><span id="setting-max-commission-day">-</span></div>
+                </div>
+                <div class="bg-white p-3 rounded-lg">
+                    <div class="text-gray-600 mb-1">⚠️ Overpay Protection</div>
+                    <div class="font-bold text-blue-600"><span id="setting-overpay">-</span>%</div>
+                </div>
+            </div>
+        </div>
+
         <!-- Animation Area -->
         <div id="animation-container" class="hidden">
             <!-- Current Month Display -->
@@ -335,9 +370,43 @@ async function loadSettings() {
         const response = await fetch('{{ route("admin.mlm.settings.get-settings") }}');
         const data = await response.json();
         simulationData.settings = data.settings;
+
+        // Display settings
+        displaySettings();
     } catch (error) {
         console.error('Failed to load settings:', error);
     }
+}
+
+function displaySettings() {
+    const settings = simulationData.settings;
+
+    // Show settings panel
+    document.getElementById('settings-info').classList.remove('hidden');
+
+    // PV Rate
+    document.getElementById('setting-pv-rate').textContent = settings.global_pv_rate || '1.00';
+
+    // Unilevel Max Depth
+    document.getElementById('setting-max-depth').textContent = settings.unilevel_max_depth || '10';
+
+    // Binary Commission
+    document.getElementById('setting-binary-commission').textContent = settings.binary_pair_commission || '100';
+
+    // Binary Pairing Type
+    document.getElementById('setting-pairing-type').textContent = settings.binary_pairing_type || '1:1';
+
+    // Max Pairs/Day
+    const maxPairs = settings.binary_max_pairs_per_day;
+    document.getElementById('setting-max-pairs').textContent = maxPairs ? maxPairs.toLocaleString() : 'ไม่จำกัด';
+
+    // Max Commission/Day
+    const maxCommDay = settings.binary_max_commission_per_day;
+    document.getElementById('setting-max-commission-day').textContent = maxCommDay ? '฿' + maxCommDay.toLocaleString() : 'ไม่จำกัด';
+
+    // Overpay Protection
+    const overpay = settings.max_commission_percentage;
+    document.getElementById('setting-overpay').textContent = overpay ? overpay + '%' : 'ปิด';
 }
 
 async function loadRanks() {
@@ -443,29 +512,42 @@ async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
     const rankMultiplier = simulationData.selectedRank ? parseFloat(simulationData.selectedRank.bonus_multiplier || 1) : 1;
     const rankCommissionRate = simulationData.selectedRank ? parseFloat(simulationData.selectedRank.commission_rate || 0) : 0;
 
-    // Unilevel calculation - CORRECTED
-    // In real system, each sponsor gets commission from downline's PV
-    // We simulate by distributing team PV across levels with realistic distribution
+    // Unilevel calculation - Uses actual settings
     const unilevelLevels = simulationData.settings.unilevel_levels || [];
+    const unilevelMaxDepth = parseInt(simulationData.settings.unilevel_max_depth || 10);
     let unilevelCommission = 0;
 
     if (Array.isArray(unilevelLevels) && unilevelLevels.length > 0) {
-        // Distribute team members across levels (realistic distribution)
-        // Level 1: 40%, Level 2: 25%, Level 3: 15%, Level 4-6: 10%, Level 7-10: 10%
-        const levelDistribution = {
-            0: 0.40,  // Level 1
-            1: 0.25,  // Level 2
-            2: 0.15,  // Level 3
-            3: 0.07,  // Level 4
-            4: 0.05,  // Level 5
-            5: 0.03,  // Level 6
-            6: 0.02,  // Level 7
-            7: 0.01,  // Level 8
-            8: 0.01,  // Level 9
-            9: 0.01,  // Level 10
+        // Generate dynamic distribution based on max depth
+        // Uses realistic pyramid structure: more members at lower levels
+        const generateDistribution = (maxLevels) => {
+            const dist = {};
+            let remaining = 1.0;
+
+            // Level 1 gets 40%, Level 2 gets 25%, then decreasing
+            const baseDistribution = [0.40, 0.25, 0.15, 0.10, 0.05, 0.03, 0.02];
+
+            for (let i = 0; i < maxLevels; i++) {
+                if (i < baseDistribution.length) {
+                    dist[i] = baseDistribution[i];
+                } else {
+                    // Remaining levels split the rest equally
+                    dist[i] = remaining / (maxLevels - baseDistribution.length);
+                }
+                remaining -= dist[i];
+                if (remaining < 0) remaining = 0;
+            }
+
+            return dist;
         };
 
+        const levelDistribution = generateDistribution(unilevelMaxDepth);
+
+        // Calculate commission for each level (up to max depth)
         unilevelLevels.forEach((level, index) => {
+            // Stop at max depth
+            if (index >= unilevelMaxDepth) return;
+
             const percentage = level.percentage || 0;
             if (percentage > 0) {
                 // Calculate PV for this level based on distribution
@@ -482,38 +564,66 @@ async function simulateMonth(month, personalSales, teamSize, teamAvgSales) {
         unilevelCommission *= rankMultiplier;
     }
 
-    // Binary calculation - CORRECTED
+    // Binary calculation - Uses actual settings
     let binaryCommission = 0;
-    if (simulationData.settings.binary_enabled !== false) {
+    const binaryPairCommission = parseFloat(simulationData.settings.binary_pair_commission || 0);
+
+    if (binaryPairCommission > 0) {
         // Simulate left and right leg distribution (60/40 split)
         const leftLegPv = teamPv * 0.6;
         const rightLegPv = teamPv * 0.4;
         const weakLegPv = Math.min(leftLegPv, rightLegPv);
 
-        // Calculate pairs (1 PV = 1 pair by default)
-        const pairRatio = parseFloat(simulationData.settings.binary_pair_ratio || 1);
+        // Binary pairing type (1:1 or 2:1)
+        const pairingType = simulationData.settings.binary_pairing_type || '1:1';
+        const pairRatio = pairingType === '2:1' ? 2 : 1;
         const pairsAvailable = Math.floor(weakLegPv / pairRatio);
 
-        // Daily pair limit
-        const dailyPairLimit = parseInt(simulationData.settings.binary_max_pairs_per_day || 999999);
-        const pairsToPay = Math.min(pairsAvailable, dailyPairLimit);
+        // Apply daily pair limit (null = unlimited)
+        const maxPairsPerDay = parseInt(simulationData.settings.binary_max_pairs_per_day || 0);
+        let pairsToPay = pairsAvailable;
+        if (maxPairsPerDay > 0) {
+            pairsToPay = Math.min(pairsToPay, maxPairsPerDay);
+        }
 
-        // Commission per pair (use binary_pair_commission, NOT binary_match_percentage)
-        const binaryPairCommission = parseFloat(simulationData.settings.binary_pair_commission || 100);
+        // Calculate base binary commission
+        let tempBinaryCommission = pairsToPay * binaryPairCommission;
 
-        // Calculate total binary commission
-        binaryCommission = pairsToPay * binaryPairCommission;
+        // Apply rank multiplier
+        tempBinaryCommission *= rankMultiplier;
 
-        // Apply rank multiplier to binary (if no rank, multiplier = 1 so no bonus)
-        binaryCommission *= rankMultiplier;
+        // Apply daily commission limit (null = unlimited)
+        const maxCommissionPerDay = parseFloat(simulationData.settings.binary_max_commission_per_day || 0);
+        if (maxCommissionPerDay > 0) {
+            binaryCommission = Math.min(tempBinaryCommission, maxCommissionPerDay);
+        } else {
+            binaryCommission = tempBinaryCommission;
+        }
     }
 
     // Personal PV commission (based on personal volume only)
     // If no rank selected, this will be 0 because rankCommissionRate = 0
     const personalCommission = (personalPv * rankCommissionRate) / 100;
 
-    // Total commission income
-    const totalIncome = personalCommission + unilevelCommission + binaryCommission;
+    // Total commission before overpay protection
+    let totalIncome = personalCommission + unilevelCommission + binaryCommission;
+
+    // Overpay Protection - prevent commission from exceeding sales
+    const overpayProtectionEnabled = simulationData.settings.overpay_protection_enabled !== false;
+    const maxCommissionPercentage = parseFloat(simulationData.settings.max_commission_percentage || 50);
+
+    if (overpayProtectionEnabled) {
+        const totalSales = personalSales + totalTeamSales;
+        const maxAllowedCommission = (totalSales * maxCommissionPercentage) / 100;
+
+        if (totalIncome > maxAllowedCommission) {
+            // Scale down commissions proportionally
+            const scaleFactor = maxAllowedCommission / totalIncome;
+            unilevelCommission *= scaleFactor;
+            binaryCommission *= scaleFactor;
+            totalIncome = personalCommission + unilevelCommission + binaryCommission;
+        }
+    }
 
     // Animate income display
     animateNumber('personal-income', personalCommission);
