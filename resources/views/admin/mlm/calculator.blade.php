@@ -294,10 +294,11 @@ function displayDetailedBreakdown(data) {
 async function loadSettings() {
     try {
         const response = await fetch('{{ route("admin.mlm.settings.get-settings") }}');
-        const settings = await response.json();
+        const data = await response.json();
+        const settings = data.settings || data;
 
-        if (settings.pv_rate) {
-            document.getElementById('pv_rate').value = settings.pv_rate;
+        if (settings.global_pv_rate) {
+            document.getElementById('pv_rate').value = settings.global_pv_rate;
         }
 
         if (settings.unilevel_max_depth) {

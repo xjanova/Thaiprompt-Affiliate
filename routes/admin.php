@@ -40,7 +40,6 @@ use App\Http\Controllers\Admin\WebPManagementController;
 use App\Http\Controllers\Admin\ECommerceController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\MlmGlobalSettingController;
-use App\Http\Controllers\Admin\MlmSettingController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use Illuminate\Support\Facades\Route;
 
@@ -663,15 +662,12 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         Route::get('/export-commissions', [\App\Http\Controllers\Admin\MlmReportController::class, 'exportCommissions'])->name('export-commissions');
     });
 
-    // MLM Global Settings
+    // MLM Global Settings (Premium Edition)
     Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'index'])->name('index');
-        Route::put('/', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'update'])->name('update');
-        Route::get('/create', [\App\Http\Controllers\Admin\MlmSettingController::class, 'create'])->name('create');
-        Route::post('/store', [\App\Http\Controllers\Admin\MlmSettingController::class, 'store'])->name('store');
-        Route::delete('/{setting}', [\App\Http\Controllers\Admin\MlmSettingController::class, 'destroy'])->name('destroy');
-        Route::post('/preview-calculation', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'previewCalculation'])->name('preview-calculation');
-        Route::get('/get-settings', [\App\Http\Controllers\Admin\MlmGlobalSettingController::class, 'getSettings'])->name('get-settings');
+        Route::get('/', [MlmGlobalSettingController::class, 'index'])->name('index');
+        Route::put('/', [MlmGlobalSettingController::class, 'update'])->name('update');
+        Route::post('/preview-calculation', [MlmGlobalSettingController::class, 'previewCalculation'])->name('preview-calculation');
+        Route::get('/get-settings', [MlmGlobalSettingController::class, 'getSettings'])->name('get-settings');
     });
 
     // MLM Genealogy Viewer
