@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\LineChatWidgetController;
 use App\Http\Controllers\Admin\LineAvatarController;
 use App\Http\Controllers\Admin\LineBroadcastController;
 use App\Http\Controllers\Admin\OtpSettingsController;
+use App\Http\Controllers\Admin\TwoFactorSettingsController;
 use App\Http\Controllers\Admin\AiInstallationController;
 use App\Http\Controllers\Admin\AiProviderManagementController;
 use App\Http\Controllers\Admin\AiBotController;
@@ -450,6 +451,12 @@ Route::prefix('otp')->name('otp.')->group(function () {
     Route::get('/settings', [OtpSettingsController::class, 'index'])->name('settings');
     Route::put('/settings', [OtpSettingsController::class, 'update'])->name('settings.update');
     Route::post('/test', [OtpSettingsController::class, 'test'])->name('test');
+});
+
+// Two-Factor Authentication Settings
+Route::prefix('two-factor')->name('two-factor.')->group(function () {
+    Route::get('/settings', [TwoFactorSettingsController::class, 'index'])->name('settings');
+    Route::post('/settings', [TwoFactorSettingsController::class, 'update'])->name('settings.update');
 });
 
 // AI Installation & Management
