@@ -502,6 +502,31 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user has a specific role or one of multiple roles
+     *
+     * @param string|array $roles Role name(s) to check
+     * @return bool
+     */
+    public function hasRole($roles): bool
+    {
+        // Super admin has all roles
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        // Convert single role to array for consistent handling
+        $roles = is_array($roles) ? $roles : [$roles];
+
+        // Check against roleModel name (new system)
+        if ($this->roleModel) {
+            return in_array(strtolower($this->roleModel->name), array_map('strtolower', $roles));
+        }
+
+        // Fallback to old role field
+        return in_array(strtolower($this->role), array_map('strtolower', $roles));
+    }
+
+    /**
      * Add rank points
      */
     public function addRankPoints(int $points): void
