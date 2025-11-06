@@ -4,10 +4,25 @@
 
 @section('content')
 <div class="container mx-auto px-4 py-6">
-    <!-- Header -->
-    <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">ตั้งค่า MLM</h1>
-        <p class="text-gray-600 mt-1">กำหนดค่าและตั้งค่าระบบ MLM (Premium Edition)</p>
+    <!-- Premium Header -->
+    <div class="mb-8">
+        <div class="flex justify-between items-start mb-4">
+            <div>
+                <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-500 bg-clip-text text-transparent mb-2 animate-gradient">
+                    ⚙️ ตั้งค่า MLM
+                </h1>
+                <p class="text-gray-600 text-lg">Premium Edition - ระบบตั้งค่าแบบมืออาชีพ พร้อมการคำนวณ Real-time</p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{{ route('admin.mlm.calculator') }}"
+                   class="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl shadow-lg transition-all duration-200 flex items-center gap-2 transform hover:scale-105">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    เครื่องคำนวณ
+                </a>
+            </div>
+        </div>
     </div>
 
     <!-- Overpay Warning Alert -->
@@ -72,9 +87,17 @@
 
                 @forelse($settings as $group => $groupSettings)
         <!-- Settings Group -->
-        <div class="bg-white rounded-xl shadow-lg mb-6">
-            <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-t-xl">
-                <h2 class="text-lg font-semibold">{{ ucfirst(str_replace('_', ' ', $group)) }}</h2>
+        <div class="bg-white rounded-2xl shadow-xl mb-6 overflow-hidden border border-gray-100 transform transition-all duration-300 hover:shadow-2xl">
+            <div class="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                        <span class="text-2xl">{{ getGroupIcon($group) }}</span>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">{{ getGroupName($group) }}</h2>
+                        <p class="text-sm text-white/80">{{ getGroupDescription($group) }}</p>
+                    </div>
+                </div>
             </div>
 
             <div class="divide-y divide-gray-200">
@@ -588,5 +611,100 @@ function updateDashboard(total, unilevel, binary) {
     }
 }
 </script>
+
+@php
+function getGroupIcon($group) {
+    return match($group) {
+        'general' => '⚙️',
+        'pv' => '💎',
+        'unilevel' => '📊',
+        'binary' => '🔄',
+        'flush' => '🌊',
+        'placement' => '📍',
+        'rollup' => '↗️',
+        'retention' => '🎯',
+        'commission' => '💰',
+        default => '📋'
+    };
+}
+
+function getGroupName($group) {
+    return match($group) {
+        'general' => 'ทั่วไป',
+        'pv' => 'ระบบ PV',
+        'unilevel' => 'Unilevel Commission',
+        'binary' => 'Binary Commission',
+        'flush' => 'การล้าง PV',
+        'placement' => 'การจัดวางสมาชิก',
+        'rollup' => 'Roll-up / Compression',
+        'retention' => 'การรักษายอด',
+        'commission' => 'ป้องกัน Overpay',
+        default => ucfirst($group)
+    };
+}
+
+function getGroupDescription($group) {
+    return match($group) {
+        'general' => 'การตั้งค่าพื้นฐานของระบบ',
+        'pv' => 'อัตราแลกเปลี่ยนและการคำนวณ PV',
+        'unilevel' => 'เปอร์เซ็นต์คอมมิชชันแต่ละชั้น',
+        'binary' => 'การจับคู่และคอมมิชชันแบบ Binary',
+        'flush' => 'การล้างหรือยกยอด PV',
+        'placement' => 'กลยุทธ์การจัดวางสมาชิกใหม่',
+        'rollup' => 'การยกคอมมิชชันข้ามคนไม่ active',
+        'retention' => 'เงื่อนไขการรักษายอดขาย',
+        'commission' => 'การป้องกันการจ่ายเกิน',
+        default => ''
+    };
+}
+@endphp
+
+<style>
+/* Premium Animations */
+@keyframes gradient {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 3s ease infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #9333ea, #ec4899);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #7e22ce, #db2777);
+}
+
+/* Smooth transitions for all interactive elements */
+input, select, textarea, button {
+    transition: all 0.2s ease;
+}
+
+/* Pulse animation for important elements */
+@keyframes pulse-subtle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
+.animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
+}
+</style>
 
 @endsection
