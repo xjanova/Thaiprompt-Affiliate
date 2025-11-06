@@ -22,6 +22,8 @@ class OtpSetting extends Model
         'custom_api_url',
         'custom_api_key',
         'custom_api_headers',
+        'enable_line_otp',
+        'line_otp_message_template',
         'otp_length',
         'otp_expiry_minutes',
         'max_attempts',
@@ -33,6 +35,7 @@ class OtpSetting extends Model
 
     protected $casts = [
         'enabled' => 'boolean',
+        'enable_line_otp' => 'boolean',
         'alphanumeric' => 'boolean',
         'otp_length' => 'integer',
         'otp_expiry_minutes' => 'integer',
@@ -83,14 +86,32 @@ class OtpSetting extends Model
     }
 
     /**
+     * Get LINE OTP message template
+     */
+    public function getLineOtpMessageTemplateAttribute($value): string
+    {
+        return $value ?? 'รหัสยืนยันของคุณคือ: {code}\nใช้งานได้ใน {expiry} นาที';
+    }
+
+    /**
      * Get formatted message
      */
-    public function getFormattedMessage(string $code): string
+    public function getFormattedMessage(string $code, string $channel = 'sms'): string
     {
+        $template = $channel === 'line' ? $this->line_otp_message_template : $this->message_template;
+
         return str_replace(
             ['{code}', '{expiry}'],
             [$code, $this->otp_expiry_minutes],
-            $this->message_template
+            $template
         );
+    }
+
+    /**
+     * Check if LINE OTP is enabled
+     */
+    public function isLineOtpEnabled(): bool
+    {
+        return $this->enable_line_otp === true;
     }
 }
