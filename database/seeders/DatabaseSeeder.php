@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             EmailTemplateSeeder::class,    // สร้าง Email Templates สำหรับระบบส่งอีเมล
             AiProvidersSeeder::class,      // สร้าง AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
             MenuItemSeeder::class,         // สร้างเมนูสำหรับ Header
+            MlmGlobalSettingsSeeder::class, // สร้างการตั้งค่า MLM พรีเมี่ยม
         ]);
 
         $this->command->info('');
