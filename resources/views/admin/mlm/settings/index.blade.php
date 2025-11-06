@@ -226,7 +226,7 @@
                                                         'GBP' => '🇬🇧 GBP - ปอนด์',
                                                         'JPY' => '🇯🇵 JPY - เยน',
                                                         default => $option
-                                                    }}
+                                                    } }}
                                                 </option>
                                             @endforeach
                                         </select>
