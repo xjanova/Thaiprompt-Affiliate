@@ -122,6 +122,14 @@ class LearningArticle extends Model
     }
 
     /**
+     * Alias for userProgress (for withCount queries)
+     */
+    public function progressRecords()
+    {
+        return $this->hasMany(UserArticleProgress::class, 'article_id');
+    }
+
+    /**
      * Get progress for a specific user
      */
     public function progressForUser($userId)
