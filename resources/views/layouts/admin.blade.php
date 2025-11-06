@@ -1012,8 +1012,8 @@
                             <span class="text-[10px] text-gray-500 uppercase font-semibold">ประเมินผล</span>
                         </div>
 
-                        <a href="{{ route('admin.hrm.performance.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.performance.index') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                        <a href="{{ route('admin.hrm.performance.reviews.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.performance.reviews.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
                             <span class="mr-2">⭐</span>
                             <span>ประเมินผลงาน</span>
                         </a>
@@ -1031,14 +1031,14 @@
                             <span class="text-[10px] text-gray-500 uppercase font-semibold">สรรหา</span>
                         </div>
 
-                        <a href="{{ route('admin.hrm.recruitment.positions') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.recruitment.positions*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                        <a href="{{ route('admin.hrm.recruitment.jobs.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.recruitment.jobs.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
                             <span class="mr-2">📢</span>
                             <span>ตำแหน่งว่าง</span>
                         </a>
 
-                        <a href="{{ route('admin.hrm.recruitment.applications') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.recruitment.applications*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                        <a href="{{ route('admin.hrm.recruitment.applications.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.recruitment.applications.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
                             <span class="mr-2">📨</span>
                             <span>ใบสมัครงาน</span>
                         </a>
@@ -1050,14 +1050,14 @@
                             <span class="text-[10px] text-gray-500 uppercase font-semibold">พัฒนาบุคลากร</span>
                         </div>
 
-                        <a href="{{ route('admin.hrm.training.programs') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.training.programs*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                        <a href="{{ route('admin.hrm.training.courses.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.training.courses.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
                             <span class="mr-2">🎓</span>
                             <span>หลักสูตรฝึกอบรม</span>
                         </a>
 
                         <a href="{{ route('admin.hrm.training.schedules') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.training.schedules*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hrm.training.schedules') || request()->routeIs('admin.hrm.training.enrollments.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
                             <span class="mr-2">📆</span>
                             <span>กำหนดการอบรม</span>
                         </a>
