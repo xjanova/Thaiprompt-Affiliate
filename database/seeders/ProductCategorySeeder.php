@@ -106,15 +106,17 @@ class ProductCategorySeeder extends Seeder
         ];
 
         foreach ($categories as $index => $category) {
-            ProductCategory::create([
-                'name' => $category['name'],
-                'slug' => $category['slug'],
-                'description' => $category['description'],
-                'is_active' => $category['is_active'],
-                'sort_order' => $index + 1,
-                'parent_id' => null,
-                'image_url' => null,
-            ]);
+            ProductCategory::updateOrCreate(
+                ['slug' => $category['slug']],
+                [
+                    'name' => $category['name'],
+                    'description' => $category['description'],
+                    'is_active' => $category['is_active'],
+                    'sort_order' => $index + 1,
+                    'parent_id' => null,
+                    'image_url' => null,
+                ]
+            );
         }
 
         $this->command->info('✓ Created ' . count($categories) . ' product categories successfully!');

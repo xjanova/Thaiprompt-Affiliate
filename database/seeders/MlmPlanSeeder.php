@@ -13,7 +13,9 @@ class MlmPlanSeeder extends Seeder
     public function run(): void
     {
         // Create default Hybrid plan
-        MlmPlan::create([
+        MlmPlan::updateOrCreate(
+            ['slug' => 'premium-hybrid-plan'],
+            [
             'name' => 'Premium Hybrid Plan',
             'name_th' => 'แผนไฮบริดพรีเมี่ยม',
             'description' => 'Complete MLM plan with both Unilevel and Binary commission structures. Perfect for maximum earnings potential.',
@@ -70,7 +72,9 @@ class MlmPlanSeeder extends Seeder
         ]);
 
         // Create Unilevel-only plan
-        MlmPlan::create([
+        MlmPlan::updateOrCreate(
+            ['slug' => 'unilevel-basic-plan'],
+            [
             'name' => 'Unilevel Basic Plan',
             'name_th' => 'แผน Unilevel พื้นฐาน',
             'description' => 'Simple and straightforward Unilevel commission structure.',
@@ -112,7 +116,9 @@ class MlmPlanSeeder extends Seeder
         ]);
 
         // Create Binary-only plan
-        MlmPlan::create([
+        MlmPlan::updateOrCreate(
+            ['slug' => 'binary-power-plan'],
+            [
             'name' => 'Binary Power Plan',
             'name_th' => 'แผน Binary ทรงพลัง',
             'description' => 'Powerful Binary plan with spillover and team building.',
