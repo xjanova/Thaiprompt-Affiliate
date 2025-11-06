@@ -27,7 +27,8 @@ class DatabaseSeeder extends Seeder
             AiProvidersSeeder::class,      // สร้าง AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
             MenuItemSeeder::class,         // สร้างเมนูสำหรับ Header
             MlmGlobalSettingsSeeder::class, // สร้างการตั้งค่า MLM พรีเมี่ยม
-            MlmPlanSeeder::class,          // สร้างแผนแพคเกจ MLM (Hybrid, Unilevel, Binary)
+            MlmPlanSeeder::class,          // สร้างแผนคอมมิชชัน MLM หลัก (แผนเดียวบังคับทั้งระบบ)
+            MlmPackageSeeder::class,       // สร้างแพคเกจสมาชิก MLM (Bronze, Silver, Gold, Diamond, Premier)
 
             // Product & E-commerce Seeders
             ProductCategorySeeder::class,  // สร้างหมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)
