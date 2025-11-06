@@ -859,18 +859,57 @@ let recommendations = null;
 let installedModels = [];
 let isInstalling = false;
 
-// DeepSeek Logo SVG
-const DEEPSEEK_LOGO = `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-        <linearGradient id="deepseek-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" style="stop-color:#212555;stop-opacity:1" />
-            <stop offset="100%" style="stop-color:#424aaa;stop-opacity:1" />
-        </linearGradient>
-    </defs>
-    <circle cx="100" cy="100" r="90" fill="url(#deepseek-gradient)"/>
-    <path d="M60 80 L100 100 L140 80 M60 120 L100 100 L140 120" stroke="white" stroke-width="8" fill="none" stroke-linecap="round"/>
-    <circle cx="100" cy="100" r="12" fill="white"/>
-</svg>`;
+// Model Logos
+const MODEL_LOGOS = {
+    'qwen': `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="qwen-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="90" fill="url(#qwen-gradient)"/>
+        <text x="100" y="130" font-size="100" font-weight="bold" fill="white" text-anchor="middle">Q</text>
+    </svg>`,
+    'gemma': `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="gemma-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#4285F4;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#34A853;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="90" fill="url(#gemma-gradient)"/>
+        <text x="100" y="130" font-size="100" font-weight="bold" fill="white" text-anchor="middle">G</text>
+    </svg>`,
+    'llama': `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="llama-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#0064E0;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#00A6FF;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="90" fill="url(#llama-gradient)"/>
+        <text x="100" y="130" font-size="100" font-weight="bold" fill="white" text-anchor="middle">L</text>
+    </svg>`,
+    'phi': `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="phi-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#00A4EF;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0078D4;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <circle cx="100" cy="100" r="90" fill="url(#phi-gradient)"/>
+        <text x="100" y="130" font-size="100" font-weight="bold" fill="white" text-anchor="middle">Φ</text>
+    </svg>`
+};
+
+function getModelLogo(modelId) {
+    if (modelId.startsWith('qwen')) return MODEL_LOGOS.qwen;
+    if (modelId.startsWith('gemma')) return MODEL_LOGOS.gemma;
+    if (modelId.startsWith('llama')) return MODEL_LOGOS.llama;
+    if (modelId.startsWith('phi')) return MODEL_LOGOS.phi;
+    return MODEL_LOGOS.qwen; // default
+}
 
 // Load everything on page load
 document.addEventListener('DOMContentLoaded', function() {
@@ -1121,7 +1160,7 @@ function createModelCard(model, status) {
 
                 <div class="model-header">
                     <div class="model-logo">
-                        ${DEEPSEEK_LOGO}
+                        ${getModelLogo(model.model_id)}
                     </div>
                     <div class="model-name">${model.model_name}</div>
                     <div class="model-size">${model.model_size} Parameters</div>
