@@ -372,10 +372,16 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::delete('/{id}', [LineBotAiController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/test', [LineBotAiController::class, 'test'])->name('test');
 
+        // Conversations & Analytics
+        Route::get('/conversations', [LineBotAiController::class, 'conversations'])->name('conversations');
+        Route::get('/conversations/{id}', [LineBotAiController::class, 'conversationDetail'])->name('conversations.detail');
+        Route::get('/analytics', [LineBotAiController::class, 'analytics'])->name('analytics');
+
         // Knowledge Base
         Route::get('/{aiSettingId}/knowledge', [LineBotAiController::class, 'knowledgeIndex'])->name('knowledge.index');
         Route::get('/{aiSettingId}/knowledge/create', [LineBotAiController::class, 'knowledgeCreate'])->name('knowledge.create');
         Route::post('/{aiSettingId}/knowledge', [LineBotAiController::class, 'knowledgeStore'])->name('knowledge.store');
+        Route::post('/{aiSettingId}/knowledge/{knowledgeId}/sync', [LineBotAiController::class, 'knowledgeSync'])->name('knowledge.sync');
         Route::delete('/{aiSettingId}/knowledge/{knowledgeId}', [LineBotAiController::class, 'knowledgeDestroy'])->name('knowledge.destroy');
     });
 
