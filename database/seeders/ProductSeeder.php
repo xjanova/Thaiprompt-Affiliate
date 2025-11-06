@@ -144,35 +144,47 @@ class ProductSeeder extends Seeder
         foreach ($categories as $category) {
             if (isset($productsData[$category->name])) {
                 foreach ($productsData[$category->name] as $productData) {
-                    Product::create([
-                        'seller_id' => $seller->id,
-                        'category_id' => $category->id,
-                        'name' => $productData['name'],
-                        'slug' => Str::slug($productData['name']),
-                        'sku' => 'SKU-' . strtoupper(Str::random(8)),
-                        'description' => $this->generateDescription($productData['name'], $category->name),
-                        'short_description' => $this->generateShortDescription($productData['name']),
-                        'price' => $productData['price'],
-                        'compare_at_price' => $productData['compare_at_price'],
-                        'cost_price' => $productData['price'] * 0.6,
-                        'commission_rate' => rand(10, 30),
-                        'brand' => $productData['brand'] ?? null,
-                        'stock_quantity' => rand(10, 100),
-                        'track_inventory' => true,
-                        'low_stock_threshold' => 5,
-                        'stock_status' => 'in_stock',
-                        'is_active' => true,
-                        'is_featured' => $productData['featured'],
-                        'weight' => rand(100, 5000) / 100,
-                        'dimensions' => rand(10, 50) . 'x' . rand(10, 50) . 'x' . rand(10, 50),
-                        'rating_average' => rand(35, 50) / 10,
-                        'rating_count' => rand(5, 200),
-                        'sales_count' => rand(10, 500),
-                        'view_count' => rand(50, 1000),
-                        'meta_title' => $productData['name'],
-                        'meta_description' => $this->generateShortDescription($productData['name']),
-                        'tags' => json_encode([$category->name, $productData['brand'] ?? 'ทั่วไป']),
-                    ]);
+                    // Check if product exists to keep existing SKU and slug
+                    $existingProduct = Product::where('name', $productData['name'])
+                        ->where('category_id', $category->id)
+                        ->first();
+
+                    $sku = $existingProduct ? $existingProduct->sku : 'SKU-' . strtoupper(Str::random(8));
+                    $slug = $existingProduct ? $existingProduct->slug : Str::slug($sku);
+
+                    Product::updateOrCreate(
+                        [
+                            'name' => $productData['name'],
+                            'category_id' => $category->id,
+                        ],
+                        [
+                            'seller_id' => $seller->id,
+                            'slug' => $slug,
+                            'sku' => $sku,
+                            'description' => $this->generateDescription($productData['name'], $category->name),
+                            'short_description' => $this->generateShortDescription($productData['name']),
+                            'price' => $productData['price'],
+                            'compare_at_price' => $productData['compare_at_price'],
+                            'cost_price' => $productData['price'] * 0.6,
+                            'commission_rate' => rand(10, 30),
+                            'brand' => $productData['brand'] ?? null,
+                            'stock_quantity' => rand(10, 100),
+                            'track_inventory' => true,
+                            'low_stock_threshold' => 5,
+                            'stock_status' => 'in_stock',
+                            'is_active' => true,
+                            'is_featured' => $productData['featured'],
+                            'weight' => rand(100, 5000) / 100,
+                            'dimensions' => rand(10, 50) . 'x' . rand(10, 50) . 'x' . rand(10, 50),
+                            'rating_average' => rand(35, 50) / 10,
+                            'rating_count' => rand(5, 200),
+                            'sales_count' => rand(10, 500),
+                            'view_count' => rand(50, 1000),
+                            'meta_title' => $productData['name'],
+                            'meta_description' => $this->generateShortDescription($productData['name']),
+                            'tags' => json_encode([$category->name, $productData['brand'] ?? 'ทั่วไป']),
+                        ]
+                    );
                     $totalProducts++;
                 }
             }
