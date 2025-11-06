@@ -475,6 +475,13 @@ Route::prefix('learning-center')->name('learning-center.')->group(function () {
     Route::post('/article/{slug}/progress', [\App\Http\Controllers\Admin\LearningCenterController::class, 'updateProgress'])->name('article.progress');
 });
 
+// Instructor Dashboard - For Course Instructors
+Route::prefix('instructor')->name('instructor.')->group(function () {
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\InstructorDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/course/{id}/analytics', [\App\Http\Controllers\Admin\InstructorDashboardController::class, 'courseAnalytics'])->name('course.analytics');
+    Route::get('/earnings', [\App\Http\Controllers\Admin\InstructorDashboardController::class, 'earnings'])->name('earnings');
+});
+
 // Article Management - Admin Only
 Route::prefix('articles')->name('articles.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\ArticleManagementController::class, 'index'])->name('index');
