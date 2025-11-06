@@ -86,6 +86,7 @@ Route::prefix('otp')->name('otp.')->group(function () {
 // Frontend Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
+Route::get('/about-us', [HomeController::class, 'aboutProfessional'])->name('about.professional');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 
 // Dynamic Page Routes (Privacy Policy, Terms, etc.)

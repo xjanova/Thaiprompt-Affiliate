@@ -132,6 +132,14 @@ class HomeController extends Controller
     }
 
     /**
+     * Show the professional about page (PR version)
+     */
+    public function aboutProfessional()
+    {
+        return view('frontend.about-professional');
+    }
+
+    /**
      * Show the contact page
      */
     public function contact()

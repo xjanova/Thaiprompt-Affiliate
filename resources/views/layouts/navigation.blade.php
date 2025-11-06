@@ -207,7 +207,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                             </a>
                         @endif
                     @endauth
-                    <a href="{{ route('about') }}"
+                    <a href="{{ route('about.professional') }}"
                        class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
                        style="color: {{ $headerTextColor }};"
                        onmouseover="this.style.color='{{ $headerHoverColor }}';"
@@ -365,7 +365,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         </a>
                     @endif
                 @endauth
-                <a href="{{ route('about') }}"
+                <a href="{{ route('about.professional') }}"
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};">
                     เกี่ยวกับเรา
