@@ -43,6 +43,13 @@ use App\Http\Controllers\Admin\MlmGlobalSettingController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\AcademySettingsController;
 use App\Http\Controllers\Admin\CertificateManagementController;
+use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
+use App\Http\Controllers\Admin\Accounting\InvoiceController;
+use App\Http\Controllers\Admin\Accounting\ExpenseController;
+use App\Http\Controllers\Admin\Accounting\ContactController;
+use App\Http\Controllers\Admin\Accounting\ProductController;
+use App\Http\Controllers\Admin\Accounting\ReportController;
+use App\Http\Controllers\Admin\Accounting\FlowAccountController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -727,6 +734,45 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     })->name('calculator');
 });
 
+// Academy System
+Route::prefix('academy')->name('academy.')->group(function () {
+    // Academy Settings
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'index'])->name('index');
+        Route::post('/basic', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateBasic'])->name('update-basic');
+        Route::post('/certificate', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateCertificate'])->name('update-certificate');
+        Route::post('/email', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateEmail'])->name('update-email');
+        Route::post('/course', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateCourse'])->name('update-course');
+        Route::post('/instructor', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateInstructor'])->name('update-instructor');
+        Route::post('/toggle-active', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'toggleActive'])->name('toggle-active');
+
+        // File Uploads
+        Route::post('/upload-logo', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'uploadLogo'])->name('upload-logo');
+        Route::post('/upload-certificate-background', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'uploadCertificateBackground'])->name('upload-certificate-background');
+        Route::post('/upload-certificate-template', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'uploadCertificateTemplate'])->name('upload-certificate-template');
+
+        // Signatures
+        Route::post('/add-signature', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'addSignature'])->name('add-signature');
+        Route::delete('/remove-signature/{index}', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'removeSignature'])->name('remove-signature');
+    });
+
+    // Certificate Management (Admin)
+    Route::prefix('certificates')->name('certificates.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'store'])->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'update'])->name('update');
+        Route::post('/{id}/revoke', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'revoke'])->name('revoke');
+        Route::post('/{id}/restore', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'restore'])->name('restore');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'destroy'])->name('destroy');
+        Route::post('/bulk-generate', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'bulkGenerate'])->name('bulk-generate');
+        Route::get('/export/csv', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'export'])->name('export');
+    });
+});
+
+
 // HRM (Human Resource Management) System
 Route::prefix('hrm')->name('hrm.')->group(function () {
     // HRM Dashboard
@@ -819,14 +865,6 @@ Route::prefix('hrm')->name('hrm.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('accounting')->name('accounting.')->group(function () {
-    use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
-    use App\Http\Controllers\Admin\Accounting\InvoiceController;
-    use App\Http\Controllers\Admin\Accounting\ExpenseController;
-    use App\Http\Controllers\Admin\Accounting\ContactController;
-    use App\Http\Controllers\Admin\Accounting\ProductController;
-    use App\Http\Controllers\Admin\Accounting\ReportController;
-    use App\Http\Controllers\Admin\Accounting\FlowAccountController;
-
     // Dashboard
     Route::get('/', [AccountingDashboardController::class, 'index'])->name('dashboard');
     Route::get('/setup', [AccountingDashboardController::class, 'setup'])->name('setup');
@@ -873,43 +911,5 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::post('/disconnect', [FlowAccountController::class, 'disconnect'])->name('disconnect');
         Route::post('/sync', [FlowAccountController::class, 'sync'])->name('sync');
         Route::post('/sync/{type}', [FlowAccountController::class, 'syncType'])->name('sync.type');
-    });
-});
-
-// Academy System Settings
-Route::prefix('academy')->name('academy.')->group(function () {
-    // Academy Settings
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'index'])->name('index');
-        Route::post('/basic', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateBasic'])->name('update-basic');
-        Route::post('/certificate', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateCertificate'])->name('update-certificate');
-        Route::post('/email', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateEmail'])->name('update-email');
-        Route::post('/course', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateCourse'])->name('update-course');
-        Route::post('/instructor', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'updateInstructor'])->name('update-instructor');
-        Route::post('/toggle-active', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'toggleActive'])->name('toggle-active');
-
-        // File Uploads
-        Route::post('/upload-logo', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'uploadLogo'])->name('upload-logo');
-        Route::post('/upload-certificate-background', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'uploadCertificateBackground'])->name('upload-certificate-background');
-        Route::post('/upload-certificate-template', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'uploadCertificateTemplate'])->name('upload-certificate-template');
-
-        // Signatures
-        Route::post('/add-signature', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'addSignature'])->name('add-signature');
-        Route::delete('/remove-signature/{index}', [\App\Http\Controllers\Admin\AcademySettingsController::class, 'removeSignature'])->name('remove-signature');
-    });
-
-    // Certificate Management (Admin)
-    Route::prefix('certificates')->name('certificates.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'index'])->name('index');
-        Route::get('/create', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'create'])->name('create');
-        Route::post('/', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'store'])->name('store');
-        Route::get('/{id}', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'show'])->name('show');
-        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'update'])->name('update');
-        Route::post('/{id}/revoke', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'revoke'])->name('revoke');
-        Route::post('/{id}/restore', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'restore'])->name('restore');
-        Route::delete('/{id}', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'destroy'])->name('destroy');
-        Route::post('/bulk-generate', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'bulkGenerate'])->name('bulk-generate');
-        Route::get('/export/csv', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'export'])->name('export');
     });
 });
