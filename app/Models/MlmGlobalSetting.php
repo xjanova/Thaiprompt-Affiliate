@@ -11,9 +11,13 @@ class MlmGlobalSetting extends Model
         'key',
         'value',
         'type',
+        'input_type',
+        'allowed_values',
         'group',
         'description',
         'description_th',
+        'placeholder',
+        'unit',
         'sort_order',
         'is_editable',
         'is_visible',
@@ -40,6 +44,20 @@ class MlmGlobalSetting extends Model
             'array' => is_string($value) ? json_decode($value, true) : $value,
             default => $value,
         };
+    }
+
+    /**
+     * Get allowed values as array
+     */
+    public function getAllowedValuesArray()
+    {
+        if (!$this->allowed_values) {
+            return [];
+        }
+
+        return is_string($this->allowed_values)
+            ? json_decode($this->allowed_values, true)
+            : $this->allowed_values;
     }
 
     /**

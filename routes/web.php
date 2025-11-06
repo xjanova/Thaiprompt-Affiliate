@@ -49,6 +49,12 @@ Route::prefix('setup')->name('setup.')->group(function () {
     Route::get('/info', [SetupController::class, 'info'])->name('info');
 });
 
+// Public Certificate Verification
+Route::prefix('certificate')->name('certificate.')->group(function () {
+    Route::get('/verify/{verificationCode}', [\App\Http\Controllers\Admin\CertificateController::class, 'verify'])->name('verify');
+    Route::get('/share/{id}', [\App\Http\Controllers\Admin\CertificateController::class, 'share'])->name('share');
+});
+
 // Authentication Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');

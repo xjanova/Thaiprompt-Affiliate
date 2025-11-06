@@ -372,10 +372,16 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::delete('/{id}', [LineBotAiController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/test', [LineBotAiController::class, 'test'])->name('test');
 
+        // Conversations & Analytics
+        Route::get('/conversations', [LineBotAiController::class, 'conversations'])->name('conversations');
+        Route::get('/conversations/{id}', [LineBotAiController::class, 'conversationDetail'])->name('conversations.detail');
+        Route::get('/analytics', [LineBotAiController::class, 'analytics'])->name('analytics');
+
         // Knowledge Base
         Route::get('/{aiSettingId}/knowledge', [LineBotAiController::class, 'knowledgeIndex'])->name('knowledge.index');
         Route::get('/{aiSettingId}/knowledge/create', [LineBotAiController::class, 'knowledgeCreate'])->name('knowledge.create');
         Route::post('/{aiSettingId}/knowledge', [LineBotAiController::class, 'knowledgeStore'])->name('knowledge.store');
+        Route::post('/{aiSettingId}/knowledge/{knowledgeId}/sync', [LineBotAiController::class, 'knowledgeSync'])->name('knowledge.sync');
         Route::delete('/{aiSettingId}/knowledge/{knowledgeId}', [LineBotAiController::class, 'knowledgeDestroy'])->name('knowledge.destroy');
     });
 
@@ -500,6 +506,14 @@ Route::prefix('quiz-management')->name('quiz-management.')->group(function () {
     Route::put('/{id}', [\App\Http\Controllers\Admin\QuizManagementController::class, 'update'])->name('update');
     Route::delete('/{id}', [\App\Http\Controllers\Admin\QuizManagementController::class, 'destroy'])->name('destroy');
     Route::get('/{id}/attempts', [\App\Http\Controllers\Admin\QuizManagementController::class, 'attempts'])->name('attempts');
+});
+
+// Certificates - User Certificates
+Route::prefix('certificates')->name('certificates.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\CertificateController::class, 'index'])->name('index');
+    Route::post('/generate/{articleId}', [\App\Http\Controllers\Admin\CertificateController::class, 'generate'])->name('generate');
+    Route::get('/{id}', [\App\Http\Controllers\Admin\CertificateController::class, 'show'])->name('show');
+    Route::get('/{id}/download', [\App\Http\Controllers\Admin\CertificateController::class, 'download'])->name('download');
 });
 
 // Article Management - Admin Only
@@ -794,5 +808,68 @@ Route::prefix('hrm')->name('hrm.')->group(function () {
     Route::prefix('training')->name('training.')->group(function () {
         Route::resource('courses', \App\Http\Controllers\Admin\TrainingCourseController::class);
         Route::resource('enrollments', \App\Http\Controllers\Admin\TrainingEnrollmentController::class);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Accounting System Routes
+|--------------------------------------------------------------------------
+*/
+Route::prefix('accounting')->name('accounting.')->group(function () {
+    use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
+    use App\Http\Controllers\Admin\Accounting\InvoiceController;
+    use App\Http\Controllers\Admin\Accounting\ExpenseController;
+    use App\Http\Controllers\Admin\Accounting\ContactController;
+    use App\Http\Controllers\Admin\Accounting\ProductController;
+    use App\Http\Controllers\Admin\Accounting\ReportController;
+    use App\Http\Controllers\Admin\Accounting\FlowAccountController;
+
+    // Dashboard
+    Route::get('/', [AccountingDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/setup', [AccountingDashboardController::class, 'setup'])->name('setup');
+    Route::post('/setup', [AccountingDashboardController::class, 'saveSetup'])->name('setup.save');
+
+    // Invoices
+    Route::resource('invoices', InvoiceController::class);
+    Route::post('invoices/{invoice}/items', [InvoiceController::class, 'addItem'])->name('invoices.items.add');
+    Route::delete('invoices/{invoice}/items/{item}', [InvoiceController::class, 'removeItem'])->name('invoices.items.remove');
+    Route::post('invoices/{invoice}/payments', [InvoiceController::class, 'recordPayment'])->name('invoices.payments');
+    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
+    Route::post('invoices/{invoice}/send', [InvoiceController::class, 'sendEmail'])->name('invoices.send');
+
+    // Expenses
+    Route::resource('expenses', ExpenseController::class);
+    Route::post('expenses/{expense}/items', [ExpenseController::class, 'addItem'])->name('expenses.items.add');
+    Route::delete('expenses/{expense}/items/{item}', [ExpenseController::class, 'removeItem'])->name('expenses.items.remove');
+    Route::post('expenses/{expense}/payments', [ExpenseController::class, 'recordPayment'])->name('expenses.payments');
+
+    // Contacts (Customers & Vendors)
+    Route::resource('contacts', ContactController::class);
+    Route::get('contacts/{contact}/statement', [ContactController::class, 'statement'])->name('contacts.statement');
+
+    // Products & Services
+    Route::resource('products', ProductController::class);
+    Route::post('products/bulk-import', [ProductController::class, 'bulkImport'])->name('products.bulk-import');
+
+    // Reports
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::get('/profit-loss', [ReportController::class, 'profitLoss'])->name('profit-loss');
+        Route::get('/balance-sheet', [ReportController::class, 'balanceSheet'])->name('balance-sheet');
+        Route::get('/cash-flow', [ReportController::class, 'cashFlow'])->name('cash-flow');
+        Route::get('/sales', [ReportController::class, 'sales'])->name('sales');
+        Route::get('/expenses', [ReportController::class, 'expenses'])->name('expenses');
+        Route::get('/tax', [ReportController::class, 'tax'])->name('tax');
+    });
+
+    // FlowAccount Integration
+    Route::prefix('flowaccount')->name('flowaccount.')->group(function () {
+        Route::get('/', [FlowAccountController::class, 'index'])->name('index');
+        Route::post('/connect', [FlowAccountController::class, 'connect'])->name('connect');
+        Route::get('/callback', [FlowAccountController::class, 'callback'])->name('callback');
+        Route::post('/disconnect', [FlowAccountController::class, 'disconnect'])->name('disconnect');
+        Route::post('/sync', [FlowAccountController::class, 'sync'])->name('sync');
+        Route::post('/sync/{type}', [FlowAccountController::class, 'syncType'])->name('sync.type');
     });
 });

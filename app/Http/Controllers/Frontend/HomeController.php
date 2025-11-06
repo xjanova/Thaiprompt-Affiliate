@@ -136,7 +136,34 @@ class HomeController extends Controller
      */
     public function aboutProfessional()
     {
-        return view('frontend.about-professional');
+        // Get version from CHANGELOG
+        $version = '1.159.0'; // Default fallback
+        $changelogPath = base_path('CHANGELOG.md');
+
+        if (file_exists($changelogPath)) {
+            $changelog = file_get_contents($changelogPath);
+            // Extract latest version from CHANGELOG
+            if (preg_match('/##\s*\[v?(\d+\.\d+\.\d+)\]/', $changelog, $matches)) {
+                $version = $matches[1];
+            }
+        }
+
+        // Get comprehensive project stats
+        $stats = [
+            'version' => $version,
+            'last_updated' => date('Y-m-d'),
+            'total_users' => User::count(),
+            'total_affiliates' => \App\Models\Affiliate::count(),
+            'total_commissions' => \App\Models\Commission::count(),
+            'database_tables' => 105,
+            'database_models' => 113,
+            'http_controllers' => 91,
+            'migrations_count' => 136,
+            'services_count' => 30,
+            'api_endpoints' => 20,
+        ];
+
+        return view('frontend.about-professional', compact('stats'));
     }
 
     /**

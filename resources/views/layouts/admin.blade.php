@@ -196,6 +196,7 @@
         walletOpen: localStorage.getItem('walletOpen') === 'true',
         emailMenuOpen: localStorage.getItem('emailMenuOpen') === 'true',
         lineMenuOpen: localStorage.getItem('lineMenuOpen') === 'true',
+        accountingMenuOpen: localStorage.getItem('accountingMenuOpen') === 'true',
         ecommerceMenuOpen: localStorage.getItem('ecommerceMenuOpen') === 'true',
         mlmMenuOpen: localStorage.getItem('mlmMenuOpen') === 'true',
         // Auto-open dropdown if current page is in submenu
@@ -215,6 +216,7 @@
             this.emailMenuOpen = false;
             this.lineMenuOpen = false;
             this.systemMenuOpen = false;
+            this.accountingMenuOpen = false;
             this.ecommerceMenuOpen = false;
             this.mlmMenuOpen = false;
 
@@ -227,6 +229,8 @@
                 this.walletOpen = true;
             } else if (currentPath.includes('/admin/email')) {
                 this.emailMenuOpen = true;
+            } else if (currentPath.includes('/admin/accounting')) {
+                this.accountingMenuOpen = true;
             } else if (currentPath.includes('/admin/ecommerce')) {
                 this.ecommerceMenuOpen = true;
             } else if (currentPath.includes('/admin/mlm')) {
@@ -240,6 +244,7 @@
             localStorage.setItem('walletOpen', this.walletOpen);
             localStorage.setItem('emailMenuOpen', this.emailMenuOpen);
             localStorage.setItem('lineMenuOpen', this.lineMenuOpen);
+            localStorage.setItem('accountingMenuOpen', this.accountingMenuOpen);
             localStorage.setItem('ecommerceMenuOpen', this.ecommerceMenuOpen);
             localStorage.setItem('mlmMenuOpen', this.mlmMenuOpen);
             localStorage.setItem('systemMenuOpen', this.systemMenuOpen);
@@ -649,18 +654,30 @@
 
                         <div class="border-t border-gray-700/30 my-1"></div>
 
-                        <!-- AI Bot Section -->
-                        <div class="px-2 py-1">
-                            <span class="text-[10px] text-gray-500 uppercase font-semibold">AI Chat Bot</span>
+                        <!-- AI Chat Bot Section -->
+                        <div class="px-2 py-1 mt-1">
+                            <span class="text-[10px] text-purple-400 uppercase font-bold tracking-wider">🤖 AI Chat Bot</span>
                         </div>
 
                         <a href="{{ route('admin.line-bot.ai.index') }}"
-                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
-                            <span class="mr-2">🤖</span>
-                            <span>AI Settings (Old)</span>
+                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 hover:text-white rounded-lg transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : '' }}">
+                            <span class="mr-2">⚡</span>
+                            <span class="font-semibold">AI Settings</span>
                         </a>
 
-                        <div class="border-t border-gray-700/30 my-1"></div>
+                        <a href="{{ route('admin.line-bot.ai.conversations') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.conversations') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">💬</span>
+                            <span>Conversations</span>
+                        </a>
+
+                        <a href="{{ route('admin.line-bot.ai.analytics') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.line-bot.ai.analytics') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>Analytics</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-2"></div>
 
                         <!-- AI System Section -->
                         <div class="px-2 py-1">
@@ -764,6 +781,103 @@
 
                 <!-- Divider -->
                 <div class="border-t border-gray-700/50 my-3"></div>
+
+                <!-- Accounting System Dropdown -->
+                @if(config('license.addons.accounting.enabled') && (auth()->user()->hasPermission('accounting.view_dashboard') || auth()->user()->isSuperAdmin()))
+                <div class="relative mb-1">
+                    @php
+                        $accountingActive = request()->routeIs('admin.accounting.*');
+                    @endphp
+
+                    <!-- Main Accounting Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-emerald-600 hover:text-white rounded-lg transition-all duration-200 group {{ $accountingActive ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('accountingMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            ระบบบัญชี
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': accountingMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Accounting Submenu -->
+                    <div x-show="accountingMenuOpen"
+                         x-collapse
+                         class="pl-6 mt-1 space-y-0.5"
+                         :class="{ 'md:hidden': sidebarCollapsed }"
+                         style="display: {{ $accountingActive ? 'block' : 'none' }};">
+
+                        <!-- Dashboard -->
+                        <a href="{{ route('admin.accounting.dashboard') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.accounting.dashboard') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <i class="fas fa-chart-line text-xs mr-2 w-4"></i>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Invoices -->
+                        @if(auth()->user()->hasPermission('accounting.view_invoices') || auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.accounting.invoices.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.accounting.invoices.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <i class="fas fa-file-invoice text-xs mr-2 w-4"></i>
+                            <span>ใบแจ้งหนี้</span>
+                        </a>
+                        @endif
+
+                        <!-- Expenses -->
+                        @if(auth()->user()->hasPermission('accounting.view_expenses') || auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.accounting.expenses.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.accounting.expenses.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <i class="fas fa-receipt text-xs mr-2 w-4"></i>
+                            <span>รายจ่าย</span>
+                        </a>
+                        @endif
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Contacts -->
+                        @if(auth()->user()->hasPermission('accounting.view_contacts') || auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.accounting.contacts.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.accounting.contacts.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <i class="fas fa-address-book text-xs mr-2 w-4"></i>
+                            <span>ลูกค้า/ผู้จำหน่าย</span>
+                        </a>
+                        @endif
+
+                        <!-- Products -->
+                        @if(auth()->user()->hasPermission('accounting.view_products') || auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.accounting.products.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.accounting.products.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <i class="fas fa-box text-xs mr-2 w-4"></i>
+                            <span>สินค้า/บริการ</span>
+                        </a>
+                        @endif
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Reports -->
+                        @if(auth()->user()->hasPermission('accounting.view_reports') || auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.accounting.reports.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.accounting.reports.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <i class="fas fa-chart-bar text-xs mr-2 w-4"></i>
+                            <span>รายงาน</span>
+                        </a>
+                        @endif
+
+                        <!-- FlowAccount Integration -->
+                        @if(auth()->user()->hasPermission('accounting.manage_flowaccount') || auth()->user()->isSuperAdmin())
+                        <a href="{{ route('admin.accounting.flowaccount.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.accounting.flowaccount.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <i class="fas fa-plug text-xs mr-2 w-4"></i>
+                            <span>เชื่อมต่อ FlowAccount</span>
+                        </a>
+                        @endif
+                    </div>
+                </div>
+                @endif
 
                 <!-- E-Commerce Management Dropdown -->
                 <div class="relative mb-1">

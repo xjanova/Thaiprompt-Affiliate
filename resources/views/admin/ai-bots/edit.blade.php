@@ -246,7 +246,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="form-label">AI Provider <span class="text-red-500">*</span></label>
-                        <select name="provider_id" class="form-select" required @change="loadModels($event.target.value)">
+                        <select name="provider_id" class="form-select" required onchange="loadModels(this.value)" id="provider_select">
                             <option value="">-- เลือก Provider --</option>
                             @foreach($providers as $provider)
                             <option value="{{ $provider->id }}" {{ old('provider_id', $bot->provider_id) == $provider->id ? 'selected' : '' }}>
@@ -260,12 +260,8 @@
                         <label class="form-label">AI Model <span class="text-red-500">*</span></label>
                         <select name="model_id" class="form-select" required id="model_select">
                             <option value="">-- เลือก Model --</option>
-                            @foreach($models->where('provider_id', $bot->provider_id) as $model)
-                            <option value="{{ $model->id }}" {{ old('model_id', $bot->model_id) == $model->id ? 'selected' : '' }}>
-                                {{ $model->display_name }}
-                            </option>
-                            @endforeach
                         </select>
+                        <p class="form-help">โมเดลจะโหลดตาม Provider ที่เลือก</p>
                     </div>
                 </div>
 
@@ -441,36 +437,76 @@
 
 @push('scripts')
 <script>
+// Global loadModels function
+async function loadModels(providerId) {
+    const modelSelect = document.getElementById('model_select');
+
+    if (!providerId) {
+        modelSelect.innerHTML = '<option value="">-- เลือก Model --</option>';
+        return;
+    }
+
+    // Show loading state
+    modelSelect.innerHTML = '<option value="">กำลังโหลด...</option>';
+    modelSelect.disabled = true;
+
+    try {
+        console.log('Loading models for provider:', providerId);
+        const response = await fetch(`/admin/ai-bots/providers/${providerId}/models`);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Models loaded:', data);
+
+        if (!data.success || !data.data) {
+            throw new Error('Invalid response format');
+        }
+
+        let options = '<option value="">-- เลือก Model --</option>';
+        const currentModelId = {{ $bot->model_id }};
+        const oldModelId = '{{ old('model_id') }}';
+        const selectedModelId = oldModelId || currentModelId;
+
+        if (data.data.length === 0) {
+            options = '<option value="">-- ไม่มีโมเดลสำหรับ Provider นี้ --</option>';
+        } else {
+            data.data.forEach(model => {
+                const selected = model.id == selectedModelId ? 'selected' : '';
+                const contextInfo = model.context_window ? ` (${model.context_window.toLocaleString()} tokens)` : '';
+                options += `<option value="${model.id}" ${selected}>${model.display_name}${contextInfo}</option>`;
+            });
+        }
+
+        modelSelect.innerHTML = options;
+        modelSelect.disabled = false;
+
+    } catch (error) {
+        console.error('Error loading models:', error);
+        modelSelect.innerHTML = '<option value="">-- เกิดข้อผิดพลาด กรุณาลองใหม่ --</option>';
+        modelSelect.disabled = false;
+        alert('ไม่สามารถโหลดรายการ Model ได้: ' + error.message);
+    }
+}
+
 function botEditor() {
     return {
         temperature: {{ old('temperature', $bot->temperature ?? 0.7) }},
         maxTokens: {{ old('max_tokens', $bot->max_tokens ?? 2000) }},
         topP: {{ old('top_p', $bot->top_p ?? 1) }},
-        showAdvanced: false,
-
-        async loadModels(providerId) {
-            if (!providerId) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/admin/ai-bots/providers/${providerId}/models`);
-                const data = await response.json();
-
-                let options = '<option value="">-- เลือก Model --</option>';
-                const currentModelId = {{ $bot->model_id }};
-
-                data.data.forEach(model => {
-                    const selected = model.id === currentModelId ? 'selected' : '';
-                    options += `<option value="${model.id}" ${selected}>${model.display_name}</option>`;
-                });
-
-                $('#model_select').html(options);
-            } catch (error) {
-                console.error('Error loading models:', error);
-            }
-        }
+        showAdvanced: false
     }
 }
+
+// Load models on page load for current provider
+document.addEventListener('DOMContentLoaded', function() {
+    const providerSelect = document.querySelector('select[name="provider_id"]');
+    if (providerSelect && providerSelect.value) {
+        console.log('Loading models for provider:', providerSelect.value);
+        loadModels(providerSelect.value);
+    }
+});
 </script>
 @endpush

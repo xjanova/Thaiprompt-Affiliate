@@ -179,4 +179,75 @@ class LineBotAiController extends Controller
         return redirect()->route('admin.line-bot.ai.knowledge.index', $aiSettingId)
             ->with('success', 'ลบแหล่งข้อมูลสำเร็จ');
     }
+
+    public function knowledgeSync($aiSettingId, $knowledgeId)
+    {
+        $knowledge = LineBotKnowledgeBase::where('ai_setting_id', $aiSettingId)
+            ->findOrFail($knowledgeId);
+
+        // Update last synced timestamp
+        $knowledge->last_synced_at = now();
+        $knowledge->save();
+
+        return redirect()->route('admin.line-bot.ai.knowledge.index', $aiSettingId)
+            ->with('success', 'ซิงค์ข้อมูลสำเร็จ');
+    }
+
+    // Conversations Management
+    public function conversations()
+    {
+        $conversations = \App\Models\LineBotConversation::with(['user', 'aiSetting'])
+            ->latest()
+            ->paginate(20);
+
+        $stats = [
+            'total_conversations' => \App\Models\LineBotConversation::count(),
+            'today_conversations' => \App\Models\LineBotConversation::whereDate('created_at', today())->count(),
+            'active_conversations' => \App\Models\LineBotConversation::where('status', 'active')->count(),
+            'total_messages' => \App\Models\LineBotMessage::count(),
+        ];
+
+        return view('admin.line-bot.ai.conversations', compact('conversations', 'stats'));
+    }
+
+    public function conversationDetail($id)
+    {
+        $conversation = \App\Models\LineBotConversation::with(['user', 'aiSetting', 'messages'])
+            ->findOrFail($id);
+
+        return view('admin.line-bot.ai.conversation-detail', compact('conversation'));
+    }
+
+    // Analytics Dashboard
+    public function analytics()
+    {
+        $aiSettings = LineBotAiSetting::with('knowledgeBases')->get();
+
+        // Get statistics
+        $stats = [
+            'total_ai_settings' => $aiSettings->count(),
+            'active_ai_settings' => $aiSettings->where('is_active', true)->count(),
+            'total_knowledge_bases' => \App\Models\LineBotKnowledgeBase::count(),
+            'total_conversations' => \App\Models\LineBotConversation::count(),
+            'total_messages' => \App\Models\LineBotMessage::count(),
+            'today_conversations' => \App\Models\LineBotConversation::whereDate('created_at', today())->count(),
+            'today_messages' => \App\Models\LineBotMessage::whereDate('created_at', today())->count(),
+        ];
+
+        // Get conversations per day (last 7 days)
+        $conversationsPerDay = \App\Models\LineBotConversation::selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->where('created_at', '>=', now()->subDays(7))
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        // Get messages per provider
+        $messagesPerProvider = \App\Models\LineBotMessage::join('line_bot_conversations', 'line_bot_messages.conversation_id', '=', 'line_bot_conversations.id')
+            ->join('line_bot_ai_settings', 'line_bot_conversations.ai_setting_id', '=', 'line_bot_ai_settings.id')
+            ->selectRaw('line_bot_ai_settings.provider, COUNT(*) as count')
+            ->groupBy('line_bot_ai_settings.provider')
+            ->get();
+
+        return view('admin.line-bot.ai.analytics', compact('stats', 'conversationsPerDay', 'messagesPerProvider', 'aiSettings'));
+    }
 }

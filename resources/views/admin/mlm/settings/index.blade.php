@@ -163,43 +163,98 @@
                         </div>
 
                         <!-- Setting Input -->
-                        <div class="flex items-center gap-2">
+                        <div class="w-full">
                             @if(!$setting->is_editable)
-                                <!-- Read-only display for non-editable settings -->
-                                <div class="w-full px-4 py-2 bg-gray-100 text-gray-600 rounded-lg border border-gray-300">
-                                    @if($setting->type === 'boolean')
-                                        {{ $setting->getTypedValue() ? 'เปิด' : 'ปิด' }}
-                                    @elseif($setting->type === 'json')
-                                        <pre class="font-mono text-xs">{{ $setting->value }}</pre>
-                                    @else
-                                        {{ $setting->value }}
-                                    @endif
+                                <!-- Read-only display -->
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 px-4 py-3 bg-gray-50 text-gray-600 rounded-xl border-2 border-gray-200">
+                                        @if($setting->type === 'boolean')
+                                            <span class="font-medium">{{ $setting->getTypedValue() ? '✓ เปิดใช้งาน' : '✗ ปิดใช้งาน' }}</span>
+                                        @elseif($setting->type === 'json')
+                                            <pre class="font-mono text-xs">{{ $setting->value }}</pre>
+                                        @else
+                                            <span class="font-medium">{{ $setting->value }}</span>
+                                        @endif
+                                    </div>
+                                    <span class="px-3 py-2 text-xs bg-gray-200 text-gray-600 rounded-full whitespace-nowrap font-medium flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                        </svg>
+                                        Read-only
+                                    </span>
                                 </div>
-                                <span class="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded-full whitespace-nowrap">
-                                    🔒 Read-only
-                                </span>
                             @else
-                                <!-- Editable inputs -->
-                                @if($setting->type === 'boolean')
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox"
-                                               name="settings[{{ $setting->key }}]"
-                                               value="1"
-                                               {{ $setting->getTypedValue() ? 'checked' : '' }}
-                                               class="sr-only peer">
-                                        <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-purple-600"></div>
-                                        <span class="ml-3 text-sm font-medium text-gray-700">
-                                            {{ $setting->getTypedValue() ? 'เปิด' : 'ปิด' }}
+                                <!-- Editable inputs based on input_type -->
+                                @if(($setting->input_type ?? 'text') === 'toggle')
+                                    <!-- Modern Toggle Switch (Line OA Style) -->
+                                    <label class="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border-2 border-gray-200 hover:border-purple-300 cursor-pointer transition-all duration-200 group">
+                                        <span class="text-sm font-semibold text-gray-700 group-hover:text-purple-700 transition-colors">
+                                            {{ $setting->getTypedValue() ? '✓ เปิดใช้งาน' : 'ปิดใช้งาน' }}
                                         </span>
+                                        <div class="relative">
+                                            <input type="checkbox"
+                                                   name="settings[{{ $setting->key }}]"
+                                                   value="1"
+                                                   {{ $setting->getTypedValue() ? 'checked' : '' }}
+                                                   class="sr-only peer">
+                                            <div class="w-16 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-200 rounded-full peer peer-checked:after:translate-x-8 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-pink-600 shadow-inner"></div>
+                                        </div>
                                     </label>
-                                @elseif($setting->type === 'integer' || $setting->type === 'decimal' || $setting->type === 'float')
-                                    <input type="number"
-                                           name="settings[{{ $setting->key }}]"
-                                           value="{{ $setting->value }}"
-                                           step="{{ $setting->type === 'integer' ? '1' : 'any' }}"
-                                           onchange="updatePreview()"
-                                           class="w-full border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
-                                @elseif($setting->key === 'unilevel_levels')
+
+                                @elseif(($setting->input_type ?? 'text') === 'select')
+                                    <!-- Beautiful Dropdown (Line OA Style) -->
+                                    <div class="relative">
+                                        <select name="settings[{{ $setting->key }}]"
+                                                class="w-full px-4 py-3 pr-10 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 appearance-none cursor-pointer text-base font-medium text-gray-700 hover:border-purple-300 transition-all duration-200"
+                                                @if($setting->key === 'auto_placement_strategy') onchange="showPlacementDemo(this.value)" @endif>
+                                            @foreach($setting->getAllowedValuesArray() as $option)
+                                                <option value="{{ $option }}" {{ $setting->value == $option ? 'selected' : '' }}>
+                                                    {{ match($option) {
+                                                        'manual' => '📍 Manual - วางด้วยตนเอง',
+                                                        'left_first', 'fill_left' => '⬅️ Fill Left - เติมซ้ายก่อน',
+                                                        'right_first', 'fill_right' => '➡️ Fill Right - เติมขวาก่อน',
+                                                        'weak_leg' => '⚖️ Weak Leg - เติมขาอ่อน',
+                                                        'strong_leg' => '💪 Strong Leg - เติมขาแข็ง',
+                                                        'balanced' => '⚖️ Balanced - สมดุล',
+                                                        'fill_level' => '📊 Fill Level - เติมเต็มระดับ',
+                                                        'percentage' => '% เปอร์เซ็นต์',
+                                                        'full' => '🔄 เต็มทั้งหมด',
+                                                        'none' => '❌ ไม่ล้าง',
+                                                        'THB' => '🇹🇭 THB - บาทไทย',
+                                                        'USD' => '🇺🇸 USD - ดอลลาร์สหรัฐ',
+                                                        'EUR' => '🇪🇺 EUR - ยูโร',
+                                                        'GBP' => '🇬🇧 GBP - ปอนด์',
+                                                        'JPY' => '🇯🇵 JPY - เยน',
+                                                        default => $option
+                                                    }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3">
+                                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                @elseif(($setting->input_type ?? 'text') === 'number')
+                                    <!-- Number Input with Unit (Line OA Style) -->
+                                    <div class="relative">
+                                        <input type="number"
+                                               name="settings[{{ $setting->key }}]"
+                                               value="{{ $setting->value }}"
+                                               step="{{ $setting->type === 'integer' ? '1' : 'any' }}"
+                                               placeholder="{{ $setting->placeholder ?? '' }}"
+                                               onchange="updatePreview()"
+                                               class="w-full px-4 py-3 {{ $setting->unit ? 'pr-20' : '' }} bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-base font-semibold text-gray-700 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">
+                                        @if($setting->unit)
+                                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                                <span class="text-sm font-bold text-purple-600 bg-purple-50 px-3 py-1 rounded-lg">{{ $setting->unit }}</span>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                @elseif(($setting->input_type ?? 'text') === 'unilevel_editor')
                                     <!-- Visual Unilevel Editor -->
                                     <div class="w-full">
                                         <div id="unilevel-editor" class="space-y-2 mb-3">
@@ -209,22 +264,28 @@
                                                   id="unilevel-json"
                                                   class="hidden">{{ $setting->value }}</textarea>
                                         <button type="button" onclick="addUnilevelLevel()"
-                                                class="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                class="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center gap-2 transform hover:scale-[1.02]">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                             </svg>
-                                            เพิ่มระดับ
+                                            เพิ่มระดับใหม่
                                         </button>
                                     </div>
+
                                 @elseif($setting->type === 'json' || $setting->type === 'array')
+                                    <!-- JSON Textarea -->
                                     <textarea name="settings[{{ $setting->key }}]"
-                                              rows="3"
-                                              class="w-full border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 font-mono text-sm">{{ $setting->value }}</textarea>
+                                              rows="4"
+                                              placeholder="{{ $setting->placeholder ?? 'กรอกข้อมูล JSON' }}"
+                                              class="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 font-mono text-sm text-gray-700 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">{{ $setting->value }}</textarea>
+
                                 @else
+                                    <!-- Text Input (Line OA Style) -->
                                     <input type="text"
                                            name="settings[{{ $setting->key }}]"
                                            value="{{ $setting->value }}"
-                                           class="w-full border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                                           placeholder="{{ $setting->placeholder ?? '' }}"
+                                           class="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-purple-200 focus:border-purple-500 text-base font-medium text-gray-700 placeholder-gray-400 hover:border-purple-300 transition-all duration-200">
                                 @endif
                             @endif
                         </div>
