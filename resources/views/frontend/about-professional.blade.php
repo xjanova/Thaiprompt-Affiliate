@@ -8,7 +8,6 @@
 @endphp
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vis-network@10.0.2/dist/dist/vis-network.min.css">
 <style>
 :root {
     --primary: {{ $primaryColor }};
@@ -39,23 +38,26 @@
     -webkit-text-fill-color: transparent;
 }
 
-/* Mind Map Container */
-#mindmap-container {
+/* Mind Map Container - Google Maps Style */
+.diagram-container {
     width: 100%;
-    height: 800px;
+    min-height: 800px;
+    background: linear-gradient(to bottom, #f0f4f8 0%, #ffffff 100%);
     border: 2px solid #e5e7eb;
     border-radius: 16px;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
 
-/* System Diagram Container */
-#system-diagram {
+.diagram-wrapper {
     width: 100%;
-    height: 1000px;
-    border: 2px solid #e5e7eb;
-    border-radius: 16px;
-    background: #f9fafb;
+    height: 100%;
+    min-height: 800px;
+    position: relative;
+    cursor: move;
+    transform-origin: center center;
+    transition: transform 0.3s ease;
 }
 
 .zoom-controls {
@@ -64,7 +66,12 @@
     right: 20px;
     z-index: 100;
     display: flex;
+    flex-direction: column;
     gap: 8px;
+    background: white;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
 
 .zoom-btn {
@@ -72,20 +79,56 @@
     height: 40px;
     background: white;
     border: 2px solid #e5e7eb;
-    border-radius: 8px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
-    justify-center;
+    justify-content: center;
     cursor: pointer;
     font-size: 20px;
     font-weight: bold;
     transition: all 0.2s;
+    color: #374151;
 }
 
 .zoom-btn:hover {
     background: {{ $primaryColor }};
     color: white;
     border-color: {{ $primaryColor }};
+    transform: scale(1.1);
+}
+
+/* Node Styles */
+.node {
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.node:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}
+
+.node rect {
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+}
+
+.node:hover rect {
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.2));
+}
+
+.node text {
+    pointer-events: none;
+    user-select: none;
+}
+
+.connection-line {
+    stroke-width: 2;
+    fill: none;
+    opacity: 0.6;
+}
+
+.connection-line-dashed {
+    stroke-dasharray: 5,5;
 }
 
 .section-title {
@@ -105,26 +148,6 @@
     border-radius: 2px;
 }
 
-.feature-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 24px;
-}
-
-.feature-card-detailed {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    border: 2px solid #f3f4f6;
-    transition: all 0.3s ease;
-}
-
-.feature-card-detailed:hover {
-    border-color: {{ $primaryColor }};
-    transform: translateY(-4px);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-}
-
 .badge-version {
     background: linear-gradient(135deg, #10B981 0%, #059669 100%);
     color: white;
@@ -134,6 +157,12 @@
     font-size: 18px;
     display: inline-block;
     box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+    animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
 }
 
 .stat-box {
@@ -142,87 +171,31 @@
     padding: 20px;
     border-radius: 12px;
     margin-bottom: 16px;
+    transition: all 0.3s ease;
 }
 
-.timeline {
-    position: relative;
-    padding-left: 40px;
+.stat-box:hover {
+    transform: translateX(5px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
 }
 
-.timeline::before {
-    content: '';
+.info-panel {
     position: absolute;
-    left: 15px;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    background: linear-gradient(to bottom, {{ $primaryColor }}, {{ $secondaryColor }});
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 40px;
-}
-
-.timeline-dot {
-    position: absolute;
-    left: -32px;
-    top: 8px;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: {{ $primaryColor }};
-    border: 4px solid white;
-    box-shadow: 0 0 0 4px {{ $primaryColor }}40;
-}
-
-.code-block {
-    background: #1e293b;
-    color: #e2e8f0;
-    padding: 24px;
-    border-radius: 12px;
-    overflow-x: auto;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.6;
-}
-
-.table-responsive {
-    overflow-x: auto;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-}
-
-.table-modern {
-    width: 100%;
-    border-collapse: collapse;
+    bottom: 20px;
+    left: 20px;
     background: white;
-}
-
-.table-modern thead {
-    background: linear-gradient(135deg, {{ $primaryColor }} 0%, {{ $secondaryColor }} 100%);
-    color: white;
-}
-
-.table-modern th {
     padding: 16px;
-    text-align: left;
-    font-weight: 600;
-}
-
-.table-modern td {
-    padding: 16px;
-    border-bottom: 1px solid #f3f4f6;
-}
-
-.table-modern tbody tr:hover {
-    background: #f9fafb;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    max-width: 300px;
 }
 
 @media (max-width: 768px) {
-    #mindmap-container,
-    #system-diagram {
-        height: 500px;
+    .diagram-container {
+        min-height: 500px;
+    }
+    .diagram-wrapper {
+        min-height: 500px;
     }
 }
 </style>
@@ -277,9 +250,6 @@
                 ['icon' => '💰', 'title' => 'โมเดลธุรกิจ', 'href' => '#business-model'],
                 ['icon' => '⚙️', 'title' => 'ฟีเจอร์ทั้งหมด', 'href' => '#features'],
                 ['icon' => '🛠️', 'title' => 'เทคโนโลยี', 'href' => '#technology'],
-                ['icon' => '📊', 'title' => 'Database Schema', 'href' => '#database'],
-                ['icon' => '🔌', 'title' => 'API & Integration', 'href' => '#api'],
-                ['icon' => '📅', 'title' => 'Development Timeline', 'href' => '#timeline'],
             ] as $item)
             <a href="{{ $item['href'] }}" class="flex items-center gap-3 p-4 rounded-lg border-2 border-gray-200 hover:border-[var(--primary)] hover:bg-gray-50 transition-all">
                 <span class="text-3xl">{{ $item['icon'] }}</span>
@@ -356,34 +326,188 @@
 <div id="mindmap" class="bg-gray-50 py-20">
     <div class="max-w-7xl mx-auto px-4">
         <h2 class="text-4xl md:text-5xl font-bold mb-4 section-title text-center">🧠 Mind Map: ระบบเชื่อมต่อทั้งหมด</h2>
-        <p class="text-xl text-gray-600 text-center mb-12">แผนภาพแสดงความเชื่อมโยงของระบบทั้งหมดแบบ Interactive (Zoom/Pan ได้)</p>
+        <p class="text-xl text-gray-600 text-center mb-12">แผนภาพแสดงความเชื่อมโยงของระบบทั้งหมดแบบ Interactive (คลิกลากเพื่อดู, Scroll เพื่อ Zoom)</p>
 
         <div class="card-premium rounded-2xl p-4 mb-4">
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between flex-wrap gap-4">
                 <div class="text-sm text-gray-600">
-                    💡 <strong>คำแนะนำ:</strong> ใช้ Mouse Wheel เพื่อ Zoom, ลากเพื่อ Pan, คลิก Node เพื่อดูรายละเอียด
+                    💡 <strong>คำแนะนำ:</strong> คลิกลากเพื่อเลื่อนดูผัง, ใช้ปุ่มด้านขวาเพื่อ Zoom In/Out
                 </div>
-                <div class="zoom-controls relative">
-                    <button onclick="zoomIn()" class="zoom-btn">+</button>
-                    <button onclick="zoomOut()" class="zoom-btn">−</button>
-                    <button onclick="resetZoom()" class="zoom-btn">⟲</button>
+                <div class="flex gap-2 text-xs">
+                    <span class="px-3 py-1 bg-purple-100 rounded-full">🟣 MLM</span>
+                    <span class="px-3 py-1 bg-pink-100 rounded-full">🔴 E-Commerce</span>
+                    <span class="px-3 py-1 bg-green-100 rounded-full">🟢 Wallet</span>
+                    <span class="px-3 py-1 bg-yellow-100 rounded-full">🟠 LINE</span>
+                    <span class="px-3 py-1 bg-cyan-100 rounded-full">🔵 AI</span>
                 </div>
             </div>
         </div>
 
-        <div id="mindmap-container"></div>
+        <!-- Interactive Mind Map -->
+        <div class="diagram-container" id="mindmap-container">
+            <div class="zoom-controls">
+                <button onclick="zoomIn()" class="zoom-btn" title="Zoom In">+</button>
+                <button onclick="zoomOut()" class="zoom-btn" title="Zoom Out">−</button>
+                <button onclick="resetZoom()" class="zoom-btn" title="Reset">⟲</button>
+            </div>
+
+            <div class="info-panel">
+                <div class="text-sm font-semibold mb-2">📍 ระบบทั้งหมด</div>
+                <div class="text-xs text-gray-600">
+                    • 7 โมดูลหลัก<br>
+                    • 40+ ระบบย่อย<br>
+                    • เชื่อมต่อกันครบถ้วน
+                </div>
+            </div>
+
+            <svg id="mindmap-svg" class="diagram-wrapper" viewBox="0 0 1600 1200" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                        <polygon points="0 0, 10 3, 0 6" fill="#94A3B8" />
+                    </marker>
+
+                    <!-- Gradients -->
+                    <linearGradient id="grad-primary" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:{{ $primaryColor }};stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:{{ $secondaryColor }};stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="grad-mlm" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="grad-ecommerce" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#EC4899;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#DB2777;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="grad-wallet" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#10B981;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="grad-line" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#F59E0B;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#D97706;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="grad-ai" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#06B6D4;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#0891B2;stop-opacity:1" />
+                    </linearGradient>
+                    <linearGradient id="grad-security" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color:#EF4444;stop-opacity:1" />
+                        <stop offset="100%" style="stop-color:#DC2626;stop-opacity:1" />
+                    </linearGradient>
+                </defs>
+
+                <!-- Core Platform (Center) -->
+                <g class="node" onclick="showNodeInfo('TP-Affiliate Platform', 'แพลตฟอร์มหลัก MLM + E-Commerce')">
+                    <rect x="650" y="550" width="300" height="100" rx="15" fill="url(#grad-primary)" />
+                    <text x="800" y="590" text-anchor="middle" fill="white" font-size="24" font-weight="bold">TP-Affiliate</text>
+                    <text x="800" y="620" text-anchor="middle" fill="white" font-size="16">Platform</text>
+                </g>
+
+                <!-- MLM System (Top Left) -->
+                <line x1="750" y1="550" x2="300" y2="150" class="connection-line" stroke="{{ $primaryColor }}" stroke-width="3" />
+                <g class="node" onclick="showNodeInfo('MLM System', 'ระบบ Multi-Level Marketing แบบครบวงจร')">
+                    <rect x="150" y="50" width="300" height="200" rx="12" fill="url(#grad-mlm)" />
+                    <text x="300" y="90" text-anchor="middle" fill="white" font-size="20" font-weight="bold">MLM System</text>
+                    <text x="300" y="120" text-anchor="middle" fill="white" font-size="13">• Unilevel Plan</text>
+                    <text x="300" y="140" text-anchor="middle" fill="white" font-size="13">• Binary Plan</text>
+                    <text x="300" y="160" text-anchor="middle" fill="white" font-size="13">• Commission Engine</text>
+                    <text x="300" y="180" text-anchor="middle" fill="white" font-size="13">• PV System</text>
+                    <text x="300" y="200" text-anchor="middle" fill="white" font-size="13">• Rank Management</text>
+                    <text x="300" y="220" text-anchor="middle" fill="white" font-size="13">• Genealogy Tree</text>
+                </g>
+
+                <!-- E-Commerce (Top Right) -->
+                <line x1="850" y1="550" x2="1300" y2="150" class="connection-line" stroke="{{ $primaryColor }}" stroke-width="3" />
+                <g class="node" onclick="showNodeInfo('E-Commerce', 'ระบบขายสินค้าแบบ Multi-Vendor')">
+                    <rect x="1150" y="50" width="300" height="200" rx="12" fill="url(#grad-ecommerce)" />
+                    <text x="1300" y="90" text-anchor="middle" fill="white" font-size="20" font-weight="bold">E-Commerce</text>
+                    <text x="1300" y="120" text-anchor="middle" fill="white" font-size="13">• Product Management</text>
+                    <text x="1300" y="140" text-anchor="middle" fill="white" font-size="13">• Shopping Cart</text>
+                    <text x="1300" y="160" text-anchor="middle" fill="white" font-size="13">• Order Processing</text>
+                    <text x="1300" y="180" text-anchor="middle" fill="white" font-size="13">• Multi-Vendor</text>
+                    <text x="1300" y="200" text-anchor="middle" fill="white" font-size="13">• Inventory System</text>
+                    <text x="1300" y="220" text-anchor="middle" fill="white" font-size="13">• Reviews & Ratings</text>
+                </g>
+
+                <!-- Wallet System (Left) -->
+                <line x1="650" y1="600" x2="300" y2="600" class="connection-line" stroke="{{ $primaryColor }}" stroke-width="3" />
+                <g class="node" onclick="showNodeInfo('Wallet System', 'ระบบกระเป๋าเงินดิจิทัล')">
+                    <rect x="50" y="500" width="250" height="200" rx="12" fill="url(#grad-wallet)" />
+                    <text x="175" y="540" text-anchor="middle" fill="white" font-size="20" font-weight="bold">Wallet System</text>
+                    <text x="175" y="570" text-anchor="middle" fill="white" font-size="13">• Balance Management</text>
+                    <text x="175" y="590" text-anchor="middle" fill="white" font-size="13">• Transactions</text>
+                    <text x="175" y="610" text-anchor="middle" fill="white" font-size="13">• Withdrawals</text>
+                    <text x="175" y="630" text-anchor="middle" fill="white" font-size="13">• Payment Methods</text>
+                    <text x="175" y="650" text-anchor="middle" fill="white" font-size="13">• 2FA & PIN Security</text>
+                </g>
+
+                <!-- LINE Integration (Right) -->
+                <line x1="950" y1="600" x2="1300" y2="600" class="connection-line" stroke="{{ $primaryColor }}" stroke-width="3" />
+                <g class="node" onclick="showNodeInfo('LINE Integration', 'LINE Official Account + AI Bot')">
+                    <rect x="1300" y="500" width="250" height="200" rx="12" fill="url(#grad-line)" />
+                    <text x="1425" y="540" text-anchor="middle" fill="white" font-size="20" font-weight="bold">LINE Integration</text>
+                    <text x="1425" y="570" text-anchor="middle" fill="white" font-size="13">• LINE Bot AI</text>
+                    <text x="1425" y="590" text-anchor="middle" fill="white" font-size="13">• Flex Messages</text>
+                    <text x="1425" y="610" text-anchor="middle" fill="white" font-size="13">• Rich Menu Builder</text>
+                    <text x="1425" y="630" text-anchor="middle" fill="white" font-size="13">• Broadcast System</text>
+                    <text x="1425" y="650" text-anchor="middle" fill="white" font-size="13">• Chat Widget</text>
+                </g>
+
+                <!-- AI Services (Bottom Left) -->
+                <line x1="750" y1="650" x2="300" y2="1000" class="connection-line" stroke="{{ $primaryColor }}" stroke-width="3" />
+                <g class="node" onclick="showNodeInfo('AI Services', 'Multi-AI Provider Integration')">
+                    <rect x="150" y="900" width="300" height="200" rx="12" fill="url(#grad-ai)" />
+                    <text x="300" y="940" text-anchor="middle" fill="white" font-size="20" font-weight="bold">AI Services</text>
+                    <text x="300" y="970" text-anchor="middle" fill="white" font-size="13">• OpenAI GPT</text>
+                    <text x="300" y="990" text-anchor="middle" fill="white" font-size="13">• Claude AI</text>
+                    <text x="300" y="1010" text-anchor="middle" fill="white" font-size="13">• Google Gemini</text>
+                    <text x="300" y="1030" text-anchor="middle" fill="white" font-size="13">• RAG System</text>
+                    <text x="300" y="1050" text-anchor="middle" fill="white" font-size="13">• Knowledge Base</text>
+                </g>
+
+                <!-- Security System (Bottom Center) -->
+                <line x1="800" y1="650" x2="800" y2="900" class="connection-line" stroke="{{ $primaryColor }}" stroke-width="3" />
+                <g class="node" onclick="showNodeInfo('Security', 'Enterprise Security Features')">
+                    <rect x="650" y="900" width="300" height="170" rx="12" fill="url(#grad-security)" />
+                    <text x="800" y="940" text-anchor="middle" fill="white" font-size="20" font-weight="bold">Security</text>
+                    <text x="800" y="970" text-anchor="middle" fill="white" font-size="13">• KYC/OCR (Google Vision)</text>
+                    <text x="800" y="990" text-anchor="middle" fill="white" font-size="13">• IP Blocking & CIDR</text>
+                    <text x="800" y="1010" text-anchor="middle" fill="white" font-size="13">• Threat Detection</text>
+                    <text x="800" y="1030" text-anchor="middle" fill="white" font-size="13">• Auto-Ban System</text>
+                </g>
+
+                <!-- Admin Panel (Bottom Right) -->
+                <line x1="850" y1="650" x2="1300" y2="1000" class="connection-line" stroke="{{ $primaryColor }}" stroke-width="3" />
+                <g class="node" onclick="showNodeInfo('Admin Panel', '50+ Controllers สำหรับจัดการ')">
+                    <rect x="1150" y="900" width="300" height="170" rx="12" fill="#6366F1" />
+                    <text x="1300" y="940" text-anchor="middle" fill="white" font-size="20" font-weight="bold">Admin Panel</text>
+                    <text x="1300" y="970" text-anchor="middle" fill="white" font-size="13">• Dashboard & Analytics</text>
+                    <text x="1300" y="990" text-anchor="middle" fill="white" font-size="13">• User Management</text>
+                    <text x="1300" y="1010" text-anchor="middle" fill="white" font-size="13">• System Settings</text>
+                    <text x="1300" y="1030" text-anchor="middle" fill="white" font-size="13">• Reports & Monitoring</text>
+                </g>
+
+                <!-- Cross-Module Connections (Dashed Lines) -->
+                <line x1="300" y1="250" x2="175" y2="500" class="connection-line connection-line-dashed" stroke="#94A3B8" marker-end="url(#arrowhead)" />
+                <text x="220" y="380" fill="#64748B" font-size="11">Commission → Wallet</text>
+
+                <line x1="1300" y1="250" x2="300" y2="900" class="connection-line connection-line-dashed" stroke="#94A3B8" marker-end="url(#arrowhead)" />
+                <text x="750" y="570" fill="#64748B" font-size="11">Order → Commission → AI</text>
+
+                <line x1="1425" y1="700" x2="300" y2="950" class="connection-line connection-line-dashed" stroke="#94A3B8" marker-end="url(#arrowhead)" />
+                <text x="850" y="820" fill="#64748B" font-size="11">LINE Bot → AI Knowledge</text>
+            </svg>
+        </div>
     </div>
 </div>
 
-<!-- System Architecture Diagram -->
+<!-- Architecture Details -->
 <div id="architecture" class="max-w-7xl mx-auto px-4 py-20">
     <h2 class="text-4xl md:text-5xl font-bold mb-4 section-title text-center">🏗️ System Architecture</h2>
     <p class="text-xl text-gray-600 text-center mb-12">สถาปัตยกรรมระบบแบบ Layered Architecture พร้อม Integration ครบวงจร</p>
 
-    <div id="system-diagram"></div>
-
-    <!-- Architecture Details -->
-    <div class="grid md:grid-cols-2 gap-6 mt-12">
+    <div class="grid md:grid-cols-2 gap-6">
         <div class="card-premium rounded-2xl p-8">
             <h3 class="text-2xl font-bold mb-6 flex items-center gap-3">
                 <span class="text-4xl">🖥️</span>
@@ -442,247 +566,135 @@
     </div>
 </div>
 
-{{-- Part 2 will continue with Business Model, Features, etc. --}}
-
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/vis-network@10.0.2/dist/dist/vis-network.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
-let network = null;
+let currentZoom = 1;
+let isDragging = false;
+let startX, startY;
+let translateX = 0, translateY = 0;
 
-// Initialize Mind Map
+// SVG Pan and Zoom functionality
 document.addEventListener('DOMContentLoaded', function() {
-    initMindMap();
-    initSystemDiagram();
-});
-
-function initMindMap() {
+    const svg = document.getElementById('mindmap-svg');
     const container = document.getElementById('mindmap-container');
 
-    // Define nodes (ระบบทั้งหมด)
-    const nodes = new vis.DataSet([
-        // Core System
-        {id: 1, label: 'TP-Affiliate\nPlatform', level: 0, color: {background: '#3B82F6', border: '#2563EB'}, font: {color: 'white', size: 18, bold: true}, shape: 'box', margin: 15},
+    // Mouse drag to pan
+    container.addEventListener('mousedown', function(e) {
+        if (e.target.closest('.node') || e.target.closest('.zoom-btn')) return;
+        isDragging = true;
+        startX = e.clientX - translateX;
+        startY = e.clientY - translateY;
+        container.style.cursor = 'grabbing';
+    });
 
-        // Main Modules (Level 1)
-        {id: 10, label: 'MLM System', level: 1, color: {background: '#8B5CF6', border: '#7C3AED'}, font: {color: 'white', size: 14}, shape: 'box'},
-        {id: 20, label: 'E-Commerce', level: 1, color: {background: '#EC4899', border: '#DB2777'}, font: {color: 'white', size: 14}, shape: 'box'},
-        {id: 30, label: 'Wallet System', level: 1, color: {background: '#10B981', border: '#059669'}, font: {color: 'white', size: 14}, shape: 'box'},
-        {id: 40, label: 'LINE Integration', level: 1, color: {background: '#F59E0B', border: '#D97706'}, font: {color: 'white', size: 14}, shape: 'box'},
-        {id: 50, label: 'AI Services', level: 1, color: {background: '#06B6D4', border: '#0891B2'}, font: {color: 'white', size: 14}, shape: 'box'},
-        {id: 60, label: 'Security', level: 1, color: {background: '#EF4444', border: '#DC2626'}, font: {color: 'white', size: 14}, shape: 'box'},
-        {id: 70, label: 'Admin Panel', level: 1, color: {background: '#6366F1', border: '#4F46E5'}, font: {color: 'white', size: 14}, shape: 'box'},
+    container.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+        translateX = e.clientX - startX;
+        translateY = e.clientY - startY;
+        updateTransform();
+    });
 
-        // MLM Sub-modules (Level 2)
-        {id: 11, label: 'Unilevel Plan', level: 2, group: 'mlm'},
-        {id: 12, label: 'Binary Plan', level: 2, group: 'mlm'},
-        {id: 13, label: 'Commission\nCalculation', level: 2, group: 'mlm'},
-        {id: 14, label: 'PV System', level: 2, group: 'mlm'},
-        {id: 15, label: 'Rank System', level: 2, group: 'mlm'},
-        {id: 16, label: 'Genealogy Tree', level: 2, group: 'mlm'},
+    container.addEventListener('mouseup', function() {
+        isDragging = false;
+        container.style.cursor = 'move';
+    });
 
-        // E-Commerce Sub-modules
-        {id: 21, label: 'Product\nManagement', level: 2, group: 'ecommerce'},
-        {id: 22, label: 'Shopping Cart', level: 2, group: 'ecommerce'},
-        {id: 23, label: 'Order Processing', level: 2, group: 'ecommerce'},
-        {id: 24, label: 'Multi-Vendor', level: 2, group: 'ecommerce'},
-        {id: 25, label: 'Inventory', level: 2, group: 'ecommerce'},
-        {id: 26, label: 'Reviews & Ratings', level: 2, group: 'ecommerce'},
+    container.addEventListener('mouseleave', function() {
+        isDragging = false;
+        container.style.cursor = 'move';
+    });
 
-        // Wallet Sub-modules
-        {id: 31, label: 'Balance\nManagement', level: 2, group: 'wallet'},
-        {id: 32, label: 'Transactions', level: 2, group: 'wallet'},
-        {id: 33, label: 'Withdrawals', level: 2, group: 'wallet'},
-        {id: 34, label: 'Payment Methods', level: 2, group: 'wallet'},
-        {id: 35, label: '2FA & PIN', level: 2, group: 'wallet'},
+    // Mouse wheel to zoom
+    container.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        currentZoom *= delta;
+        currentZoom = Math.max(0.5, Math.min(3, currentZoom));
+        updateTransform();
+    });
 
-        // LINE Sub-modules
-        {id: 41, label: 'LINE Bot AI', level: 2, group: 'line'},
-        {id: 42, label: 'Flex Messages', level: 2, group: 'line'},
-        {id: 43, label: 'Rich Menu', level: 2, group: 'line'},
-        {id: 44, label: 'Broadcast', level: 2, group: 'line'},
-        {id: 45, label: 'Chat Widget', level: 2, group: 'line'},
-
-        // AI Sub-modules
-        {id: 51, label: 'OpenAI GPT', level: 2, group: 'ai'},
-        {id: 52, label: 'Claude', level: 2, group: 'ai'},
-        {id: 53, label: 'Google Gemini', level: 2, group: 'ai'},
-        {id: 54, label: 'RAG System', level: 2, group: 'ai'},
-        {id: 55, label: 'Knowledge Base', level: 2, group: 'ai'},
-
-        // Security Sub-modules
-        {id: 61, label: 'KYC/OCR', level: 2, group: 'security'},
-        {id: 62, label: 'IP Blocking', level: 2, group: 'security'},
-        {id: 63, label: 'Threat Detection', level: 2, group: 'security'},
-        {id: 64, label: 'Auto-Ban', level: 2, group: 'security'},
-
-        // Admin Sub-modules
-        {id: 71, label: 'Dashboard', level: 2, group: 'admin'},
-        {id: 72, label: 'User Management', level: 2, group: 'admin'},
-        {id: 73, label: 'Settings', level: 2, group: 'admin'},
-        {id: 74, label: 'Reports', level: 2, group: 'admin'},
-    ]);
-
-    // Define edges (connections)
-    const edges = new vis.DataSet([
-        // Core to Main Modules
-        {from: 1, to: 10, width: 3, color: {color: '#3B82F6'}},
-        {from: 1, to: 20, width: 3, color: {color: '#3B82F6'}},
-        {from: 1, to: 30, width: 3, color: {color: '#3B82F6'}},
-        {from: 1, to: 40, width: 3, color: {color: '#3B82F6'}},
-        {from: 1, to: 50, width: 3, color: {color: '#3B82F6'}},
-        {from: 1, to: 60, width: 3, color: {color: '#3B82F6'}},
-        {from: 1, to: 70, width: 3, color: {color: '#3B82F6'}},
-
-        // MLM to sub-modules
-        {from: 10, to: 11}, {from: 10, to: 12}, {from: 10, to: 13},
-        {from: 10, to: 14}, {from: 10, to: 15}, {from: 10, to: 16},
-
-        // E-Commerce to sub-modules
-        {from: 20, to: 21}, {from: 20, to: 22}, {from: 20, to: 23},
-        {from: 20, to: 24}, {from: 20, to: 25}, {from: 20, to: 26},
-
-        // Wallet to sub-modules
-        {from: 30, to: 31}, {from: 30, to: 32}, {from: 30, to: 33},
-        {from: 30, to: 34}, {from: 30, to: 35},
-
-        // LINE to sub-modules
-        {from: 40, to: 41}, {from: 40, to: 42}, {from: 40, to: 43},
-        {from: 40, to: 44}, {from: 40, to: 45},
-
-        // AI to sub-modules
-        {from: 50, to: 51}, {from: 50, to: 52}, {from: 50, to: 53},
-        {from: 50, to: 54}, {from: 50, to: 55},
-
-        // Security to sub-modules
-        {from: 60, to: 61}, {from: 60, to: 62}, {from: 60, to: 63}, {from: 60, to: 64},
-
-        // Admin to sub-modules
-        {from: 70, to: 71}, {from: 70, to: 72}, {from: 70, to: 73}, {from: 70, to: 74},
-
-        // Cross-module connections
-        {from: 13, to: 30, dashes: true, color: {color: '#94A3B8'}}, // Commission to Wallet
-        {from: 23, to: 13, dashes: true, color: {color: '#94A3B8'}}, // Order to Commission
-        {from: 41, to: 55, dashes: true, color: {color: '#94A3B8'}}, // LINE Bot to Knowledge
-        {from: 61, to: 72, dashes: true, color: {color: '#94A3B8'}}, // KYC to User Management
-    ]);
-
-    const data = {nodes: nodes, edges: edges};
-
-    const options = {
-        layout: {
-            hierarchical: {
-                direction: 'UD',
-                sortMethod: 'directed',
-                levelSeparation: 150,
-                nodeSpacing: 150,
-            }
-        },
-        physics: {
-            enabled: false
-        },
-        interaction: {
-            zoomView: true,
-            dragView: true,
-            hover: true,
-        },
-        groups: {
-            mlm: {color: {background: '#DDD6FE', border: '#8B5CF6'}},
-            ecommerce: {color: {background: '#FBCFE8', border: '#EC4899'}},
-            wallet: {color: {background: '#D1FAE5', border: '#10B981'}},
-            line: {color: {background: '#FEF3C7', border: '#F59E0B'}},
-            ai: {color: {background: '#CFFAFE', border: '#06B6D4'}},
-            security: {color: {background: '#FEE2E2', border: '#EF4444'}},
-            admin: {color: {background: '#E0E7FF', border: '#6366F1'}},
-        },
-        nodes: {
-            shape: 'box',
-            margin: 10,
-            widthConstraint: {
-                maximum: 150
-            },
-            font: {
-                size: 12,
-            }
-        }
-    };
-
-    network = new vis.Network(container, data, options);
-
-    // Event handlers
-    network.on('click', function(params) {
-        if (params.nodes.length > 0) {
-            const nodeId = params.nodes[0];
-            const node = nodes.get(nodeId);
-            alert('Module: ' + node.label + '\n\nคลิก OK เพื่อดูรายละเอียดเพิ่มเติม');
+    // Touch support for mobile
+    let touchStartDistance = 0;
+    container.addEventListener('touchstart', function(e) {
+        if (e.touches.length === 2) {
+            touchStartDistance = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        } else if (e.touches.length === 1) {
+            isDragging = true;
+            startX = e.touches[0].clientX - translateX;
+            startY = e.touches[0].clientY - translateY;
         }
     });
+
+    container.addEventListener('touchmove', function(e) {
+        if (e.touches.length === 2) {
+            e.preventDefault();
+            const touchDistance = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            const delta = touchDistance / touchStartDistance;
+            currentZoom *= delta;
+            currentZoom = Math.max(0.5, Math.min(3, currentZoom));
+            touchStartDistance = touchDistance;
+            updateTransform();
+        } else if (isDragging && e.touches.length === 1) {
+            e.preventDefault();
+            translateX = e.touches[0].clientX - startX;
+            translateY = e.touches[0].clientY - startY;
+            updateTransform();
+        }
+    });
+
+    container.addEventListener('touchend', function() {
+        isDragging = false;
+    });
+});
+
+function updateTransform() {
+    const svg = document.getElementById('mindmap-svg');
+    svg.style.transform = `translate(${translateX}px, ${translateY}px) scale(${currentZoom})`;
 }
 
 function zoomIn() {
-    if (network) {
-        const scale = network.getScale();
-        network.moveTo({scale: scale * 1.2});
-    }
+    currentZoom *= 1.2;
+    currentZoom = Math.min(3, currentZoom);
+    updateTransform();
 }
 
 function zoomOut() {
-    if (network) {
-        const scale = network.getScale();
-        network.moveTo({scale: scale * 0.8});
-    }
+    currentZoom *= 0.8;
+    currentZoom = Math.max(0.5, currentZoom);
+    updateTransform();
 }
 
 function resetZoom() {
-    if (network) {
-        network.fit();
-    }
+    currentZoom = 1;
+    translateX = 0;
+    translateY = 0;
+    updateTransform();
 }
 
-function initSystemDiagram() {
-    // System Architecture Diagram using vis-network
-    const container = document.getElementById('system-diagram');
+function showNodeInfo(title, description) {
+    alert(`📍 ${title}\n\n${description}\n\nคลิก OK เพื่อปิด`);
+}
 
-    const nodes = new vis.DataSet([
-        // Layers
-        {id: 'presentation', label: 'Presentation Layer\n(Blade, Alpine.js, Tailwind)', level: 0, color: {background: '#3B82F6'}, font: {color: 'white', size: 14}},
-        {id: 'business', label: 'Business Logic Layer\n(Controllers, Services)', level: 1, color: {background: '#8B5CF6'}, font: {color: 'white', size: 14}},
-        {id: 'data', label: 'Data Layer\n(Models, Database)', level: 2, color: {background: '#EC4899'}, font: {color: 'white', size: 14}},
-        {id: 'integration', label: 'Integration Layer\n(APIs, Webhooks)', level: 3, color: {background: '#10B981'}, font: {color: 'white', size: 14}},
-    ]);
-
-    const edges = new vis.DataSet([
-        {from: 'presentation', to: 'business', arrows: 'to;from', width: 2},
-        {from: 'business', to: 'data', arrows: 'to;from', width: 2},
-        {from: 'business', to: 'integration', arrows: 'to;from', width: 2, dashes: true},
-    ]);
-
-    const data = {nodes, edges};
-    const options = {
-        layout: {
-            hierarchical: {
-                direction: 'UD',
-                sortMethod: 'directed',
-                levelSeparation: 200,
-            }
-        },
-        physics: false,
-        nodes: {
-            shape: 'box',
-            size: 30,
-            widthConstraint: {
-                minimum: 300,
-                maximum: 300
-            },
-            heightConstraint: {
-                minimum: 80
-            },
-            margin: 15,
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
         }
-    };
-
-    new vis.Network(container, data, options);
-}
+    });
+});
 </script>
 @endpush
 
