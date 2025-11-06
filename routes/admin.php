@@ -710,3 +710,89 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         return view('admin.mlm.calculator');
     })->name('calculator');
 });
+
+// HRM (Human Resource Management) System
+Route::prefix('hrm')->name('hrm.')->group(function () {
+    // HRM Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\HrmDashboardController::class, 'index'])->name('dashboard');
+
+    // Employee Management
+    Route::prefix('employees')->name('employees.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\EmployeeController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\EmployeeController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\EmployeeController::class, 'store'])->name('store');
+        Route::get('/{employee}', [\App\Http\Controllers\Admin\EmployeeController::class, 'show'])->name('show');
+        Route::get('/{employee}/edit', [\App\Http\Controllers\Admin\EmployeeController::class, 'edit'])->name('edit');
+        Route::put('/{employee}', [\App\Http\Controllers\Admin\EmployeeController::class, 'update'])->name('update');
+        Route::delete('/{employee}', [\App\Http\Controllers\Admin\EmployeeController::class, 'destroy'])->name('destroy');
+        Route::get('/export/csv', [\App\Http\Controllers\Admin\EmployeeController::class, 'export'])->name('export');
+    });
+
+    // Department Management
+    Route::prefix('departments')->name('departments.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\DepartmentController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\DepartmentController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\DepartmentController::class, 'store'])->name('store');
+        Route::get('/{department}', [\App\Http\Controllers\Admin\DepartmentController::class, 'show'])->name('show');
+        Route::get('/{department}/edit', [\App\Http\Controllers\Admin\DepartmentController::class, 'edit'])->name('edit');
+        Route::put('/{department}', [\App\Http\Controllers\Admin\DepartmentController::class, 'update'])->name('update');
+        Route::delete('/{department}', [\App\Http\Controllers\Admin\DepartmentController::class, 'destroy'])->name('destroy');
+    });
+
+    // Position Management (simplified routes)
+    Route::resource('positions', \App\Http\Controllers\Admin\PositionController::class);
+
+    // Attendance Management
+    Route::prefix('attendance')->name('attendance.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\AttendanceController::class, 'index'])->name('index');
+        Route::get('/employee/{employee}', [\App\Http\Controllers\Admin\AttendanceController::class, 'employeeReport'])->name('employee-report');
+        Route::post('/mark-absent', [\App\Http\Controllers\Admin\AttendanceController::class, 'markAbsent'])->name('mark-absent');
+        Route::post('/bulk-import', [\App\Http\Controllers\Admin\AttendanceController::class, 'bulkImport'])->name('bulk-import');
+    });
+
+    // Leave Management
+    Route::prefix('leave')->name('leave.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LeaveController::class, 'index'])->name('index');
+        Route::get('/{leaveRequest}', [\App\Http\Controllers\Admin\LeaveController::class, 'show'])->name('show');
+        Route::post('/{leaveRequest}/approve', [\App\Http\Controllers\Admin\LeaveController::class, 'approve'])->name('approve');
+        Route::post('/{leaveRequest}/reject', [\App\Http\Controllers\Admin\LeaveController::class, 'reject'])->name('reject');
+        Route::get('/calendar/view', [\App\Http\Controllers\Admin\LeaveController::class, 'calendar'])->name('calendar');
+
+        // Leave Types Management
+        Route::get('/types/manage', [\App\Http\Controllers\Admin\LeaveController::class, 'leaveTypes'])->name('types');
+        Route::get('/types/create', [\App\Http\Controllers\Admin\LeaveController::class, 'createLeaveType'])->name('types.create');
+        Route::post('/types', [\App\Http\Controllers\Admin\LeaveController::class, 'storeLeaveType'])->name('types.store');
+        Route::get('/types/{leaveType}/edit', [\App\Http\Controllers\Admin\LeaveController::class, 'editLeaveType'])->name('types.edit');
+        Route::put('/types/{leaveType}', [\App\Http\Controllers\Admin\LeaveController::class, 'updateLeaveType'])->name('types.update');
+    });
+
+    // Payroll Management
+    Route::prefix('payroll')->name('payroll.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\PayrollController::class, 'index'])->name('index');
+        Route::get('/{payroll}', [\App\Http\Controllers\Admin\PayrollController::class, 'show'])->name('show');
+        Route::post('/generate', [\App\Http\Controllers\Admin\PayrollController::class, 'generate'])->name('generate');
+        Route::post('/{payroll}/approve', [\App\Http\Controllers\Admin\PayrollController::class, 'approve'])->name('approve');
+        Route::post('/{payroll}/mark-paid', [\App\Http\Controllers\Admin\PayrollController::class, 'markAsPaid'])->name('mark-paid');
+        Route::get('/{payroll}/payslip', [\App\Http\Controllers\Admin\PayrollController::class, 'downloadPayslip'])->name('payslip');
+        Route::post('/bulk-approve', [\App\Http\Controllers\Admin\PayrollController::class, 'bulkApprove'])->name('bulk-approve');
+        Route::get('/export/csv', [\App\Http\Controllers\Admin\PayrollController::class, 'export'])->name('export');
+    });
+
+    // Performance Management
+    Route::prefix('performance')->name('performance.')->group(function () {
+        Route::resource('reviews', \App\Http\Controllers\Admin\PerformanceReviewController::class);
+        Route::resource('goals', \App\Http\Controllers\Admin\PerformanceGoalController::class);
+    });
+
+    // Recruitment Management
+    Route::prefix('recruitment')->name('recruitment.')->group(function () {
+        Route::resource('jobs', \App\Http\Controllers\Admin\JobPostingController::class);
+        Route::resource('applications', \App\Http\Controllers\Admin\JobApplicationController::class);
+    });
+
+    // Training Management
+    Route::prefix('training')->name('training.')->group(function () {
+        Route::resource('courses', \App\Http\Controllers\Admin\TrainingCourseController::class);
+        Route::resource('enrollments', \App\Http\Controllers\Admin\TrainingEnrollmentController::class);
+    });
+});
