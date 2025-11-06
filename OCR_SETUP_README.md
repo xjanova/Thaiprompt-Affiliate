@@ -183,6 +183,38 @@ composer require google/cloud-vision
 2. ตรวจสอบว่าไฟล์อยู่ที่ `storage/app/google-credentials.json`
 3. ตรวจสอบ permissions: `chmod 600 storage/app/google-credentials.json`
 
+### ❌ "ไฟล์ credentials หายหลัง deploy"
+
+**สาเหตุ:**
+- ระบบ deploy script มีการ backup และ restore อัตโนมัติแล้ว (ตั้งแต่ version ล่าสุด)
+- แต่ถ้าไม่มีไฟล์เดิมก่อน deploy ครั้งแรก ระบบจะไม่มีอะไรให้ restore
+
+**วิธีแก้:**
+1. **สำหรับครั้งแรก:** อัปโหลดไฟล์ผ่าน Admin Panel (`/admin/settings/ocr`)
+2. **หรือ** คัดลอกไฟล์โดยตรง:
+   ```bash
+   # SSH เข้า production server
+   cd /path/to/your/project
+
+   # คัดลอกไฟล์ credentials
+   cp /path/to/your-service-account-key.json storage/app/google-credentials.json
+
+   # ตั้งค่า permissions
+   chmod 600 storage/app/google-credentials.json
+   chown www-data:www-data storage/app/google-credentials.json
+   ```
+3. **หลังจากนั้น:** Deploy script จะ backup และ restore ไฟล์นี้อัตโนมัติทุกครั้ง
+
+**การตรวจสอบว่า backup ทำงาน:**
+```bash
+# ดู deployment logs
+tail -f storage/logs/deployment.log
+
+# ควรเห็นข้อความ:
+# ✓ Backed up Google credentials
+# ✓ Restored Google credentials
+```
+
 ### ❌ "ไฟล์นี้ไม่ใช่ Service Account Key ที่ถูกต้อง"
 
 **วิธีแก้:**
