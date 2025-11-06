@@ -14,6 +14,8 @@ class WalletTopupController extends Controller
     public function __construct(PaymentService $paymentService)
     {
         $this->middleware('auth');
+        $this->middleware('payment.ratelimit:topup')->only(['process']);
+        $this->middleware('idempotency')->only(['process']);
         $this->paymentService = $paymentService;
     }
 
@@ -44,12 +46,13 @@ class WalletTopupController extends Controller
     {
         $validated = $request->validate([
             'amount' => 'required|numeric|min:100|max:100000',
-            'payment_method' => 'required|in:promptpay,credit_card,bank_transfer',
-            // Card details if needed
-            'card_number' => 'required_if:payment_method,credit_card',
-            'exp_month' => 'required_if:payment_method,credit_card',
-            'exp_year' => 'required_if:payment_method,credit_card',
-            'cvv' => 'required_if:payment_method,credit_card',
+            'payment_method' => 'required|in:promptpay,credit_card,bank_transfer,paysolutions',
+            // PaySolutions specific
+            'paysolutions_method' => 'required_if:payment_method,paysolutions|in:qr,card,bank_transfer,ewallet,installment',
+            // Card token (for PCI compliance - NOT raw card data)
+            'card_token' => 'required_if:payment_method,credit_card',
+            'payment_token' => 'nullable|string',
+            'gateway' => 'nullable|string',
         ]);
 
         try {
@@ -63,11 +66,16 @@ class WalletTopupController extends Controller
             // Prepare payment data
             $paymentData = [];
             if ($validated['payment_method'] === 'credit_card') {
+                // SECURITY: Use tokenized payment, NOT raw card data
                 $paymentData = [
-                    'card_number' => $validated['card_number'],
-                    'exp_month' => $validated['exp_month'],
-                    'exp_year' => $validated['exp_year'],
-                    'cvv' => $validated['cvv'],
+                    'card_token' => $validated['card_token'] ?? null,
+                    'payment_token' => $validated['payment_token'] ?? null,
+                    'gateway' => $validated['gateway'] ?? 'stripe',
+                ];
+            } elseif ($validated['payment_method'] === 'paysolutions') {
+                $paymentData = [
+                    'paysolutions_method' => $validated['paysolutions_method'] ?? 'qr',
+                    'card_token' => $validated['card_token'] ?? null,
                 ];
             }
 

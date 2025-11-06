@@ -30,4 +30,53 @@ return [
         ],
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | LINE Configuration
+    |--------------------------------------------------------------------------
+    */
+
+    'line' => [
+        'channel_id' => env('LINE_CHANNEL_ID'),
+        'channel_secret' => env('LINE_CHANNEL_SECRET'),
+        'channel_access_token' => env('LINE_CHANNEL_ACCESS_TOKEN'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Gateway Configurations
+    |--------------------------------------------------------------------------
+    */
+
+    'stripe' => [
+        'api_key' => env('STRIPE_API_KEY'),
+        'secret_key' => env('STRIPE_SECRET_KEY'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+    ],
+
+    'paypal' => [
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET'),
+        'mode' => env('PAYPAL_MODE', 'sandbox'), // sandbox or live
+    ],
+
+    'omise' => [
+        'public_key' => env('OMISE_PUBLIC_KEY'),
+        'secret_key' => env('OMISE_SECRET_KEY'),
+    ],
+
+    'promptpay' => [
+        'merchant_id' => env('PROMPTPAY_MERCHANT_ID'),
+        'webhook_secret' => env('PROMPTPAY_WEBHOOK_SECRET'),
+    ],
+
+    'paysolutions' => [
+        'merchant_id' => env('PAYSOLUTIONS_MERCHANT_ID'),
+        'api_key' => env('PAYSOLUTIONS_API_KEY'),
+        'secret_key' => env('PAYSOLUTIONS_SECRET_KEY'),
+        'webhook_secret' => env('PAYSOLUTIONS_WEBHOOK_SECRET'),
+        'api_url' => env('PAYSOLUTIONS_API_URL', 'https://api.paysolutions.asia'),
+        'sandbox_url' => env('PAYSOLUTIONS_SANDBOX_URL', 'https://sandbox-api.paysolutions.asia'),
+    ],
+
 ];
