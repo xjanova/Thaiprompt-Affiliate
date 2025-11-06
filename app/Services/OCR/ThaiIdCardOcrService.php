@@ -30,25 +30,185 @@ class ThaiIdCardOcrService
      * Extract data from Thai ID card or driver's license image
      *
      * @param string $imagePath Path to the image file
-     * @return array|null Extracted data or null if extraction failed
+     * @return array Extracted data with error information
      */
-    public function extractData(string $imagePath): ?array
+    public function extractData(string $imagePath): array
     {
         try {
+            // Check if image file exists
+            if (!Storage::disk('public')->exists($imagePath)) {
+                return [
+                    'success' => false,
+                    'error' => 'ไม่พบไฟล์รูปภาพ',
+                    'error_code' => 'FILE_NOT_FOUND',
+                    'suggestion' => 'กรุณาอัพโหลดรูปภาพใหม่อีกครั้ง'
+                ];
+            }
+
             // Read the image file
             $imageContent = Storage::disk('public')->get($imagePath);
 
-            // Try Google Cloud Vision API first
-            if ($this->client) {
-                return $this->extractWithGoogleVision($imageContent);
+            // Validate image content
+            $validation = $this->validateImageQuality($imageContent);
+            if (!$validation['valid']) {
+                return [
+                    'success' => false,
+                    'error' => $validation['error'],
+                    'error_code' => $validation['error_code'],
+                    'suggestion' => $validation['suggestion']
+                ];
             }
 
-            // Fallback to pattern matching OCR
-            return $this->extractWithPatternMatching($imageContent);
+            // Preprocess image for better OCR results
+            $processedContent = $this->preprocessImage($imageContent);
+
+            // Try Google Cloud Vision API first
+            if ($this->client) {
+                $result = $this->extractWithGoogleVision($processedContent);
+
+                if ($result === null) {
+                    return [
+                        'success' => false,
+                        'error' => 'ไม่สามารถตรวจจับข้อความจากรูปภาพได้',
+                        'error_code' => 'NO_TEXT_DETECTED',
+                        'suggestion' => 'กรุณาถ่ายรูปบัตรให้ชัดเจน มีแสงสว่างเพียงพอ และข้อความบนบัตรสามารถอ่านได้ชัดเจน'
+                    ];
+                }
+
+                // Check if we got meaningful data
+                if ($this->hasMinimumData($result)) {
+                    $result['success'] = true;
+                    return $result;
+                } else {
+                    return [
+                        'success' => false,
+                        'error' => 'ตรวจพบข้อความบางส่วน แต่ไม่สามารถระบุข้อมูลสำคัญได้',
+                        'error_code' => 'INSUFFICIENT_DATA',
+                        'suggestion' => 'กรุณาตรวจสอบว่ารูปบัตรมีความชัดเจน ไม่เบลอ และถ่ายบัตรทั้งใบให้เห็นชัดเจน',
+                        'partial_data' => $result
+                    ];
+                }
+            }
+
+            // No Google Vision API available
+            return [
+                'success' => false,
+                'error' => 'ระบบ OCR ยังไม่พร้อมใช้งาน',
+                'error_code' => 'OCR_NOT_CONFIGURED',
+                'suggestion' => 'กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่า Google Cloud Vision API'
+            ];
         } catch (\Exception $e) {
-            Log::error('Thai ID Card OCR Error: ' . $e->getMessage());
-            return null;
+            Log::error('Thai ID Card OCR Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return [
+                'success' => false,
+                'error' => 'เกิดข้อผิดพลาดในการประมวลผลรูปภาพ',
+                'error_code' => 'PROCESSING_ERROR',
+                'suggestion' => 'กรุณาลองอัพโหลดรูปภาพใหม่อีกครั้ง หรือใช้รูปภาพอื่น',
+                'technical_error' => $e->getMessage()
+            ];
         }
+    }
+
+    /**
+     * Validate image quality before OCR
+     */
+    protected function validateImageQuality(string $imageContent): array
+    {
+        // Check file size (too small = likely corrupted or screenshot)
+        $size = strlen($imageContent);
+        if ($size < 10000) { // Less than 10KB
+            return [
+                'valid' => false,
+                'error' => 'ไฟล์รูปภาพมีขนาดเล็กเกินไป',
+                'error_code' => 'FILE_TOO_SMALL',
+                'suggestion' => 'กรุณาใช้รูปถ่ายจากกล้องที่มีความละเอียดสูง ไม่ใช่ภาพหน้าจอ (screenshot)'
+            ];
+        }
+
+        // Check if it's a valid image
+        try {
+            $imageInfo = @getimagesizefromstring($imageContent);
+            if ($imageInfo === false) {
+                return [
+                    'valid' => false,
+                    'error' => 'ไฟล์ไม่ใช่รูปภาพที่ถูกต้อง',
+                    'error_code' => 'INVALID_IMAGE',
+                    'suggestion' => 'กรุณาอัพโหลดไฟล์รูปภาพ (JPEG, PNG) เท่านั้น'
+                ];
+            }
+
+            // Check image dimensions (too small = poor quality)
+            [$width, $height] = $imageInfo;
+            if ($width < 300 || $height < 200) {
+                return [
+                    'valid' => false,
+                    'error' => 'ความละเอียดของรูปภาพต่ำเกินไป (' . $width . 'x' . $height . ')',
+                    'error_code' => 'LOW_RESOLUTION',
+                    'suggestion' => 'กรุณาถ่ายรูปใหม่ด้วยกล้องที่มีความละเอียดสูงกว่า หรือเข้าใกล้บัตรมากขึ้น (แนะนำ: อย่างน้อย 800x600 pixels)'
+                ];
+            }
+
+        } catch (\Exception $e) {
+            return [
+                'valid' => false,
+                'error' => 'ไม่สามารถตรวจสอบคุณภาพรูปภาพได้',
+                'error_code' => 'VALIDATION_ERROR',
+                'suggestion' => 'กรุณาลองอัพโหลดรูปภาพใหม่'
+            ];
+        }
+
+        return ['valid' => true];
+    }
+
+    /**
+     * Preprocess image for better OCR results
+     */
+    protected function preprocessImage(string $imageContent): string
+    {
+        try {
+            // Use Intervention Image for preprocessing
+            $imageManager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            $image = $imageManager->read($imageContent);
+
+            // Auto adjust brightness and contrast
+            $image->brightness(5);
+            $image->contrast(10);
+
+            // Sharpen the image for better text recognition
+            $image->sharpen(10);
+
+            // Convert to high quality JPEG for Google Vision
+            $encoded = $image->toJpeg(95);
+
+            return (string) $encoded;
+        } catch (\Exception $e) {
+            Log::warning('Image preprocessing failed, using original: ' . $e->getMessage());
+            return $imageContent;
+        }
+    }
+
+    /**
+     * Check if extracted data has minimum required information
+     */
+    protected function hasMinimumData(array $data): bool
+    {
+        // For ID card: must have ID number or name
+        if ($data['document_type'] === 'id_card') {
+            return !empty($data['id_card_number']) ||
+                   (!empty($data['thai_first_name']) || !empty($data['english_first_name']));
+        }
+
+        // For driver license: must have license number or ID number
+        if ($data['document_type'] === 'driver_license') {
+            return !empty($data['license_number']) ||
+                   !empty($data['id_card_number']) ||
+                   (!empty($data['thai_first_name']) || !empty($data['english_first_name']));
+        }
+
+        return false;
     }
 
     /**
