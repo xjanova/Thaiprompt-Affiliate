@@ -134,7 +134,25 @@
                                            name="settings[{{ $setting->key }}]"
                                            value="{{ $setting->value }}"
                                            step="{{ $setting->type === 'integer' ? '1' : 'any' }}"
+                                           onchange="updatePreview()"
                                            class="w-full border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500">
+                                @elseif($setting->key === 'unilevel_levels')
+                                    <!-- Visual Unilevel Editor -->
+                                    <div class="w-full">
+                                        <div id="unilevel-editor" class="space-y-2 mb-3">
+                                            <!-- Will be populated by JavaScript -->
+                                        </div>
+                                        <textarea name="settings[{{ $setting->key }}]"
+                                                  id="unilevel-json"
+                                                  class="hidden">{{ $setting->value }}</textarea>
+                                        <button type="button" onclick="addUnilevelLevel()"
+                                                class="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                            </svg>
+                                            เพิ่มระดับ
+                                        </button>
+                                    </div>
                                 @elseif($setting->type === 'json' || $setting->type === 'array')
                                     <textarea name="settings[{{ $setting->key }}]"
                                               rows="3"
@@ -195,4 +213,106 @@
         </div>
     </div>
 </div>
+
+<script>
+let unilevelData = [];
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    initializeUnilevelEditor();
+});
+
+// Initialize Unilevel Visual Editor
+function initializeUnilevelEditor() {
+    const jsonTextarea = document.getElementById('unilevel-json');
+    if (!jsonTextarea) return;
+
+    try {
+        unilevelData = JSON.parse(jsonTextarea.value);
+    } catch(e) {
+        unilevelData = [];
+    }
+
+    renderUnilevelEditor();
+}
+
+function renderUnilevelEditor() {
+    const container = document.getElementById('unilevel-editor');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    unilevelData.forEach((level, index) => {
+        const levelDiv = document.createElement('div');
+        levelDiv.className = 'flex items-center gap-3 p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200 hover:border-purple-400 transition-all duration-200 shadow-sm hover:shadow-md';
+        levelDiv.innerHTML = `
+            <div class="flex-shrink-0 w-20 text-center">
+                <div class="px-3 py-1 bg-purple-600 text-white rounded-lg font-bold text-sm">
+                    ชั้น ${level.level}
+                </div>
+            </div>
+            <div class="flex-1 flex items-center gap-2">
+                <input type="number"
+                       value="${level.percentage}"
+                       onchange="updateUnilevelLevel(${index}, this.value)"
+                       class="flex-1 px-4 py-3 text-xl font-bold text-center border-2 border-purple-300 rounded-xl focus:ring-4 focus:ring-purple-500 focus:border-purple-500 bg-white"
+                       step="0.1" min="0" max="100">
+                <span class="text-2xl font-bold text-purple-600">%</span>
+            </div>
+            <button type="button" onclick="removeUnilevelLevel(${index})"
+                    class="flex-shrink-0 p-3 text-red-600 hover:bg-red-100 rounded-xl transition-all duration-200 hover:scale-110">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </button>
+        `;
+        container.appendChild(levelDiv);
+    });
+
+    updateUnilevelJSON();
+    updatePreview();
+}
+
+function updateUnilevelLevel(index, newValue) {
+    unilevelData[index].percentage = parseFloat(newValue);
+    updateUnilevelJSON();
+    updatePreview();
+}
+
+function addUnilevelLevel() {
+    const nextLevel = unilevelData.length + 1;
+    unilevelData.push({
+        level: nextLevel,
+        percentage: 1.0
+    });
+    renderUnilevelEditor();
+}
+
+function removeUnilevelLevel(index) {
+    if (unilevelData.length <= 1) {
+        alert('ต้องมีอย่างน้อย 1 ระดับ');
+        return;
+    }
+
+    unilevelData.splice(index, 1);
+    // Re-number levels
+    unilevelData.forEach((level, idx) => {
+        level.level = idx + 1;
+    });
+    renderUnilevelEditor();
+}
+
+function updateUnilevelJSON() {
+    const jsonTextarea = document.getElementById('unilevel-json');
+    if (jsonTextarea) {
+        jsonTextarea.value = JSON.stringify(unilevelData);
+    }
+}
+
+function updatePreview() {
+    // Placeholder for now - will be implemented in Step 2
+    console.log('Preview updated');
+}
+</script>
+
 @endsection
