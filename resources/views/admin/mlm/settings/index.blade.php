@@ -63,11 +63,14 @@
         </div>
     </div>
 
-    <form action="{{ route('admin.mlm.settings.update') }}" method="POST">
-        @csrf
-        @method('PUT')
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <!-- Left Column: Settings Form (2/3 width) -->
+        <div class="xl:col-span-2">
+            <form id="settings-form" action="{{ route('admin.mlm.settings.update') }}" method="POST">
+                @csrf
+                @method('PUT')
 
-        @forelse($settings as $group => $groupSettings)
+                @forelse($settings as $group => $groupSettings)
         <!-- Settings Group -->
         <div class="bg-white rounded-xl shadow-lg mb-6">
             <div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-4 rounded-t-xl">
@@ -188,7 +191,122 @@
             </button>
         </div>
         @endif
-    </form>
+            </form>
+        </div>
+
+        <!-- Right Column: Live Preview & Dashboard (1/3 width) -->
+        <div class="xl:col-span-1">
+            <div class="sticky top-4 space-y-6">
+                <!-- Commission Dashboard -->
+                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                        <span class="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center text-white text-sm">⚡</span>
+                        ภาพรวมคอมมิชชั่น
+                    </h3>
+
+                    <!-- Commission Percentage Gauge -->
+                    <div class="mb-6">
+                        <div class="flex justify-between items-end mb-2">
+                            <span class="text-sm font-medium text-gray-600">เปอร์เซ็นต์รวม</span>
+                            <span id="total-percentage-text" class="text-3xl font-bold text-purple-600">{{ number_format($currentCommissionPercentage ?? 0, 2) }}%</span>
+                        </div>
+                        <div class="relative w-full h-6 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                            <div id="percentage-bar"
+                                 class="absolute top-0 left-0 h-full transition-all duration-500 ease-out rounded-full"
+                                 style="width: {{ min($currentCommissionPercentage ?? 0, 100) }}%; background: linear-gradient(90deg, #9333ea, #ec4899);"></div>
+                            <div class="absolute top-0 left-1/2 w-0.5 h-full bg-yellow-400 opacity-50"></div>
+                        </div>
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>0%</span>
+                            <span class="text-yellow-600 font-semibold">← 50% (Limit)</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+
+                    <!-- Status Badge -->
+                    <div id="overpay-status" class="mb-6 p-4 rounded-xl border-2 {{ ($currentCommissionPercentage ?? 0) > 50 ? 'bg-red-50 border-red-300' : (($currentCommissionPercentage ?? 0) > 40 ? 'bg-yellow-50 border-yellow-300' : 'bg-green-50 border-green-300') }}">
+                        <div class="flex items-start gap-3">
+                            <span class="text-2xl">
+                                @if(($currentCommissionPercentage ?? 0) > 50)
+                                    ⚠️
+                                @elseif(($currentCommissionPercentage ?? 0) > 40)
+                                    ⚡
+                                @else
+                                    ✅
+                                @endif
+                            </span>
+                            <div class="flex-1">
+                                <h4 id="status-title" class="font-bold text-sm {{ ($currentCommissionPercentage ?? 0) > 50 ? 'text-red-800' : (($currentCommissionPercentage ?? 0) > 40 ? 'text-yellow-800' : 'text-green-800') }}">
+                                    @if(($currentCommissionPercentage ?? 0) > 50)
+                                        อันตราย - Overpay!
+                                    @elseif(($currentCommissionPercentage ?? 0) > 40)
+                                        ใกล้ขีดจำกัด
+                                    @else
+                                        ปลอดภัย
+                                    @endif
+                                </h4>
+                                <p id="status-message" class="text-xs mt-1 {{ ($currentCommissionPercentage ?? 0) > 50 ? 'text-red-700' : (($currentCommissionPercentage ?? 0) > 40 ? 'text-yellow-700' : 'text-green-700') }}">
+                                    @if(($currentCommissionPercentage ?? 0) > 50)
+                                        เปอร์เซ็นต์เกิน 50% อาจขาดทุน
+                                    @elseif(($currentCommissionPercentage ?? 0) > 40)
+                                        ควรตรวจสอบอีกครั้ง
+                                    @else
+                                        เปอร์เซ็นต์เหมาะสม
+                                    @endif
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Commission Chart -->
+                    <div class="mb-4">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-3">แยกตามประเภท</h4>
+                        <div style="height: 200px;">
+                            <canvas id="commission-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Breakdown Details -->
+                    <div id="breakdown-details" class="space-y-2 mb-4">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+
+                    <!-- Recalculate Button -->
+                    <button type="button" onclick="calculatePreview()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                        คำนวณใหม่
+                    </button>
+                </div>
+
+                <!-- Tips Card -->
+                <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-lg p-5 border border-purple-200">
+                    <h3 class="text-base font-bold text-purple-900 mb-3 flex items-center gap-2">
+                        💡 เคล็ดลับ
+                    </h3>
+                    <ul class="space-y-2 text-sm text-purple-800">
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">•</span>
+                            <span>เปอร์เซ็นต์รวมไม่ควรเกิน 50%</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">•</span>
+                            <span>Unilevel ชั้นแรกควรสูงสุด</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">•</span>
+                            <span>ใช้ Constraints จำกัดจ่ายต่อวัน</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-purple-600 font-bold">•</span>
+                            <span>เปิด Roll-up รักษา flow</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Common Settings Reference -->
     <div class="mt-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl shadow-lg p-6">
@@ -214,12 +332,18 @@
     </div>
 </div>
 
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
 let unilevelData = [];
+let commissionChart = null;
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     initializeUnilevelEditor();
+    initializeChart();
+    updatePreview();
 });
 
 // Initialize Unilevel Visual Editor
@@ -309,9 +433,159 @@ function updateUnilevelJSON() {
     }
 }
 
+// Initialize Chart
+function initializeChart() {
+    const ctx = document.getElementById('commission-chart');
+    if (!ctx) return;
+
+    commissionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Unilevel', 'Binary', 'เหลือ'],
+            datasets: [{
+                data: [26, 12, 62],
+                backgroundColor: [
+                    'rgba(147, 51, 234, 0.9)',
+                    'rgba(236, 72, 153, 0.9)',
+                    'rgba(209, 213, 219, 0.3)'
+                ],
+                borderColor: [
+                    'rgb(147, 51, 234)',
+                    'rgb(236, 72, 153)',
+                    'rgb(209, 213, 219)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 10,
+                        font: {
+                            size: 11,
+                            weight: 'bold'
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + context.parsed.toFixed(2) + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Update Preview and Calculate
 function updatePreview() {
-    // Placeholder for now - will be implemented in Step 2
-    console.log('Preview updated');
+    calculatePreview();
+}
+
+async function calculatePreview() {
+    try {
+        // Calculate Unilevel total
+        let unilevelTotal = 0;
+        if (unilevelData.length > 0) {
+            unilevelTotal = unilevelData.reduce((sum, level) => sum + parseFloat(level.percentage || 0), 0);
+        }
+
+        // Get Binary percentage
+        const binaryInput = document.querySelector('input[name="settings[binary_match_percentage]"]');
+        const binaryPercentage = binaryInput ? parseFloat(binaryInput.value || 0) : 0;
+        const binaryEstimate = binaryPercentage * 0.5; // Estimate 50% weak leg
+
+        const totalPercentage = unilevelTotal + binaryEstimate;
+
+        // Update Dashboard UI
+        updateDashboard(totalPercentage, unilevelTotal, binaryEstimate);
+
+    } catch (error) {
+        console.error('Preview calculation error:', error);
+    }
+}
+
+function updateDashboard(total, unilevel, binary) {
+    // Update percentage text
+    const percentText = document.getElementById('total-percentage-text');
+    if (percentText) {
+        percentText.textContent = total.toFixed(2) + '%';
+    }
+
+    // Update progress bar
+    const bar = document.getElementById('percentage-bar');
+    if (bar) {
+        bar.style.width = Math.min(total, 100) + '%';
+
+        // Change color based on threshold
+        if (total > 50) {
+            bar.style.background = 'linear-gradient(90deg, #dc2626, #ef4444)';
+        } else if (total > 40) {
+            bar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+        } else {
+            bar.style.background = 'linear-gradient(90deg, #9333ea, #ec4899)';
+        }
+    }
+
+    // Update status
+    const statusDiv = document.getElementById('overpay-status');
+    const statusTitle = document.getElementById('status-title');
+    const statusMessage = document.getElementById('status-message');
+
+    if (statusDiv && statusTitle && statusMessage) {
+        if (total > 50) {
+            statusDiv.className = 'mb-6 p-4 rounded-xl border-2 bg-red-50 border-red-300';
+            statusTitle.className = 'font-bold text-sm text-red-800';
+            statusTitle.innerHTML = '⚠️ อันตราย - Overpay!';
+            statusMessage.className = 'text-xs mt-1 text-red-700';
+            statusMessage.textContent = 'เปอร์เซ็นต์เกิน 50% อาจขาดทุน';
+        } else if (total > 40) {
+            statusDiv.className = 'mb-6 p-4 rounded-xl border-2 bg-yellow-50 border-yellow-300';
+            statusTitle.className = 'font-bold text-sm text-yellow-800';
+            statusTitle.innerHTML = '⚡ ใกล้ขีดจำกัด';
+            statusMessage.className = 'text-xs mt-1 text-yellow-700';
+            statusMessage.textContent = 'ควรตรวจสอบอีกครั้ง';
+        } else {
+            statusDiv.className = 'mb-6 p-4 rounded-xl border-2 bg-green-50 border-green-300';
+            statusTitle.className = 'font-bold text-sm text-green-800';
+            statusTitle.innerHTML = '✅ ปลอดภัย';
+            statusMessage.className = 'text-xs mt-1 text-green-700';
+            statusMessage.textContent = 'เปอร์เซ็นต์เหมาะสม';
+        }
+    }
+
+    // Update chart
+    if (commissionChart) {
+        const remaining = Math.max(0, 100 - total);
+        commissionChart.data.datasets[0].data = [unilevel, binary, remaining];
+        commissionChart.update();
+    }
+
+    // Update breakdown details
+    const breakdownDiv = document.getElementById('breakdown-details');
+    if (breakdownDiv) {
+        const totalColor = total > 50 ? 'text-red-600' : (total > 40 ? 'text-yellow-600' : 'text-green-600');
+        breakdownDiv.innerHTML = `
+            <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                <span class="text-sm font-medium text-gray-700">Unilevel</span>
+                <span class="text-lg font-bold text-purple-600">${unilevel.toFixed(2)}%</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-pink-50 rounded-lg">
+                <span class="text-sm font-medium text-gray-700">Binary (ประมาณ)</span>
+                <span class="text-lg font-bold text-pink-600">${binary.toFixed(2)}%</span>
+            </div>
+            <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg border-t-2 border-gray-300">
+                <span class="text-sm font-bold text-gray-900">รวม</span>
+                <span class="text-xl font-bold ${totalColor}">${total.toFixed(2)}%</span>
+            </div>
+        `;
+    }
 }
 </script>
 
