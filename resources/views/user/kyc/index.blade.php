@@ -34,6 +34,51 @@
         </div>
     @endif
 
+    {{-- OCR Success Message --}}
+    @if(session('ocr_success'))
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-robot text-2xl text-green-600"></i>
+                </div>
+                <div class="ml-3 flex-1">
+                    <h3 class="text-sm font-bold text-green-900">
+                        <i class="fas fa-check-circle mr-1"></i>{{ session('ocr_success') }}
+                    </h3>
+                    <p class="text-xs text-green-700 mt-1">
+                        ข้อมูลจากบัตรประชาชนถูกอ่านและบันทึกอัตโนมัติแล้ว แอดมินจะตรวจสอบความถูกต้องอีกครั้ง
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- OCR Error/Warning Message --}}
+    @if(session('ocr_error'))
+        <div class="bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-xl p-4">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle text-2xl text-orange-600"></i>
+                </div>
+                <div class="ml-3 flex-1">
+                    <h3 class="text-sm font-bold text-orange-900">
+                        <i class="fas fa-robot mr-1"></i>ระบบ OCR: {{ session('ocr_error') }}
+                    </h3>
+                    @if(session('ocr_suggestion'))
+                        <p class="text-xs text-orange-700 mt-2">
+                            <i class="fas fa-lightbulb mr-1"></i><strong>คำแนะนำ:</strong> {{ session('ocr_suggestion') }}
+                        </p>
+                    @endif
+                    <div class="mt-3 p-2 bg-white bg-opacity-60 rounded text-xs text-gray-700">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        <strong>หมายเหตุ:</strong> คำขอของคุณถูกส่งเรียบร้อยแล้ว แต่ระบบไม่สามารถอ่านข้อมูลจากบัตรอัตโนมัติได้
+                        แอดมินจะกรอกข้อมูลด้วยตนเองในขั้นตอนการตรวจสอบ
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <!-- KYC Status Card -->
     <div class="bg-white rounded-xl shadow-md p-6">
         @if(auth()->user()->kyc_status === 'not_submitted')

@@ -91,20 +91,47 @@ class KycController extends Controller
 
         // Extract data from ID card using OCR
         $extractedData = null;
+        $ocrError = null;
+
         try {
             $ocrService = new ThaiIdCardOcrService();
-            $extractedData = $ocrService->extractData($idCardPath);
+            $ocrResult = $ocrService->extractData($idCardPath);
 
-            // Validate ID card number if extracted
-            if (!empty($extractedData['id_card_number'])) {
-                if (!$ocrService->validateIdCardNumber($extractedData['id_card_number'])) {
-                    Log::warning('Invalid ID card number checksum: ' . $extractedData['id_card_number']);
+            if (!empty($ocrResult['success'])) {
+                // OCR succeeded
+                $extractedData = $ocrResult;
+
+                // Validate ID card number if extracted
+                if (!empty($extractedData['id_card_number'])) {
+                    if (!$ocrService->validateIdCardNumber($extractedData['id_card_number'])) {
+                        Log::warning('Invalid ID card number checksum: ' . $extractedData['id_card_number']);
+                    }
+                }
+
+                Log::info('OCR extracted data successfully', ['data' => $extractedData]);
+            } else {
+                // OCR failed with detailed error
+                $ocrError = [
+                    'error' => $ocrResult['error'] ?? 'ไม่สามารถอ่านข้อมูลจากบัตรได้',
+                    'error_code' => $ocrResult['error_code'] ?? 'UNKNOWN_ERROR',
+                    'suggestion' => $ocrResult['suggestion'] ?? 'กรุณาลองถ่ายรูปใหม่'
+                ];
+
+                Log::warning('OCR extraction failed', $ocrError);
+
+                // Store partial data if available
+                if (!empty($ocrResult['partial_data'])) {
+                    $extractedData = $ocrResult['partial_data'];
+                    $extractedData['ocr_warning'] = $ocrError;
                 }
             }
-
-            Log::info('OCR extracted data', ['data' => $extractedData]);
         } catch (\Exception $e) {
-            Log::error('OCR extraction failed: ' . $e->getMessage());
+            Log::error('OCR extraction exception: ' . $e->getMessage());
+            $ocrError = [
+                'error' => 'เกิดข้อผิดพลาดในการประมวลผล',
+                'error_code' => 'EXCEPTION',
+                'suggestion' => 'กรุณาลองอัพโหลดใหม่อีกครั้ง'
+            ];
         }
 
         // Create KYC verification record
@@ -122,8 +149,20 @@ class KycController extends Controller
             'kyc_status' => 'pending',
         ]);
 
+        // Prepare success message with OCR warning if applicable
+        $successMessage = 'ส่งคำขอยืนยันตัวตนเรียบร้อยแล้ว กรุณารอแอดมินตรวจสอบและอนุมัติ';
+
+        if ($ocrError) {
+            // OCR failed, but submission succeeded
+            return redirect()->route('user.kyc.index')
+                ->with('warning', $successMessage)
+                ->with('ocr_error', $ocrError['error'])
+                ->with('ocr_suggestion', $ocrError['suggestion']);
+        }
+
         return redirect()->route('user.kyc.index')
-            ->with('success', 'ส่งคำขอยืนยันตัวตนเรียบร้อยแล้ว กรุณารอแอดมินตรวจสอบและอนุมัติ');
+            ->with('success', $successMessage)
+            ->with('ocr_success', $extractedData ? 'ระบบได้อ่านข้อมูลจากบัตรอัตโนมัติแล้ว' : null);
     }
 
     /**
