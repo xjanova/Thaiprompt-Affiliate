@@ -199,6 +199,7 @@
         accountingMenuOpen: localStorage.getItem('accountingMenuOpen') === 'true',
         ecommerceMenuOpen: localStorage.getItem('ecommerceMenuOpen') === 'true',
         mlmMenuOpen: localStorage.getItem('mlmMenuOpen') === 'true',
+        academyMenuOpen: localStorage.getItem('academyMenuOpen') === 'true',
         // Auto-open dropdown if current page is in submenu
         init() {
             this.checkActiveMenu();
@@ -219,6 +220,7 @@
             this.accountingMenuOpen = false;
             this.ecommerceMenuOpen = false;
             this.mlmMenuOpen = false;
+            this.academyMenuOpen = false;
 
             // Open only the relevant menu based on current path
             if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/line-bot') || currentPath.includes('/admin/otp') || currentPath.includes('/admin/ai-bots') || currentPath.includes('/admin/ai-providers') || currentPath.includes('/admin/ai-monitoring') || currentPath.includes('/admin/ai-installation')) {
@@ -235,6 +237,8 @@
                 this.ecommerceMenuOpen = true;
             } else if (currentPath.includes('/admin/mlm')) {
                 this.mlmMenuOpen = true;
+            } else if (currentPath.includes('/admin/academy') || currentPath.includes('/admin/learning-center') || currentPath.includes('/admin/instructor') || currentPath.includes('/admin/quiz') || currentPath.includes('/admin/certificates')) {
+                this.academyMenuOpen = true;
             } else if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications') || currentPath.includes('/admin/roles')) {
                 this.systemMenuOpen = true;
             }
@@ -247,6 +251,7 @@
             localStorage.setItem('accountingMenuOpen', this.accountingMenuOpen);
             localStorage.setItem('ecommerceMenuOpen', this.ecommerceMenuOpen);
             localStorage.setItem('mlmMenuOpen', this.mlmMenuOpen);
+            localStorage.setItem('academyMenuOpen', this.academyMenuOpen);
             localStorage.setItem('systemMenuOpen', this.systemMenuOpen);
         }
     }">
@@ -528,12 +533,115 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ความปลอดภัย</span>
                 </a>
 
-                <!-- Learning Center -->
-                <a href="{{ route('admin.learning-center.index') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.learning-center.*') ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📚</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ศูนย์เรียนรู้</span>
-                </a>
+                <!-- Academy System Dropdown -->
+                <div class="relative mb-1">
+                    @php
+                        $academyActive = request()->routeIs('admin.learning-center.*') ||
+                                         request()->routeIs('admin.academy.*') ||
+                                         request()->routeIs('admin.instructor.*') ||
+                                         request()->routeIs('admin.quiz.*') ||
+                                         request()->routeIs('admin.certificates.*');
+                    @endphp
+
+                    <!-- Main Academy Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-indigo-600 hover:text-white rounded-lg transition-all duration-200 group {{ $academyActive ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('academyMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🎓</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            Academy System
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': academyMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="academyMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <!-- Academy Home Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">หน้าหลัก</span>
+                        </div>
+
+                        <a href="{{ route('admin.learning-center.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.learning-center.index') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">🏠</span>
+                            <span>หน้าแรก Academy</span>
+                        </a>
+
+                        <a href="{{ route('admin.instructor.dashboard') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.instructor.dashboard') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">👨‍🏫</span>
+                            <span>แดชบอร์ดครูผู้สอน</span>
+                        </a>
+
+                        <a href="{{ route('admin.certificates.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.certificates.index') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">🏆</span>
+                            <span>ใบประกาศนียบัตรของฉัน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Management Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">จัดการคอร์ส</span>
+                        </div>
+
+                        <a href="{{ route('admin.article-management.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.article-management.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">📝</span>
+                            <span>จัดการคอร์ส</span>
+                        </a>
+
+                        <a href="{{ route('admin.category-management.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.category-management.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">📂</span>
+                            <span>หมวดหมู่</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Certificate Management Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">ใบประกาศนียบัตร</span>
+                        </div>
+
+                        <a href="{{ route('admin.academy.certificates.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.academy.certificates.index') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">📜</span>
+                            <span>จัดการใบประกาศ</span>
+                        </a>
+
+                        <a href="{{ route('admin.academy.certificates.create') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.academy.certificates.create') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">➕</span>
+                            <span>สร้างใบประกาศ</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Settings Section -->
+                        <div class="px-2 py-1">
+                            <span class="text-[10px] text-gray-500 uppercase font-semibold">การตั้งค่า</span>
+                        </div>
+
+                        <a href="{{ route('admin.academy.settings.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-indigo-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.academy.settings.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white' : '' }}">
+                            <span class="mr-2">⚙️</span>
+                            <span>ตั้งค่า Academy</span>
+                        </a>
+                    </div>
+                </div>
 
                 <!-- Email Management Dropdown -->
                 <div class="relative mb-1">
