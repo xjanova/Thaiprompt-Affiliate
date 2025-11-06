@@ -214,6 +214,11 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                        onmouseout="this.style.color='{{ $headerTextColor }}';">
                         เกี่ยวกับเรา
                     </a>
+                    <a href="{{ route('platform.wiki') }}"
+                       class="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full text-sm font-bold leading-5 shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200"
+                       title="สารานุกรมความรู้ - Platform Wiki">
+                        📚 Platform Wiki
+                    </a>
                     <a href="{{ route('contact') }}"
                        class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
                        style="color: {{ $headerTextColor }};"
@@ -369,6 +374,11 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};">
                     เกี่ยวกับเรา
+                </a>
+                <a href="{{ route('platform.wiki') }}"
+                   class="block mx-3 my-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-base font-bold text-center shadow-lg"
+                   style="border: none;">
+                    📚 Platform Wiki - สารานุกรมความรู้
                 </a>
                 <a href="{{ route('contact') }}"
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
