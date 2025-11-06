@@ -40,7 +40,7 @@ class InstructorDashboardController extends Controller
             ->where('status', 'completed')
             ->count();
 
-        $totalViews = $courses->sum('views');
+        $totalViews = $courses->sum(fn($course) => $course->views ?? 0);
 
         // Get recent student activities
         $recentActivities = UserArticleProgress::whereIn('article_id', $courses->pluck('id'))
@@ -61,11 +61,11 @@ class InstructorDashboardController extends Controller
             return [
                 'id' => $course->id,
                 'title' => $course->title,
-                'category' => $course->category->name,
+                'category' => $course->category ? $course->category->name : 'ไม่มีหมวดหมู่',
                 'students' => $totalEnrolled,
                 'completed' => $completed,
                 'completion_rate' => $completionRate,
-                'views' => $course->views,
+                'views' => $course->views ?? 0,
                 'rating' => 4.5, // TODO: Implement actual rating system
                 'created_at' => $course->created_at,
             ];
