@@ -134,6 +134,11 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         return view('user.mlm.income-simulator');
     })->name('income-simulator');
 
+    // Scenario Simulator - Marketing Tool
+    Route::get('/scenario-simulator', function () {
+        return view('user.mlm.scenario-simulator');
+    })->name('scenario-simulator');
+
     // Income Comparison - Marketing Tool
     Route::get('/income-comparison', function () {
         return view('user.mlm.income-comparison');
