@@ -253,10 +253,12 @@ class QuizSeeder extends Seeder
                             'question_id' => $question->id,
                             'option_text' => $optionData['text'],
                         ],
-                        array_merge($optionData, [
+                        [
                             'question_id' => $question->id,
+                            'option_text' => $optionData['text'],
+                            'is_correct' => $optionData['is_correct'],
                             'order' => $optionIndex,
-                        ])
+                        ]
                     );
                 }
             }
