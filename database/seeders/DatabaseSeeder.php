@@ -27,6 +27,11 @@ class DatabaseSeeder extends Seeder
             AiProvidersSeeder::class,      // สร้าง AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
             MenuItemSeeder::class,         // สร้างเมนูสำหรับ Header
             MlmGlobalSettingsSeeder::class, // สร้างการตั้งค่า MLM พรีเมี่ยม
+
+            // Academy Platform Seeders
+            LearningCategorySeeder::class,  // สร้างหมวดหมู่คอร์ส
+            LearningArticleSeeder::class,   // สร้างคอร์สและบทความ
+            QuizSeeder::class,              // สร้าง Quiz และคำถาม
         ]);
 
         $this->command->info('');
