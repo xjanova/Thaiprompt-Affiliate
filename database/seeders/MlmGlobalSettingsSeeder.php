@@ -304,8 +304,13 @@ class MlmGlobalSettingsSeeder extends Seeder
             ],
         ];
 
+        // Clear existing settings first
+        DB::table('mlm_global_settings')->truncate();
+
         foreach ($settings as $setting) {
             DB::table('mlm_global_settings')->insert(array_merge($setting, [
+                'is_visible' => $setting['is_visible'] ?? true,
+                'is_editable' => $setting['is_editable'] ?? true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]));
