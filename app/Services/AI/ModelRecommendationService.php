@@ -5,188 +5,116 @@ namespace App\Services\AI;
 class ModelRecommendationService
 {
     /**
-     * รายการโมเดล DeepSeek ทั้งหมดพร้อมข้อมูล requirements
+     * รายการโมเดล AI ที่มีจริงใน Ollama และทำงานได้
      */
     private array $availableModels = [
-        'deepseek-coder-33b-instruct' => [
-            'name' => 'DeepSeek Coder 33B Instruct',
-            'size' => '33B',
-            'description' => 'โมเดล Coding ขนาดใหญ่ที่ทรงพลัง เขียนโค้ดได้หลายภาษา มีความสามารถในการวิเคราะห์และแก้ไขโค้ดที่ซับซ้อน เหมาะสำหรับโปรเจกต์ขนาดใหญ่',
-            'capabilities' => ['coding', 'reasoning', 'multilingual'],
-            'context_window' => 16384,
+        'qwen2.5:0.5b' => [
+            'name' => 'Qwen 2.5 (0.5B)',
+            'size' => '0.5B',
+            'description' => 'โมเดลขนาดเล็กมากที่รองรับภาษาไทย เร็ว ประหยัดทรัพยากร เหมาะสำหรับเซิร์ฟเวอร์ที่มี RAM น้อย',
+            'capabilities' => ['chat', 'multilingual', 'basic_reasoning'],
+            'context_window' => 32768,
             'features' => [
-                'เขียนโค้ด Python, JavaScript, Java, C++, Go และอื่นๆ',
-                'วิเคราะห์และแก้ไข Bug ในโค้ด',
-                'สร้าง Unit Tests อัตโนมัติ',
-                'Refactor Code และปรับปรุงประสิทธิภาพ',
-                'อธิบายโค้ดและสร้างเอกสาร'
+                'รองรับภาษาไทยได้ดีมาก',
+                'ตอบคำถามพื้นฐาน',
+                'สนทนาและช่วยเหลือทั่วไป',
+                'ความเร็วสูงมาก',
+                'ใช้ RAM เพียง 1-2 GB'
             ],
             'quantizations' => [
-                'FP16' => [
-                    'vram_required' => 66,
-                    'ram_required' => 70,
-                    'performance' => 100,
-                    'quality' => 100,
-                ],
-                'Q8_0' => [
-                    'vram_required' => 35,
-                    'ram_required' => 40,
-                    'performance' => 95,
-                    'quality' => 98,
-                ],
-                'Q5_K_M' => [
-                    'vram_required' => 22,
-                    'ram_required' => 26,
-                    'performance' => 90,
-                    'quality' => 95,
-                ],
                 'Q4_K_M' => [
-                    'vram_required' => 18,
-                    'ram_required' => 22,
-                    'performance' => 85,
-                    'quality' => 90,
-                ],
-            ],
-        ],
-        'deepseek-coder-6.7b-instruct' => [
-            'name' => 'DeepSeek Coder 6.7B Instruct',
-            'size' => '7B',
-            'description' => 'โมเดล Coding ขนาดกลางที่มีความสมดุลดี ใช้ทรัพยากรไม่มาก แต่ให้ประสิทธิภาพที่ดีเยี่ยม เหมาะสำหรับงาน Coding ทั่วไป',
-            'capabilities' => ['coding', 'reasoning', 'multilingual'],
-            'context_window' => 16384,
-            'features' => [
-                'เขียนและแก้ไขโค้ดได้หลายภาษา',
-                'แนะนำวิธีแก้ไข Bug',
-                'สร้าง Code Snippets ที่มีประสิทธิภาพ',
-                'ตรวจสอบ Code Quality',
-                'รองรับภาษาไทยและภาษาอื่นๆ'
-            ],
-            'quantizations' => [
-                'FP16' => [
-                    'vram_required' => 14,
-                    'ram_required' => 16,
+                    'vram_required' => 0.8,
+                    'ram_required' => 1.5,
                     'performance' => 100,
-                    'quality' => 100,
-                ],
-                'Q8_0' => [
-                    'vram_required' => 8,
-                    'ram_required' => 10,
-                    'performance' => 95,
-                    'quality' => 98,
-                ],
-                'Q5_K_M' => [
-                    'vram_required' => 6,
-                    'ram_required' => 8,
-                    'performance' => 90,
-                    'quality' => 95,
-                ],
-                'Q4_K_M' => [
-                    'vram_required' => 5,
-                    'ram_required' => 6,
-                    'performance' => 85,
-                    'quality' => 90,
-                ],
-                'Q4_0' => [
-                    'vram_required' => 4,
-                    'ram_required' => 5,
-                    'performance' => 80,
                     'quality' => 85,
                 ],
             ],
         ],
-        'deepseek-coder-1.3b-instruct' => [
-            'name' => 'DeepSeek Coder 1.3B Instruct',
-            'size' => '1.3B',
-            'description' => 'โมเดล Coding ขนาดเล็ก เร็วและประหยัดทรัพยากร เหมาะสำหรับคอมพิวเตอร์ที่มี RAM น้อย หรือต้องการความเร็วสูง',
-            'capabilities' => ['coding', 'basic_reasoning'],
-            'context_window' => 16384,
+        'qwen2.5:1.5b' => [
+            'name' => 'Qwen 2.5 (1.5B)',
+            'size' => '1.5B',
+            'description' => 'โมเดลขนาดเล็กที่รองรับภาษาไทยได้ดี มีความสามารถสูงกว่า 0.5B เหมาะสำหรับงานทั่วไป',
+            'capabilities' => ['chat', 'multilingual', 'reasoning'],
+            'context_window' => 32768,
             'features' => [
-                'เขียนโค้ดพื้นฐานได้หลายภาษา',
-                'แก้ไข Bug ง่ายๆ',
-                'สร้าง Function และ Class ทั่วไป',
-                'ความเร็วสูง ตอบสนองเร็ว',
-                'ใช้ RAM เพียง 2-4 GB'
+                'รองรับภาษาไทยและหลายภาษา',
+                'ตอบคำถามและให้คำแนะนำ',
+                'วิเคราะห์และสรุปข้อมูล',
+                'เร็วและใช้ทรัพยากรน้อย',
+                'ใช้ RAM 2-3 GB'
             ],
             'quantizations' => [
-                'FP16' => [
-                    'vram_required' => 3,
-                    'ram_required' => 4,
-                    'performance' => 100,
-                    'quality' => 100,
-                ],
-                'Q8_0' => [
-                    'vram_required' => 2,
-                    'ram_required' => 3,
-                    'performance' => 95,
-                    'quality' => 98,
-                ],
                 'Q4_K_M' => [
                     'vram_required' => 1.5,
-                    'ram_required' => 2,
-                    'performance' => 85,
-                    'quality' => 90,
+                    'ram_required' => 2.5,
+                    'performance' => 95,
+                    'quality' => 88,
                 ],
             ],
         ],
-        'deepseek-llm-7b-chat' => [
-            'name' => 'DeepSeek LLM 7B Chat',
-            'size' => '7B',
-            'description' => 'โมเดล Chat ทั่วไป สำหรับการสนทนา ตอบคำถาม และช่วยเหลือในงานต่างๆ รองรับภาษาไทยและหลายภาษา',
+        'gemma2:2b' => [
+            'name' => 'Gemma 2 (2B)',
+            'size' => '2B',
+            'description' => 'โมเดลจาก Google ขนาดเล็กแต่มีประสิทธิภาพสูง รองรับหลายภาษารวมไทย',
             'capabilities' => ['chat', 'reasoning', 'multilingual'],
-            'context_window' => 4096,
+            'context_window' => 8192,
             'features' => [
-                'สนทนาและตอบคำถามได้อย่างธรรมชาติ',
-                'ช่วยวางแผนและให้คำแนะนำ',
-                'แปลภาษาและสรุปเนื้อหา',
-                'ค้นหาข้อมูลและวิเคราะห์',
-                'เขียนเนื้อหา Email, บทความ'
+                'ประสิทธิภาพสูงจาก Google',
+                'รองรับภาษาไทย',
+                'วิเคราะห์และตอบคำถาม',
+                'สนทนาได้เป็นธรรมชาติ',
+                'ใช้ RAM 3-4 GB'
             ],
             'quantizations' => [
-                'FP16' => [
-                    'vram_required' => 14,
-                    'ram_required' => 16,
-                    'performance' => 100,
-                    'quality' => 100,
-                ],
-                'Q5_K_M' => [
-                    'vram_required' => 6,
-                    'ram_required' => 8,
-                    'performance' => 90,
-                    'quality' => 95,
-                ],
                 'Q4_K_M' => [
-                    'vram_required' => 5,
-                    'ram_required' => 6,
-                    'performance' => 85,
+                    'vram_required' => 2,
+                    'ram_required' => 3,
+                    'performance' => 90,
                     'quality' => 90,
                 ],
             ],
         ],
-        'deepseek-llm-67b-chat' => [
-            'name' => 'DeepSeek LLM 67B Chat',
-            'size' => '67B',
-            'description' => 'โมเดล Chat ขนาดใหญ่ที่ทรงพลังที่สุด สำหรับงานซับซ้อนและต้องการคุณภาพสูงสุด มีความสามารถในการวิเคราะห์ลึกและแก้ปัญหายาก',
-            'capabilities' => ['chat', 'reasoning', 'multilingual', 'complex_tasks'],
-            'context_window' => 4096,
+        'llama3.2:3b' => [
+            'name' => 'Llama 3.2 (3B)',
+            'size' => '3B',
+            'description' => 'โมเดลจาก Meta ขนาดกลางที่มีความสมดุลดีระหว่างประสิทธิภาพและทรัพยากร',
+            'capabilities' => ['chat', 'reasoning', 'coding', 'multilingual'],
+            'context_window' => 131072,
             'features' => [
-                'สนทนาและวิเคราะห์ในระดับสูง',
-                'แก้ปัญหาที่ซับซ้อนและต้องการการคิดลึก',
-                'วางแผนและสร้างกลยุทธ์',
-                'วิจัยและวิเคราะห์ข้อมูลขนาดใหญ่',
-                'เขียนเนื้อหาคุณภาพสูงระดับมืออาชีพ'
+                'โมเดลคุณภาพสูงจาก Meta',
+                'เขียนโค้ดได้',
+                'วิเคราะห์และแก้ปัญหา',
+                'รองรับหลายภาษา',
+                'ใช้ RAM 4-5 GB'
             ],
             'quantizations' => [
-                'Q5_K_M' => [
-                    'vram_required' => 45,
-                    'ram_required' => 50,
-                    'performance' => 90,
-                    'quality' => 95,
-                ],
                 'Q4_K_M' => [
-                    'vram_required' => 36,
-                    'ram_required' => 40,
+                    'vram_required' => 3,
+                    'ram_required' => 4,
+                    'performance' => 88,
+                    'quality' => 92,
+                ],
+            ],
+        ],
+        'phi3:3.8b' => [
+            'name' => 'Phi 3 (3.8B)',
+            'size' => '3.8B',
+            'description' => 'โมเดลจาก Microsoft ขนาดกลางที่มีประสิทธิภาพสูงมาก เหมาะสำหรับงานที่ต้องการความแม่นยำ',
+            'capabilities' => ['chat', 'reasoning', 'coding', 'complex_tasks'],
+            'context_window' => 128000,
+            'features' => [
+                'ประสิทธิภาพสูงมากจาก Microsoft',
+                'เขียนและวิเคราะห์โค้ด',
+                'แก้ปัญหาซับซ้อน',
+                'วิเคราะห์เชิงลึก',
+                'ใช้ RAM 4-6 GB'
+            ],
+            'quantizations' => [
+                'Q4_K_M' => [
+                    'vram_required' => 3.5,
+                    'ram_required' => 5,
                     'performance' => 85,
-                    'quality' => 90,
+                    'quality' => 95,
                 ],
             ],
         ],
