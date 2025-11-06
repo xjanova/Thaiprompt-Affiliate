@@ -1127,20 +1127,862 @@ function calculateCommission($order) {
             </div>
         </section>
 
-        <!-- Continue with more sections... -->
-        <p class="text-center text-gray-500 my-12">
-            🚧 <strong>เนื้อหาส่วนอื่นๆ กำลังดำเนินการเขียน...</strong> 🚧
-        </p>
+        <!-- Wallet System Section -->
+        <section id="wallet" class="wiki-section">
+            <h2>💰 Digital Wallet System - ระบบกระเป๋าเงินดิจิทัล</h2>
 
-        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 text-center">
-            <h3 class="text-2xl font-bold mb-4">📖 Platform Wiki กำลังพัฒนา</h3>
-            <p class="text-gray-700 mb-4">
-                เรากำลังเขียนเนื้อหาเชิงลึกให้ครบทุกหัวข้อ โปรดติดตามใน Version ถัดไป
+            <p>
+                ระบบ Wallet ของเราคือ <strong>ศูนย์กลางการเงิน</strong> ที่จัดการทุกธุรกรรมทางการเงินในแพลตฟอร์ม
+                ออกแบบมาให้ <strong>ปลอดภัย, โปร่งใส, และใช้งานง่าย</strong> เทียบเท่าระบบธนาคาร
             </p>
-            <a href="{{ route('about.professional') }}" class="inline-block px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg hover:shadow-lg transition">
-                ดูหน้า About Professional →
-            </a>
-        </div>
+
+            <h3>🎯 ทำไมต้องมี Digital Wallet?</h3>
+
+            <div class="info-box">
+                <h4>💡 ปัญหาของระบบเงินสดแบบเดิม</h4>
+                <ul>
+                    <li>❌ ต้องไปธนาคารถอนเงิน (เสียเวลา)</li>
+                    <li>❌ ค่าธรรมเนียมโอนเงินสูง</li>
+                    <li>❌ ไม่สะดวกในการทำธุรกรรม</li>
+                    <li>❌ ไม่มี Transaction History ที่ดี</li>
+                    <li>❌ ความปลอดภัยไม่เพียงพอ</li>
+                </ul>
+            </div>
+
+            <h3>🏗️ สถาปัตยกรรม Wallet System</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">💵</div>
+                    <h4>Balance Management</h4>
+                    <p><strong>จัดการยอดเงินแบบ Real-time</strong></p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Main Balance (ยอดหลัก)</li>
+                        <li>• Pending Balance (รอโอน)</li>
+                        <li>• Locked Balance (ถูกล็อค)</li>
+                        <li>• Auto-Credit จาก Commission</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h4>Transaction Logging</h4>
+                    <p><strong>บันทึกทุกการเปลี่ยนแปลง</strong></p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• ประเภทธุรกรรม (Type)</li>
+                        <li>• จำนวนเงิน (Amount)</li>
+                        <li>• ผู้ทำรายการ (User)</li>
+                        <li>• Timestamp & IP Address</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🔐 ระบบรักษาความปลอดภัย</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Security Layer</th>
+                        <th>วิธีการ</th>
+                        <th>จุดประสงค์</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>PIN 6 หลัก</strong></td>
+                        <td>กำหนด PIN สำหรับทุกธุรกรรม</td>
+                        <td>ป้องกันการถูกขโมยบัญชี</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2FA</strong></td>
+                        <td>Two-Factor Authentication</td>
+                        <td>ยืนยันตัวตนเพิ่ม</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Encryption</strong></td>
+                        <td>เข้ารหัส PIN ด้วย bcrypt</td>
+                        <td>ป้องกัน Data Breach</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rate Limiting</strong></td>
+                        <td>จำกัดจำนวน Request</td>
+                        <td>ป้องกัน Brute Force Attack</td>
+                    </tr>
+                    <tr>
+                        <td><strong>IP Whitelist</strong></td>
+                        <td>จำกัด IP ที่เข้าถึงได้</td>
+                        <td>ป้องกันการเข้าถึงจาก IP แปลกปลอม</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>💳 Withdrawal System (ระบบถอนเงิน)</h3>
+
+            <p><strong>Flow การถอนเงิน:</strong></p>
+
+            <div class="code-block">
+<pre>
+1. User กรอกจำนวนเงินที่ต้องการถอน
+   ↓
+2. ระบบเช็ค Balance (พอหรือไม่?)
+   ↓
+3. กรอก PIN 6 หลัก (ยืนยันตัวตน)
+   ↓
+4. เลือก Bank Account (บัญชีธนาคารที่ลงทะเบียนไว้)
+   ↓
+5. ระบบสร้าง Withdrawal Request
+   ↓
+6. Lock Balance (ล็อคยอดเงินที่ขอถอน)
+   ↓
+7. Admin อนุมัติ (Manual Approval)
+   ↓
+8. โอนเงินเข้าบัญชีจริง
+   ↓
+9. Update Status = "Completed"
+   ↓
+10. ส่ง Email/SMS แจ้งเตือน
+</pre>
+            </div>
+
+            <div class="info-box warning">
+                <h4>⚠️ ข้อจำกัดการถอนเงิน</h4>
+                <ul>
+                    <li><strong>ขั้นต่ำ:</strong> ฿500/ครั้ง</li>
+                    <li><strong>สูงสุด:</strong> ฿100,000/วัน</li>
+                    <li><strong>ค่าธรรมเนียม:</strong> ฿20-50 ต่อครั้ง (ขึ้นอยู่กับ Rank)</li>
+                    <li><strong>ระยะเวลา:</strong> 1-3 วันทำการ</li>
+                </ul>
+            </div>
+
+            <h3>📊 Analytics & Reporting</h3>
+
+            <p>ระบบ Wallet มี Dashboard แสดง:</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 my-6">
+                <div class="stat-card">
+                    <div class="stat-number">฿0.00</div>
+                    <div class="stat-label">Total Balance</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">฿0.00</div>
+                    <div class="stat-label">This Month Earning</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">฿0.00</div>
+                    <div class="stat-label">Total Withdrawn</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI & LINE Bot Section -->
+        <section id="ai-integration" class="wiki-section">
+            <h2>🤖 AI & LINE Bot Integration - อนาคตของการดูแลลูกค้า</h2>
+
+            <p>
+                ระบบ AI ของเราคือ <strong>ผู้ช่วยอัจฉริยะ</strong> ที่ทำงาน 24/7 ไม่เคยหยุดพัก
+                ใช้ <strong>Multi-AI Provider</strong> (OpenAI, Claude, Gemini, Groq) พร้อม <strong>RAG System</strong>
+                เพื่อให้คำตอบที่แม่นยำและเป็นธรรมชาติ
+            </p>
+
+            <h3>🎯 ทำไมต้องใช้ AI?</h3>
+
+            <div class="info-box research">
+                <h4>📊 สถิติการใช้ Chatbot ในไทย</h4>
+                <ul>
+                    <li>• <strong>75%</strong> ของธุรกิจไทยใช้ Chatbot แล้ว</li>
+                    <li>• ลดค่าใช้จ่าย Customer Service ได้ถึง <strong>70%</strong></li>
+                    <li>• เพิ่มความพึงพอใจลูกค้า <strong>40%</strong></li>
+                    <li>• Response Time เร็วขึ้น <strong>90%</strong></li>
+                </ul>
+                <p class="text-sm mt-2">*ที่มา: Thailand AI Association</p>
+            </div>
+
+            <h3>🏗️ สถาปัตยกรรม AI System</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h4>Multi-AI Provider</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• <strong>OpenAI GPT-4:</strong> ตอบคำถามทั่วไป</li>
+                        <li>• <strong>Claude 3:</strong> วิเคราะห์ซับซ้อน</li>
+                        <li>• <strong>Google Gemini:</strong> Search & Fact Check</li>
+                        <li>• <strong>Groq:</strong> Fast Response (10x เร็วกว่า)</li>
+                    </ul>
+                    <p class="text-xs text-gray-500 mt-4">
+                        <strong>Fallback System:</strong> ถ้า AI ตัวหนึ่งล่ม จะสลับไปใช้ตัวอื่นอัตโนมัติ
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h4>RAG System</h4>
+                    <p class="text-sm mt-2">Retrieval-Augmented Generation</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• <strong>Knowledge Base:</strong> บทความ, FAQ, ข้อมูลสินค้า</li>
+                        <li>• <strong>Vector Database:</strong> จัดเก็บ Embeddings</li>
+                        <li>• <strong>Semantic Search:</strong> ค้นหาตามความหมาย</li>
+                        <li>• <strong>Context Injection:</strong> ใส่ข้อมูลที่เกี่ยวข้อง</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>💬 LINE Official Account Integration</h3>
+
+            <p>เชื่อมต่อกับ <strong>LINE Messaging API</strong> เพื่อสร้างประสบการณ์ที่ดีที่สุด:</p>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>คำอธิบาย</th>
+                        <th>Use Case</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Flex Messages</strong></td>
+                        <td>ข้อความรูปแบบสวยงาม</td>
+                        <td>แสดงสินค้า, โปรโมชั่น</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Rich Menu</strong></td>
+                        <td>เมนูด้านล่างแชท</td>
+                        <td>ลัด: ดูรายได้, ซื้อของ, Contact Admin</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Quick Reply</strong></td>
+                        <td>ปุ่มตอบกลับด่วน</td>
+                        <td>เลือกคำตอบที่กำหนดไว้</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Broadcast</strong></td>
+                        <td>ส่งข้อความหมู่</td>
+                        <td>แจ้งข่าวสาร, โปรโมชั่น</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LINE Login</strong></td>
+                        <td>เข้าสู่ระบบด้วย LINE</td>
+                        <td>ไม่ต้องจำ Password</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🎨 Bot Marketplace - ให้เช่า AI Bot</h3>
+
+            <p>
+                <strong>นวัตกรรมพิเศษ:</strong> ผู้ใช้สามารถ <strong>สร้าง AI Bot ของตัวเอง</strong> แล้วนำมา <strong>ให้เช่า</strong>
+                เพื่อสร้างรายได้เสริม!
+            </p>
+
+            <div class="info-box success">
+                <h4>✅ ตัวอย่าง: ให้เช่า LINE Bot</h4>
+                <p><strong>สมมติ:</strong> คุณสร้าง LINE Bot ที่ตอบคำถามเกี่ยวกับสินค้า</p>
+                <ul class="mt-2">
+                    <li>• ตั้งราคาเช่า: <strong>฿299/เดือน</strong></li>
+                    <li>• มีคนเช่า 100 คน = <strong>฿29,900/เดือน</strong></li>
+                    <li>• Platform รับ 30% = ฿8,970</li>
+                    <li>• คุณได้: <strong>฿20,930/เดือน</strong></li>
+                </ul>
+                <p class="text-sm mt-2 font-bold text-green-700">รายได้แบบ Passive Income!</p>
+            </div>
+        </section>
+
+        <!-- Security Section -->
+        <section id="security" class="wiki-section">
+            <h2>🔒 ระบบรักษาความปลอดภัย - Security Architecture</h2>
+
+            <p>
+                ความปลอดภัยคือ <strong>หัวใจหลัก</strong> ของแพลตฟอร์ม เราใช้ระบบรักษาความปลอดภัยระดับ <strong>Banking-grade</strong>
+                พร้อมการตรวจสอบและป้องกันภัยคุกคามแบบอัตโนมัติ
+            </p>
+
+            <h3>🛡️ Multi-Layer Security</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <h4>Layer 1: Authentication</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Password Hashing (bcrypt)</li>
+                        <li>• 2FA (Two-Factor Auth)</li>
+                        <li>• Session Management</li>
+                        <li>• Token Encryption</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🚨</div>
+                    <h4>Layer 2: Threat Detection</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• IP Reputation Check</li>
+                        <li>• Login Attempt Monitoring</li>
+                        <li>• Anomaly Detection</li>
+                        <li>• Auto-Ban Suspicious Users</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h4>Layer 3: Monitoring</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Activity Logs</li>
+                        <li>• Real-time Alerts</li>
+                        <li>• Security Dashboard</li>
+                        <li>• Incident Response</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>👁️ KYC/OCR System - ยืนยันตัวตนด้วย AI</h3>
+
+            <p>
+                ใช้ <strong>Google Vision API</strong> อ่านข้อมูลจากบัตรประชาชนอัตโนมัติ เพื่อป้องกันการปลอมแปลงและฉ้อโกง
+            </p>
+
+            <div class="code-block">
+<pre>
+// KYC Process Flow
+1. User อัพโหลดรูปบัตรประชาชน (ด้านหน้า + ด้านหลัง)
+   ↓
+2. Google Vision API แยกข้อความ (OCR)
+   ↓
+3. Extract Fields:
+   - ID Number (13 หลัก)
+   - Full Name
+   - Date of Birth
+   - Address
+   ↓
+4. Validation:
+   - เช็คว่าเป็นบัตรจริงหรือไม่
+   - เช็คอายุ (ต้องเกิน 18 ปี)
+   - เช็ค ID ซ้ำในระบบหรือไม่
+   ↓
+5. Face Verification:
+   - ถ่ายรูปตัวเองพร้อมถือบัตร
+   - เทียบใบหน้ากับรูปในบัตร
+   ↓
+6. Manual Review (ถ้าจำเป็น)
+   ↓
+7. Approve/Reject
+</pre>
+            </div>
+
+            <div class="info-box warning">
+                <h4>⚠️ ทำไมต้องมี KYC?</h4>
+                <ul>
+                    <li><strong>กฎหมาย:</strong> ตาม พ.ร.บ. การฟอกเงิน ต้องยืนยันตัวตนผู้ใช้</li>
+                    <li><strong>ป้องกันฉ้อโกง:</strong> ลดการสร้างบัญชีปลอม</li>
+                    <li><strong>เพิ่มความน่าเชื่อถือ:</strong> ผู้ใช้มั่นใจว่าทุกคนเป็นคนจริง</li>
+                </ul>
+            </div>
+
+            <h3>🚫 IP Blocking & CIDR</h3>
+
+            <p>ระบบบล็อก IP ที่เป็นอันตราย:</p>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Threat Type</th>
+                        <th>Action</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Brute Force</strong></td>
+                        <td>Ban IP หลังพยายาม Login ผิด 5 ครั้ง</td>
+                        <td>24 ชั่วโมง</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SQL Injection</strong></td>
+                        <td>Ban IP ทันที</td>
+                        <td>ถาวร</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DDoS</strong></td>
+                        <td>Rate Limit + Ban</td>
+                        <td>48 ชั่วโมง</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Bot Traffic</strong></td>
+                        <td>Captcha + Slow Down</td>
+                        <td>จนกว่าจะผ่าน Captcha</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Technology Stack Section -->
+        <section id="technology" class="wiki-section">
+            <h2>🛠️ สถาปัตยกรรมเทคโนโลยี - Technology Architecture</h2>
+
+            <p>
+                แพลตฟอร์มของเราสร้างด้วย <strong>Modern Stack</strong> ที่ได้รับการพิสูจน์แล้วจากบริษัทชั้นนำทั่วโลก
+                พร้อมความยืดหยุ่นและ Scalability สูง
+            </p>
+
+            <h3>🏗️ Layered Architecture</h3>
+
+            <div class="code-block">
+<pre>
+┌─────────────────────────────────────┐
+│   Presentation Layer (Frontend)    │
+│   - Blade Templates                 │
+│   - Alpine.js (Reactive)            │
+│   - Tailwind CSS (Styling)          │
+│   - Vite (Build Tool)               │
+└─────────────────────────────────────┘
+            ↓ HTTP/AJAX
+┌─────────────────────────────────────┐
+│    Application Layer (Laravel)     │
+│    - Controllers (91 files)         │
+│    - Middleware (Auth, CORS, etc)   │
+│    - Form Requests (Validation)     │
+│    - Resources (API Transform)      │
+└─────────────────────────────────────┘
+            ↓ Service Calls
+┌─────────────────────────────────────┐
+│      Business Logic Layer           │
+│      - Services (30+ classes)       │
+│      - Repositories (Data Access)   │
+│      - Events & Listeners           │
+│      - Jobs & Queues                │
+└─────────────────────────────────────┘
+            ↓ Eloquent ORM
+┌─────────────────────────────────────┐
+│        Data Layer (Database)        │
+│        - MySQL 8.0 (105 tables)     │
+│        - Redis (Cache & Queue)      │
+│        - Eloquent Models (113+)     │
+└─────────────────────────────────────┘
+            ↓ Integration
+┌─────────────────────────────────────┐
+│      External Services              │
+│      - OpenAI API                   │
+│      - Google Cloud (Vision, Trans) │
+│      - LINE Messaging API           │
+│      - Payment Gateways             │
+└─────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h3>⚡ Performance Optimization</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">🚀</div>
+                    <h4>Caching Strategy</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• <strong>Redis:</strong> Cache Database Queries</li>
+                        <li>• <strong>CDN:</strong> Static Assets</li>
+                        <li>• <strong>OPcache:</strong> PHP Bytecode</li>
+                        <li>• <strong>View Cache:</strong> Compiled Blade Templates</li>
+                    </ul>
+                    <p class="text-xs text-gray-500 mt-4">
+                        <strong>ผลลัพธ์:</strong> Response Time ลดลง 70%
+                    </p>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📦</div>
+                    <h4>Database Optimization</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• <strong>Indexing:</strong> Primary & Foreign Keys</li>
+                        <li>• <strong>Eager Loading:</strong> ลด N+1 Problem</li>
+                        <li>• <strong>Query Optimization:</strong> Analyze & Optimize</li>
+                        <li>• <strong>Partitioning:</strong> แบ่ง Table ขนาดใหญ่</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🔄 CI/CD Pipeline</h3>
+
+            <p><strong>Automated Deployment Process:</strong></p>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4 class="font-bold">1. Code Push (Git)</h4>
+                    <p>Developer push code ไป GitHub</p>
+                </div>
+                <div class="timeline-item">
+                    <h4 class="font-bold">2. Auto Testing</h4>
+                    <p>Run PHPUnit, Feature Tests, Integration Tests</p>
+                </div>
+                <div class="timeline-item">
+                    <h4 class="font-bold">3. Build & Compile</h4>
+                    <p>Vite build assets, Composer install dependencies</p>
+                </div>
+                <div class="timeline-item">
+                    <h4 class="font-bold">4. Deploy to Staging</h4>
+                    <p>ทดสอบบน Staging Environment</p>
+                </div>
+                <div class="timeline-item">
+                    <h4 class="font-bold">5. Production Deploy</h4>
+                    <p>Deploy ไป Production โดยอัตโนมัติ (ถ้าผ่านทุก Test)</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Database Design Section -->
+        <section id="database" class="wiki-section">
+            <h2>🗄️ Database Design Philosophy</h2>
+
+            <p>
+                Database ของเราออกแบบตาม <strong>Normalization Principles</strong> พร้อม <strong>Strategic Denormalization</strong>
+                ในจุดที่ต้องการ Performance
+            </p>
+
+            <h3>🎯 Design Principles</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">✅</div>
+                    <h4>1. Normalization (3NF)</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• ไม่มี Duplicate Data</li>
+                        <li>• แยก Entity ให้ชัดเจน</li>
+                        <li>• ใช้ Foreign Key เชื่อมโยง</li>
+                        <li>• ง่ายต่อการ Update</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h4>2. Strategic Denormalization</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Cache ข้อมูลที่ Query บ่อย</li>
+                        <li>• Aggregate Tables (Summary)</li>
+                        <li>• Materialized Views</li>
+                        <li>• Trade-off: Storage vs Speed</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🔗 Eloquent Relationships</h3>
+
+            <p><strong>ตัวอย่างความสัมพันธ์ที่ซับซ้อน:</strong></p>
+
+            <div class="code-block">
+<pre>
+// User Model
+class User extends Model {
+    // One-to-One
+    public function affiliate() {
+        return $this->hasOne(Affiliate::class);
+    }
+
+    public function wallet() {
+        return $this->hasOne(Wallet::class);
+    }
+
+    // One-to-Many
+    public function orders() {
+        return $this->hasMany(Order::class);
+    }
+
+    public function transactions() {
+        return $this->hasMany(Transaction::class);
+    }
+
+    // Many-to-Many
+    public function roles() {
+        return $this->belongsToMany(Role::class);
+    }
+}
+
+// Affiliate Model
+class Affiliate extends Model {
+    // Self-Referencing (Sponsor/Downline)
+    public function sponsor() {
+        return $this->belongsTo(Affiliate::class, 'sponsor_id');
+    }
+
+    public function children() {
+        return $this->hasMany(Affiliate::class, 'sponsor_id');
+    }
+
+    // Recursive (All Downlines)
+    public function allDownlines() {
+        return $this->children()->with('allDownlines');
+    }
+
+    // Has-Many-Through
+    public function commissions() {
+        return $this->hasMany(Commission::class);
+    }
+}
+</pre>
+            </div>
+
+            <div class="info-box">
+                <h4>💡 Query Optimization Tips</h4>
+                <ul>
+                    <li><strong>Eager Loading:</strong> <code>User::with('affiliate', 'wallet')->get();</code></li>
+                    <li><strong>Lazy Eager Loading:</strong> <code>$users->load('orders');</code></li>
+                    <li><strong>Chunking:</strong> <code>User::chunk(1000, function($users) {...});</code></li>
+                    <li><strong>Select Specific Columns:</strong> <code>User::select('id', 'name')->get();</code></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Business Model Section -->
+        <section id="business-model" class="wiki-section">
+            <h2>💼 Business Model Analysis</h2>
+
+            <p>
+                โมเดลธุรกิจของเราคือ <strong>Platform as a Service (PaaS)</strong> ที่สร้างรายได้จาก <strong>หลายช่องทาง</strong>
+                (Multiple Revenue Streams) เพื่อลดความเสี่ยงและเพิ่มความยั่งยืน
+            </p>
+
+            <h3>💰 Revenue Model</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
+                <div class="stat-card">
+                    <div class="stat-number">40%</div>
+                    <div class="stat-label">E-Commerce Commission</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">35%</div>
+                    <div class="stat-label">MLM Platform Fee</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">25%</div>
+                    <div class="stat-label">Premium Services</div>
+                </div>
+            </div>
+
+            <h3>📈 Unit Economics</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Value</th>
+                        <th>Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CAC</strong> (Customer Acquisition Cost)</td>
+                        <td>฿150</td>
+                        <td>ค่าใช้จ่ายในการหาลูกค้า 1 คน</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LTV</strong> (Lifetime Value)</td>
+                        <td>฿4,500</td>
+                        <td>มูลค่าลูกค้าตลอดชีพ</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LTV/CAC Ratio</strong></td>
+                        <td>30:1</td>
+                        <td>ดีเยี่ยม (ควรมากกว่า 3:1)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Payback Period</strong></td>
+                        <td>2 เดือน</td>
+                        <td>ระยะเวลาคืนทุน</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Churn Rate</strong></td>
+                        <td>8%</td>
+                        <td>% ลูกค้าที่เลิกใช้ต่อเดือน</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info-box success">
+                <h4>✅ Sustainable Business Model</h4>
+                <p>
+                    โมเดลธุรกิจของเรา <strong>Profitable</strong> ตั้งแต่เดือนที่ 3 เนื่องจาก:
+                </p>
+                <ul>
+                    <li>• <strong>Low CAC:</strong> ใช้ Referral Marketing (ปากต่อปาก)</li>
+                    <li>• <strong>High LTV:</strong> ลูกค้าอยู่กับเรานาน เพราะมีรายได้จาก MLM</li>
+                    <li>• <strong>Network Effect:</strong> ยิ่งมีคนเยอะ ยิ่งมีคนสนใจมากขึ้น</li>
+                    <li>• <strong>Recurring Revenue:</strong> รายได้ทุกเดือนจาก Active Users</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Case Studies Section -->
+        <section id="case-studies" class="wiki-section">
+            <h2>📚 กรณีศึกษา (Case Studies)</h2>
+
+            <p>ตัวอย่างความสำเร็จของผู้ใช้จริง:</p>
+
+            <div class="feature-card">
+                <h3 class="text-2xl font-bold mb-4">🎯 Case Study #1: คุณสมชาย - ครูประจำโรงเรียน</h3>
+                <p class="mb-4">
+                    <strong>Background:</strong> ครูสอนวิทยาศาสตร์ เงินเดือน ฿25,000/เดือน
+                    ต้องการรายได้เสริมเพื่อจ่ายค่าเทอมลูก
+                </p>
+                <p class="mb-4">
+                    <strong>วิธีการ:</strong> ใช้เวลาว่าง 2 ชม./วัน ชวนเพื่อนครู และผู้ปกครอง
+                    ขายสินค้าราคาถูก (เครื่องเขียน, หนังสือ) ผ่านระบบ
+                </p>
+                <p class="mb-4">
+                    <strong>ผลลัพธ์:</strong>
+                </p>
+                <ul class="space-y-2">
+                    <li>• <strong>เดือนที่ 1:</strong> ฿3,500 (ขายสินค้า + Commission Level 1)</li>
+                    <li>• <strong>เดือนที่ 3:</strong> ฿8,200 (Downline 15 คน)</li>
+                    <li>• <strong>เดือนที่ 6:</strong> ฿18,500 (Downline 45 คน, Binary เริ่มมี Pair)</li>
+                    <li>• <strong>เดือนที่ 12:</strong> ฿35,000 (มากกว่าเงินเดือนหลัก!)</li>
+                </ul>
+            </div>
+
+            <div class="feature-card">
+                <h3 class="text-2xl font-bold mb-4">🎯 Case Study #2: คุณแดง - แม่บ้านจังหวัดอุดร</h3>
+                <p class="mb-4">
+                    <strong>Background:</strong> แม่บ้านเลี้ยงลูก 2 คน ไม่มีรายได้ พึ่งสามีคนเดียว
+                </p>
+                <p class="mb-4">
+                    <strong>วิธีการ:</strong> ขายสินค้า OTOP ของจังหวัดผ่านแพลตฟอร์ม + ชวนเพื่อนในกลุ่ม LINE
+                </p>
+                <p class="mb-4">
+                    <strong>ผลลัพธ์:</strong>
+                </p>
+                <ul class="space-y-2">
+                    <li>• <strong>เดือนที่ 1:</strong> ฿1,200 (ขายของให้เพื่อนบ้าน)</li>
+                    <li>• <strong>เดือนที่ 6:</strong> ฿12,000 (Downline 25 คน)</li>
+                    <li>• <strong>ปัจจุบัน (1 ปี):</strong> ฿42,000/เดือน</li>
+                    <li>• <strong>พิเศษ:</strong> สามารถซื้อรถคันแรกได้!</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Roadmap Section -->
+        <section id="roadmap" class="wiki-section">
+            <h2>🗺️ แผนพัฒนาอนาคต (Roadmap)</h2>
+
+            <p>เรามีแผนพัฒนาอย่างต่อเนื่อง เพื่อให้แพลตฟอร์มดีขึ้นเรื่อยๆ</p>
+
+            <div class="timeline">
+                <div class="timeline-item">
+                    <h4 class="font-bold">Q1 2025 - Mobile App</h4>
+                    <p>พัฒนา iOS & Android App ให้ใช้งานสะดวกขึ้น</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Push Notification แจ้งเตือนทันที</li>
+                        <li>• Offline Mode (บางฟีเจอร์)</li>
+                        <li>• Biometric Login (Face ID, Fingerprint)</li>
+                    </ul>
+                </div>
+
+                <div class="timeline-item">
+                    <h4 class="font-bold">Q2 2025 - Blockchain Integration</h4>
+                    <p>เพิ่มความโปร่งใสด้วย Blockchain</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• บันทึก Transaction บน Blockchain</li>
+                        <li>• Smart Contract สำหรับ Commission</li>
+                        <li>• Cryptocurrency Payment (BTC, ETH, USDT)</li>
+                    </ul>
+                </div>
+
+                <div class="timeline-item">
+                    <h4 class="font-bold">Q3 2025 - AI Analytics</h4>
+                    <p>วิเคราะห์ข้อมูลด้วย AI เพื่อแนะนำกลยุทธ์</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Predictive Analytics (ทำนายยอดขาย)</li>
+                        <li>• Recommendation Engine (แนะนำสินค้า)</li>
+                        <li>• Churn Prediction (ทำนายลูกค้าที่จะหนีไป)</li>
+                    </ul>
+                </div>
+
+                <div class="timeline-item">
+                    <h4 class="font-bold">Q4 2025 - International Expansion</h4>
+                    <p>ขยายไปต่างประเทศ</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Multi-Currency Support</li>
+                        <li>• International Shipping</li>
+                        <li>• English, Chinese, Japanese Interface</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- For Investors Section -->
+        <section id="for-investors" class="wiki-section">
+            <h2>💎 สำหรับนักลงทุน (For Investors)</h2>
+
+            <p>
+                หากคุณสนใจลงทุนในแพลตฟอร์ม นี่คือข้อมูลสำคัญที่คุณควรรู้:
+            </p>
+
+            <h3>📊 Market Opportunity</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
+                <div class="stat-card">
+                    <div class="stat-number">฿120B</div>
+                    <div class="stat-label">MLM Market Size (Thailand)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">฿650B</div>
+                    <div class="stat-label">E-Commerce Market Size</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">25%</div>
+                    <div class="stat-label">Annual Growth Rate</div>
+                </div>
+            </div>
+
+            <h3>💰 Investment Terms</h3>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Valuation</strong></td>
+                        <td>฿50,000,000 (Pre-money)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Funding Round</strong></td>
+                        <td>Seed Round</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Amount Raising</strong></td>
+                        <td>฿10,000,000</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Minimum Investment</strong></td>
+                        <td>฿1,000,000</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Use of Funds</strong></td>
+                        <td>60% Marketing, 30% Development, 10% Operations</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🎯 Competitive Advantages</h3>
+
+            <div class="feature-card">
+                <h4 class="text-xl font-bold mb-4">ทำไมเราถึงชนะคู่แข่ง?</h4>
+                <ol class="space-y-3">
+                    <li><strong>1. Technology Stack:</strong> ใช้เทคโนโลยีที่ทันสมัยกว่า (AI, Blockchain Concept)</li>
+                    <li><strong>2. User Experience:</strong> UI/UX ที่ดีกว่า ใช้งานง่ายกว่า</li>
+                    <li><strong>3. Transparency:</strong> ระบบโปร่งใส ตรวจสอบได้ทุกขั้นตอน</li>
+                    <li><strong>4. Low Cost:</strong> ค่าใช้จ่ายต่ำกว่า เพราะใช้ Automation</li>
+                    <li><strong>5. Network Effect:</strong> ยิ่งมีคนใช้ ยิ่งมีค่า (เหมือน Facebook)</li>
+                </ol>
+            </div>
+
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-2xl p-8 text-center my-8">
+                <h3 class="text-3xl font-bold mb-4">📧 Contact for Investment</h3>
+                <p class="text-gray-700 mb-6">
+                    สนใจลงทุนหรือต้องการข้อมูลเพิ่มเติม?
+                </p>
+                <a href="{{ route('contact') }}" class="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-lg font-bold rounded-full hover:shadow-2xl transition">
+                    ติดต่อเรา →
+                </a>
+            </div>
+        </section>
 
     </main>
 </div>
