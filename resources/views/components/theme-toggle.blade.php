@@ -73,35 +73,45 @@ function themeToggle() {
             // Apply theme immediately
             this.applyTheme();
 
-            // Save to server using ThemeManager if available
-            if (typeof window.ThemeManager !== 'undefined' && this.currentThemeId) {
-                try {
-                    window.ThemeManager.currentMode = newMode;
-                    await window.ThemeManager.reloadThemeVariables();
+            // Update current mode
+            this.currentMode = newMode;
 
-                    // Save preference to server
-                    const routeName = window.location.pathname.startsWith('/admin') ? 'admin.themes.set' : 'user.themes.set';
-                    const route = routeName === 'admin.themes.set' ? '/admin/themes/set' : '/user/themes/set';
+            // Update ThemeManager if available
+            if (typeof window.ThemeManager !== 'undefined') {
+                try {
+                    await window.ThemeManager.setMode(newMode);
+                } catch (error) {
+                    console.error('ThemeManager error:', error);
+                }
+            }
+
+            // Save preference to server
+            if (this.currentThemeId) {
+                try {
+                    const route = window.location.pathname.startsWith('/admin')
+                        ? '/admin/themes/set'
+                        : '/user/themes/set';
+
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                    if (!csrfToken) {
+                        console.error('CSRF token not found');
+                        return;
+                    }
 
                     await fetch(route, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            'X-CSRF-TOKEN': csrfToken.content
                         },
                         body: JSON.stringify({
                             theme_id: this.currentThemeId,
                             mode: newMode
                         })
                     });
-
-                    this.currentMode = newMode;
                 } catch (error) {
                     console.error('Failed to save theme preference:', error);
                 }
-            } else {
-                // Fallback to localStorage
-                localStorage.setItem('theme', newMode);
             }
         },
 
