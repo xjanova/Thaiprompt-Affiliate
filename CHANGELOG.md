@@ -2,6 +2,91 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.0.0] - 2025-11-07 🎉 Phoenix
+
+### 🚀 Major Features
+
+#### ระบบ Theme v2 แบบ Line OA
+- **Theme System v2**: ระบบธีมใหม่ที่ยืดหยุ่นและทันสมัย รองรับการปรับแต่งสี, ฟอนต์, ระยะห่าง, และอื่นๆ
+- **Line OA Design**: ออกแบบตาม Line Official Account เพื่อความคุ้นเคยและใช้งานง่าย
+- **Dark/Light Mode**: รองรับโหมดมืด/สว่างแบบสมจริง พร้อม Auto mode ตาม system preference
+- **Theme Presets**: มี 6 theme presets สำเร็จรูป (Line OA, Ocean Blue, Sunset Orange, Purple Dream, Minimal Dark, Forest Green)
+- **Admin Theme Builder**: แอดมินสามารถสร้างและออกแบบ theme ของตัวเองได้
+- **User Theme Selection**: ผู้ใช้สามารถเลือก theme ที่ชอบได้
+- **Theme Import/Export**: รองรับการ import/export theme configuration
+- **Real-time Preview**: ดูตัวอย่าง theme แบบ real-time
+
+#### ระบบ Update อัตโนมัติ
+- **Auto Update System**: ระบบตรวจสอบและอัพเดทอัตโนมัติจาก GitHub Releases
+- **Safe Migration**: ระบบ migration ที่ปลอดภัย พร้อมระบบสำรองข้อมูล
+- **Rollback Support**: รองรับการย้อนกลับเวอร์ชันเมื่อเกิดปัญหา
+- **Update Notifications**: แจ้งเตือนเมื่อมีเวอร์ชันใหม่
+- **Update History**: บันทึกประวัติการอัพเดททั้งหมด
+- **Backup System**: สำรองข้อมูลอัตโนมัติก่อนอัพเดท
+
+### 📊 Database Changes
+
+#### New Tables
+- `themes` - เก็บข้อมูล theme ทั้งหมด
+- `theme_presets` - เก็บ theme presets สำเร็จรูป
+- `user_themes` - เก็บการตั้งค่า theme ของแต่ละ user
+- `system_updates` - เก็บข้อมูลเวอร์ชันที่มีให้อัพเดท
+- `update_logs` - บันทึกประวัติการอัพเดท
+- `update_notifications` - แจ้งเตือนเมื่อมีอัพเดทใหม่
+- `update_settings` - การตั้งค่าระบบอัพเดท
+
+### 🎨 New Models & Services
+
+#### Theme System
+- `Theme` - Model สำหรับ themes
+- `ThemePreset` - Model สำหรับ theme presets
+- `UserTheme` - Model สำหรับ user theme preferences
+- `ThemeService` - Service สำหรับจัดการ themes ทั้งหมด
+
+#### Update System
+- `SystemUpdate` - Model สำหรับ system updates
+- `UpdateLog` - Model สำหรับ update logs
+- `UpdateNotification` - Model สำหรับ update notifications
+- `UpdateService` - Service สำหรับจัดการการอัพเดท
+
+### 🛣️ New Routes
+
+#### Admin Routes
+- `/admin/themes/*` - จัดการ themes
+- `/admin/updates/*` - จัดการการอัพเดท
+
+#### User Routes
+- `/user/themes/*` - เลือกและตั้งค่า theme
+
+### 🔧 Infrastructure
+
+- **Version Bump**: อัพเกรดเป็น v2.0.0 (codename: Phoenix)
+- **Migration System**: เพิ่มระบบ migration ที่ปลอดภัยและรองรับ rollback
+- **Theme Seeder**: Seeder สำหรับ themes และ presets เริ่มต้น
+- **Enhanced Version Management**: ปรับปรุงระบบจัดการเวอร์ชัน
+
+### ⚠️ Breaking Changes
+
+- อาจต้อง re-migrate database สำหรับ tables ใหม่
+- ผู้ใช้อาจต้องเลือก theme ใหม่หลัง upgrade
+- Admin ควรตรวจสอบและทดสอบ theme ก่อนให้ผู้ใช้เข้าถึง
+
+### 📝 Migration Guide
+
+สำหรับผู้ที่ upgrade จาก v1.x ไปเป็น v2.0.0:
+
+1. **Backup ข้อมูล**: สำรองฐานข้อมูลและไฟล์ก่อน upgrade
+2. **Run Migrations**: `php artisan migrate --seed`
+3. **Initialize Themes**: `php artisan db:seed --class=ThemeSeeder`
+4. **Clear Cache**: `php artisan cache:clear && php artisan config:clear`
+5. **Test**: ทดสอบระบบให้แน่ใจว่าทำงานปกติ
+
+### 🙏 Credits
+
+Version 2.0.0 "Phoenix" - การเกิดใหม่ของ Thai Prompt Affiliate Marketing Platform
+
+---
+
 ## [v1.255.0] - 2025-11-07
 
 ### ✨ Features

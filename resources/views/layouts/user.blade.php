@@ -34,14 +34,8 @@
     <!-- GSAP -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 
-    @php
-        $primaryStart = \App\Models\Setting::get('theme_primary_start', '#3B82F6');
-        $primaryEnd = \App\Models\Setting::get('theme_primary_end', '#1D4ED8');
-        $secondaryStart = \App\Models\Setting::get('theme_secondary_start', '#10B981');
-        $secondaryEnd = \App\Models\Setting::get('theme_secondary_end', '#059669');
-        $accentStart = \App\Models\Setting::get('theme_accent_start', '#8B5CF6');
-        $accentEnd = \App\Models\Setting::get('theme_accent_end', '#6D28D9');
-    @endphp
+    {{-- Theme System v2 --}}
+    <x-theme-style :theme="$currentTheme ?? null" :mode="$currentThemeMode ?? 'auto'" />
 
     <style>
         :root {
@@ -685,6 +679,11 @@
 
     {{-- Immediate Notification Popup --}}
     <x-immediate-notification-popup />
+
+    {{-- Theme System v2 - JavaScript --}}
+    @if(class_exists('\App\Models\Theme'))
+        <x-theme-script :mode="$currentThemeMode ?? 'auto'" />
+    @endif
 
     @stack('scripts')
 </body>
