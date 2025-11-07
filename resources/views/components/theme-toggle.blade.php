@@ -3,8 +3,8 @@
     $currentThemeId = $currentTheme->id ?? null;
     $currentMode = $currentThemeMode ?? 'auto';
 
-    // Detect if we're in admin or user context
-    $isAdmin = request()->is('admin/*') || request()->is('admin');
+    // Detect if we're in admin or user context - use path segment for more reliable detection
+    $isAdmin = request()->segment(1) === 'admin';
     $themeSetRoute = $isAdmin ? route('admin.themes.set') : route('user.themes.set');
 @endphp
 
@@ -47,8 +47,15 @@ function themeToggle() {
         isDark: false,
         currentThemeId: {{ $currentThemeId ?? 'null' }},
         currentMode: '{{ $currentMode }}',
+        themeSetRoute: '{{ $themeSetRoute }}',
 
         init() {
+            console.log('Theme Toggle Init:', {
+                currentMode: this.currentMode,
+                currentThemeId: this.currentThemeId,
+                themeSetRoute: this.themeSetRoute
+            });
+
             // Get mode from server-side or determine from current state
             if (this.currentMode === 'dark') {
                 this.isDark = true;
@@ -92,13 +99,19 @@ function themeToggle() {
             // Save preference to server
             if (this.currentThemeId) {
                 try {
+                    console.log('Saving theme preference:', {
+                        route: this.themeSetRoute,
+                        theme_id: this.currentThemeId,
+                        mode: newMode
+                    });
+
                     const csrfToken = document.querySelector('meta[name="csrf-token"]');
                     if (!csrfToken) {
                         console.error('CSRF token not found');
                         return;
                     }
 
-                    await fetch('{{ $themeSetRoute }}', {
+                    const response = await fetch(this.themeSetRoute, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -109,6 +122,16 @@ function themeToggle() {
                             mode: newMode
                         })
                     });
+
+                    console.log('Theme preference response:', {
+                        status: response.status,
+                        ok: response.ok
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('Theme save failed:', errorText);
+                    }
                 } catch (error) {
                     console.error('Failed to save theme preference:', error);
                 }
