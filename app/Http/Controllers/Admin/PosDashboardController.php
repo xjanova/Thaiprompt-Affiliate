@@ -79,15 +79,30 @@ class PosDashboardController extends Controller
 
     protected function getTopStores($limit = 10)
     {
-        return VendorStore::select('vendor_stores.*')
-            ->selectRaw('COUNT(pos_transactions.id) as transaction_count')
-            ->selectRaw('SUM(pos_transactions.total_amount) as total_sales')
-            ->leftJoin('pos_transactions', 'vendor_stores.id', '=', 'pos_transactions.store_id')
-            ->whereDate('pos_transactions.transaction_date', '>=', now()->startOfMonth())
-            ->groupBy('vendor_stores.id')
+        $storeStats = DB::table('pos_transactions')
+            ->select('store_id')
+            ->selectRaw('COUNT(id) as transaction_count')
+            ->selectRaw('SUM(total_amount) as total_sales')
+            ->whereDate('transaction_date', '>=', now()->startOfMonth())
+            ->whereNotNull('store_id')
+            ->groupBy('store_id')
             ->orderByDesc('total_sales')
             ->limit($limit)
             ->get();
+
+        $storeIds = $storeStats->pluck('store_id');
+
+        $stores = VendorStore::whereIn('id', $storeIds)->get()->keyBy('id');
+
+        return $storeStats->map(function ($stat) use ($stores) {
+            $store = $stores->get($stat->store_id);
+            if ($store) {
+                $store->transaction_count = $stat->transaction_count;
+                $store->total_sales = $stat->total_sales;
+                return $store;
+            }
+            return null;
+        })->filter();
     }
 
     protected function getDeviceStatus()
@@ -215,29 +230,59 @@ class PosDashboardController extends Controller
 
     protected function getDevicePerformance($dateFrom, $dateTo, $limit = 20)
     {
-        return PosDevice::with('store')
-            ->select('pos_devices.*')
-            ->selectRaw('COUNT(pos_transactions.id) as transaction_count')
-            ->selectRaw('SUM(pos_transactions.total_amount) as total_sales')
-            ->leftJoin('pos_transactions', 'pos_devices.id', '=', 'pos_transactions.pos_device_id')
-            ->whereBetween('pos_transactions.transaction_date', [$dateFrom, $dateTo])
-            ->groupBy('pos_devices.id')
+        $deviceStats = DB::table('pos_transactions')
+            ->select('pos_device_id')
+            ->selectRaw('COUNT(id) as transaction_count')
+            ->selectRaw('SUM(total_amount) as total_sales')
+            ->whereBetween('transaction_date', [$dateFrom, $dateTo])
+            ->whereNotNull('pos_device_id')
+            ->groupBy('pos_device_id')
             ->orderByDesc('total_sales')
             ->limit($limit)
             ->get();
+
+        $deviceIds = $deviceStats->pluck('pos_device_id');
+
+        $devices = PosDevice::with('store')->whereIn('id', $deviceIds)->get()->keyBy('id');
+
+        return $deviceStats->map(function ($stat) use ($devices) {
+            $device = $devices->get($stat->pos_device_id);
+            if ($device) {
+                $device->transaction_count = $stat->transaction_count;
+                $device->total_sales = $stat->total_sales;
+                return $device;
+            }
+            return null;
+        })->filter();
     }
 
     protected function getStorePerformance($dateFrom, $dateTo, $limit = 20)
     {
-        return VendorStore::select('vendor_stores.*')
-            ->selectRaw('COUNT(pos_transactions.id) as transaction_count')
-            ->selectRaw('SUM(pos_transactions.total_amount) as total_sales')
-            ->selectRaw('AVG(pos_transactions.total_amount) as average_sale')
-            ->leftJoin('pos_transactions', 'vendor_stores.id', '=', 'pos_transactions.store_id')
-            ->whereBetween('pos_transactions.transaction_date', [$dateFrom, $dateTo])
-            ->groupBy('vendor_stores.id')
+        $storeStats = DB::table('pos_transactions')
+            ->select('store_id')
+            ->selectRaw('COUNT(id) as transaction_count')
+            ->selectRaw('SUM(total_amount) as total_sales')
+            ->selectRaw('AVG(total_amount) as average_sale')
+            ->whereBetween('transaction_date', [$dateFrom, $dateTo])
+            ->whereNotNull('store_id')
+            ->groupBy('store_id')
             ->orderByDesc('total_sales')
             ->limit($limit)
             ->get();
+
+        $storeIds = $storeStats->pluck('store_id');
+
+        $stores = VendorStore::whereIn('id', $storeIds)->get()->keyBy('id');
+
+        return $storeStats->map(function ($stat) use ($stores) {
+            $store = $stores->get($stat->store_id);
+            if ($store) {
+                $store->transaction_count = $stat->transaction_count;
+                $store->total_sales = $stat->total_sales;
+                $store->average_sale = $stat->average_sale;
+                return $store;
+            }
+            return null;
+        })->filter();
     }
 }
