@@ -1009,6 +1009,9 @@ Route::prefix('themes')->name('themes.')->group(function () {
     Route::post('/initialize', [\App\Http\Controllers\Admin\ThemeController::class, 'initialize'])->name('initialize');
     Route::post('/{id}/set-default', [\App\Http\Controllers\Admin\ThemeController::class, 'setDefault'])->name('set-default');
     Route::post('/{id}/toggle-active', [\App\Http\Controllers\Admin\ThemeController::class, 'toggleActive'])->name('toggle-active');
+    // User theme preferences for admin
+    Route::post('/set', [\App\Http\Controllers\Admin\ThemeController::class, 'setTheme'])->name('set');
+    Route::get('/css', [\App\Http\Controllers\Admin\ThemeController::class, 'getCss'])->name('css');
 });
 
 // Icon Management

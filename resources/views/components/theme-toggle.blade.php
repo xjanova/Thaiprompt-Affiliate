@@ -1,4 +1,9 @@
 <!-- Theme Toggle Component -->
+@php
+    $currentThemeId = $currentTheme->id ?? null;
+    $currentMode = $currentThemeMode ?? 'auto';
+@endphp
+
 <div x-data="themeToggle()" x-init="init()" class="relative">
     <button
         @click="toggleTheme()"
@@ -36,28 +41,68 @@
 function themeToggle() {
     return {
         isDark: false,
+        currentThemeId: {{ $currentThemeId ?? 'null' }},
+        currentMode: '{{ $currentMode }}',
 
         init() {
-            // ตรวจสอบ theme จาก localStorage หรือ system preference
-            const savedTheme = localStorage.getItem('theme');
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            // Get mode from server-side or determine from current state
+            if (this.currentMode === 'dark') {
+                this.isDark = true;
+            } else if (this.currentMode === 'light') {
+                this.isDark = false;
+            } else {
+                // Auto mode - check system preference
+                this.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
 
-            this.isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
             this.applyTheme();
 
-            // Listen for system preference changes
+            // Listen for system preference changes (for auto mode)
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (!localStorage.getItem('theme')) {
+                if (this.currentMode === 'auto') {
                     this.isDark = e.matches;
                     this.applyTheme();
                 }
             });
         },
 
-        toggleTheme() {
+        async toggleTheme() {
             this.isDark = !this.isDark;
-            localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
+            const newMode = this.isDark ? 'dark' : 'light';
+
+            // Apply theme immediately
             this.applyTheme();
+
+            // Save to server using ThemeManager if available
+            if (typeof window.ThemeManager !== 'undefined' && this.currentThemeId) {
+                try {
+                    window.ThemeManager.currentMode = newMode;
+                    await window.ThemeManager.reloadThemeVariables();
+
+                    // Save preference to server
+                    const routeName = window.location.pathname.startsWith('/admin') ? 'admin.themes.set' : 'user.themes.set';
+                    const route = routeName === 'admin.themes.set' ? '/admin/themes/set' : '/user/themes/set';
+
+                    await fetch(route, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            theme_id: this.currentThemeId,
+                            mode: newMode
+                        })
+                    });
+
+                    this.currentMode = newMode;
+                } catch (error) {
+                    console.error('Failed to save theme preference:', error);
+                }
+            } else {
+                // Fallback to localStorage
+                localStorage.setItem('theme', newMode);
+            }
         },
 
         applyTheme() {
