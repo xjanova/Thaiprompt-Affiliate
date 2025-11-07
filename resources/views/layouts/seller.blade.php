@@ -220,6 +220,10 @@
             };
         };
     </script>
+
+    {{-- Dark Mode System --}}
+    <x-dark-mode-init />
+    <x-dark-mode-styles />
 </head>
 <body class="font-sans antialiased bg-gray-100">
     <!-- Page Loader -->
@@ -361,8 +365,8 @@
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
 
-                        <!-- Theme Toggle -->
-                        <x-theme-toggle />
+                        <!-- Dark Mode Toggle -->
+                        <x-dark-mode-toggle />
 
                         <!-- Notification Bell -->
                         <x-notification-bell />
