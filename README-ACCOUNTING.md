@@ -41,7 +41,7 @@ ADDON_ACCOUNTING_LICENSE_KEY=your_license_key
 เมื่อรัน `AccountingDemoSeeder` จะได้ข้อมูลตัวอย่างดังนี้:
 
 ### 🏢 บริษัท
-- บริษัท ไทยพร้อมท์ จำกัด (Thai Prompt Co., Ltd.)
+- บริษัท ไทยพร๊อมท์ จำกัด (Thai Prompt Co., Ltd.)
 
 ### 📊 ผังบัญชี (Chart of Accounts)
 - สินทรัพย์ (Assets): เงินฝากธนาคาร, ลูกหนี้การค้า
