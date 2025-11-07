@@ -4,16 +4,24 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Order;
 use App\Models\ProductCategory;
 use App\Models\ProductReview;
 use App\Models\User;
+use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class ECommerceController extends Controller
 {
+    protected ImageUploadService $imageUploadService;
+
+    public function __construct(ImageUploadService $imageUploadService)
+    {
+        $this->imageUploadService = $imageUploadService;
+    }
     /**
      * Show E-commerce Dashboard
      */
@@ -205,6 +213,16 @@ class ECommerceController extends Controller
     }
 
     /**
+     * Show edit product form
+     */
+    public function editProduct(Product $product)
+    {
+        $product->load('images');
+        $categories = ProductCategory::active()->orderBy('name')->get();
+        return view('admin.ecommerce.products.edit', compact('product', 'categories'));
+    }
+
+    /**
      * Update product
      */
     public function updateProduct(Request $request, Product $product)
@@ -213,6 +231,7 @@ class ECommerceController extends Controller
             'name' => 'required|string|max:255',
             'sku' => 'nullable|string|max:100|unique:products,sku,' . $product->id,
             'description' => 'nullable|string',
+            'short_description' => 'nullable|string|max:500',
             'price' => 'required|numeric|min:0',
             'compare_at_price' => 'nullable|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
@@ -223,35 +242,97 @@ class ECommerceController extends Controller
             'is_featured' => 'boolean',
             'category_id' => 'nullable|exists:product_categories,id',
             'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'brand' => 'nullable|string|max:100',
+            'weight' => 'nullable|numeric|min:0',
+            'main_image' => 'nullable|image|max:5120',
+            'images.*' => 'nullable|image|max:5120',
         ]);
 
-        // Handle checkboxes
-        $validated['is_active'] = $request->has('is_active');
-        $validated['is_featured'] = $request->has('is_featured');
-        $validated['track_inventory'] = $request->has('track_inventory');
+        DB::beginTransaction();
 
-        // Update slug if name changed
-        if ($validated['name'] !== $product->name) {
-            $validated['slug'] = \Str::slug($validated['name']);
-        }
-
-        // Update stock status
-        if (isset($validated['track_inventory']) && $validated['track_inventory']) {
-            $qty = $validated['stock_quantity'] ?? $product->stock_quantity;
-            $threshold = $validated['low_stock_threshold'] ?? $product->low_stock_threshold ?? 10;
-
-            if ($qty <= 0) {
-                $validated['stock_status'] = 'out_of_stock';
-            } elseif ($qty <= $threshold) {
-                $validated['stock_status'] = 'low_stock';
-            } else {
-                $validated['stock_status'] = 'in_stock';
+        try {
+            // Handle main image upload
+            if ($request->hasFile('main_image')) {
+                // Delete old image if exists
+                if ($product->main_image_url) {
+                    $this->imageUploadService->deleteImage($product->main_image_url);
+                }
+                $validated['main_image_url'] = $this->imageUploadService->uploadImage(
+                    $request->file('main_image'),
+                    'products',
+                    1200,
+                    1200,
+                    90
+                );
             }
+
+            // Handle checkboxes
+            $validated['is_active'] = $request->has('is_active');
+            $validated['is_featured'] = $request->has('is_featured');
+            $validated['track_inventory'] = $request->has('track_inventory');
+
+            // Update slug if name changed
+            if ($validated['name'] !== $product->name) {
+                $validated['slug'] = \Str::slug($validated['name']);
+            }
+
+            // Update stock status
+            if (isset($validated['track_inventory']) && $validated['track_inventory']) {
+                $qty = $validated['stock_quantity'] ?? $product->stock_quantity;
+                $threshold = $validated['low_stock_threshold'] ?? $product->low_stock_threshold ?? 10;
+
+                if ($qty <= 0) {
+                    $validated['stock_status'] = 'out_of_stock';
+                } elseif ($qty <= $threshold) {
+                    $validated['stock_status'] = 'low_stock';
+                } else {
+                    $validated['stock_status'] = 'in_stock';
+                }
+            }
+
+            $product->update($validated);
+
+            // Handle deleted images
+            if ($request->filled('deleted_images')) {
+                $deletedIds = $request->input('deleted_images');
+                $imagesToDelete = ProductImage::whereIn('id', $deletedIds)
+                    ->where('product_id', $product->id)
+                    ->get();
+
+                foreach ($imagesToDelete as $img) {
+                    $this->imageUploadService->deleteImage($img->image_url);
+                    $img->delete();
+                }
+            }
+
+            // Handle additional images
+            if ($request->hasFile('images')) {
+                $sortOrder = $product->images()->max('sort_order') ?? 0;
+                $sortOrder++;
+                foreach ($request->file('images') as $image) {
+                    $imageUrl = $this->imageUploadService->uploadImage(
+                        $image,
+                        'products',
+                        1200,
+                        1200,
+                        85
+                    );
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_url' => $imageUrl,
+                        'sort_order' => $sortOrder++,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'อัพเดทสินค้าเรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
-
-        $product->update($validated);
-
-        return redirect()->back()->with('success', 'อัพเดทสินค้าเรียบร้อยแล้ว');
     }
 
     /**
@@ -395,20 +476,41 @@ class ECommerceController extends Controller
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:product_categories,id',
             'sort_order' => 'nullable|integer',
-            'image_url' => 'nullable|string|max:500',
+            'category_image' => 'nullable|image|max:5120',
         ]);
 
-        // Handle checkbox properly
-        $validated['is_active'] = $request->has('is_active');
+        DB::beginTransaction();
 
-        // Auto-generate slug if not provided
-        if (empty($validated['slug'])) {
-            $validated['slug'] = \Str::slug($validated['name']);
+        try {
+            // Handle image upload
+            if ($request->hasFile('category_image')) {
+                $validated['image_url'] = $this->imageUploadService->uploadImage(
+                    $request->file('category_image'),
+                    'categories',
+                    800,
+                    800,
+                    90
+                );
+            }
+
+            // Handle checkbox properly
+            $validated['is_active'] = $request->has('is_active');
+
+            // Auto-generate slug if not provided
+            if (empty($validated['slug'])) {
+                $validated['slug'] = \Str::slug($validated['name']);
+            }
+
+            ProductCategory::create($validated);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'สร้างหมวดหมู่เรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
-
-        ProductCategory::create($validated);
-
-        return redirect()->back()->with('success', 'สร้างหมวดหมู่เรียบร้อยแล้ว');
     }
 
     /**
@@ -422,20 +524,45 @@ class ECommerceController extends Controller
             'description' => 'nullable|string',
             'parent_id' => 'nullable|exists:product_categories,id',
             'sort_order' => 'nullable|integer',
-            'image_url' => 'nullable|string|max:500',
+            'category_image' => 'nullable|image|max:5120',
         ]);
 
-        // Handle checkbox properly
-        $validated['is_active'] = $request->has('is_active');
+        DB::beginTransaction();
 
-        // Auto-generate slug if name changed and slug is empty
-        if ($validated['name'] !== $category->name && empty($validated['slug'])) {
-            $validated['slug'] = \Str::slug($validated['name']);
+        try {
+            // Handle image upload
+            if ($request->hasFile('category_image')) {
+                // Delete old image if exists
+                if ($category->image_url) {
+                    $this->imageUploadService->deleteImage($category->image_url);
+                }
+                $validated['image_url'] = $this->imageUploadService->uploadImage(
+                    $request->file('category_image'),
+                    'categories',
+                    800,
+                    800,
+                    90
+                );
+            }
+
+            // Handle checkbox properly
+            $validated['is_active'] = $request->has('is_active');
+
+            // Auto-generate slug if name changed and slug is empty
+            if ($validated['name'] !== $category->name && empty($validated['slug'])) {
+                $validated['slug'] = \Str::slug($validated['name']);
+            }
+
+            $category->update($validated);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'อัพเดทหมวดหมู่เรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
-
-        $category->update($validated);
-
-        return redirect()->back()->with('success', 'อัพเดทหมวดหมู่เรียบร้อยแล้ว');
     }
 
     /**

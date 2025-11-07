@@ -125,23 +125,32 @@
                 <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
                     <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">รูปภาพสินค้า</h2>
 
-                    <div class="space-y-4">
+                    <div class="space-y-6">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                รูปหลัก
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                รูปหลัก <span class="text-red-600">*</span>
                             </label>
-                            <input type="file" name="main_image" accept="image/*"
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
-                            <p class="text-xs text-gray-500 mt-1">ขนาดแนะนำ: 800x800px, สูงสุด 2MB</p>
+                            <x-image-upload
+                                name="main_image"
+                                :multiple="false"
+                                :maxFiles="1"
+                                :maxSize="5"
+                                :required="true"
+                            />
+                            <p class="text-xs text-gray-500 mt-2">ขนาดแนะนำ: 1200x1200px สำหรับคุณภาพที่ดีที่สุด</p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                รูปเพิ่มเติม
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                รูปเพิ่มเติม (Gallery)
                             </label>
-                            <input type="file" name="images[]" accept="image/*" multiple
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg">
-                            <p class="text-xs text-gray-500 mt-1">เลือกได้หลายรูป, สูงสุดรูปละ 2MB</p>
+                            <x-image-upload
+                                name="images"
+                                :multiple="true"
+                                :maxFiles="10"
+                                :maxSize="5"
+                            />
+                            <p class="text-xs text-gray-500 mt-2">อัปโหลดได้สูงสุด 10 รูป, ขนาดรูปละไม่เกิน 5MB</p>
                         </div>
                     </div>
                 </div>

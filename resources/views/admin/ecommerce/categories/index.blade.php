@@ -90,12 +90,12 @@
 </div>
 
 <!-- Create Modal -->
-<div id="createModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md">
+<div id="createModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 my-8">
         <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">เพิ่มหมวดหมู่ใหม่</h2>
-        <form action="{{ route('admin.ecommerce.categories.store') }}" method="POST">
+        <form action="{{ route('admin.ecommerce.categories.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
-            <div class="space-y-4">
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อหมวดหมู่</label>
                     <input type="text" name="name" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
@@ -109,8 +109,14 @@
                     <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white"></textarea>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL รูปภาพ</label>
-                    <input type="text" name="image_url" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">รูปภาพหมวดหมู่</label>
+                    <x-image-upload
+                        name="category_image"
+                        :multiple="false"
+                        :maxFiles="1"
+                        :maxSize="5"
+                    />
+                    <p class="text-xs text-gray-500 mt-2">ขนาดแนะนำ: 800x800px</p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลำดับการแสดงผล</label>
@@ -130,7 +136,7 @@
                     <label class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้งาน</label>
                 </div>
             </div>
-            <div class="flex justify-end space-x-2 mt-6">
+            <div class="flex justify-end space-x-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button type="button" onclick="document.getElementById('createModal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600">
                     ยกเลิก
                 </button>
@@ -143,13 +149,13 @@
 </div>
 
 <!-- Edit Modal -->
-<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-md">
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 my-8">
         <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">แก้ไขหมวดหมู่</h2>
-        <form id="editForm" method="POST">
+        <form id="editForm" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
-            <div class="space-y-4">
+            <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อหมวดหมู่</label>
                     <input type="text" id="edit_name" name="name" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
@@ -162,10 +168,17 @@
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
                     <textarea id="edit_description" name="description" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white"></textarea>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">URL รูปภาพ</label>
-                    <input type="text" id="edit_image_url" name="image_url" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+
+                <!-- Current Image Preview -->
+                <div id="currentImagePreview" class="hidden">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปภาพปัจจุบัน</label>
+                    <img id="currentImage" src="" alt="Current category image" class="w-32 h-32 object-cover rounded-lg border border-gray-300 dark:border-gray-600 mb-2">
                 </div>
+
+                <div id="editImageUpload">
+                    <!-- Image upload component will be inserted here by JavaScript -->
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลำดับการแสดงผล</label>
                     <input type="number" id="edit_sort_order" name="sort_order" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
@@ -184,7 +197,7 @@
                     <label class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้งาน</label>
                 </div>
             </div>
-            <div class="flex justify-end space-x-2 mt-6">
+            <div class="flex justify-end space-x-2 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-400 dark:hover:bg-gray-600">
                     ยกเลิก
                 </button>
@@ -206,10 +219,41 @@ function editCategory(category) {
     document.getElementById('edit_name').value = category.name || '';
     document.getElementById('edit_slug').value = category.slug || '';
     document.getElementById('edit_description').value = category.description || '';
-    document.getElementById('edit_image_url').value = category.image_url || '';
     document.getElementById('edit_sort_order').value = category.sort_order || 0;
     document.getElementById('edit_parent_id').value = category.parent_id || '';
     document.getElementById('edit_is_active').checked = category.is_active;
+
+    // Handle image display
+    const imagePreview = document.getElementById('currentImagePreview');
+    const currentImage = document.getElementById('currentImage');
+    const imageUploadDiv = document.getElementById('editImageUpload');
+
+    let existingImages = [];
+    if (category.image_url) {
+        // Show current image
+        currentImage.src = '/storage/' + category.image_url;
+        imagePreview.classList.remove('hidden');
+
+        existingImages = [{
+            url: '/storage/' + category.image_url,
+            name: 'รูปหมวดหมู่'
+        }];
+    } else {
+        imagePreview.classList.add('hidden');
+    }
+
+    // Create image upload component HTML
+    imageUploadDiv.innerHTML = `
+        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">รูปภาพหมวดหมู่${category.image_url ? ' (อัปโหลดใหม่เพื่อเปลี่ยน)' : ''}</label>
+        <x-image-upload
+            name="category_image"
+            :multiple="false"
+            :maxFiles="1"
+            :maxSize="5"
+            :existingImages="json_encode(${JSON.stringify(existingImages)})"
+        />
+        <p class="text-xs text-gray-500 mt-2">ขนาดแนะนำ: 800x800px</p>
+    `;
 
     // Show modal
     document.getElementById('editModal').classList.remove('hidden');

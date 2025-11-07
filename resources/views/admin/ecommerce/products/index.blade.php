@@ -87,10 +87,20 @@
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200">ไม่ใช้งาน</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-sm">
-                                <a href="{{ route('admin.ecommerce.products.show', $product) }}" class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium">
-                                    ดูรายละเอียด
+                            <td class="px-6 py-4 text-sm space-x-3">
+                                <a href="{{ route('admin.ecommerce.products.show', $product) }}" class="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
+                                    ดู
                                 </a>
+                                <a href="{{ route('admin.ecommerce.products.edit', $product) }}" class="text-orange-600 dark:text-orange-400 hover:text-orange-700 dark:hover:text-orange-300 font-medium">
+                                    แก้ไข
+                                </a>
+                                <form action="{{ route('admin.ecommerce.products.delete', $product) }}" method="POST" class="inline" onsubmit="return confirm('ยืนยันการลบสินค้า?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium">
+                                        ลบ
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     @empty
