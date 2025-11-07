@@ -18,6 +18,18 @@
         </div>
     @endif
 
+    <!-- Validation Errors -->
+    @if($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <p class="font-bold">กรุณาแก้ไขข้อผิดพลาดต่อไปนี้:</p>
+            <ul class="mt-2 list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="flex justify-between items-center">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">📦 จัดการสินค้า</h1>
         <button onclick="document.getElementById('createProductModal').classList.remove('hidden')" class="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 flex items-center gap-2">
@@ -149,7 +161,10 @@
             <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อสินค้า *</label>
-                    <input type="text" name="name" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    <input type="text" name="name" value="{{ old('name') }}" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    @error('name')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div>
@@ -157,40 +172,52 @@
                     <select name="category_id" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
                         <option value="">เลือกหมวดหมู่</option>
                         @foreach($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
                         @endforeach
                     </select>
+                    @error('category_id')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">SKU</label>
-                    <input type="text" name="sku" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    <input type="text" name="sku" value="{{ old('sku') }}" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    @error('sku')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
-                    <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white"></textarea>
+                    <textarea name="description" rows="3" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">{{ old('description') }}</textarea>
+                    @error('description')
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ราคา *</label>
-                        <input type="number" name="price" step="0.01" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                        <input type="number" name="price" step="0.01" value="{{ old('price') }}" required class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                        @error('price')
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ราคาเทียบเคียง</label>
-                        <input type="number" name="compare_at_price" step="0.01" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                        <input type="number" name="compare_at_price" step="0.01" value="{{ old('compare_at_price') }}" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำนวนสต็อก</label>
-                        <input type="number" name="stock_quantity" value="0" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                        <input type="number" name="stock_quantity" value="{{ old('stock_quantity', 0) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">% คอมมิชชั่น</label>
-                        <input type="number" name="commission_rate" step="0.01" value="15" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                        <input type="number" name="commission_rate" step="0.01" value="{{ old('commission_rate', 15) }}" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
                     </div>
                 </div>
 
@@ -250,4 +277,13 @@
         </div>
     </div>
 </div>
+
+@if($errors->any() || old('name'))
+<script>
+    // เปิด modal อัตโนมัติเมื่อมี validation errors
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('createProductModal').classList.remove('hidden');
+    });
+</script>
+@endif
 @endsection
