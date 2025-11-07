@@ -181,7 +181,7 @@
                         <p class="text-white/90 text-xl leading-relaxed">
                             แพลตฟอร์มที่รวมทุกอย่างไว้ในที่เดียว <strong>ราคาเป็นกันเอง</strong> คุณภาพระดับ Enterprise
                             <br>
-                            พร้อม <strong>Source Code แท้</strong> ปรับแต่งได้เต็มที่ แก้ปัญหาได้ทันที
+                            <strong>ปรับแต่งหน้าร้านได้ผ่าน UI</strong> ง่ายมาก ไม่ต้องเขียนโค้ด
                         </p>
                     </div>
                     <div class="text-8xl ml-8">🚀</div>
@@ -204,12 +204,13 @@
                 <div class="space-y-6">
                     <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
                         <div class="flex items-start gap-4">
-                            <div class="text-5xl">🎯</div>
+                            <div class="text-5xl">🎨</div>
                             <div class="flex-1 text-white">
-                                <h3 class="text-2xl font-bold mb-3">Source Code แท้ 100%</h3>
+                                <h3 class="text-2xl font-bold mb-3">ปรับแต่งหน้าร้านผ่าน UI</h3>
                                 <p class="text-white/80 leading-relaxed">
-                                    เราให้ <strong>Source Code แท้</strong> ไม่เข้ารหัส ปรับแต่งได้เต็มที่
-                                    ไม่ผูกมัด ไม่ถูกเอาเปรียบ คุณเป็นเจ้าของระบบจริงๆ
+                                    <strong>ไม่ต้องเขียนโค้ด!</strong> ปรับแต่งสี ธีม โลโก้ ผ่าน UI ของเรา
+                                    <br>
+                                    ใครๆ ก็ทำได้ ง่ายมาก ไม่ต้องจ้าง Dev แพงๆ
                                 </p>
                             </div>
                         </div>
@@ -640,89 +641,229 @@
     </div>
 </div>
 
-<!-- Slide 3.5: MLM Commission Structure (NEW) -->
+<!-- Slide 3.5a: Unilevel Commission (NEW) -->
 <div class="slide">
-    <div class="h-full flex items-center justify-center bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-12">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-emerald-900 via-green-900 to-teal-900 p-12">
         <div class="max-w-6xl w-full">
-            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
-                💎 โครงสร้างค่าคอมมิชชั่น MLM
+            <h2 class="text-5xl md:text-6xl font-black text-white mb-8 text-center">
+                🌟 Unilevel Commission
             </h2>
+            <p class="text-center text-white/90 text-xl mb-10">รับคอมมิชชั่น 5 ชั้น ตามลำดับแนวตรง</p>
 
-            <div class="mb-8">
+            <div class="grid grid-cols-2 gap-8 mb-8">
+                <!-- Left: Diagram -->
                 <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8">
-                    <h3 class="text-3xl font-bold text-white mb-6 text-center">🌟 Unilevel Commission</h3>
-                    <div class="grid grid-cols-5 gap-4">
-                        <div class="text-center p-4 bg-gradient-to-br from-emerald-600 to-green-600 rounded-2xl">
-                            <div class="text-4xl font-black text-white mb-2">15%</div>
-                            <p class="text-white/90 font-semibold">ชั้นที่ 1</p>
-                            <p class="text-white/70 text-sm">ทีมตรง</p>
+                    <h3 class="text-2xl font-bold text-white mb-6 text-center">📊 ผังโครงสร้าง</h3>
+
+                    <!-- SVG Unilevel Diagram -->
+                    <svg viewBox="0 0 400 450" class="w-full h-auto">
+                        <!-- Level 0 (You) -->
+                        <circle cx="200" cy="30" r="25" fill="#10B981" stroke="#fff" stroke-width="3"/>
+                        <text x="200" y="37" text-anchor="middle" fill="#fff" font-weight="bold" font-size="14">คุณ</text>
+
+                        <!-- Level 1 (15%) -->
+                        <line x1="200" y1="55" x2="100" y2="105" stroke="#fff" stroke-width="2"/>
+                        <line x1="200" y1="55" x2="200" y2="105" stroke="#fff" stroke-width="2"/>
+                        <line x1="200" y1="55" x2="300" y2="105" stroke="#fff" stroke-width="2"/>
+
+                        <circle cx="100" cy="120" r="20" fill="#34D399" stroke="#fff" stroke-width="2"/>
+                        <text x="100" y="125" text-anchor="middle" fill="#fff" font-weight="bold" font-size="12">A</text>
+                        <text x="100" y="150" text-anchor="middle" fill="#10B981" font-weight="bold" font-size="16">15%</text>
+
+                        <circle cx="200" cy="120" r="20" fill="#34D399" stroke="#fff" stroke-width="2"/>
+                        <text x="200" y="125" text-anchor="middle" fill="#fff" font-weight="bold" font-size="12">B</text>
+                        <text x="200" y="150" text-anchor="middle" fill="#10B981" font-weight="bold" font-size="16">15%</text>
+
+                        <circle cx="300" cy="120" r="20" fill="#34D399" stroke="#fff" stroke-width="2"/>
+                        <text x="300" y="125" text-anchor="middle" fill="#fff" font-weight="bold" font-size="12">C</text>
+                        <text x="300" y="150" text-anchor="middle" fill="#10B981" font-weight="bold" font-size="16">15%</text>
+
+                        <!-- Level 2 (10%) -->
+                        <line x1="100" y1="140" x2="70" y2="185" stroke="#fff" stroke-width="1.5"/>
+                        <line x1="100" y1="140" x2="130" y2="185" stroke="#fff" stroke-width="1.5"/>
+
+                        <circle cx="70" cy="200" r="18" fill="#3B82F6" stroke="#fff" stroke-width="2"/>
+                        <text x="70" y="205" text-anchor="middle" fill="#fff" font-size="11">D</text>
+                        <text x="70" y="225" text-anchor="middle" fill="#60A5FA" font-weight="bold" font-size="14">10%</text>
+
+                        <circle cx="130" cy="200" r="18" fill="#3B82F6" stroke="#fff" stroke-width="2"/>
+                        <text x="130" y="205" text-anchor="middle" fill="#fff" font-size="11">E</text>
+                        <text x="130" y="225" text-anchor="middle" fill="#60A5FA" font-weight="bold" font-size="14">10%</text>
+
+                        <!-- Level 3 (7%) -->
+                        <line x1="70" y1="218" x2="60" y2="265" stroke="#fff" stroke-width="1.5"/>
+                        <line x1="70" y1="218" x2="80" y2="265" stroke="#fff" stroke-width="1.5"/>
+
+                        <circle cx="60" cy="280" r="16" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+                        <text x="60" y="284" text-anchor="middle" fill="#fff" font-size="10">F</text>
+                        <text x="60" y="302" text-anchor="middle" fill="#A78BFA" font-weight="bold" font-size="13">7%</text>
+
+                        <circle cx="80" cy="280" r="16" fill="#8B5CF6" stroke="#fff" stroke-width="2"/>
+                        <text x="80" y="284" text-anchor="middle" fill="#fff" font-size="10">G</text>
+                        <text x="80" y="302" text-anchor="middle" fill="#A78BFA" font-weight="bold" font-size="13">7%</text>
+
+                        <!-- Level 4 (5%) -->
+                        <line x1="60" y1="296" x2="50" y2="340" stroke="#fff" stroke-width="1"/>
+                        <circle cx="50" cy="355" r="14" fill="#EC4899" stroke="#fff" stroke-width="2"/>
+                        <text x="50" y="359" text-anchor="middle" fill="#fff" font-size="9">H</text>
+                        <text x="50" y="377" text-anchor="middle" fill="#F472B6" font-weight="bold" font-size="12">5%</text>
+
+                        <!-- Level 5 (3%) -->
+                        <line x1="50" y1="369" x2="45" y2="410" stroke="#fff" stroke-width="1"/>
+                        <circle cx="45" cy="425" r="12" fill="#EF4444" stroke="#fff" stroke-width="2"/>
+                        <text x="45" y="429" text-anchor="middle" fill="#fff" font-size="8">I</text>
+                        <text x="45" y="445" text-anchor="middle" fill="#F87171" font-weight="bold" font-size="11">3%</text>
+                    </svg>
+                </div>
+
+                <!-- Right: Commission Table -->
+                <div class="space-y-4">
+                    <div class="bg-gradient-to-r from-emerald-600 to-green-600 rounded-2xl p-6">
+                        <div class="text-center">
+                            <div class="text-6xl font-black text-white mb-2">15%</div>
+                            <p class="text-white text-xl font-bold">ชั้นที่ 1 - ทีมตรง</p>
+                            <p class="text-white/80 mt-2">สมาชิกที่สมัครตรงจากคุณ</p>
                         </div>
-                        <div class="text-center p-4 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl">
-                            <div class="text-4xl font-black text-white mb-2">10%</div>
-                            <p class="text-white/90 font-semibold">ชั้นที่ 2</p>
-                            <p class="text-white/70 text-sm">ชั้น 2</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl p-5">
+                        <div class="text-center">
+                            <div class="text-5xl font-black text-white mb-2">10%</div>
+                            <p class="text-white text-lg font-bold">ชั้นที่ 2</p>
+                            <p class="text-white/80 text-sm">สมาชิกที่สมัครผ่านทีมชั้น 1</p>
                         </div>
-                        <div class="text-center p-4 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl">
-                            <div class="text-4xl font-black text-white mb-2">7%</div>
-                            <p class="text-white/90 font-semibold">ชั้นที่ 3</p>
-                            <p class="text-white/70 text-sm">ชั้น 3</p>
+                    </div>
+                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5">
+                        <div class="text-center">
+                            <div class="text-5xl font-black text-white mb-2">7%</div>
+                            <p class="text-white text-lg font-bold">ชั้นที่ 3</p>
                         </div>
-                        <div class="text-center p-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl">
-                            <div class="text-4xl font-black text-white mb-2">5%</div>
-                            <p class="text-white/90 font-semibold">ชั้นที่ 4</p>
-                            <p class="text-white/70 text-sm">ชั้น 4</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-4 text-center">
+                            <div class="text-4xl font-black text-white">5%</div>
+                            <p class="text-white text-sm font-bold">ชั้นที่ 4</p>
                         </div>
-                        <div class="text-center p-4 bg-gradient-to-br from-pink-600 to-red-600 rounded-2xl">
-                            <div class="text-4xl font-black text-white mb-2">3%</div>
-                            <p class="text-white/90 font-semibold">ชั้นที่ 5</p>
-                            <p class="text-white/70 text-sm">ชั้น 5</p>
+                        <div class="bg-gradient-to-r from-pink-600 to-red-600 rounded-xl p-4 text-center">
+                            <div class="text-4xl font-black text-white">3%</div>
+                            <p class="text-white text-sm font-bold">ชั้นที่ 5</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-6">
-                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
-                    <h4 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                        <span>⚖️</span>
-                        <span>Binary Bonus</span>
-                    </h4>
-                    <ul class="space-y-3 text-white">
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-400 text-2xl">✓</span>
-                            <span><strong>10%</strong> จากขาอ่อน</span>
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-400 text-2xl">✓</span>
-                            <span>คำนวณตามสัปดาห์</span>
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-400 text-2xl">✓</span>
-                            <span>ต้องมียอดทั้ง 2 ขา</span>
-                        </li>
-                    </ul>
+            <div class="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl p-6 text-center">
+                <p class="text-2xl font-bold text-white">
+                    💰 ยิ่งทีมลึก ยิ่งได้มาก! รวมคอมได้สูงสุด <span class="text-3xl">40%</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3.5b: Binary Commission (NEW) -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 p-12">
+        <div class="max-w-6xl w-full">
+            <h2 class="text-5xl md:text-6xl font-black text-white mb-8 text-center">
+                ⚖️ Binary Bonus
+            </h2>
+            <p class="text-center text-white/90 text-xl mb-10">รับ 10% จากขาอ่อน + โบนัสพิเศษ</p>
+
+            <div class="grid grid-cols-2 gap-8 mb-8">
+                <!-- Left: Binary Diagram -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8">
+                    <h3 class="text-2xl font-bold text-white mb-6 text-center">📊 ผัง Binary</h3>
+
+                    <!-- SVG Binary Diagram -->
+                    <svg viewBox="0 0 400 350" class="w-full h-auto">
+                        <!-- You -->
+                        <circle cx="200" cy="30" r="30" fill="#8B5CF6" stroke="#fff" stroke-width="3"/>
+                        <text x="200" y="38" text-anchor="middle" fill="#fff" font-weight="bold" font-size="16">คุณ</text>
+
+                        <!-- Left & Right Lines -->
+                        <line x1="200" y1="60" x2="100" y2="120" stroke="#10B981" stroke-width="4"/>
+                        <line x1="200" y1="60" x2="300" y2="120" stroke="#EF4444" stroke-width="4"/>
+
+                        <!-- Left Team (Strong) -->
+                        <circle cx="100" cy="140" r="28" fill="#10B981" stroke="#fff" stroke-width="3"/>
+                        <text x="100" y="145" text-anchor="middle" fill="#fff" font-weight="bold" font-size="14">ขาซ้าย</text>
+                        <text x="100" y="180" text-anchor="middle" fill="#fff" font-weight="bold" font-size="18">฿100K</text>
+                        <text x="100" y="200" text-anchor="middle" fill="#34D399" font-weight="bold" font-size="14">ขาแข็ง</text>
+
+                        <!-- Right Team (Weak) -->
+                        <circle cx="300" cy="140" r="28" fill="#EF4444" stroke="#fff" stroke-width="3"/>
+                        <text x="300" y="145" text-anchor="middle" fill="#fff" font-weight="bold" font-size="14">ขาขวา</text>
+                        <text x="300" y="180" text-anchor="middle" fill="#fff" font-weight="bold" font-size="18">฿60K</text>
+                        <text x="300" y="200" text-anchor="middle" fill="#FCA5A5" font-weight="bold" font-size="14">ขาอ่อน</text>
+
+                        <!-- Left Subtree -->
+                        <line x1="100" y1="168" x2="70" y2="225" stroke="#10B981" stroke-width="2"/>
+                        <line x1="100" y1="168" x2="130" y2="225" stroke="#10B981" stroke-width="2"/>
+                        <circle cx="70" cy="240" r="18" fill="#34D399" stroke="#fff" stroke-width="2"/>
+                        <circle cx="130" cy="240" r="18" fill="#34D399" stroke="#fff" stroke-width="2"/>
+
+                        <!-- Right Subtree -->
+                        <line x1="300" y1="168" x2="270" y2="225" stroke="#EF4444" stroke-width="2"/>
+                        <line x1="300" y1="168" x2="330" y2="225" stroke="#EF4444" stroke-width="2"/>
+                        <circle cx="270" cy="240" r="18" fill="#F87171" stroke="#fff" stroke-width="2"/>
+                        <circle cx="330" cy="240" r="18" fill="#F87171" stroke="#fff" stroke-width="2"/>
+
+                        <!-- Calculation Arrow -->
+                        <path d="M 200 220 L 200 280" stroke="#FCD34D" stroke-width="3" fill="none" marker-end="url(#arrowhead)"/>
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+                                <polygon points="0 0, 10 5, 0 10" fill="#FCD34D"/>
+                            </marker>
+                        </defs>
+
+                        <!-- Result Box -->
+                        <rect x="120" y="290" width="160" height="50" rx="10" fill="#FBBF24" stroke="#fff" stroke-width="2"/>
+                        <text x="200" y="310" text-anchor="middle" fill="#000" font-weight="bold" font-size="12">รับคอมมิชชั่น</text>
+                        <text x="200" y="328" text-anchor="middle" fill="#000" font-weight="bold" font-size="20">฿6,000</text>
+                    </svg>
                 </div>
 
-                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
-                    <h4 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
-                        <span>🎁</span>
-                        <span>Matching Bonus</span>
-                    </h4>
-                    <ul class="space-y-3 text-white">
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-400 text-2xl">✓</span>
-                            <span><strong>5%</strong> จากทีมงาน</span>
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-400 text-2xl">✓</span>
-                            <span>Matching ถึง 3 ชั้น</span>
-                        </li>
-                        <li class="flex items-center gap-3">
-                            <span class="text-emerald-400 text-2xl">✓</span>
-                            <span>โบนัสพิเศษสำหรับลีดเดอร์</span>
-                        </li>
-                    </ul>
+                <!-- Right: Explanation -->
+                <div class="space-y-6">
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
+                        <h4 class="text-2xl font-bold text-white mb-4">💡 วิธีคำนวณ</h4>
+                        <div class="space-y-3 text-white text-lg">
+                            <p>1️⃣ ดูยอดขายรวมทั้ง 2 ขา</p>
+                            <p class="pl-6">• ขาซ้าย: <span class="text-emerald-400 font-bold">฿100,000</span></p>
+                            <p class="pl-6">• ขาขวา: <span class="text-red-400 font-bold">฿60,000</span></p>
+
+                            <p class="pt-2">2️⃣ เลือกขาอ่อน (ยอดต่ำกว่า)</p>
+                            <p class="pl-6">• ขาอ่อน = <span class="text-red-400 font-bold">฿60,000</span></p>
+
+                            <p class="pt-2">3️⃣ คำนวณ 10% จากขาอ่อน</p>
+                            <p class="pl-6">• ฿60,000 × 10% = <span class="text-yellow-400 font-bold text-2xl">฿6,000</span></p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-6">
+                        <h4 class="text-xl font-bold text-white mb-3">🎁 Matching Bonus</h4>
+                        <ul class="space-y-2 text-white">
+                            <li class="flex items-center gap-2">
+                                <span class="text-emerald-400">✓</span>
+                                <span>รับเพิ่ม <strong>5%</strong> จากทีมงาน</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="text-emerald-400">✓</span>
+                                <span>Matching ถึง 3 ชั้น</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="text-emerald-400">✓</span>
+                                <span>โบนัสพิเศษสำหรับลีดเดอร์</span>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl p-6 text-center">
+                <p class="text-2xl font-bold text-white">
+                    ⚡ สร้างทีม 2 ขาให้สมดุล = รายได้สูงสุด!
+                </p>
             </div>
         </div>
     </div>
@@ -976,6 +1117,112 @@
                     <div class="text-4xl mb-3">⚡</div>
                     <h4 class="text-xl font-bold text-white mb-2">ผลลัพธ์ทันที</h4>
                     <p class="text-white/90">คำนวณเสร็จในไม่กี่วินาที ได้คำตอบทันที</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3.8: ปัญหาการหลอกลวงใน MLM (NEW) -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-red-900 via-orange-900 to-yellow-900 p-12">
+        <div class="max-w-6xl w-full">
+            <h2 class="text-5xl md:text-6xl font-black text-white mb-8 text-center">
+                ⚠️ ปัญหาที่พบใน MLM ทั่วไป
+            </h2>
+            <p class="text-center text-white/90 text-xl mb-10">
+                ระบบที่ไม่โปร่งใส = โอกาสโดนหลอกสูง!
+            </p>
+
+            <div class="grid grid-cols-2 gap-6 mb-8">
+                <!-- Problem 1 -->
+                <div class="bg-red-900/30 backdrop-blur-sm border-2 border-red-500/50 rounded-3xl p-8">
+                    <div class="flex items-start gap-4 mb-4">
+                        <span class="text-5xl">🚫</span>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-white mb-3">โยกย้ายสายงานตามใจชอบ</h3>
+                            <p class="text-white/90 text-lg leading-relaxed">
+                                เจ้าของระบบหรือแอดมิน <strong class="text-red-300">แอบโยกย้ายสมาชิก</strong>
+                                จากสายงานหนึ่งไปอีกสายงานหนึ่ง
+                                <br><br>
+                                ทำให้คนที่ควรได้คอมมิชชั่น <strong class="text-red-300">สูญเสียรายได้</strong>
+                                โดยไม่รู้ตัว!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problem 2 -->
+                <div class="bg-red-900/30 backdrop-blur-sm border-2 border-red-500/50 rounded-3xl p-8">
+                    <div class="flex items-start gap-4 mb-4">
+                        <span class="text-5xl">📋</span>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-white mb-3">ไม่มี Log การทำธุรกรรม</h3>
+                            <p class="text-white/90 text-lg leading-relaxed">
+                                <strong class="text-red-300">ไม่มีประวัติการแก้ไข</strong> ระบบไม่บันทึกว่าใครทำอะไร เมื่อไหร่
+                                <br><br>
+                                เกิดปัญหา <strong class="text-red-300">ตรวจสอบไม่ได้</strong>
+                                แอบแก้ข้อมูลย้อนหลังก็รู้ไม่ได้!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problem 3 -->
+                <div class="bg-red-900/30 backdrop-blur-sm border-2 border-red-500/50 rounded-3xl p-8">
+                    <div class="flex items-start gap-4 mb-4">
+                        <span class="text-5xl">🎭</span>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-white mb-3">สามารถปลอมแปลงข้อมูล</h3>
+                            <p class="text-white/90 text-lg leading-relaxed">
+                                เจ้าของระบบสามารถ <strong class="text-red-300">เพิ่ม-ลด ยอดขาย</strong>
+                                คอมมิชชั่น หรือคะแนนได้ตามใจชอบ
+                                <br><br>
+                                <strong class="text-red-300">ไม่มีความโปร่งใส</strong>
+                                ตรวจสอบทางไหนก็ไม่ได้!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Problem 4 -->
+                <div class="bg-red-900/30 backdrop-blur-sm border-2 border-red-500/50 rounded-3xl p-8">
+                    <div class="flex items-start gap-4 mb-4">
+                        <span class="text-5xl">🔒</span>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-white mb-3">ระบบ Black Box ดูไม่ได้</h3>
+                            <p class="text-white/90 text-lg leading-relaxed">
+                                <strong class="text-red-300">ไม่มีสิทธิ์เข้าดูระบบ</strong>
+                                ต้องเชื่อในสิ่งที่เจ้าของระบบบอกเท่านั้น
+                                <br><br>
+                                โดนโกง <strong class="text-red-300">ก็ไม่มีหลักฐาน</strong>
+                                ฟ้องร้องไม่ได้!
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-8 text-center">
+                <h3 class="text-3xl font-bold text-white mb-4">
+                    ✅ ไทยพร๊อม แก้ปัญหาทั้งหมดนี้!
+                </h3>
+                <div class="grid grid-cols-3 gap-6 text-white">
+                    <div>
+                        <div class="text-4xl mb-2">📊</div>
+                        <p class="text-lg font-semibold">มี Activity Log ครบ</p>
+                        <p class="text-white/80">ตรวจสอบได้ทุกธุรกรรม</p>
+                    </div>
+                    <div>
+                        <div class="text-4xl mb-2">🔐</div>
+                        <p class="text-lg font-semibold">ระบบ Permission ชัดเจน</p>
+                        <p class="text-white/80">ใครมีสิทธิ์อะไรกำหนดได้</p>
+                    </div>
+                    <div>
+                        <div class="text-4xl mb-2">💎</div>
+                        <p class="text-lg font-semibold">โปร่งใส 100%</p>
+                        <p class="text-white/80">ตรวจสอบได้ทุกการเคลื่อนไหว</p>
+                    </div>
                 </div>
             </div>
         </div>
