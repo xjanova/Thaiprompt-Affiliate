@@ -5,7 +5,32 @@
 @section('content')
 <div class="container-fluid px-4 py-6" x-data="{
     provider: '{{ old('provider', $aiSetting->provider ?? 'openai') }}',
-    isActive: {{ old('is_active', $aiSetting->is_active ?? false) ? 'true' : 'false' }}
+    model: '{{ old('model', $aiSetting->model ?? 'gpt-3.5-turbo') }}',
+    isActive: {{ old('is_active', $aiSetting->is_active ?? false) ? 'true' : 'false' }},
+    models: {
+        openai: ['gpt-3.5-turbo', 'gpt-4', 'gpt-4-turbo', 'gpt-4o', 'gpt-4o-mini'],
+        deepseek: ['deepseek-chat', 'deepseek-coder'],
+        anthropic: ['claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022', 'claude-3-opus-20240229', 'claude-3-sonnet-20240229', 'claude-3-haiku-20240307'],
+        gemini: ['gemini-1.5-pro', 'gemini-1.5-flash', 'gemini-pro', 'gemini-pro-vision'],
+        custom: []
+    },
+    get modelOptions() {
+        return this.models[this.provider] || [];
+    },
+    get isCustomProvider() {
+        return this.provider === 'custom';
+    },
+    updateModel() {
+        // Set default model for each provider when changed
+        const defaults = {
+            openai: 'gpt-3.5-turbo',
+            deepseek: 'deepseek-chat',
+            anthropic: 'claude-3-5-sonnet-20241022',
+            gemini: 'gemini-1.5-pro',
+            custom: ''
+        };
+        this.model = defaults[this.provider] || '';
+    }
 }">
     <!-- Header -->
     <div class="mb-6">
@@ -77,7 +102,7 @@
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-server text-purple-500 mr-1"></i> AI Provider <span class="text-red-500">*</span>
                             </label>
-                            <select name="provider" x-model="provider" required
+                            <select name="provider" x-model="provider" @change="updateModel()" required
                                 class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all">
                                 <option value="openai">OpenAI (GPT-3.5, GPT-4)</option>
                                 <option value="deepseek">DeepSeek</option>
@@ -91,11 +116,32 @@
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 <i class="fas fa-microchip text-purple-500 mr-1"></i> Model <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="model" value="{{ old('model', $aiSetting->model ?? 'gpt-3.5-turbo') }}" required
-                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
-                                placeholder="gpt-3.5-turbo">
-                            <p class="text-xs text-gray-500 mt-1">
-                                Examples: gpt-3.5-turbo, gpt-4, deepseek-chat, claude-3-sonnet, gemini-pro
+
+                            <!-- Dropdown for predefined providers -->
+                            <div x-show="!isCustomProvider" x-cloak>
+                                <select x-model="model" required
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all">
+                                    <template x-for="modelOption in modelOptions" :key="modelOption">
+                                        <option :value="modelOption" x-text="modelOption"></option>
+                                    </template>
+                                </select>
+                            </div>
+
+                            <!-- Text input for custom provider -->
+                            <div x-show="isCustomProvider" x-cloak>
+                                <input type="text" x-model="model"
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                                    placeholder="your-custom-model-name">
+                            </div>
+
+                            <!-- Hidden input to always submit the model value -->
+                            <input type="hidden" name="model" :value="model">
+
+                            <p class="text-xs text-gray-500 mt-1" x-show="!isCustomProvider">
+                                Select the AI model for this provider
+                            </p>
+                            <p class="text-xs text-gray-500 mt-1" x-show="isCustomProvider">
+                                Enter your custom model name (e.g., llama-3, mistral-large)
                             </p>
                         </div>
 
