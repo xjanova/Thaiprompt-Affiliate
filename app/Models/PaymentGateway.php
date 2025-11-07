@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 
 class PaymentGateway extends Model
 {
@@ -44,14 +47,102 @@ class PaymentGateway extends Model
         'supports_deposit' => 'boolean',
         'supports_withdrawal' => 'boolean',
         'config' => 'array',
-        'credentials' => 'encrypted:array',
         'fees' => 'array',
         'limits' => 'array',
-        'test_credentials' => 'encrypted:array',
         'metadata' => 'array',
         'test_mode' => 'boolean',
         'last_tested_at' => 'datetime',
     ];
+
+    /**
+     * Get the credentials attribute with decryption error handling
+     */
+    public function getCredentialsAttribute($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            // Manually decrypt the value
+            $decrypted = Crypt::decryptString($value);
+            // Decode the JSON
+            return json_decode($decrypted, true);
+        } catch (DecryptException $e) {
+            Log::warning('Failed to decrypt credentials for payment gateway', [
+                'gateway_id' => $this->id,
+                'gateway_code' => $this->code ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Unexpected error accessing credentials for payment gateway', [
+                'gateway_id' => $this->id,
+                'gateway_code' => $this->code ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Set the credentials attribute with encryption
+     */
+    public function setCredentialsAttribute($value)
+    {
+        if ($value === null) {
+            $this->attributes['credentials'] = null;
+            return;
+        }
+
+        // Encrypt the JSON-encoded value
+        $this->attributes['credentials'] = Crypt::encryptString(json_encode($value));
+    }
+
+    /**
+     * Get the test_credentials attribute with decryption error handling
+     */
+    public function getTestCredentialsAttribute($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        try {
+            // Manually decrypt the value
+            $decrypted = Crypt::decryptString($value);
+            // Decode the JSON
+            return json_decode($decrypted, true);
+        } catch (DecryptException $e) {
+            Log::warning('Failed to decrypt test credentials for payment gateway', [
+                'gateway_id' => $this->id,
+                'gateway_code' => $this->code ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Unexpected error accessing test credentials for payment gateway', [
+                'gateway_id' => $this->id,
+                'gateway_code' => $this->code ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Set the test_credentials attribute with encryption
+     */
+    public function setTestCredentialsAttribute($value)
+    {
+        if ($value === null) {
+            $this->attributes['test_credentials'] = null;
+            return;
+        }
+
+        // Encrypt the JSON-encoded value
+        $this->attributes['test_credentials'] = Crypt::encryptString(json_encode($value));
+    }
 
     /**
      * Scope for active gateways
