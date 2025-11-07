@@ -98,6 +98,10 @@ class ProductController extends Controller
             'dimensions' => 'nullable|string|max:100',
             'sku' => 'nullable|string|unique:products,sku',
             'track_inventory' => 'boolean',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'pv_value' => 'nullable|numeric|min:0',
+            'customer_cashback' => 'nullable|numeric|min:0',
+            'cashback_percentage' => 'nullable|numeric|min:0|max:100',
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
         ]);
@@ -135,10 +139,29 @@ class ProductController extends Controller
                 'brand' => $request->brand,
                 'weight' => $request->weight,
                 'dimensions' => $request->dimensions,
+                'commission_rate' => $request->commission_rate ?? 10.00,
+                'customer_cashback' => $request->customer_cashback ?? 0,
+                'cashback_percentage' => $request->cashback_percentage ?? 0,
                 'main_image_url' => $mainImageUrl,
                 'is_active' => true,
                 'published_at' => now(),
             ]);
+
+            // Create PV for default MLM plan if specified
+            if ($request->filled('pv_value') && $request->pv_value > 0) {
+                // Get default or first active MLM plan
+                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
+                if ($defaultPlan) {
+                    \App\Models\MlmProductPv::create([
+                        'product_id' => $product->id,
+                        'mlm_plan_id' => $defaultPlan->id,
+                        'pv_value' => $request->pv_value,
+                        'use_global_rate' => true,
+                        'show_pv_on_product_page' => true,
+                        'show_commission_preview' => true,
+                    ]);
+                }
+            }
 
             // Handle additional images with optimization
             if ($request->hasFile('images')) {
@@ -208,6 +231,10 @@ class ProductController extends Controller
             'dimensions' => 'nullable|string|max:100',
             'sku' => 'nullable|string|unique:products,sku,' . $product->id,
             'track_inventory' => 'boolean',
+            'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'pv_value' => 'nullable|numeric|min:0',
+            'customer_cashback' => 'nullable|numeric|min:0',
+            'cashback_percentage' => 'nullable|numeric|min:0|max:100',
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
         ]);
@@ -247,11 +274,48 @@ class ProductController extends Controller
                 'brand' => $request->brand,
                 'weight' => $request->weight,
                 'dimensions' => $request->dimensions,
+                'commission_rate' => $request->commission_rate ?? $product->commission_rate,
+                'customer_cashback' => $request->customer_cashback ?? 0,
+                'cashback_percentage' => $request->cashback_percentage ?? 0,
             ]);
+
+            // Update or create PV for default MLM plan if specified
+            if ($request->filled('pv_value')) {
+                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
+                if ($defaultPlan) {
+                    $existingPv = $product->getMlmPv($defaultPlan->id);
+
+                    if ($existingPv) {
+                        // Update existing PV
+                        $existingPv->update([
+                            'pv_value' => $request->pv_value,
+                        ]);
+                    } else {
+                        // Create new PV
+                        \App\Models\MlmProductPv::create([
+                            'product_id' => $product->id,
+                            'mlm_plan_id' => $defaultPlan->id,
+                            'pv_value' => $request->pv_value,
+                            'use_global_rate' => true,
+                            'show_pv_on_product_page' => true,
+                            'show_commission_preview' => true,
+                        ]);
+                    }
+                }
+            } elseif ($request->has('pv_value') && $request->pv_value == 0) {
+                // Delete PV if value is 0
+                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
+                if ($defaultPlan) {
+                    $existingPv = $product->getMlmPv($defaultPlan->id);
+                    if ($existingPv) {
+                        $existingPv->delete();
+                    }
+                }
+            }
 
             // Handle deleted images
             if ($request->filled('deleted_images')) {
-                $deletedIds = $request->input('deleted_images');
+                $deletedIds = explode(',', $request->input('deleted_images'));
                 $imagesToDelete = ProductImage::whereIn('id', $deletedIds)
                     ->where('product_id', $product->id)
                     ->get();

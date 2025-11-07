@@ -165,31 +165,97 @@ class ECommerceController extends Controller
             'category_id' => 'required|exists:product_categories,id',
             'sku' => 'nullable|string|max:100|unique:products,sku',
             'description' => 'nullable|string',
+            'short_description' => 'nullable|string|max:500',
             'price' => 'required|numeric|min:0',
             'compare_at_price' => 'nullable|numeric|min:0',
+            'cost_price' => 'nullable|numeric|min:0',
             'stock_quantity' => 'nullable|integer|min:0',
             'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'pv_value' => 'nullable|numeric|min:0',
+            'customer_cashback' => 'nullable|numeric|min:0',
+            'cashback_percentage' => 'nullable|numeric|min:0|max:100',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'track_inventory' => 'boolean',
+            'main_image' => 'nullable|image|max:5120',
+            'images.*' => 'nullable|image|max:5120',
         ]);
 
-        // Generate slug
-        $validated['slug'] = \Str::slug($validated['name']);
+        DB::beginTransaction();
 
-        // Set seller_id to first user or current user
-        $validated['seller_id'] = auth()->id() ?? 1;
+        try {
+            // Handle main image upload
+            if ($request->hasFile('main_image')) {
+                $validated['main_image_url'] = $this->imageUploadService->uploadImage(
+                    $request->file('main_image'),
+                    'products',
+                    1200,
+                    1200,
+                    90
+                );
+            }
 
-        // Set defaults
-        $validated['is_active'] = $request->has('is_active');
-        $validated['is_featured'] = $request->has('is_featured');
-        $validated['track_inventory'] = $request->has('track_inventory');
-        $validated['stock_status'] = $validated['track_inventory'] && ($validated['stock_quantity'] ?? 0) > 0 ? 'in_stock' : 'out_of_stock';
+            // Generate slug
+            $validated['slug'] = \Str::slug($validated['name']);
 
-        Product::create($validated);
+            // Set seller_id to first user or current user
+            $validated['seller_id'] = auth()->id() ?? 1;
 
-        return redirect()->route('admin.ecommerce.products.index')
-            ->with('success', 'เพิ่มสินค้าเรียบร้อยแล้ว');
+            // Set defaults
+            $validated['is_active'] = $request->has('is_active');
+            $validated['is_featured'] = $request->has('is_featured');
+            $validated['track_inventory'] = $request->has('track_inventory');
+            $validated['stock_status'] = $validated['track_inventory'] && ($validated['stock_quantity'] ?? 0) > 0 ? 'in_stock' : 'out_of_stock';
+            $validated['commission_rate'] = $validated['commission_rate'] ?? 10.00;
+            $validated['customer_cashback'] = $validated['customer_cashback'] ?? 0;
+            $validated['cashback_percentage'] = $validated['cashback_percentage'] ?? 0;
+            $validated['published_at'] = now();
+
+            $product = Product::create($validated);
+
+            // Create PV for default MLM plan if specified
+            if ($request->filled('pv_value') && $request->pv_value > 0) {
+                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
+                if ($defaultPlan) {
+                    \App\Models\MlmProductPv::create([
+                        'product_id' => $product->id,
+                        'mlm_plan_id' => $defaultPlan->id,
+                        'pv_value' => $request->pv_value,
+                        'use_global_rate' => true,
+                        'show_pv_on_product_page' => true,
+                        'show_commission_preview' => true,
+                    ]);
+                }
+            }
+
+            // Handle additional images
+            if ($request->hasFile('images')) {
+                $sortOrder = 1;
+                foreach ($request->file('images') as $image) {
+                    $imageUrl = $this->imageUploadService->uploadImage(
+                        $image,
+                        'products',
+                        1200,
+                        1200,
+                        85
+                    );
+                    ProductImage::create([
+                        'product_id' => $product->id,
+                        'image_url' => $imageUrl,
+                        'sort_order' => $sortOrder++,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('admin.ecommerce.products.index')
+                ->with('success', 'เพิ่มสินค้าเรียบร้อยแล้ว');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -242,8 +308,12 @@ class ECommerceController extends Controller
             'is_featured' => 'boolean',
             'category_id' => 'nullable|exists:product_categories,id',
             'commission_rate' => 'nullable|numeric|min:0|max:100',
+            'pv_value' => 'nullable|numeric|min:0',
+            'customer_cashback' => 'nullable|numeric|min:0',
+            'cashback_percentage' => 'nullable|numeric|min:0|max:100',
             'brand' => 'nullable|string|max:100',
             'weight' => 'nullable|numeric|min:0',
+            'dimensions' => 'nullable|string|max:100',
             'main_image' => 'nullable|image|max:5120',
             'images.*' => 'nullable|image|max:5120',
         ]);
@@ -290,11 +360,49 @@ class ECommerceController extends Controller
                 }
             }
 
+            // Set cashback defaults if not provided
+            $validated['customer_cashback'] = $validated['customer_cashback'] ?? 0;
+            $validated['cashback_percentage'] = $validated['cashback_percentage'] ?? 0;
+
             $product->update($validated);
+
+            // Update or create PV for default MLM plan if specified
+            if ($request->filled('pv_value')) {
+                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
+                if ($defaultPlan) {
+                    $existingPv = $product->getMlmPv($defaultPlan->id);
+
+                    if ($existingPv) {
+                        // Update existing PV
+                        $existingPv->update([
+                            'pv_value' => $request->pv_value,
+                        ]);
+                    } else {
+                        // Create new PV
+                        \App\Models\MlmProductPv::create([
+                            'product_id' => $product->id,
+                            'mlm_plan_id' => $defaultPlan->id,
+                            'pv_value' => $request->pv_value,
+                            'use_global_rate' => true,
+                            'show_pv_on_product_page' => true,
+                            'show_commission_preview' => true,
+                        ]);
+                    }
+                }
+            } elseif ($request->has('pv_value') && $request->pv_value == 0) {
+                // Delete PV if value is 0
+                $defaultPlan = \App\Models\MlmPlan::where('is_active', true)->first();
+                if ($defaultPlan) {
+                    $existingPv = $product->getMlmPv($defaultPlan->id);
+                    if ($existingPv) {
+                        $existingPv->delete();
+                    }
+                }
+            }
 
             // Handle deleted images
             if ($request->filled('deleted_images')) {
-                $deletedIds = $request->input('deleted_images');
+                $deletedIds = explode(',', $request->input('deleted_images'));
                 $imagesToDelete = ProductImage::whereIn('id', $deletedIds)
                     ->where('product_id', $product->id)
                     ->get();
