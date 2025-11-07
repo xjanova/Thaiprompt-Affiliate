@@ -384,9 +384,16 @@ class ThemeService
      */
     protected function clearAllUserThemeCaches()
     {
-        // This is a simple implementation
-        // In production, you might want to use Cache tags or Redis SCAN
-        Cache::flush();
+        // Get all users who have theme preferences
+        $userIds = UserTheme::distinct('user_id')->pluck('user_id');
+
+        // Clear cache for each user individually instead of flushing everything
+        foreach ($userIds as $userId) {
+            Cache::forget("user_theme_{$userId}");
+        }
+
+        // Note: In production with many users, consider using Cache tags with Redis
+        // or implementing a more efficient cache clearing strategy
     }
 
     /**
