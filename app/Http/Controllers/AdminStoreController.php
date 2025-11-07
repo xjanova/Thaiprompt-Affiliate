@@ -22,7 +22,7 @@ class AdminStoreController extends Controller
         $categories = ProductCategory::withCount('products')->get();
 
         // Build query for products
-        $query = Product::with(['seller', 'category'])
+        $query = Product::with(['seller', 'category', 'mlmProductPv'])
             ->where('store_id', $adminStore->id)
             ->where('is_active', true);
 
@@ -67,7 +67,8 @@ class AdminStoreController extends Controller
         $products = $query->paginate(16);
 
         // Get featured products
-        $featuredProducts = Product::where('store_id', $adminStore->id)
+        $featuredProducts = Product::with(['mlmProductPv'])
+            ->where('store_id', $adminStore->id)
             ->where('is_featured', true)
             ->where('is_active', true)
             ->limit(8)
@@ -110,7 +111,7 @@ class AdminStoreController extends Controller
         // Find admin user (assuming user_id = 1 is admin)
         $adminUserId = 1;
 
-        $store = VendorStore::where('user_id', $adminUserId)->first();
+        $store = VendorStore::with('user')->where('user_id', $adminUserId)->first();
 
         if (!$store) {
             // Create default admin store

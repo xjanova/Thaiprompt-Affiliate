@@ -473,6 +473,113 @@ class WalletService
     }
 
     /**
+     * Refund to wallet (admin action)
+     */
+    public function refund(
+        Wallet $wallet,
+        float $amount,
+        string $reason,
+        User $admin,
+        ?string $referenceType = null,
+        ?int $referenceId = null
+    ): WalletTransaction {
+        if ($amount <= 0) {
+            throw new Exception('Refund amount must be greater than 0');
+        }
+
+        return $this->deposit(
+            $wallet,
+            $amount,
+            "คืนเงิน: {$reason}",
+            $referenceType ?? 'admin_refund',
+            $referenceId ?? $admin->id,
+            [
+                'refunded_by' => $admin->id,
+                'reason' => $reason,
+                'type' => 'refund',
+            ]
+        );
+    }
+
+    /**
+     * Rollback transaction (admin action)
+     */
+    public function rollbackTransaction(
+        WalletTransaction $transaction,
+        string $reason,
+        User $admin
+    ): WalletTransaction {
+        if ($transaction->status !== 'completed') {
+            throw new Exception('Can only rollback completed transactions');
+        }
+
+        $wallet = $transaction->wallet;
+        $amount = $transaction->amount;
+
+        // For deposit/income transactions, deduct the amount
+        if (in_array($transaction->type, ['deposit', 'transfer_in', 'commission', 'refund', 'bonus', 'cashback'])) {
+            if ($wallet->balance < $amount) {
+                throw new Exception('Insufficient balance to rollback this transaction');
+            }
+
+            return DB::transaction(function () use ($wallet, $amount, $reason, $admin, $transaction) {
+                $balanceBefore = $wallet->balance;
+                $balanceAfter = $balanceBefore - $amount;
+
+                $rollbackTx = WalletTransaction::create([
+                    'wallet_id' => $wallet->id,
+                    'user_id' => $wallet->user_id,
+                    'type' => 'fee',
+                    'amount' => $amount,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceAfter,
+                    'currency' => $wallet->currency,
+                    'description' => "Rollback: {$reason} (ธุรกรรมเดิม: {$transaction->transaction_id})",
+                    'reference_type' => 'rollback',
+                    'reference_id' => $transaction->id,
+                    'status' => 'completed',
+                    'metadata' => [
+                        'rollback_by' => $admin->id,
+                        'reason' => $reason,
+                        'original_transaction_id' => $transaction->id,
+                    ],
+                    'completed_at' => now(),
+                ]);
+
+                $wallet->update([
+                    'balance' => $balanceAfter,
+                    'total_expense' => $wallet->total_expense + $amount,
+                    'last_transaction_at' => now(),
+                ]);
+
+                $this->logAction(
+                    $wallet,
+                    'transaction_rollback',
+                    "Transaction rolled back by admin: {$reason}",
+                    'warning',
+                    ['transaction_id' => $rollbackTx->id, 'admin_id' => $admin->id]
+                );
+
+                return $rollbackTx;
+            });
+        } else {
+            // For withdrawal/expense transactions, add the amount back
+            return $this->deposit(
+                $wallet,
+                $amount,
+                "Rollback: {$reason} (ธุรกรรมเดิม: {$transaction->transaction_id})",
+                'rollback',
+                $transaction->id,
+                [
+                    'rollback_by' => $admin->id,
+                    'reason' => $reason,
+                    'original_transaction_id' => $transaction->id,
+                ]
+            );
+        }
+    }
+
+    /**
      * Adjust wallet balance (admin only)
      */
     public function adjustBalance(

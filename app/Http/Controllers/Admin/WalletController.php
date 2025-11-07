@@ -384,4 +384,69 @@ class WalletController extends Controller
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Refund to user's wallet (Admin only)
+     */
+    public function refund(Request $request, $id)
+    {
+        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'reason' => 'required|string|max:255',
+            'reference_type' => 'nullable|string',
+            'reference_id' => 'nullable|integer',
+        ]);
+
+        try {
+            $wallet = Wallet::findOrFail($id);
+            $admin = auth()->user();
+
+            $transaction = $this->walletService->refund(
+                $wallet,
+                $request->amount,
+                $request->reason,
+                $admin,
+                $request->reference_type,
+                $request->reference_id
+            );
+
+            return redirect()->back()->with('success', 'คืนเงินสำเร็จ: ' . number_format($request->amount, 2) . ' บาท');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Rollback a transaction (Admin only)
+     */
+    public function rollbackTransaction(Request $request, $id)
+    {
+        if (!auth()->user()->isSuperAdmin() && !auth()->user()->hasRole('admin')) {
+            return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์ในการดำเนินการนี้');
+        }
+
+        $request->validate([
+            'transaction_id' => 'required|exists:wallet_transactions,id',
+            'reason' => 'required|string|max:255',
+        ]);
+
+        try {
+            $transaction = WalletTransaction::findOrFail($request->transaction_id);
+            $admin = auth()->user();
+
+            $rollbackTx = $this->walletService->rollbackTransaction(
+                $transaction,
+                $request->reason,
+                $admin
+            );
+
+            return redirect()->back()->with('success', 'Rollback ธุรกรรมสำเร็จ');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
 }

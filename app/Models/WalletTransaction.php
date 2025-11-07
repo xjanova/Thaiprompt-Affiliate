@@ -94,6 +94,7 @@ class WalletTransaction extends Model
             'refund' => '↩️',
             'fee' => '💳',
             'bonus' => '🎁',
+            'cashback' => '💸',
             default => '📊',
         };
     }
@@ -112,6 +113,7 @@ class WalletTransaction extends Model
             'refund' => 'คืนเงิน',
             'fee' => 'ค่าธรรมเนียม',
             'bonus' => 'โบนัส',
+            'cashback' => 'เงินคืน (Cashback)',
             default => 'อื่นๆ',
         };
     }
@@ -151,7 +153,7 @@ class WalletTransaction extends Model
      */
     public function getFormattedAmountAttribute(): string
     {
-        $sign = in_array($this->type, ['deposit', 'transfer_in', 'commission', 'refund', 'bonus']) ? '+' : '-';
+        $sign = in_array($this->type, ['deposit', 'transfer_in', 'commission', 'refund', 'bonus', 'cashback']) ? '+' : '-';
         return $sign . number_format(abs($this->amount), 2) . ' ' . $this->currency;
     }
 
