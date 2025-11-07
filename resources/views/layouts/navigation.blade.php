@@ -131,7 +131,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
     <div class="max-w-7xl mx-auto">
         <div class="flex justify-between items-center" style="height: 100%;">
             <!-- Logo Section -->
-            <div class="shrink-0 flex items-center">
+            <div class="shrink-0 flex items-center w-48">
                 <a href="{{ route('home') }}" class="flex items-center">
                     @if($logo)
                         <img src="{{ asset($logo) }}"
@@ -153,8 +153,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                 </a>
             </div>
 
-            <!-- Desktop Navigation Links -->
-            <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+            <!-- Desktop Navigation Links - Centered -->
+            <div class="hidden space-x-8 sm:flex flex-1 justify-center">
                 @if($menuItems && $menuItems->count() > 0)
                     @foreach($menuItems as $menuItem)
                         @if($menuItem->shouldDisplay())
@@ -232,7 +232,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
             </div>
 
             <!-- Right Side: Language + Auth -->
-            <div class="hidden sm:flex sm:items-center sm:ml-6 space-x-4">
+            <div class="hidden sm:flex sm:items-center space-x-4 w-48 justify-end">
                 <!-- Language Switcher -->
                 <div class="relative z-50">
                     <x-language-switcher-pro />
