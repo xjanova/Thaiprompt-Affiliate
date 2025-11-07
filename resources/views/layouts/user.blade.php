@@ -37,6 +37,16 @@
     {{-- Theme System v2 --}}
     <x-theme-style :theme="$currentTheme ?? null" :mode="$currentThemeMode ?? 'auto'" />
 
+    @php
+        // Gradient color variables from settings with defaults
+        $primaryStart = \App\Models\Setting::get('theme_primary_start', '#3B82F6');
+        $primaryEnd = \App\Models\Setting::get('theme_primary_end', '#1D4ED8');
+        $secondaryStart = \App\Models\Setting::get('theme_secondary_start', '#10B981');
+        $secondaryEnd = \App\Models\Setting::get('theme_secondary_end', '#059669');
+        $accentStart = \App\Models\Setting::get('theme_accent_start', '#F59E0B');
+        $accentEnd = \App\Models\Setting::get('theme_accent_end', '#D97706');
+    @endphp
+
     <style>
         :root {
             --gradient-primary: linear-gradient(135deg, {{ $primaryStart }}, {{ $primaryEnd }});
