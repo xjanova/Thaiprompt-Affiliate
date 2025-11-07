@@ -100,7 +100,7 @@
     </div>
 </div>
 
-<!-- Slide 3: MLM System -->
+<!-- Slide 3: MLM System Overview -->
 <div class="slide">
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 p-12">
         <div class="max-w-6xl w-full">
@@ -142,6 +142,209 @@
                     </div>
                     <div class="text-6xl">💰</div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3.5: MLM Commission Structure (NEW) -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-12">
+        <div class="max-w-6xl w-full">
+            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
+                💎 โครงสร้างค่าคอมมิชชั่น MLM
+            </h2>
+
+            <div class="mb-8">
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-8">
+                    <h3 class="text-3xl font-bold text-white mb-6 text-center">🌟 Unilevel Commission</h3>
+                    <div class="grid grid-cols-5 gap-4">
+                        <div class="text-center p-4 bg-gradient-to-br from-emerald-600 to-green-600 rounded-2xl">
+                            <div class="text-4xl font-black text-white mb-2">15%</div>
+                            <p class="text-white/90 font-semibold">ชั้นที่ 1</p>
+                            <p class="text-white/70 text-sm">ทีมตรง</p>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl">
+                            <div class="text-4xl font-black text-white mb-2">10%</div>
+                            <p class="text-white/90 font-semibold">ชั้นที่ 2</p>
+                            <p class="text-white/70 text-sm">ชั้น 2</p>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-2xl">
+                            <div class="text-4xl font-black text-white mb-2">7%</div>
+                            <p class="text-white/90 font-semibold">ชั้นที่ 3</p>
+                            <p class="text-white/70 text-sm">ชั้น 3</p>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl">
+                            <div class="text-4xl font-black text-white mb-2">5%</div>
+                            <p class="text-white/90 font-semibold">ชั้นที่ 4</p>
+                            <p class="text-white/70 text-sm">ชั้น 4</p>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-pink-600 to-red-600 rounded-2xl">
+                            <div class="text-4xl font-black text-white mb-2">3%</div>
+                            <p class="text-white/90 font-semibold">ชั้นที่ 5</p>
+                            <p class="text-white/70 text-sm">ชั้น 5</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
+                    <h4 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span>⚖️</span>
+                        <span>Binary Bonus</span>
+                    </h4>
+                    <ul class="space-y-3 text-white">
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-400 text-2xl">✓</span>
+                            <span><strong>10%</strong> จากขาอ่อน</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-400 text-2xl">✓</span>
+                            <span>คำนวณตามสัปดาห์</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-400 text-2xl">✓</span>
+                            <span>ต้องมียอดทั้ง 2 ขา</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6">
+                    <h4 class="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                        <span>🎁</span>
+                        <span>Matching Bonus</span>
+                    </h4>
+                    <ul class="space-y-3 text-white">
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-400 text-2xl">✓</span>
+                            <span><strong>5%</strong> จากทีมงาน</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-400 text-2xl">✓</span>
+                            <span>Matching ถึง 3 ชั้น</span>
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-emerald-400 text-2xl">✓</span>
+                            <span>โบนัสพิเศษสำหรับลีดเดอร์</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 3.6: MLM Income Examples (NEW) -->
+<div class="slide">
+    <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-12">
+        <div class="max-w-6xl w-full">
+            <h2 class="text-5xl md:text-6xl font-black text-white mb-12 text-center">
+                💰 ตัวอย่างรายได้จริง MLM
+            </h2>
+
+            <div class="grid grid-cols-3 gap-6 mb-8">
+                <!-- Example 1: Beginner -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6">
+                    <div class="text-center mb-4">
+                        <div class="text-5xl mb-3">🌱</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">มือใหม่</h3>
+                        <p class="text-emerald-400 text-sm">เดือนที่ 1-3</p>
+                    </div>
+                    <div class="space-y-3 text-white">
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>ทีมตรง:</span>
+                            <strong>5 คน</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>ยอดขายเฉลี่ย:</span>
+                            <strong>฿2,000/คน</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>คอมชั้น 1 (15%):</span>
+                            <strong>฿1,500</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>Binary Bonus:</span>
+                            <strong>฿800</strong>
+                        </div>
+                        <div class="bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl p-3 text-center mt-4">
+                            <p class="text-white/80 text-sm">รวมต่อเดือน</p>
+                            <p class="text-3xl font-black text-white">฿2,300</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 2: Intermediate -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 ring-2 ring-yellow-500">
+                    <div class="text-center mb-4">
+                        <div class="text-5xl mb-3">🚀</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">มืออาชีพ</h3>
+                        <p class="text-yellow-400 text-sm">เดือนที่ 4-6</p>
+                    </div>
+                    <div class="space-y-3 text-white">
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>ทีมตรง:</span>
+                            <strong>20 คน</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>ยอดขายเฉลี่ย:</span>
+                            <strong>฿3,000/คน</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>คอม 5 ชั้น:</span>
+                            <strong>฿12,500</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>Binary + Matching:</span>
+                            <strong>฿8,200</strong>
+                        </div>
+                        <div class="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-xl p-3 text-center mt-4">
+                            <p class="text-white/80 text-sm">รวมต่อเดือน</p>
+                            <p class="text-3xl font-black text-white">฿20,700</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Example 3: Leader -->
+                <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-3xl p-6 ring-2 ring-purple-500">
+                    <div class="text-center mb-4">
+                        <div class="text-5xl mb-3">👑</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">ลีดเดอร์</h3>
+                        <p class="text-purple-400 text-sm">เดือนที่ 7+</p>
+                    </div>
+                    <div class="space-y-3 text-white">
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>ทีมทั้งหมด:</span>
+                            <strong>100+ คน</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>ยอดขายเฉลี่ย:</span>
+                            <strong>฿5,000/คน</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>คอม 5 ชั้น:</span>
+                            <strong>฿45,000</strong>
+                        </div>
+                        <div class="flex justify-between items-center py-2 border-b border-white/20">
+                            <span>Binary + Matching:</span>
+                            <strong>฿28,000</strong>
+                        </div>
+                        <div class="bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl p-3 text-center mt-4">
+                            <p class="text-white/80 text-sm">รวมต่อเดือน</p>
+                            <p class="text-3xl font-black text-white">฿73,000+</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-3xl p-6 text-center">
+                <p class="text-2xl text-white font-bold mb-2">
+                    💎 รายได้ไม่จำกัด! ยิ่งทีมใหญ่ รายได้ยิ่งมาก
+                </p>
+                <p class="text-white/90 text-lg">
+                    ลีดเดอร์ระดับสูงสุดสามารถสร้างรายได้ได้ถึง <strong class="text-2xl">฿200,000 - ฿500,000+</strong> ต่อเดือน
+                </p>
             </div>
         </div>
     </div>

@@ -251,6 +251,9 @@
         transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         position: absolute;
         inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow-y: auto;
     }
 
     .slide.active {
@@ -261,6 +264,50 @@
 
     .slide.prev {
         transform: translateX(-100%);
+    }
+
+    /* Fullscreen responsive fixes */
+    #presentation-fullscreen {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+    }
+
+    /* Ensure content fits on screen */
+    #presentation-fullscreen .slide > div {
+        min-height: 100vh;
+        max-height: 100vh;
+    }
+
+    /* Handle different screen sizes */
+    @media (max-width: 768px) {
+        #presentation-fullscreen .slide {
+            font-size: 14px;
+        }
+
+        #presentation-fullscreen h2 {
+            font-size: 2rem !important;
+        }
+
+        #presentation-fullscreen h3 {
+            font-size: 1.5rem !important;
+        }
+    }
+
+    @media (min-width: 1920px) {
+        #presentation-fullscreen .slide {
+            font-size: 18px;
+        }
+    }
+
+    /* Force hardware acceleration */
+    .slide,
+    #presentation-fullscreen {
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
     }
 
     /* Progress dots */
@@ -309,14 +356,23 @@ function openPresentationFullscreen() {
     fullscreen.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
-    // Request fullscreen
-    if (fullscreen.requestFullscreen) {
-        fullscreen.requestFullscreen();
-    } else if (fullscreen.webkitRequestFullscreen) {
-        fullscreen.webkitRequestFullscreen();
-    } else if (fullscreen.msRequestFullscreen) {
-        fullscreen.msRequestFullscreen();
+    // Request fullscreen with all vendor prefixes
+    const requestFullscreen = fullscreen.requestFullscreen ||
+                             fullscreen.webkitRequestFullscreen ||
+                             fullscreen.mozRequestFullScreen ||
+                             fullscreen.msRequestFullscreen;
+
+    if (requestFullscreen) {
+        requestFullscreen.call(fullscreen).catch(err => {
+            console.log('Fullscreen request failed:', err);
+            // Continue anyway even if fullscreen fails
+        });
     }
+
+    // Force resize to fit screen
+    setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+    }, 100);
 
     showSlide(0);
 }
@@ -326,15 +382,40 @@ function closePresentationFullscreen() {
     fullscreen.classList.add('hidden');
     document.body.style.overflow = 'auto';
 
-    if (document.exitFullscreen) {
-        document.exitFullscreen();
-    } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-    } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
+    // Exit fullscreen with all vendor prefixes
+    const exitFullscreen = document.exitFullscreen ||
+                          document.webkitExitFullscreen ||
+                          document.mozCancelFullScreen ||
+                          document.msExitFullscreen;
+
+    if (exitFullscreen) {
+        exitFullscreen.call(document).catch(err => {
+            console.log('Exit fullscreen failed:', err);
+        });
     }
 
     stopAutoplay();
+}
+
+// Handle fullscreen change events
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+function handleFullscreenChange() {
+    const isFullscreen = document.fullscreenElement ||
+                        document.webkitFullscreenElement ||
+                        document.mozFullScreenElement ||
+                        document.msFullscreenElement;
+
+    if (!isFullscreen) {
+        const fullscreenDiv = document.getElementById('presentation-fullscreen');
+        if (fullscreenDiv && !fullscreenDiv.classList.contains('hidden')) {
+            // User exited fullscreen, close presentation
+            closePresentationFullscreen();
+        }
+    }
 }
 
 function showSlide(index) {
