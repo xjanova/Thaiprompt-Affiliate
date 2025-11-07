@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreCashbackSettingRequest;
+use App\Http\Requests\UpdateCashbackSettingRequest;
 use App\Models\CashbackSetting;
 use App\Models\Product;
 use App\Services\CashbackService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 
 class CashbackSettingController extends Controller
 {
@@ -72,31 +73,9 @@ class CashbackSettingController extends Controller
     /**
      * Store a newly created cashback setting
      */
-    public function store(Request $request)
+    public function store(StoreCashbackSettingRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'type' => 'required|in:global,product',
-            'product_id' => 'required_if:type,product|nullable|exists:products,id',
-            'value_type' => 'required|in:percentage,fixed',
-            'value' => 'required|numeric|min:0',
-            'is_active' => 'boolean',
-            'min_order_amount' => 'nullable|numeric|min:0',
-            'max_cashback_amount' => 'nullable|numeric|min:0',
-            'description' => 'nullable|string|max:500',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        // Validate percentage is not > 100
-        if ($request->value_type === 'percentage' && $request->value > 100) {
-            return redirect()->back()
-                ->withErrors(['value' => 'เปอร์เซ็นต์ไม่สามารถเกิน 100%'])
-                ->withInput();
-        }
+        $validated = $request->validated();
 
         // Check if global setting already exists
         if ($request->type === 'global') {
@@ -153,31 +132,9 @@ class CashbackSettingController extends Controller
     /**
      * Update the specified cashback setting
      */
-    public function update(Request $request, CashbackSetting $cashback)
+    public function update(UpdateCashbackSettingRequest $request, CashbackSetting $cashback)
     {
-        $validator = Validator::make($request->all(), [
-            'type' => 'required|in:global,product',
-            'product_id' => 'required_if:type,product|nullable|exists:products,id',
-            'value_type' => 'required|in:percentage,fixed',
-            'value' => 'required|numeric|min:0',
-            'is_active' => 'boolean',
-            'min_order_amount' => 'nullable|numeric|min:0',
-            'max_cashback_amount' => 'nullable|numeric|min:0',
-            'description' => 'nullable|string|max:500',
-        ]);
-
-        if ($validator->fails()) {
-            return redirect()->back()
-                ->withErrors($validator)
-                ->withInput();
-        }
-
-        // Validate percentage is not > 100
-        if ($request->value_type === 'percentage' && $request->value > 100) {
-            return redirect()->back()
-                ->withErrors(['value' => 'เปอร์เซ็นต์ไม่สามารถเกิน 100%'])
-                ->withInput();
-        }
+        $validated = $request->validated();
 
         $cashback->update([
             'type' => $request->type,

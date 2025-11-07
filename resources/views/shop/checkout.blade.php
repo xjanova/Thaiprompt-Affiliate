@@ -265,7 +265,47 @@
                                     @endif
                                 </span>
                             </div>
+
+                            @if(isset($cashbackPreview) && $cashbackPreview['total_cashback'] > 0)
+                            <div class="flex justify-between text-green-600 bg-green-50 -mx-6 px-6 py-2">
+                                <div class="flex items-center">
+                                    <span class="mr-1">💰</span>
+                                    <span class="font-semibold">Cashback ที่จะได้รับ</span>
+                                </div>
+                                <span class="font-bold">฿{{ number_format($cashbackPreview['total_cashback'], 2) }}</span>
+                            </div>
+                            @endif
                         </div>
+
+                        <!-- Cashback Details (if available) -->
+                        @if(isset($cashbackPreview) && $cashbackPreview['total_cashback'] > 0)
+                        <div class="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                            <div class="flex items-start mb-3">
+                                <span class="text-2xl mr-2">🎁</span>
+                                <div class="flex-1">
+                                    <h3 class="font-bold text-green-800 mb-1">รายละเอียด Cashback</h3>
+                                    <p class="text-xs text-green-700">เงินคืนจะถูกเพิ่มในกระเป๋าเงินทันทีหลังชำระเงิน</p>
+                                </div>
+                            </div>
+
+                            @if(isset($cashbackPreview['breakdown']) && count($cashbackPreview['breakdown']) > 0)
+                            <div class="space-y-2">
+                                @foreach($cashbackPreview['breakdown'] as $item)
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-700">
+                                        @if($item['type'] === 'global')
+                                            🌐 {{ $item['product_name'] ?? 'Global Cashback' }}
+                                        @else
+                                            📦 {{ $item['product_name'] }}
+                                        @endif
+                                    </span>
+                                    <span class="font-semibold text-green-600">฿{{ number_format($item['cashback'], 2) }}</span>
+                                </div>
+                                @endforeach
+                            </div>
+                            @endif
+                        </div>
+                        @endif
 
                         <!-- Grand Total -->
                         <div class="pt-4 border-t-2 border-gray-200 mb-6">

@@ -73,7 +73,7 @@
     </div>
 
     <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white">
             <div class="flex items-center justify-between mb-4">
                 <div class="text-4xl">📥</div>
@@ -100,7 +100,50 @@
             <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($wallet->balance, 2) }}</p>
             <p class="text-xs text-white text-opacity-70 mt-2">Current Balance</p>
         </div>
+
+        <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl shadow-xl p-6 text-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-4xl">🎁</div>
+            </div>
+            <p class="text-white text-opacity-80 text-sm mb-1">Cashback ทั้งหมด</p>
+            <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($cashbackStats['total'] ?? 0, 2) }}</p>
+            <p class="text-xs text-white text-opacity-70 mt-2">{{ $cashbackStats['count'] ?? 0 }} ครั้ง</p>
+        </div>
     </div>
+
+    <!-- Cashback Details -->
+    @if(isset($cashbackStats) && $cashbackStats['total'] > 0)
+    <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl shadow-lg p-6">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-xl font-bold text-green-800 flex items-center gap-2">
+                    <span class="text-2xl">💸</span>
+                    สถิติ Cashback
+                </h3>
+                <p class="text-sm text-green-600 mt-1">รายรับจากการคืนเงิน</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="bg-white bg-opacity-60 rounded-xl p-4">
+                <p class="text-sm text-gray-600 mb-1">Cashback เดือนนี้</p>
+                <p class="text-2xl font-bold text-green-600">฿{{ number_format($cashbackStats['this_month'] ?? 0, 2) }}</p>
+            </div>
+
+            <div class="bg-white bg-opacity-60 rounded-xl p-4">
+                <p class="text-sm text-gray-600 mb-1">30 วันล่าสุด</p>
+                <p class="text-2xl font-bold text-green-600">฿{{ number_format($cashbackStats['last_30_days'] ?? 0, 2) }}</p>
+            </div>
+
+            <div class="bg-white bg-opacity-60 rounded-xl p-4">
+                <p class="text-sm text-gray-600 mb-1">Cashback เฉลี่ย</p>
+                <p class="text-2xl font-bold text-green-600">
+                    ฿{{ $cashbackStats['count'] > 0 ? number_format($cashbackStats['total'] / $cashbackStats['count'], 2) : '0.00' }}
+                </p>
+            </div>
+        </div>
+    </div>
+    @endif
 
     <!-- Additional Statistics -->
     @if(isset($statistics) && !empty($statistics))
