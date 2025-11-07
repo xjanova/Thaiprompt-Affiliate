@@ -109,6 +109,14 @@ class VendorStore extends Model
     }
 
     /**
+     * Alias for owner relationship
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
      * Get the current package
      */
     public function package(): BelongsTo

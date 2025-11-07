@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\SeoController;
 use App\Http\Controllers\Admin\WalletController;
 use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\WalletSettingsController;
+use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\LanguageSettingController;
 use App\Http\Controllers\Admin\TranslationMappingController;
 use App\Http\Controllers\Admin\NotificationManagementController;
@@ -208,6 +209,8 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/all', [WalletController::class, 'allWallets'])->name('all');
     Route::get('/{id}/show', [WalletController::class, 'showWallet'])->name('show');
     Route::post('/{id}/adjust-balance', [WalletController::class, 'adjustBalance'])->name('adjust-balance');
+    Route::post('/{id}/refund', [WalletController::class, 'refund'])->name('refund');
+    Route::post('/{id}/rollback-transaction', [WalletController::class, 'rollbackTransaction'])->name('rollback-transaction');
     Route::post('/{id}/lock', [WalletController::class, 'lockUserWallet'])->name('lock-user');
     Route::post('/{id}/unlock', [WalletController::class, 'unlockUserWallet'])->name('unlock-user');
 });
@@ -231,6 +234,18 @@ Route::prefix('wallet-settings')->name('wallet-settings.')->group(function () {
     Route::post('/{id}/toggle', [WalletSettingsController::class, 'toggle'])->name('toggle');
     Route::post('/calculate-fee', [WalletSettingsController::class, 'calculateFee'])->name('calculate-fee');
     Route::post('/reset-defaults', [WalletSettingsController::class, 'resetToDefaults'])->name('reset-defaults');
+});
+
+// Cashback Management (in wallet section)
+Route::prefix('cashback')->name('cashback.')->group(function () {
+    Route::get('/', [CashbackSettingController::class, 'index'])->name('index');
+    Route::get('/create', [CashbackSettingController::class, 'create'])->name('create');
+    Route::post('/', [CashbackSettingController::class, 'store'])->name('store');
+    Route::get('/{cashback}/edit', [CashbackSettingController::class, 'edit'])->name('edit');
+    Route::put('/{cashback}', [CashbackSettingController::class, 'update'])->name('update');
+    Route::delete('/{cashback}', [CashbackSettingController::class, 'destroy'])->name('destroy');
+    Route::post('/{cashback}/toggle-active', [CashbackSettingController::class, 'toggleActive'])->name('toggle-active');
+    Route::get('/statistics', [CashbackSettingController::class, 'statistics'])->name('statistics');
 });
 
 // Payment Gateway Management

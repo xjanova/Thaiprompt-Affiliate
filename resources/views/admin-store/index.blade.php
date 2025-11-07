@@ -35,7 +35,11 @@
                             <span class="font-semibold">Official Store</span>
                         </div>
                         <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight drop-shadow-lg">
-                            {{ $adminStore->store_name }}
+                            @if($adminStore->user && $adminStore->user->is_super_admin)
+                                TP-MALL
+                            @else
+                                {{ $adminStore->store_name }}
+                            @endif
                         </h1>
                         @if($adminStore->store_description)
                             <p class="text-xl md:text-2xl text-purple-100 mb-6 font-medium">
