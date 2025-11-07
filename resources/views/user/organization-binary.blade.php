@@ -75,8 +75,9 @@
             <div class="flex-1">
                 <p class="font-semibold text-purple-900 mb-2">ข้อมูล Binary Tree:</p>
                 <ul class="list-disc list-inside space-y-1 text-sm text-purple-800">
+                    <li>แสดงเฉพาะคุณและลูกทีมที่อยู่ใต้คุณ (ไม่แสดงผู้แนะนำด้านบน)</li>
                     <li>โครงสร้างแบบ Binary Tree: แต่ละคนมีลูกทีมได้สูงสุด 2 คน (ซ้าย และ ขวา)</li>
-                    <li>สีเขียว = ตำแหน่งที่มีลูกทีมอยู่แล้ว | สีเทา = ตำแหน่งว่าง</li>
+                    <li>สีม่วง = คุณ | สีขาว = ลูกทีม | สีเทา = ตำแหน่งว่าง</li>
                     <li>คลิกที่สมาชิกเพื่อดูรายละเอียด</li>
                     <li>ใช้ปุ่ม Zoom และ Pan เพื่อดูผังได้ทุกทิศทาง</li>
                 </ul>
@@ -117,11 +118,11 @@
             <svg id="binary-tree-svg" class="w-full" style="min-height: 600px;"></svg>
         </div>
 
-        <!-- Empty State -->
-        <div id="empty-state" class="hidden text-center py-12">
-            <div class="text-6xl mb-4">📭</div>
-            <p class="text-gray-600 text-lg mb-2">ยังไม่มีข้อมูล Binary Tree</p>
-            <p class="text-gray-500 text-sm">เมื่อมีลูกทีมเข้าร่วม ข้อมูลจะแสดงที่นี่</p>
+        <!-- No Team Message (แสดงตัวเองเสมอ แต่บอกว่ายังไม่มีลูกทีม) -->
+        <div id="no-team-message" class="hidden text-center py-8 bg-purple-50 rounded-lg">
+            <div class="text-4xl mb-3">👥</div>
+            <p class="text-gray-700 font-semibold mb-1">ยังไม่มีลูกทีมใน Binary Tree</p>
+            <p class="text-gray-500 text-sm">เชิญเพื่อนด้วยรหัส <span class="font-bold text-purple-600">{{ $affiliate->referral_code }}</span> เพื่อสร้างทีมของคุณ</p>
         </div>
     </div>
 
@@ -142,7 +143,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const loadingIndicator = document.getElementById('loading-indicator');
     const treeContainer = document.getElementById('binary-tree-container');
-    const emptyState = document.getElementById('empty-state');
+    const noTeamMessage = document.getElementById('no-team-message');
     const svg = d3.select('#binary-tree-svg');
 
     // Zoom buttons
@@ -163,16 +164,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadingIndicator.classList.add('hidden');
 
                 if (result.success && result.data) {
+                    // เสมอแสดง tree (แสดงตัวเองเสมอ)
                     treeContainer.classList.remove('hidden');
                     renderBinaryTree(result.data);
+
+                    // ถ้าไม่มีลูกทีมเลย (ทั้ง left และ right ว่าง) แสดงข้อความ
+                    const hasChildren = result.data.children && result.data.children.some(child => !child.empty);
+                    if (!hasChildren) {
+                        noTeamMessage.classList.remove('hidden');
+                    }
                 } else {
-                    emptyState.classList.remove('hidden');
+                    // กรณี error แสดงข้อความ
+                    noTeamMessage.classList.remove('hidden');
                 }
             })
             .catch(error => {
                 console.error('Error loading binary tree:', error);
                 loadingIndicator.classList.add('hidden');
-                emptyState.classList.remove('hidden');
+                noTeamMessage.classList.remove('hidden');
             });
     }
 
