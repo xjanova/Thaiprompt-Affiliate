@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductCategory;
+use App\Services\CashbackService;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 
 class ShopController extends Controller
@@ -137,10 +139,15 @@ class ShopController extends Controller
                 ->exists();
         }
 
+        // Calculate potential cashback
+        $cashbackService = new CashbackService(new WalletService());
+        $cashbackInfo = $cashbackService->calculateItemCashback($product, $product->price, 1);
+
         return view('shop.show', compact(
             'product',
             'relatedProducts',
-            'hasPurchased'
+            'hasPurchased',
+            'cashbackInfo'
         ));
     }
 
