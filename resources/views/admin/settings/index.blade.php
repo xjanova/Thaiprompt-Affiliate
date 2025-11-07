@@ -189,6 +189,69 @@
 
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าโลโก้และ Favicon</h3>
 
+                        <!-- Error Messages -->
+                        @if($errors->has('storage'))
+                            <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h4 class="text-red-800 font-semibold mb-1">Storage Link ไม่พร้อมใช้งาน</h4>
+                                        <p class="text-red-700 text-sm mb-2">{{ $errors->first('storage') }}</p>
+                                        <div class="bg-white border border-red-200 rounded p-3 mt-2">
+                                            <p class="text-gray-700 text-sm font-medium mb-2">วิธีแก้ไข:</p>
+                                            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
+                                                <li>เปิด Terminal/Command Line</li>
+                                                <li>ไปยังโฟลเดอร์โปรเจค</li>
+                                                <li>รันคำสั่ง: <code class="bg-gray-100 px-2 py-1 rounded text-red-600 font-mono">php artisan storage:fix</code></li>
+                                                <li>รีเฟรชหน้านี้และลองอัพโหลดใหม่</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Success Message -->
+                        @if(session('success'))
+                            <div class="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-6 w-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-green-800 font-semibold">{{ session('success') }}</p>
+                                        <p class="text-green-700 text-sm mt-1">หากโลโก้ยังไม่เปลี่ยน กรุณารีเฟรชหน้าเว็บ (Ctrl+F5 หรือ Cmd+Shift+R) เพื่อเคลียร์ cache</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Info Box -->
+                        <div class="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="text-blue-800 font-semibold mb-1">ข้อมูลสำคัญ</h4>
+                                    <ul class="text-blue-700 text-sm space-y-1 list-disc list-inside">
+                                        <li>ระบบจะแปลงรูปภาพเป็น WebP format โดยอัตโนมัติเพื่อความเร็วในการโหลด (ยกเว้น SVG)</li>
+                                        <li>โลโก้จะถูกบันทึกที่ <code class="bg-blue-100 px-1 rounded font-mono">/storage/branding/</code></li>
+                                        <li>หลังอัพโหลดเสร็จ หากโลโก้ไม่เปลี่ยน ให้กด Ctrl+F5 (Windows) หรือ Cmd+Shift+R (Mac) เพื่อเคลียร์ cache</li>
+                                        <li>ขนาดโลโก้แนะนำ: กว้าง 200-400px สูง 60-100px</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
                     <div class="grid md:grid-cols-2 gap-6">
                         <!-- Logo Upload -->
                         <div>
