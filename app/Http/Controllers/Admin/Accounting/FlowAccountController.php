@@ -55,6 +55,14 @@ class FlowAccountController extends Controller
     }
 
     /**
+     * Show the FlowAccount connection form
+     */
+    public function showConnectForm()
+    {
+        return view('admin.accounting.flowaccount.connect');
+    }
+
+    /**
      * Connect to FlowAccount
      */
     public function connect(Request $request)

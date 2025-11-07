@@ -52,7 +52,7 @@
                         </button>
                     </form>
                 @else
-                    <a href="{{ route('admin.accounting.flowaccount.connect') }}" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all">
+                    <a href="{{ route('admin.accounting.flowaccount.connect.form') }}" class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all">
                         <i class="fas fa-link mr-2"></i>เชื่อมต่อ FlowAccount
                     </a>
                 @endif
@@ -158,7 +158,8 @@
         </h3>
         <ol class="list-decimal list-inside space-y-2 text-blue-800 dark:text-blue-300">
             <li>คลิกปุ่ม "เชื่อมต่อ FlowAccount" ด้านบน</li>
-            <li>เข้าสู่ระบบ FlowAccount ของคุณ</li>
+            <li>กรอก Client ID และ Client Secret จาก FlowAccount Developer Portal</li>
+            <li>เข้าสู่ระบบ FlowAccount ของคุณเพื่ออนุญาตการเข้าถึง</li>
             <li>อนุญาตให้แอพพลิเคชันเข้าถึงข้อมูลบัญชีของคุณ</li>
             <li>รอการเชื่อมต่อเสร็จสมบูรณ์</li>
             <li>เริ่มซิงค์ข้อมูลระหว่างระบบ</li>

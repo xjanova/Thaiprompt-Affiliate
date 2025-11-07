@@ -947,6 +947,7 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
     // FlowAccount Integration
     Route::prefix('flowaccount')->name('flowaccount.')->group(function () {
         Route::get('/', [FlowAccountController::class, 'index'])->name('index');
+        Route::get('/connect', [FlowAccountController::class, 'showConnectForm'])->name('connect.form');
         Route::post('/connect', [FlowAccountController::class, 'connect'])->name('connect');
         Route::get('/callback', [FlowAccountController::class, 'callback'])->name('callback');
         Route::post('/disconnect', [FlowAccountController::class, 'disconnect'])->name('disconnect');
