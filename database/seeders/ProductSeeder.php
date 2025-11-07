@@ -152,6 +152,7 @@ class ProductSeeder extends Seeder
                     // Keep existing SKU and slug if product exists, otherwise let model auto-generate
                     $productAttributes = [
                         'seller_id' => $seller->id,
+                        'store_id' => null,  // Admin products belong to the main platform store (null = admin store)
                         'description' => $this->generateDescription($productData['name'], $category->name),
                         'short_description' => $this->generateShortDescription($productData['name']),
                         'price' => $productData['price'],
@@ -165,6 +166,7 @@ class ProductSeeder extends Seeder
                         'stock_status' => 'in_stock',
                         'is_active' => true,
                         'is_featured' => $productData['featured'],
+                        'published_at' => now(),  // Publish immediately for admin products
                         'weight' => rand(100, 5000) / 100,
                         'dimensions' => rand(10, 50) . 'x' . rand(10, 50) . 'x' . rand(10, 50),
                         'rating_average' => rand(35, 50) / 10,
