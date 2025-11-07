@@ -1019,6 +1019,79 @@ Route::prefix('icons')->name('icons.')->group(function () {
     Route::get('/list', [\App\Http\Controllers\Admin\IconController::class, 'list'])->name('list');
 });
 
+// Hotel Management
+Route::prefix('hotels')->name('hotels.')->group(function () {
+    // Hotel Management
+    Route::get('/', [\App\Http\Controllers\Admin\HotelManagementController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\HotelManagementController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\HotelManagementController::class, 'store'])->name('store');
+    Route::get('/{id}', [\App\Http\Controllers\Admin\HotelManagementController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [\App\Http\Controllers\Admin\HotelManagementController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [\App\Http\Controllers\Admin\HotelManagementController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\Admin\HotelManagementController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/toggle-status', [\App\Http\Controllers\Admin\HotelManagementController::class, 'toggleStatus'])->name('toggle-status');
+    Route::post('/{id}/toggle-featured', [\App\Http\Controllers\Admin\HotelManagementController::class, 'toggleFeatured'])->name('toggle-featured');
+
+    // Room Type Management
+    Route::prefix('{hotelId}/rooms')->name('rooms.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'store'])->name('store');
+        Route::get('/{roomTypeId}', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'show'])->name('show');
+        Route::get('/{roomTypeId}/edit', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'edit'])->name('edit');
+        Route::put('/{roomTypeId}', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'update'])->name('update');
+        Route::delete('/{roomTypeId}', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'destroy'])->name('destroy');
+        Route::get('/{roomTypeId}/availability', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'availability'])->name('availability');
+        Route::post('/{roomTypeId}/availability', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'updateAvailability'])->name('availability.update');
+    });
+
+    // Facilities Management
+    Route::prefix('facilities')->name('facilities.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'store'])->name('store');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'destroy'])->name('destroy');
+        Route::post('/reorder', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'reorder'])->name('reorder');
+    });
+
+    // Booking Management
+    Route::prefix('bookings')->name('bookings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'store'])->name('store');
+        Route::get('/calendar', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'calendar'])->name('calendar');
+        Route::get('/analytics', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'analytics'])->name('analytics');
+        Route::get('/export', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'export'])->name('export');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'show'])->name('show');
+        Route::post('/{id}/update-status', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'updateStatus'])->name('update-status');
+        Route::post('/{id}/cancel', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'cancel'])->name('cancel');
+    });
+
+    // Review Management
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'show'])->name('show');
+        Route::post('/{id}/approve', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'reject'])->name('reject');
+        Route::post('/{id}/toggle-featured', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'toggleFeatured'])->name('toggle-featured');
+        Route::post('/{id}/respond', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'respond'])->name('respond');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'destroy'])->name('destroy');
+    });
+
+    // Special Offers Management
+    Route::prefix('special-offers')->name('special-offers.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'store'])->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/toggle-status', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{id}/toggle-featured', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'toggleFeatured'])->name('toggle-featured');
+    });
+});
+
 // System Update Management
 Route::prefix('updates')->name('updates.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('index');
