@@ -7,6 +7,7 @@ use App\Http\Controllers\User\MembershipRetentionController;
 use App\Http\Controllers\User\KycController;
 use App\Http\Controllers\User\ShopController;
 use App\Http\Controllers\User\TwoFactorController;
+use App\Http\Controllers\User\TicketController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -178,4 +179,14 @@ Route::prefix('themes')->name('themes.')->group(function () {
     Route::get('/', [\App\Http\Controllers\User\ThemeController::class, 'index'])->name('index');
     Route::post('/set', [\App\Http\Controllers\User\ThemeController::class, 'setTheme'])->name('set');
     Route::get('/css', [\App\Http\Controllers\User\ThemeController::class, 'getCss'])->name('css');
+});
+
+// Ticket Support System (User)
+Route::prefix('tickets')->name('tickets.')->group(function () {
+    Route::get('/', [TicketController::class, 'index'])->name('index');
+    Route::get('/create', [TicketController::class, 'create'])->name('create');
+    Route::post('/', [TicketController::class, 'store'])->name('store');
+    Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
+    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
+    Route::post('/{ticket}/close', [TicketController::class, 'close'])->name('close');
 });

@@ -304,6 +304,19 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ไปช๊อปปิ้ง</span>
                 </a>
 
+                <!-- Ticket Support -->
+                @php
+                    $myOpenTickets = \App\Models\Ticket::where('user_id', auth()->id())->open()->count();
+                @endphp
+                <a href="{{ route('user.tickets.index') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.tickets.*') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🎫</span>
+                    <span class="ml-3 text-sm font-medium transition-all flex-1" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">Ticket Support</span>
+                    @if($myOpenTickets > 0)
+                        <span class="ml-auto bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $myOpenTickets }}</span>
+                    @endif
+                </a>
+
                 <!-- Wallet Dropdown Menu -->
                 <div x-data="{ walletOpen: false }" class="relative mb-1">
                     @php

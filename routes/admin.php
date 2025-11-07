@@ -56,6 +56,7 @@ use App\Http\Controllers\Admin\PosDashboardController;
 use App\Http\Controllers\Admin\PosDeviceController;
 use App\Http\Controllers\Admin\PosTransactionController;
 use App\Http\Controllers\Admin\PosAdvertisementController;
+use App\Http\Controllers\Admin\TicketController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -1031,4 +1032,20 @@ Route::prefix('updates')->name('updates.')->group(function () {
     Route::post('/settings', [\App\Http\Controllers\Admin\UpdateController::class, 'updateSettings'])->name('settings.update');
     Route::get('/notifications', [\App\Http\Controllers\Admin\UpdateController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/{id}/dismiss', [\App\Http\Controllers\Admin\UpdateController::class, 'dismissNotification'])->name('notifications.dismiss');
+});
+
+// Ticket Support System
+Route::prefix('tickets')->name('tickets.')->group(function () {
+    Route::get('/', [TicketController::class, 'index'])->name('index');
+    Route::get('/categories', [TicketController::class, 'categories'])->name('categories');
+    Route::post('/categories', [TicketController::class, 'storeCategory'])->name('categories.store');
+    Route::put('/categories/{id}', [TicketController::class, 'updateCategoryData'])->name('categories.update');
+    Route::delete('/categories/{id}', [TicketController::class, 'destroyCategory'])->name('categories.destroy');
+    Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
+    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
+    Route::post('/{ticket}/assign', [TicketController::class, 'assign'])->name('assign');
+    Route::put('/{ticket}/status', [TicketController::class, 'updateStatus'])->name('update-status');
+    Route::put('/{ticket}/priority', [TicketController::class, 'updatePriority'])->name('update-priority');
+    Route::put('/{ticket}/category', [TicketController::class, 'updateCategory'])->name('update-category');
+    Route::delete('/{ticket}', [TicketController::class, 'destroy'])->name('destroy');
 });
