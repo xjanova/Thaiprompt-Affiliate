@@ -401,8 +401,14 @@ class ECommerceController extends Controller
             }
 
             // Handle deleted images
-            if ($request->filled('deleted_images')) {
-                $deletedIds = explode(',', $request->input('deleted_images'));
+            if ($request->has('deleted_images')) {
+                $deletedIds = $request->input('deleted_images');
+
+                // Support both array and comma-separated string
+                if (is_string($deletedIds)) {
+                    $deletedIds = explode(',', $deletedIds);
+                }
+
                 $imagesToDelete = ProductImage::whereIn('id', $deletedIds)
                     ->where('product_id', $product->id)
                     ->get();
