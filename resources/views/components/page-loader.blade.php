@@ -21,7 +21,7 @@
                     $logo = \App\Models\Setting::get('logo');
                 @endphp
                 @if($logo)
-                    <img src="{{ asset($logo) }}" alt="Logo" class="absolute inset-0 m-auto w-10 h-10 object-contain">
+                    <img src="{{ asset($logo) }}" alt="Logo" width="40" height="40" class="absolute inset-0 m-auto w-10 h-10 object-contain">
                 @endif
             </div>
 

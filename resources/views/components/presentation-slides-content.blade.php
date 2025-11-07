@@ -3,7 +3,7 @@
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-12">
         <div class="text-center text-white max-w-5xl">
             <div class="mb-8 animate-bounce">
-                <img src="{{ asset('images/logo.svg') }}" alt="ไทยพร๊อม" class="w-32 h-32 mx-auto filter drop-shadow-2xl">
+                <img src="{{ asset('images/logo.svg') }}" alt="ไทยพร๊อม" width="128" height="128" class="w-32 h-32 mx-auto filter drop-shadow-2xl">
             </div>
             <h1 class="text-7xl md:text-8xl font-black mb-6 leading-tight">
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300">
@@ -953,7 +953,7 @@
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-12">
         <div class="max-w-6xl w-full text-center">
             <div class="mb-8">
-                <img src="{{ asset('images/logo.svg') }}" alt="ไทยพร๊อม" class="w-32 h-32 mx-auto filter drop-shadow-2xl mb-8">
+                <img src="{{ asset('images/logo.svg') }}" alt="ไทยพร๊อม" width="128" height="128" class="w-32 h-32 mx-auto filter drop-shadow-2xl mb-8">
             </div>
 
             <h2 class="text-6xl md:text-7xl font-black text-white mb-6">

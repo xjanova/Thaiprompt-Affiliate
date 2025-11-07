@@ -136,6 +136,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                     @if($logo)
                         <img src="{{ asset($logo) }}"
                              alt="{{ $appName }}"
+                             width="{{ $headerLogoHeight }}"
+                             height="{{ $headerLogoHeight }}"
                              class="object-contain transition-all"
                              :style="{
                                  height: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $headerLogoHeightScrolled }}px' : '{{ $headerLogoHeight }}px')
