@@ -199,6 +199,7 @@
         accountingMenuOpen: localStorage.getItem('accountingMenuOpen') === 'true',
         ecommerceMenuOpen: localStorage.getItem('ecommerceMenuOpen') === 'true',
         mlmMenuOpen: localStorage.getItem('mlmMenuOpen') === 'true',
+        posMenuOpen: localStorage.getItem('posMenuOpen') === 'true',
         academyMenuOpen: localStorage.getItem('academyMenuOpen') === 'true',
         // Auto-open dropdown if current page is in submenu
         init() {
@@ -220,6 +221,7 @@
             this.accountingMenuOpen = false;
             this.ecommerceMenuOpen = false;
             this.mlmMenuOpen = false;
+            this.posMenuOpen = false;
             this.academyMenuOpen = false;
 
             // Open only the relevant menu based on current path
@@ -237,6 +239,8 @@
                 this.ecommerceMenuOpen = true;
             } else if (currentPath.includes('/admin/mlm')) {
                 this.mlmMenuOpen = true;
+            } else if (currentPath.includes('/admin/pos') || currentPath.includes('/pos/')) {
+                this.posMenuOpen = true;
             } else if (currentPath.includes('/admin/academy') || currentPath.includes('/admin/learning-center') || currentPath.includes('/admin/instructor') || currentPath.includes('/admin/quiz') || currentPath.includes('/admin/certificates')) {
                 this.academyMenuOpen = true;
             } else if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications') || currentPath.includes('/admin/roles')) {
@@ -251,6 +255,7 @@
             localStorage.setItem('accountingMenuOpen', this.accountingMenuOpen);
             localStorage.setItem('ecommerceMenuOpen', this.ecommerceMenuOpen);
             localStorage.setItem('mlmMenuOpen', this.mlmMenuOpen);
+            localStorage.setItem('posMenuOpen', this.posMenuOpen);
             localStorage.setItem('academyMenuOpen', this.academyMenuOpen);
             localStorage.setItem('systemMenuOpen', this.systemMenuOpen);
         }
@@ -1302,6 +1307,66 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- POS Management Dropdown -->
+                @if(auth()->user()->isSuperAdmin() || auth()->user()->hasRole('admin'))
+                <div class="relative mb-1">
+                    @php
+                        $posActive = request()->routeIs('admin.pos.*') || request()->routeIs('pos.*');
+                    @endphp
+
+                    <!-- Main POS Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-cyan-600 hover:text-white rounded-lg transition-all duration-200 group {{ $posActive ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('posMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏪</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            ระบบ POS
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': posMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="posMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('admin.pos.dashboard') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.pos.dashboard') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>Dashboard POS</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.pos.devices.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.pos.devices.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📱</span>
+                            <span>จัดการอุปกรณ์</span>
+                        </a>
+
+                        <a href="{{ route('admin.pos.transactions.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.pos.transactions.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">💰</span>
+                            <span>รายการขาย</span>
+                        </a>
+
+                        <a href="{{ route('admin.pos.analytics') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.pos.analytics') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
+                            <span class="mr-2">📈</span>
+                            <span>รายงาน & สถิติ</span>
+                        </a>
+                    </div>
+                </div>
+                @endif
 
                 <!-- System Management Dropdown -->
                 <div class="relative mb-1">
