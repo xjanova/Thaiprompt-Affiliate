@@ -1,13 +1,4 @@
 <!-- Theme Toggle Component -->
-@php
-    $currentThemeId = $currentTheme->id ?? null;
-    $currentMode = $currentThemeMode ?? 'auto';
-
-    // Detect if we're in admin or user context - use path segment for more reliable detection
-    $isAdmin = request()->segment(1) === 'admin';
-    $themeSetRoute = $isAdmin ? route('admin.themes.set') : route('user.themes.set');
-@endphp
-
 <div x-data="themeToggle()" x-init="init()" class="relative">
     <button
         @click="toggleTheme()"
@@ -45,97 +36,28 @@
 function themeToggle() {
     return {
         isDark: false,
-        currentThemeId: {{ $currentThemeId ?? 'null' }},
-        currentMode: '{{ $currentMode }}',
-        themeSetRoute: '{{ $themeSetRoute }}',
 
         init() {
-            console.log('Theme Toggle Init:', {
-                currentMode: this.currentMode,
-                currentThemeId: this.currentThemeId,
-                themeSetRoute: this.themeSetRoute
-            });
+            // ตรวจสอบ theme จาก localStorage หรือ system preference
+            const savedTheme = localStorage.getItem('theme');
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-            // Get mode from server-side or determine from current state
-            if (this.currentMode === 'dark') {
-                this.isDark = true;
-            } else if (this.currentMode === 'light') {
-                this.isDark = false;
-            } else {
-                // Auto mode - check system preference
-                this.isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            }
-
+            this.isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
             this.applyTheme();
 
-            // Listen for system preference changes (for auto mode)
+            // Listen for system preference changes
             window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-                if (this.currentMode === 'auto') {
+                if (!localStorage.getItem('theme')) {
                     this.isDark = e.matches;
                     this.applyTheme();
                 }
             });
         },
 
-        async toggleTheme() {
+        toggleTheme() {
             this.isDark = !this.isDark;
-            const newMode = this.isDark ? 'dark' : 'light';
-
-            // Apply theme immediately
+            localStorage.setItem('theme', this.isDark ? 'dark' : 'light');
             this.applyTheme();
-
-            // Update current mode
-            this.currentMode = newMode;
-
-            // Update ThemeManager if available
-            if (typeof window.ThemeManager !== 'undefined') {
-                try {
-                    await window.ThemeManager.setMode(newMode);
-                } catch (error) {
-                    console.error('ThemeManager error:', error);
-                }
-            }
-
-            // Save preference to server
-            if (this.currentThemeId) {
-                try {
-                    console.log('Saving theme preference:', {
-                        route: this.themeSetRoute,
-                        theme_id: this.currentThemeId,
-                        mode: newMode
-                    });
-
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
-                    if (!csrfToken) {
-                        console.error('CSRF token not found');
-                        return;
-                    }
-
-                    const response = await fetch(this.themeSetRoute, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken.content
-                        },
-                        body: JSON.stringify({
-                            theme_id: this.currentThemeId,
-                            mode: newMode
-                        })
-                    });
-
-                    console.log('Theme preference response:', {
-                        status: response.status,
-                        ok: response.ok
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('Theme save failed:', errorText);
-                    }
-                } catch (error) {
-                    console.error('Failed to save theme preference:', error);
-                }
-            }
         },
 
         applyTheme() {

@@ -53,10 +53,7 @@ class UserTheme extends Model
     {
         return self::where('user_id', $userId)
             ->where('is_active', true)
-            ->with(['theme' => function($query) {
-                // Only load active themes
-                $query->where('is_active', true);
-            }])
+            ->with('theme')
             ->first();
     }
 
