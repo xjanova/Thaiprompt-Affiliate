@@ -679,15 +679,11 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
 
 // MLM System Management
 Route::prefix('mlm')->name('mlm.')->group(function () {
-    // MLM Plans
+    // MLM Plans - ระบบใช้แผนคอมมิชชัน Global บังคับทั้งระบบ
+    // เหลือเพียง index เพื่อแสดงข้อความว่าใช้แผน Global
     Route::prefix('plans')->name('plans.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\MlmPlanController::class, 'index'])->name('index');
-        Route::get('/create', [\App\Http\Controllers\Admin\MlmPlanController::class, 'create'])->name('create');
-        Route::post('/', [\App\Http\Controllers\Admin\MlmPlanController::class, 'store'])->name('store');
-        // Note: edit และ update routes ถูกลบออก - แผน MLM ไม่ควรแก้ไขผ่าน UI
-        Route::delete('/{plan}', [\App\Http\Controllers\Admin\MlmPlanController::class, 'destroy'])->name('destroy');
-        Route::post('/{plan}/toggle-status', [\App\Http\Controllers\Admin\MlmPlanController::class, 'toggleStatus'])->name('toggle-status');
-        Route::post('/{plan}/set-default', [\App\Http\Controllers\Admin\MlmPlanController::class, 'setDefault'])->name('set-default');
+        // Note: ปิดการใช้งาน create, store, edit, update, destroy เพราะใช้แผน Global
     });
 
     // MLM Members
