@@ -320,10 +320,11 @@
                                 {{ config('version.current') }}
                             </span>
                         </div>
-                        @if(config('version.name'))
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ config('version.name') }}</p>
-                        @endif
                         <div class="text-[10px] text-gray-600 dark:text-gray-400 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span>App</span>
+                                <span class="text-gray-400 dark:text-gray-300">{{ config('version.current') }} {{ config('version.name') }}</span>
+                            </div>
                             <div class="flex items-center justify-between">
                                 <span>Laravel</span>
                                 <span class="text-gray-400 dark:text-gray-300">{{ app()->version() }}</span>

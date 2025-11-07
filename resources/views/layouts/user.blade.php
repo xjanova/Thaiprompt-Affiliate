@@ -511,12 +511,14 @@
                                 {{ config('version.current') }}
                             </span>
                         </div>
-                        @if(config('version.name'))
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ config('version.name') }}</p>
-                        @endif
                         <div class="text-[10px] text-gray-600 dark:text-gray-400 space-y-1.5">
+                            <!-- Version Info -->
+                            <div class="flex items-center justify-between pb-1 border-b border-gray-700/30">
+                                <span>App</span>
+                                <span class="text-gray-400 dark:text-gray-300">{{ config('version.current') }} {{ config('version.name') }}</span>
+                            </div>
                             <!-- Company Info -->
-                            <div class="mb-1">
+                            <div class="mb-1 pt-1">
                                 <a href="https://xman4289.com" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:text-indigo-300 transition-colors underline decoration-dotted text-xs font-medium">
                                     Xman Enterprise co.,ltd.
                                 </a>
