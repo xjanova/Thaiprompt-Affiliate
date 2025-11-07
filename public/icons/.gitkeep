@@ -1,0 +1,20 @@
+# Icon Storage Directory
+
+This directory stores all system icons and custom icons.
+
+## Directory Structure:
+
+- `system/` - System icons (settings, dashboard, users, etc.)
+- `theme/` - Theme-related icons (color palette, brush, etc.)
+- `custom/` - Custom icons uploaded by admin
+- `social/` - Social media icons (Facebook, LINE, Twitter, etc.)
+- `flags/` - Country flags
+
+## Supported Formats:
+- SVG (recommended for scalability)
+- PNG (with transparency)
+- JPG (for photos)
+- WebP (for optimization)
+
+## Usage:
+Upload your icons here and use the Icon helper or component to display them.

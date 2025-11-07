@@ -2,6 +2,104 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.0.0] - 2025-11-07 🎉 Phoenix
+
+### 🚀 Major Features
+
+#### ระบบ Theme v2 แบบ Line OA
+- **Theme System v2**: ระบบธีมใหม่ที่ยืดหยุ่นและทันสมัย รองรับการปรับแต่งสี, ฟอนต์, ระยะห่าง, และอื่นๆ
+- **Line OA Design**: ออกแบบตาม Line Official Account เพื่อความคุ้นเคยและใช้งานง่าย
+- **Dark/Light Mode**: รองรับโหมดมืด/สว่างแบบสมจริง พร้อม Auto mode ตาม system preference
+- **Theme Presets**: มี 6 theme presets สำเร็จรูป (Line OA, Ocean Blue, Sunset Orange, Purple Dream, Minimal Dark, Forest Green)
+- **Admin Theme Builder**: แอดมินสามารถสร้างและออกแบบ theme ของตัวเองได้
+- **User Theme Selection**: ผู้ใช้สามารถเลือก theme ที่ชอบได้
+- **Theme Import/Export**: รองรับการ import/export theme configuration
+- **Real-time Preview**: ดูตัวอย่าง theme แบบ real-time
+
+#### ระบบจัดการ Icons
+- **Icon Management System**: ระบบจัดการ icons แบบเป็นระเบียบ
+- **5 Categories**: system, theme, custom, social, flags
+- **IconHelper Class**: API สำหรับจัดการ icons ทั้งหมด
+- **Icon Component**: Blade component สำหรับใช้ icons ง่ายๆ
+- **Admin UI**: หน้าจัดการ icons พร้อม upload/delete
+- **Multiple Formats**: รองรับ SVG, PNG, JPG, WebP
+
+#### ระบบ Update อัตโนมัติ
+- **Auto Update System**: ระบบตรวจสอบและอัพเดทอัตโนมัติจาก GitHub Releases
+- **Safe Migration**: ระบบ migration ที่ปลอดภัย พร้อมระบบสำรองข้อมูล
+- **Rollback Support**: รองรับการย้อนกลับเวอร์ชันเมื่อเกิดปัญหา
+- **Update Notifications**: แจ้งเตือนเมื่อมีเวอร์ชันใหม่
+- **Update History**: บันทึกประวัติการอัพเดททั้งหมด
+- **Backup System**: สำรองข้อมูลอัตโนมัติก่อนอัพเดท
+
+### 📊 Database Changes
+
+#### New Tables
+- `themes` - เก็บข้อมูล theme ทั้งหมด
+- `theme_presets` - เก็บ theme presets สำเร็จรูป
+- `user_themes` - เก็บการตั้งค่า theme ของแต่ละ user
+- `system_updates` - เก็บข้อมูลเวอร์ชันที่มีให้อัพเดท
+- `update_logs` - บันทึกประวัติการอัพเดท
+- `update_notifications` - แจ้งเตือนเมื่อมีอัพเดทใหม่
+- `update_settings` - การตั้งค่าระบบอัพเดท
+
+### 🎨 New Models & Services
+
+#### Theme System
+- `Theme` - Model สำหรับ themes
+- `ThemePreset` - Model สำหรับ theme presets
+- `UserTheme` - Model สำหรับ user theme preferences
+- `ThemeService` - Service สำหรับจัดการ themes ทั้งหมด
+
+#### Icon System
+- `IconHelper` - Helper class สำหรับจัดการ icons
+- `IconController` - Controller สำหรับ admin icon management
+
+#### Update System
+- `SystemUpdate` - Model สำหรับ system updates
+- `UpdateLog` - Model สำหรับ update logs
+- `UpdateNotification` - Model สำหรับ update notifications
+- `UpdateService` - Service สำหรับจัดการการอัพเดท
+
+### 🛣️ New Routes
+
+#### Admin Routes
+- `/admin/themes/*` - จัดการ themes
+- `/admin/icons/*` - จัดการ icons
+- `/admin/updates/*` - จัดการการอัพเดท
+
+#### User Routes
+- `/user/themes/*` - เลือกและตั้งค่า theme
+
+### 🔧 Infrastructure
+
+- **Version Bump**: อัพเกรดเป็น v2.0.0 (codename: Phoenix)
+- **Migration System**: เพิ่มระบบ migration ที่ปลอดภัยและรองรับ rollback
+- **Theme Seeder**: Seeder สำหรับ themes และ presets เริ่มต้น
+- **Enhanced Version Management**: ปรับปรุงระบบจัดการเวอร์ชัน
+
+### ⚠️ Breaking Changes
+
+- อาจต้อง re-migrate database สำหรับ tables ใหม่
+- ผู้ใช้อาจต้องเลือก theme ใหม่หลัง upgrade
+- Admin ควรตรวจสอบและทดสอบ theme ก่อนให้ผู้ใช้เข้าถึง
+
+### 📝 Migration Guide
+
+สำหรับผู้ที่ upgrade จาก v1.x ไปเป็น v2.0.0:
+
+1. **Backup ข้อมูล**: สำรองฐานข้อมูลและไฟล์ก่อน upgrade
+2. **Run Migrations**: `php artisan migrate --seed`
+3. **Initialize Themes**: `php artisan db:seed --class=ThemeSeeder`
+4. **Clear Cache**: `php artisan cache:clear && php artisan config:clear`
+5. **Test**: ทดสอบระบบให้แน่ใจว่าทำงานปกติ
+
+### 🙏 Credits
+
+Version 2.0.0 "Phoenix" - การเกิดใหม่ของ Thai Prompt Affiliate Marketing Platform
+
+---
+
 ## [v1.255.0] - 2025-11-07
 
 ### ✨ Features
@@ -68,203 +166,6 @@
 - chore: bump version to 1.241.0 [skip ci] (1b5315a)
 - chore: bump version to 1.240.0 [skip ci] (2243052)
 
-## [v1.254.0] - 2025-11-07
-
-### ✨ Features
-- Merge pull request #473 from xjanova/claude/fix-missing-employee-view-011CUtahg5bB8okr2oXMfWoN (a6bfe9a)
-- feat: add comprehensive HRM views (d59b169)
-- Merge pull request #470 from xjanova/claude/wallet-cashback-support-011CUtYBfr9B5ezYjFQQFbXA (11f9123)
-- Merge pull request #467 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (ac71e17)
-- feat: add cashback display on product pages (6946225)
-- feat: add complete POS system access for sellers (bd95a88)
-- Merge pull request #466 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (6d66447)
-- Merge pull request #464 from xjanova/claude/wallet-cashback-support-011CUtYBfr9B5ezYjFQQFbXA (089888d)
-- feat: implement comprehensive wallet cashback system (a1c11df)
-- feat: Add PV/Cashback support to Admin product management (9c9710e)
-- feat: Add modern edit page for Seller products with PV/Cashback (468b923)
-- feat: Modernize e-commerce UI with LINE OA style and add PV/Cashback system (b451af8)
-- feat: add create and edit views for POS device management (9f78c29)
-- Merge pull request #462 from xjanova/claude/product-upload-system-011CUtW28fBQj2k2NQTij75D (b6c1a34)
-- feat: Add drag & drop image upload for products and categories (8c2fa03)
-- Merge pull request #459 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (fafb84a)
-- feat: add comprehensive POS admin views for dashboard and management (46d371f)
-- Merge pull request #457 from xjanova/claude/admin-dashboard-pv-cashback-011CUtNrjzLyZKSU161rFZFf (8a944e0)
-- feat: Add premium image upload system with drag & drop for products (b68f16f)
-- Merge pull request #456 from xjanova/claude/admin-dashboard-pv-cashback-011CUtNrjzLyZKSU161rFZFf (b510d98)
-### 🐛 Bug Fixes
-- Merge pull request #472 from xjanova/claude/fix-article-permissions-view-011CUtcB222UDvB3naTzvWF5 (0d71715)
-- fix: Add missing article permissions view (c0fafb2)
-- Merge pull request #469 from xjanova/claude/mlm-package-seed-fix-011CUtaT5S7qdbhxLX6r9axA (e302351)
-- Merge pull request #468 from xjanova/claude/fix-missing-employee-view-011CUtahg5bB8okr2oXMfWoN (de59c15)
-- fix: add missing employee index view (c95f68b)
-- fix: แก้ไขความเข้าใจผิดเรื่อง MLM Plan vs Package และลบฟังก์ชัน edit ที่ไม่จำเป็น (5ad0317)
-- Merge pull request #463 from xjanova/claude/improve-homepage-menu-contrast-011CUtPfXW5Awj25EqkexVyf (fb20226)
-- fix: แก้ปัญหา Error 419 เมื่ออัพโหลดโลโก้ (d3acf3b)
-- Merge pull request #461 from xjanova/claude/fix-post-only-route-error-011CUtWVRiMVkz1cVvVye5He (87cd1b9)
-- Merge pull request #460 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (504181e)
-- fix: แก้ไขปัญหา POST-only route error สำหรับ FlowAccount connection (4198e42)
-- fix: correct POS route names and add transaction detail view (77da9a5)
-- Merge pull request #458 from xjanova/claude/improve-homepage-menu-contrast-011CUtPfXW5Awj25EqkexVyf (50533a6)
-- fix: แก้ไขปัญหาโลโก้อัพโหลดแล้วไม่แสดง (919d8ec)
-- Merge pull request #454 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (b8e982f)
-- fix: resolve MySQL GROUP BY strict mode errors in POS dashboard (10e77d9)
-- Merge pull request #452 from xjanova/claude/fix-payment-gateway-decryption-011CUt7RMRqjUShDLiCsBLz9 (293a174)
-- Merge pull request #451 from xjanova/claude/fix-permission-binding-error-011CUtDVPtyqGwrqArNQuTfq (6dd7056)
-- fix: register CheckPermission middleware alias to resolve binding error (6921194)
-- fix: comprehensive DecryptException protection across all layers (3656c6b)
-### 🔧 Other Changes
-- Merge pull request #474 from xjanova/claude/mlm-package-seed-fix-011CUtaT5S7qdbhxLX6r9axA (d61515a)
-- chore: bump version to 1.253.0 [skip ci] (48ae1f8)
-- chore: bump version to 1.252.0 [skip ci] (ac978ea)
-- refactor: ใช้แผนคอมมิชชัน Global แทนการจัดการผ่าน UI (b8788b2)
-- chore: bump version to 1.251.0 [skip ci] (c3c256a)
-- Merge pull request #471 from xjanova/claude/admin-line-bot-ai-provider-011CUtaCp31ro4EJpZrum8kZ (4c7c66b)
-- chore: bump version to 1.250.0 [skip ci] (de72c2e)
-- chore: bump version to 1.249.0 [skip ci] (6cf0c77)
-- chore: bump version to 1.248.0 [skip ci] (44be067)
-- chore: bump version to 1.247.0 [skip ci] (858f23a)
-- Fix AI provider model selection to dynamically filter based on provider (709c590)
-- chore: bump version to 1.246.0 [skip ci] (a903056)
-- chore: bump version to 1.245.0 [skip ci] (f4f8576)
-- Merge pull request #465 from xjanova/claude/product-upload-system-011CUtW28fBQj2k2NQTij75D (9698f1d)
-- chore: bump version to 1.244.0 [skip ci] (92a7b1c)
-- chore: bump version to 1.243.0 [skip ci] (c1a2f55)
-- chore: bump version to 1.242.0 [skip ci] (90ed154)
-- chore: bump version to 1.241.0 [skip ci] (1b5315a)
-- chore: bump version to 1.240.0 [skip ci] (2243052)
-- chore: bump version to 1.239.0 [skip ci] (a6c172a)
-
-## [v1.253.0] - 2025-11-07
-
-### ✨ Features
-- Merge pull request #473 from xjanova/claude/fix-missing-employee-view-011CUtahg5bB8okr2oXMfWoN (a6bfe9a)
-- feat: add comprehensive HRM views (d59b169)
-- Merge pull request #470 from xjanova/claude/wallet-cashback-support-011CUtYBfr9B5ezYjFQQFbXA (11f9123)
-- Merge pull request #467 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (ac71e17)
-- feat: add cashback display on product pages (6946225)
-- feat: add complete POS system access for sellers (bd95a88)
-- Merge pull request #466 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (6d66447)
-- Merge pull request #464 from xjanova/claude/wallet-cashback-support-011CUtYBfr9B5ezYjFQQFbXA (089888d)
-- feat: implement comprehensive wallet cashback system (a1c11df)
-- feat: Add PV/Cashback support to Admin product management (9c9710e)
-- feat: Add modern edit page for Seller products with PV/Cashback (468b923)
-- feat: Modernize e-commerce UI with LINE OA style and add PV/Cashback system (b451af8)
-- feat: add create and edit views for POS device management (9f78c29)
-- Merge pull request #462 from xjanova/claude/product-upload-system-011CUtW28fBQj2k2NQTij75D (b6c1a34)
-- feat: Add drag & drop image upload for products and categories (8c2fa03)
-- Merge pull request #459 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (fafb84a)
-- feat: add comprehensive POS admin views for dashboard and management (46d371f)
-- Merge pull request #457 from xjanova/claude/admin-dashboard-pv-cashback-011CUtNrjzLyZKSU161rFZFf (8a944e0)
-- feat: Add premium image upload system with drag & drop for products (b68f16f)
-- Merge pull request #456 from xjanova/claude/admin-dashboard-pv-cashback-011CUtNrjzLyZKSU161rFZFf (b510d98)
-### 🐛 Bug Fixes
-- Merge pull request #472 from xjanova/claude/fix-article-permissions-view-011CUtcB222UDvB3naTzvWF5 (0d71715)
-- fix: Add missing article permissions view (c0fafb2)
-- Merge pull request #469 from xjanova/claude/mlm-package-seed-fix-011CUtaT5S7qdbhxLX6r9axA (e302351)
-- Merge pull request #468 from xjanova/claude/fix-missing-employee-view-011CUtahg5bB8okr2oXMfWoN (de59c15)
-- fix: add missing employee index view (c95f68b)
-- fix: แก้ไขความเข้าใจผิดเรื่อง MLM Plan vs Package และลบฟังก์ชัน edit ที่ไม่จำเป็น (5ad0317)
-- Merge pull request #463 from xjanova/claude/improve-homepage-menu-contrast-011CUtPfXW5Awj25EqkexVyf (fb20226)
-- fix: แก้ปัญหา Error 419 เมื่ออัพโหลดโลโก้ (d3acf3b)
-- Merge pull request #461 from xjanova/claude/fix-post-only-route-error-011CUtWVRiMVkz1cVvVye5He (87cd1b9)
-- Merge pull request #460 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (504181e)
-- fix: แก้ไขปัญหา POST-only route error สำหรับ FlowAccount connection (4198e42)
-- fix: correct POS route names and add transaction detail view (77da9a5)
-- Merge pull request #458 from xjanova/claude/improve-homepage-menu-contrast-011CUtPfXW5Awj25EqkexVyf (50533a6)
-- fix: แก้ไขปัญหาโลโก้อัพโหลดแล้วไม่แสดง (919d8ec)
-- Merge pull request #454 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (b8e982f)
-- fix: resolve MySQL GROUP BY strict mode errors in POS dashboard (10e77d9)
-- Merge pull request #452 from xjanova/claude/fix-payment-gateway-decryption-011CUt7RMRqjUShDLiCsBLz9 (293a174)
-- Merge pull request #451 from xjanova/claude/fix-permission-binding-error-011CUtDVPtyqGwrqArNQuTfq (6dd7056)
-- fix: register CheckPermission middleware alias to resolve binding error (6921194)
-- fix: comprehensive DecryptException protection across all layers (3656c6b)
-### 🔧 Other Changes
-- chore: bump version to 1.252.0 [skip ci] (ac978ea)
-- chore: bump version to 1.251.0 [skip ci] (c3c256a)
-- Merge pull request #471 from xjanova/claude/admin-line-bot-ai-provider-011CUtaCp31ro4EJpZrum8kZ (4c7c66b)
-- chore: bump version to 1.250.0 [skip ci] (de72c2e)
-- chore: bump version to 1.249.0 [skip ci] (6cf0c77)
-- chore: bump version to 1.248.0 [skip ci] (44be067)
-- chore: bump version to 1.247.0 [skip ci] (858f23a)
-- Fix AI provider model selection to dynamically filter based on provider (709c590)
-- chore: bump version to 1.246.0 [skip ci] (a903056)
-- chore: bump version to 1.245.0 [skip ci] (f4f8576)
-- Merge pull request #465 from xjanova/claude/product-upload-system-011CUtW28fBQj2k2NQTij75D (9698f1d)
-- chore: bump version to 1.244.0 [skip ci] (92a7b1c)
-- chore: bump version to 1.243.0 [skip ci] (c1a2f55)
-- chore: bump version to 1.242.0 [skip ci] (90ed154)
-- chore: bump version to 1.241.0 [skip ci] (1b5315a)
-- chore: bump version to 1.240.0 [skip ci] (2243052)
-- chore: bump version to 1.239.0 [skip ci] (a6c172a)
-- chore: bump version to 1.238.0 [skip ci] (5fd8440)
-- chore: bump version to 1.237.0 [skip ci] (b78f599)
-- chore: bump version to 1.236.0 [skip ci] (2ff6c42)
-
-## [v1.252.0] - 2025-11-07
-
-### ✨ Features
-- Merge pull request #470 from xjanova/claude/wallet-cashback-support-011CUtYBfr9B5ezYjFQQFbXA (11f9123)
-- Merge pull request #467 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (ac71e17)
-- feat: add cashback display on product pages (6946225)
-- feat: add complete POS system access for sellers (bd95a88)
-- Merge pull request #466 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (6d66447)
-- Merge pull request #464 from xjanova/claude/wallet-cashback-support-011CUtYBfr9B5ezYjFQQFbXA (089888d)
-- feat: implement comprehensive wallet cashback system (a1c11df)
-- feat: Add PV/Cashback support to Admin product management (9c9710e)
-- feat: Add modern edit page for Seller products with PV/Cashback (468b923)
-- feat: Modernize e-commerce UI with LINE OA style and add PV/Cashback system (b451af8)
-- feat: add create and edit views for POS device management (9f78c29)
-- Merge pull request #462 from xjanova/claude/product-upload-system-011CUtW28fBQj2k2NQTij75D (b6c1a34)
-- feat: Add drag & drop image upload for products and categories (8c2fa03)
-- Merge pull request #459 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (fafb84a)
-- feat: add comprehensive POS admin views for dashboard and management (46d371f)
-- Merge pull request #457 from xjanova/claude/admin-dashboard-pv-cashback-011CUtNrjzLyZKSU161rFZFf (8a944e0)
-- feat: Add premium image upload system with drag & drop for products (b68f16f)
-- Merge pull request #456 from xjanova/claude/admin-dashboard-pv-cashback-011CUtNrjzLyZKSU161rFZFf (b510d98)
-- Merge pull request #455 from xjanova/claude/improve-homepage-menu-contrast-011CUtPfXW5Awj25EqkexVyf (23ef690)
-- feat: ปรับปรุงความคมชัดและขนาดของเมนูหน้าแรก (aa35f6e)
-### 🐛 Bug Fixes
-- Merge pull request #472 from xjanova/claude/fix-article-permissions-view-011CUtcB222UDvB3naTzvWF5 (0d71715)
-- fix: Add missing article permissions view (c0fafb2)
-- Merge pull request #469 from xjanova/claude/mlm-package-seed-fix-011CUtaT5S7qdbhxLX6r9axA (e302351)
-- Merge pull request #468 from xjanova/claude/fix-missing-employee-view-011CUtahg5bB8okr2oXMfWoN (de59c15)
-- fix: add missing employee index view (c95f68b)
-- fix: แก้ไขความเข้าใจผิดเรื่อง MLM Plan vs Package และลบฟังก์ชัน edit ที่ไม่จำเป็น (5ad0317)
-- Merge pull request #463 from xjanova/claude/improve-homepage-menu-contrast-011CUtPfXW5Awj25EqkexVyf (fb20226)
-- fix: แก้ปัญหา Error 419 เมื่ออัพโหลดโลโก้ (d3acf3b)
-- Merge pull request #461 from xjanova/claude/fix-post-only-route-error-011CUtWVRiMVkz1cVvVye5He (87cd1b9)
-- Merge pull request #460 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (504181e)
-- fix: แก้ไขปัญหา POST-only route error สำหรับ FlowAccount connection (4198e42)
-- fix: correct POS route names and add transaction detail view (77da9a5)
-- Merge pull request #458 from xjanova/claude/improve-homepage-menu-contrast-011CUtPfXW5Awj25EqkexVyf (50533a6)
-- fix: แก้ไขปัญหาโลโก้อัพโหลดแล้วไม่แสดง (919d8ec)
-- Merge pull request #454 from xjanova/claude/admin-pos-menu-access-011CUtDRQZoNxc8q8EGpRYkE (b8e982f)
-- fix: resolve MySQL GROUP BY strict mode errors in POS dashboard (10e77d9)
-- Merge pull request #452 from xjanova/claude/fix-payment-gateway-decryption-011CUt7RMRqjUShDLiCsBLz9 (293a174)
-- Merge pull request #451 from xjanova/claude/fix-permission-binding-error-011CUtDVPtyqGwrqArNQuTfq (6dd7056)
-- fix: register CheckPermission middleware alias to resolve binding error (6921194)
-- fix: comprehensive DecryptException protection across all layers (3656c6b)
-### 🔧 Other Changes
-- chore: bump version to 1.251.0 [skip ci] (c3c256a)
-- Merge pull request #471 from xjanova/claude/admin-line-bot-ai-provider-011CUtaCp31ro4EJpZrum8kZ (4c7c66b)
-- chore: bump version to 1.250.0 [skip ci] (de72c2e)
-- chore: bump version to 1.249.0 [skip ci] (6cf0c77)
-- chore: bump version to 1.248.0 [skip ci] (44be067)
-- chore: bump version to 1.247.0 [skip ci] (858f23a)
-- Fix AI provider model selection to dynamically filter based on provider (709c590)
-- chore: bump version to 1.246.0 [skip ci] (a903056)
-- chore: bump version to 1.245.0 [skip ci] (f4f8576)
-- Merge pull request #465 from xjanova/claude/product-upload-system-011CUtW28fBQj2k2NQTij75D (9698f1d)
-- chore: bump version to 1.244.0 [skip ci] (92a7b1c)
-- chore: bump version to 1.243.0 [skip ci] (c1a2f55)
-- chore: bump version to 1.242.0 [skip ci] (90ed154)
-- chore: bump version to 1.241.0 [skip ci] (1b5315a)
-- chore: bump version to 1.240.0 [skip ci] (2243052)
-- chore: bump version to 1.239.0 [skip ci] (a6c172a)
-- chore: bump version to 1.238.0 [skip ci] (5fd8440)
-- chore: bump version to 1.237.0 [skip ci] (b78f599)
-- chore: bump version to 1.236.0 [skip ci] (2ff6c42)
-- chore: bump version to 1.235.0 [skip ci] (7a9cb6d)
 
 ## [v1.251.0] - 2025-11-07
 

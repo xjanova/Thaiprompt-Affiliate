@@ -34,125 +34,13 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 
-    @php
-        $primaryStart = \App\Models\Setting::get('theme_primary_start', '#3B82F6');
-        $primaryEnd = \App\Models\Setting::get('theme_primary_end', '#1D4ED8');
-        $secondaryStart = \App\Models\Setting::get('theme_secondary_start', '#10B981');
-        $secondaryEnd = \App\Models\Setting::get('theme_secondary_end', '#059669');
-    @endphp
+    {{-- Theme System v2 --}}
+    <x-theme-style :theme="$currentTheme ?? null" :mode="$currentThemeMode ?? 'auto'" />
 
     <style>
         /* Alpine.js x-cloak */
         [x-cloak] {
             display: none !important;
-        }
-
-        :root {
-            --gradient-primary: linear-gradient(135deg, {{ $primaryStart }}, {{ $primaryEnd }});
-            --gradient-secondary: linear-gradient(135deg, {{ $secondaryStart }}, {{ $secondaryEnd }});
-        }
-
-        .bg-gradient-primary {
-            background: var(--gradient-primary);
-        }
-
-        .bg-gradient-secondary {
-            background: var(--gradient-secondary);
-        }
-
-        /* Dark Mode Variables */
-        .dark {
-            color-scheme: dark;
-        }
-
-        .dark body {
-            background-color: #0f172a;
-            color: #e2e8f0;
-        }
-
-        .dark .bg-gray-100 {
-            background-color: #1e293b;
-        }
-
-        .dark .bg-gray-50 {
-            background-color: #1e293b;
-        }
-
-        .dark .bg-white {
-            background-color: #1e293b;
-            color: #e2e8f0;
-        }
-
-        .dark .text-gray-800 {
-            color: #e2e8f0;
-        }
-
-        .dark .text-gray-900 {
-            color: #f1f5f9;
-        }
-
-        .dark .text-gray-700 {
-            color: #cbd5e1;
-        }
-
-        .dark .text-gray-600 {
-            color: #94a3b8;
-        }
-
-        .dark .text-gray-500 {
-            color: #94a3b8;
-        }
-
-        .dark .border-gray-200 {
-            border-color: #334155;
-        }
-
-        .dark .divide-gray-200 {
-            border-color: #334155;
-        }
-
-        .dark .shadow-sm {
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
-        }
-
-        .dark .shadow-md {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-        }
-
-        .dark .shadow-xl {
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-        }
-
-        .dark .hover\:bg-gray-50:hover {
-            background-color: #334155;
-        }
-
-        .dark .bg-gray-100 {
-            background-color: #1e293b;
-        }
-
-        /* Dark mode for tables */
-        .dark table thead {
-            background-color: #0f172a;
-        }
-
-        .dark table tbody tr:hover {
-            background-color: #334155;
-        }
-
-        .dark input,
-        .dark select,
-        .dark textarea {
-            background-color: #1e293b;
-            border-color: #334155;
-            color: #e2e8f0;
-        }
-
-        .dark input:focus,
-        .dark select:focus,
-        .dark textarea:focus {
-            border-color: #6366f1;
-            background-color: #1e293b;
         }
 
         /* Smooth transitions */
@@ -1713,6 +1601,9 @@
     </script>
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
+
+    {{-- Theme System v2 - JavaScript --}}
+    <x-theme-script :mode="$currentThemeMode ?? 'auto'" />
 
     @stack('scripts')
 </body>
