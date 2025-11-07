@@ -1015,6 +1015,14 @@ Route::prefix('themes')->name('themes.')->group(function () {
     Route::post('/{id}/toggle-active', [\App\Http\Controllers\Admin\ThemeController::class, 'toggleActive'])->name('toggle-active');
 });
 
+// Icon Management
+Route::prefix('icons')->name('icons.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\IconController::class, 'index'])->name('index');
+    Route::post('/upload', [\App\Http\Controllers\Admin\IconController::class, 'upload'])->name('upload');
+    Route::delete('/', [\App\Http\Controllers\Admin\IconController::class, 'destroy'])->name('destroy');
+    Route::get('/list', [\App\Http\Controllers\Admin\IconController::class, 'list'])->name('list');
+});
+
 // System Update Management
 Route::prefix('updates')->name('updates.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('index');
