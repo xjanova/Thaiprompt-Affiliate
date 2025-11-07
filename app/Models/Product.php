@@ -347,6 +347,25 @@ class Product extends Model
     }
 
     /**
+     * Get primary image URL (main_image_url or first image)
+     */
+    public function getPrimaryImageAttribute(): ?string
+    {
+        // If main_image_url exists, use it
+        if ($this->main_image_url) {
+            return \Storage::url($this->main_image_url);
+        }
+
+        // Otherwise, use first image from images relationship
+        $firstImage = $this->images()->first();
+        if ($firstImage && $firstImage->image_url) {
+            return \Storage::url($firstImage->image_url);
+        }
+
+        return null;
+    }
+
+    /**
      * MLM Relationships
      */
 
