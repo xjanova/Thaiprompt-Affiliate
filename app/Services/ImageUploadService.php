@@ -11,7 +11,7 @@ use Exception;
 class ImageUploadService
 {
     /**
-     * Upload and optimize image
+     * Upload and optimize image (saves as WebP for better performance)
      */
     public function uploadImage(
         UploadedFile $file,
@@ -21,8 +21,8 @@ class ImageUploadService
         int $quality = 85
     ): string {
         try {
-            // Generate unique filename
-            $filename = Str::random(40) . '.' . $file->getClientOriginalExtension();
+            // Generate unique filename with .webp extension
+            $filename = Str::random(40) . '.webp';
             $path = "{$directory}/{$filename}";
 
             // Get image dimensions
@@ -36,9 +36,9 @@ class ImageUploadService
                 });
             }
 
-            // Optimize and save
-            $image->encode($file->getClientOriginalExtension(), $quality);
-            Storage::disk('public')->put($path, (string) $image->encode());
+            // Encode as WebP and save
+            $webp = $image->encode('webp', $quality);
+            Storage::disk('public')->put($path, (string) $webp);
 
             return $path;
         } catch (Exception $e) {

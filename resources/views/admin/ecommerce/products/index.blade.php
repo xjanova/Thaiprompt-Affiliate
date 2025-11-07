@@ -175,6 +175,18 @@
                     </div>
                 </div>
 
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">รูปภาพหลัก</label>
+                    <input type="file" name="main_image" accept="image/*" class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">รองรับ JPG, PNG, GIF, WebP (ขนาดไม่เกิน 5MB)</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">รูปภาพเพิ่มเติม (สูงสุด 10 ภาพ)</label>
+                    <input type="file" name="images[]" accept="image/*" multiple class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">สามารถเลือกหลายไฟล์พร้อมกันได้</p>
+                </div>
+
                 <div class="flex items-center space-x-4">
                     <label class="flex items-center">
                         <input type="checkbox" name="is_active" value="1" checked class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
