@@ -193,7 +193,7 @@
         </div>
         @if(auth()->user()->isSuperAdmin())
         <div class="bg-white rounded-lg shadow p-4">
-            <a href="{{ route('admin.pos.devices-export') }}{{ request()->getQueryString() ? '?' . request()->getQueryString() : '' }}"
+            <a href="{{ route('admin.pos.devices.export') }}{{ request()->getQueryString() ? '?' . request()->getQueryString() : '' }}"
                class="flex items-center justify-center h-full text-blue-600 hover:text-blue-700">
                 <span class="text-lg mr-2">📥</span>
                 Export CSV

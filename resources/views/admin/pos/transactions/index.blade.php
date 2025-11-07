@@ -211,7 +211,7 @@
                 <h3 class="text-lg font-bold text-gray-900">ส่งออกข้อมูล</h3>
                 <p class="text-sm text-gray-500 mt-1">ส่งออกรายการขายเป็นไฟล์ CSV</p>
             </div>
-            <a href="{{ route('admin.pos.transactions-export') }}{{ request()->getQueryString() ? '?' . request()->getQueryString() : '' }}"
+            <a href="{{ route('admin.pos.transactions.export') }}{{ request()->getQueryString() ? '?' . request()->getQueryString() : '' }}"
                class="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                 📥 Export CSV
             </a>
