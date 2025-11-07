@@ -36,15 +36,39 @@
             }
         },
 
-        setMode(mode) {
+        async setMode(mode) {
             this.currentMode = mode;
             this.applyTheme();
-            this.reloadThemeVariables();
+            await this.reloadThemeVariables();
         },
 
-        reloadThemeVariables() {
+        async reloadThemeVariables() {
             // Reload theme CSS variables if needed
             const actualMode = this.getActualMode();
+
+            // Fetch new CSS variables from server
+            try {
+                const response = await fetch(`{{ route("user.themes.css") }}?mode=${actualMode}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                if (response.ok) {
+                    const css = await response.text();
+
+                    // Update or create dynamic style element
+                    let styleElement = document.getElementById('dynamic-theme-css');
+                    if (!styleElement) {
+                        styleElement = document.createElement('style');
+                        styleElement.id = 'dynamic-theme-css';
+                        document.head.appendChild(styleElement);
+                    }
+                    styleElement.textContent = css;
+                }
+            } catch (error) {
+                console.error('Failed to reload theme variables:', error);
+            }
 
             // Trigger event for other components
             window.dispatchEvent(new CustomEvent('theme-changed', {

@@ -21,9 +21,12 @@ class ThemeController extends Controller
     public function index()
     {
         $themes = $this->themeService->getAllThemes(true);
-        $currentTheme = $this->themeService->getThemeForUser(auth()->id());
+        $userThemeData = $this->themeService->getThemeForUser(auth()->id());
 
-        return view('user.themes.index', compact('themes', 'currentTheme'));
+        $currentTheme = $userThemeData['theme'];
+        $currentMode = $userThemeData['mode'];
+
+        return view('user.themes.index', compact('themes', 'currentTheme', 'currentMode'));
     }
 
     /**
@@ -42,7 +45,10 @@ class ThemeController extends Controller
             $validated['mode']
         );
 
-        return back()->with('success', 'เปลี่ยน Theme สำเร็จ');
+        return response()->json([
+            'success' => true,
+            'message' => 'เปลี่ยน Theme สำเร็จ'
+        ]);
     }
 
     /**
