@@ -76,7 +76,7 @@ class AccountingDemoSeeder extends Seeder
             $this->command->info('2. Creating company...');
             $company = AccountingCompany::create([
                 'user_id' => $user->id,
-                'name' => 'บริษัท ไทยพร้อมท์ จำกัด',
+                'name' => 'บริษัท ไทยพร๊อมท์ จำกัด',
                 'name_eng' => 'Thai Prompt Co., Ltd.',
                 'tax_id' => '0105559123456',
                 'branch_code' => '00000',
@@ -100,7 +100,7 @@ class AccountingDemoSeeder extends Seeder
             $bankAccount1 = AccountingBankAccount::create([
                 'user_id' => $user->id,
                 'bank_name' => 'ธนาคารกสิกรไทย',
-                'account_name' => 'บริษัท ไทยพร้อมท์ จำกัด',
+                'account_name' => 'บริษัท ไทยพร๊อมท์ จำกัด',
                 'account_number' => '123-4-56789-0',
                 'branch' => 'สาขาสุขุมวิท',
                 'account_type' => 'current',
@@ -113,7 +113,7 @@ class AccountingDemoSeeder extends Seeder
             $bankAccount2 = AccountingBankAccount::create([
                 'user_id' => $user->id,
                 'bank_name' => 'ธนาคารไทยพาณิชย์',
-                'account_name' => 'บริษัท ไทยพร้อมท์ จำกัด',
+                'account_name' => 'บริษัท ไทยพร๊อมท์ จำกัด',
                 'account_number' => '987-6-54321-0',
                 'branch' => 'สาขาอโศก',
                 'account_type' => 'savings',
