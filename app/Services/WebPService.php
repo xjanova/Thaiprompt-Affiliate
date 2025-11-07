@@ -6,6 +6,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use App\Models\WebPConversionStat;
 
 class WebPService
 {
@@ -55,6 +56,13 @@ class WebPService
 
         // Store the WebP image
         Storage::disk('public')->put($fullPath, (string) $encoded);
+
+        // Track automatic conversion
+        try {
+            WebPConversionStat::incrementUploadConversion(1);
+        } catch (\Exception $e) {
+            \Log::warning('Failed to track WebP conversion stat: ' . $e->getMessage());
+        }
 
         return [
             'path' => $fullPath,

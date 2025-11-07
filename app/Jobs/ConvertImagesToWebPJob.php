@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Services\WebPService;
 use App\Services\WebPDatabaseUpdateService;
+use App\Models\WebPConversionStat;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -138,6 +139,15 @@ class ConvertImagesToWebPJob implements ShouldQueue
 
             // Update database records
             $dbUpdateResults = $dbUpdateService->updateAllImagePaths($updatedRecords);
+
+            // Track batch conversion if there are converted files
+            if ($convertedFiles > 0) {
+                try {
+                    WebPConversionStat::incrementBatchConversion($convertedFiles);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to track WebP batch conversion stat: ' . $e->getMessage());
+                }
+            }
 
             // Final progress
             $this->updateProgress(

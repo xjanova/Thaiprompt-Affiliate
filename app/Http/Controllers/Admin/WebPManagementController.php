@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Jobs\ConvertImagesToWebPJob;
 use App\Services\WebPService;
+use App\Models\WebPConversionStat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -27,7 +28,10 @@ class WebPManagementController extends Controller
         // Get statistics
         $stats = $this->getStatistics();
 
-        return view('admin.webp.index', compact('stats'));
+        // Get conversion stats (total across all conversions)
+        $conversionStats = WebPConversionStat::getStats();
+
+        return view('admin.webp.index', compact('stats', 'conversionStats'));
     }
 
     /**

@@ -34,7 +34,24 @@
     @endif
 
     <!-- Statistics Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
+        <!-- Total Converted (All) -->
+        <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl shadow-lg p-6 text-white">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-indigo-100 text-sm font-medium">รวมแปลงทั้งหมด</p>
+                    <h3 class="text-3xl font-bold mt-2">{{ number_format($conversionStats['total_converted']) }}</h3>
+                    <p class="text-indigo-100 text-xs mt-1">
+                        🔄 {{ number_format($conversionStats['total_from_uploads']) }} +
+                        📊 {{ number_format($conversionStats['total_from_batch']) }}
+                    </p>
+                </div>
+                <div class="bg-white/20 rounded-full p-3">
+                    <i class="fas fa-sync-alt text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
         <!-- Total Images -->
         <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
             <div class="flex items-center justify-between">
@@ -84,6 +101,58 @@
                 <div class="bg-white/20 rounded-full p-3">
                     <i class="fas fa-chart-line text-2xl"></i>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Conversion History -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+            <i class="fas fa-history mr-2 text-indigo-500"></i>
+            ประวัติการแปลง WebP
+        </h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- From Uploads -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-semibold text-gray-800 dark:text-white flex items-center">
+                        <i class="fas fa-upload mr-2 text-blue-500"></i>
+                        จากการอัพโหลด (อัตโตมัติ)
+                    </h3>
+                </div>
+                <div class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 mb-2">
+                    {{ number_format($conversionStats['total_from_uploads']) }}
+                </div>
+                @if($conversionStats['last_upload_conversion'])
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-clock mr-1"></i>
+                        อัพเดตล่าสุด: {{ $conversionStats['last_upload_conversion']->format('d/m/Y H:i') }}
+                    </p>
+                @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">ยังไม่มีการแปลงจากการอัพโหลด</p>
+                @endif
+            </div>
+
+            <!-- From Batch -->
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="font-semibold text-gray-800 dark:text-white flex items-center">
+                        <i class="fas fa-layer-group mr-2 text-green-500"></i>
+                        จากการแปลงกลุ่ม (บัตช์)
+                    </h3>
+                </div>
+                <div class="text-3xl font-bold text-green-600 dark:text-green-400 mb-2">
+                    {{ number_format($conversionStats['total_from_batch']) }}
+                </div>
+                @if($conversionStats['last_batch_conversion'])
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        <i class="fas fa-clock mr-1"></i>
+                        อัพเดตล่าสุด: {{ $conversionStats['last_batch_conversion']->format('d/m/Y H:i') }}
+                    </p>
+                @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400 italic">ยังไม่มีการแปลงจากการแปลงกลุ่ม</p>
+                @endif
             </div>
         </div>
     </div>
