@@ -161,6 +161,8 @@
                     <div class="flex justify-center mb-6">
                         <img src="{{ $logoUrl }}"
                              alt="{{ $appName }} Logo"
+                             width="128"
+                             height="128"
                              class="w-32 h-32 logo-glow float-animation object-contain">
                     </div>
                     <h1 class="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">

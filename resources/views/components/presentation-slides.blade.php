@@ -94,7 +94,7 @@
 <div id="presentation-fullscreen" class="fixed inset-0 bg-black z-50 hidden">
     <!-- Logo Watermark Overlay -->
     <div class="absolute top-8 left-8 z-20 opacity-15 pointer-events-none">
-        <img src="{{ asset('images/logo.svg') }}" alt="ไทยพร๊อม" class="w-24 h-24">
+        <img src="{{ asset('images/logo.svg') }}" alt="ไทยพร๊อม" width="96" height="96" class="w-24 h-24">
     </div>
 
     <!-- Control Panel -->
