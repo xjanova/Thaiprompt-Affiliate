@@ -684,8 +684,7 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\MlmPlanController::class, 'index'])->name('index');
         Route::get('/create', [\App\Http\Controllers\Admin\MlmPlanController::class, 'create'])->name('create');
         Route::post('/', [\App\Http\Controllers\Admin\MlmPlanController::class, 'store'])->name('store');
-        Route::get('/{plan}/edit', [\App\Http\Controllers\Admin\MlmPlanController::class, 'edit'])->name('edit');
-        Route::put('/{plan}', [\App\Http\Controllers\Admin\MlmPlanController::class, 'update'])->name('update');
+        // Note: edit และ update routes ถูกลบออก - แผน MLM ไม่ควรแก้ไขผ่าน UI
         Route::delete('/{plan}', [\App\Http\Controllers\Admin\MlmPlanController::class, 'destroy'])->name('destroy');
         Route::post('/{plan}/toggle-status', [\App\Http\Controllers\Admin\MlmPlanController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/{plan}/set-default', [\App\Http\Controllers\Admin\MlmPlanController::class, 'setDefault'])->name('set-default');
