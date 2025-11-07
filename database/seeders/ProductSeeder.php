@@ -181,8 +181,9 @@ class ProductSeeder extends Seeder
                         $productAttributes['slug'] = $existingProduct->slug;
                         $productAttributes['sku'] = $existingProduct->sku;
                     } else {
-                        // For new products, create slug from name and let SKU be auto-generated
+                        // For new products, create unique slug and SKU
                         $productAttributes['slug'] = Str::slug($productData['name']) . '-' . strtolower(Str::random(4));
+                        $productAttributes['sku'] = 'PRD-' . strtoupper(Str::random(8));
                     }
 
                     Product::updateOrCreate(
