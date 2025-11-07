@@ -306,6 +306,9 @@
         </div>
     </section>
 
+    <!-- Presentation Slides Section -->
+    @include('components.presentation-slides')
+
     <style>
         @keyframes blob {
             0% { transform: translate(0px, 0px) scale(1); }
