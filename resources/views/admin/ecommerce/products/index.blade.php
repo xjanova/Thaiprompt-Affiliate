@@ -4,6 +4,20 @@
 
 @section('content')
 <div class="space-y-6">
+    <!-- Success Message -->
+    @if(session('success'))
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{ session('success') }}</span>
+        </div>
+    @endif
+
+    <!-- Error Message -->
+    @if(session('error'))
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+            <span class="block sm:inline">{{ session('error') }}</span>
+        </div>
+    @endif
+
     <div class="flex justify-between items-center">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">📦 จัดการสินค้า</h1>
         <button onclick="document.getElementById('createProductModal').classList.remove('hidden')" class="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 flex items-center gap-2">
@@ -122,10 +136,15 @@
 </div>
 
 <!-- Create Product Modal -->
-<div id="createProductModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto">
+<div id="createProductModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 overflow-y-auto" x-data="{
+    isUploading: false,
+    handleSubmit(event) {
+        this.isUploading = true;
+    }
+}">
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 my-8">
         <h2 class="text-2xl font-bold mb-4 text-gray-900 dark:text-white">เพิ่มสินค้าใหม่</h2>
-        <form action="{{ route('admin.ecommerce.products.store') }}" method="POST" enctype="multipart/form-data">
+        <form action="{{ route('admin.ecommerce.products.store') }}" method="POST" enctype="multipart/form-data" @submit="handleSubmit">
             @csrf
             <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
                 <div>
@@ -212,6 +231,23 @@
                 </button>
             </div>
         </form>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div x-show="isUploading" x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         style="display: none;">
+        <div class="bg-white dark:bg-slate-800 rounded-lg p-8 max-w-sm mx-4 text-center shadow-2xl">
+            <div class="mb-4">
+                <svg class="animate-spin h-16 w-16 text-orange-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            </div>
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">กำลังบันทึกสินค้า...</h3>
+            <p class="text-gray-600 dark:text-gray-400">กรุณารอสักครู่ ระบบกำลังอัพโหลดภาพและบันทึกข้อมูล</p>
+        </div>
     </div>
 </div>
 @endsection
