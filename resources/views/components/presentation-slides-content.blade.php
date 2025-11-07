@@ -8,10 +8,10 @@
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-12">
         <div class="text-center text-white max-w-5xl">
             <div class="mb-8 animate-bounce">
-                @if($logo)
-                    <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl object-contain">
+                @if($logo && file_exists(storage_path('app/public/' . $logo)))
+                    <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl object-contain" onerror="this.src='{{ asset('images/logo.svg') }}'">
                 @else
-                    <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl">
+                    <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl object-contain">
                 @endif
             </div>
             <h1 class="text-7xl md:text-8xl font-black mb-6 leading-tight">
@@ -2153,10 +2153,10 @@
     <div class="h-full flex items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 p-12">
         <div class="max-w-6xl w-full text-center">
             <div class="mb-8">
-                @if($logo)
-                    <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl mb-8 object-contain">
+                @if($logo && file_exists(storage_path('app/public/' . $logo)))
+                    <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl mb-8 object-contain" onerror="this.src='{{ asset('images/logo.svg') }}'">
                 @else
-                    <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl mb-8">
+                    <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="160" height="160" class="w-40 h-40 mx-auto filter drop-shadow-2xl mb-8 object-contain">
                 @endif
             </div>
 
