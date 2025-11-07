@@ -1,5 +1,12 @@
 @props(['mode' => $currentThemeMode ?? 'auto'])
 
+@php
+    // Detect if we're in admin or user context
+    $isAdmin = request()->is('admin/*') || request()->is('admin');
+    $themeCssRoute = $isAdmin ? route('admin.themes.css') : route('user.themes.css');
+    $themeSetRoute = $isAdmin ? route('admin.themes.set') : route('user.themes.set');
+@endphp
+
 <script>
     // Theme management
     window.ThemeManager = {
@@ -48,7 +55,7 @@
 
             // Fetch new CSS variables from server
             try {
-                const response = await fetch(`{{ route("user.themes.css") }}?mode=${actualMode}`, {
+                const response = await fetch(`{{ $themeCssRoute }}?mode=${actualMode}`, {
                     headers: {
                         'X-Requested-With': 'XMLHttpRequest'
                     }
@@ -78,7 +85,7 @@
 
         async changeTheme(themeId, mode = 'auto') {
             try {
-                const response = await fetch('{{ route("user.themes.set") }}', {
+                const response = await fetch('{{ $themeSetRoute }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -2,6 +2,10 @@
 @php
     $currentThemeId = $currentTheme->id ?? null;
     $currentMode = $currentThemeMode ?? 'auto';
+
+    // Detect if we're in admin or user context
+    $isAdmin = request()->is('admin/*') || request()->is('admin');
+    $themeSetRoute = $isAdmin ? route('admin.themes.set') : route('user.themes.set');
 @endphp
 
 <div x-data="themeToggle()" x-init="init()" class="relative">
@@ -88,17 +92,13 @@ function themeToggle() {
             // Save preference to server
             if (this.currentThemeId) {
                 try {
-                    const route = window.location.pathname.startsWith('/admin')
-                        ? '/admin/themes/set'
-                        : '/user/themes/set';
-
                     const csrfToken = document.querySelector('meta[name="csrf-token"]');
                     if (!csrfToken) {
                         console.error('CSRF token not found');
                         return;
                     }
 
-                    await fetch(route, {
+                    await fetch('{{ $themeSetRoute }}', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
