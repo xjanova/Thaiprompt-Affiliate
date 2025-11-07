@@ -3,78 +3,99 @@
 @section('title', 'ตั้งค่าระบบ')
 
 @section('content')
-<div x-data="{ activeTab: 'general' }" class="space-y-6">
+<div x-data="{ activeTab: 'general' }" class="container-fluid px-4 py-6">
+    <!-- Animated Header -->
+    <div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 dark:from-indigo-600 dark:via-purple-700 dark:to-pink-700 p-8 shadow-2xl">
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
+        <div class="relative flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white mb-1">ตั้งค่าระบบ</h1>
+                        <p class="text-indigo-100 dark:text-purple-200">จัดการการตั้งค่าทั้งหมดของระบบ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Tab Navigation -->
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden mb-6">
         <div class="border-b border-gray-200 dark:border-slate-700">
-            <nav class="flex -mb-px">
+            <nav class="flex overflow-x-auto -mb-px">
                 <button @click="activeTab = 'general'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'general', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'general' }"
-                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
-                    <span class="flex items-center">
-                        <span class="text-lg mr-2">⚙️</span>
-                        ตั้งค่าทั่วไป
+                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20': activeTab === 'general', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'general' }"
+                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-cog text-lg"></i>
+                        <span>ตั้งค่าทั่วไป</span>
                     </span>
                 </button>
 
                 <button @click="activeTab = 'affiliate'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'affiliate', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'affiliate' }"
-                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
-                    <span class="flex items-center">
-                        <span class="text-lg mr-2">🌐</span>
-                        ตั้งค่า Affiliate
+                        :class="{ 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20': activeTab === 'affiliate', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'affiliate' }"
+                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-network-wired text-lg"></i>
+                        <span>ตั้งค่า Affiliate</span>
                     </span>
                 </button>
 
                 <button @click="activeTab = 'branding'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'branding', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'branding' }"
-                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
-                    <span class="flex items-center">
-                        <span class="text-lg mr-2">🎨</span>
-                        โลโก้ & Favicon
+                        :class="{ 'border-pink-500 text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20': activeTab === 'branding', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'branding' }"
+                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-palette text-lg"></i>
+                        <span>โลโก้ & Favicon</span>
                     </span>
                 </button>
 
                 <button @click="activeTab = 'theme'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'theme', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'theme' }"
-                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
-                    <span class="flex items-center">
-                        <span class="text-lg mr-2">🎨</span>
-                        สีธีม
+                        :class="{ 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20': activeTab === 'theme', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'theme' }"
+                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-fill-drip text-lg"></i>
+                        <span>สีธีม</span>
                     </span>
                 </button>
 
                 <button @click="activeTab = 'api'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'api', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'api' }"
-                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
-                    <span class="flex items-center">
-                        <span class="text-lg mr-2">🔑</span>
-                        การตั้งค่า API
+                        :class="{ 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20': activeTab === 'api', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'api' }"
+                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-key text-lg"></i>
+                        <span>การตั้งค่า API</span>
                     </span>
                 </button>
 
                 <button @click="activeTab = 'pageloader'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'pageloader', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'pageloader' }"
-                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
-                    <span class="flex items-center">
-                        <span class="text-lg mr-2">⏳</span>
-                        อนิเมชั่นโหลดหน้า
+                        :class="{ 'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20': activeTab === 'pageloader', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'pageloader' }"
+                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-spinner text-lg"></i>
+                        <span>อนิเมชั่นโหลดหน้า</span>
                     </span>
                 </button>
 
                 <button @click="activeTab = 'ocr'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400': activeTab === 'ocr', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'ocr' }"
-                        class="px-6 py-4 text-sm font-medium border-b-2 transition-colors duration-200">
-                    <span class="flex items-center">
-                        <span class="text-lg mr-2">📸</span>
-                        OCR / KYC
+                        :class="{ 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20': activeTab === 'ocr', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'ocr' }"
+                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
+                    <span class="flex items-center gap-2">
+                        <i class="fas fa-camera text-lg"></i>
+                        <span>OCR / KYC</span>
                     </span>
                 </button>
             </nav>
         </div>
 
         <!-- Tab Contents -->
-        <div class="p-6">
+        <div class="p-6 dark:bg-slate-800">
             <!-- General Settings Tab -->
             <div x-show="activeTab === 'general'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
                 <form method="POST" action="{{ route('admin.settings.update') }}">
@@ -93,8 +114,8 @@
                         </div>
 
                         <div class="flex justify-end">
-                            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                                บันทึกการตั้งค่า
+                            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+                                <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
                             </button>
                         </div>
                     </div>
@@ -146,8 +167,8 @@
                         </div>
 
                         <div class="flex justify-end">
-                            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                                บันทึกการตั้งค่า
+                            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+                                <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
                             </button>
                         </div>
                     </div>
@@ -389,8 +410,8 @@
                     </div>
 
                     <div class="flex justify-end mt-6">
-                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                            อัพโหลด
+                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-pink-600 to-rose-600 dark:from-pink-500 dark:to-rose-500 text-white rounded-xl hover:from-pink-700 hover:to-rose-700 dark:hover:from-pink-600 dark:hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+                            <i class="fas fa-upload mr-2"></i>อัพโหลด
                         </button>
                     </div>
                 </form>
@@ -510,8 +531,8 @@
                     </div>
 
                     <div class="flex justify-end mt-6">
-                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                            บันทึกสีธีม
+                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-500 dark:to-blue-500 text-white rounded-xl hover:from-cyan-700 hover:to-blue-700 dark:hover:from-cyan-600 dark:hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+                            <i class="fas fa-palette mr-2"></i>บันทึกสีธีม
                         </button>
                     </div>
                 </form>
@@ -608,8 +629,8 @@
                     </div>
 
                     <div class="flex justify-end mt-6">
-                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition">
-                            บันทึกการตั้งค่า API
+                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 dark:hover:from-emerald-600 dark:hover:to-teal-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+                            <i class="fas fa-key mr-2"></i>บันทึกการตั้งค่า API
                         </button>
                     </div>
                 </form>
@@ -866,8 +887,8 @@
                         </div>
 
                         <div class="flex justify-end mt-6">
-                            <button type="submit" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-purple-700 transition shadow-lg">
-                                💾 บันทึกการตั้งค่า
+                            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-orange-600 to-red-600 dark:from-orange-500 dark:to-red-500 text-white rounded-xl hover:from-orange-700 hover:to-red-700 dark:hover:from-orange-600 dark:hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+                                <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
                             </button>
                         </div>
                     </form>
