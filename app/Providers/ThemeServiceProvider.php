@@ -26,19 +26,27 @@ class ThemeServiceProvider extends ServiceProvider
     {
         // Share theme data with all views
         View::composer('*', function ($view) {
-            // Only load theme if user is authenticated
-            if (auth()->check()) {
-                $themeService = app(ThemeService::class);
-                $userTheme = $themeService->getThemeForUser(auth()->id());
+            try {
+                // Only load theme if user is authenticated
+                if (auth()->check()) {
+                    $themeService = app(ThemeService::class);
+                    $userTheme = $themeService->getThemeForUser(auth()->id());
 
+                    $view->with([
+                        'currentTheme' => $userTheme['theme'] ?? Theme::getDefault(),
+                        'currentThemeMode' => $userTheme['mode'] ?? 'auto',
+                    ]);
+                } else {
+                    // For guests, use default theme
+                    $view->with([
+                        'currentTheme' => Theme::getDefault(),
+                        'currentThemeMode' => 'auto',
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // If theme system not initialized or has errors, provide safe defaults
                 $view->with([
-                    'currentTheme' => $userTheme['theme'] ?? Theme::getDefault(),
-                    'currentThemeMode' => $userTheme['mode'] ?? 'auto',
-                ]);
-            } else {
-                // For guests, use default theme
-                $view->with([
-                    'currentTheme' => Theme::getDefault(),
+                    'currentTheme' => null,
                     'currentThemeMode' => 'auto',
                 ]);
             }

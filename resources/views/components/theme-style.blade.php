@@ -50,6 +50,31 @@
     }
     @endif
 
+    /* Dark mode when .dark class is applied to html element (for localStorage toggle) */
+    html.dark {
+        @if($theme && $theme->dark_colors)
+            @php
+                $darkVariables = $theme->getCssVariables('dark');
+            @endphp
+            @foreach($darkVariables as $key => $value)
+            {{ $key }}: {{ $value }};
+            @endforeach
+        @else
+            /* Fallback dark colors if no theme is set */
+            --color-bg-primary: #111827;
+            --color-bg-secondary: #1F2937;
+            --color-bg-tertiary: #374151;
+            --color-text-primary: #F9FAFB;
+            --color-text-secondary: #D1D5DB;
+            --color-text-tertiary: #9CA3AF;
+            --color-gray-50: #1F2937;
+            --color-gray-100: #111827;
+            --color-gray-200: #374151;
+            --color-gray-800: #F3F4F6;
+            --color-gray-900: #F9FAFB;
+        @endif
+    }
+
     /* Custom CSS from theme */
     @if($theme && $theme->custom_css && isset($theme->custom_css[$actualMode]))
     {!! $theme->custom_css[$actualMode] !!}
