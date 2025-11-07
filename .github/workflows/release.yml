@@ -13,7 +13,8 @@ on:
       - main
       - master
       - claude/Main
-  workflow_dispatch:
+      - 'claude/**'  # Support merges to all claude feature branches
+  workflow_dispatch:  # Allow manual trigger from any branch
 
 jobs:
   release:
