@@ -14,6 +14,7 @@ class Product extends Model
 
     protected $fillable = [
         'seller_id',
+        'store_id',
         'category_id',
         'name',
         'slug',
@@ -43,6 +44,9 @@ class Product extends Model
         'tags',
         'is_active',
         'is_featured',
+        'is_public_approved',
+        'public_approved_at',
+        'public_approved_by',
         'published_at',
         'view_count',
         'sales_count',
@@ -66,6 +70,8 @@ class Product extends Model
         'tags' => 'array',
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
+        'is_public_approved' => 'boolean',
+        'public_approved_at' => 'datetime',
         'published_at' => 'datetime',
         'view_count' => 'integer',
         'sales_count' => 'integer',

@@ -282,7 +282,7 @@
                     $logo = \App\Models\Setting::get('logo');
                 @endphp
                 @if($logo)
-                    <img src="{{ asset($logo) }}" alt="Logo" class="h-10 object-contain" :class="{ 'md:h-8': sidebarCollapsed }">
+                    <img src="{{ asset($logo) }}" alt="Logo" width="40" height="40" class="h-10 object-contain" :class="{ 'md:h-8': sidebarCollapsed }">
                 @else
                     @php
                         $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
