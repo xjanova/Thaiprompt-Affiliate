@@ -996,3 +996,35 @@ Route::prefix('pos')->name('pos.')->group(function () {
     Route::post('advertisements/{advertisement}/duplicate', [PosAdvertisementController::class, 'duplicate'])->name('advertisements.duplicate');
     Route::get('advertisements-analytics', [PosAdvertisementController::class, 'analytics'])->name('advertisements.analytics');
 });
+
+// Theme Management
+Route::prefix('themes')->name('themes.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ThemeController::class, 'index'])->name('index');
+    Route::get('/builder/{id?}', [\App\Http\Controllers\Admin\ThemeController::class, 'builder'])->name('builder');
+    Route::post('/', [\App\Http\Controllers\Admin\ThemeController::class, 'store'])->name('store');
+    Route::put('/{id}', [\App\Http\Controllers\Admin\ThemeController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\Admin\ThemeController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/duplicate', [\App\Http\Controllers\Admin\ThemeController::class, 'duplicate'])->name('duplicate');
+    Route::post('/preset/{presetId}', [\App\Http\Controllers\Admin\ThemeController::class, 'createFromPreset'])->name('create-from-preset');
+    Route::post('/{id}/preview', [\App\Http\Controllers\Admin\ThemeController::class, 'uploadPreview'])->name('upload-preview');
+    Route::get('/{id}/statistics', [\App\Http\Controllers\Admin\ThemeController::class, 'statistics'])->name('statistics');
+    Route::get('/{id}/export', [\App\Http\Controllers\Admin\ThemeController::class, 'export'])->name('export');
+    Route::post('/import', [\App\Http\Controllers\Admin\ThemeController::class, 'import'])->name('import');
+    Route::post('/initialize', [\App\Http\Controllers\Admin\ThemeController::class, 'initialize'])->name('initialize');
+    Route::post('/{id}/set-default', [\App\Http\Controllers\Admin\ThemeController::class, 'setDefault'])->name('set-default');
+    Route::post('/{id}/toggle-active', [\App\Http\Controllers\Admin\ThemeController::class, 'toggleActive'])->name('toggle-active');
+});
+
+// System Update Management
+Route::prefix('updates')->name('updates.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('index');
+    Route::get('/check', [\App\Http\Controllers\Admin\UpdateController::class, 'check'])->name('check');
+    Route::get('/{id}', [\App\Http\Controllers\Admin\UpdateController::class, 'show'])->name('show');
+    Route::post('/{id}/install', [\App\Http\Controllers\Admin\UpdateController::class, 'install'])->name('install');
+    Route::get('/logs', [\App\Http\Controllers\Admin\UpdateController::class, 'logs'])->name('logs');
+    Route::get('/logs/{id}', [\App\Http\Controllers\Admin\UpdateController::class, 'showLog'])->name('logs.show');
+    Route::post('/logs/{id}/rollback', [\App\Http\Controllers\Admin\UpdateController::class, 'rollback'])->name('rollback');
+    Route::post('/settings', [\App\Http\Controllers\Admin\UpdateController::class, 'updateSettings'])->name('settings.update');
+    Route::get('/notifications', [\App\Http\Controllers\Admin\UpdateController::class, 'notifications'])->name('notifications');
+    Route::post('/notifications/{id}/dismiss', [\App\Http\Controllers\Admin\UpdateController::class, 'dismissNotification'])->name('notifications.dismiss');
+});
