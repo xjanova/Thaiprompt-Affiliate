@@ -2,6 +2,8 @@
     $primaryColor = \App\Models\Setting::get('primary_color', '#3B82F6');
     $secondaryColor = \App\Models\Setting::get('secondary_color', '#8B5CF6');
     $accentColor = \App\Models\Setting::get('accent_color', '#EC4899');
+    $logo = \App\Models\Setting::get('logo');
+    $appName = \App\Models\Setting::get('app_name', 'ไทยพร๊อม');
 @endphp
 
 <!-- Premium Presentation Slides Section -->
@@ -33,7 +35,7 @@
             <!-- Main Heading -->
             <h2 class="text-5xl md:text-6xl font-black mb-6 leading-tight">
                 <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-200">
-                    ไทยพร๊อม Presentation
+                    {{ $appName }} Presentation
                 </span>
                 <br>
                 <span class="text-white">สำหรับวิทยากรและนักลงทุน</span>
@@ -94,14 +96,18 @@
 <div id="presentation-fullscreen" class="fixed inset-0 bg-black z-50 hidden">
     <!-- Logo Watermark Overlay -->
     <div class="absolute top-8 left-8 z-20 opacity-15 pointer-events-none">
-        <img src="{{ asset('images/logo.svg') }}" alt="ไทยพร๊อม" width="96" height="96" class="w-24 h-24">
+        @if($logo)
+            <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" class="w-24 h-24 object-contain">
+        @else
+            <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" class="w-24 h-24">
+        @endif
     </div>
 
     <!-- Control Panel -->
     <div class="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/80 to-transparent p-6 z-30 transition-opacity duration-300" id="control-panel">
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <h3 class="text-white text-xl font-bold">ไทยพร๊อม - ระบบแพลตฟอร์มครบวงจร</h3>
+                <h3 class="text-white text-xl font-bold">{{ $appName }} - ระบบแพลตฟอร์มครบวงจร</h3>
                 <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm" id="slide-counter">
                     1 / 15
                 </span>
