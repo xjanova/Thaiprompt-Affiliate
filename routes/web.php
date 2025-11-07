@@ -206,3 +206,8 @@ Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin')->name('ad
 Route::middleware(['auth', 'role:seller,super_admin'])->prefix('seller')->name('seller.')->group(function () {
     require __DIR__.'/seller.php';
 });
+
+// POS Routes (Protected by auth middleware)
+Route::middleware('auth')->prefix('pos')->name('pos.')->group(function () {
+    require __DIR__.'/pos.php';
+});

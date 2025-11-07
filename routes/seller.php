@@ -5,6 +5,7 @@ use App\Http\Controllers\Seller\ProductController;
 use App\Http\Controllers\Seller\OrderManagementController;
 use App\Http\Controllers\Seller\PackageController;
 use App\Http\Controllers\Seller\StoreController;
+use App\Http\Controllers\Seller\SellerPosController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -76,4 +77,39 @@ Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::post('/bulk-delete', [NotificationController::class, 'bulkDelete'])->name('bulk-delete');
     Route::post('/bulk-mark-as-read', [NotificationController::class, 'bulkMarkAsRead'])->name('bulk-mark-as-read');
     Route::delete('/delete-all-read', [NotificationController::class, 'deleteAllRead'])->name('delete-all-read');
+});
+
+// ========================================
+// POS MANAGEMENT
+// ========================================
+Route::prefix('pos')->name('pos.')->group(function () {
+    // Dashboard
+    Route::get('/', [SellerPosController::class, 'index'])->name('index');
+    Route::get('/analytics', [SellerPosController::class, 'analytics'])->name('analytics');
+
+    // Devices
+    Route::get('/devices', [SellerPosController::class, 'devices'])->name('devices');
+    Route::get('/devices/{device}', [SellerPosController::class, 'deviceShow'])->name('devices.show');
+
+    // Transactions
+    Route::get('/transactions', [SellerPosController::class, 'transactions'])->name('transactions');
+    Route::get('/transactions/{transaction}', [SellerPosController::class, 'transactionShow'])->name('transactions.show');
+
+    // Sessions
+    Route::get('/sessions', [SellerPosController::class, 'sessions'])->name('sessions');
+    Route::get('/sessions/{session}', [SellerPosController::class, 'sessionShow'])->name('sessions.show');
+
+    // Settings
+    Route::get('/settings', [SellerPosController::class, 'settings'])->name('settings');
+    Route::put('/settings', [SellerPosController::class, 'updateSettings'])->name('settings.update');
+
+    // Categories
+    Route::get('/categories', [SellerPosController::class, 'categories'])->name('categories');
+    Route::post('/categories', [SellerPosController::class, 'categoryStore'])->name('categories.store');
+    Route::put('/categories/{category}', [SellerPosController::class, 'categoryUpdate'])->name('categories.update');
+    Route::delete('/categories/{category}', [SellerPosController::class, 'categoryDestroy'])->name('categories.destroy');
+
+    // Advertisements
+    Route::get('/advertisements', [SellerPosController::class, 'advertisements'])->name('advertisements');
+    Route::post('/advertisements', [SellerPosController::class, 'advertisementStore'])->name('advertisements.store');
 });

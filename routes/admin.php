@@ -51,6 +51,10 @@ use App\Http\Controllers\Admin\Accounting\ContactController;
 use App\Http\Controllers\Admin\Accounting\ProductController;
 use App\Http\Controllers\Admin\Accounting\ReportController;
 use App\Http\Controllers\Admin\Accounting\FlowAccountController;
+use App\Http\Controllers\Admin\PosDashboardController;
+use App\Http\Controllers\Admin\PosDeviceController;
+use App\Http\Controllers\Admin\PosTransactionController;
+use App\Http\Controllers\Admin\PosAdvertisementController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -934,4 +938,40 @@ Route::prefix('accounting')->name('accounting.')->group(function () {
         Route::post('/sync', [FlowAccountController::class, 'sync'])->name('sync');
         Route::post('/sync/{type}', [FlowAccountController::class, 'syncType'])->name('sync.type');
     });
+});
+
+// POS Management
+Route::prefix('pos')->name('pos.')->group(function () {
+    // Dashboard
+    Route::get('/', [PosDashboardController::class, 'index'])->name('dashboard');
+    Route::get('/analytics', [PosDashboardController::class, 'analytics'])->name('analytics');
+    Route::get('/sales-chart', [PosDashboardController::class, 'salesChart'])->name('sales-chart');
+
+    // Devices Management
+    Route::resource('devices', PosDeviceController::class);
+    Route::post('devices/{device}/regenerate-license', [PosDeviceController::class, 'regenerateLicenseKey'])->name('devices.regenerate-license');
+    Route::post('devices/{device}/toggle-status', [PosDeviceController::class, 'toggleStatus'])->name('devices.toggle-status');
+    Route::post('devices/{device}/extend-subscription', [PosDeviceController::class, 'extendSubscription'])->name('devices.extend-subscription');
+    Route::post('devices/{device}/suspend', [PosDeviceController::class, 'suspend'])->name('devices.suspend');
+    Route::post('devices/{device}/reactivate', [PosDeviceController::class, 'reactivate'])->name('devices.reactivate');
+    Route::post('devices/{device}/force-offline', [PosDeviceController::class, 'forceOffline'])->name('devices.force-offline');
+    Route::get('devices-export', [PosDeviceController::class, 'export'])->name('devices.export');
+
+    // Transactions Management
+    Route::get('transactions', [PosTransactionController::class, 'index'])->name('transactions.index');
+    Route::get('transactions/{transaction}', [PosTransactionController::class, 'show'])->name('transactions.show');
+    Route::post('transactions/{transaction}/refund', [PosTransactionController::class, 'refund'])->name('transactions.refund');
+    Route::post('transactions/{transaction}/void', [PosTransactionController::class, 'void'])->name('transactions.void');
+    Route::get('transactions/{transaction}/receipt', [PosTransactionController::class, 'receipt'])->name('transactions.receipt');
+    Route::get('transactions/{transaction}/print', [PosTransactionController::class, 'printReceipt'])->name('transactions.print');
+    Route::get('transactions-export', [PosTransactionController::class, 'export'])->name('transactions.export');
+    Route::get('transactions-analytics', [PosTransactionController::class, 'analytics'])->name('transactions.analytics');
+
+    // Advertisements Management
+    Route::resource('advertisements', PosAdvertisementController::class);
+    Route::post('advertisements/{advertisement}/toggle-status', [PosAdvertisementController::class, 'toggleStatus'])->name('advertisements.toggle-status');
+    Route::post('advertisements/reorder', [PosAdvertisementController::class, 'reorder'])->name('advertisements.reorder');
+    Route::get('advertisements/{advertisement}/preview', [PosAdvertisementController::class, 'preview'])->name('advertisements.preview');
+    Route::post('advertisements/{advertisement}/duplicate', [PosAdvertisementController::class, 'duplicate'])->name('advertisements.duplicate');
+    Route::get('advertisements-analytics', [PosAdvertisementController::class, 'analytics'])->name('advertisements.analytics');
 });
