@@ -1,27 +1,11 @@
 @props(['mode' => $currentThemeMode ?? 'auto'])
 
-@php
-    // Detect if we're in admin or user context - use path segment for more reliable detection
-    $isAdmin = request()->segment(1) === 'admin';
-    $themeCssRoute = $isAdmin ? route('admin.themes.css') : route('user.themes.css');
-    $themeSetRoute = $isAdmin ? route('admin.themes.set') : route('user.themes.set');
-@endphp
-
 <script>
     // Theme management
     window.ThemeManager = {
         currentMode: '{{ $mode }}',
-        isAdmin: {{ $isAdmin ? 'true' : 'false' }},
-        themeCssRoute: '{{ $themeCssRoute }}',
-        themeSetRoute: '{{ $themeSetRoute }}',
 
         init() {
-            console.log('ThemeManager Init:', {
-                isAdmin: this.isAdmin,
-                currentMode: this.currentMode,
-                themeCssRoute: this.themeCssRoute,
-                themeSetRoute: this.themeSetRoute
-            });
             this.applyTheme();
             this.watchSystemPreference();
         },
@@ -52,39 +36,15 @@
             }
         },
 
-        async setMode(mode) {
+        setMode(mode) {
             this.currentMode = mode;
             this.applyTheme();
-            await this.reloadThemeVariables();
+            this.reloadThemeVariables();
         },
 
-        async reloadThemeVariables() {
+        reloadThemeVariables() {
             // Reload theme CSS variables if needed
             const actualMode = this.getActualMode();
-
-            // Fetch new CSS variables from server
-            try {
-                const response = await fetch(`${this.themeCssRoute}?mode=${actualMode}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                });
-
-                if (response.ok) {
-                    const css = await response.text();
-
-                    // Update or create dynamic style element
-                    let styleElement = document.getElementById('dynamic-theme-css');
-                    if (!styleElement) {
-                        styleElement = document.createElement('style');
-                        styleElement.id = 'dynamic-theme-css';
-                        document.head.appendChild(styleElement);
-                    }
-                    styleElement.textContent = css;
-                }
-            } catch (error) {
-                console.error('Failed to reload theme variables:', error);
-            }
 
             // Trigger event for other components
             window.dispatchEvent(new CustomEvent('theme-changed', {
@@ -94,7 +54,7 @@
 
         async changeTheme(themeId, mode = 'auto') {
             try {
-                const response = await fetch(this.themeSetRoute, {
+                const response = await fetch('{{ route("user.themes.set") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -271,37 +271,4 @@ class ThemeController extends Controller
 
         return back()->with('success', "{$status}  Theme สำเร็จ");
     }
-
-    /**
-     * Set theme for current admin user
-     */
-    public function setTheme(Request $request)
-    {
-        $validated = $request->validate([
-            'theme_id' => 'required|exists:themes,id',
-            'mode' => 'required|in:light,dark,auto',
-        ]);
-
-        $this->themeService->setThemeForUser(
-            auth()->id(),
-            $validated['theme_id'],
-            $validated['mode']
-        );
-
-        return response()->json([
-            'success' => true,
-            'message' => 'เปลี่ยน Theme สำเร็จ'
-        ]);
-    }
-
-    /**
-     * Get current theme CSS
-     */
-    public function getCss()
-    {
-        $mode = request('mode', 'light');
-        $css = $this->themeService->getCssForUser(auth()->id(), $mode);
-
-        return response($css)->header('Content-Type', 'text/css');
-    }
 }

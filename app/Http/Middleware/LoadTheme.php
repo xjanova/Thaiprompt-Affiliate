@@ -25,26 +25,8 @@ class LoadTheme
         if (auth()->check()) {
             $userTheme = $this->themeService->getThemeForUser(auth()->id());
 
-            // Ensure we always have a valid theme (fallback to any active theme if needed)
-            if (!$userTheme['theme']) {
-                $userTheme['theme'] = \App\Models\Theme::where('is_active', true)->first();
-            }
-
-            // Share theme data with the view
-            view()->share('currentTheme', $userTheme['theme']);
-            view()->share('currentThemeMode', $userTheme['mode']);
+            // Share theme CSS with the view
             view()->share('themeCss', $this->generateThemeCss($userTheme));
-        } else {
-            // For guests, use default theme
-            $defaultTheme = \App\Models\Theme::getDefault();
-
-            // If no default theme exists, get any active theme
-            if (!$defaultTheme) {
-                $defaultTheme = \App\Models\Theme::where('is_active', true)->first();
-            }
-
-            view()->share('currentTheme', $defaultTheme);
-            view()->share('currentThemeMode', 'auto');
         }
 
         return $next($request);
