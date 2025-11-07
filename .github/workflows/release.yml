@@ -49,20 +49,40 @@ jobs:
             VERSION_FROM_FILE=$(cat VERSION | tr -d '\n\r')
             LATEST_TAG="v$VERSION_FROM_FILE"
             echo "✅ Using VERSION file as base: $LATEST_TAG"
+
+            # Check if this tag actually exists in git
+            if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+              HAS_GIT_TAG="true"
+              echo "✅ Git tag $LATEST_TAG exists"
+            else
+              HAS_GIT_TAG="false"
+              echo "⚠️ Git tag $LATEST_TAG does not exist yet (will be created)"
+            fi
           elif [ -f "package.json" ]; then
             VERSION_FROM_PKG=$(node -p "require('./package.json').version" 2>/dev/null || echo "1.0.0")
             LATEST_TAG="v$VERSION_FROM_PKG"
             echo "Using package.json: $LATEST_TAG"
+
+            # Check if this tag actually exists in git
+            if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+              HAS_GIT_TAG="true"
+            else
+              HAS_GIT_TAG="false"
+            fi
           else
             # Fallback to git tag only if no VERSION file exists
             LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            HAS_GIT_TAG="true"
+            if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+              HAS_GIT_TAG="true"
+            else
+              HAS_GIT_TAG="false"
+            fi
             echo "Fallback to git tag: $LATEST_TAG"
           fi
 
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "has_git_tag=$HAS_GIT_TAG" >> $GITHUB_OUTPUT
-          echo "📌 Base version for bump: $LATEST_TAG"
+          echo "📌 Base version for bump: $LATEST_TAG (git_tag_exists=$HAS_GIT_TAG)"
 
       - name: Check if version bump needed
         id: check_bump
@@ -70,13 +90,21 @@ jobs:
           # Count commits since last tag
           if [ "${{ steps.previoustag.outputs.has_git_tag }}" == "true" ]; then
             # Has real git tag, count commits since that tag
-            COMMIT_COUNT=$(git rev-list ${{ steps.previoustag.outputs.tag }}..HEAD --count)
+            COMMIT_COUNT=$(git rev-list ${{ steps.previoustag.outputs.tag }}..HEAD --count 2>/dev/null || echo "0")
             echo "Commits since git tag ${{ steps.previoustag.outputs.tag }}: $COMMIT_COUNT"
           else
-            # No git tag, use VERSION file - always bump version
-            echo "No git tags found. Using VERSION file: ${{ steps.previoustag.outputs.tag }}"
-            echo "Will create first git tag and bump version."
-            COMMIT_COUNT=1  # Force bump
+            # No git tag exists yet - check if there are any commits
+            echo "⚠️ Git tag ${{ steps.previoustag.outputs.tag }} does not exist"
+            echo "Will check recent commits to determine if bump is needed"
+
+            # Count recent commits (last 50)
+            COMMIT_COUNT=$(git rev-list --count HEAD -n 50 2>/dev/null || echo "1")
+            echo "Recent commits found: $COMMIT_COUNT"
+
+            # If there are commits, bump version
+            if [ "$COMMIT_COUNT" -gt "0" ]; then
+              COMMIT_COUNT=1  # Force bump
+            fi
           fi
 
           if [ "$COMMIT_COUNT" -eq "0" ]; then
@@ -94,13 +122,13 @@ jobs:
           # Get commits since last tag
           if [ "${{ steps.previoustag.outputs.has_git_tag }}" == "true" ]; then
             # Has git tag, get commits since that tag
-            COMMITS=$(git log ${{ steps.previoustag.outputs.tag }}..HEAD --pretty=format:"%s")
+            COMMITS=$(git log ${{ steps.previoustag.outputs.tag }}..HEAD --pretty=format:"%s" 2>/dev/null || git log -20 --pretty=format:"%s")
           else
             # No git tag, get recent commits (last 20)
-            COMMITS=$(git log -20 --pretty=format:"%s")
+            COMMITS=$(git log -20 --pretty=format:"%s" 2>/dev/null || echo "No commits found")
           fi
 
-          echo "📝 Commits since last tag:"
+          echo "📝 Commits to analyze:"
           echo "$COMMITS"
           echo ""
 
