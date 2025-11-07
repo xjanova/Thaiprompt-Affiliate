@@ -64,11 +64,40 @@ class PaymentGateway extends Model
         }
 
         try {
-            // Manually decrypt the value
+            // Check if value is already an array (shouldn't happen but handle it)
+            if (is_array($value)) {
+                return $value;
+            }
+
+            // Try to decrypt as encrypted string first
             $decrypted = Crypt::decryptString($value);
-            // Decode the JSON
-            return json_decode($decrypted, true);
+            $result = json_decode($decrypted, true);
+
+            // If decryption succeeded but JSON decode failed, return null
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::warning('Failed to decode JSON after decryption for payment gateway credentials', [
+                    'gateway_id' => $this->id,
+                    'gateway_code' => $this->code ?? 'unknown',
+                ]);
+                return null;
+            }
+
+            return $result;
         } catch (DecryptException $e) {
+            // If decryption fails, try to parse as plain JSON (for backward compatibility)
+            try {
+                $plainData = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($plainData)) {
+                    Log::info('Found unencrypted credentials, returning as-is', [
+                        'gateway_id' => $this->id,
+                        'gateway_code' => $this->code ?? 'unknown',
+                    ]);
+                    return $plainData;
+                }
+            } catch (\Exception $jsonException) {
+                // Ignore JSON parsing errors
+            }
+
             Log::warning('Failed to decrypt credentials for payment gateway', [
                 'gateway_id' => $this->id,
                 'gateway_code' => $this->code ?? 'unknown',
@@ -109,11 +138,40 @@ class PaymentGateway extends Model
         }
 
         try {
-            // Manually decrypt the value
+            // Check if value is already an array (shouldn't happen but handle it)
+            if (is_array($value)) {
+                return $value;
+            }
+
+            // Try to decrypt as encrypted string first
             $decrypted = Crypt::decryptString($value);
-            // Decode the JSON
-            return json_decode($decrypted, true);
+            $result = json_decode($decrypted, true);
+
+            // If decryption succeeded but JSON decode failed, return null
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::warning('Failed to decode JSON after decryption for payment gateway test credentials', [
+                    'gateway_id' => $this->id,
+                    'gateway_code' => $this->code ?? 'unknown',
+                ]);
+                return null;
+            }
+
+            return $result;
         } catch (DecryptException $e) {
+            // If decryption fails, try to parse as plain JSON (for backward compatibility)
+            try {
+                $plainData = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($plainData)) {
+                    Log::info('Found unencrypted test credentials, returning as-is', [
+                        'gateway_id' => $this->id,
+                        'gateway_code' => $this->code ?? 'unknown',
+                    ]);
+                    return $plainData;
+                }
+            } catch (\Exception $jsonException) {
+                // Ignore JSON parsing errors
+            }
+
             Log::warning('Failed to decrypt test credentials for payment gateway', [
                 'gateway_id' => $this->id,
                 'gateway_code' => $this->code ?? 'unknown',
@@ -205,11 +263,29 @@ class PaymentGateway extends Model
      */
     public function getCredential(string $key, $default = null)
     {
-        if ($this->test_mode && $this->test_credentials) {
-            return data_get($this->test_credentials, $key, $default);
-        }
+        try {
+            if ($this->test_mode && $this->test_credentials) {
+                return data_get($this->test_credentials, $key, $default);
+            }
 
-        return data_get($this->credentials, $key, $default);
+            return data_get($this->credentials, $key, $default);
+        } catch (DecryptException $e) {
+            Log::warning('DecryptException in getCredential method', [
+                'gateway_id' => $this->id,
+                'gateway_code' => $this->code ?? 'unknown',
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+            return $default;
+        } catch (\Exception $e) {
+            Log::error('Unexpected exception in getCredential method', [
+                'gateway_id' => $this->id,
+                'gateway_code' => $this->code ?? 'unknown',
+                'key' => $key,
+                'error' => $e->getMessage(),
+            ]);
+            return $default;
+        }
     }
 
     /**
@@ -217,20 +293,36 @@ class PaymentGateway extends Model
      */
     public function isConfigured(): bool
     {
-        if ($this->is_coming_soon) {
-            return false;
-        }
-
-        // Each gateway has different required fields
-        $requiredFields = $this->getRequiredFields();
-
-        foreach ($requiredFields as $field) {
-            if (empty($this->getCredential($field))) {
+        try {
+            if ($this->is_coming_soon) {
                 return false;
             }
-        }
 
-        return true;
+            // Each gateway has different required fields
+            $requiredFields = $this->getRequiredFields();
+
+            foreach ($requiredFields as $field) {
+                if (empty($this->getCredential($field))) {
+                    return false;
+                }
+            }
+
+            return true;
+        } catch (DecryptException $e) {
+            Log::warning('DecryptException in isConfigured method', [
+                'gateway_id' => $this->id,
+                'gateway_code' => $this->code ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        } catch (\Exception $e) {
+            Log::error('Unexpected exception in isConfigured method', [
+                'gateway_id' => $this->id,
+                'gateway_code' => $this->code ?? 'unknown',
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
     }
 
     /**
