@@ -261,34 +261,6 @@ jobs:
 
           echo "Updated CHANGELOG.md with ${NEW_TAG}"
 
-      - name: Check if release already exists
-        if: steps.check_bump.outputs.should_bump == 'true'
-        id: check_release
-        run: |
-          # Check if release already exists
-          if gh release view ${{ steps.bump.outputs.new_tag }} >/dev/null 2>&1; then
-            echo "Release ${{ steps.bump.outputs.new_tag }} already exists"
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "Release ${{ steps.bump.outputs.new_tag }} does not exist"
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Create GitHub Release
-        if: steps.check_bump.outputs.should_bump == 'true' && steps.check_release.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.bump.outputs.new_tag }}
-          name: Release ${{ steps.bump.outputs.new_tag }}
-          body_path: CHANGELOG.txt
-          draft: false
-          prerelease: false
-          generate_release_notes: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Setup Node.js
         if: steps.check_bump.outputs.should_bump == 'true'
         uses: actions/setup-node@v4
@@ -374,6 +346,34 @@ jobs:
               fi
             done
           fi
+
+      - name: Check if release already exists
+        if: steps.check_bump.outputs.should_bump == 'true'
+        id: check_release
+        run: |
+          # Check if release already exists
+          if gh release view ${{ steps.bump.outputs.new_tag }} >/dev/null 2>&1; then
+            echo "Release ${{ steps.bump.outputs.new_tag }} already exists"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Release ${{ steps.bump.outputs.new_tag }} does not exist"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.check_bump.outputs.should_bump == 'true' && steps.check_release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.bump.outputs.new_tag }}
+          name: Release ${{ steps.bump.outputs.new_tag }}
+          body_path: CHANGELOG.txt
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Output new version
         if: steps.check_bump.outputs.should_bump == 'true'
