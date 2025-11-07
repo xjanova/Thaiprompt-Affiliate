@@ -2,6 +2,43 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.2.0] - 2025-11-07
+
+### ✨ Features
+- feat: fix auto version system and sync VERSION files (b32ef5f)
+- Merge pull request #484 from xjanova/claude/resolve-merge-conflicts-011CUtifWcCyu26PUHw5Bbzu (60c2923)
+- feat: add manual version bump script and documentation (1894501)
+- Merge pull request #482 from xjanova/claude/prepare-v2-update-011CUtch2PvnQdtf6JErcaFF (587f1e0)
+- feat: upgrade Settings page with modern gradient theme and dark mode (3b80114)
+- feat: add Theme & Icon Management menu to Admin & User sidebar (8a20366)
+### 🐛 Bug Fixes
+- fix: handle missing git tags gracefully in workflow (a5a846a)
+- fix: create release AFTER committing version files (611d8b9)
+- Merge pull request #487 from xjanova/claude/review-code-011CUtttjjGHethH76Z4mif7 (1599c65)
+- fix: resolve GitHub Actions release workflow errors (dec5c72)
+- Merge pull request #486 from xjanova/claude/resolve-merge-conflicts-011CUtifWcCyu26PUHw5Bbzu (07561bc)
+- Merge pull request #485 from xjanova/claude/review-code-011CUtttjjGHethH76Z4mif7 (adcd086)
+- fix: update auto version workflow to support claude/* branches (0de9ccb)
+- fix: enable Dark/Light mode in Admin panel (789ff76)
+- fix: Dark/Light mode not working in theme settings (70d608f)
+- Merge pull request #481 from xjanova/claude/fix-undefined-theme-variables-011CUtrGuLys5DXaheXizTfF (aec97c5)
+- Merge pull request #480 from xjanova/claude/fix-blade-syntax-error-011CUtqdyZhYruMfdrU5hnFa (2897bf0)
+- fix: add missing gradient color variables in user layout (5d6a452)
+- fix: display complete app version info across all layouts (798939f)
+- fix: correct Blade syntax escaping in icon manager view (a395010)
+### 🔧 Other Changes
+- chore: bump version to 2.1.0 [skip ci] (53f046c)
+- Merge pull request #483 from xjanova/claude/resolve-merge-conflicts-011CUtifWcCyu26PUHw5Bbzu (fb7ea74)
+- Merge branch 'claude/Main': Integrate Icon Management System and fixes (ffb428f)
+- Merge pull request #479 from xjanova/claude/prepare-v2-update-011CUtch2PvnQdtf6JErcaFF (a05f0b6)
+- docs: restructure CHANGELOG.md for v2.0.0 Phoenix major release (a85b51b)
+- chore: revert to v2.0.0 Phoenix as the major release (2de12d4)
+- chore: bump version to 2.2.0 [skip ci] (b5ad9b4)
+- Merge pull request #477 from xjanova/claude/prepare-v2-update-011CUtch2PvnQdtf6JErcaFF (37bcc79)
+- docs: add comprehensive deployment guide for v2.0.0 Phoenix (208e341)
+- chore: bump version to 2.1.0 [skip ci] (bee65cb)
+- Merge branch 'claude/prepare-v2-update-011CUtch2PvnQdtf6JErcaFF': Resolve conflicts for v2.0.0 Phoenix release (225eea3)
+
 ## [v2.1.0] - 2025-11-07
 
 ### ✨ Features
