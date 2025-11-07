@@ -61,6 +61,43 @@ class CashbackService
     }
 
     /**
+     * Calculate cashback for a product (for preview purposes)
+     * Returns both the cashback amount and setting info
+     */
+    public function calculateProductCashback($product, float $price, int $quantity = 1): array
+    {
+        $itemTotal = $price * $quantity;
+
+        // Check for product-specific cashback first
+        $productSetting = CashbackSetting::getProductSetting($product->id);
+
+        if ($productSetting && $productSetting->qualifiesForCashback($itemTotal)) {
+            return [
+                'cashback' => $productSetting->calculateCashback($itemTotal),
+                'setting' => $productSetting,
+                'type' => 'product',
+            ];
+        }
+
+        // Fall back to global cashback
+        $globalSetting = CashbackSetting::getGlobalSetting();
+
+        if ($globalSetting && $globalSetting->qualifiesForCashback($itemTotal)) {
+            return [
+                'cashback' => $globalSetting->calculateCashback($itemTotal),
+                'setting' => $globalSetting,
+                'type' => 'global',
+            ];
+        }
+
+        return [
+            'cashback' => 0,
+            'setting' => null,
+            'type' => null,
+        ];
+    }
+
+    /**
      * Process cashback for an order
      * Should be called when payment is completed (not for COD until admin approves)
      */
@@ -166,49 +203,37 @@ class CashbackService
     /**
      * Get cashback preview for an order (before checkout)
      */
-    public function getCashbackPreview(array $items): array
+    public function getCashbackPreview($cartItems, float $orderTotal = 0): array
     {
-        $itemsPreviews = [];
+        $breakdown = [];
         $totalCashback = 0;
 
-        foreach ($items as $item) {
-            $product = $item['product'];
-            $quantity = $item['quantity'];
+        foreach ($cartItems as $cartItem) {
+            $product = $cartItem->product;
+            $quantity = $cartItem->quantity;
             $itemTotal = $product->price * $quantity;
 
-            // Check for product-specific cashback first
-            $productSetting = CashbackSetting::getProductSetting($product->id);
-            $setting = null;
-            $cashback = 0;
+            // Calculate cashback for this item
+            $cashbackInfo = $this->calculateProductCashback($product, $product->price, $quantity);
 
-            if ($productSetting && $productSetting->qualifiesForCashback($itemTotal)) {
-                $setting = $productSetting;
-                $cashback = $productSetting->calculateCashback($itemTotal);
-            } else {
-                // Fall back to global cashback
-                $globalSetting = CashbackSetting::getGlobalSetting();
-                if ($globalSetting && $globalSetting->qualifiesForCashback($itemTotal)) {
-                    $setting = $globalSetting;
-                    $cashback = $globalSetting->calculateCashback($itemTotal);
-                }
+            if ($cashbackInfo['cashback'] > 0) {
+                $breakdown[] = [
+                    'product_id' => $product->id,
+                    'product_name' => $product->name,
+                    'item_total' => $itemTotal,
+                    'cashback' => $cashbackInfo['cashback'],
+                    'type' => $cashbackInfo['type'],
+                    'setting' => $cashbackInfo['setting'],
+                ];
+
+                $totalCashback += $cashbackInfo['cashback'];
             }
-
-            $itemsPreviews[] = [
-                'product_id' => $product->id,
-                'product_name' => $product->name,
-                'item_total' => $itemTotal,
-                'cashback_amount' => $cashback,
-                'setting_type' => $setting ? $setting->type : null,
-                'setting_value' => $setting ? $setting->formatted_value : null,
-            ];
-
-            $totalCashback += $cashback;
         }
 
         return [
-            'items' => $itemsPreviews,
+            'breakdown' => $breakdown,
             'total_cashback' => round($totalCashback, 2),
-            'formatted_total_cashback' => '฿' . number_format($totalCashback, 2),
+            'formatted_total' => '฿' . number_format($totalCashback, 2),
         ];
     }
 

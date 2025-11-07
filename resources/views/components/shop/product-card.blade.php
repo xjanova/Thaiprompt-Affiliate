@@ -196,7 +196,7 @@
                 use App\Services\CashbackService;
                 use App\Services\WalletService;
                 $cashbackService = new CashbackService(new WalletService());
-                $cashbackInfo = $cashbackService->calculateItemCashback($product, $product->price, 1);
+                $cashbackInfo = $cashbackService->calculateProductCashback($product, $product->price, 1);
             @endphp
             @if($cashbackInfo && $cashbackInfo['cashback'] > 0)
                 <div class="flex items-center gap-1.5 text-xs text-amber-700 font-bold mb-3 bg-gradient-to-r from-amber-50 to-orange-50 px-2.5 py-1.5 rounded-lg border border-amber-300">

@@ -141,7 +141,7 @@ class ShopController extends Controller
 
         // Calculate potential cashback
         $cashbackService = new CashbackService(new WalletService());
-        $cashbackInfo = $cashbackService->calculateItemCashback($product, $product->price, 1);
+        $cashbackInfo = $cashbackService->calculateProductCashback($product, $product->price, 1);
 
         return view('shop.show', compact(
             'product',
