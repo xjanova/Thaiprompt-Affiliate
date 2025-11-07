@@ -1,153 +1,109 @@
 @extends('layouts.admin')
 
-@section('title', 'จัดการแผน MLM')
+@section('title', 'จัดการแผนคอมมิชชัน MLM')
 
 @section('content')
 <div class="container mx-auto px-4 py-6">
     <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">จัดการแผนคอมมิชชัน MLM</h1>
-            <p class="text-gray-600 mt-1">แผนการคำนวณค่าคอมมิชชัน (Unilevel, Binary, Hybrid)</p>
-            <p class="text-sm text-orange-600 mt-1">
-                ⚠️ หมายเหตุ: นี่คือ "แผนคอมมิชชัน" ไม่ใช่ "แพคเกจสมาชิก" - แพคเกจสมาชิกอยู่ที่เมนู MLM Packages
-            </p>
-        </div>
-        <a href="{{ route('admin.mlm.plans.create') }}"
-           class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            สร้างแผนใหม่
-        </a>
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">จัดการแผนคอมมิชชัน MLM</h1>
+        <p class="text-gray-600 mt-1">ระบบใช้แผนคอมมิชชัน Global บังคับทั้งระบบ</p>
     </div>
 
-    <!-- Plans List -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach($plans as $plan)
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 border-2 {{ $plan->is_active ? 'border-green-400' : 'border-gray-300' }}">
-            <!-- Plan Header -->
-            <div class="p-6" style="background: linear-gradient(135deg, {{ $plan->color }} 0%, {{ $plan->color }}dd 100%);">
-                <div class="flex justify-between items-start mb-4">
-                    <div>
-                        <h3 class="text-xl font-bold text-white">{{ $plan->display_name }}</h3>
-                        <p class="text-white/80 text-sm mt-1">{{ ucfirst($plan->type) }}</p>
-                    </div>
-                    @if($plan->is_default)
-                        <span class="bg-white/20 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full">
-                            ค่าเริ่มต้น
-                        </span>
-                    @endif
-                </div>
-
-                <div class="flex items-center gap-2 text-white/90 text-sm">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+    <!-- Info Card -->
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-lg p-8 border-2 border-blue-200">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+                <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <span>{{ $plan->members_count ?? 0 }} สมาชิก</span>
                 </div>
             </div>
-
-            <!-- Plan Details -->
-            <div class="p-6 space-y-3">
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-600">PV Rate:</span>
-                    <span class="font-semibold text-gray-800">1 THB = {{ $plan->global_pv_rate }} PV</span>
+            <div class="flex-1">
+                <h2 class="text-xl font-bold text-gray-800 mb-3">ระบบใช้แผนคอมมิชชัน Global</h2>
+                <div class="space-y-2 text-gray-700">
+                    <p class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>แผนคอมมิชชันถูกกำหนดโดยตรงในโค้ดและ MlmGlobalSettings</span>
+                    </p>
+                    <p class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>ไม่ต้องจัดการแผนคอมมิชชันผ่าน UI</span>
+                    </p>
+                    <p class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>สมาชิกทุกคนใช้แผนคอมมิชชันเดียวกัน</span>
+                    </p>
                 </div>
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-600">Commission/PV:</span>
-                    <span class="font-semibold text-gray-800">{{ $plan->global_commission_per_pv }} THB</span>
-                </div>
 
-                @if($plan->type === 'unilevel' || $plan->type === 'hybrid')
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-600">Unilevel Levels:</span>
-                    <span class="font-semibold text-gray-800">{{ count($plan->unilevel_levels ?? []) }} ระดับ</span>
+                <div class="mt-6 pt-6 border-t border-blue-200">
+                    <p class="text-sm text-gray-600 mb-4">
+                        <strong>หมายเหตุ:</strong> หากต้องการจัดการแพคเกจสมาชิก (Bronze, Silver, Gold, etc.)
+                        กรุณาไปที่เมนู <strong>MLM Packages</strong>
+                    </p>
+                    <a href="{{ route('admin.mlm.settings.index') }}"
+                       class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        ตั้งค่า MLM Global Settings
+                    </a>
                 </div>
-                @endif
-
-                @if($plan->type === 'binary' || $plan->type === 'hybrid')
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-600">Binary Commission:</span>
-                    <span class="font-semibold text-gray-800">{{ $plan->binary_pair_commission }} THB/คู่</span>
-                </div>
-                @endif
-
-                <!-- Status Badge -->
-                <div class="pt-3 border-t border-gray-200">
-                    <span class="inline-flex items-center gap-2 text-sm px-3 py-1 rounded-full {{ $plan->is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
-                        <span class="w-2 h-2 rounded-full {{ $plan->is_active ? 'bg-green-500' : 'bg-red-500' }}"></span>
-                        {{ $plan->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
-                    </span>
-                </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="px-6 pb-6 flex gap-2">
-                <button onclick="togglePlanStatus({{ $plan->id }})"
-                        class="flex-1 {{ $plan->is_active ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600' }} text-white px-4 py-2 rounded-lg transition-colors">
-                    {{ $plan->is_active ? 'ปิด' : 'เปิด' }}
-                </button>
-                @if(!$plan->is_default)
-                <button onclick="setDefaultPlan({{ $plan->id }})"
-                        class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
-                    ตั้งเป็นค่าเริ่มต้น
-                </button>
-                @endif
             </div>
         </div>
-        @endforeach
     </div>
 
-    @if($plans->isEmpty())
-    <div class="bg-white rounded-xl shadow-lg p-12 text-center">
-        <div class="text-gray-400 text-6xl mb-4">📋</div>
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">ยังไม่มีแผน MLM</h3>
-        <p class="text-gray-500 mb-6">สร้างแผน MLM แรกของคุณเพื่อเริ่มต้นใช้งาน</p>
-        <a href="{{ route('admin.mlm.plans.create') }}"
-           class="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            สร้างแผนแรก
+    <!-- Quick Links -->
+    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="{{ route('admin.mlm.settings.index') }}" class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-l-4 border-blue-500">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">Global Settings</h3>
+                    <p class="text-sm text-gray-500">ตั้งค่าระบบ MLM</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{{ route('admin.mlm.members.index') }}" class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-l-4 border-green-500">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">สมาชิก MLM</h3>
+                    <p class="text-sm text-gray-500">จัดการสมาชิก</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{{ route('admin.mlm.reports.dashboard') }}" class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border-l-4 border-purple-500">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-800">รายงาน</h3>
+                    <p class="text-sm text-gray-500">ดูสถิติและรายงาน</p>
+                </div>
+            </div>
         </a>
     </div>
-    @endif
 </div>
-
-<script>
-function togglePlanStatus(planId) {
-    if (confirm('คุณต้องการเปลี่ยนสถานะแผนนี้หรือไม่?')) {
-        fetch(`/admin/mlm/plans/${planId}/toggle-status`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                window.location.reload();
-            }
-        });
-    }
-}
-
-function setDefaultPlan(planId) {
-    if (confirm('ตั้งเป็นแผนค่าเริ่มต้นหรือไม่?')) {
-        fetch(`/admin/mlm/plans/${planId}/set-default`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            window.location.reload();
-        });
-    }
-}
-</script>
 @endsection
