@@ -16,6 +16,14 @@
 - **Theme Import/Export**: รองรับการ import/export theme configuration
 - **Real-time Preview**: ดูตัวอย่าง theme แบบ real-time
 
+#### ระบบจัดการ Icons
+- **Icon Management System**: ระบบจัดการ icons แบบเป็นระเบียบ
+- **5 Categories**: system, theme, custom, social, flags
+- **IconHelper Class**: API สำหรับจัดการ icons ทั้งหมด
+- **Icon Component**: Blade component สำหรับใช้ icons ง่ายๆ
+- **Admin UI**: หน้าจัดการ icons พร้อม upload/delete
+- **Multiple Formats**: รองรับ SVG, PNG, JPG, WebP
+
 #### ระบบ Update อัตโนมัติ
 - **Auto Update System**: ระบบตรวจสอบและอัพเดทอัตโนมัติจาก GitHub Releases
 - **Safe Migration**: ระบบ migration ที่ปลอดภัย พร้อมระบบสำรองข้อมูล
@@ -43,6 +51,10 @@
 - `UserTheme` - Model สำหรับ user theme preferences
 - `ThemeService` - Service สำหรับจัดการ themes ทั้งหมด
 
+#### Icon System
+- `IconHelper` - Helper class สำหรับจัดการ icons
+- `IconController` - Controller สำหรับ admin icon management
+
 #### Update System
 - `SystemUpdate` - Model สำหรับ system updates
 - `UpdateLog` - Model สำหรับ update logs
@@ -53,6 +65,7 @@
 
 #### Admin Routes
 - `/admin/themes/*` - จัดการ themes
+- `/admin/icons/*` - จัดการ icons
 - `/admin/updates/*` - จัดการการอัพเดท
 
 #### User Routes

@@ -1264,6 +1264,8 @@
                                        request()->routeIs('admin.templates.*') ||
                                        request()->routeIs('admin.pages.*') ||
                                        request()->routeIs('admin.seo.*') ||
+                                       request()->routeIs('admin.themes.*') ||
+                                       request()->routeIs('admin.icons.*') ||
                                        request()->routeIs('admin.settings.languages*') ||
                                        request()->routeIs('admin.translations.*') ||
                                        request()->routeIs('admin.notifications.*') ||
@@ -1329,6 +1331,20 @@
 
                         <div class="border-t border-gray-700/30 my-1"></div>
 
+                        <a href="{{ route('admin.themes.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.themes.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🎨</span>
+                            <span>จัดการธีม (Theme)</span>
+                        </a>
+
+                        <a href="{{ route('admin.icons.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.icons.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🖼️</span>
+                            <span>จัดการไอคอน (Icons)</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
                         <a href="{{ route('admin.settings.languages') }}"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.settings.languages*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
                             <span class="mr-2">🌍</span>
@@ -1386,10 +1402,11 @@
                                 {{ config('version.current') }}
                             </span>
                         </div>
-                        @if(config('version.name'))
-                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">{{ config('version.name') }}</p>
-                        @endif
                         <div class="text-[10px] text-gray-600 dark:text-gray-400 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span>App</span>
+                                <span class="text-gray-400 dark:text-gray-300">{{ config('version.current') }} {{ config('version.name') }}</span>
+                            </div>
                             <div class="flex items-center justify-between">
                                 <span>Laravel</span>
                                 <span class="text-gray-400 dark:text-gray-300">{{ app()->version() }}</span>
