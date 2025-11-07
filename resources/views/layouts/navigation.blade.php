@@ -16,16 +16,16 @@ $headerShadowOnScroll = \App\Models\Setting::get('header_shadow_on_scroll', true
 $headerHeight = \App\Models\Setting::get('header_height', 64);
 $headerHeightScrolled = \App\Models\Setting::get('header_height_scrolled', 56);
 $headerPaddingX = \App\Models\Setting::get('header_padding_x', 16);
-$headerTextColor = \App\Models\Setting::get('header_text_color', '#374151');
-$headerTextColorScroll = \App\Models\Setting::get('header_text_color_scroll', '#374151');
-$headerHoverColor = \App\Models\Setting::get('header_hover_color', '#111827');
+$headerTextColor = \App\Models\Setting::get('header_text_color', '#1f2937');
+$headerTextColorScroll = \App\Models\Setting::get('header_text_color_scroll', '#1f2937');
+$headerHoverColor = \App\Models\Setting::get('header_hover_color', '#4f46e5');
 $headerBorderBottom = \App\Models\Setting::get('header_border_bottom', false);
 $headerBorderColor = \App\Models\Setting::get('header_border_color', '#e5e7eb');
 $headerBorderWidth = \App\Models\Setting::get('header_border_width', 1);
 $headerAnimationDuration = \App\Models\Setting::get('header_animation_duration', 300);
 $headerAnimationEasing = \App\Models\Setting::get('header_animation_easing', 'ease-in-out');
-$headerLogoHeight = \App\Models\Setting::get('header_logo_height', 40);
-$headerLogoHeightScrolled = \App\Models\Setting::get('header_logo_height_scrolled', 32);
+$headerLogoHeight = \App\Models\Setting::get('header_logo_height', 60);
+$headerLogoHeightScrolled = \App\Models\Setting::get('header_logo_height_scrolled', 48);
 $headerGradient = \App\Models\Setting::get('header_gradient', false);
 $headerGradientFrom = \App\Models\Setting::get('header_gradient_from', '#ffffff');
 $headerGradientTo = \App\Models\Setting::get('header_gradient_to', '#f3f4f6');
@@ -69,7 +69,7 @@ $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 $menuItems = \App\Models\MenuItem::getForLocation('header');
 @endphp
 
-<nav class="header-navigation {{ $currentShadow }} backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200/50 dark:border-gray-700/50"
+<nav class="header-navigation {{ $currentShadow }} backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border-b border-gray-200 dark:border-gray-700"
      x-data="navigationMenu()"
      x-init="init()"
      :class="{
@@ -146,7 +146,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
             </div>
 
             <!-- Desktop Navigation Links - Centered -->
-            <div class="hidden sm:flex flex-1 justify-center items-center gap-2">
+            <div class="hidden sm:flex flex-1 justify-center items-center gap-3">
                 @if($menuItems && $menuItems->count() > 0)
                     @foreach($menuItems as $menuItem)
                         @if($menuItem->shouldDisplay())
@@ -163,33 +163,33 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                 @else
                     {{-- Fallback to hardcoded menu if no database items --}}
                     <a href="{{ route('home') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 hover:shadow-md">
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 hover:shadow-md">
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">🏠</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">หน้าแรก</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     <a href="{{ route('marketplace.index') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900/30 dark:hover:to-cyan-900/30 hover:text-blue-700 dark:hover:text-blue-300 hover:shadow-md">
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900/30 dark:hover:to-cyan-900/30 hover:text-blue-700 dark:hover:text-blue-300 hover:shadow-md">
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">🤖</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">ตลาดบอท</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     <a href="{{ route('shop.index') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 dark:hover:from-pink-900/30 dark:hover:to-rose-900/30 hover:text-pink-700 dark:hover:text-pink-300 hover:shadow-md">
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 dark:hover:from-pink-900/30 dark:hover:to-rose-900/30 hover:text-pink-700 dark:hover:text-pink-300 hover:shadow-md">
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">🛍️</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">ช๊อปปิ้ง</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-pink-600 to-rose-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     @auth
                         <a href="{{ route('my-rentals.index') }}"
-                           class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 dark:hover:from-emerald-900/30 dark:hover:to-teal-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 hover:shadow-md">
+                           class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 dark:hover:from-emerald-900/30 dark:hover:to-teal-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 hover:shadow-md">
                             <span class="text-lg group-hover:scale-110 transition-transform duration-300">💼</span>
                             <span class="group-hover:translate-x-0.5 transition-transform duration-300">การเช่าของฉัน</span>
                             <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-600 to-teal-600 group-hover:w-full transition-all duration-300"></span>
                         </a>
                         @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
                             <a href="{{ route('owner-dashboard.index') }}"
-                               class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-900/30 dark:hover:to-orange-900/30 hover:text-amber-700 dark:hover:text-amber-300 hover:shadow-md">
+                               class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-900/30 dark:hover:to-orange-900/30 hover:text-amber-700 dark:hover:text-amber-300 hover:shadow-md">
                                 <span class="text-lg group-hover:scale-110 transition-transform duration-300">📊</span>
                                 <span class="group-hover:translate-x-0.5 transition-transform duration-300">Dashboard</span>
                                 <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-amber-600 to-orange-600 group-hover:w-full transition-all duration-300"></span>
@@ -197,7 +197,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         @endif
                     @endauth
                     <a href="{{ route('about.professional') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50 dark:hover:from-slate-900/30 dark:hover:to-gray-900/30 hover:text-slate-700 dark:hover:text-slate-300 hover:shadow-md">
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50 dark:hover:from-slate-900/30 dark:hover:to-gray-900/30 hover:text-slate-700 dark:hover:text-slate-300 hover:shadow-md">
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">ℹ️</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">เกี่ยวกับเรา</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-600 to-gray-600 group-hover:w-full transition-all duration-300"></span>
@@ -213,7 +213,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         </svg>
                     </a>
                     <a href="{{ route('contact') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 hover:text-blue-700 dark:hover:text-blue-300 hover:shadow-md">
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 hover:text-blue-700 dark:hover:text-blue-300 hover:shadow-md">
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">✉️</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">ติดต่อเรา</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 group-hover:w-full transition-all duration-300"></span>
@@ -288,7 +288,7 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                     </div>
                 @else
                     <a href="{{ route('login') }}"
-                       class="group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-indigo-700 dark:hover:text-indigo-300">
+                       class="group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-indigo-700 dark:hover:text-indigo-300">
                         <svg class="w-4 h-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
                         </svg>
