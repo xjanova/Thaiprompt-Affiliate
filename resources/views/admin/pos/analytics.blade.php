@@ -253,10 +253,10 @@
                 <p class="text-sm text-gray-500 mt-1">ส่งออกข้อมูลวิเคราะห์เป็นไฟล์ CSV</p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('admin.pos.devices-export') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <a href="{{ route('admin.pos.devices.export') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                     📱 อุปกรณ์
                 </a>
-                <a href="{{ route('admin.pos.transactions-export') }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+                <a href="{{ route('admin.pos.transactions.export') }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                     💰 รายการขาย
                 </a>
             </div>
