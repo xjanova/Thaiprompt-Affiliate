@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\WalletService;
 use App\Services\WithdrawalService;
 use App\Services\PaymentGatewayService;
+use App\Services\CashbackService;
 use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Exception;
@@ -15,6 +16,7 @@ class WalletController extends Controller
     protected $walletService;
     protected $withdrawalService;
     protected $paymentGatewayService;
+    protected $cashbackService;
 
     public function __construct(
         WalletService $walletService,
@@ -24,6 +26,7 @@ class WalletController extends Controller
         $this->walletService = $walletService;
         $this->withdrawalService = $withdrawalService;
         $this->paymentGatewayService = $paymentGatewayService;
+        $this->cashbackService = new CashbackService($walletService);
     }
 
     /**
@@ -44,12 +47,30 @@ class WalletController extends Controller
         $paymentMethods = $user->paymentMethods()->active()->get();
         $availableGateways = $this->paymentGatewayService->getAvailablePaymentMethods();
 
+        // Get cashback statistics
+        $cashbackTransactions = $wallet->transactions()
+            ->where('type', 'cashback')
+            ->where('status', 'completed')
+            ->get();
+
+        $cashbackStats = [
+            'total' => $cashbackTransactions->sum('amount'),
+            'count' => $cashbackTransactions->count(),
+            'this_month' => $cashbackTransactions->filter(function($t) {
+                return $t->created_at->isCurrentMonth();
+            })->sum('amount'),
+            'last_30_days' => $cashbackTransactions->filter(function($t) {
+                return $t->created_at->greaterThanOrEqualTo(now()->subDays(30));
+            })->sum('amount'),
+        ];
+
         return view('user.wallet.index', compact(
             'wallet',
             'statistics',
             'recentTransactions',
             'paymentMethods',
-            'availableGateways'
+            'availableGateways',
+            'cashbackStats'
         ));
     }
 

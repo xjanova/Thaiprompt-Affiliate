@@ -6,14 +6,19 @@ use App\Models\ShoppingCart;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ShippingAddress;
+use App\Services\CashbackService;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
+    protected CashbackService $cashbackService;
+
     public function __construct()
     {
         $this->middleware('auth');
+        $this->cashbackService = new CashbackService(new WalletService());
     }
 
     /**
@@ -46,12 +51,16 @@ class CheckoutController extends Controller
         $shippingFee = $this->calculateShippingFee($subtotal);
         $total = $subtotal + $shippingFee;
 
+        // Calculate cashback preview
+        $cashbackPreview = $this->cashbackService->getCashbackPreview($cartItems, $total);
+
         return view('shop.checkout', compact(
             'cartItems',
             'addresses',
             'subtotal',
             'shippingFee',
-            'total'
+            'total',
+            'cashbackPreview'
         ));
     }
 
@@ -87,6 +96,9 @@ class CheckoutController extends Controller
             $platformCommission = 0;
             $sellerEarning = 0;
 
+            // Calculate cashback
+            $cashbackAmount = $this->cashbackService->calculateOrderCashback($cartItems, $total);
+
             // Create order
             $order = Order::create([
                 'user_id' => auth()->id(),
@@ -97,6 +109,8 @@ class CheckoutController extends Controller
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shippingFee,
                 'total_amount' => $total,
+                'cashback_amount' => $cashbackAmount,
+                'cashback_processed' => false,
                 'customer_notes' => $request->customer_notes,
                 'shipping_address_snapshot' => $shippingAddress->toArray(),
             ]);
@@ -144,6 +158,16 @@ class CheckoutController extends Controller
 
             // Clear cart
             ShoppingCart::where('user_id', auth()->id())->delete();
+
+            // Process cashback for non-COD payment methods
+            if ($request->payment_method !== 'cod' && $cashbackAmount > 0) {
+                try {
+                    $this->cashbackService->processOrderCashback($order);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to process cashback for order ' . $order->id . ': ' . $e->getMessage());
+                    // Continue anyway - cashback can be processed later
+                }
+            }
 
             DB::commit();
 
