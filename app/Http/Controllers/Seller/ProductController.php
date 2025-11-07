@@ -6,12 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\ProductImage;
+use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
+    protected ImageUploadService $imageUploadService;
+
+    public function __construct(ImageUploadService $imageUploadService)
+    {
+        $this->imageUploadService = $imageUploadService;
+    }
+
     /**
      * Display all seller's products
      */
@@ -90,17 +98,23 @@ class ProductController extends Controller
             'dimensions' => 'nullable|string|max:100',
             'sku' => 'nullable|string|unique:products,sku',
             'track_inventory' => 'boolean',
-            'main_image' => 'nullable|image|max:2048',
-            'images.*' => 'nullable|image|max:2048',
+            'main_image' => 'nullable|image|max:5120',
+            'images.*' => 'nullable|image|max:5120',
         ]);
 
         DB::beginTransaction();
 
         try {
-            // Handle main image upload
+            // Handle main image upload with optimization
             $mainImageUrl = null;
             if ($request->hasFile('main_image')) {
-                $mainImageUrl = $request->file('main_image')->store('products', 'public');
+                $mainImageUrl = $this->imageUploadService->uploadImage(
+                    $request->file('main_image'),
+                    'products',
+                    1200,
+                    1200,
+                    90
+                );
             }
 
             // Create product
@@ -126,11 +140,17 @@ class ProductController extends Controller
                 'published_at' => now(),
             ]);
 
-            // Handle additional images
+            // Handle additional images with optimization
             if ($request->hasFile('images')) {
                 $sortOrder = 1;
                 foreach ($request->file('images') as $image) {
-                    $imageUrl = $image->store('products', 'public');
+                    $imageUrl = $this->imageUploadService->uploadImage(
+                        $image,
+                        'products',
+                        1200,
+                        1200,
+                        85
+                    );
                     ProductImage::create([
                         'product_id' => $product->id,
                         'image_url' => $imageUrl,
@@ -188,8 +208,8 @@ class ProductController extends Controller
             'dimensions' => 'nullable|string|max:100',
             'sku' => 'nullable|string|unique:products,sku,' . $product->id,
             'track_inventory' => 'boolean',
-            'main_image' => 'nullable|image|max:2048',
-            'images.*' => 'nullable|image|max:2048',
+            'main_image' => 'nullable|image|max:5120',
+            'images.*' => 'nullable|image|max:5120',
         ]);
 
         DB::beginTransaction();
@@ -199,9 +219,15 @@ class ProductController extends Controller
             if ($request->hasFile('main_image')) {
                 // Delete old image if exists
                 if ($product->main_image_url) {
-                    \Storage::disk('public')->delete($product->main_image_url);
+                    $this->imageUploadService->deleteImage($product->main_image_url);
                 }
-                $product->main_image_url = $request->file('main_image')->store('products', 'public');
+                $product->main_image_url = $this->imageUploadService->uploadImage(
+                    $request->file('main_image'),
+                    'products',
+                    1200,
+                    1200,
+                    90
+                );
             }
 
             // Update product
@@ -223,11 +249,31 @@ class ProductController extends Controller
                 'dimensions' => $request->dimensions,
             ]);
 
+            // Handle deleted images
+            if ($request->filled('deleted_images')) {
+                $deletedIds = $request->input('deleted_images');
+                $imagesToDelete = ProductImage::whereIn('id', $deletedIds)
+                    ->where('product_id', $product->id)
+                    ->get();
+
+                foreach ($imagesToDelete as $img) {
+                    $this->imageUploadService->deleteImage($img->image_url);
+                    $img->delete();
+                }
+            }
+
             // Handle additional images
             if ($request->hasFile('images')) {
-                $sortOrder = $product->images()->max('sort_order') + 1;
+                $sortOrder = $product->images()->max('sort_order') ?? 0;
+                $sortOrder++;
                 foreach ($request->file('images') as $image) {
-                    $imageUrl = $image->store('products', 'public');
+                    $imageUrl = $this->imageUploadService->uploadImage(
+                        $image,
+                        'products',
+                        1200,
+                        1200,
+                        85
+                    );
                     ProductImage::create([
                         'product_id' => $product->id,
                         'image_url' => $imageUrl,
@@ -255,6 +301,15 @@ class ProductController extends Controller
         $product = Product::where('id', $id)
             ->where('seller_id', auth()->id())
             ->firstOrFail();
+
+        // Delete all product images
+        if ($product->main_image_url) {
+            $this->imageUploadService->deleteImage($product->main_image_url);
+        }
+
+        foreach ($product->images as $image) {
+            $this->imageUploadService->deleteImage($image->image_url);
+        }
 
         $product->delete();
 
@@ -291,13 +346,16 @@ class ProductController extends Controller
             ->where('product_id', $product->id)
             ->firstOrFail();
 
-        // Delete file
-        \Storage::disk('public')->delete($image->image_url);
+        // Delete file using service
+        $this->imageUploadService->deleteImage($image->image_url);
 
         // Delete record
         $image->delete();
 
-        return back()->with('success', 'ลบรูปภาพเรียบร้อยแล้ว');
+        return response()->json([
+            'success' => true,
+            'message' => 'ลบรูปภาพเรียบร้อยแล้ว'
+        ]);
     }
 
     /**
