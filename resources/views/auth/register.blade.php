@@ -150,7 +150,7 @@
                     <div class="text-center mb-6 md:mb-8">
                         @if($logo)
                             <div class="mb-4 flex justify-center">
-                                <img src="{{ asset($logo) }}" alt="{{ $appName }} Logo" width="80" height="80" class="h-16 md:h-20 object-contain">
+                                <img src="{{ asset($logo) }}" alt="{{ $appName }} Logo" width="72" height="72" class="h-16 md:h-18 object-contain">
                             </div>
                         @else
                             <h1 class="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">{{ $appName }}</h1>

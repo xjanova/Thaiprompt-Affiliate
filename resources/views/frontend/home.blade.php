@@ -694,7 +694,7 @@
 
     @if($premiumSections['cta'])
         <!-- Final CTA Section -->
-        <section class="relative py-20 overflow-hidden">
+        <section class="relative pt-20 pb-0 overflow-hidden">
             <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600"></div>
             <div class="absolute inset-0 opacity-10">
                 <div class="absolute w-96 h-96 bg-white rounded-full -top-20 -left-20 animate-pulse"></div>
