@@ -39,6 +39,8 @@
             </div>
             <p class="text-center text-gray-400 text-sm">
                 &copy; {{ date('Y') }} {{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}. สงวนลิขสิทธิ์.
+                <span class="mx-2 text-gray-600">|</span>
+                <span class="text-xs">Version {{ config('version.current') }} {{ config('version.name') }}</span>
             </p>
         </div>
     </div>
