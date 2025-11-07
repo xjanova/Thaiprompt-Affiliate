@@ -160,6 +160,8 @@
                     logoPreview: null,
                     faviconPreview: null,
                     isUploading: false,
+                    uploadError: null,
+                    sessionExpired: false,
                     handleLogoUpload(event) {
                         const file = event.target.files[0];
                         if (file && file.type.startsWith('image/')) {
@@ -180,14 +182,96 @@
                             reader.readAsDataURL(file);
                         }
                     },
-                    handleSubmit(event) {
+                    async handleSubmit(event) {
+                        event.preventDefault();
                         this.isUploading = true;
+                        this.uploadError = null;
+                        this.sessionExpired = false;
+
+                        const form = event.target;
+                        const formData = new FormData(form);
+
+                        try {
+                            // รีเฟรช CSRF token ก่อนส่งฟอร์ม
+                            const tokenResponse = await fetch('/admin/csrf-token', {
+                                method: 'GET',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (tokenResponse.ok) {
+                                const data = await tokenResponse.json();
+                                formData.set('_token', data.token);
+                            }
+
+                            // ส่งฟอร์มด้วย fetch
+                            const response = await fetch(form.action, {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (response.ok) {
+                                // สำเร็จ - รีเฟรชหน้า
+                                window.location.reload();
+                            } else if (response.status === 419) {
+                                // Session หมดอายุ
+                                this.sessionExpired = true;
+                                this.isUploading = false;
+                            } else {
+                                // Error อื่นๆ
+                                const errorData = await response.json();
+                                this.uploadError = errorData.message || 'เกิดข้อผิดพลาดในการอัพโหลด';
+                                this.isUploading = false;
+                            }
+                        } catch (error) {
+                            console.error('Upload error:', error);
+                            this.uploadError = 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง';
+                            this.isUploading = false;
+                        }
                     }
                 }">
                     <form method="POST" action="{{ route('admin.settings.branding') }}" enctype="multipart/form-data" @submit="handleSubmit">
                         @csrf
 
                         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าโลโก้และ Favicon</h3>
+
+                        <!-- Session Expired Error -->
+                        <div x-show="sessionExpired" x-transition class="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-6 w-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3 flex-1">
+                                    <h4 class="text-yellow-800 font-semibold mb-1">Session หมดอายุแล้ว (Error 419)</h4>
+                                    <p class="text-yellow-700 text-sm mb-3">คุณเปิดหน้านี้ทิ้งไว้นานเกินไป กรุณารีเฟรชหน้าและลองอัพโหลดใหม่อีกครั้ง</p>
+                                    <button @click="window.location.reload()"
+                                            class="px-4 py-2 bg-yellow-600 text-white text-sm font-semibold rounded-lg hover:bg-yellow-700 transition">
+                                        รีเฟรชหน้าเว็บ
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Upload Error -->
+                        <div x-show="uploadError" x-transition class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <h4 class="text-red-800 font-semibold mb-1">เกิดข้อผิดพลาด</h4>
+                                    <p class="text-red-700 text-sm" x-text="uploadError"></p>
+                                </div>
+                            </div>
+                        </div>
 
                         <!-- Error Messages -->
                         @if($errors->has('storage'))

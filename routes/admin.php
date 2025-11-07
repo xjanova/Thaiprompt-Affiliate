@@ -65,6 +65,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+// CSRF Token Refresh (for long-running forms)
+Route::get('/csrf-token', function () {
+    return response()->json(['token' => csrf_token()]);
+})->name('csrf-token');
+
 // User Management
 Route::resource('users', UserController::class);
 Route::get('users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
