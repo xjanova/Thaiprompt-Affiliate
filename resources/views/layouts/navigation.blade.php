@@ -69,13 +69,13 @@ $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 $menuItems = \App\Models\MenuItem::getForLocation('header');
 @endphp
 
-<nav class="header-navigation {{ $currentShadow }}"
+<nav class="header-navigation {{ $currentShadow }} backdrop-blur-xl bg-white/80 dark:bg-gray-900/80 border-b border-gray-200/50 dark:border-gray-700/50"
      x-data="navigationMenu()"
      x-init="init()"
      :class="{
          'header-scrolled': scrolled,
          'header-hidden': hidden,
-         '{{ $shadowClasses[$headerShadowOnScroll ? 'lg' : 'none'] }}': scrolled && {{ $headerShadowOnScroll ? 'true' : 'false' }}
+         '{{ $shadowClasses[$headerShadowOnScroll ? 'xl' : 'none'] }}': scrolled && {{ $headerShadowOnScroll ? 'true' : 'false' }}
      }"
      style="
          transition-property: all;
@@ -106,20 +106,12 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
          height: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $headerHeightScrolled }}px' : '{{ $headerHeight }}px'),
          paddingLeft: '{{ $headerPaddingX }}px',
          paddingRight: '{{ $headerPaddingX }}px',
-         backgroundColor: {{ $headerGradient ? 'null' : "'".hexToRgba($headerBgColor, $headerBgOpacity)."'" }},
-         @if($headerGradient)
-         backgroundImage: 'linear-gradient({{ $headerGradientDirection }}, {{ $headerGradientFrom }}, {{ $headerGradientTo }})',
-         @endif
-         color: '{{ $headerTextColor }}',
          @if($headerBlur)
-         backdropFilter: 'blur({{ $headerBlurAmount }}px)',
-         WebkitBackdropFilter: 'blur({{ $headerBlurAmount }}px)',
-         @endif
-         @if($headerBorderBottom)
-         borderBottom: '{{ $headerBorderWidth }}px solid {{ $headerBorderColor }}',
+         backdropFilter: 'blur({{ $headerBlurAmount }}px) saturate(180%)',
+         WebkitBackdropFilter: 'blur({{ $headerBlurAmount }}px) saturate(180%)',
          @endif
          @if($headerTransparent || ($headerTransparentOnScroll && scrolled))
-         opacity: '0.95',
+         opacity: '0.98',
          @else
          opacity: '1',
          @endif
@@ -154,79 +146,77 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
             </div>
 
             <!-- Desktop Navigation Links - Centered -->
-            <div class="hidden space-x-8 sm:flex flex-1 justify-center">
+            <div class="hidden sm:flex flex-1 justify-center items-center gap-2">
                 @if($menuItems && $menuItems->count() > 0)
                     @foreach($menuItems as $menuItem)
                         @if($menuItem->shouldDisplay())
                             <a href="{{ $menuItem->url ?? '#' }}"
-                               class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
+                               class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30"
                                style="color: {{ $headerTextColor }};"
-                               onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                               onmouseout="this.style.color='{{ $headerTextColor }}';"
                                @if($menuItem->target === '_blank') target="_blank" rel="noopener noreferrer" @endif>
-                                @if($menuItem->icon){{ $menuItem->icon }} @endif{{ $menuItem->title }}
+                                @if($menuItem->icon)<span class="text-lg group-hover:scale-110 transition-transform duration-300">{{ $menuItem->icon }}</span>@endif
+                                <span class="group-hover:translate-x-0.5 transition-transform duration-300">{{ $menuItem->title }}</span>
+                                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:w-full transition-all duration-300"></span>
                             </a>
                         @endif
                     @endforeach
                 @else
                     {{-- Fallback to hardcoded menu if no database items --}}
                     <a href="{{ route('home') }}"
-                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                       style="color: {{ $headerTextColor }};"
-                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                       onmouseout="this.style.color='{{ $headerTextColor }}';">
-                        หน้าแรก
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 hover:shadow-md">
+                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">🏠</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">หน้าแรก</span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     <a href="{{ route('marketplace.index') }}"
-                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                       style="color: {{ $headerTextColor }};"
-                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                       onmouseout="this.style.color='{{ $headerTextColor }}';">
-                        🤖 ตลาดบอท
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900/30 dark:hover:to-cyan-900/30 hover:text-blue-700 dark:hover:text-blue-300 hover:shadow-md">
+                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">🤖</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">ตลาดบอท</span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     <a href="{{ route('shop.index') }}"
-                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                       style="color: {{ $headerTextColor }};"
-                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                       onmouseout="this.style.color='{{ $headerTextColor }}';">
-                        🛍️ ช๊อปปิ้ง
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-rose-50 dark:hover:from-pink-900/30 dark:hover:to-rose-900/30 hover:text-pink-700 dark:hover:text-pink-300 hover:shadow-md">
+                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">🛍️</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">ช๊อปปิ้ง</span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-pink-600 to-rose-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     @auth
                         <a href="{{ route('my-rentals.index') }}"
-                           class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                           style="color: {{ $headerTextColor }};"
-                           onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                           onmouseout="this.style.color='{{ $headerTextColor }}';">
-                            💼 การเช่าของฉัน
+                           class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 dark:hover:from-emerald-900/30 dark:hover:to-teal-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 hover:shadow-md">
+                            <span class="text-lg group-hover:scale-110 transition-transform duration-300">💼</span>
+                            <span class="group-hover:translate-x-0.5 transition-transform duration-300">การเช่าของฉัน</span>
+                            <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-600 to-teal-600 group-hover:w-full transition-all duration-300"></span>
                         </a>
                         @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
                             <a href="{{ route('owner-dashboard.index') }}"
-                               class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                               style="color: {{ $headerTextColor }};"
-                               onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                               onmouseout="this.style.color='{{ $headerTextColor }}';">
-                                📊 Dashboard เจ้าของ
+                               class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-900/30 dark:hover:to-orange-900/30 hover:text-amber-700 dark:hover:text-amber-300 hover:shadow-md">
+                                <span class="text-lg group-hover:scale-110 transition-transform duration-300">📊</span>
+                                <span class="group-hover:translate-x-0.5 transition-transform duration-300">Dashboard</span>
+                                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-amber-600 to-orange-600 group-hover:w-full transition-all duration-300"></span>
                             </a>
                         @endif
                     @endauth
                     <a href="{{ route('about.professional') }}"
-                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                       style="color: {{ $headerTextColor }};"
-                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                       onmouseout="this.style.color='{{ $headerTextColor }}';">
-                        เกี่ยวกับเรา
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50 dark:hover:from-slate-900/30 dark:hover:to-gray-900/30 hover:text-slate-700 dark:hover:text-slate-300 hover:shadow-md">
+                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">ℹ️</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">เกี่ยวกับเรา</span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-600 to-gray-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     <a href="{{ route('platform.wiki') }}"
-                       class="inline-flex items-center gap-1 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full text-sm font-bold leading-5 shadow-lg hover:shadow-xl hover:scale-105 transform transition-all duration-200"
+                       class="nav-link-special group relative inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-full text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105 transform transition-all duration-300 overflow-hidden"
                        title="สารานุกรมความรู้ - Platform Wiki">
-                        📚 Platform Wiki
+                        <span class="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                        <span class="relative text-lg group-hover:rotate-12 transition-transform duration-300">📚</span>
+                        <span class="relative group-hover:translate-x-0.5 transition-transform duration-300">Platform Wiki</span>
+                        <svg class="relative w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
                     </a>
                     <a href="{{ route('contact') }}"
-                       class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium leading-5 transition duration-150 ease-in-out"
-                       style="color: {{ $headerTextColor }};"
-                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                       onmouseout="this.style.color='{{ $headerTextColor }}';">
-                        ติดต่อเรา
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 hover:text-blue-700 dark:hover:text-blue-300 hover:shadow-md">
+                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">✉️</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">ติดต่อเรา</span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-indigo-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                 @endif
             </div>
@@ -298,15 +288,22 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                     </div>
                 @else
                     <a href="{{ route('login') }}"
-                       class="text-sm font-medium transition"
-                       style="color: {{ $headerTextColor }};"
-                       onmouseover="this.style.color='{{ $headerHoverColor }}';"
-                       onmouseout="this.style.color='{{ $headerTextColor }}';">
-                        เข้าสู่ระบบ
+                       class="group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 rounded-lg transition-all duration-300 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-indigo-700 dark:hover:text-indigo-300">
+                        <svg class="w-4 h-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                        </svg>
+                        <span>เข้าสู่ระบบ</span>
                     </a>
                     <a href="{{ route('register') }}"
-                       class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                        สมัครสมาชิก
+                       class="group relative inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-lg font-semibold text-sm shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/50 hover:scale-105 transform transition-all duration-300 overflow-hidden">
+                        <span class="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
+                        <svg class="relative w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                        </svg>
+                        <span class="relative">สมัครสมาชิก</span>
+                        <svg class="relative w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                        </svg>
                     </a>
                 @endauth
             </div>
