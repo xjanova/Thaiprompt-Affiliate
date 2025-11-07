@@ -242,6 +242,42 @@
                     </div>
                     <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">จัดการผู้ใช้</span>
                 </a>
+            @elseif($isSeller)
+                <a href="{{ route('seller.profile') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 rounded-xl transition-all duration-300 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-indigo-100 group-hover:to-purple-100 dark:group-hover:from-indigo-900/50 dark:group-hover:to-purple-900/50 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">โปรไฟล์ของฉัน</span>
+                </a>
+
+                <a href="{{ route('seller.products.index') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 dark:hover:from-orange-900/20 dark:hover:to-amber-900/20 rounded-xl transition-all duration-300 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-orange-100 group-hover:to-amber-100 dark:group-hover:from-orange-900/50 dark:group-hover:to-amber-900/50 group-hover:text-orange-600 dark:group-hover:text-orange-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">จัดการสินค้า</span>
+                </a>
+
+                <a href="{{ route('seller.pos.index') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 dark:hover:from-cyan-900/20 dark:hover:to-blue-900/20 rounded-xl transition-all duration-300 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-cyan-100 group-hover:to-blue-100 dark:group-hover:from-cyan-900/50 dark:group-hover:to-blue-900/50 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">🏪 ระบบขายหน้าร้าน (POS)</span>
+                </a>
+
+                <a href="{{ route('seller.orders.index') }}" class="flex items-center gap-3 px-3 py-2.5 mt-1 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/20 dark:hover:to-emerald-900/20 rounded-xl transition-all duration-300 group">
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-300 group-hover:from-green-100 group-hover:to-emerald-100 dark:group-hover:from-green-900/50 dark:group-hover:to-emerald-900/50 group-hover:text-green-600 dark:group-hover:text-green-400 group-hover:scale-110 transition-all duration-300 shadow-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <span class="text-sm text-gray-700 dark:text-gray-300 font-medium group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">คำสั่งซื้อ</span>
+                </a>
             @endif
         </div>
 
