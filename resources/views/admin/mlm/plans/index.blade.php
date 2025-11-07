@@ -7,8 +7,11 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">จัดการแผน MLM</h1>
-            <p class="text-gray-600 mt-1">จัดการแผน MLM (Unilevel, Binary, Hybrid)</p>
+            <h1 class="text-2xl font-bold text-gray-800">จัดการแผนคอมมิชชัน MLM</h1>
+            <p class="text-gray-600 mt-1">แผนการคำนวณค่าคอมมิชชัน (Unilevel, Binary, Hybrid)</p>
+            <p class="text-sm text-orange-600 mt-1">
+                ⚠️ หมายเหตุ: นี่คือ "แผนคอมมิชชัน" ไม่ใช่ "แพคเกจสมาชิก" - แพคเกจสมาชิกอยู่ที่เมนู MLM Packages
+            </p>
         </div>
         <a href="{{ route('admin.mlm.plans.create') }}"
            class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-2.5 rounded-lg shadow-lg transition-all duration-200 flex items-center gap-2">
@@ -81,17 +84,13 @@
 
             <!-- Actions -->
             <div class="px-6 pb-6 flex gap-2">
-                <a href="{{ route('admin.mlm.plans.edit', $plan) }}"
-                   class="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-center px-4 py-2 rounded-lg transition-colors">
-                    แก้ไข
-                </a>
                 <button onclick="togglePlanStatus({{ $plan->id }})"
                         class="flex-1 {{ $plan->is_active ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-500 hover:bg-green-600' }} text-white px-4 py-2 rounded-lg transition-colors">
                     {{ $plan->is_active ? 'ปิด' : 'เปิด' }}
                 </button>
                 @if(!$plan->is_default)
                 <button onclick="setDefaultPlan({{ $plan->id }})"
-                        class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
+                        class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors">
                     ตั้งเป็นค่าเริ่มต้น
                 </button>
                 @endif

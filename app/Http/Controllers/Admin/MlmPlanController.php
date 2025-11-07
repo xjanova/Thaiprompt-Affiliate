@@ -78,43 +78,8 @@ class MlmPlanController extends Controller
             ->with('success', 'MLM Package created successfully');
     }
 
-    public function edit(MlmPlan $plan)
-    {
-        return view('admin.mlm.plans.edit', compact('plan'));
-    }
-
-    public function update(Request $request, MlmPlan $plan)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'name_th' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'description_th' => 'nullable|string',
-            'type' => 'required|in:unilevel,binary,hybrid',
-            'is_active' => 'boolean',
-            'color' => 'nullable|string|max:20',
-            'joining_fee' => 'nullable|numeric|min:0',
-            'requires_joining_fee' => 'boolean',
-            'use_pv_system' => 'boolean',
-            'global_pv_rate' => 'required|numeric|min:0',
-            'global_commission_per_pv' => 'required|numeric|min:0',
-            'unilevel_levels' => 'nullable|array',
-            'unilevel_max_depth' => 'nullable|integer|min:1|max:50',
-            'unilevel_compression' => 'boolean',
-            'binary_pair_commission' => 'nullable|numeric|min:0',
-            'binary_match_percentage' => 'nullable|numeric|min:0|max:100',
-            'binary_spillover' => 'boolean',
-            'binary_pairing_type' => 'nullable|in:1:1,2:1',
-            'auto_placement' => 'boolean',
-            'auto_placement_type' => 'nullable|in:left_to_right,balanced,weak_leg',
-        ]);
-
-        $plan->update($validated);
-
-        return redirect()
-            ->route('admin.mlm.plans.index')
-            ->with('success', 'MLM Plan updated successfully');
-    }
+    // Note: Edit และ Update ถูกลบออก เพราะแผน MLM หลักไม่ควรแก้ไขผ่าน UI
+    // หากต้องการแก้ไข ให้แก้ผ่าน Seeder หรือ Database โดยตรง
 
     public function destroy(MlmPlan $plan)
     {

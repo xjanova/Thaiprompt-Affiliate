@@ -9,9 +9,20 @@ class MlmPackageSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * สำคัญ: นี่คือ "แพคเกจสมาชิก" ไม่ใช่ "แผนคอมมิชชัน"
+     * - MlmPackage = แพคเกจที่สมาชิกซื้อเพื่อเข้าร่วม MLM (Bronze, Silver, Gold, etc.)
+     * - MlmPlan = แผนการคำนวณค่าคอมมิชชัน (ใช้ร่วมกันโดยสมาชิกทุกคน)
+     *   ดู MlmPlanSeeder.php
      */
     public function run(): void
     {
+        // ลบข้อมูลเก่าทั้งหมดเพื่อป้องกันความซ้ำซ้อน
+        $this->command->info('🗑️  Cleaning old MLM Packages...');
+        MlmPackage::query()->delete();
+
+        $this->command->info('📦 Creating MLM Packages...');
+
         $packages = [
             [
                 'name' => 'Bronze Package',
@@ -197,12 +208,10 @@ class MlmPackageSeeder extends Seeder
         ];
 
         foreach ($packages as $package) {
-            MlmPackage::updateOrCreate(
-                ['slug' => $package['slug']],
-                $package
-            );
+            MlmPackage::create($package);
         }
 
-        $this->command->info('✓ Created 5 MLM Packages: Bronze, Silver, Gold, Diamond, Premier');
+        $this->command->info('✅ Created 5 MLM Packages: Bronze, Silver, Gold, Diamond, Premier');
+        $this->command->info('ℹ️  หากต้องการดูแผนคอมมิชชัน ให้รัน: php artisan db:seed --class=MlmPlanSeeder');
     }
 }
