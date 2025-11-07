@@ -203,7 +203,7 @@
     </div>
 
     <!-- Countdown Timer -->
-    <div id="countdown-timer" class="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-30">
+    <div id="countdown-timer" class="absolute bottom-24 left-8 z-30" style="display: none;">
         <div class="flex items-center gap-3 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20">
             <svg class="w-5 h-5 text-white animate-spin" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -510,6 +510,12 @@ function startAutoplay() {
         </svg>
     `;
 
+    // Show countdown timer when autoplay starts
+    const timer = document.getElementById('countdown-timer');
+    if (timer && showCountdown) {
+        timer.style.display = 'block';
+    }
+
     resetCountdown();
 }
 
@@ -532,8 +538,9 @@ function stopAutoplay() {
         clearInterval(countdownInterval);
     }
 
+    // Hide countdown timer when autoplay stops
     const timer = document.getElementById('countdown-timer');
-    if (timer && showCountdown) {
+    if (timer) {
         timer.style.display = 'none';
     }
 }
@@ -550,7 +557,8 @@ function resetCountdown() {
     const countdownValue = document.getElementById('countdown-value');
     const timer = document.getElementById('countdown-timer');
 
-    if (showCountdown && timer) {
+    // Only show countdown if autoplay is active and countdown visibility is enabled
+    if (isAutoplayActive && showCountdown && timer) {
         timer.style.display = 'block';
         countdownValue.textContent = timeLeft;
 
