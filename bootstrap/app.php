@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'super_admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
             'role' => \App\Http\Middleware\CheckRole::class,
+            'check.permission' => \App\Http\Middleware\CheckPermission::class,
             'turnstile' => \App\Http\Middleware\VerifyCloudfareTurnstile::class,
             'throttle.login' => \App\Http\Middleware\ThrottleLogin::class,
             'check.blocked.ip' => \App\Http\Middleware\CheckBlockedIp::class,
