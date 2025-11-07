@@ -119,10 +119,10 @@
                     <pre class="bg-blue-100 p-2 rounded text-xs overflow-x-auto"><code>&lt;x-icon name="icon-name" category="system" size="md" /&gt;</code></pre>
 
                     <p class="mt-3"><strong>{{ __('Using Helper:') }}</strong></p>
-                    <pre class="bg-blue-100 p-2 rounded text-xs overflow-x-auto"><code>&lt;img src="{{ '{{ ' }}App\Helpers\IconHelper::url('icon-name', 'system'){{ ' }}' }}" /&gt;</code></pre>
+                    <pre class="bg-blue-100 p-2 rounded text-xs overflow-x-auto"><code>&lt;img src="@{{ App\Helpers\IconHelper::url('icon-name', 'system') }}" /&gt;</code></pre>
 
                     <p class="mt-3"><strong>{{ __('Inline SVG:') }}</strong></p>
-                    <pre class="bg-blue-100 p-2 rounded text-xs overflow-x-auto"><code>{{ '{!! ' }}App\Helpers\IconHelper::inline('icon-name', 'system'){{ ' !!}' }}</code></pre>
+                    <pre class="bg-blue-100 p-2 rounded text-xs overflow-x-auto"><code>@{!! App\Helpers\IconHelper::inline('icon-name', 'system') !!}</code></pre>
 
                     <p class="mt-3"><strong>{{ __('Supported Formats:') }}</strong> SVG, PNG, JPG, WebP</p>
                     <p><strong>{{ __('Max Size:') }}</strong> 2MB</p>
