@@ -1264,6 +1264,8 @@
                                        request()->routeIs('admin.templates.*') ||
                                        request()->routeIs('admin.pages.*') ||
                                        request()->routeIs('admin.seo.*') ||
+                                       request()->routeIs('admin.themes.*') ||
+                                       request()->routeIs('admin.icons.*') ||
                                        request()->routeIs('admin.settings.languages*') ||
                                        request()->routeIs('admin.translations.*') ||
                                        request()->routeIs('admin.notifications.*') ||
@@ -1325,6 +1327,20 @@
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.seo.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
                             <span class="mr-2">🔍</span>
                             <span>จัดการ SEO</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('admin.themes.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.themes.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🎨</span>
+                            <span>จัดการธีม (Theme)</span>
+                        </a>
+
+                        <a href="{{ route('admin.icons.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.icons.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
+                            <span class="mr-2">🖼️</span>
+                            <span>จัดการไอคอน (Icons)</span>
                         </a>
 
                         <div class="border-t border-gray-700/30 my-1"></div>

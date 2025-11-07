@@ -491,6 +491,17 @@
                     </div>
                 </div>
 
+                <!-- Theme Settings -->
+                <div class="mb-1">
+                    <a href="{{ route('user.themes.index') }}"
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.themes.*') ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : '' }}">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🎨</span>
+                        <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            ตั้งค่าธีม
+                        </span>
+                    </a>
+                </div>
+
                 <!-- System Info -->
                 <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
                     <div class="bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30 dark:border-gray-600/30">
