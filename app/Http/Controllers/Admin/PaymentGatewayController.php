@@ -20,20 +20,50 @@ class PaymentGatewayController extends Controller
             return redirect()->back()->with('error', 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
         }
 
-        $gateways = PaymentGateway::orderBy('category')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get()
-            ->groupBy('category');
+        try {
+            $gateways = PaymentGateway::orderBy('category')
+                ->orderBy('sort_order')
+                ->orderBy('name')
+                ->get()
+                ->groupBy('category');
 
-        $stats = [
-            'total' => PaymentGateway::count(),
-            'active' => PaymentGateway::where('is_active', true)->count(),
-            'configured' => PaymentGateway::get()->filter(fn($g) => $g->isConfigured())->count(),
-            'coming_soon' => PaymentGateway::where('is_coming_soon', true)->count(),
-        ];
+            // Count configured gateways with error handling
+            $configuredCount = 0;
+            try {
+                $configuredCount = PaymentGateway::get()->filter(function($g) {
+                    try {
+                        return $g->isConfigured();
+                    } catch (\Throwable $e) {
+                        \Log::error('Error checking isConfigured for gateway', [
+                            'gateway_id' => $g->id ?? null,
+                            'gateway_code' => $g->code ?? 'unknown',
+                            'error' => $e->getMessage(),
+                        ]);
+                        return false;
+                    }
+                })->count();
+            } catch (\Throwable $e) {
+                \Log::error('Error counting configured gateways', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
-        return view('admin.payment-gateways.index', compact('gateways', 'stats'));
+            $stats = [
+                'total' => PaymentGateway::count(),
+                'active' => PaymentGateway::where('is_active', true)->count(),
+                'configured' => $configuredCount,
+                'coming_soon' => PaymentGateway::where('is_coming_soon', true)->count(),
+            ];
+
+            return view('admin.payment-gateways.index', compact('gateways', 'stats'));
+        } catch (\Throwable $e) {
+            \Log::error('Critical error in PaymentGatewayController::index', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการโหลดข้อมูล Payment Gateway: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -122,7 +152,14 @@ class PaymentGatewayController extends Controller
             Cache::forget('active_payment_gateways');
 
             return redirect()->back()->with('success', 'อัพเดทการตั้งค่าเรียบร้อยแล้ว');
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            \Log::error('Error updating payment gateway', [
+                'gateway_id' => $paymentGateway->id ?? null,
+                'gateway_code' => $paymentGateway->code ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
@@ -170,7 +207,14 @@ class PaymentGatewayController extends Controller
                 'message' => $result['message'],
                 'data' => $result['data'] ?? null,
             ]);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            \Log::error('Error testing payment gateway connection', [
+                'gateway_id' => $paymentGateway->id ?? null,
+                'gateway_code' => $paymentGateway->code ?? 'unknown',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
