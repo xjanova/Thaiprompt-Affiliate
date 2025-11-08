@@ -53,7 +53,7 @@ return new class extends Migration
 
             // Indexes and constraints
             $table->unique(['address', 'network']);
-            $table->unique(['user_id', 'crypto_currency_id', 'network']);
+            $table->unique(['user_id', 'crypto_currency_id', 'network'], 'cda_user_currency_network_unq');
             $table->index(['is_monitored', 'is_active']);
             $table->index(['network', 'last_checked_at']);
         });
