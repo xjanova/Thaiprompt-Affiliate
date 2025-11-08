@@ -15,8 +15,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('crypto_currencies', function (Blueprint $table) {
+            // Drop the existing unique constraint first
+            $table->dropUnique('crypto_currencies_code_unique');
+        });
+
+        Schema::table('crypto_currencies', function (Blueprint $table) {
             // Change code column from VARCHAR(10) to VARCHAR(30)
-            $table->string('code', 30)->unique()->change();
+            $table->string('code', 30)->change();
+        });
+
+        Schema::table('crypto_currencies', function (Blueprint $table) {
+            // Re-add the unique constraint
+            $table->unique('code', 'crypto_currencies_code_unique');
         });
     }
 
@@ -26,8 +36,18 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('crypto_currencies', function (Blueprint $table) {
+            // Drop the unique constraint first
+            $table->dropUnique('crypto_currencies_code_unique');
+        });
+
+        Schema::table('crypto_currencies', function (Blueprint $table) {
             // Revert back to VARCHAR(10) (may fail if longer codes exist)
-            $table->string('code', 10)->unique()->change();
+            $table->string('code', 10)->change();
+        });
+
+        Schema::table('crypto_currencies', function (Blueprint $table) {
+            // Re-add the unique constraint
+            $table->unique('code', 'crypto_currencies_code_unique');
         });
     }
 };
