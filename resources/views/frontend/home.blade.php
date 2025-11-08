@@ -7,78 +7,154 @@
     <!-- Premium Landing Page Sections -->
     @if($premiumSections['hero'])
 
-        <!-- Hero Section - แบบ Premium อลังการ -->
-        <section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600">
+        <!-- Hero Section - Premium Design with Logo -->
+        <section class="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900">
             <!-- Animated Background Elements -->
             <div class="absolute inset-0 overflow-hidden">
-                <div class="absolute w-96 h-96 bg-white opacity-10 rounded-full -top-20 -left-20 animate-pulse"></div>
-                <div class="absolute w-80 h-80 bg-white opacity-10 rounded-full top-40 right-20 animate-pulse" style="animation-delay: 1s;"></div>
-                <div class="absolute w-64 h-64 bg-white opacity-10 rounded-full bottom-20 left-1/3 animate-pulse" style="animation-delay: 2s;"></div>
+                <!-- Gradient Orbs with Glow -->
+                <div class="absolute w-96 h-96 bg-gradient-to-r from-purple-500 to-pink-500 opacity-20 rounded-full -top-20 -left-20 animate-pulse blur-3xl"></div>
+                <div class="absolute w-80 h-80 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-20 rounded-full top-40 right-20 animate-pulse blur-3xl" style="animation-delay: 1s;"></div>
+                <div class="absolute w-64 h-64 bg-gradient-to-r from-pink-500 to-purple-500 opacity-20 rounded-full bottom-20 left-1/3 animate-pulse blur-3xl" style="animation-delay: 2s;"></div>
+
+                <!-- Floating Particles -->
+                <div class="absolute top-20 left-10 w-2 h-2 bg-yellow-300 rounded-full animate-ping"></div>
+                <div class="absolute top-40 right-20 w-3 h-3 bg-pink-300 rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
+                <div class="absolute bottom-40 left-20 w-2 h-2 bg-blue-300 rounded-full animate-ping" style="animation-delay: 1s;"></div>
+                <div class="absolute bottom-20 right-40 w-3 h-3 bg-purple-300 rounded-full animate-ping" style="animation-delay: 1.5s;"></div>
             </div>
 
+            <!-- Grid Pattern Overlay -->
+            <div class="absolute inset-0 opacity-10" style="background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px); background-size: 50px 50px;"></div>
+
             <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 text-center text-white">
+                <!-- Logo Section -->
+                <div class="mb-12 animate-fade-in-down">
+                    <div class="inline-block p-8 bg-white/10 backdrop-blur-xl rounded-3xl border-2 border-white/20 shadow-2xl transform hover:scale-105 transition-all duration-500">
+                        <img src="{{ asset('images/logo.svg') }}" alt="Logo" class="w-32 h-32 mx-auto filter drop-shadow-2xl">
+                    </div>
+                </div>
+
                 <div class="animate-fade-in-up">
                     <h1 class="text-5xl md:text-7xl font-bold mb-6 leading-tight">
-                        สร้างรายได้ไม่จำกัด<br>
-                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-300">
-                            กับระบบ Affiliate
-                        </span>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300 animate-pulse">
+                            สร้างรายได้ไม่จำกัด
+                        </span><br>
+                        <span class="text-white drop-shadow-2xl">กับระบบ Affiliate ที่ทรงพลัง</span>
                     </h1>
-                    <p class="text-xl md:text-2xl mb-8 text-indigo-100 max-w-3xl mx-auto">
-                        แพลตฟอร์ม Affiliate Marketing ที่ทันสมัย มั่นคง จ่ายจริง พร้อมระบบจัดการครบครัน
+                    <p class="text-xl md:text-2xl mb-12 text-indigo-200 max-w-3xl mx-auto leading-relaxed">
+                        แพลตฟอร์มครบวงจร • มั่นคง • จ่ายจริง<br>
+                        <span class="text-yellow-300 font-semibold">พร้อมระบบจัดการที่ทันสมัยที่สุด</span>
                     </p>
 
+                    <!-- Feature Cards Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 max-w-6xl mx-auto">
+                        <!-- Affiliate Card -->
+                        <a href="{{ route('user.dashboard') }}" class="group relative bg-gradient-to-br from-purple-600/30 to-pink-600/30 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/50 cursor-pointer">
+                            <div class="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity duration-300"></div>
+                            <div class="relative z-10">
+                                <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">💼</div>
+                                <h3 class="text-xl font-bold mb-2 text-white">ระบบ Affiliate</h3>
+                                <p class="text-purple-200 text-sm mb-4">หาเงินออนไลน์ รายได้ไม่จำกัด</p>
+                                <div class="flex items-center justify-center text-yellow-300 font-semibold group-hover:gap-2 transition-all">
+                                    <span>เริ่มเลย</span>
+                                    <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </a>
+
+                        <!-- Software Purchase Card - NEW -->
+                        <a href="{{ route('software.products.index') }}" class="group relative bg-gradient-to-br from-blue-600/30 to-cyan-600/30 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50 cursor-pointer">
+                            <div class="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity duration-300"></div>
+                            <div class="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">
+                                ใหม่!
+                            </div>
+                            <div class="relative z-10">
+                                <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🛒</div>
+                                <h3 class="text-xl font-bold mb-2 text-white">ซื้อซอฟแวร์</h3>
+                                <p class="text-blue-200 text-sm mb-4">ระบบครบวงจร ราคาคุ้มค่า</p>
+                                <div class="flex items-center justify-center text-yellow-300 font-semibold group-hover:gap-2 transition-all">
+                                    <span>ดูสินค้า</span>
+                                    <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </a>
+
+                        <!-- Tarot Card -->
+                        <a href="{{ route('tarot.index') }}" class="group relative bg-gradient-to-br from-indigo-600/30 to-purple-600/30 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-500/50 cursor-pointer">
+                            <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 to-purple-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity duration-300"></div>
+                            <div class="relative z-10">
+                                <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">🔮</div>
+                                <h3 class="text-xl font-bold mb-2 text-white">ทาโร่ต์ AI</h3>
+                                <p class="text-indigo-200 text-sm mb-4">ทำนายดวงชะตา ฟรีทุกวัน</p>
+                                <div class="flex items-center justify-center text-yellow-300 font-semibold group-hover:gap-2 transition-all">
+                                    <span>ทำนายเลย</span>
+                                    <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </a>
+
+                        <!-- Platform Info Card -->
+                        <a href="{{ route('about.professional') }}" class="group relative bg-gradient-to-br from-pink-600/30 to-orange-600/30 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-pink-500/50 cursor-pointer">
+                            <div class="absolute inset-0 bg-gradient-to-br from-pink-600 to-orange-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity duration-300"></div>
+                            <div class="relative z-10">
+                                <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">📊</div>
+                                <h3 class="text-xl font-bold mb-2 text-white">แพลตฟอร์ม</h3>
+                                <p class="text-pink-200 text-sm mb-4">ข้อมูลระบบและฟีเจอร์</p>
+                                <div class="flex items-center justify-center text-yellow-300 font-semibold group-hover:gap-2 transition-all">
+                                    <span>ดูรายละเอียด</span>
+                                    <svg class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+
                     <!-- CTA Buttons -->
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center mb-12">
                         @guest
-                            <a href="{{ route('register') }}" class="group relative inline-flex items-center justify-center px-8 py-4 bg-white text-indigo-600 font-bold rounded-xl shadow-2xl hover:shadow-white/50 transition-all duration-300 transform hover:scale-105">
-                                <span class="relative z-10">เริ่มต้นฟรีวันนี้</span>
-                                <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <a href="{{ route('register') }}" class="group relative inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 text-white font-bold text-lg rounded-2xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105 overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                <span class="relative z-10">🚀 เริ่มต้นฟรีวันนี้</span>
+                                <svg class="w-5 h-5 ml-2 relative z-10 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                                 </svg>
                             </a>
-                            <a href="{{ route('login') }}" class="inline-flex items-center justify-center px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-xl border-2 border-white/30 hover:bg-white/20 transition-all duration-300 transform hover:scale-105">
+                            <a href="{{ route('login') }}" class="inline-flex items-center justify-center px-10 py-5 bg-white/10 backdrop-blur-sm text-white font-bold text-lg rounded-2xl border-2 border-white/30 hover:bg-white/20 hover:border-white/50 transition-all duration-300 transform hover:scale-105">
                                 เข้าสู่ระบบ
                             </a>
                         @else
-                            <a href="{{ route(Auth::user()->is_admin ? 'admin.dashboard' : 'user.dashboard') }}" class="inline-flex items-center justify-center px-8 py-4 bg-white text-indigo-600 font-bold rounded-xl shadow-2xl hover:shadow-white/50 transition-all duration-300 transform hover:scale-105">
-                                เข้าสู่แดชบอร์ด
+                            <a href="{{ route(Auth::user()->is_admin ? 'admin.dashboard' : 'user.dashboard') }}" class="inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-yellow-400 via-pink-500 to-purple-600 text-white font-bold text-lg rounded-2xl shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105">
+                                🎯 เข้าสู่แดชบอร์ด
                             </a>
                         @endguest
                     </div>
 
-                    <!-- Platform Details Link (Premium) -->
-                    <div class="mb-12">
-                        <a href="{{ route('about.professional') }}" class="group inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-semibold rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 animate-pulse">
-                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span>📊 ดูรายละเอียดแพลตฟอร์มแบบครบถ้วน</span>
-                            <svg class="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </a>
-                    </div>
-
                     <!-- Trust Badges -->
-                    <div class="flex flex-wrap items-center justify-center gap-8 text-white/80">
-                        <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center justify-center gap-8 text-white/90">
+                        <div class="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full border border-white/20">
                             <svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                             </svg>
-                            <span>ปลอดภัย 100%</span>
+                            <span class="font-semibold">ปลอดภัย 100%</span>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full border border-white/20">
                             <svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                             </svg>
-                            <span>จ่ายรายได้ทุกสัปดาห์</span>
+                            <span class="font-semibold">จ่ายรายได้ทุกสัปดาห์</span>
                         </div>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full border border-white/20">
                             <svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
                             </svg>
-                            <span>ไม่มีค่าใช้จ่ายแอบแฝง</span>
+                            <span class="font-semibold">ไม่มีค่าใช้จ่ายแอบแฝง</span>
                         </div>
                     </div>
                 </div>
@@ -86,9 +162,11 @@
 
             <!-- Scroll Down Arrow -->
             <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
-                </svg>
+                <div class="bg-white/10 backdrop-blur-sm p-3 rounded-full border border-white/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                    </svg>
+                </div>
             </div>
         </section>
     @endif
@@ -132,31 +210,67 @@
                     <span class="text-yellow-300 font-semibold">✨ ทำนายฟรีวันละ 1 ครั้งต่อหมวดหมู่!</span>
                 </p>
 
-                <!-- Feature Highlights -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-10 max-w-5xl mx-auto">
-                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 transform hover:scale-105 transition-all duration-300 hover:bg-white/20">
-                        <div class="text-4xl mb-3">💖</div>
-                        <h3 class="text-white font-bold mb-1">ความรัก</h3>
-                        <p class="text-purple-200 text-sm">เปิดเผยเรื่องราวหัวใจ</p>
-                    </div>
+                <!-- Feature Highlights - Clickable Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-10 max-w-5xl mx-auto">
+                    <a href="{{ route('tarot.index') }}" class="group relative bg-gradient-to-br from-pink-600/20 to-red-600/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 transform hover:scale-110 hover:-translate-y-3 transition-all duration-300 hover:shadow-2xl hover:shadow-pink-500/50 cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-br from-pink-600 to-red-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity duration-300"></div>
+                        <div class="relative z-10">
+                            <div class="text-5xl mb-4 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300">💖</div>
+                            <h3 class="text-white font-bold text-lg mb-2">ความรัก</h3>
+                            <p class="text-purple-200 text-sm mb-3">เปิดเผยเรื่องราวหัวใจ</p>
+                            <div class="flex items-center text-yellow-300 text-xs font-semibold">
+                                <span>เริ่มทำนาย</span>
+                                <svg class="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
 
-                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 transform hover:scale-105 transition-all duration-300 hover:bg-white/20">
-                        <div class="text-4xl mb-3">💼</div>
-                        <h3 class="text-white font-bold mb-1">การงาน</h3>
-                        <p class="text-purple-200 text-sm">มองหาโอกาสใหม่</p>
-                    </div>
+                    <a href="{{ route('tarot.index') }}" class="group relative bg-gradient-to-br from-blue-600/20 to-indigo-600/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 transform hover:scale-110 hover:-translate-y-3 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50 cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-600 to-indigo-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity duration-300"></div>
+                        <div class="relative z-10">
+                            <div class="text-5xl mb-4 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300">💼</div>
+                            <h3 class="text-white font-bold text-lg mb-2">การงาน</h3>
+                            <p class="text-purple-200 text-sm mb-3">มองหาโอกาสใหม่</p>
+                            <div class="flex items-center text-yellow-300 text-xs font-semibold">
+                                <span>เริ่มทำนาย</span>
+                                <svg class="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
 
-                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 transform hover:scale-105 transition-all duration-300 hover:bg-white/20">
-                        <div class="text-4xl mb-3">💰</div>
-                        <h3 class="text-white font-bold mb-1">การเงิน</h3>
-                        <p class="text-purple-200 text-sm">วางแผนทางการเงิน</p>
-                    </div>
+                    <a href="{{ route('tarot.index') }}" class="group relative bg-gradient-to-br from-green-600/20 to-emerald-600/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 transform hover:scale-110 hover:-translate-y-3 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/50 cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-br from-green-600 to-emerald-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity duration-300"></div>
+                        <div class="relative z-10">
+                            <div class="text-5xl mb-4 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300">💰</div>
+                            <h3 class="text-white font-bold text-lg mb-2">การเงิน</h3>
+                            <p class="text-purple-200 text-sm mb-3">วางแผนทางการเงิน</p>
+                            <div class="flex items-center text-yellow-300 text-xs font-semibold">
+                                <span>เริ่มทำนาย</span>
+                                <svg class="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
 
-                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 transform hover:scale-105 transition-all duration-300 hover:bg-white/20">
-                        <div class="text-4xl mb-3">🌟</div>
-                        <h3 class="text-white font-bold mb-1">ทั่วไป</h3>
-                        <p class="text-purple-200 text-sm">คำทำนายรายวัน</p>
-                    </div>
+                    <a href="{{ route('tarot.index') }}" class="group relative bg-gradient-to-br from-yellow-600/20 to-orange-600/20 backdrop-blur-sm border border-white/20 rounded-2xl p-8 transform hover:scale-110 hover:-translate-y-3 transition-all duration-300 hover:shadow-2xl hover:shadow-yellow-500/50 cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-br from-yellow-600 to-orange-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity duration-300"></div>
+                        <div class="relative z-10">
+                            <div class="text-5xl mb-4 group-hover:scale-125 group-hover:rotate-12 transition-transform duration-300">🌟</div>
+                            <h3 class="text-white font-bold text-lg mb-2">ทั่วไป</h3>
+                            <p class="text-purple-200 text-sm mb-3">คำทำนายรายวัน</p>
+                            <div class="flex items-center text-yellow-300 text-xs font-semibold">
+                                <span>เริ่มทำนาย</span>
+                                <svg class="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </a>
                 </div>
 
                 <!-- Main CTA Button -->
@@ -222,92 +336,154 @@
         </div>
     </section>
 
-    <!-- Platform Overview Banner -->
-    <section class="py-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 relative overflow-hidden">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+    <!-- Platform Overview Banner - Enhanced -->
+    <section class="py-20 bg-gradient-to-br from-blue-900 via-indigo-900 to-purple-900 relative overflow-hidden">
+        <!-- Animated Background -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute w-96 h-96 bg-gradient-to-r from-blue-500 to-cyan-500 opacity-20 rounded-full -top-20 -left-20 animate-pulse blur-3xl"></div>
+            <div class="absolute w-80 h-80 bg-gradient-to-r from-purple-500 to-pink-500 opacity-20 rounded-full top-40 right-20 animate-pulse blur-3xl" style="animation-delay: 1s;"></div>
         </div>
 
+        <!-- Grid Pattern -->
+        <div class="absolute inset-0 opacity-5" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+
         <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <div class="inline-block mb-4 animate-fade-in-down">
+                    <span class="px-6 py-3 bg-gradient-to-r from-blue-500/30 to-purple-500/30 backdrop-blur-sm rounded-full text-white font-semibold border border-white/30 shadow-lg">
+                        🚀 Enterprise Platform
+                    </span>
+                </div>
+                <h2 class="text-4xl md:text-5xl font-bold mb-4 text-white animate-fade-in-up">
+                    แพลตฟอร์มระดับมืออาชีพ
+                </h2>
+                <p class="text-lg md:text-xl text-blue-200 max-w-3xl mx-auto">
+                    สร้างด้วยเทคโนโลยีที่ทันสมัยที่สุด มีฟีเจอร์ครบครัน<br class="hidden md:block">
+                    <span class="text-yellow-300 font-semibold">113+ Models • 105 Tables • 91 Controllers</span>
+                </p>
+            </div>
+
             <div class="grid md:grid-cols-2 gap-8 items-center">
-                <div class="text-white">
-                    <div class="inline-block mb-4">
-                        <span class="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full text-sm font-semibold border border-white/30">
-                            🚀 Enterprise Platform
-                        </span>
-                    </div>
-                    <h2 class="text-3xl md:text-4xl font-bold mb-4">
-                        แพลตฟอร์มระดับมืออาชีพ
-                    </h2>
-                    <p class="text-lg text-blue-100 mb-6">
-                        สร้างด้วยเทคโนโลยีที่ทันสมัยที่สุด มีฟีเจอร์ครบครัน 113+ Models, 105 Tables, 91 Controllers
-                        พร้อมระบบ MLM, E-Commerce, AI Chatbot และอื่นๆ อีกมากมาย
-                    </p>
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="flex items-center gap-2">
-                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">✓</div>
-                            <div>
-                                <div class="font-semibold">MLM System</div>
-                                <div class="text-sm text-blue-200">Unilevel & Binary</div>
+                <!-- Features Grid -->
+                <div class="grid grid-cols-2 gap-4">
+                    <a href="{{ route('about.professional') }}" class="group bg-gradient-to-br from-purple-600/20 to-pink-600/20 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/50 cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity"></div>
+                        <div class="relative z-10">
+                            <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-3 text-2xl group-hover:scale-110 transition-transform">
+                                🔄
                             </div>
+                            <div class="font-bold text-white text-lg mb-1">MLM System</div>
+                            <div class="text-sm text-blue-200">Unilevel & Binary</div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">✓</div>
-                            <div>
-                                <div class="font-semibold">E-Commerce</div>
-                                <div class="text-sm text-blue-200">Multi-Vendor</div>
+                    </a>
+
+                    <a href="{{ route('about.professional') }}" class="group bg-gradient-to-br from-blue-600/20 to-cyan-600/20 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50 cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-br from-blue-600 to-cyan-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity"></div>
+                        <div class="relative z-10">
+                            <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-3 text-2xl group-hover:scale-110 transition-transform">
+                                🛍️
                             </div>
+                            <div class="font-bold text-white text-lg mb-1">E-Commerce</div>
+                            <div class="text-sm text-blue-200">Multi-Vendor</div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">✓</div>
-                            <div>
-                                <div class="font-semibold">AI Integration</div>
-                                <div class="text-sm text-blue-200">LINE Bot + RAG</div>
+                    </a>
+
+                    <a href="{{ route('about.professional') }}" class="group bg-gradient-to-br from-green-600/20 to-emerald-600/20 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-green-500/50 cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-br from-green-600 to-emerald-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity"></div>
+                        <div class="relative z-10">
+                            <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-3 text-2xl group-hover:scale-110 transition-transform">
+                                🤖
                             </div>
+                            <div class="font-bold text-white text-lg mb-1">AI Integration</div>
+                            <div class="text-sm text-blue-200">LINE Bot + RAG</div>
                         </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">✓</div>
-                            <div>
-                                <div class="font-semibold">Production Ready</div>
-                                <div class="text-sm text-blue-200">v1.159.0</div>
+                    </a>
+
+                    <a href="{{ route('about.professional') }}" class="group bg-gradient-to-br from-yellow-600/20 to-orange-600/20 backdrop-blur-xl border border-white/20 rounded-2xl p-6 transform hover:scale-105 hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl hover:shadow-yellow-500/50 cursor-pointer">
+                        <div class="absolute inset-0 bg-gradient-to-br from-yellow-600 to-orange-600 opacity-0 group-hover:opacity-20 rounded-2xl transition-opacity"></div>
+                        <div class="relative z-10">
+                            <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center mb-3 text-2xl group-hover:scale-110 transition-transform">
+                                ✅
                             </div>
+                            <div class="font-bold text-white text-lg mb-1">Production Ready</div>
+                            <div class="text-sm text-blue-200">v1.159.0</div>
                         </div>
-                    </div>
-                    <a href="{{ route('about.professional') }}" class="inline-flex items-center px-6 py-3 bg-white text-indigo-600 font-bold rounded-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105">
-                        <span>อ่านรายละเอียดทั้งหมด</span>
-                        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-                        </svg>
                     </a>
                 </div>
 
-                <div class="hidden md:block">
-                    <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between p-4 bg-white/10 rounded-lg">
-                                <span class="font-semibold text-white">Database Models</span>
-                                <span class="text-2xl font-bold text-yellow-300">113+</span>
+                <!-- Stats Panel -->
+                <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border-2 border-white/20 shadow-2xl">
+                    <h3 class="text-2xl font-bold text-white mb-6 text-center">Platform Statistics</h3>
+                    <div class="space-y-4">
+                        <div class="group bg-gradient-to-r from-white/5 to-white/10 rounded-xl p-4 hover:from-white/10 hover:to-white/15 transition-all duration-300 transform hover:scale-105">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-purple-500/30 rounded-lg flex items-center justify-center text-xl">
+                                        📦
+                                    </div>
+                                    <span class="font-semibold text-white">Database Models</span>
+                                </div>
+                                <span class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-pink-300">113+</span>
                             </div>
-                            <div class="flex items-center justify-between p-4 bg-white/10 rounded-lg">
-                                <span class="font-semibold text-white">Database Tables</span>
-                                <span class="text-2xl font-bold text-yellow-300">105</span>
+                        </div>
+
+                        <div class="group bg-gradient-to-r from-white/5 to-white/10 rounded-xl p-4 hover:from-white/10 hover:to-white/15 transition-all duration-300 transform hover:scale-105">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-blue-500/30 rounded-lg flex items-center justify-center text-xl">
+                                        🗃️
+                                    </div>
+                                    <span class="font-semibold text-white">Database Tables</span>
+                                </div>
+                                <span class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-300 to-cyan-300">105</span>
                             </div>
-                            <div class="flex items-center justify-between p-4 bg-white/10 rounded-lg">
-                                <span class="font-semibold text-white">HTTP Controllers</span>
-                                <span class="text-2xl font-bold text-yellow-300">91</span>
+                        </div>
+
+                        <div class="group bg-gradient-to-r from-white/5 to-white/10 rounded-xl p-4 hover:from-white/10 hover:to-white/15 transition-all duration-300 transform hover:scale-105">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-green-500/30 rounded-lg flex items-center justify-center text-xl">
+                                        ⚙️
+                                    </div>
+                                    <span class="font-semibold text-white">HTTP Controllers</span>
+                                </div>
+                                <span class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-emerald-300">91</span>
                             </div>
-                            <div class="flex items-center justify-between p-4 bg-white/10 rounded-lg">
-                                <span class="font-semibold text-white">Migrations</span>
-                                <span class="text-2xl font-bold text-yellow-300">136</span>
+                        </div>
+
+                        <div class="group bg-gradient-to-r from-white/5 to-white/10 rounded-xl p-4 hover:from-white/10 hover:to-white/15 transition-all duration-300 transform hover:scale-105">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-pink-500/30 rounded-lg flex items-center justify-center text-xl">
+                                        🔄
+                                    </div>
+                                    <span class="font-semibold text-white">Migrations</span>
+                                </div>
+                                <span class="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-300 to-purple-300">136</span>
                             </div>
-                            <div class="text-center pt-2">
-                                <span class="inline-block px-4 py-2 bg-green-500 text-white rounded-full text-sm font-semibold animate-pulse">
-                                    ✓ Production Ready
-                                </span>
-                            </div>
+                        </div>
+
+                        <div class="text-center pt-4">
+                            <span class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full text-sm font-bold shadow-lg animate-pulse">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                Production Ready
+                            </span>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- CTA Button -->
+            <div class="text-center mt-12">
+                <a href="{{ route('about.professional') }}" class="group inline-flex items-center px-8 py-4 bg-gradient-to-r from-white to-blue-50 text-indigo-600 font-bold text-lg rounded-2xl shadow-2xl hover:shadow-white/30 transition-all duration-300 transform hover:scale-105">
+                    <span>อ่านรายละเอียดทั้งหมด</span>
+                    <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </a>
             </div>
         </div>
     </section>
