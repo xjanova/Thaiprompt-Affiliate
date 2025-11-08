@@ -37,13 +37,15 @@ class HotelSeeder extends Seeder
 
         $createdFacilities = [];
         foreach ($facilities as $index => $facility) {
-            $createdFacilities[] = HotelFacility::create([
-                'name' => $facility['name'],
-                'icon' => $facility['icon'],
-                'category' => $facility['category'],
-                'is_active' => true,
-                'sort_order' => $index + 1,
-            ]);
+            $createdFacilities[] = HotelFacility::updateOrCreate(
+                ['name' => $facility['name']],
+                [
+                    'icon' => $facility['icon'],
+                    'category' => $facility['category'],
+                    'is_active' => true,
+                    'sort_order' => $index + 1,
+                ]
+            );
         }
 
         // Create Sample Hotels
@@ -125,11 +127,14 @@ class HotelSeeder extends Seeder
             $facilityIndexes = $hotelData['facilities'];
             unset($hotelData['facilities']);
 
-            $hotel = Hotel::create($hotelData);
+            $hotel = Hotel::updateOrCreate(
+                ['slug' => $hotelData['slug']],
+                $hotelData
+            );
 
-            // Attach facilities
+            // Sync facilities (will replace existing attachments)
             $facilityIds = array_map(fn($index) => $createdFacilities[$index]->id, $facilityIndexes);
-            $hotel->facilities()->attach($facilityIds);
+            $hotel->facilities()->sync($facilityIds);
 
             // Create Room Types for each hotel
             $roomTypes = [
@@ -194,7 +199,13 @@ class HotelSeeder extends Seeder
 
             foreach ($roomTypes as $roomData) {
                 $roomData['hotel_id'] = $hotel->id;
-                $roomType = RoomType::create($roomData);
+                $roomType = RoomType::updateOrCreate(
+                    [
+                        'hotel_id' => $hotel->id,
+                        'name' => $roomData['name']
+                    ],
+                    $roomData
+                );
 
                 // Initialize availability for next 365 days
                 $startDate = Carbon::today();

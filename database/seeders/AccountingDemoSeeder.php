@@ -40,37 +40,39 @@ class AccountingDemoSeeder extends Seeder
 
             // 1. Create Accounting Settings
             $this->command->info('1. Creating accounting settings...');
-            $settings = AccountingSetting::create([
-                'user_id' => $user->id,
-                'is_enabled' => true,
-                'currency' => 'THB',
-                'date_format' => 'd/m/Y',
-                'timezone' => 'Asia/Bangkok',
-                'fiscal_year_start' => '01-01',
-                'auto_sync_flowaccount' => false,
-                'tax_settings' => [
-                    'default_tax_rate' => 7.00,
-                    'tax_inclusive' => false,
-                    'withholding_tax' => false,
-                    'default_withholding_rate' => 3.00,
-                ],
-                'invoice_settings' => [
-                    'default_payment_terms' => 'credit',
-                    'default_due_days' => 30,
-                    'auto_number' => true,
-                    'number_prefix' => 'INV',
-                    'number_padding' => 5,
-                    'show_company_logo' => true,
-                    'default_note' => 'ขอบคุณที่ใช้บริการ',
-                    'default_terms' => 'ชำระภายใน 30 วัน',
-                ],
-                'expense_settings' => [
-                    'auto_number' => true,
-                    'number_prefix' => 'EXP',
-                    'number_padding' => 5,
-                    'require_receipt' => false,
-                ],
-            ]);
+            $settings = AccountingSetting::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'is_enabled' => true,
+                    'currency' => 'THB',
+                    'date_format' => 'd/m/Y',
+                    'timezone' => 'Asia/Bangkok',
+                    'fiscal_year_start' => '01-01',
+                    'auto_sync_flowaccount' => false,
+                    'tax_settings' => [
+                        'default_tax_rate' => 7.00,
+                        'tax_inclusive' => false,
+                        'withholding_tax' => false,
+                        'default_withholding_rate' => 3.00,
+                    ],
+                    'invoice_settings' => [
+                        'default_payment_terms' => 'credit',
+                        'default_due_days' => 30,
+                        'auto_number' => true,
+                        'number_prefix' => 'INV',
+                        'number_padding' => 5,
+                        'show_company_logo' => true,
+                        'default_note' => 'ขอบคุณที่ใช้บริการ',
+                        'default_terms' => 'ชำระภายใน 30 วัน',
+                    ],
+                    'expense_settings' => [
+                        'auto_number' => true,
+                        'number_prefix' => 'EXP',
+                        'number_padding' => 5,
+                        'require_receipt' => false,
+                    ],
+                ]
+            );
 
             // 2. Create Company
             $this->command->info('2. Creating company...');
