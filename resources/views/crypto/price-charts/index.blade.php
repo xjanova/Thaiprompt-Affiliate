@@ -171,6 +171,10 @@
                         <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200">
                             <div class="flex items-center gap-3">
                                 <span class="text-gray-400 font-mono text-sm" x-text="'#' + (index + 1)"></span>
+                                <img :src="'/icons/cryptocurrency/' + coin.code.toLowerCase() + '.svg'"
+                                     :alt="coin.code"
+                                     class="w-8 h-8"
+                                     @error="$el.style.display='none'">
                                 <div>
                                     <div class="text-white font-bold" x-text="coin.code"></div>
                                     <div class="text-gray-400 text-sm" x-text="coin.name"></div>
@@ -195,6 +199,10 @@
                         <div class="flex items-center justify-between p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-all duration-200">
                             <div class="flex items-center gap-3">
                                 <span class="text-gray-400 font-mono text-sm" x-text="'#' + (index + 1)"></span>
+                                <img :src="'/icons/cryptocurrency/' + coin.code.toLowerCase() + '.svg'"
+                                     :alt="coin.code"
+                                     class="w-8 h-8"
+                                     @error="$el.style.display='none'">
                                 <div>
                                     <div class="text-white font-bold" x-text="coin.code"></div>
                                     <div class="text-gray-400 text-sm" x-text="coin.name"></div>
