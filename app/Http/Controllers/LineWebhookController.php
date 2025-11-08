@@ -6,6 +6,8 @@ use App\Models\LineOaSetting;
 use App\Models\User;
 use App\Models\AiBotProfile;
 use App\Services\LineService;
+use App\Services\MlmProspectService;
+use App\Services\LineSignupService;
 use App\Services\AI\ConversationManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -102,6 +104,17 @@ class LineWebhookController extends Controller
 
         // Handle commands
         $lineService = app(LineService::class);
+        $prospectService = app(MlmProspectService::class);
+        $signupService = app(LineSignupService::class);
+
+        // Check if user is in signup process
+        $prospect = $prospectService->getProspectByLineUserId($lineUserId);
+
+        if ($prospect && in_array($prospect->status, ['pending', 'in_progress'])) {
+            // Handle signup conversation
+            $signupService->handleConversationMessage($prospect, $messageText);
+            return;
+        }
 
         // Check for special commands first
         $command = strtolower(trim($messageText));
@@ -113,6 +126,18 @@ class LineWebhookController extends Controller
                 $lineService->sendPushMessage(
                     $lineUserId,
                     'คุณยังไม่ได้ลงทะเบียนในระบบ กรุณาสมัครสมาชิกที่เว็บไซต์ของเรา'
+                );
+            }
+            return;
+        }
+
+        if ($command === 'รีเซ็ต' || $command === 'reset') {
+            if ($prospect) {
+                $signupService->resetConversation($prospect);
+            } else {
+                $lineService->sendPushMessage(
+                    $lineUserId,
+                    'ไม่พบข้อมูลการสมัครสมาชิก'
                 );
             }
             return;

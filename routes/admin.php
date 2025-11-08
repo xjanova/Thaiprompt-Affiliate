@@ -481,6 +481,24 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::post('/{id}/send', [LineBroadcastController::class, 'send'])->name('send');
         Route::delete('/{id}', [LineBroadcastController::class, 'destroy'])->name('destroy');
     });
+
+    // Signup Flow Management
+    Route::prefix('signup-flow')->name('signup-flow.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'store'])->name('store');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'destroy'])->name('destroy');
+        Route::post('/reorder', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'reorder'])->name('reorder');
+    });
+});
+
+// MLM Prospects Management
+Route::prefix('mlm-prospects')->name('mlm-prospects.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\MlmProspectController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\Admin\MlmProspectController::class, 'show'])->name('show');
+    Route::post('/expire-old', [\App\Http\Controllers\Admin\MlmProspectController::class, 'expireOld'])->name('expire-old');
 });
 
 // OTP Settings Management
