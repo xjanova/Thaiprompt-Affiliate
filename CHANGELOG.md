@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.88.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #599 from xjanova/claude/crypto-wallet-validation-alerts-011CUvkPm1SMQPK4sqJ8Qiad (26396bc)
+- fix: correct all broken routes in start menu (37d3a73)
+### 🔧 Other Changes
+
+
 ## [v2.88.1] - 2025-11-08
 
 ### ✨ Features
