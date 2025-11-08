@@ -80,7 +80,8 @@ class ECommerceController extends Controller
         ];
 
         // Top selling products
-        $topProducts = Product::withCount(['orderItems as total_sales' => function($query) {
+        $topProducts = Product::with('images')
+            ->withCount(['orderItems as total_sales' => function($query) {
                 $query->select(DB::raw('SUM(quantity)'));
             }])
             ->orderBy('total_sales', 'desc')
@@ -88,13 +89,14 @@ class ECommerceController extends Controller
             ->get();
 
         // Recent orders
-        $recentOrders = Order::with(['user', 'items.product'])
+        $recentOrders = Order::with(['user', 'items.product.images'])
             ->latest()
             ->limit(10)
             ->get();
 
         // Low stock products
-        $lowStockProducts = Product::where('track_inventory', true)
+        $lowStockProducts = Product::with('images')
+            ->where('track_inventory', true)
             ->where('stock_quantity', '<=', DB::raw('low_stock_threshold'))
             ->orderBy('stock_quantity', 'asc')
             ->limit(10)
@@ -117,7 +119,7 @@ class ECommerceController extends Controller
      */
     public function products(Request $request)
     {
-        $query = Product::with(['category', 'seller']);
+        $query = Product::with(['category', 'seller', 'images']);
 
         // Search
         if ($request->filled('search')) {
