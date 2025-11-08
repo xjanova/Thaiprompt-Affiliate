@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.87.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #596 from xjanova/claude/add-missing-seeder-011CUvkVGenWi6uwzJKpTmu3 (a0232e4)
+- fix: add missing AppManagementSeeder to DatabaseSeeder (2136356)
+### 🔧 Other Changes
+
+
 ## [v2.87.0] - 2025-11-08
 
 ### ✨ Features
