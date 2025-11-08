@@ -344,7 +344,9 @@
                 <p class="text-xl md:text-2xl text-pink-100 max-w-4xl mx-auto mb-12 leading-relaxed">
                     ระบบการลงทุนที่โปร่งใส ปลอดภัย จ่าย ROI อัตโนมัติทุกวัน
                     <br>
-                    <span class="text-yellow-300 font-semibold">เริ่มต้นเพียง {{ number_format($investmentPlans->min('min_amount'), 0) }} บาท</span>
+                    @if($investmentPlans->isNotEmpty())
+                    <span class="text-yellow-300 font-semibold">เริ่มต้นเพียง ฿{{ number_format($investmentPlans->min('min_amount'), 0) }}</span>
+                    @endif
                 </p>
 
                 <!-- Investment Stats -->
@@ -630,7 +632,7 @@
             <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
                     <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        ตัวเลxที่พิสูจน์ความสำเร็จ
+                        ตัวเลขที่พิสูจน์ความสำเร็จ
                     </h2>
                     <p class="text-xl text-gray-600">ข้อมูลสถิติแบบเรียลไทม์ จากผู้ใช้งานจริง</p>
                 </div>
