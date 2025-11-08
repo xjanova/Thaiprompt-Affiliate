@@ -84,7 +84,7 @@
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('user.profile'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('user.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
             ['icon' => '💰', 'label' => 'คอมมิชชั่น', 'url' => route('user.commissions'), 'color' => 'from-yellow-600 to-orange-600'],
-            ['icon' => '🛒', 'label' => 'ไปช๊อปปิ้ง', 'url' => route('user.shop.index'), 'color' => 'from-green-600 to-teal-600'],
+            ['icon' => '🛒', 'label' => 'ไปช๊อปปิ้ง', 'url' => route('shop.index'), 'color' => 'from-green-600 to-teal-600'],
             ['icon' => '🏨', 'label' => 'การจองโรงแรม', 'url' => route('hotels.bookings.index'), 'color' => 'from-orange-600 to-amber-600'],
             ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('user.tickets.index'), 'color' => 'from-blue-600 to-indigo-600'],
             [
