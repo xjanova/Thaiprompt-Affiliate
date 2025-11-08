@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             AppNameSettingSeeder::class,        // ตั้งค่าชื่อแอพ
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
             ThemeSeeder::class,                 // ธีมของระบบ
+            AppManagementSeeder::class,         // ตั้งค่าแอพ, ธีม, ฟีเจอร์, แบนเนอร์, และ maintenance
             CookieSettingsSeeder::class,        // ตั้งค่า Cookie Consent & PDPA
 
             // 2. User & Demo Data
