@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.91.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #606 from xjanova/claude/enhance-hero-software-purchase-011CUvnMxEY1ijwcgoE4wnv4 (09873f5)
+- fix: add schema validation to MlmGlobalSettingSeeder to handle missing columns gracefully (0a5d511)
+### 🔧 Other Changes
+
+
 ## [v2.91.1] - 2025-11-08
 
 ### ✨ Features
