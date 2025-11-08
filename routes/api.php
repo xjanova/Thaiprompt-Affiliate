@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\TreeController;
 use App\Http\Controllers\Api\RankController;
+use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\LineWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -76,6 +77,19 @@ Route::prefix('v1')->group(function () {
             Route::get('/leaderboard', [RankController::class, 'leaderboard']);
             Route::get('/user/eligibility', [RankController::class, 'checkEligibility']);
             Route::post('/promotions/request', [RankController::class, 'requestPromotion']);
+        });
+
+        // Investments & Staking
+        Route::prefix('investments')->group(function () {
+            Route::get('/plans', [InvestmentController::class, 'plans']);
+            Route::get('/plans/{plan}', [InvestmentController::class, 'showPlan']);
+            Route::post('/calculate-roi', [InvestmentController::class, 'calculateROI']);
+            Route::post('/invest', [InvestmentController::class, 'store']);
+            Route::get('/summary', [InvestmentController::class, 'summary']);
+            Route::get('/positions', [InvestmentController::class, 'positions']);
+            Route::get('/positions/{position}', [InvestmentController::class, 'showPosition']);
+            Route::post('/positions/{position}/withdraw', [InvestmentController::class, 'withdraw']);
+            Route::get('/distributions', [InvestmentController::class, 'distributions']);
         });
     });
 });
