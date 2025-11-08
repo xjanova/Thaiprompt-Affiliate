@@ -426,14 +426,6 @@
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
         ];
     }
-
-    // Create submenu state initialization for Alpine.js
-    $submenuStates = [];
-    foreach ($menuItems as $index => $item) {
-        if (isset($item['submenu'])) {
-            $submenuStates['submenu_' . $index] = false;
-        }
-    }
 @endphp
 
 <!-- Millennium Start Menu Overlay -->
@@ -454,9 +446,7 @@
 <div
     x-show="startMenuOpen"
     @click.away="startMenuOpen = false"
-    x-data="{
-        {{ collect($submenuStates)->map(fn($value, $key) => "$key: " . ($value ? 'true' : 'false'))->join(', ') }}
-    }"
+    x-data="millenniumMenu()"
     x-transition:enter="transition ease-out duration-400"
     x-transition:enter-start="opacity-0 -translate-x-full"
     x-transition:enter-end="opacity-100 translate-x-0"
@@ -517,9 +507,9 @@
                                 <div>
                                     <!-- Main Menu Button -->
                                     <button
-                                        @click="submenu_{{ $index }} = !submenu_{{ $index }}"
+                                        @click="toggleSubmenu({{ $index }})"
                                         class="w-full group flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-white/5 to-white/10 hover:from-pink-500/30 hover:to-purple-500/30 border border-white/10 hover:border-pink-400/50 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-pink-500/20 millennium-menu-item"
-                                        :class="submenu_{{ $index }} ? 'from-pink-500/20 to-purple-500/20 border-pink-400/50' : ''">
+                                        :class="openMenus[{{ $index }}] ? 'from-pink-500/20 to-purple-500/20 border-pink-400/50' : ''">
 
                                         <!-- Icon -->
                                         <span class="text-3xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
@@ -534,7 +524,7 @@
                                         <!-- Chevron Arrow -->
                                         <svg
                                             class="w-5 h-5 ml-auto text-white/40 group-hover:text-pink-300 transition-all duration-300"
-                                            :class="submenu_{{ $index }} ? 'rotate-90 text-pink-300' : ''"
+                                            :class="openMenus[{{ $index }}] ? 'rotate-90 text-pink-300' : ''"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -545,9 +535,15 @@
 
                                     <!-- Submenu Items with Smooth Transition -->
                                     <div
-                                        x-show="submenu_{{ $index }}"
-                                        x-collapse
-                                        class="mt-1.5 ml-6 space-y-1.5">
+                                        x-show="openMenus[{{ $index }}]"
+                                        x-transition:enter="transition ease-out duration-200"
+                                        x-transition:enter-start="opacity-0 -translate-y-2"
+                                        x-transition:enter-end="opacity-100 translate-y-0"
+                                        x-transition:leave="transition ease-in duration-150"
+                                        x-transition:leave-start="opacity-100 translate-y-0"
+                                        x-transition:leave-end="opacity-0 -translate-y-2"
+                                        class="mt-1.5 ml-6 space-y-1.5"
+                                        style="display: none;">
                                         @foreach($item['submenu'] as $subitem)
                                             <a
                                                 href="{{ $subitem['url'] }}"
@@ -641,6 +637,17 @@
         </div>
     </div>
 </div>
+
+<script>
+    function millenniumMenu() {
+        return {
+            openMenus: {},
+            toggleSubmenu(index) {
+                this.openMenus[index] = !this.openMenus[index];
+            }
+        }
+    }
+</script>
 
 <style>
     /* Millennium RGB Glow Effect */
