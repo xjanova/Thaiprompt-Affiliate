@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.71.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #566 from xjanova/claude/fix-crypto-transactions-relation-011CUvU6CaCxusg9A68fdkn1 (6bcc9e1)
+- fix: add transactions() relationship alias to CryptoCurrency model (f70419c)
+### 🔧 Other Changes
+
+
 ## [v2.71.1] - 2025-11-08
 
 ### ✨ Features
