@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.75.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #573 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (3576f28)
+- feat: Redesign menu with Millennium Start Button and RGB effects (3f2113d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.74.0] - 2025-11-08
 
 ### ✨ Features
