@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.76.3] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #577 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (3a6c8c5)
+- fix: Correct dependency injection order in CryptoExchangeService (04af4d4)
+### 🔧 Other Changes
+
+
 ## [v2.76.2] - 2025-11-08
 
 ### ✨ Features
