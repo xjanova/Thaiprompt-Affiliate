@@ -330,7 +330,7 @@
                        @click="walletOpen = !walletOpen">
                         <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">💳</span>
                         <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
-                            กระเป๋าเงิน
+                            กระเป๋าเงิน THB
                         </span>
                         <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': walletOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
@@ -380,6 +380,78 @@
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.wallet.payment-methods') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">🏦</span>
                             <span>ช่องทางรับเงิน</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Crypto Wallet Dropdown Menu -->
+                <div x-data="{ cryptoOpen: false }" class="relative mb-1">
+                    @php
+                        $cryptoActive = request()->routeIs('user.crypto-wallet.*');
+                    @endphp
+
+                    <!-- Main Crypto Wallet Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-amber-600 hover:to-orange-600 hover:text-white rounded-lg transition-all duration-200 group {{ $cryptoActive ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg' : '' }}"
+                       @click="cryptoOpen = !cryptoOpen">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">₿</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            กระเป๋าคริปโต
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': cryptoOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="cryptoOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('user.crypto-wallet.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.index') ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">🪙</span>
+                            <span>กระเป๋าคริปโต</span>
+                        </a>
+
+                        <a href="{{ route('user.crypto-wallet.transactions') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.transactions') ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">📝</span>
+                            <span>ประวัติธุรกรรม</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('user.crypto-wallet.deposit') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.deposit*') ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">📥</span>
+                            <span>ฝากเหรียญ</span>
+                        </a>
+
+                        <a href="{{ route('user.crypto-wallet.withdraw') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.withdraw*') ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">📤</span>
+                            <span>ถอนเหรียญ</span>
+                        </a>
+
+                        <a href="{{ route('user.crypto-wallet.withdrawals') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.withdrawals') ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">📋</span>
+                            <span>ประวัติการถอน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('user.crypto-wallet.exchange') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.exchange*') ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">💱</span>
+                            <span>แลกเปลี่ยน THB ↔ Crypto</span>
                         </a>
                     </div>
                 </div>
