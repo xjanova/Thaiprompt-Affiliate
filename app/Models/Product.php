@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class Product extends Model
@@ -353,13 +354,13 @@ class Product extends Model
     {
         // If main_image_url exists, use it
         if ($this->main_image_url) {
-            return \Storage::url($this->main_image_url);
+            return Storage::url($this->main_image_url);
         }
 
         // Otherwise, use first image from images relationship
         $firstImage = $this->images()->first();
         if ($firstImage && $firstImage->image_url) {
-            return \Storage::url($firstImage->image_url);
+            return Storage::url($firstImage->image_url);
         }
 
         return null;

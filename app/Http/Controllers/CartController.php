@@ -48,11 +48,23 @@ class CartController extends Controller
 
         // Check if product is available
         if (!$product->isInStock()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'สินค้านี้หมดสต็อกแล้ว'
+                ], 400);
+            }
             return back()->with('error', 'สินค้านี้หมดสต็อกแล้ว');
         }
 
         // Check stock quantity
         if ($product->track_inventory && $product->stock_quantity < $request->quantity) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'สินค้ามีจำนวนไม่เพียงพอ'
+                ], 400);
+            }
             return back()->with('error', 'สินค้ามีจำนวนไม่เพียงพอ');
         }
 
@@ -67,6 +79,12 @@ class CartController extends Controller
             $newQuantity = $cartItem->quantity + $request->quantity;
 
             if ($product->track_inventory && $product->stock_quantity < $newQuantity) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'สินค้ามีจำนวนไม่เพียงพอ'
+                    ], 400);
+                }
                 return back()->with('error', 'สินค้ามีจำนวนไม่เพียงพอ');
             }
 
@@ -78,6 +96,18 @@ class CartController extends Controller
                 'product_id' => $request->product_id,
                 'quantity' => $request->quantity,
                 'selected_attributes' => $request->attributes,
+            ]);
+        }
+
+        // Get updated cart count
+        $cartCount = ShoppingCart::where('user_id', auth()->id())->sum('quantity');
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'เพิ่มสินค้าลงตะกร้าเรียบร้อยแล้ว',
+                'cart_count' => $cartCount
             ]);
         }
 

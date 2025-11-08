@@ -83,6 +83,12 @@ Route::prefix('notifications')->name('notifications.')->group(function () {
 // POS MANAGEMENT
 // ========================================
 Route::prefix('pos')->name('pos.')->group(function () {
+    // POS Terminal (Cashier Interface)
+    Route::get('/terminal', [SellerPosController::class, 'terminal'])->name('terminal');
+    Route::post('/transaction', [SellerPosController::class, 'createTransaction'])->name('create-transaction');
+    Route::get('/transaction/{transaction}/receipt', [SellerPosController::class, 'receipt'])->name('receipt');
+    Route::get('/search-products', [SellerPosController::class, 'searchProducts'])->name('search-products');
+
     // Dashboard
     Route::get('/', [SellerPosController::class, 'index'])->name('index');
     Route::get('/analytics', [SellerPosController::class, 'analytics'])->name('analytics');

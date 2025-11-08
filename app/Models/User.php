@@ -655,4 +655,54 @@ class User extends Authenticatable
             ->where('status', 'active')
             ->first();
     }
+
+    /**
+     * Hotel Booking Relationships
+     */
+
+    /**
+     * Get user's hotel bookings
+     */
+    public function hotelBookings()
+    {
+        return $this->hasMany(\App\Models\HotelBooking::class);
+    }
+
+    /**
+     * Get user's hotel reviews
+     */
+    public function hotelReviews()
+    {
+        return $this->hasMany(\App\Models\HotelReview::class);
+    }
+
+    /**
+     * Get hotels owned by this user (if hotel owner)
+     */
+    public function ownedHotels()
+    {
+        return $this->hasMany(\App\Models\Hotel::class, 'owner_id');
+    }
+
+    /**
+     * Get upcoming hotel bookings
+     */
+    public function upcomingHotelBookings()
+    {
+        return $this->hotelBookings()
+            ->whereIn('status', ['confirmed', 'pending'])
+            ->where('check_in_date', '>=', now())
+            ->orderBy('check_in_date', 'asc');
+    }
+
+    /**
+     * Get past hotel bookings
+     */
+    public function pastHotelBookings()
+    {
+        return $this->hotelBookings()
+            ->whereIn('status', ['completed', 'checked_out'])
+            ->where('check_out_date', '<', now())
+            ->orderBy('check_out_date', 'desc');
+    }
 }

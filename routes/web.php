@@ -192,6 +192,53 @@ Route::middleware('auth')->prefix('orders')->name('orders.')->group(function () 
     Route::post('/{orderId}/items/{itemId}/review', [\App\Http\Controllers\OrderController::class, 'submitReview'])->name('review.submit');
 });
 
+// ========================================
+// HOTEL BOOKING ROUTES
+// ========================================
+
+// Public Hotel Browsing Routes
+Route::prefix('hotels')->name('hotels.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\HotelController::class, 'index'])->name('index');
+    Route::get('/featured', [\App\Http\Controllers\HotelController::class, 'featured'])->name('featured');
+    Route::get('/city/{city}', [\App\Http\Controllers\HotelController::class, 'byCity'])->name('by-city');
+    Route::get('/search', [\App\Http\Controllers\HotelController::class, 'search'])->name('search');
+    Route::get('/autocomplete', [\App\Http\Controllers\HotelController::class, 'autocomplete'])->name('autocomplete');
+    Route::post('/check-availability', [\App\Http\Controllers\HotelController::class, 'checkAvailability'])->name('check-availability');
+    Route::get('/{slug}', [\App\Http\Controllers\HotelController::class, 'show'])->name('show');
+
+    // Hotel Reviews (Public viewing)
+    Route::get('/{slug}/reviews', [\App\Http\Controllers\HotelReviewController::class, 'index'])->name('reviews.index');
+});
+
+// Hotel Booking Routes (Authenticated)
+Route::middleware('auth')->prefix('hotels')->name('hotels.')->group(function () {
+    // Booking Management
+    Route::prefix('bookings')->name('bookings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\HotelBookingController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\HotelBookingController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\HotelBookingController::class, 'store'])->name('store');
+        Route::get('/{bookingNumber}', [\App\Http\Controllers\HotelBookingController::class, 'show'])->name('show');
+        Route::get('/{bookingNumber}/edit', [\App\Http\Controllers\HotelBookingController::class, 'edit'])->name('edit');
+        Route::put('/{bookingNumber}', [\App\Http\Controllers\HotelBookingController::class, 'update'])->name('update');
+        Route::post('/{bookingNumber}/cancel', [\App\Http\Controllers\HotelBookingController::class, 'cancel'])->name('cancel');
+        Route::get('/{bookingNumber}/payment', [\App\Http\Controllers\HotelBookingController::class, 'payment'])->name('payment');
+        Route::post('/{bookingNumber}/payment', [\App\Http\Controllers\HotelBookingController::class, 'processPayment'])->name('process-payment');
+        Route::post('/calculate-price', [\App\Http\Controllers\HotelBookingController::class, 'calculatePrice'])->name('calculate-price');
+    });
+
+    // Review Management
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/booking/{bookingNumber}', [\App\Http\Controllers\HotelReviewController::class, 'create'])->name('create');
+        Route::post('/booking/{bookingNumber}', [\App\Http\Controllers\HotelReviewController::class, 'store'])->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\HotelReviewController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [\App\Http\Controllers\HotelReviewController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\HotelReviewController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\HotelReviewController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/helpful', [\App\Http\Controllers\HotelReviewController::class, 'markHelpful'])->name('helpful');
+        Route::post('/{id}/not-helpful', [\App\Http\Controllers\HotelReviewController::class, 'markNotHelpful'])->name('not-helpful');
+    });
+});
+
 // User Routes (Protected by auth middleware and role check)
 Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
     require __DIR__.'/user.php';
@@ -210,4 +257,24 @@ Route::middleware(['auth', 'role:seller,super_admin'])->prefix('seller')->name('
 // POS Routes (Protected by auth middleware)
 Route::middleware('auth')->prefix('pos')->name('pos.')->group(function () {
     require __DIR__.'/pos.php';
+});
+
+// Tarot Reading Routes (Public)
+Route::prefix('tarot')->name('tarot.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\TarotReadingController::class, 'index'])->name('index');
+    Route::get('/category/{slug}', [\App\Http\Controllers\TarotReadingController::class, 'showCategory'])->name('category');
+    Route::post('/start', [\App\Http\Controllers\TarotReadingController::class, 'startReading'])->name('start');
+    Route::get('/reading/{id}', [\App\Http\Controllers\TarotReadingController::class, 'showReading'])->name('reading.show');
+    Route::get('/card-backs', [\App\Http\Controllers\TarotReadingController::class, 'getCardBackImages'])->name('card-backs');
+
+    // Payment routes
+    Route::get('/payment', [\App\Http\Controllers\TarotReadingController::class, 'payment'])->name('payment');
+    Route::post('/payment/process', [\App\Http\Controllers\TarotReadingController::class, 'processPayment'])->name('payment.process');
+
+    // Authenticated routes
+    Route::middleware('auth')->group(function () {
+        Route::post('/reading/{id}/save', [\App\Http\Controllers\TarotReadingController::class, 'saveReading'])->name('reading.save');
+        Route::get('/history', [\App\Http\Controllers\TarotReadingController::class, 'history'])->name('history');
+        Route::get('/saved', [\App\Http\Controllers\TarotReadingController::class, 'savedReadings'])->name('saved');
+    });
 });

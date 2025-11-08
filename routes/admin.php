@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
+use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\PageController;
@@ -56,6 +57,7 @@ use App\Http\Controllers\Admin\PosDashboardController;
 use App\Http\Controllers\Admin\PosDeviceController;
 use App\Http\Controllers\Admin\PosTransactionController;
 use App\Http\Controllers\Admin\PosAdvertisementController;
+use App\Http\Controllers\Admin\TicketController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -95,6 +97,33 @@ Route::resource('commissions', CommissionController::class);
 Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
 Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
 Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
+
+// Investment & Staking Management
+Route::prefix('investments')->name('investments.')->group(function () {
+    Route::get('/', [InvestmentController::class, 'index'])->name('index');
+
+    // Investment Plans
+    Route::get('/plans', [InvestmentController::class, 'plans'])->name('plans.index');
+    Route::get('/plans/create', [InvestmentController::class, 'createPlan'])->name('plans.create');
+    Route::post('/plans', [InvestmentController::class, 'storePlan'])->name('plans.store');
+    Route::get('/plans/{plan}/edit', [InvestmentController::class, 'editPlan'])->name('plans.edit');
+    Route::put('/plans/{plan}', [InvestmentController::class, 'updatePlan'])->name('plans.update');
+    Route::delete('/plans/{plan}', [InvestmentController::class, 'destroyPlan'])->name('plans.destroy');
+
+    // Staking Positions
+    Route::get('/positions', [InvestmentController::class, 'positions'])->name('positions.index');
+    Route::get('/positions/{position}', [InvestmentController::class, 'showPosition'])->name('positions.show');
+    Route::post('/positions/{position}/approve', [InvestmentController::class, 'approvePosition'])->name('positions.approve');
+    Route::post('/positions/{position}/reject', [InvestmentController::class, 'rejectPosition'])->name('positions.reject');
+
+    // ROI Distributions
+    Route::get('/distributions', [InvestmentController::class, 'distributions'])->name('distributions.index');
+    Route::post('/distributions/trigger', [InvestmentController::class, 'triggerDistribution'])->name('distributions.trigger');
+    Route::post('/distributions/retry-failed', [InvestmentController::class, 'retryFailedDistributions'])->name('distributions.retry-failed');
+
+    // Utilities
+    Route::post('/process-mature', [InvestmentController::class, 'processMaturePositions'])->name('process-mature');
+});
 
 // KYC Verification Management
 Route::prefix('kyc')->name('kyc.')->group(function () {
@@ -154,6 +183,20 @@ Route::post('header-editor/menu-items/reorder', [HeaderEditorController::class, 
 // Pages Management (CMS)
 Route::resource('pages', PageController::class);
 Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
+
+// Windows UI Management
+Route::prefix('windows-ui')->name('windows-ui.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\WindowsUiController::class, 'index'])->name('index');
+    Route::put('/', [\App\Http\Controllers\Admin\WindowsUiController::class, 'update'])->name('update');
+    Route::get('/start-menu', [\App\Http\Controllers\Admin\WindowsUiController::class, 'startMenu'])->name('start-menu');
+    Route::put('/start-menu', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateStartMenu'])->name('start-menu.update');
+    Route::get('/taskbar-apps', [\App\Http\Controllers\Admin\WindowsUiController::class, 'taskbarApps'])->name('taskbar-apps');
+    Route::put('/taskbar-apps', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateTaskbarApps'])->name('taskbar-apps.update');
+    Route::get('/system-tray', [\App\Http\Controllers\Admin\WindowsUiController::class, 'systemTray'])->name('system-tray');
+    Route::put('/system-tray', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateSystemTray'])->name('system-tray.update');
+    Route::get('/rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'rgbSettings'])->name('rgb-settings');
+    Route::put('/rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateRgbSettings'])->name('rgb-settings.update');
+});
 
 // Premium Landing Page Management
 Route::get('premium-page', [PremiumPageController::class, 'index'])->name('premium-page.index');
@@ -1019,6 +1062,85 @@ Route::prefix('icons')->name('icons.')->group(function () {
     Route::get('/list', [\App\Http\Controllers\Admin\IconController::class, 'list'])->name('list');
 });
 
+// Hotel Management
+Route::prefix('hotels')->name('hotels.')->group(function () {
+    // Hotel Management
+    Route::get('/', [\App\Http\Controllers\Admin\HotelManagementController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Admin\HotelManagementController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\Admin\HotelManagementController::class, 'store'])->name('store');
+    Route::get('/{id}', [\App\Http\Controllers\Admin\HotelManagementController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [\App\Http\Controllers\Admin\HotelManagementController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [\App\Http\Controllers\Admin\HotelManagementController::class, 'update'])->name('update');
+    Route::delete('/{id}', [\App\Http\Controllers\Admin\HotelManagementController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/toggle-status', [\App\Http\Controllers\Admin\HotelManagementController::class, 'toggleStatus'])->name('toggle-status');
+    Route::post('/{id}/toggle-featured', [\App\Http\Controllers\Admin\HotelManagementController::class, 'toggleFeatured'])->name('toggle-featured');
+
+    // Room Type Management
+    Route::prefix('{hotelId}/rooms')->name('rooms.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'store'])->name('store');
+        Route::get('/{roomTypeId}', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'show'])->name('show');
+        Route::get('/{roomTypeId}/edit', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'edit'])->name('edit');
+        Route::put('/{roomTypeId}', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'update'])->name('update');
+        Route::delete('/{roomTypeId}', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'destroy'])->name('destroy');
+        Route::get('/{roomTypeId}/availability', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'availability'])->name('availability');
+        Route::post('/{roomTypeId}/availability', [\App\Http\Controllers\Admin\RoomTypeManagementController::class, 'updateAvailability'])->name('availability.update');
+    });
+
+    // Facilities Management
+    Route::prefix('facilities')->name('facilities.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'store'])->name('store');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'destroy'])->name('destroy');
+        Route::post('/reorder', [\App\Http\Controllers\Admin\HotelFacilityController::class, 'reorder'])->name('reorder');
+    });
+
+    // Booking Management
+    Route::prefix('bookings')->name('bookings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'store'])->name('store');
+        Route::get('/calendar', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'calendar'])->name('calendar');
+        Route::get('/analytics', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'analytics'])->name('analytics');
+        Route::get('/export', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'export'])->name('export');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'show'])->name('show');
+        Route::post('/{id}/update-status', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'updateStatus'])->name('update-status');
+        Route::post('/{id}/cancel', [\App\Http\Controllers\Admin\HotelBookingManagementController::class, 'cancel'])->name('cancel');
+    });
+
+    // Review Management
+    Route::prefix('reviews')->name('reviews.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'show'])->name('show');
+        Route::post('/{id}/approve', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'reject'])->name('reject');
+        Route::post('/{id}/toggle-featured', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'toggleFeatured'])->name('toggle-featured');
+        Route::post('/{id}/respond', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'respond'])->name('respond');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\HotelReviewManagementController::class, 'destroy'])->name('destroy');
+    });
+
+    // Special Offers Management
+    Route::prefix('special-offers')->name('special-offers.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'store'])->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/toggle-status', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{id}/toggle-featured', [\App\Http\Controllers\Admin\HotelSpecialOfferController::class, 'toggleFeatured'])->name('toggle-featured');
+    });
+});
+
+// Floating Tools Management
+Route::prefix('floating-tools')->name('floating-tools.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\FloatingToolsController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\Admin\FloatingToolsController::class, 'update'])->name('update');
+});
+
 // System Update Management
 Route::prefix('updates')->name('updates.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('index');
@@ -1031,4 +1153,71 @@ Route::prefix('updates')->name('updates.')->group(function () {
     Route::post('/settings', [\App\Http\Controllers\Admin\UpdateController::class, 'updateSettings'])->name('settings.update');
     Route::get('/notifications', [\App\Http\Controllers\Admin\UpdateController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/{id}/dismiss', [\App\Http\Controllers\Admin\UpdateController::class, 'dismissNotification'])->name('notifications.dismiss');
+});
+
+// Ticket Support System
+Route::prefix('tickets')->name('tickets.')->group(function () {
+    Route::get('/', [TicketController::class, 'index'])->name('index');
+    Route::get('/categories', [TicketController::class, 'categories'])->name('categories');
+    Route::post('/categories', [TicketController::class, 'storeCategory'])->name('categories.store');
+    Route::put('/categories/{id}', [TicketController::class, 'updateCategoryData'])->name('categories.update');
+    Route::delete('/categories/{id}', [TicketController::class, 'destroyCategory'])->name('categories.destroy');
+    Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
+    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
+    Route::post('/{ticket}/assign', [TicketController::class, 'assign'])->name('assign');
+    Route::put('/{ticket}/status', [TicketController::class, 'updateStatus'])->name('update-status');
+    Route::put('/{ticket}/priority', [TicketController::class, 'updatePriority'])->name('update-priority');
+    Route::put('/{ticket}/category', [TicketController::class, 'updateCategory'])->name('update-category');
+    Route::delete('/{ticket}', [TicketController::class, 'destroy'])->name('destroy');
+});
+
+// Tarot Reading Management
+Route::prefix('tarot')->name('tarot.')->group(function () {
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'index'])->name('index');
+    Route::get('/analytics', [\App\Http\Controllers\Admin\TarotManagementController::class, 'analytics'])->name('analytics');
+
+    // Tarot Cards Management
+    Route::prefix('cards')->name('cards.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsCreate'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsStore'])->name('store');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsEdit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsUpdate'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsDestroy'])->name('destroy');
+    });
+
+    // Categories Management
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesCreate'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesStore'])->name('store');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesEdit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesUpdate'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesDestroy'])->name('destroy');
+    });
+
+    // Card Back Images Management
+    Route::prefix('card-backs')->name('card-backs.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksIndex'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksStore'])->name('store');
+        Route::post('/{id}/set-default', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksSetDefault'])->name('set-default');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksDestroy'])->name('destroy');
+    });
+
+    // Spread Types Management
+    Route::prefix('spread-types')->name('spread-types.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'spreadTypesIndex'])->name('index');
+    });
+
+    // Readings Management
+    Route::prefix('readings')->name('readings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsIndex'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsShow'])->name('show');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsDestroy'])->name('destroy');
+    });
+
+    // Settings
+    Route::get('/settings', [\App\Http\Controllers\Admin\TarotManagementController::class, 'settings'])->name('settings');
+    Route::put('/settings', [\App\Http\Controllers\Admin\TarotManagementController::class, 'settingsUpdate'])->name('settings.update');
 });
