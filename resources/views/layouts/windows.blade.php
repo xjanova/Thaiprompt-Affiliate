@@ -61,8 +61,8 @@
     <x-spaceship-background />
 
     <div class="min-h-screen">
-        <!-- Windows Taskbar (Replaces Navigation) -->
-        <x-windows-taskbar />
+        <!-- Millennium Taskbar (Replaces Navigation) -->
+        <x-millennium-taskbar type="user" />
 
         <!-- Page Content -->
         <main>
