@@ -127,7 +127,7 @@
             ],
             ['icon' => '👥', 'label' => 'ผู้แนะนำ', 'url' => route('user.referrals'), 'color' => 'from-pink-600 to-rose-600'],
             ['icon' => '🌳', 'label' => 'ผังสายงาน', 'url' => route('user.organization'), 'color' => 'from-green-600 to-emerald-600'],
-            ['icon' => '🔷', 'label' => 'ผัง Binary', 'url' => route('user.binary'), 'color' => 'from-cyan-600 to-blue-600'],
+            ['icon' => '🔷', 'label' => 'ผัง Binary', 'url' => route('user.organization.binary'), 'color' => 'from-cyan-600 to-blue-600'],
             [
                 'icon' => '💖',
                 'label' => 'รักษายอด',
@@ -135,7 +135,7 @@
                 'submenu' => [
                     ['label' => 'สถานะพลังชีวิต', 'url' => route('user.retention.index')],
                     ['label' => 'ซ่อมสิทธิ์', 'url' => route('user.retention.repair')],
-                    ['label' => 'เติมวันล่วงหน้า', 'url' => route('user.retention.advance')],
+                    ['label' => 'เติมวันล่วงหน้า', 'url' => route('user.retention.advance-renewal')],
                 ]
             ],
             [
@@ -143,9 +143,9 @@
                 'label' => 'เครื่องมือการตลาด',
                 'color' => 'from-violet-600 to-purple-600',
                 'submenu' => [
-                    ['label' => 'จำลองรายได้', 'url' => route('user.marketing.income-simulator')],
-                    ['label' => 'เปรียบเทียบรายได้', 'url' => route('user.marketing.income-comparison')],
-                    ['label' => 'จำลองการปันผล', 'url' => route('user.marketing.dividend-simulator')],
+                    ['label' => 'จำลองรายได้', 'url' => route('user.mlm.income-simulator')],
+                    ['label' => 'เปรียบเทียบรายได้', 'url' => route('user.mlm.income-comparison')],
+                    ['label' => 'จำลองการปันผล', 'url' => route('user.mlm.dividend-simulator')],
                 ]
             ],
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
