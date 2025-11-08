@@ -10,6 +10,14 @@
     $taskbarHeight = WindowsUiSetting::get('windows_taskbar_height', 60);
     $taskbarPosition = WindowsUiSetting::get('windows_taskbar_position', 'top');
 
+    // Millennium-specific settings
+    $backButtonEnabled = WindowsUiSetting::get('millennium_back_button_enabled', true);
+    $backButtonText = WindowsUiSetting::get('millennium_back_button_text', 'กลับ');
+    $centerSectionEnabled = WindowsUiSetting::get('millennium_center_section_enabled', true);
+    $centerSectionText = WindowsUiSetting::get('millennium_center_section_text', '');
+    $millenniumRgbEnabled = WindowsUiSetting::get('millennium_rgb_enabled', true);
+    $millenniumRgbSpeed = WindowsUiSetting::get('millennium_rgb_speed', 5);
+
     // Get user info
     $user = auth()->user();
 @endphp
@@ -48,7 +56,9 @@
          style="height: {{ $taskbarHeight }}px;">
 
         <!-- RGB Border Animation -->
-        <div class="absolute inset-0 millennium-taskbar-rgb"></div>
+        @if($millenniumRgbEnabled)
+            <div class="absolute inset-0 millennium-taskbar-rgb"></div>
+        @endif
 
         <!-- Taskbar Background -->
         <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900/40 to-blue-900/40 backdrop-blur-xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/10 shadow-2xl"></div>
@@ -85,15 +95,17 @@
                 </button>
 
                 <!-- Back Button -->
-                <button
-                    onclick="window.history.back()"
-                    class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-                    title="กลับ">
-                    <svg class="w-6 h-6 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    <span class="font-bold text-base hidden lg:inline-block">กลับ</span>
-                </button>
+                @if($backButtonEnabled)
+                    <button
+                        onclick="window.history.back()"
+                        class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                        title="{{ $backButtonText }}">
+                        <svg class="w-6 h-6 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        <span class="font-bold text-base hidden lg:inline-block">{{ $backButtonText }}</span>
+                    </button>
+                @endif
 
             </div>
 
@@ -270,7 +282,7 @@
             #FF0080 100%
         );
         background-size: 200% 100%;
-        animation: millenniumTaskbarRgb 5s linear infinite;
+        animation: millenniumTaskbarRgb {{ $millenniumRgbSpeed }}s linear infinite;
         filter: blur(2px);
         box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
     }
