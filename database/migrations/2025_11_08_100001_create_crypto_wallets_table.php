@@ -25,7 +25,7 @@ return new class extends Migration
             // For custodial wallets - encrypted seed phrase
             $table->text('encrypted_seed')->nullable()
                 ->comment('AES-256 encrypted mnemonic seed phrase');
-            $table->string('derivation_path')->default("m/44'/60'/0'/0/0")
+            $table->string('derivation_path')->default("m/44\'/60\'/0\'/0/0")
                 ->comment('BIP44 derivation path');
 
             // Security
