@@ -231,8 +231,8 @@
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
-    <!-- Windows Taskbar -->
-    <x-windows-taskbar />
+    <!-- Millennium Taskbar -->
+    <x-millennium-taskbar type="user" />
 
     <!-- Page Loader -->
     <x-page-loader />
@@ -284,21 +284,21 @@
                                     <a href="{{ route('user.dashboard') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.dashboard') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">📊</span>
-                                        <span class="ml-3 text-sm font-medium">แดชบอร์ด</span>
+                                        <span class="ml-3 text-base font-semibold">แดชบอร์ด</span>
                                     </a>
 
                                     <!-- Profile -->
                                     <a href="{{ route('user.profile') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.profile') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">👤</span>
-                                        <span class="ml-3 text-sm font-medium">โปรไฟล์</span>
+                                        <span class="ml-3 text-base font-semibold">โปรไฟล์</span>
                                     </a>
 
                                     <!-- KYC Verification -->
                                     <a href="{{ route('user.kyc.index') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.kyc.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">🪪</span>
-                                        <span class="ml-3 text-sm font-medium flex-1">ยืนยันตัวตน (KYC)</span>
+                                        <span class="ml-3 text-base font-semibold flex-1">ยืนยันตัวตน (KYC)</span>
                                         @if(auth()->user()->kyc_status === 'pending')
                                             <span class="ml-auto bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 animate-pulse">รอตรวจสอบ</span>
                                         @elseif(auth()->user()->kyc_status === 'approved')
@@ -312,21 +312,21 @@
                                     <a href="{{ route('user.commissions') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.commissions') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">💰</span>
-                                        <span class="ml-3 text-sm font-medium">คอมมิชชั่น</span>
+                                        <span class="ml-3 text-base font-semibold">คอมมิชชั่น</span>
                                     </a>
 
                                     <!-- Shop -->
                                     <a href="{{ route('user.shop.index') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-green-600 hover:to-teal-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.shop.*') ? 'bg-gradient-to-r from-green-600 to-teal-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">🛒</span>
-                                        <span class="ml-3 text-sm font-medium">ไปช๊อปปิ้ง</span>
+                                        <span class="ml-3 text-base font-semibold">ไปช๊อปปิ้ง</span>
                                     </a>
 
                                     <!-- Hotel Bookings -->
                                     <a href="{{ route('hotels.bookings.index') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-orange-600 hover:to-amber-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('hotels.bookings.*') ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">🏨</span>
-                                        <span class="ml-3 text-sm font-medium">การจองโรงแรม</span>
+                                        <span class="ml-3 text-base font-semibold">การจองโรงแรม</span>
                                     </a>
 
                                     <!-- Ticket Support -->
@@ -336,7 +336,7 @@
                                     <a href="{{ route('user.tickets.index') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.tickets.*') ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">🎫</span>
-                                        <span class="ml-3 text-sm font-medium flex-1">Ticket Support</span>
+                                        <span class="ml-3 text-base font-semibold flex-1">Ticket Support</span>
                                         @if($myOpenTickets > 0)
                                             <span class="ml-auto bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5">{{ $myOpenTickets }}</span>
                                         @endif
@@ -353,7 +353,7 @@
                                            class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ $walletActive ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}"
                                            @click="walletOpen = !walletOpen">
                                             <span class="text-xl">💳</span>
-                                            <span class="ml-3 text-sm font-medium flex-1 text-left">
+                                            <span class="ml-3 text-base font-semibold flex-1 text-left">
                                                 กระเป๋าเงิน THB
                                             </span>
                                             <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': walletOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,7 +419,7 @@
                                            class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-amber-600 hover:to-orange-600 hover:text-white rounded-lg transition-all duration-200 group {{ $cryptoActive ? 'bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg' : '' }}"
                                            @click="cryptoOpen = !cryptoOpen">
                                             <span class="text-xl">₿</span>
-                                            <span class="ml-3 text-sm font-medium flex-1 text-left">
+                                            <span class="ml-3 text-base font-semibold flex-1 text-left">
                                                 กระเป๋าคริปโต
                                             </span>
                                             <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': cryptoOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -512,7 +512,7 @@
                                            class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ $investmentActive ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : '' }}"
                                            @click="investmentOpen = !investmentOpen">
                                             <span class="text-xl">📈</span>
-                                            <span class="ml-3 text-sm font-medium flex-1 text-left">
+                                            <span class="ml-3 text-base font-semibold flex-1 text-left">
                                                 การลงทุน ROI
                                             </span>
                                             <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': investmentOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -565,21 +565,21 @@
                                     <a href="{{ route('user.referrals') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.referrals') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">👥</span>
-                                        <span class="ml-3 text-sm font-medium">ผู้แนะนำ</span>
+                                        <span class="ml-3 text-base font-semibold">ผู้แนะนำ</span>
                                     </a>
 
                                     <!-- Organization -->
                                     <a href="{{ route('user.organization') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.organization') && !request()->routeIs('user.organization.binary') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">🌳</span>
-                                        <span class="ml-3 text-sm font-medium">ผังสายงาน</span>
+                                        <span class="ml-3 text-base font-semibold">ผังสายงาน</span>
                                     </a>
 
                                     <!-- Binary Organization -->
                                     <a href="{{ route('user.organization.binary') }}"
                                        class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.organization.binary') ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : '' }}">
                                         <span class="text-xl">🌲</span>
-                                        <span class="ml-3 text-sm font-medium">ผัง Binary</span>
+                                        <span class="ml-3 text-base font-semibold">ผัง Binary</span>
                                     </a>
 
                                     <!-- Retention Dropdown Menu -->
@@ -593,7 +593,7 @@
                                            class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ $retentionActive ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg' : '' }}"
                                            @click="retentionOpen = !retentionOpen">
                                             <span class="text-xl">💖</span>
-                                            <span class="ml-3 text-sm font-medium flex-1 text-left">
+                                            <span class="ml-3 text-base font-semibold flex-1 text-left">
                                                 รักษายอด
                                             </span>
                                             <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': retentionOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -645,7 +645,7 @@
                                            class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-yellow-600 hover:to-orange-600 hover:text-white rounded-lg transition-all duration-200 group {{ $marketingToolsActive ? 'bg-gradient-to-r from-yellow-600 to-orange-600 text-white shadow-lg' : '' }}"
                                            @click="marketingToolsOpen = !marketingToolsOpen">
                                             <span class="text-xl">🛠️</span>
-                                            <span class="ml-3 text-sm font-medium flex-1 text-left">
+                                            <span class="ml-3 text-base font-semibold flex-1 text-left">
                                                 เครื่องมือการตลาด
                                             </span>
                                             <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': marketingToolsOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -689,7 +689,7 @@
                                         <a href="{{ route('user.themes.index') }}"
                                            class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('user.themes.*') ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : '' }}">
                                             <span class="text-xl">🎨</span>
-                                            <span class="ml-3 text-sm font-medium">
+                                            <span class="ml-3 text-base font-semibold">
                                                 ตั้งค่าธีม
                                             </span>
                                         </a>
@@ -701,15 +701,12 @@
                             </div>
                         </div>
 
-                        <h1 class="text-2xl font-semibold text-gray-800 dark:text-white">@yield('title')</h1>
+                        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
                     </div>
 
                     <div class="flex items-center space-x-3">
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
-
-                        <!-- Dark Mode Toggle -->
-                        <x-dark-mode-toggle />
 
                         <!-- Notification Bell -->
                         <x-notification-bell />
@@ -849,9 +846,6 @@
 
     {{-- Immediate Notification Popup --}}
     <x-immediate-notification-popup />
-
-    {{-- Floating Tools --}}
-    <x-floating-tools />
 
     @stack('scripts')
 </body>
