@@ -255,8 +255,8 @@
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
-    <!-- Windows Taskbar -->
-    <x-windows-taskbar />
+    <!-- Millennium Taskbar -->
+    <x-millennium-taskbar type="seller" />
 
     <!-- Page Loader -->
     <x-page-loader />
@@ -319,14 +319,14 @@
                 <a href="{{ route('seller.dashboard') }}"
                    class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.dashboard') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
                     <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
+                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
                 </a>
 
                 <!-- Products -->
                 <a href="{{ route('seller.products.index') }}"
                    class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.products*') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
                     <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📦</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สินค้า</span>
+                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สินค้า</span>
                 </a>
 
                 <!-- POS Menu with Submenu -->
@@ -336,7 +336,7 @@
                             class="w-full flex items-center justify-between px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.pos*') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg' : '' }}">
                         <div class="flex items-center">
                             <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏪</span>
-                            <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ระบบ POS</span>
+                            <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ระบบ POS</span>
                         </div>
                         <svg x-show="!sidebarCollapsed || sidebarOpen" :class="{ 'rotate-180': posOpen }" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -380,21 +380,21 @@
                 <a href="{{ route('seller.orders.index') }}"
                    class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.orders*') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
                     <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🛒</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ยอดขาย</span>
+                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ยอดขาย</span>
                 </a>
 
                 <!-- Analytics -->
                 <a href="{{ route('seller.analytics') }}"
                    class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.analytics') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
                     <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📈</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">วิเคราะห์</span>
+                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">วิเคราะห์</span>
                 </a>
 
                 <!-- Profile -->
                 <a href="{{ route('seller.profile') }}"
                    class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.profile') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
                     <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👤</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">โปรไฟล์</span>
+                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">โปรไฟล์</span>
                 </a>
 
                 <!-- Version Info -->
@@ -440,7 +440,7 @@
                             </svg>
                         </button>
 
-                        <h1 class="text-2xl font-semibold text-gray-800">@yield('title')</h1>
+                        <h1 class="text-3xl font-bold text-gray-800">@yield('title')</h1>
                     </div>
 
                     <div class="flex items-center space-x-3">
@@ -455,9 +455,6 @@
 
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
-
-                        <!-- Dark Mode Toggle -->
-                        <x-dark-mode-toggle />
 
                         <!-- Notification Bell -->
                         <x-notification-bell />
