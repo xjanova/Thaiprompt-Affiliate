@@ -42,7 +42,7 @@ return new class extends Migration
             // Affiliate Info
             $table->text('affiliate_url')->nullable();
             $table->decimal('commission_rate', 5, 2)->nullable();
-            $table->decimal('commission_amount', 15, 2')->nullable();
+            $table->decimal('commission_amount', 15, 2)->nullable();
 
             // Product Details
             $table->json('attributes')->nullable();
