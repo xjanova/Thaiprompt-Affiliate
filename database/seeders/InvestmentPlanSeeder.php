@@ -179,7 +179,10 @@ class InvestmentPlanSeeder extends Seeder
         ];
 
         foreach ($plans as $plan) {
-            InvestmentPlan::create($plan);
+            InvestmentPlan::updateOrCreate(
+                ['name' => $plan['name']],
+                $plan
+            );
         }
 
         $this->command->info('Investment plans seeded successfully!');
