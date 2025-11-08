@@ -1291,3 +1291,33 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
     });
 });
+
+// Video Reward System Admin
+Route::prefix('video-rewards')->name('video-rewards.')->group(function () {
+    // Dashboard & Statistics
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'dashboard'])->name('dashboard');
+
+    // Coin Exchange Management
+    Route::get('/exchange-requests', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'exchangeRequests'])->name('exchange.requests');
+    Route::post('/exchange-requests/{requestId}/approve', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'approveExchange'])->name('exchange.approve');
+    Route::post('/exchange-requests/{requestId}/reject', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'rejectExchange'])->name('exchange.reject');
+
+    // Channel Management
+    Route::get('/channels', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'channels'])->name('channels.index');
+    Route::post('/channels', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'storeChannel'])->name('channels.store');
+    Route::put('/channels/{channelId}', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'updateChannel'])->name('channels.update');
+
+    // Video Management
+    Route::get('/videos', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'videos'])->name('videos.index');
+    Route::post('/videos', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'storeVideo'])->name('videos.store');
+    Route::put('/videos/{videoId}', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'updateVideo'])->name('videos.update');
+
+    // Quest Management
+    Route::get('/quests', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'quests'])->name('quests.index');
+    Route::post('/quests', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'storeQuest'])->name('quests.store');
+    Route::put('/quests/{questId}', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'updateQuest'])->name('quests.update');
+
+    // Exchange Rate Management
+    Route::get('/exchange-rates', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'exchangeRates'])->name('exchange-rates.index');
+    Route::put('/exchange-rates/{rateId}', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'updateExchangeRate'])->name('exchange-rates.update');
+});
