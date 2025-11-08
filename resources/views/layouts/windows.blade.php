@@ -56,7 +56,7 @@
         }
     </style>
 </head>
-<body class="font-sans antialiased">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
@@ -74,6 +74,21 @@
     </div>
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
+
+    {{-- Dark Mode Toggle Function --}}
+    <script>
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.contains('dark');
+
+            if (isDark) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('darkMode', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('darkMode', 'dark');
+            }
+        }
+    </script>
 
     @stack('scripts')
 </body>
