@@ -639,7 +639,8 @@
 </div>
 
 <script>
-    function millenniumMenu() {
+    // Make function global so Alpine.js can access it
+    window.millenniumMenu = function() {
         return {
             openMenus: {},
             toggleSubmenu(index) {
