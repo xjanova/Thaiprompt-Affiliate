@@ -41,10 +41,7 @@ jobs:
       - name: Get previous version
         id: previoustag
         run: |
-          # ALWAYS use VERSION file as the source of truth (not git tags)
-          # This prevents overwriting manual version corrections
-          HAS_GIT_TAG="false"
-
+          # Get version from VERSION file but verify if git tag exists
           if [ -f "VERSION" ]; then
             VERSION_FROM_FILE=$(cat VERSION | tr -d '\n\r')
             LATEST_TAG="v$VERSION_FROM_FILE"
@@ -56,8 +53,16 @@ jobs:
           else
             # Fallback to git tag only if no VERSION file exists
             LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            HAS_GIT_TAG="true"
             echo "Fallback to git tag: $LATEST_TAG"
+          fi
+
+          # Check if the tag actually exists in git
+          if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+            HAS_GIT_TAG="true"
+            echo "✅ Git tag $LATEST_TAG exists"
+          else
+            HAS_GIT_TAG="false"
+            echo "⚠️ Git tag $LATEST_TAG does not exist, will use recent commits"
           fi
 
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
@@ -346,6 +351,57 @@ jobs:
               fi
             done
           fi
+
+      - name: Create Git Tag
+        if: steps.check_bump.outputs.should_bump == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+
+          NEW_TAG="${{ steps.bump.outputs.new_tag }}"
+
+          # Check if tag already exists locally
+          if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+            echo "⚠️ Tag $NEW_TAG already exists locally, skipping creation"
+          else
+            # Create annotated tag
+            git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
+            echo "✅ Created git tag: $NEW_TAG"
+          fi
+
+          # Determine target branch
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+          else
+            TARGET_BRANCH="${{ github.ref_name }}"
+          fi
+
+          echo "Pushing tag to remote: $NEW_TAG"
+
+          # Retry logic for pushing tag with exponential backoff
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          SLEEP_TIME=2
+
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            echo "Tag push attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES..."
+
+            # Try to push tag
+            if git push origin "$NEW_TAG"; then
+              echo "✅ Tag push successful!"
+              break
+            else
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                echo "⚠️ Tag push failed. Retrying in ${SLEEP_TIME}s..."
+                sleep $SLEEP_TIME
+                SLEEP_TIME=$((SLEEP_TIME * 2))  # Exponential backoff
+              else
+                echo "❌ Tag push failed after $MAX_RETRIES attempts"
+                exit 1
+              fi
+            fi
+          done
 
       - name: Check if release already exists
         if: steps.check_bump.outputs.should_bump == 'true'
