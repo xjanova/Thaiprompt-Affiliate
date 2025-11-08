@@ -25,11 +25,9 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Alpine.js Plugins -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
-
     <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.3/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -193,6 +191,10 @@
         @php
             $taskbarPosition = \App\Models\WindowsUiSetting::get('windows_taskbar_position', 'top');
             $taskbarHeight = \App\Models\WindowsUiSetting::get('windows_taskbar_height', 48);
+
+            // Content width settings
+            $contentWidthMode = \App\Models\WindowsUiSetting::get('content_width_mode', 'container');
+            $contentWidthCustom = \App\Models\WindowsUiSetting::get('content_width_custom', 1400);
         @endphp
 
         @if($taskbarPosition === 'top')
@@ -241,7 +243,8 @@
     <div class="min-h-screen">
         <!-- Top Bar -->
         <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
+                 @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
@@ -273,7 +276,8 @@
         </header>
 
         <!-- Page Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
+              @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
             @yield('content')
         </main>
     </div>

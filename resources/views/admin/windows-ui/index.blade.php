@@ -276,6 +276,37 @@
                         </div>
                     </div>
 
+                    <!-- Content Area Width Settings -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">📏</span> ความกว้างพื้นที่ใช้งาน (Content Area Width)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โหมดความกว้าง</label>
+                                <select name="content_width_mode" id="content_width_mode" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="max" {{ ($settings['content_width_mode'] ?? 'container') === 'max' ? 'selected' : '' }}>เต็มความกว้างจอ (Full Width)</option>
+                                    <option value="container" {{ ($settings['content_width_mode'] ?? 'container') === 'container' ? 'selected' : '' }}>ค่ามาตรฐาน (max-w-7xl / ~1280px)</option>
+                                    <option value="custom" {{ ($settings['content_width_mode'] ?? 'container') === 'custom' ? 'selected' : '' }}>กำหนดเอง (Custom)</option>
+                                </select>
+                            </div>
+                            <div id="custom_width_wrapper" style="display: {{ ($settings['content_width_mode'] ?? 'container') === 'custom' ? 'block' : 'none' }};">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความกว้างแบบกำหนดเอง (px)</label>
+                                <input type="number" name="content_width_custom" min="800" max="3000" step="10" value="{{ $settings['content_width_custom'] ?? 1400 }}" placeholder="1400" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                <strong>💡 คำแนะนำ:</strong>
+                            </p>
+                            <ul class="text-sm text-blue-700 dark:text-blue-300 list-disc ml-5 mt-2 space-y-1">
+                                <li><strong>เต็มความกว้างจอ:</strong> เนื้อหาจะกางเต็มหน้าจอ (100%)</li>
+                                <li><strong>ค่ามาตรฐาน:</strong> ความกว้างสูงสุด ~1280px (max-w-7xl)</li>
+                                <li><strong>กำหนดเอง:</strong> กำหนดความกว้างได้ตามต้องการ (800-3000px)</li>
+                            </ul>
+                        </div>
+                    </div>
+
                     <!-- System Tray Info -->
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -304,4 +335,18 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    // Toggle custom width input visibility
+    document.getElementById('content_width_mode').addEventListener('change', function() {
+        const customWidthWrapper = document.getElementById('custom_width_wrapper');
+        if (this.value === 'custom') {
+            customWidthWrapper.style.display = 'block';
+        } else {
+            customWidthWrapper.style.display = 'none';
+        }
+    });
+</script>
+@endpush
 @endsection
