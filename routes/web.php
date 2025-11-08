@@ -279,6 +279,11 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
     });
 });
 
+// ========================================
+// SOFTWARE SALES SYSTEM ROUTES
+// ========================================
+require __DIR__.'/software_sales.php';
+
 // Cookie Policy Page
 Route::get('/cookie-policy', function () {
     return view('cookie-policy');
