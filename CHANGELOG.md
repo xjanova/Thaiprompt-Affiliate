@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.91.3] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #607 from xjanova/claude/fix-crypto-transactions-view-011CUvdT5aQ6Z5jsr4rGdqgH (9c6a6a0)
+- fix: Add missing user.investments.history route and implementation (5fc2c32)
+### 🔧 Other Changes
+
+
 ## [v2.91.2] - 2025-11-08
 
 ### ✨ Features
