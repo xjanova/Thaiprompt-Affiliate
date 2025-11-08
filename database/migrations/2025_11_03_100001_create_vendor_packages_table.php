@@ -29,7 +29,7 @@ return new class extends Migration
 
             // Limitations
             $table->integer('max_products')->nullable();
-            $table->integer('max_images_per_product')->default(10);
+            $table->integer('max_images_per_product')->nullable()->default(10);
             $table->integer('max_categories')->nullable();
             $table->integer('max_storage_mb')->nullable();
             $table->integer('max_monthly_orders')->nullable();
