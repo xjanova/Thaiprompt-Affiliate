@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.82.3] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #589 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (07729ba)
+- fix: Fix Start Menu not opening and enhance Taskbar with comprehensive icons (f6b2a9b)
+### 🔧 Other Changes
+
+
 ## [v2.82.2] - 2025-11-08
 
 ### ✨ Features
