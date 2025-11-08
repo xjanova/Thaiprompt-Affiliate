@@ -220,6 +220,16 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
     Route::get('/reading/{id}', [\App\Http\Controllers\TarotReadingController::class, 'showReading'])->name('reading.show');
     Route::get('/card-backs', [\App\Http\Controllers\TarotReadingController::class, 'getCardBackImages'])->name('card-backs');
 
+    // Cart routes
+    Route::prefix('cart')->name('cart.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\TarotCartController::class, 'index'])->name('index');
+        Route::post('/add', [\App\Http\Controllers\TarotCartController::class, 'addToCart'])->name('add');
+        Route::delete('/remove/{id}', [\App\Http\Controllers\TarotCartController::class, 'removeItem'])->name('remove');
+        Route::post('/clear', [\App\Http\Controllers\TarotCartController::class, 'clearCart'])->name('clear');
+        Route::get('/checkout', [\App\Http\Controllers\TarotCartController::class, 'checkout'])->name('checkout');
+        Route::post('/checkout/process', [\App\Http\Controllers\TarotCartController::class, 'processCheckout'])->name('processCheckout');
+    });
+
     // Payment routes
     Route::get('/payment', [\App\Http\Controllers\TarotReadingController::class, 'payment'])->name('payment');
     Route::post('/payment/process', [\App\Http\Controllers\TarotReadingController::class, 'processPayment'])->name('payment.process');

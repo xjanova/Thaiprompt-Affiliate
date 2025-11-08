@@ -24,16 +24,29 @@
                             {{ number_format($category->price, 0) }} บาท
                         </div>
                         @if($category->is_free_first)
-                            @if($canUseFree)
-                                <span class="text-green-300 text-sm">✓ คุณมีสิทธิ์ดูฟรี 1 ครั้ง</span>
+                            @php
+                                $userId = Auth::id();
+                                $sessionId = session()->getId();
+                                $ipAddress = request()->ip();
+                                $remaining = \App\Models\TarotUserLimit::getRemainingQuota($category->id, $userId, $sessionId, $ipAddress);
+                            @endphp
+                            @if($remaining > 0)
+                                <span class="text-green-300 text-sm">✓ โควต้าฟรีเหลือ: {{ $remaining }} ครั้ง/วัน</span>
                             @else
-                                <span class="text-red-300 text-sm">หมดสิทธิ์ฟรีวันนี้แล้ว</span>
+                                <span class="text-red-300 text-sm">❌ หมดโควต้าฟรีวันนี้แล้ว</span>
                             @endif
                         @endif
                     @else
-                        <div class="bg-green-500 text-white px-6 py-3 rounded-full font-bold text-xl">
+                        <div class="bg-green-500 text-white px-6 py-3 rounded-full font-bold text-xl mb-2">
                             ฟรี
                         </div>
+                        @php
+                            $userId = Auth::id();
+                            $sessionId = session()->getId();
+                            $ipAddress = request()->ip();
+                            $remaining = \App\Models\TarotUserLimit::getRemainingQuota($category->id, $userId, $sessionId, $ipAddress);
+                        @endphp
+                        <span class="text-green-300 text-sm">โควต้าเหลือ: {{ $remaining }} ครั้ง/วัน</span>
                     @endif
                 </div>
             </div>
@@ -55,8 +68,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($spreadTypes as $spreadType)
-            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6 hover:bg-opacity-20 transition-all cursor-pointer border border-white border-opacity-20"
-                 onclick="startReading({{ $spreadType->id }})">
+            <div class="bg-white bg-opacity-10 backdrop-blur-lg rounded-xl p-6 hover:bg-opacity-20 transition-all border border-white border-opacity-20">
 
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xl font-bold text-white">
@@ -67,13 +79,27 @@
                     </span>
                 </div>
 
-                <p class="text-purple-200 mb-4">
+                <p class="text-purple-200 mb-3">
                     {{ $spreadType->description_th }}
                 </p>
 
-                <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-semibold transition-all">
-                    เลือกแบบนี้
-                </button>
+                @if($spreadType->base_price > 0)
+                    <p class="text-yellow-300 text-sm mb-4">
+                        + ราคารูปแบบ: ฿{{ number_format($spreadType->base_price, 0) }}
+                    </p>
+                @endif
+
+                <!-- Buttons -->
+                <div class="space-y-2">
+                    <button onclick="startReading({{ $spreadType->id }})"
+                            class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white py-3 rounded-lg font-semibold transition-all">
+                        ⚡ ทำนายทันที
+                    </button>
+                    <button onclick="addToCart({{ $spreadType->id }})"
+                            class="w-full bg-white bg-opacity-20 hover:bg-opacity-30 text-white py-3 rounded-lg font-semibold transition-all border border-white border-opacity-30">
+                        🛒 เพิ่มเข้าตะกร้า
+                    </button>
+                </div>
             </div>
             @endforeach
         </div>
@@ -140,6 +166,67 @@ function startReading(spreadTypeId) {
             window.location.href = data.redirect_url;
         } else {
             Swal.fire('เกิดข้อผิดพลาด', data.message || 'กรุณาลองใหม่อีกครั้ง', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('เกิดข้อผิดพลาด', 'กรุณาลองใหม่อีกครั้ง', 'error');
+    });
+}
+
+function addToCart(spreadTypeId) {
+    const question = document.getElementById('question').value;
+
+    if (!question || question.trim() === '') {
+        Swal.fire({
+            title: 'กรุณาใส่คำถาม',
+            text: 'โปรดพิมพ์คำถามที่คุณต้องการทราบคำตอบ',
+            icon: 'warning'
+        });
+        return;
+    }
+
+    // Show loading
+    Swal.fire({
+        title: 'กำลังเพิ่มเข้าตะกร้า...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // Add to cart
+    const formData = new FormData();
+    formData.append('category_id', {{ $category->id }});
+    formData.append('spread_type_id', spreadTypeId);
+    formData.append('question', question);
+
+    fetch('{{ route('tarot.cart.add') }}', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            Swal.fire({
+                title: 'เพิ่มเข้าตะกร้าแล้ว!',
+                text: 'ต้องการไปที่ตะกร้าหรือไม่?',
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonText: 'ไปที่ตะกร้า',
+                cancelButtonText: 'เลือกต่อ'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '{{ route('tarot.cart.index') }}';
+                } else {
+                    // Clear question for next item
+                    document.getElementById('question').value = '';
+                }
+            });
+        } else {
+            throw new Error('Failed to add to cart');
         }
     })
     .catch(error => {

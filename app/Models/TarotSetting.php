@@ -84,6 +84,14 @@ class TarotSetting extends Model
     }
 
     /**
+     * Alias for getAll()
+     */
+    public static function getSettings(): array
+    {
+        return static::getAll();
+    }
+
+    /**
      * Check if setting exists
      */
     public static function has(string $key): bool
