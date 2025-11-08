@@ -17,7 +17,7 @@ return new class extends Migration
 
         Schema::create('crypto_currencies', function (Blueprint $table) {
             $table->id();
-            $table->string('code', 10)->unique()->comment('BTC, ETH, USDT, etc.');
+            $table->string('code', 30)->unique()->comment('BTC, ETH, USDT_POLYGON, etc.');
             $table->string('name', 100)->comment('Bitcoin, Ethereum, etc.');
             $table->string('symbol', 10)->comment('฿, Ξ, etc.');
             $table->string('network')->comment('bitcoin, ethereum, bsc, polygon, tron');
