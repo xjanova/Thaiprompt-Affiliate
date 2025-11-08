@@ -45,7 +45,7 @@
             <button
                 @click="toggleStartMenu()"
                 :class="{'bg-white/20': startMenuOpen}"
-                class="group flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/20 transition-all duration-300 transform hover:scale-105 active:scale-95">
+                class="group flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/20 transition-all duration-300 transform hover:scale-105 active:scale-95 @if($rgbSettings['enabled']) rgb-pulse-start-button @endif">
 
                 @if($useLogoForStart && $logo)
                     <img src="{{ asset($logo) }}" alt="{{ $appName }}" style="width: {{ $logoTaskbarWidth }}px; height: {{ $logoTaskbarHeight }}px;" class="object-contain">
@@ -177,6 +177,74 @@ function windowsTaskbar() {
 
     .taskbar-apps::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.5);
+    }
+
+    /* RGB Pulse Animation for Start Button */
+    @keyframes rgbPulse {
+        0%, 100% {
+            box-shadow:
+                0 0 10px rgba(255, 0, 128, 0.6),
+                0 0 20px rgba(255, 0, 128, 0.4),
+                0 0 30px rgba(255, 0, 128, 0.2),
+                inset 0 0 15px rgba(255, 0, 128, 0.1);
+            border-color: rgba(255, 0, 128, 0.5);
+        }
+        25% {
+            box-shadow:
+                0 0 10px rgba(0, 240, 255, 0.6),
+                0 0 20px rgba(0, 240, 255, 0.4),
+                0 0 30px rgba(0, 240, 255, 0.2),
+                inset 0 0 15px rgba(0, 240, 255, 0.1);
+            border-color: rgba(0, 240, 255, 0.5);
+        }
+        50% {
+            box-shadow:
+                0 0 10px rgba(127, 0, 255, 0.6),
+                0 0 20px rgba(127, 0, 255, 0.4),
+                0 0 30px rgba(127, 0, 255, 0.2),
+                inset 0 0 15px rgba(127, 0, 255, 0.1);
+            border-color: rgba(127, 0, 255, 0.5);
+        }
+        75% {
+            box-shadow:
+                0 0 10px rgba(255, 61, 0, 0.6),
+                0 0 20px rgba(255, 61, 0, 0.4),
+                0 0 30px rgba(255, 61, 0, 0.2),
+                inset 0 0 15px rgba(255, 61, 0, 0.1);
+            border-color: rgba(255, 61, 0, 0.5);
+        }
+    }
+
+    .rgb-pulse-start-button {
+        position: relative;
+        animation: rgbPulse 4s ease-in-out infinite;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: linear-gradient(135deg, rgba(255, 0, 128, 0.1), rgba(0, 240, 255, 0.1), rgba(127, 0, 255, 0.1), rgba(255, 61, 0, 0.1));
+        background-size: 400% 400%;
+    }
+
+    @keyframes rgbGradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .rgb-pulse-start-button::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 0.5rem;
+        background: linear-gradient(45deg, #FF0080, #00F0FF, #7F00FF, #FF3D00, #FF0080);
+        background-size: 300% 300%;
+        animation: rgbGradient 6s ease infinite;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: -1;
+        filter: blur(8px);
+    }
+
+    .rgb-pulse-start-button:hover::before {
+        opacity: 0.6;
     }
 </style>
 @endpush
