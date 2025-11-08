@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:ThaipromptAffiliate.ViewModels"
+             xmlns:models="clr-namespace:ThaipromptAffiliate.Models"
+             x:Class="ThaipromptAffiliate.Views.DashboardPage"
+             x:DataType="viewmodels:DashboardViewModel"
+             Title="แดชบอร์ด">
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                 Command="{Binding RefreshCommand}">
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="20">
+
+                <!-- Welcome Header -->
+                <Frame BackgroundColor="{DynamicResource Primary}"
+                       CornerRadius="15"
+                       Padding="20"
+                       HasShadow="True">
+                    <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto">
+
+                        <!-- Welcome Message -->
+                        <Label Grid.Row="0" Grid.Column="0"
+                               Text="{Binding WelcomeMessage}"
+                               TextColor="White"
+                               FontSize="24"
+                               FontAttributes="Bold"/>
+
+                        <!-- Profile Button -->
+                        <ImageButton Grid.Row="0" Grid.Column="1"
+                                     Source="profile_icon.png"
+                                     WidthRequest="40"
+                                     HeightRequest="40"
+                                     CornerRadius="20"
+                                     Command="{Binding ViewProfileCommand}"
+                                     BackgroundColor="White"/>
+
+                        <!-- Total Earnings -->
+                        <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                               Text="รายได้ทั้งหมด"
+                               TextColor="White"
+                               FontSize="14"
+                               Opacity="0.9"
+                               Margin="0,15,0,5"/>
+
+                        <Label Grid.Row="2" Grid.Column="0"
+                               Text="{Binding TotalEarnings}"
+                               TextColor="White"
+                               FontSize="36"
+                               FontAttributes="Bold"/>
+
+                        <!-- Growth Badge -->
+                        <Frame Grid.Row="2" Grid.Column="1"
+                               BackgroundColor="#10B981"
+                               CornerRadius="12"
+                               Padding="10,5"
+                               HasShadow="False"
+                               VerticalOptions="Center">
+                            <Label Text="{Binding GrowthPercentage}"
+                                   TextColor="White"
+                                   FontSize="14"
+                                   FontAttributes="Bold"/>
+                        </Frame>
+                    </Grid>
+                </Frame>
+
+                <!-- Stats Cards -->
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+
+                    <!-- Pending Earnings -->
+                    <Frame Grid.Column="0"
+                           BorderColor="{DynamicResource BorderColor}"
+                           BackgroundColor="{DynamicResource CardBackgroundColor}"
+                           CornerRadius="12"
+                           Padding="15"
+                           HasShadow="False">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="รอดำเนินการ"
+                                   TextColor="{DynamicResource SecondaryTextColor}"
+                                   FontSize="12"/>
+                            <Label Text="{Binding PendingEarnings}"
+                                   TextColor="{DynamicResource PrimaryTextColor}"
+                                   FontSize="20"
+                                   FontAttributes="Bold"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- Total Referrals -->
+                    <Frame Grid.Column="1"
+                           BorderColor="{DynamicResource BorderColor}"
+                           BackgroundColor="{DynamicResource CardBackgroundColor}"
+                           CornerRadius="12"
+                           Padding="15"
+                           HasShadow="False">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="ผู้ใช้ที่แนะนำ"
+                                   TextColor="{DynamicResource SecondaryTextColor}"
+                                   FontSize="12"/>
+                            <Label Text="{Binding TotalReferrals}"
+                                   TextColor="{DynamicResource PrimaryTextColor}"
+                                   FontSize="20"
+                                   FontAttributes="Bold"/>
+                        </VerticalStackLayout>
+                    </Frame>
+                </Grid>
+
+                <!-- Quick Actions -->
+                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="15" RowSpacing="15">
+
+                    <!-- View Commissions -->
+                    <Frame Grid.Row="0" Grid.Column="0"
+                           BorderColor="{DynamicResource BorderColor}"
+                           CornerRadius="12"
+                           Padding="20"
+                           HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ViewAllCommissionsCommand}"/>
+                        </Frame.GestureRecognizers>
+
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Image Source="commission_icon.png"
+                                   WidthRequest="40"
+                                   HeightRequest="40"/>
+                            <Label Text="คอมมิชชัน"
+                                   HorizontalOptions="Center"
+                                   FontSize="14"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- View Referrals -->
+                    <Frame Grid.Row="0" Grid.Column="1"
+                           BorderColor="{DynamicResource BorderColor}"
+                           CornerRadius="12"
+                           Padding="20"
+                           HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ViewReferralsCommand}"/>
+                        </Frame.GestureRecognizers>
+
+                        <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Image Source="referral_icon.png"
+                                   WidthRequest="40"
+                                   HeightRequest="40"/>
+                            <Label Text="ผู้ใช้ที่แนะนำ"
+                                   HorizontalOptions="Center"
+                                   FontSize="14"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- Share Referral Link -->
+                    <Frame Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                           BackgroundColor="{DynamicResource Primary}"
+                           CornerRadius="12"
+                           Padding="20"
+                           HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ShareReferralLinkCommand}"/>
+                        </Frame.GestureRecognizers>
+
+                        <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Image Source="share_icon.png"
+                                   WidthRequest="24"
+                                   HeightRequest="24"
+                                   Aspect="AspectFit"/>
+                            <Label Text="แชร์ลิงก์แนะนำ"
+                                   TextColor="White"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   VerticalOptions="Center"/>
+                        </HorizontalStackLayout>
+                    </Frame>
+                </Grid>
+
+                <!-- Recent Commissions -->
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0"
+                               Text="คอมมิชชันล่าสุด"
+                               FontSize="18"
+                               FontAttributes="Bold"
+                               TextColor="{DynamicResource PrimaryTextColor}"/>
+
+                        <Label Grid.Column="1"
+                               Text="ดูทั้งหมด"
+                               TextColor="{DynamicResource Primary}"
+                               FontAttributes="Bold"
+                               VerticalOptions="Center">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding ViewAllCommissionsCommand}"/>
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </Grid>
+
+                    <!-- Commissions List -->
+                    <CollectionView ItemsSource="{Binding RecentCommissions}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Commission">
+                                <Frame BorderColor="{DynamicResource BorderColor}"
+                                       CornerRadius="12"
+                                       Padding="15"
+                                       Margin="0,5"
+                                       HasShadow="False">
+                                    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto">
+
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding Description}"
+                                               FontSize="14"
+                                               FontAttributes="Bold"
+                                               TextColor="{DynamicResource PrimaryTextColor}"/>
+
+                                        <Label Grid.Row="0" Grid.Column="1"
+                                               Text="{Binding FormattedAmount}"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               TextColor="{DynamicResource Primary}"/>
+
+                                        <Label Grid.Row="1" Grid.Column="0"
+                                               Text="{Binding CreatedAt, StringFormat='{0:dd MMM yyyy}'}"
+                                               FontSize="12"
+                                               TextColor="{DynamicResource SecondaryTextColor}"/>
+
+                                        <Frame Grid.Row="1" Grid.Column="1"
+                                               BackgroundColor="{Binding StatusColor}"
+                                               CornerRadius="8"
+                                               Padding="8,4"
+                                               HasShadow="False">
+                                            <Label Text="{Binding StatusText}"
+                                                   TextColor="White"
+                                                   FontSize="11"/>
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+
+                        <CollectionView.EmptyView>
+                            <Label Text="ยังไม่มีคอมมิชชัน"
+                                   HorizontalOptions="Center"
+                                   TextColor="{DynamicResource SecondaryTextColor}"
+                                   Margin="0,20"/>
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:viewmodels="clr-namespace:ThaipromptAffiliate.ViewModels"
+             x:Class="ThaipromptAffiliate.Views.LoginPage"
+             x:DataType="viewmodels:LoginViewModel"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{DynamicResource PageBackgroundColor}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="30" Spacing="20" VerticalOptions="Center">
+
+            <!-- Logo -->
+            <Image Source="logo.png"
+                   HeightRequest="100"
+                   Aspect="AspectFit"
+                   Margin="0,0,0,30"/>
+
+            <!-- Title -->
+            <Label Text="เข้าสู่ระบบ"
+                   FontSize="32"
+                   FontAttributes="Bold"
+                   HorizontalOptions="Center"
+                   TextColor="{DynamicResource PrimaryTextColor}"/>
+
+            <Label Text="Thai Prompt Affiliate"
+                   FontSize="16"
+                   HorizontalOptions="Center"
+                   TextColor="{DynamicResource SecondaryTextColor}"
+                   Margin="0,0,0,30"/>
+
+            <!-- Error Message -->
+            <Frame IsVisible="{Binding HasError}"
+                   BackgroundColor="#FFEBEE"
+                   BorderColor="#EF4444"
+                   CornerRadius="8"
+                   Padding="15"
+                   HasShadow="False">
+                <Label Text="{Binding ErrorMessage}"
+                       TextColor="#C62828"
+                       FontSize="14"/>
+            </Frame>
+
+            <!-- Email Input -->
+            <Frame BorderColor="{DynamicResource BorderColor}"
+                   CornerRadius="10"
+                   Padding="0"
+                   HasShadow="False">
+                <Entry Placeholder="อีเมล"
+                       Text="{Binding Email}"
+                       Keyboard="Email"
+                       ReturnType="Next"
+                       FontSize="16"
+                       Margin="15,10"/>
+            </Frame>
+
+            <!-- Password Input -->
+            <Frame BorderColor="{DynamicResource BorderColor}"
+                   CornerRadius="10"
+                   Padding="0"
+                   HasShadow="False">
+                <Grid ColumnDefinitions="*,Auto">
+                    <Entry Grid.Column="0"
+                           Placeholder="รหัสผ่าน"
+                           Text="{Binding Password}"
+                           IsPassword="{Binding ShowPassword, Converter={StaticResource InvertedBoolConverter}}"
+                           ReturnType="Done"
+                           FontSize="16"
+                           Margin="15,10"/>
+
+                    <ImageButton Grid.Column="1"
+                                 Source="{Binding ShowPassword, Converter={StaticResource PasswordVisibilityIconConverter}}"
+                                 Command="{Binding TogglePasswordVisibilityCommand}"
+                                 BackgroundColor="Transparent"
+                                 WidthRequest="40"
+                                 HeightRequest="40"
+                                 Margin="0,0,10,0"/>
+                </Grid>
+            </Frame>
+
+            <!-- Remember Me -->
+            <Grid ColumnDefinitions="*,Auto">
+                <Label Grid.Column="0"
+                       Text="จดจำการเข้าสู่ระบบ"
+                       VerticalOptions="Center"
+                       TextColor="{DynamicResource SecondaryTextColor}"/>
+
+                <Switch Grid.Column="1"
+                        IsToggled="{Binding RememberMe}"
+                        OnColor="{DynamicResource Primary}"/>
+            </Grid>
+
+            <!-- Forgot Password -->
+            <Label Text="ลืมรหัสผ่าน?"
+                   HorizontalOptions="End"
+                   TextColor="{DynamicResource Primary}"
+                   FontAttributes="Bold">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ForgotPasswordCommand}"/>
+                </Label.GestureRecognizers>
+            </Label>
+
+            <!-- Login Button -->
+            <Button Text="เข้าสู่ระบบ"
+                    Command="{Binding LoginCommand}"
+                    BackgroundColor="{DynamicResource Primary}"
+                    TextColor="White"
+                    FontSize="18"
+                    FontAttributes="Bold"
+                    CornerRadius="10"
+                    HeightRequest="55"
+                    Margin="0,10,0,0">
+                <Button.IsVisible>
+                    <Binding Path="IsBusy" Converter="{StaticResource InvertedBoolConverter}"/>
+                </Button.IsVisible>
+            </Button>
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator IsRunning="{Binding IsBusy}"
+                              IsVisible="{Binding IsBusy}"
+                              Color="{DynamicResource Primary}"
+                              HeightRequest="55"/>
+
+            <!-- Register Link -->
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="5" Margin="0,20,0,0">
+                <Label Text="ยังไม่มีบัญชี?"
+                       TextColor="{DynamicResource SecondaryTextColor}"/>
+
+                <Label Text="สมัครสมาชิก"
+                       TextColor="{DynamicResource Primary}"
+                       FontAttributes="Bold">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding RegisterCommand}"/>
+                    </Label.GestureRecognizers>
+                </Label>
+            </HorizontalStackLayout>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
