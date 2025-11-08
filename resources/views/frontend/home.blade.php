@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.windows')
 
-@section('title', 'หน้าแรก')
+@section('title', 'หน้าแรก | Windows Theme')
 
 @section('content')
 
