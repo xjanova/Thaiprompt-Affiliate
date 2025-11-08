@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.82.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #587 from xjanova/claude/update-about-us-page-011CUvceE7YxiXAy2U2gbMJt (3d93481)
+- fix: Update about-us page to use real-time version from package.json (e1e0416)
+### 🔧 Other Changes
+
+
 ## [v2.82.0] - 2025-11-08
 
 ### ✨ Features
