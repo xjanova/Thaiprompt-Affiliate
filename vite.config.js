@@ -17,11 +17,13 @@ export default defineConfig({
             output: {
                 manualChunks: {
                     'crypto': ['ethers'],
+                    'charts': ['chart.js'],
+                    'animations': ['gsap'],
                 }
             }
         }
     },
     optimizeDeps: {
-        include: ['ethers'],
+        include: ['ethers', 'chart.js', 'gsap'],
     },
 });
