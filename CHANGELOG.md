@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.72.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #568 from xjanova/claude/rgb-pulse-start-button-011CUvSTGUiUh6SPbjjRsSrV (fcc40b2)
+- feat: Add RGB pulse animation to Windows UI start button (c13c34b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.71.3] - 2025-11-08
 
 ### ✨ Features
