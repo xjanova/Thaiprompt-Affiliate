@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\TreeController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\InvestmentController;
+use App\Http\Controllers\Api\CryptoWalletApiController;
 use App\Http\Controllers\LineWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -91,5 +92,18 @@ Route::prefix('v1')->group(function () {
             Route::post('/positions/{position}/withdraw', [InvestmentController::class, 'withdraw']);
             Route::get('/distributions', [InvestmentController::class, 'distributions']);
         });
+
+        // Crypto Wallet API
+        Route::prefix('crypto')->group(function () {
+            Route::post('/verify-signature', [CryptoWalletApiController::class, 'verifySignature']);
+            Route::get('/balances', [CryptoWalletApiController::class, 'getBalances']);
+            Route::get('/address/{currency}', [CryptoWalletApiController::class, 'getAddress']);
+            Route::get('/prices', [CryptoWalletApiController::class, 'getPrices']);
+            Route::get('/transaction/{txHash}', [CryptoWalletApiController::class, 'checkTransaction']);
+            Route::get('/gas-price', [CryptoWalletApiController::class, 'getGasPrice']);
+        });
     });
 });
+
+// Public Crypto Wallet API (no auth required)
+Route::post('/crypto/generate-nonce', [CryptoWalletApiController::class, 'generateNonce']);

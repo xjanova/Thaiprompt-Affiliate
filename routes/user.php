@@ -84,6 +84,7 @@ Route::prefix('crypto-wallet')->name('crypto-wallet.')->group(function () {
 
     // Wallet Management (no wallet required - for creating first wallet)
     Route::get('/wallets', [CryptoWalletController::class, 'wallets'])->name('wallets');
+    Route::get('/wallet-management', [CryptoWalletController::class, 'walletManagement'])->name('wallet-management');
     Route::post('/create-wallet', [CryptoWalletController::class, 'createWallet'])->name('create-wallet');
     Route::post('/connect-wallet', [CryptoWalletController::class, 'connectWallet'])->name('connect-wallet');
 
@@ -91,6 +92,10 @@ Route::prefix('crypto-wallet')->name('crypto-wallet.')->group(function () {
     Route::middleware(['crypto.wallet.exists'])->group(function () {
         Route::delete('/wallet/{id}', [CryptoWalletController::class, 'deleteWallet'])->name('wallet.delete');
         Route::post('/wallet/{id}/set-default', [CryptoWalletController::class, 'setDefaultWallet'])->name('wallet.set-default');
+
+        // Premium Trading & Portfolio (wallet must exist)
+        Route::get('/trading', [CryptoWalletController::class, 'tradingDashboard'])->name('trading');
+        Route::get('/portfolio', [CryptoWalletController::class, 'portfolio'])->name('portfolio');
 
         // Deposit Routes (wallet must exist)
         Route::get('/deposit', [CryptoWalletController::class, 'deposit'])->name('deposit');

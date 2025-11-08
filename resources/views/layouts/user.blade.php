@@ -420,10 +420,31 @@
                             <span>กระเป๋าคริปโต</span>
                         </a>
 
+                        <a href="{{ route('user.crypto-wallet.wallet-management') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.wallet-management') ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">💼</span>
+                            <span>จัดการกระเป๋า</span>
+                        </a>
+
                         <a href="{{ route('user.crypto-wallet.transactions') }}"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.transactions') ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white' : '' }}">
                             <span class="mr-2">📝</span>
                             <span>ประวัติธุรกรรม</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Premium Trading & Portfolio -->
+                        <a href="{{ route('user.crypto-wallet.trading') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.trading') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>เทรดดิ้ง</span>
+                        </a>
+
+                        <a href="{{ route('user.crypto-wallet.portfolio') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.crypto-wallet.portfolio') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">💼</span>
+                            <span>พอร์ตโฟลิโอ</span>
                         </a>
 
                         <div class="border-t border-gray-700/30 my-1"></div>

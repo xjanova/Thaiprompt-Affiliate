@@ -79,6 +79,41 @@ class CryptoWalletController extends Controller
     }
 
     /**
+     * Premium Wallet Management - Enhanced multi-wallet interface
+     */
+    public function walletManagement(Request $request)
+    {
+        $user = $request->user();
+        $wallets = $user->cryptoWallets()
+            ->with(['cryptoAddresses.currency', 'balances'])
+            ->orderBy('is_default', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Calculate balances by wallet
+        $balancesByWallet = [];
+        $totalValue = 0;
+        $totalAssets = 0;
+
+        foreach ($wallets as $wallet) {
+            $balances = $this->walletService->getAllBalances($wallet);
+            $balancesByWallet[$wallet->id] = collect($balances);
+
+            foreach ($balances as $balance) {
+                $totalValue += $balance['balance_thb'];
+                $totalAssets++;
+            }
+        }
+
+        return view('user.crypto-wallet.wallet-management', compact(
+            'wallets',
+            'balancesByWallet',
+            'totalValue',
+            'totalAssets'
+        ));
+    }
+
+    /**
      * Create new custodial wallet
      */
     public function createWallet(CreateCustodialWalletRequest $request)
@@ -447,5 +482,123 @@ class CryptoWalletController extends Controller
         $wallet->setAsDefault();
 
         return back()->with('success', 'ตั้งเป็นกระเป๋าหลักสำเร็จ');
+    }
+
+    /**
+     * Trading Dashboard - Premium crypto exchange interface
+     */
+    public function tradingDashboard(Request $request)
+    {
+        $user = $request->user();
+        $wallet = $user->defaultCryptoWallet;
+
+        if (!$wallet) {
+            return redirect()->route('user.crypto-wallet.index')
+                ->with('error', 'กรุณาสร้างกระเป๋าคริปโตก่อน');
+        }
+
+        // Get active trading pairs
+        $currencies = CryptoCurrency::active()->ordered()->get();
+
+        // Get user balances
+        $balances = $this->walletService->getAllBalances($wallet);
+
+        // Get current prices with 24h change
+        $prices = [];
+        foreach ($currencies as $currency) {
+            $rate = $this->priceService->getCurrentRate($currency);
+            if ($rate) {
+                $prices[$currency->code] = [
+                    'code' => $currency->code,
+                    'name' => $currency->name,
+                    'price_thb' => $rate->rate_thb,
+                    'buy_price' => $rate->buy_rate_thb,
+                    'sell_price' => $rate->sell_rate_thb,
+                    'change_24h' => $rate->price_change_24h,
+                    'volume_24h' => $rate->volume_24h,
+                ];
+            }
+        }
+
+        return view('user.crypto-wallet.trading-dashboard', compact(
+            'wallet',
+            'currencies',
+            'balances',
+            'prices'
+        ));
+    }
+
+    /**
+     * Portfolio Management - Advanced portfolio analytics
+     */
+    public function portfolio(Request $request)
+    {
+        $user = $request->user();
+        $wallet = $user->defaultCryptoWallet;
+
+        if (!$wallet) {
+            return redirect()->route('user.crypto-wallet.index')
+                ->with('error', 'กรุณาสร้างกระเป๋าคริปโตก่อน');
+        }
+
+        // Get balances with detailed metrics
+        $balances = $this->walletService->getAllBalances($wallet);
+
+        // Calculate total portfolio value
+        $totalValueTHB = 0;
+        $totalInvested = 0;
+        foreach ($balances as $balance) {
+            $totalValueTHB += $balance['balance_thb'];
+            // In future, track initial investment amounts
+            $totalInvested += $balance['balance_thb'] * 0.85; // Temporary mock
+        }
+
+        // Calculate P&L
+        $totalProfitLoss = $totalValueTHB - $totalInvested;
+        $totalProfitLossPercent = $totalInvested > 0 ? (($totalProfitLoss / $totalInvested) * 100) : 0;
+
+        // Get recent transactions for activity feed
+        $recentTransactions = $user->cryptoTransactions()
+            ->with(['currency', 'cryptoWallet'])
+            ->orderBy('created_at', 'desc')
+            ->limit(20)
+            ->get();
+
+        // Prepare chart data for performance
+        $performanceData = $this->getPortfolioPerformanceData($user, 30); // Last 30 days
+
+        return view('user.crypto-wallet.portfolio', compact(
+            'wallet',
+            'balances',
+            'totalValueTHB',
+            'totalInvested',
+            'totalProfitLoss',
+            'totalProfitLossPercent',
+            'recentTransactions',
+            'performanceData'
+        ));
+    }
+
+    /**
+     * Get portfolio performance data for charts
+     */
+    protected function getPortfolioPerformanceData($user, $days = 30)
+    {
+        // This would fetch historical portfolio values
+        // For now, return mock data structure
+        $data = [];
+        $baseValue = 100000;
+
+        for ($i = $days; $i >= 0; $i--) {
+            $date = now()->subDays($i);
+            $value = $baseValue + (rand(-5000, 15000));
+            $data[] = [
+                'date' => $date->format('Y-m-d'),
+                'value' => $value,
+            ];
+            $baseValue = $value;
+        }
+
+        return $data;
     }
 }
