@@ -396,7 +396,7 @@ class TarotSystemSeeder extends Seeder
 
         foreach ($spreadTypes as $spreadType) {
             TarotSpreadType::updateOrCreate(
-                ['slug' => $spreadType['slug']],
+                ['name_en' => $spreadType['name_en']],
                 $spreadType
             );
         }

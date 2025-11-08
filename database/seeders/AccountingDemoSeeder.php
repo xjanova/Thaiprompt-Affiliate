@@ -76,22 +76,26 @@ class AccountingDemoSeeder extends Seeder
 
             // 2. Create Company
             $this->command->info('2. Creating company...');
-            $company = AccountingCompany::create([
-                'user_id' => $user->id,
-                'name' => 'บริษัท ไทยพร๊อมท์ จำกัด',
-                'name_eng' => 'Thai Prompt Co., Ltd.',
-                'tax_id' => '0105559123456',
-                'branch_code' => '00000',
-                'phone' => '02-123-4567',
-                'email' => 'info@thaiprompt.com',
-                'website' => 'https://thaiprompt.com',
-                'address' => '123 ถนนสุขุมวิท',
-                'district' => 'คลองเตย',
-                'province' => 'กรุงเทพมหานคร',
-                'postal_code' => '10110',
-                'country' => 'Thailand',
-                'is_default' => true,
-            ]);
+            $company = AccountingCompany::updateOrCreate(
+                [
+                    'user_id' => $user->id,
+                    'tax_id' => '0105559123456',
+                ],
+                [
+                    'name' => 'บริษัท ไทยพร๊อมท์ จำกัด',
+                    'name_eng' => 'Thai Prompt Co., Ltd.',
+                    'branch_code' => '00000',
+                    'phone' => '02-123-4567',
+                    'email' => 'info@thaiprompt.com',
+                    'website' => 'https://thaiprompt.com',
+                    'address' => '123 ถนนสุขุมวิท',
+                    'district' => 'คลองเตย',
+                    'province' => 'กรุงเทพมหานคร',
+                    'postal_code' => '10110',
+                    'country' => 'Thailand',
+                    'is_default' => true,
+                ]
+            );
 
             // 3. Create Chart of Accounts
             $this->command->info('3. Creating chart of accounts...');
