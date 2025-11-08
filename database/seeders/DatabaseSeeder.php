@@ -59,6 +59,7 @@ class DatabaseSeeder extends Seeder
             VendorPackageSeeder::class,         // แพคเกจสำหรับผู้ขาย/Vendor
             VendorPackageFeatureSeeder::class,  // ฟีเจอร์ของแพคเกจ Vendor
             MarketplacePlatformSeeder::class,   // Marketplace Platforms (Shopee, Lazada, etc.)
+            SoftwareProductSeeder::class,       // ระบบผลิตภัณฑ์ซอฟต์แวร์ (MLM, E-commerce, Affiliate systems)
 
             // 9. Academy & Learning Platform
             AcademySeeder::class,               // ตั้งค่าระบบ Academy
