@@ -489,6 +489,9 @@
         });
     </script>
 
+    {{-- Floating Tools --}}
+    <x-floating-tools />
+
     @stack('scripts')
 </body>
 </html>

@@ -1620,6 +1620,9 @@
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
+    {{-- Floating Tools --}}
+    <x-floating-tools />
+
     @stack('scripts')
 </body>
 </html>
