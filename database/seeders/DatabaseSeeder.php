@@ -38,7 +38,6 @@ class DatabaseSeeder extends Seeder
             // 4. Communication Templates
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
             LineOaSettingSeeder::class,         // LINE OA Settings Configuration
-            LineSignupFlowSeeder::class,        // LINE Signup Flow (Conversation Bot)
             LineFlexMessageTemplateSeeder::class, // LINE Flex Message Templates
 
             // 5. AI & Integrations
@@ -50,7 +49,8 @@ class DatabaseSeeder extends Seeder
             CryptoCurrencySeeder::class,        // Cryptocurrency Support (BTC, ETH, USDT, etc.)
 
             // 7. MLM & Affiliate System
-            MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM พรีเมี่ยม
+            MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM ทั่วไป (สร้างข้อมูลเริ่มต้น)
+            MlmGlobalSettingSeeder::class,      // อัปเดต MLM Global Settings สำหรับระบบผู้มุ่งหวัง
             MlmPlanSeeder::class,               // แผนคอมมิชชัน MLM หลัก (แผนเดียวบังคับทั้งระบบ)
             MlmPackageSeeder::class,            // แพคเกจสมาชิก MLM (Bronze, Silver, Gold, Diamond, Premier)
             RankSeeder::class,                  // ระบบยศ/ระดับ (Bronze, Silver, Gold, Platinum, Diamond)
