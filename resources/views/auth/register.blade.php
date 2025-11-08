@@ -7,6 +7,8 @@
     @php
         $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
         $logo = \App\Models\Setting::get('logo');
+        $logoAuthWidth = \App\Models\Setting::get('logo_auth_width', 72);
+        $logoAuthHeight = \App\Models\Setting::get('logo_auth_height', 72);
     @endphp
     <title>สมัครสมาชิก - {{ $appName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -150,7 +152,7 @@
                     <div class="text-center mb-6 md:mb-8">
                         @if($logo)
                             <div class="mb-4 flex justify-center">
-                                <img src="{{ asset($logo) }}" alt="{{ $appName }} Logo" width="72" height="72" class="h-16 md:h-18 object-contain">
+                                <img src="{{ asset($logo) }}" alt="{{ $appName }} Logo" style="width: {{ $logoAuthWidth }}px; height: {{ $logoAuthHeight }}px;" class="object-contain">
                             </div>
                         @else
                             <h1 class="text-3xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">{{ $appName }}</h1>

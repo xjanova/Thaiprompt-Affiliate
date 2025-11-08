@@ -911,8 +911,6 @@
     {{-- Immediate Notification Popup --}}
     <x-immediate-notification-popup />
 
-    {{-- Floating Tools --}}
-    <x-floating-tools />
 
     @stack('scripts')
 </body>

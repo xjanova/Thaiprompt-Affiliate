@@ -1655,8 +1655,6 @@
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
-    {{-- Floating Tools --}}
-    <x-floating-tools />
 
     <script>
         // Dark Mode Toggle Function for Windows UI
