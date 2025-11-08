@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.76.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #576 from xjanova/claude/fix-missing-email-templates-route-011CUva7pVvG91so7chuYNpk (b80270b)
+- fix: Add missing admin.academy.courses.index route (c1501d2)
+### 🔧 Other Changes
+
+
 ## [v2.76.1] - 2025-11-08
 
 ### ✨ Features
