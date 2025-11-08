@@ -104,6 +104,51 @@
         <div class="max-w-7xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <h3 class="text-white text-xl font-bold">{{ $appName }} - ระบบแพลตฟอร์มครบวงจร</h3>
+
+                <!-- Topic Selector -->
+                <div class="relative">
+                    <button onclick="toggleTopicMenu()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 backdrop-blur-sm rounded-lg text-white transition-all shadow-lg" id="topic-selector-btn">
+                        <span class="font-semibold" id="current-topic-name">ภาพรวมระบบ</span>
+                        <svg class="w-5 h-5 transition-transform" id="topic-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="topic-menu" class="hidden absolute top-full mt-2 left-0 bg-gray-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-white/20 overflow-hidden min-w-[280px]">
+                        <div class="p-2 space-y-1">
+                            <button onclick="switchTopic('system-overview')" class="topic-option active flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="system-overview">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center text-xl">
+                                    🖥️
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">ภาพรวมระบบ</p>
+                                    <p class="text-white/60 text-xs">System Overview</p>
+                                </div>
+                                <div class="topic-check hidden">
+                                    <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                            <button onclick="switchTopic('mlm-plans')" class="topic-option flex items-center gap-3 w-full px-4 py-3 rounded-lg hover:bg-white/10 transition-colors text-left" data-topic="mlm-plans">
+                                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center text-xl">
+                                    💎
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-semibold">แผนการตลาด MLM</p>
+                                    <p class="text-white/60 text-xs">Unilevel & Binary Plans</p>
+                                </div>
+                                <div class="topic-check hidden">
+                                    <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <span class="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm" id="slide-counter">
                     1 / 15
                 </span>
@@ -175,7 +220,12 @@
 
     <!-- Slides Container -->
     <div class="relative h-full flex items-center justify-center" id="slides-container">
-        @include('components.presentation-slides-content')
+        <div id="slides-system-overview" class="slides-topic-container active">
+            @include('components.presentation-slides-content')
+        </div>
+        <div id="slides-mlm-plans" class="slides-topic-container">
+            @include('components.presentation-slides-mlm-plans')
+        </div>
     </div>
 
     <!-- Navigation Controls -->
@@ -331,6 +381,39 @@
     .progress-dot:hover {
         background: rgba(255, 255, 255, 0.6);
     }
+
+    /* Topic Selector */
+    .topic-option {
+        position: relative;
+    }
+
+    .topic-option.active {
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+    .topic-option.active .topic-check {
+        display: block !important;
+    }
+
+    .slides-topic-container {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.5s ease;
+    }
+
+    .slides-topic-container.active {
+        opacity: 1;
+        pointer-events: auto;
+        position: relative;
+    }
+
+    #topic-arrow.rotated {
+        transform: rotate(180deg);
+    }
 </style>
 @endpush
 
@@ -343,14 +426,90 @@ let slideDuration = 15; // seconds
 let isAutoplayActive = false;
 let showCountdown = true;
 let loopSlides = true;
+let currentTopic = 'system-overview';
 
-const slides = document.querySelectorAll('.slide');
-const totalSlides = slides.length;
+let slides = document.querySelectorAll('#slides-system-overview .slide');
+let totalSlides = slides.length;
 
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     initializeProgressDots();
     updateSlideCounter();
+    updateTopicDisplay();
+});
+
+// Topic Selector Functions
+function toggleTopicMenu() {
+    const menu = document.getElementById('topic-menu');
+    const arrow = document.getElementById('topic-arrow');
+    menu.classList.toggle('hidden');
+    arrow.classList.toggle('rotated');
+}
+
+function switchTopic(topicId) {
+    if (currentTopic === topicId) {
+        toggleTopicMenu();
+        return;
+    }
+
+    // Stop autoplay when switching topics
+    if (isAutoplayActive) {
+        stopAutoplay();
+    }
+
+    // Hide all topic containers
+    document.querySelectorAll('.slides-topic-container').forEach(container => {
+        container.classList.remove('active');
+    });
+
+    // Show selected topic container
+    const selectedContainer = document.getElementById('slides-' + topicId);
+    selectedContainer.classList.add('active');
+
+    // Update topic options
+    document.querySelectorAll('.topic-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    document.querySelector(`.topic-option[data-topic="${topicId}"]`).classList.add('active');
+
+    // Update current topic
+    currentTopic = topicId;
+
+    // Update slides reference
+    slides = document.querySelectorAll(`#slides-${topicId} .slide`);
+    totalSlides = slides.length;
+
+    // Reset to first slide
+    currentSlide = 0;
+    showSlide(0);
+
+    // Re-initialize
+    initializeProgressDots();
+    updateSlideCounter();
+    updateTopicDisplay();
+
+    // Close menu
+    toggleTopicMenu();
+}
+
+function updateTopicDisplay() {
+    const topicNames = {
+        'system-overview': 'ภาพรวมระบบ',
+        'mlm-plans': 'แผนการตลาด MLM'
+    };
+
+    document.getElementById('current-topic-name').textContent = topicNames[currentTopic] || 'ภาพรวมระบบ';
+}
+
+// Close topic menu when clicking outside
+document.addEventListener('click', function(e) {
+    const topicMenu = document.getElementById('topic-menu');
+    const topicBtn = document.getElementById('topic-selector-btn');
+
+    if (topicMenu && topicBtn && !topicMenu.contains(e.target) && !topicBtn.contains(e.target)) {
+        topicMenu.classList.add('hidden');
+        document.getElementById('topic-arrow').classList.remove('rotated');
+    }
 });
 
 function openPresentationFullscreen() {
