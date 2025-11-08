@@ -797,6 +797,24 @@ echo ""
 print_info "[11/20] 🌱 Checking database seeding status..."
 echo ""
 
+# Step 11.1: Verify all seeders are included in DatabaseSeeder.php
+print_info "→ Verifying seeder integrity..."
+if [ -f "scripts/verify-seeders.php" ]; then
+    if php scripts/verify-seeders.php >/dev/null 2>&1; then
+        print_success "✓ All seeders are properly included in DatabaseSeeder.php"
+    else
+        print_error "✗ Seeder verification failed!"
+        echo ""
+        print_warning "Running detailed verification..."
+        php scripts/verify-seeders.php
+        echo ""
+        error_exit "Some seeders are not included in DatabaseSeeder.php - fix before deployment"
+    fi
+else
+    print_warning "⚠ Seeder verification script not found (scripts/verify-seeders.php)"
+fi
+echo ""
+
 # Check if seeders directory exists and has seeders
 SEEDER_DIR="database/seeders"
 if [ ! -d "$SEEDER_DIR" ]; then
