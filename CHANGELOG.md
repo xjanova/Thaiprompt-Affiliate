@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.85.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #594 from xjanova/claude/improve-presentation-slides-011CUvhoAWLqfBcS7rkvV5fh (7841580)
+- feat: redesign presentation slides with glassmorphism and wiki-aligned content (b84a8a4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.84.0] - 2025-11-08
 
 ### ✨ Features
