@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.86.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #591 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (d54bc59)
+- feat: Remove sidebars, add submenu support, and optimize dashboard (6215c13)
+### 🐛 Bug Fixes
+- fix: Resolve merge conflicts with main branch, keep Millennium UI (03405f5)
+### 🔧 Other Changes
+
+
 ## [v2.85.0] - 2025-11-08
 
 ### ✨ Features
