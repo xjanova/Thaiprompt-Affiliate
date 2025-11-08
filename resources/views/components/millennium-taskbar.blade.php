@@ -61,56 +61,13 @@
         @endif
 
         <!-- Taskbar Background -->
-        <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900/40 to-blue-900/40 backdrop-blur-xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/10 shadow-2xl"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-purple-900/50 to-blue-900/50 backdrop-blur-2xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 shadow-2xl rounded-2xl mx-2 my-1" style="box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
 
         <!-- Taskbar Content -->
         <div class="relative h-full max-w-full mx-auto px-3 flex items-center justify-between gap-3">
 
-            <!-- Left Section: Start Button + Back Button -->
-            <div class="flex items-center gap-3">
-
-                <!-- Start Button -->
-                <button
-                    @click="startMenuOpen = !startMenuOpen"
-                    :class="{'millennium-start-active': startMenuOpen}"
-                    class="millennium-start-button group flex items-center gap-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-pink-500/50">
-
-                    @if($logo)
-                        <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-9 h-9 object-contain drop-shadow-lg">
-                    @else
-                        <div class="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
-                            </svg>
-                        </div>
-                    @endif
-
-                    <span class="text-white font-bold text-xl hidden md:inline-block drop-shadow-lg">
-                        เริ่ม
-                    </span>
-
-                    <!-- Glow Effect on Hover -->
-                    <div class="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                         style="background: linear-gradient(45deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); filter: blur(10px);"></div>
-                </button>
-
-                <!-- Back Button -->
-                @if($backButtonEnabled)
-                    <button
-                        onclick="window.history.back()"
-                        class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-                        title="{{ $backButtonText }}">
-                        <svg class="w-6 h-6 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                        <span class="font-bold text-base hidden lg:inline-block">{{ $backButtonText }}</span>
-                    </button>
-                @endif
-
-            </div>
-
-            <!-- Center Section: Quick Icons -->
-            <div class="flex items-center gap-2 flex-1 justify-center">
+            <!-- Left Section: Quick Icons -->
+            <div class="flex items-center gap-2 flex-1">
 
                 <!-- Shopping Cart -->
                 @if(Route::has('user.shop.cart'))
@@ -181,8 +138,37 @@
 
             </div>
 
+            <!-- Center Section: Start Button -->
+            <div class="flex items-center justify-center absolute left-1/2 transform -translate-x-1/2">
+                <!-- Start Button -->
+                <button
+                    @click="startMenuOpen = !startMenuOpen"
+                    :class="{'millennium-start-active': startMenuOpen}"
+                    class="millennium-start-button group flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                    style="margin-top: -8px; margin-bottom: -8px;">
+
+                    @if($logo)
+                        <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-11 h-11 object-contain drop-shadow-2xl">
+                    @else
+                        <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                            </svg>
+                        </div>
+                    @endif
+
+                    <span class="text-white font-bold text-2xl hidden md:inline-block drop-shadow-2xl">
+                        เริ่ม
+                    </span>
+
+                    <!-- Glow Effect on Hover -->
+                    <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                         style="background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                </button>
+            </div>
+
             <!-- Right Section: System Tray -->
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-1 justify-end">
 
                 <!-- Dark Mode Toggle -->
                 <button
@@ -231,17 +217,6 @@
                     <span class="text-white font-bold text-base" x-text="currentTime"></span>
                 </div>
 
-                <!-- User Avatar -->
-                @auth
-                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300 cursor-pointer">
-                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/30">
-                            {{ substr(auth()->user()->name, 0, 2) }}
-                        </div>
-                        <span class="text-white font-semibold text-base hidden xl:inline-block">
-                            {{ auth()->user()->name }}
-                        </span>
-                    </div>
-                @endauth
             </div>
 
         </div>
