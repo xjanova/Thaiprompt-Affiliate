@@ -38,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'webhook.verify' => \App\Http\Middleware\VerifyWebhookSignature::class,
             // Two-Factor Authentication middleware
             'two-factor' => \App\Http\Middleware\RequireTwoFactor::class,
+            // Crypto wallet middleware
+            'crypto.wallet.exists' => \App\Http\Middleware\EnsureCryptoWalletExists::class,
+            'crypto.wallet.active' => \App\Http\Middleware\CheckCryptoWalletStatus::class,
         ]);
 
         // Global middleware for IP blocking

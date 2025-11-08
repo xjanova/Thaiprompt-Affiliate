@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Crypto\CreateCustodialWalletRequest;
+use App\Http\Requests\Crypto\ConnectExternalWalletRequest;
+use App\Http\Requests\Crypto\WithdrawCryptoRequest;
+use App\Http\Requests\Crypto\SetDefaultWalletRequest;
 use App\Models\CryptoCurrency;
 use App\Models\CryptoWallet;
 use App\Models\CryptoWithdrawalRequest;
@@ -77,20 +81,16 @@ class CryptoWalletController extends Controller
     /**
      * Create new custodial wallet
      */
-    public function createWallet(Request $request)
+    public function createWallet(CreateCustodialWalletRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'pin' => 'required|string|min:4|max:6|confirmed',
-        ]);
-
         try {
             $wallet = $this->walletService->createCustodialWallet(
                 $request->user(),
                 $request->pin,
                 [
-                    'name' => $request->name,
+                    'name' => $request->name ?? 'My Crypto Wallet',
                     'device_info' => $request->userAgent(),
+                    'two_factor_enabled' => $request->two_factor_enabled ?? false,
                 ]
             );
 
@@ -110,32 +110,27 @@ class CryptoWalletController extends Controller
     /**
      * Connect external wallet (MetaMask, WalletConnect)
      */
-    public function connectWallet(Request $request)
+    public function connectWallet(ConnectExternalWalletRequest $request)
     {
-        $request->validate([
-            'address' => 'required|string',
-            'network' => 'required|string|in:ethereum,bsc,polygon',
-            'signature' => 'required|string',
-            'message' => 'required|string',
-        ]);
-
         try {
             $wallet = $this->walletService->connectExternalWallet(
                 $request->user(),
                 $request->address,
                 $request->network,
                 [
-                    'name' => 'MetaMask Wallet',
+                    'name' => 'External Wallet',
                     'device_info' => $request->userAgent(),
                 ]
             );
 
-            // Verify wallet ownership
-            $this->walletService->verifyWalletOwnership(
-                $wallet,
-                $request->signature,
-                $request->message
-            );
+            // Verify wallet ownership if signature provided
+            if ($request->signature && $request->message) {
+                $this->walletService->verifyWalletOwnership(
+                    $wallet,
+                    $request->signature,
+                    $request->message
+                );
+            }
 
             return response()->json([
                 'success' => true,
@@ -229,39 +224,22 @@ class CryptoWalletController extends Controller
     /**
      * Submit withdrawal request
      */
-    public function submitWithdrawal(Request $request)
+    public function submitWithdrawal(WithdrawCryptoRequest $request)
     {
-        $request->validate([
-            'currency_id' => 'required|exists:crypto_currencies,id',
-            'amount' => 'required|numeric|min:0.00000001',
-            'to_address' => 'required|string',
-            'pin' => 'required|string',
-            'note' => 'nullable|string|max:500',
-        ]);
-
         $user = $request->user();
         $wallet = $user->defaultCryptoWallet;
-
-        if (!$wallet) {
-            return back()->with('error', 'ไม่พบกระเป๋าคริปโต');
-        }
 
         // Verify PIN
         if (!$wallet->verifyPin($request->pin)) {
             return back()->with('error', 'PIN ไม่ถูกต้อง');
         }
 
-        $currency = CryptoCurrency::findOrFail($request->currency_id);
+        $currency = CryptoCurrency::where('code', $request->currency_code)->firstOrFail();
 
         // Check balance
         $balance = $this->walletService->getBalance($wallet, $currency);
         if ($balance < $request->amount) {
             return back()->with('error', 'ยอดเงินไม่เพียงพอ');
-        }
-
-        // Check minimum withdrawal
-        if ($request->amount < $currency->min_withdrawal) {
-            return back()->with('error', "ขั้นต่ำในการถอนคือ {$currency->min_withdrawal} {$currency->code}");
         }
 
         // Calculate fees
@@ -277,14 +255,14 @@ class CryptoWalletController extends Controller
                 'crypto_wallet_id' => $wallet->id,
                 'crypto_currency_id' => $currency->id,
                 'to_address' => $request->to_address,
-                'network' => $currency->network,
+                'network' => $request->network,
                 'amount' => $request->amount,
                 'network_fee' => $networkFee,
                 'platform_fee' => $platformFee,
                 'total_fee' => $totalFee,
                 'net_amount' => $netAmount,
                 'status' => 'pending',
-                'user_note' => $request->note,
+                'user_note' => $request->note ?? '',
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent(),
             ]);
@@ -461,7 +439,7 @@ class CryptoWalletController extends Controller
     /**
      * Set default wallet
      */
-    public function setDefaultWallet(Request $request, $id)
+    public function setDefaultWallet(SetDefaultWalletRequest $request, $id)
     {
         $user = $request->user();
         $wallet = $user->cryptoWallets()->findOrFail($id);

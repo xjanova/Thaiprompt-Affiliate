@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Crypto\BuyCryptoRequest;
+use App\Http\Requests\Crypto\SellCryptoRequest;
 use App\Models\CryptoCurrency;
 use App\Services\Crypto\CryptoExchangeService;
 use App\Services\Crypto\CryptoPriceService;
@@ -114,17 +116,10 @@ class CryptoExchangeController extends Controller
     /**
      * Buy crypto with THB
      */
-    public function buyCrypto(Request $request)
+    public function buyCrypto(BuyCryptoRequest $request)
     {
-        $request->validate([
-            'currency_id' => 'required|exists:crypto_currencies,id',
-            'thb_amount' => 'required|numeric|min:1',
-            'pin' => 'required|string',
-            'accept_terms' => 'accepted',
-        ]);
-
         $user = $request->user();
-        $currency = CryptoCurrency::findOrFail($request->currency_id);
+        $currency = CryptoCurrency::where('code', $request->currency_code)->firstOrFail();
 
         try {
             $exchange = $this->exchangeService->buyCrypto(
@@ -134,7 +129,8 @@ class CryptoExchangeController extends Controller
                 null, // Use default crypto wallet
                 $request->pin,
                 [
-                    'max_slippage' => $request->max_slippage ?? 1.0,
+                    'max_slippage' => $request->slippage_tolerance,
+                    'expected_rate' => $request->expected_rate,
                 ]
             );
 
@@ -161,17 +157,10 @@ class CryptoExchangeController extends Controller
     /**
      * Sell crypto for THB
      */
-    public function sellCrypto(Request $request)
+    public function sellCrypto(SellCryptoRequest $request)
     {
-        $request->validate([
-            'currency_id' => 'required|exists:crypto_currencies,id',
-            'crypto_amount' => 'required|numeric|min:0.00000001',
-            'pin' => 'required|string',
-            'accept_terms' => 'accepted',
-        ]);
-
         $user = $request->user();
-        $currency = CryptoCurrency::findOrFail($request->currency_id);
+        $currency = CryptoCurrency::where('code', $request->currency_code)->firstOrFail();
 
         try {
             $exchange = $this->exchangeService->sellCrypto(
@@ -181,7 +170,8 @@ class CryptoExchangeController extends Controller
                 null, // Use default crypto wallet
                 $request->pin,
                 [
-                    'max_slippage' => $request->max_slippage ?? 1.0,
+                    'max_slippage' => $request->slippage_tolerance,
+                    'expected_rate' => $request->expected_rate,
                 ]
             );
 

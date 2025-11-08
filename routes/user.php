@@ -77,41 +77,48 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
 
 // Crypto Wallet Management (User)
 Route::prefix('crypto-wallet')->name('crypto-wallet.')->group(function () {
-    // Dashboard
+    // Dashboard (no wallet required - shows create wallet option)
     Route::get('/', [CryptoWalletController::class, 'index'])->name('index');
 
-    // Wallet Management
+    // Wallet Management (no wallet required - for creating first wallet)
     Route::get('/wallets', [CryptoWalletController::class, 'wallets'])->name('wallets');
     Route::post('/create-wallet', [CryptoWalletController::class, 'createWallet'])->name('create-wallet');
     Route::post('/connect-wallet', [CryptoWalletController::class, 'connectWallet'])->name('connect-wallet');
-    Route::delete('/wallet/{id}', [CryptoWalletController::class, 'deleteWallet'])->name('wallet.delete');
-    Route::post('/wallet/{id}/set-default', [CryptoWalletController::class, 'setDefaultWallet'])->name('wallet.set-default');
 
-    // Deposit Routes
-    Route::get('/deposit', [CryptoWalletController::class, 'deposit'])->name('deposit');
-    Route::get('/deposit/{currency}', [CryptoWalletController::class, 'depositCurrency'])->name('deposit.currency');
-    Route::get('/deposit-address/{currency}', [CryptoWalletController::class, 'getDepositAddress'])->name('deposit.address');
+    // Routes requiring crypto wallet to exist
+    Route::middleware(['crypto.wallet.exists'])->group(function () {
+        Route::delete('/wallet/{id}', [CryptoWalletController::class, 'deleteWallet'])->name('wallet.delete');
+        Route::post('/wallet/{id}/set-default', [CryptoWalletController::class, 'setDefaultWallet'])->name('wallet.set-default');
 
-    // Withdrawal Routes
-    Route::get('/withdraw', [CryptoWalletController::class, 'withdraw'])->name('withdraw');
-    Route::post('/withdraw', [CryptoWalletController::class, 'submitWithdrawal'])
-        ->middleware('turnstile:crypto_withdrawal')
-        ->name('withdraw.submit');
-    Route::get('/withdrawals', [CryptoWalletController::class, 'withdrawals'])->name('withdrawals');
-    Route::delete('/withdrawal/{id}/cancel', [CryptoWalletController::class, 'cancelWithdrawal'])->name('withdrawal.cancel');
+        // Deposit Routes (wallet must exist)
+        Route::get('/deposit', [CryptoWalletController::class, 'deposit'])->name('deposit');
+        Route::get('/deposit/{currency}', [CryptoWalletController::class, 'depositCurrency'])->name('deposit.currency');
+        Route::get('/deposit-address/{currency}', [CryptoWalletController::class, 'getDepositAddress'])->name('deposit.address');
 
-    // Exchange Routes (THB ↔ Crypto)
-    Route::get('/exchange', [CryptoExchangeController::class, 'index'])->name('exchange');
-    Route::post('/exchange/preview', [CryptoExchangeController::class, 'preview'])->name('exchange.preview');
-    Route::post('/exchange/buy', [CryptoExchangeController::class, 'buyCrypto'])->name('exchange.buy');
-    Route::post('/exchange/sell', [CryptoExchangeController::class, 'sellCrypto'])->name('exchange.sell');
-    Route::get('/exchange/history', [CryptoExchangeController::class, 'history'])->name('exchange.history');
+        // Transaction Routes (wallet must exist)
+        Route::get('/transactions', [CryptoWalletController::class, 'transactions'])->name('transactions');
+        Route::get('/transaction/{id}', [CryptoWalletController::class, 'transactionDetail'])->name('transaction.detail');
 
-    // Transaction Routes
-    Route::get('/transactions', [CryptoWalletController::class, 'transactions'])->name('transactions');
-    Route::get('/transaction/{id}', [CryptoWalletController::class, 'transactionDetail'])->name('transaction.detail');
+        // Routes requiring active wallet status
+        Route::middleware(['crypto.wallet.active'])->group(function () {
+            // Withdrawal Routes (wallet must be active)
+            Route::get('/withdraw', [CryptoWalletController::class, 'withdraw'])->name('withdraw');
+            Route::post('/withdraw', [CryptoWalletController::class, 'submitWithdrawal'])
+                ->middleware('turnstile:crypto_withdrawal')
+                ->name('withdraw.submit');
+            Route::get('/withdrawals', [CryptoWalletController::class, 'withdrawals'])->name('withdrawals');
+            Route::delete('/withdrawal/{id}/cancel', [CryptoWalletController::class, 'cancelWithdrawal'])->name('withdrawal.cancel');
 
-    // Price & Market Data
+            // Exchange Routes (wallet must be active)
+            Route::get('/exchange', [CryptoExchangeController::class, 'index'])->name('exchange');
+            Route::post('/exchange/preview', [CryptoExchangeController::class, 'preview'])->name('exchange.preview');
+            Route::post('/exchange/buy', [CryptoExchangeController::class, 'buyCrypto'])->name('exchange.buy');
+            Route::post('/exchange/sell', [CryptoExchangeController::class, 'sellCrypto'])->name('exchange.sell');
+            Route::get('/exchange/history', [CryptoExchangeController::class, 'history'])->name('exchange.history');
+        });
+    });
+
+    // Price & Market Data (no wallet required - public data)
     Route::get('/prices', [CryptoWalletController::class, 'getPrices'])->name('prices');
     Route::get('/price/{currency}', [CryptoWalletController::class, 'getPrice'])->name('price');
 });
