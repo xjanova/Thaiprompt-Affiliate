@@ -278,3 +278,16 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
         Route::get('/saved', [\App\Http\Controllers\TarotReadingController::class, 'savedReadings'])->name('saved');
     });
 });
+
+// Cryptocurrency Price Charts
+Route::prefix('crypto')->name('crypto.')->group(function () {
+    Route::get('/charts', [\App\Http\Controllers\CryptoPriceChartController::class, 'index'])->name('charts');
+});
+
+// Cryptocurrency API Routes
+Route::prefix('api/crypto')->name('api.crypto.')->group(function () {
+    Route::get('/chart/{currency}', [\App\Http\Controllers\CryptoPriceChartController::class, 'getChartData'])->name('chart');
+    Route::get('/compare', [\App\Http\Controllers\CryptoPriceChartController::class, 'getComparisonData'])->name('compare');
+    Route::get('/market-overview', [\App\Http\Controllers\CryptoPriceChartController::class, 'getMarketOverview'])->name('market-overview');
+    Route::get('/realtime-prices', [\App\Http\Controllers\CryptoPriceChartController::class, 'getRealTimePrices'])->name('realtime-prices');
+});

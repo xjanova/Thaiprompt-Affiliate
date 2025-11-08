@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\Crypto\BlockchainIndexerService;
 use App\Services\Crypto\BlockchainTransactionService;
+use App\Services\Crypto\ClientSideTransactionService;
 use App\Services\Crypto\CryptoExchangeService;
 use App\Services\Crypto\CryptoPriceService;
 use App\Services\Crypto\CryptoWalletService;
@@ -50,6 +51,14 @@ class CryptoServiceProvider extends ServiceProvider
         // Register BlockchainTransactionService as singleton
         $this->app->singleton(BlockchainTransactionService::class, function ($app) {
             return new BlockchainTransactionService(
+                $app->make(Web3Service::class),
+                $app->make(CryptoPriceService::class)
+            );
+        });
+
+        // Register ClientSideTransactionService as singleton
+        $this->app->singleton(ClientSideTransactionService::class, function ($app) {
+            return new ClientSideTransactionService(
                 $app->make(Web3Service::class),
                 $app->make(CryptoPriceService::class)
             );
