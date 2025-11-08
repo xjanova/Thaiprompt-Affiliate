@@ -203,6 +203,32 @@
 
     @stack('styles')
 
+    <style>
+        /* Ensure Windows Taskbar doesn't overlap with sidebar */
+        @php
+            $taskbarPosition = \App\Models\WindowsUiSetting::get('windows_taskbar_position', 'top');
+            $taskbarHeight = \App\Models\WindowsUiSetting::get('windows_taskbar_height', 48);
+        @endphp
+
+        @if($taskbarPosition === 'top')
+        body {
+            padding-top: {{ $taskbarHeight }}px;
+        }
+        .fixed.inset-y-0.left-0 {
+            top: {{ $taskbarHeight }}px;
+            height: calc(100vh - {{ $taskbarHeight }}px);
+        }
+        @else
+        body {
+            padding-bottom: {{ $taskbarHeight }}px;
+        }
+        .fixed.inset-y-0.left-0 {
+            bottom: {{ $taskbarHeight }}px;
+            height: calc(100vh - {{ $taskbarHeight }}px);
+        }
+        @endif
+    </style>
+
     <script>
         // Chart.js Dark Mode Helpers
         window.isDarkMode = function() {
@@ -225,7 +251,13 @@
     <x-dark-mode-init />
     <x-dark-mode-styles />
 </head>
-<body class="font-sans antialiased bg-gray-100">
+<body class="font-sans antialiased bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
+    <!-- Spaceship Background -->
+    <x-spaceship-background />
+
+    <!-- Windows Taskbar -->
+    <x-windows-taskbar />
+
     <!-- Page Loader -->
     <x-page-loader />
     <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false }">
@@ -498,6 +530,21 @@
 
     {{-- Floating Tools --}}
     <x-floating-tools />
+
+    <script>
+        // Dark Mode Toggle Function for Windows UI
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.contains('dark');
+
+            if (isDark) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('darkMode', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('darkMode', 'dark');
+            }
+        }
+    </script>
 
     @stack('scripts')
 </body>
