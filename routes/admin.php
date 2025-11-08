@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
+use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\PageController;
@@ -95,6 +96,33 @@ Route::resource('commissions', CommissionController::class);
 Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
 Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
 Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
+
+// Investment & Staking Management
+Route::prefix('investments')->name('investments.')->group(function () {
+    Route::get('/', [InvestmentController::class, 'index'])->name('index');
+
+    // Investment Plans
+    Route::get('/plans', [InvestmentController::class, 'plans'])->name('plans.index');
+    Route::get('/plans/create', [InvestmentController::class, 'createPlan'])->name('plans.create');
+    Route::post('/plans', [InvestmentController::class, 'storePlan'])->name('plans.store');
+    Route::get('/plans/{plan}/edit', [InvestmentController::class, 'editPlan'])->name('plans.edit');
+    Route::put('/plans/{plan}', [InvestmentController::class, 'updatePlan'])->name('plans.update');
+    Route::delete('/plans/{plan}', [InvestmentController::class, 'destroyPlan'])->name('plans.destroy');
+
+    // Staking Positions
+    Route::get('/positions', [InvestmentController::class, 'positions'])->name('positions.index');
+    Route::get('/positions/{position}', [InvestmentController::class, 'showPosition'])->name('positions.show');
+    Route::post('/positions/{position}/approve', [InvestmentController::class, 'approvePosition'])->name('positions.approve');
+    Route::post('/positions/{position}/reject', [InvestmentController::class, 'rejectPosition'])->name('positions.reject');
+
+    // ROI Distributions
+    Route::get('/distributions', [InvestmentController::class, 'distributions'])->name('distributions.index');
+    Route::post('/distributions/trigger', [InvestmentController::class, 'triggerDistribution'])->name('distributions.trigger');
+    Route::post('/distributions/retry-failed', [InvestmentController::class, 'retryFailedDistributions'])->name('distributions.retry-failed');
+
+    // Utilities
+    Route::post('/process-mature', [InvestmentController::class, 'processMaturePositions'])->name('process-mature');
+});
 
 // KYC Verification Management
 Route::prefix('kyc')->name('kyc.')->group(function () {

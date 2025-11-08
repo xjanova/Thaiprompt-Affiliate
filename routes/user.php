@@ -7,6 +7,7 @@ use App\Http\Controllers\User\MembershipRetentionController;
 use App\Http\Controllers\User\KycController;
 use App\Http\Controllers\User\ShopController;
 use App\Http\Controllers\User\TwoFactorController;
+use App\Http\Controllers\User\InvestmentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -150,6 +151,19 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     Route::get('/dividend-simulator', function () {
         return view('user.mlm.dividend-simulator');
     })->name('dividend-simulator');
+});
+
+// Investment & Staking System (User)
+Route::prefix('investments')->name('investments.')->group(function () {
+    Route::get('/', [InvestmentController::class, 'index'])->name('index');
+    Route::get('/plans', [InvestmentController::class, 'plans'])->name('plans');
+    Route::get('/plans/{plan}', [InvestmentController::class, 'showPlan'])->name('plans.show');
+    Route::post('/invest', [InvestmentController::class, 'store'])->name('store');
+    Route::post('/calculate-roi', [InvestmentController::class, 'calculateROI'])->name('calculate-roi');
+
+    Route::get('/{position}', [InvestmentController::class, 'show'])->name('show');
+    Route::post('/{position}/withdraw', [InvestmentController::class, 'withdraw'])->name('withdraw');
+    Route::get('/{position}/distributions', [InvestmentController::class, 'distributions'])->name('distributions');
 });
 
 // Two-Factor Authentication Management

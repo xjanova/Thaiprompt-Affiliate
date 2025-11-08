@@ -49,6 +49,25 @@ class Kernel extends ConsoleKernel
                     $command->dailyAt($time);
             }
         }
+
+        // Investment ROI Distribution Schedule
+        // Run daily at 00:05 (after midnight)
+        $schedule->command('investment:distribute-roi')
+            ->dailyAt('00:05')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('Daily ROI distribution completed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('Daily ROI distribution failed');
+            });
+
+        // Retry failed ROI distributions every 6 hours
+        $schedule->command('investment:distribute-roi --retry')
+            ->everySixHours()
+            ->withoutOverlapping()
+            ->runInBackground();
     }
 
     /**
