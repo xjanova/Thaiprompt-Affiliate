@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.81.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #585 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (144cce2)
+- feat: Add cryptocurrency icons to admin crypto dashboard (88a4292)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.80.1] - 2025-11-08
 
 ### ✨ Features
