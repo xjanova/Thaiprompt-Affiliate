@@ -7,11 +7,14 @@
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 
     // Taskbar settings
-    $taskbarHeight = WindowsUiSetting::get('windows_taskbar_height', 56);
+    $taskbarHeight = WindowsUiSetting::get('windows_taskbar_height', 60);
     $taskbarPosition = WindowsUiSetting::get('windows_taskbar_position', 'top');
+
+    // Get user info
+    $user = auth()->user();
 @endphp
 
-<!-- Millennium Taskbar -->
+<!-- Millennium Taskbar + Start Menu Container -->
 <div
     x-data="{
         startMenuOpen: false,
@@ -23,131 +26,218 @@
             const minutes = String(now.getMinutes()).padStart(2, '0');
             this.currentTime = hours + ':' + minutes;
         },
+        toggleDarkMode() {
+            this.isDark = !this.isDark;
+            localStorage.setItem('darkMode', this.isDark ? 'dark' : 'light');
+            if (this.isDark) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        },
         init() {
             this.updateTime();
             setInterval(() => this.updateTime(), 60000);
         }
     }"
     x-init="init()"
-    class="fixed left-0 right-0 z-50 {{ $taskbarPosition === 'top' ? 'top-0' : 'bottom-0' }} millennium-taskbar"
-    style="height: {{ $taskbarHeight }}px;">
+    class="millennium-container">
 
-    <!-- RGB Border Animation -->
-    <div class="absolute inset-0 millennium-taskbar-rgb"></div>
+    <!-- Millennium Taskbar -->
+    <div class="fixed left-0 right-0 z-50 {{ $taskbarPosition === 'top' ? 'top-0' : 'bottom-0' }} millennium-taskbar"
+         style="height: {{ $taskbarHeight }}px;">
 
-    <!-- Taskbar Background -->
-    <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900/40 to-blue-900/40 backdrop-blur-xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/10 shadow-2xl"></div>
+        <!-- RGB Border Animation -->
+        <div class="absolute inset-0 millennium-taskbar-rgb"></div>
 
-    <!-- Taskbar Content -->
-    <div class="relative h-full max-w-full mx-auto px-3 flex items-center justify-between gap-3">
+        <!-- Taskbar Background -->
+        <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900/40 to-blue-900/40 backdrop-blur-xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/10 shadow-2xl"></div>
 
-        <!-- Left Section: Start Button + Back Button -->
-        <div class="flex items-center gap-3">
+        <!-- Taskbar Content -->
+        <div class="relative h-full max-w-full mx-auto px-3 flex items-center justify-between gap-3">
 
-            <!-- Start Button -->
-            <button
-                @click="startMenuOpen = !startMenuOpen"
-                :class="{'millennium-start-active': startMenuOpen}"
-                class="millennium-start-button group flex items-center gap-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-pink-500/50">
+            <!-- Left Section: Start Button + Back Button -->
+            <div class="flex items-center gap-3">
 
-                @if($logo)
-                    <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-8 h-8 object-contain drop-shadow-lg">
-                @else
-                    <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
-                        </svg>
+                <!-- Start Button -->
+                <button
+                    @click="startMenuOpen = !startMenuOpen"
+                    :class="{'millennium-start-active': startMenuOpen}"
+                    class="millennium-start-button group flex items-center gap-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-pink-500/50">
+
+                    @if($logo)
+                        <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-9 h-9 object-contain drop-shadow-lg">
+                    @else
+                        <div class="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                            </svg>
+                        </div>
+                    @endif
+
+                    <span class="text-white font-bold text-xl hidden md:inline-block drop-shadow-lg">
+                        เริ่ม
+                    </span>
+
+                    <!-- Glow Effect on Hover -->
+                    <div class="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                         style="background: linear-gradient(45deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); filter: blur(10px);"></div>
+                </button>
+
+                <!-- Back Button -->
+                <button
+                    onclick="window.history.back()"
+                    class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                    title="กลับ">
+                    <svg class="w-6 h-6 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
+                    <span class="font-bold text-base hidden lg:inline-block">กลับ</span>
+                </button>
+
+            </div>
+
+            <!-- Center Section: Quick Icons -->
+            <div class="flex items-center gap-2 flex-1 justify-center">
+
+                <!-- Shopping Cart -->
+                @if(Route::has('user.shop.cart'))
+                <a href="{{ route('user.shop.cart') }}"
+                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-green-500 hover:to-emerald-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
+                   title="รถเข็น">
+                    <span class="text-2xl">🛒</span>
+                    @php
+                        $cartCount = 0;
+                        try {
+                            if (auth()->check() && session()->has('cart')) {
+                                $cartCount = count(session('cart', []));
+                            }
+                        } catch (\Exception $e) {}
+                    @endphp
+                    @if($cartCount > 0)
+                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                            {{ $cartCount > 9 ? '9+' : $cartCount }}
+                        </span>
+                    @endif
+                </a>
+                @endif
+
+                <!-- Tarot / ดูดวง -->
+                @if(Route::has('tarot.index'))
+                <a href="{{ route('tarot.index') }}"
+                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-purple-500 hover:to-pink-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
+                   title="ดูดวง">
+                    <span class="text-2xl">🔮</span>
+                </a>
+                @endif
+
+                <!-- Bot Marketplace / เช่าบอท -->
+                @if(Route::has('bots.marketplace'))
+                <a href="{{ route('bots.marketplace') }}"
+                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-blue-500 hover:to-cyan-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
+                   title="เช่าบอท">
+                    <span class="text-2xl">🤖</span>
+                </a>
+                @endif
+
+                <!-- Wallet / กระเป๋าเงิน -->
+                @if(Route::has('user.wallet.index'))
+                <a href="{{ route('user.wallet.index') }}"
+                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
+                   title="กระเป๋าเงิน">
+                    <span class="text-2xl">💰</span>
+                </a>
+                @endif
+
+                <!-- ROI Investment -->
+                @if(Route::has('user.investments.index'))
+                <a href="{{ route('user.investments.index') }}"
+                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-pink-500 hover:to-red-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
+                   title="การลงทุน ROI">
+                    <span class="text-2xl">📈</span>
+                </a>
+                @endif
+
+                <!-- Wiki -->
+                @if(Route::has('wiki.index'))
+                <a href="{{ route('wiki.index') }}"
+                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-indigo-500 hover:to-purple-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
+                   title="Platform Wiki">
+                    <span class="text-2xl">📚</span>
+                </a>
+                @endif
+
+            </div>
+
+            <!-- Right Section: System Tray -->
+            <div class="flex items-center gap-3">
+
+                <!-- Dark Mode Toggle -->
+                <button
+                    @click="toggleDarkMode()"
+                    class="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 transform hover:scale-110"
+                    :class="isDark ? 'text-yellow-400' : 'text-gray-300'"
+                    title="สลับโหมดมืด/สว่าง">
+                    <!-- Sun Icon -->
+                    <svg x-show="isDark" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <!-- Moon Icon -->
+                    <svg x-show="!isDark" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                </button>
+
+                <!-- Notification Badge -->
+                @php
+                    $notificationCount = 0;
+                    try {
+                        if (auth()->check()) {
+                            $notificationCount = auth()->user()->unreadNotifications()->count();
+                        }
+                    } catch (\Exception $e) {}
+                @endphp
+
+                @if($notificationCount > 0)
+                    <div class="relative">
+                        <button class="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 transform hover:scale-110">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                        </button>
+                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                            {{ $notificationCount > 9 ? '9+' : $notificationCount }}
+                        </span>
                     </div>
                 @endif
 
-                <span class="text-white font-bold text-lg hidden md:inline-block drop-shadow-lg">
-                    เริ่ม
-                </span>
-
-                <!-- Glow Effect on Hover -->
-                <div class="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                     style="background: linear-gradient(45deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); filter: blur(10px);"></div>
-            </button>
-
-            <!-- Back Button -->
-            <button
-                onclick="window.history.back()"
-                class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-                title="กลับ">
-
-                <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                </svg>
-
-                <span class="font-semibold text-base hidden lg:inline-block">กลับ</span>
-            </button>
-
-        </div>
-
-        <!-- Center Section: App Name + Current Page Title -->
-        <div class="hidden md:flex items-center gap-3 flex-1 justify-center">
-            <div class="px-6 py-2 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-                <span class="text-white font-bold text-lg drop-shadow-lg">
-                    {{ $appName }} - <span class="text-pink-300">{{ $type === 'admin' ? 'Admin Dashboard' : 'Seller Dashboard' }}</span>
-                </span>
-            </div>
-        </div>
-
-        <!-- Right Section: System Tray -->
-        <div class="flex items-center gap-3">
-
-            <!-- Notification Badge (Example) -->
-            @php
-                $notificationCount = 0;
-                try {
-                    if (auth()->check()) {
-                        $notificationCount = auth()->user()->unreadNotifications()->count();
-                    }
-                } catch (\Exception $e) {
-                    // Gracefully handle if notifications don't exist
-                }
-            @endphp
-
-            @if($notificationCount > 0)
-                <div class="relative">
-                    <button class="flex items-center justify-center w-10 h-10 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-300 transform hover:scale-110">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                    </button>
-                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
-                        {{ $notificationCount > 9 ? '9+' : $notificationCount }}
-                    </span>
+                <!-- Current Time -->
+                <div class="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                    <svg class="w-5 h-5 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-white font-bold text-base" x-text="currentTime"></span>
                 </div>
-            @endif
 
-            <!-- Current Time -->
-            <div class="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10">
-                <svg class="w-5 h-5 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span class="text-white font-bold text-base" x-text="currentTime"></span>
-            </div>
-
-            <!-- User Avatar -->
-            @auth
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300 cursor-pointer">
-                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm">
-                        {{ substr(auth()->user()->name, 0, 2) }}
+                <!-- User Avatar -->
+                @auth
+                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300 cursor-pointer">
+                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/30">
+                            {{ substr(auth()->user()->name, 0, 2) }}
+                        </div>
+                        <span class="text-white font-semibold text-base hidden xl:inline-block">
+                            {{ auth()->user()->name }}
+                        </span>
                     </div>
-                    <span class="text-white font-semibold text-sm hidden xl:inline-block">
-                        {{ auth()->user()->name }}
-                    </span>
-                </div>
-            @endauth
+                @endauth
+            </div>
+
         </div>
-
     </div>
-</div>
 
-<!-- Include Millennium Start Menu -->
-<div x-data="{ startMenuOpen: false }">
+    <!-- Millennium Start Menu (ภายใน scope เดียวกัน) -->
     <x-millennium-start-menu :type="$type" />
+
 </div>
 
 <style>
