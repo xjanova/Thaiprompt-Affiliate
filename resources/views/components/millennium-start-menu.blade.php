@@ -105,13 +105,13 @@
                 'color' => 'from-amber-600 to-orange-600',
                 'submenu' => [
                     ['label' => 'กระเป๋าคริปโต', 'url' => route('user.crypto-wallet.index')],
-                    ['label' => 'จัดการกระเป๋า', 'url' => route('user.crypto-wallet.manage')],
+                    ['label' => 'จัดการกระเป๋า', 'url' => route('user.crypto-wallet.wallet-management')],
                     ['label' => 'ประวัติธุรกรรม', 'url' => route('user.crypto-wallet.transactions')],
                     ['label' => 'เทรดดิ้ง', 'url' => route('user.crypto-wallet.trading')],
                     ['label' => 'พอร์ตโฟลิโอ', 'url' => route('user.crypto-wallet.portfolio')],
                     ['label' => 'ฝากเหรียญ', 'url' => route('user.crypto-wallet.deposit')],
                     ['label' => 'ถอนเหรียญ', 'url' => route('user.crypto-wallet.withdraw')],
-                    ['label' => 'ประวัติการถอน', 'url' => route('user.crypto-wallet.withdrawal-history')],
+                    ['label' => 'ประวัติการถอน', 'url' => route('user.crypto-wallet.withdrawals')],
                     ['label' => 'แลกเปลี่ยน THB ↔ Crypto', 'url' => route('user.crypto-wallet.exchange')],
                 ]
             ],
