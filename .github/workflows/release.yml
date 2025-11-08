@@ -376,32 +376,39 @@ jobs:
             TARGET_BRANCH="${{ github.ref_name }}"
           fi
 
-          echo "Pushing tag to remote: $NEW_TAG"
+          # Check if tag already exists on remote
+          git fetch origin --tags 2>/dev/null || true
+          if git ls-remote --tags origin | grep -q "refs/tags/$NEW_TAG$"; then
+            echo "⚠️ Tag $NEW_TAG already exists on remote, skipping push"
+            echo "✅ Tag $NEW_TAG is already available remotely"
+          else
+            echo "Pushing tag to remote: $NEW_TAG"
 
-          # Retry logic for pushing tag with exponential backoff
-          MAX_RETRIES=5
-          RETRY_COUNT=0
-          SLEEP_TIME=2
+            # Retry logic for pushing tag with exponential backoff
+            MAX_RETRIES=5
+            RETRY_COUNT=0
+            SLEEP_TIME=2
 
-          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-            echo "Tag push attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES..."
+            while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+              echo "Tag push attempt $((RETRY_COUNT + 1)) of $MAX_RETRIES..."
 
-            # Try to push tag
-            if git push origin "$NEW_TAG"; then
-              echo "✅ Tag push successful!"
-              break
-            else
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-                echo "⚠️ Tag push failed. Retrying in ${SLEEP_TIME}s..."
-                sleep $SLEEP_TIME
-                SLEEP_TIME=$((SLEEP_TIME * 2))  # Exponential backoff
+              # Try to push tag
+              if git push origin "$NEW_TAG"; then
+                echo "✅ Tag push successful!"
+                break
               else
-                echo "❌ Tag push failed after $MAX_RETRIES attempts"
-                exit 1
+                RETRY_COUNT=$((RETRY_COUNT + 1))
+                if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+                  echo "⚠️ Tag push failed. Retrying in ${SLEEP_TIME}s..."
+                  sleep $SLEEP_TIME
+                  SLEEP_TIME=$((SLEEP_TIME * 2))  # Exponential backoff
+                else
+                  echo "❌ Tag push failed after $MAX_RETRIES attempts"
+                  exit 1
+                fi
               fi
-            fi
-          done
+            done
+          fi
 
       - name: Check if release already exists
         if: steps.check_bump.outputs.should_bump == 'true'
