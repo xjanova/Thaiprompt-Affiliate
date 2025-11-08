@@ -34,8 +34,9 @@
     <!-- GSAP -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 
-    {{-- Theme System v2 --}}
-    <x-theme-style :theme="$currentTheme ?? null" :mode="$currentThemeMode ?? 'auto'" />
+    {{-- Dark Mode System --}}
+    <x-dark-mode-init />
+    <x-dark-mode-styles />
 
     @php
         // Gradient color variables from settings with defaults
@@ -383,6 +384,58 @@
                     </div>
                 </div>
 
+                <!-- Investment Dropdown Menu -->
+                <div x-data="{ investmentOpen: false }" class="relative mb-1">
+                    @php
+                        $investmentActive = request()->routeIs('user.investments.*');
+                    @endphp
+
+                    <!-- Main Investment Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ $investmentActive ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : '' }}"
+                       @click="investmentOpen = !investmentOpen">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📈</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            การลงทุน ROI
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': investmentOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="investmentOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('user.investments.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.investments.index') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">🏠</span>
+                            <span>แดชบอร์ด</span>
+                        </a>
+
+                        <a href="{{ route('user.investments.plans') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('user.investments.plans*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">💎</span>
+                            <span>แผนการลงทุน</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <a href="{{ route('user.investments.index') }}#roi-distributions"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200">
+                            <span class="mr-2">💰</span>
+                            <span>ประวัติ ROI</span>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Marketing Section Divider -->
                 <div class="border-t border-gray-700/50 my-2" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen"></div>
 
@@ -587,8 +640,8 @@
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
 
-                        <!-- Theme Toggle -->
-                        <x-theme-toggle />
+                        <!-- Dark Mode Toggle -->
+                        <x-dark-mode-toggle />
 
                         <!-- Notification Bell -->
                         <x-notification-bell />
@@ -716,10 +769,8 @@
     {{-- Immediate Notification Popup --}}
     <x-immediate-notification-popup />
 
-    {{-- Theme System v2 - JavaScript --}}
-    @if(class_exists('\App\Models\Theme'))
-        <x-theme-script :mode="$currentThemeMode ?? 'auto'" />
-    @endif
+    {{-- Floating Tools --}}
+    <x-floating-tools />
 
     @stack('scripts')
 </body>

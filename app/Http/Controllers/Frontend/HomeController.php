@@ -90,6 +90,17 @@ class HomeController extends Controller
         // Total referral network size
         $totalReferrals = \App\Models\Affiliate::sum('total_referrals') ?? 0;
 
+        // Investment statistics
+        $totalInvested = \App\Models\StakingPosition::whereIn('status', ['active', 'locked', 'matured'])
+            ->sum('amount') ?? 0;
+
+        $totalROIPaid = \App\Models\RoiDistribution::where('status', 'completed')
+            ->sum('roi_amount') ?? 0;
+
+        $activeInvestors = \App\Models\StakingPosition::whereIn('status', ['active', 'locked'])
+            ->distinct('user_id')
+            ->count('user_id') ?? 0;
+
         $stats = [
             'total_users' => $totalUsers,
             'total_affiliates' => $totalAffiliates,
@@ -102,7 +113,18 @@ class HomeController extends Controller
             'this_month_commissions' => $thisMonthCommissions,
             'user_growth' => $userGrowth,
             'total_referrals' => $totalReferrals,
+            'total_invested' => $totalInvested,
+            'total_roi_paid' => $totalROIPaid,
+            'active_investors' => $activeInvestors,
         ];
+
+        // Get investment plans for homepage
+        $investmentPlans = \App\Models\InvestmentPlan::active()
+            ->available()
+            ->orderBy('sort_order')
+            ->orderBy('min_amount')
+            ->limit(4)
+            ->get();
 
         // Get premium page sections configuration
         $premiumSections = [
@@ -113,13 +135,15 @@ class HomeController extends Controller
             'how_it_works' => Setting::get('premium_page_how_it_works_enabled', true),
             'faq' => Setting::get('premium_page_faq_enabled', true),
             'cta' => Setting::get('premium_page_cta_enabled', true),
+            'investment' => Setting::get('premium_page_investment_enabled', true), // New section
         ];
 
         return view('frontend.home', compact(
             'stats',
             'premiumSections',
             'topAffiliates',
-            'recentSuccesses'
+            'recentSuccesses',
+            'investmentPlans'
         ));
     }
 

@@ -33,8 +33,9 @@
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    {{-- Theme System v2 --}}
-    <x-theme-style :theme="$currentTheme ?? null" :mode="$currentThemeMode ?? 'auto'" />
+    {{-- Dark Mode System --}}
+    <x-dark-mode-init />
+    <x-dark-mode-styles />
 
     @stack('styles')
 
@@ -56,8 +57,8 @@
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
-    {{-- Theme System v2 --}}
-    <x-theme-script />
+    {{-- Floating Tools --}}
+    <x-floating-tools />
 
     @stack('scripts')
 </body>

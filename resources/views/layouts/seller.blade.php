@@ -220,6 +220,10 @@
             };
         };
     </script>
+
+    {{-- Dark Mode System --}}
+    <x-dark-mode-init />
+    <x-dark-mode-styles />
 </head>
 <body class="font-sans antialiased bg-gray-100">
     <!-- Page Loader -->
@@ -288,6 +292,13 @@
                    class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.products*') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
                     <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📦</span>
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สินค้า</span>
+                </a>
+
+                <!-- POS Terminal -->
+                <a href="{{ route('seller.pos.terminal') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.pos.terminal') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏪</span>
+                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">POS ขายสินค้า</span>
                 </a>
 
                 <!-- Sales -->
@@ -361,8 +372,8 @@
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
 
-                        <!-- Theme Toggle -->
-                        <x-theme-toggle />
+                        <!-- Dark Mode Toggle -->
+                        <x-dark-mode-toggle />
 
                         <!-- Notification Bell -->
                         <x-notification-bell />
@@ -484,6 +495,9 @@
             });
         });
     </script>
+
+    {{-- Floating Tools --}}
+    <x-floating-tools />
 
     @stack('scripts')
 </body>

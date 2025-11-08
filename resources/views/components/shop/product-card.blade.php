@@ -284,25 +284,40 @@ function addToCartQuick(event, productId) {
             attributes: {}
         })
     })
-    .then(response => response.json())
-    .then(data => {
-        // Show success message
-        button.innerHTML = '<svg class="w-4 h-4 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
-
-        // Update cart count if element exists
-        const cartCount = document.getElementById('cart-count');
-        if (cartCount && data.cart_count) {
-            cartCount.textContent = data.cart_count;
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'เกิดข้อผิดพลาด');
+            });
         }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            button.innerHTML = '<svg class="w-4 h-4 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>';
 
-        setTimeout(() => {
-            button.innerHTML = originalContent;
-            button.disabled = false;
-        }, 2000);
+            // Update cart count if element exists
+            const cartCount = document.getElementById('cart-count');
+            if (cartCount && data.cart_count) {
+                cartCount.textContent = data.cart_count;
+                // Add badge visibility if cart was empty
+                if (cartCount.classList.contains('hidden')) {
+                    cartCount.classList.remove('hidden');
+                }
+            }
+
+            setTimeout(() => {
+                button.innerHTML = originalContent;
+                button.disabled = false;
+            }, 2000);
+        } else {
+            throw new Error(data.message || 'เกิดข้อผิดพลาด');
+        }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า');
+        alert(error.message || 'เกิดข้อผิดพลาดในการเพิ่มสินค้าลงตะกร้า');
         button.innerHTML = originalContent;
         button.disabled = false;
     });

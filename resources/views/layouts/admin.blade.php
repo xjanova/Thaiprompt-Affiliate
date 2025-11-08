@@ -34,8 +34,9 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 
-    {{-- Theme System v2 --}}
-    <x-theme-style :theme="$currentTheme ?? null" :mode="$currentThemeMode ?? 'auto'" />
+    {{-- Dark Mode System --}}
+    <x-dark-mode-init />
+    <x-dark-mode-styles />
 
     <style>
         /* Alpine.js x-cloak */
@@ -1456,8 +1457,8 @@
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
 
-                        <!-- Theme Toggle -->
-                        <x-theme-toggle />
+                        <!-- Dark Mode Toggle -->
+                        <x-dark-mode-toggle />
 
                         <!-- Notification Bell -->
                         <x-notification-bell />
@@ -1632,8 +1633,8 @@
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
-    {{-- Theme System v2 - JavaScript --}}
-    <x-theme-script :mode="$currentThemeMode ?? 'auto'" />
+    {{-- Floating Tools --}}
+    <x-floating-tools />
 
     @stack('scripts')
 </body>

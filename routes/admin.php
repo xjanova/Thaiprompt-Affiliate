@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
+use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\PageController;
@@ -96,6 +97,33 @@ Route::resource('commissions', CommissionController::class);
 Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
 Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
 Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
+
+// Investment & Staking Management
+Route::prefix('investments')->name('investments.')->group(function () {
+    Route::get('/', [InvestmentController::class, 'index'])->name('index');
+
+    // Investment Plans
+    Route::get('/plans', [InvestmentController::class, 'plans'])->name('plans.index');
+    Route::get('/plans/create', [InvestmentController::class, 'createPlan'])->name('plans.create');
+    Route::post('/plans', [InvestmentController::class, 'storePlan'])->name('plans.store');
+    Route::get('/plans/{plan}/edit', [InvestmentController::class, 'editPlan'])->name('plans.edit');
+    Route::put('/plans/{plan}', [InvestmentController::class, 'updatePlan'])->name('plans.update');
+    Route::delete('/plans/{plan}', [InvestmentController::class, 'destroyPlan'])->name('plans.destroy');
+
+    // Staking Positions
+    Route::get('/positions', [InvestmentController::class, 'positions'])->name('positions.index');
+    Route::get('/positions/{position}', [InvestmentController::class, 'showPosition'])->name('positions.show');
+    Route::post('/positions/{position}/approve', [InvestmentController::class, 'approvePosition'])->name('positions.approve');
+    Route::post('/positions/{position}/reject', [InvestmentController::class, 'rejectPosition'])->name('positions.reject');
+
+    // ROI Distributions
+    Route::get('/distributions', [InvestmentController::class, 'distributions'])->name('distributions.index');
+    Route::post('/distributions/trigger', [InvestmentController::class, 'triggerDistribution'])->name('distributions.trigger');
+    Route::post('/distributions/retry-failed', [InvestmentController::class, 'retryFailedDistributions'])->name('distributions.retry-failed');
+
+    // Utilities
+    Route::post('/process-mature', [InvestmentController::class, 'processMaturePositions'])->name('process-mature');
+});
 
 // KYC Verification Management
 Route::prefix('kyc')->name('kyc.')->group(function () {
@@ -1020,6 +1048,12 @@ Route::prefix('icons')->name('icons.')->group(function () {
     Route::get('/list', [\App\Http\Controllers\Admin\IconController::class, 'list'])->name('list');
 });
 
+// Floating Tools Management
+Route::prefix('floating-tools')->name('floating-tools.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\FloatingToolsController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\Admin\FloatingToolsController::class, 'update'])->name('update');
+});
+
 // System Update Management
 Route::prefix('updates')->name('updates.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('index');
@@ -1048,4 +1082,55 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::put('/{ticket}/priority', [TicketController::class, 'updatePriority'])->name('update-priority');
     Route::put('/{ticket}/category', [TicketController::class, 'updateCategory'])->name('update-category');
     Route::delete('/{ticket}', [TicketController::class, 'destroy'])->name('destroy');
+});
+
+// Tarot Reading Management
+Route::prefix('tarot')->name('tarot.')->group(function () {
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'index'])->name('index');
+    Route::get('/analytics', [\App\Http\Controllers\Admin\TarotManagementController::class, 'analytics'])->name('analytics');
+
+    // Tarot Cards Management
+    Route::prefix('cards')->name('cards.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsCreate'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsStore'])->name('store');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsEdit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsUpdate'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsDestroy'])->name('destroy');
+    });
+
+    // Categories Management
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesCreate'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesStore'])->name('store');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesEdit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesUpdate'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesDestroy'])->name('destroy');
+    });
+
+    // Card Back Images Management
+    Route::prefix('card-backs')->name('card-backs.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksIndex'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksStore'])->name('store');
+        Route::post('/{id}/set-default', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksSetDefault'])->name('set-default');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksDestroy'])->name('destroy');
+    });
+
+    // Spread Types Management
+    Route::prefix('spread-types')->name('spread-types.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'spreadTypesIndex'])->name('index');
+    });
+
+    // Readings Management
+    Route::prefix('readings')->name('readings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsIndex'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsShow'])->name('show');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsDestroy'])->name('destroy');
+    });
+
+    // Settings
+    Route::get('/settings', [\App\Http\Controllers\Admin\TarotManagementController::class, 'settings'])->name('settings');
+    Route::put('/settings', [\App\Http\Controllers\Admin\TarotManagementController::class, 'settingsUpdate'])->name('settings.update');
 });
