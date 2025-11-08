@@ -37,6 +37,8 @@ class DatabaseSeeder extends Seeder
 
             // 4. Communication Templates
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
+            LineOaSettingSeeder::class,         // LINE OA Settings Configuration
+            LineSignupFlowSeeder::class,        // LINE Signup Flow (Conversation Bot)
             LineFlexMessageTemplateSeeder::class, // LINE Flex Message Templates
 
             // 5. AI & Integrations
