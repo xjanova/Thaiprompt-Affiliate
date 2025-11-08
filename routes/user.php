@@ -32,6 +32,14 @@ Route::get('/referrals', [DashboardController::class, 'referrals'])->name('refer
 Route::get('/organization', [DashboardController::class, 'organizationChart'])->name('organization');
 Route::get('/organization-binary', [DashboardController::class, 'binaryOrganizationChart'])->name('organization.binary');
 
+// MLM Prospects (ผู้มุ่งหวัง)
+Route::prefix('prospects')->name('prospects.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\MlmProspectController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\User\MlmProspectController::class, 'create'])->name('create');
+    Route::post('/', [\App\Http\Controllers\User\MlmProspectController::class, 'store'])->name('store');
+    Route::get('/{id}', [\App\Http\Controllers\User\MlmProspectController::class, 'show'])->name('show');
+});
+
 // Organization Tree API (for web session)
 Route::get('/organization/tree-data', [DashboardController::class, 'getOrganizationTreeData'])->name('organization.tree-data');
 
