@@ -2,6 +2,38 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.21.0] - 2025-11-08
+
+### ✨ Features
+- feat: implement comprehensive ticket support system (4f0e64c)
+  - Add complete admin ticket management interface
+  - Add user ticket creation and tracking interface
+  - Add 7 default Thai ticket categories
+  - Add priority levels (low, medium, high, critical)
+  - Add status workflow (open, in_progress, waiting_customer, resolved, closed)
+  - Add ticket assignment system
+  - Add internal notes for staff communication
+  - Add real-time badge counters in sidebars
+  - Add advanced filtering and search
+  - Add 14 automated feature tests
+  - Add comprehensive documentation (README, Checklist, Quick Start)
+  - Add deployment automation script
+  - Support dark mode and responsive design
+
+### 🔧 Technical
+- Add TicketService for business logic layer
+- Add Ticket, TicketReply, TicketCategory models
+- Add database migrations for ticket tables
+- Add routes for admin and user ticket management
+- Merge branch 'claude/Main' with conflict resolution
+
+### 📚 Documentation
+- Add TICKET_SYSTEM_README.md - Complete user guide
+- Add TICKET_SYSTEM_CHECKLIST.md - Pre-launch checklist
+- Add TICKET_QUICK_START.md - Quick start guide
+- Add deploy-ticket-system.sh - Deployment automation
+- Add PULL_REQUEST_TEMPLATE.md - PR documentation
+
 ## [v2.20.0] - 2025-11-08
 
 ### ✨ Features
