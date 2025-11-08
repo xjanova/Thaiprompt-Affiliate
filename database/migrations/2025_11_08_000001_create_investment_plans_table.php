@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('investment_plans')) {
+            return;
+        }
+
         Schema::create('investment_plans', function (Blueprint $table) {
             $table->id();
             $table->string('name'); // ชื่อแผน เช่น "Gold Plan"

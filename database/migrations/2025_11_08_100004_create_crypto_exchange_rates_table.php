@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('crypto_exchange_rates')) {
+            return;
+        }
+
         Schema::create('crypto_exchange_rates', function (Blueprint $table) {
             $table->id();
             $table->foreignId('crypto_currency_id')->constrained()->onDelete('cascade');
