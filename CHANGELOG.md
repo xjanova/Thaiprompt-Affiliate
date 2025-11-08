@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.80.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #583 from xjanova/claude/update-about-us-page-011CUvceE7YxiXAy2U2gbMJt (a1190fb)
+- feat: Modernize about-us page with comprehensive content and interactive mindmap (314b920)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.79.0] - 2025-11-08
 
 ### ✨ Features
