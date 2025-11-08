@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.92.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #615 from xjanova/claude/remove-user-shopping-page-011CUvtejB9cPSu85b89thah (6713767)
+- refactor: remove user shopping page and redirect to main shop (0a27de7)
+
 ## [v2.92.1] - 2025-11-08
 
 ### ✨ Features
