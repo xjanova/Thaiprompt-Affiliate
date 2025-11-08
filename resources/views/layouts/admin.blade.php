@@ -34,8 +34,9 @@
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 
-    {{-- Theme System v2 --}}
-    <x-theme-style :theme="$currentTheme ?? null" :mode="$currentThemeMode ?? 'auto'" />
+    {{-- Dark Mode System --}}
+    <x-dark-mode-init />
+    <x-dark-mode-styles />
 
     <style>
         /* Alpine.js x-cloak */
@@ -227,6 +228,19 @@
                         @endif
                     </a>
                 @endif
+
+                <!-- Ticket Support System -->
+                @php
+                    $openTicketCount = \App\Models\Ticket::open()->count();
+                @endphp
+                <a href="{{ route('admin.tickets.index') }}"
+                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-indigo-600 hover:to-purple-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.tickets.*') ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' : '' }}">
+                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🎫</span>
+                    <span class="ml-3 text-sm font-medium transition-all flex-1" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">Ticket Support</span>
+                    @if($openTicketCount > 0)
+                        <span class="ml-auto bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $openTicketCount }}</span>
+                    @endif
+                </a>
 
                 <!-- Marketing System Dropdown -->
                 <div class="relative mb-1">
@@ -1443,8 +1457,8 @@
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
 
-                        <!-- Theme Toggle -->
-                        <x-theme-toggle />
+                        <!-- Dark Mode Toggle -->
+                        <x-dark-mode-toggle />
 
                         <!-- Notification Bell -->
                         <x-notification-bell />
@@ -1619,8 +1633,8 @@
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
-    {{-- Theme System v2 - JavaScript --}}
-    <x-theme-script :mode="$currentThemeMode ?? 'auto'" />
+    {{-- Floating Tools --}}
+    <x-floating-tools />
 
     @stack('scripts')
 </body>

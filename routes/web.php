@@ -258,3 +258,23 @@ Route::middleware(['auth', 'role:seller,super_admin'])->prefix('seller')->name('
 Route::middleware('auth')->prefix('pos')->name('pos.')->group(function () {
     require __DIR__.'/pos.php';
 });
+
+// Tarot Reading Routes (Public)
+Route::prefix('tarot')->name('tarot.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\TarotReadingController::class, 'index'])->name('index');
+    Route::get('/category/{slug}', [\App\Http\Controllers\TarotReadingController::class, 'showCategory'])->name('category');
+    Route::post('/start', [\App\Http\Controllers\TarotReadingController::class, 'startReading'])->name('start');
+    Route::get('/reading/{id}', [\App\Http\Controllers\TarotReadingController::class, 'showReading'])->name('reading.show');
+    Route::get('/card-backs', [\App\Http\Controllers\TarotReadingController::class, 'getCardBackImages'])->name('card-backs');
+
+    // Payment routes
+    Route::get('/payment', [\App\Http\Controllers\TarotReadingController::class, 'payment'])->name('payment');
+    Route::post('/payment/process', [\App\Http\Controllers\TarotReadingController::class, 'processPayment'])->name('payment.process');
+
+    // Authenticated routes
+    Route::middleware('auth')->group(function () {
+        Route::post('/reading/{id}/save', [\App\Http\Controllers\TarotReadingController::class, 'saveReading'])->name('reading.save');
+        Route::get('/history', [\App\Http\Controllers\TarotReadingController::class, 'history'])->name('history');
+        Route::get('/saved', [\App\Http\Controllers\TarotReadingController::class, 'savedReadings'])->name('saved');
+    });
+});
