@@ -41,10 +41,7 @@ jobs:
       - name: Get previous version
         id: previoustag
         run: |
-          # ALWAYS use VERSION file as the source of truth (not git tags)
-          # This prevents overwriting manual version corrections
-          HAS_GIT_TAG="false"
-
+          # Get version from VERSION file but verify if git tag exists
           if [ -f "VERSION" ]; then
             VERSION_FROM_FILE=$(cat VERSION | tr -d '\n\r')
             LATEST_TAG="v$VERSION_FROM_FILE"
@@ -56,8 +53,16 @@ jobs:
           else
             # Fallback to git tag only if no VERSION file exists
             LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-            HAS_GIT_TAG="true"
             echo "Fallback to git tag: $LATEST_TAG"
+          fi
+
+          # Check if the tag actually exists in git
+          if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+            HAS_GIT_TAG="true"
+            echo "✅ Git tag $LATEST_TAG exists"
+          else
+            HAS_GIT_TAG="false"
+            echo "⚠️ Git tag $LATEST_TAG does not exist, will use recent commits"
           fi
 
           echo "tag=$LATEST_TAG" >> $GITHUB_OUTPUT
