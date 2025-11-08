@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.92.3] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #613 from xjanova/claude/fix-migration-column-reference-011CUvsSLE4fbenfjxsgRYBW (5c4c0ba)
+- fix: prevent duplicate entry errors in multiple seeders (18713c4)
+### 🔧 Other Changes
+
+
 ## [v2.92.2] - 2025-11-08
 
 ### ✨ Features
