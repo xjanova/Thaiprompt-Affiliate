@@ -720,11 +720,9 @@ class AccountingDemoSeeder extends Seeder
 
         // Assets
         $accounts['cash_in_bank'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '1120'],
             [
                 'user_id' => $user->id,
-                'code' => '1120',
-            ],
-            [
                 'name' => 'เงินฝากธนาคาร',
                 'name_eng' => 'Cash in Bank',
                 'type' => 'asset',
@@ -738,11 +736,9 @@ class AccountingDemoSeeder extends Seeder
         );
 
         $accounts['accounts_receivable'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '1130'],
             [
                 'user_id' => $user->id,
-                'code' => '1130',
-            ],
-            [
                 'name' => 'ลูกหนี้การค้า',
                 'name_eng' => 'Accounts Receivable',
                 'type' => 'asset',
@@ -755,11 +751,9 @@ class AccountingDemoSeeder extends Seeder
 
         // Liabilities
         $accounts['accounts_payable'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '2110'],
             [
                 'user_id' => $user->id,
-                'code' => '2110',
-            ],
-            [
                 'name' => 'เจ้าหนี้การค้า',
                 'name_eng' => 'Accounts Payable',
                 'type' => 'liability',
@@ -771,11 +765,9 @@ class AccountingDemoSeeder extends Seeder
         );
 
         $accounts['output_vat'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '2130'],
             [
                 'user_id' => $user->id,
-                'code' => '2130',
-            ],
-            [
                 'name' => 'ภาษีขาย',
                 'name_eng' => 'Output VAT',
                 'type' => 'liability',
@@ -788,11 +780,9 @@ class AccountingDemoSeeder extends Seeder
 
         // Equity
         $accounts['retained_earnings'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '3200'],
             [
                 'user_id' => $user->id,
-                'code' => '3200',
-            ],
-            [
                 'name' => 'กำไร (ขาดทุน) สะสม',
                 'name_eng' => 'Retained Earnings',
                 'type' => 'equity',
@@ -805,11 +795,9 @@ class AccountingDemoSeeder extends Seeder
 
         // Revenue
         $accounts['product_sales'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '4110'],
             [
                 'user_id' => $user->id,
-                'code' => '4110',
-            ],
-            [
                 'name' => 'รายได้จากการขายสินค้า',
                 'name_eng' => 'Product Sales',
                 'type' => 'revenue',
@@ -821,11 +809,9 @@ class AccountingDemoSeeder extends Seeder
         );
 
         $accounts['service_revenue'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '4120'],
             [
                 'user_id' => $user->id,
-                'code' => '4120',
-            ],
-            [
                 'name' => 'รายได้จากการให้บริการ',
                 'name_eng' => 'Service Revenue',
                 'type' => 'revenue',
@@ -838,11 +824,9 @@ class AccountingDemoSeeder extends Seeder
 
         // Expenses
         $accounts['cost_of_goods'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5110'],
             [
                 'user_id' => $user->id,
-                'code' => '5110',
-            ],
-            [
                 'name' => 'ต้นทุนสินค้า',
                 'name_eng' => 'Cost of Goods',
                 'type' => 'expense',
@@ -854,11 +838,9 @@ class AccountingDemoSeeder extends Seeder
         );
 
         $accounts['salaries'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5210'],
             [
                 'user_id' => $user->id,
-                'code' => '5210',
-            ],
-            [
                 'name' => 'เงินเดือนและค่าจ้าง',
                 'name_eng' => 'Salaries and Wages',
                 'type' => 'expense',
@@ -870,11 +852,9 @@ class AccountingDemoSeeder extends Seeder
         );
 
         $accounts['rent'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5220'],
             [
                 'user_id' => $user->id,
-                'code' => '5220',
-            ],
-            [
                 'name' => 'ค่าเช่า',
                 'name_eng' => 'Rent Expense',
                 'type' => 'expense',
@@ -886,11 +866,9 @@ class AccountingDemoSeeder extends Seeder
         );
 
         $accounts['utilities'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5230'],
             [
                 'user_id' => $user->id,
-                'code' => '5230',
-            ],
-            [
                 'name' => 'ค่าน้ำ ค่าไฟ',
                 'name_eng' => 'Utilities Expense',
                 'type' => 'expense',
@@ -902,11 +880,9 @@ class AccountingDemoSeeder extends Seeder
         );
 
         $accounts['office_supplies'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5260'],
             [
                 'user_id' => $user->id,
-                'code' => '5260',
-            ],
-            [
                 'name' => 'ค่าวัสดุสำนักงาน',
                 'name_eng' => 'Office Supplies',
                 'type' => 'expense',
@@ -918,11 +894,9 @@ class AccountingDemoSeeder extends Seeder
         );
 
         $accounts['marketing'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5280'],
             [
                 'user_id' => $user->id,
-                'code' => '5280',
-            ],
-            [
                 'name' => 'ค่าการตลาดและโฆษณา',
                 'name_eng' => 'Marketing and Advertising',
                 'type' => 'expense',
