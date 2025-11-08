@@ -361,7 +361,7 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::post('/providers/{provider}/set-default', [EmailController::class, 'setDefaultProvider'])->name('providers.set-default');
 
     // Email Templates
-    Route::get('/templates', [EmailController::class, 'templates'])->name('templates');
+    Route::get('/templates', [EmailController::class, 'templates'])->name('templates.index');
     Route::get('/templates/create', [EmailController::class, 'createTemplate'])->name('templates.create');
     Route::post('/templates', [EmailController::class, 'storeTemplate'])->name('templates.store');
     Route::get('/templates/{template}/edit', [EmailController::class, 'editTemplate'])->name('templates.edit');
