@@ -620,6 +620,81 @@
                 <!-- Divider -->
                 <div class="border-t border-gray-700/50 my-3"></div>
 
+                <!-- Cryptocurrency Payment Gateway Dropdown -->
+                <div class="relative mb-1">
+                    @php
+                        $cryptoActive = request()->routeIs('admin.crypto.*');
+                        $pendingCryptoWithdrawals = \App\Models\CryptoWithdrawalRequest::whereIn('status', ['pending', 'reviewing'])->count();
+                    @endphp
+
+                    <!-- Main Crypto Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-lg transition-all duration-200 group {{ $cryptoActive ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('cryptoMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">₿</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            Crypto Gateway
+                        </span>
+                        @if($pendingCryptoWithdrawals > 0)
+                            <span class="inline-flex items-center justify-center px-2 py-0.5 mr-1 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                                {{ $pendingCryptoWithdrawals }}
+                            </span>
+                        @endif
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': cryptoMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Crypto Submenu -->
+                    <div class="mt-1 space-y-1 overflow-hidden transition-all duration-200"
+                         x-show="cryptoMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-collapse>
+                        <a href="{{ route('admin.crypto.dashboard') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.crypto.dashboard') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <a href="{{ route('admin.crypto.withdrawals') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.crypto.withdrawals') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">🔓</span>
+                            <span>Withdrawal Approval</span>
+                            @if($pendingCryptoWithdrawals > 0)
+                                <span class="inline-flex items-center justify-center ml-auto px-1.5 py-0.5 text-xs font-bold text-white bg-red-500 rounded-full animate-pulse">
+                                    {{ $pendingCryptoWithdrawals }}
+                                </span>
+                            @endif
+                        </a>
+
+                        <a href="{{ route('admin.crypto.transactions') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.crypto.transactions') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">📜</span>
+                            <span>Transactions</span>
+                        </a>
+
+                        <a href="{{ route('admin.crypto.wallets') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.crypto.wallets') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">👛</span>
+                            <span>Wallet Management</span>
+                        </a>
+
+                        <a href="{{ route('admin.crypto.currencies') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.crypto.currencies') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">💰</span>
+                            <span>Currency Settings</span>
+                        </a>
+
+                        <a href="{{ route('admin.crypto.settings') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-yellow-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.crypto.settings') ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white' : '' }}">
+                            <span class="mr-2">⚙️</span>
+                            <span>System Settings</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="border-t border-gray-700/50 my-3"></div>
+
                 <!-- Security -->
                 <a href="{{ route('admin.security.index') }}"
                    class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-red-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('admin.security.*') ? 'bg-gradient-to-r from-red-600 to-pink-600 text-white shadow-lg' : '' }}">

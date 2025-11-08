@@ -298,3 +298,16 @@ require __DIR__.'/software_sales.php';
 Route::get('/cookie-policy', function () {
     return view('cookie-policy');
 })->name('cookie-policy');
+
+// Cryptocurrency Price Charts
+Route::prefix('crypto')->name('crypto.')->group(function () {
+    Route::get('/charts', [\App\Http\Controllers\CryptoPriceChartController::class, 'index'])->name('charts');
+});
+
+// Cryptocurrency API Routes
+Route::prefix('api/crypto')->name('api.crypto.')->group(function () {
+    Route::get('/chart/{currency}', [\App\Http\Controllers\CryptoPriceChartController::class, 'getChartData'])->name('chart');
+    Route::get('/compare', [\App\Http\Controllers\CryptoPriceChartController::class, 'getComparisonData'])->name('compare');
+    Route::get('/market-overview', [\App\Http\Controllers\CryptoPriceChartController::class, 'getMarketOverview'])->name('market-overview');
+    Route::get('/realtime-prices', [\App\Http\Controllers\CryptoPriceChartController::class, 'getRealTimePrices'])->name('realtime-prices');
+});
