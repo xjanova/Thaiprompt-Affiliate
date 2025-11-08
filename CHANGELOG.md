@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.89.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #601 from xjanova/claude/line-chatbot-mlm-signup-011CUvm6H8GwvA2dibnRvzHk (e9f0d4b)
+- feat: implement intelligent LINE chatbot MLM signup system (12e357a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.88.3] - 2025-11-08
 
 ### ✨ Features
