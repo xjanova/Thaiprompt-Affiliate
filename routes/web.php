@@ -278,3 +278,8 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
         Route::get('/saved', [\App\Http\Controllers\TarotReadingController::class, 'savedReadings'])->name('saved');
     });
 });
+
+// Cookie Policy Page
+Route::get('/cookie-policy', function () {
+    return view('cookie-policy');
+})->name('cookie-policy');
