@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.92.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #614 from xjanova/claude/fix-windows-ui-manager-011CUvf5qGaDFhFaHijnBXtU (ffc4ba9)
+- fix: integrate Start Menu directly into taskbar for proper Alpine.js state sharing (be839e2)
+### 🔧 Other Changes
+
+
 ## [v2.92.0] - 2025-11-08
 
 ### ✨ Features
