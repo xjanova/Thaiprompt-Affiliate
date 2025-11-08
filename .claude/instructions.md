@@ -1,5 +1,14 @@
 # คำแนะนำสำหรับ Claude - Thaiprompt Affiliate System
 
+## 📚 คู่มือเพิ่มเติม (Additional Guidelines)
+
+- **[DATABASE_GUIDELINES.md](./DATABASE_GUIDELINES.md)** - คู่มือการจัดการ Database, Migrations และ Seeders
+  - กฎสำคัญสำหรับ migrations (Table existence checks)
+  - Best practices สำหรับ seeders
+  - Common issues และวิธีแก้ไข
+
+---
+
 ## หลักการออกแบบและพัฒนาโค้ด
 
 ### 🌓 การรองรับโหมดมืด-สว่าง (Dark/Light Mode)
