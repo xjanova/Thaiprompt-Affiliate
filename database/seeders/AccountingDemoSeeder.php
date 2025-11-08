@@ -355,7 +355,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 1,
             ]);
 
-            $invoice1->fresh()->calculateTotals();
+            $invoice1->calculateTotals();
             $invoice1->save();
 
             // Create payment for invoice 1
@@ -394,7 +394,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 0,
             ]);
 
-            $invoice2->fresh()->calculateTotals();
+            $invoice2->calculateTotals();
             $invoice2->save();
 
             // Invoice 3 - Partial Payment
@@ -434,7 +434,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 1,
             ]);
 
-            $invoice3->fresh()->calculateTotals();
+            $invoice3->calculateTotals();
             $invoice3->save();
 
             // Partial payment
@@ -469,7 +469,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 0,
             ]);
 
-            $invoice4->fresh()->calculateTotals();
+            $invoice4->calculateTotals();
             $invoice4->save();
 
             // Invoice 5 - Draft
@@ -496,7 +496,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 0,
             ]);
 
-            $invoice5->fresh()->calculateTotals();
+            $invoice5->calculateTotals();
             $invoice5->save();
 
             // 10. Create Expenses
@@ -526,7 +526,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 0,
             ]);
 
-            $expense1->fresh()->calculateTotals();
+            $expense1->calculateTotals();
             $expense1->save();
 
             $expense1->recordPayment($expense1->total_amount, [
@@ -560,7 +560,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 0,
             ]);
 
-            $expense2->fresh()->calculateTotals();
+            $expense2->calculateTotals();
             $expense2->save();
 
             $expense2->recordPayment($expense2->total_amount, [
@@ -592,7 +592,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 0,
             ]);
 
-            $expense3->fresh()->calculateTotals();
+            $expense3->calculateTotals();
             $expense3->save();
 
             // Expense 4 - Paid
@@ -618,7 +618,7 @@ class AccountingDemoSeeder extends Seeder
                 'sort_order' => 0,
             ]);
 
-            $expense4->fresh()->calculateTotals();
+            $expense4->calculateTotals();
             $expense4->save();
 
             $expense4->recordPayment($expense4->total_amount, [
