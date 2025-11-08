@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.73.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #571 from xjanova/claude/fix-unrelated-changelog-entries-011CUvRWMZ27vcYScuDCCjaT (c571eff)
+- chore: remove PR template to prevent template text in automated PRs (c239482)
+
 ## [v2.73.1] - 2025-11-08
 
 ### ✨ Features
