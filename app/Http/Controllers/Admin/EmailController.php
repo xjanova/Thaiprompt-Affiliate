@@ -248,7 +248,7 @@ class EmailController extends Controller
         EmailTemplate::create($validated);
 
         return redirect()
-            ->route('admin.email.templates')
+            ->route('admin.email.templates.index')
             ->with('success', 'Email template created successfully');
     }
 
@@ -286,7 +286,7 @@ class EmailController extends Controller
         $template->update($validated);
 
         return redirect()
-            ->route('admin.email.templates')
+            ->route('admin.email.templates.index')
             ->with('success', 'Email template updated successfully');
     }
 
@@ -298,7 +298,7 @@ class EmailController extends Controller
         $template->delete();
 
         return redirect()
-            ->route('admin.email.templates')
+            ->route('admin.email.templates.index')
             ->with('success', 'Email template deleted successfully');
     }
 

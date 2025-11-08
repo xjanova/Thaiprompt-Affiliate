@@ -865,7 +865,7 @@
                             <span>Email Providers</span>
                         </a>
 
-                        <a href="{{ route('admin.email.templates') }}"
+                        <a href="{{ route('admin.email.templates.index') }}"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.email.templates*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white' : '' }}">
                             <span class="mr-2">📋</span>
                             <span>Email Templates</span>
