@@ -164,24 +164,6 @@
             transition-duration: 200ms;
         }
 
-        /* Custom scrollbar for sidebar */
-        .sidebar-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .sidebar-scroll::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.1);
-        }
-
-        .sidebar-scroll::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 3px;
-        }
-
-        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.5);
-        }
-
         /* Mobile-first responsive utilities */
         @media (max-width: 768px) {
             .mobile-padding {
@@ -204,7 +186,7 @@
     @stack('styles')
 
     <style>
-        /* Ensure Windows Taskbar doesn't overlap with sidebar */
+        /* Ensure Windows Taskbar doesn't overlap with content */
         @php
             $taskbarPosition = \App\Models\WindowsUiSetting::get('windows_taskbar_position', 'top');
             $taskbarHeight = \App\Models\WindowsUiSetting::get('windows_taskbar_height', 48);
@@ -214,17 +196,9 @@
         body {
             padding-top: {{ $taskbarHeight }}px;
         }
-        .fixed.inset-y-0.left-0 {
-            top: {{ $taskbarHeight }}px;
-            height: calc(100vh - {{ $taskbarHeight }}px);
-        }
         @else
         body {
             padding-bottom: {{ $taskbarHeight }}px;
-        }
-        .fixed.inset-y-0.left-0 {
-            bottom: {{ $taskbarHeight }}px;
-            height: calc(100vh - {{ $taskbarHeight }}px);
         }
         @endif
     </style>
@@ -260,187 +234,14 @@
 
     <!-- Page Loader -->
     <x-page-loader />
-    <div class="min-h-screen" x-data="{ sidebarOpen: false, sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true', profileDropdown: false }">
-        <!-- Overlay for mobile -->
-        <div x-show="sidebarOpen"
-             @click="sidebarOpen = false"
-             x-transition:enter="transition-opacity ease-linear duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition-opacity ease-linear duration-300"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-gray-600 bg-opacity-75 z-30 md:hidden"
-             style="display: none;"></div>
 
-        <!-- Sidebar -->
-        <div class="fixed inset-y-0 left-0 z-40 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900 shadow-2xl transform transition-all duration-300 ease-in-out overflow-y-auto sidebar-scroll"
-             style="box-shadow: 4px 0 20px rgba(0, 0, 0, 0.5);"
-             :class="{
-                 '-translate-x-full md:translate-x-0': !sidebarOpen,
-                 'translate-x-0': sidebarOpen,
-                 'w-56': !sidebarCollapsed,
-                 'md:w-16': sidebarCollapsed
-             }">
-            <!-- Logo Section -->
-            <div class="flex items-center justify-center h-16 bg-gradient-primary relative">
-                @php
-                    $logo = \App\Models\Setting::get('logo');
-                    // Logo size settings for sidebar
-                    $logoSidebarWidth = \App\Models\Setting::get('logo_sidebar_width', 48);
-                    $logoSidebarHeight = \App\Models\Setting::get('logo_sidebar_height', 48);
-                @endphp
-                @if($logo)
-                    <img src="{{ asset($logo) }}" alt="Logo" style="width: {{ $logoSidebarWidth }}px; height: {{ $logoSidebarHeight }}px;" class="object-contain" :class="{ 'md:w-10 md:h-10': sidebarCollapsed }">
-                @else
-                    @php
-                        $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
-                        $appNameShort = mb_substr($appName, 0, 2);
-                    @endphp
-                    <span class="text-white font-bold transition-all" :class="{ 'text-2xl': !sidebarCollapsed, 'md:text-lg': sidebarCollapsed }">
-                        <span x-show="!sidebarCollapsed">{{ $appName }}</span>
-                        <span x-show="sidebarCollapsed" class="hidden md:block">{{ $appNameShort }}</span>
-                    </span>
-                @endif
-
-                <!-- Collapse Toggle (Desktop only) -->
-                <button @click="sidebarCollapsed = !sidebarCollapsed; localStorage.setItem('sidebarCollapsed', sidebarCollapsed)"
-                        class="hidden md:flex absolute -right-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white rounded-full p-2.5 shadow-2xl transition-all duration-300 items-center justify-center group hover:scale-110 border-2 border-white"
-                        title="ซ่อน/แสดงเมนู">
-                    <svg class="w-5 h-5 transition-transform duration-300 drop-shadow-lg" :class="{ 'rotate-180': sidebarCollapsed }" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                </button>
-            </div>
-
-            <!-- Navigation -->
-            <nav class="mt-6 px-3">
-                <!-- Dashboard -->
-                <a href="{{ route('seller.dashboard') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.dashboard') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📊</span>
-                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">แดชบอร์ด</span>
-                </a>
-
-                <!-- Products -->
-                <a href="{{ route('seller.products.index') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.products*') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📦</span>
-                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สินค้า</span>
-                </a>
-
-                <!-- POS Menu with Submenu -->
-                <div x-data="{ posOpen: {{ request()->routeIs('seller.pos*') ? 'true' : 'false' }} }" class="mb-1">
-                    <!-- POS Main Menu -->
-                    <button @click="posOpen = !posOpen"
-                            class="w-full flex items-center justify-between px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.pos*') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg' : '' }}">
-                        <div class="flex items-center">
-                            <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏪</span>
-                            <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ระบบ POS</span>
-                        </div>
-                        <svg x-show="!sidebarCollapsed || sidebarOpen" :class="{ 'rotate-180': posOpen }" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                        </svg>
-                    </button>
-
-                    <!-- POS Submenu -->
-                    <div x-show="posOpen && (!sidebarCollapsed || sidebarOpen)"
-                         x-collapse
-                         class="ml-6 mt-1 space-y-1"
-                         :class="{ 'md:hidden': sidebarCollapsed }">
-                        <a href="{{ route('seller.pos.terminal') }}"
-                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.terminal') ? 'text-green-400 bg-gray-700/50' : '' }}">
-                            <span class="mr-2">💰</span>
-                            <span>ขายสินค้า</span>
-                        </a>
-                        <a href="{{ route('seller.pos.index') }}"
-                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.index') ? 'text-green-400 bg-gray-700/50' : '' }}">
-                            <span class="mr-2">📊</span>
-                            <span>แดชบอร์ด</span>
-                        </a>
-                        <a href="{{ route('seller.pos.transactions') }}"
-                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.transactions*') ? 'text-green-400 bg-gray-700/50' : '' }}">
-                            <span class="mr-2">📝</span>
-                            <span>รายการขาย</span>
-                        </a>
-                        <a href="{{ route('seller.pos.sessions') }}"
-                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.sessions*') ? 'text-green-400 bg-gray-700/50' : '' }}">
-                            <span class="mr-2">⏰</span>
-                            <span>Session</span>
-                        </a>
-                        <a href="{{ route('seller.pos.settings') }}"
-                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.settings') ? 'text-green-400 bg-gray-700/50' : '' }}">
-                            <span class="mr-2">⚙️</span>
-                            <span>ตั้งค่า POS</span>
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Sales -->
-                <a href="{{ route('seller.orders.index') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.orders*') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🛒</span>
-                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ยอดขาย</span>
-                </a>
-
-                <!-- Analytics -->
-                <a href="{{ route('seller.analytics') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.analytics') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📈</span>
-                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">วิเคราะห์</span>
-                </a>
-
-                <!-- Profile -->
-                <a href="{{ route('seller.profile') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-cyan-600 hover:to-blue-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.profile') ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">👤</span>
-                    <span class="ml-3 text-base font-semibold transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">โปรไฟล์</span>
-                </a>
-
-                <!-- Version Info -->
-                <div class="mt-4 px-3" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
-                    <div class="bg-gray-800/50 dark:bg-gray-900/50 backdrop-blur-sm rounded-lg p-3 border border-gray-700/30 dark:border-gray-600/30">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs text-gray-400 dark:text-gray-300">เวอร์ชั่น</span>
-                            <span class="text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-500 px-2 py-0.5 rounded-full">
-                                {{ config('version.current') }}
-                            </span>
-                        </div>
-                        <div class="text-[10px] text-gray-600 dark:text-gray-400 space-y-1">
-                            <div class="flex items-center justify-between">
-                                <span>App</span>
-                                <span class="text-gray-400 dark:text-gray-300">{{ config('version.current') }} {{ config('version.name') }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span>Laravel</span>
-                                <span class="text-gray-400 dark:text-gray-300">{{ app()->version() }}</span>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <span>PHP</span>
-                                <span class="text-gray-400 dark:text-gray-300">{{ PHP_VERSION }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Spacing at bottom for scrolling -->
-                <div class="h-4"></div>
-            </nav>
-        </div>
-
-        <!-- Main Content -->
-        <div class="transition-all duration-300" :class="{ 'md:ml-56': !sidebarCollapsed, 'md:ml-16': sidebarCollapsed }">
-            <!-- Top Bar -->
-            <header class="bg-white shadow-sm sticky top-0 z-20">
-                <div class="flex items-center justify-between px-6 py-4">
+    <div class="min-h-screen">
+        <!-- Top Bar -->
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                        <button @click="sidebarOpen = !sidebarOpen" class="text-gray-500 hover:text-gray-700 focus:outline-none md:hidden mr-4 transition-colors">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
-                        </button>
-
-                        <h1 class="text-3xl font-bold text-gray-800">@yield('title')</h1>
+                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
                     </div>
 
                     <div class="flex items-center space-x-3">
@@ -465,13 +266,13 @@
                         </div>
                     </div>
                 </div>
-            </header>
+            </div>
+        </header>
 
-            <!-- Page Content -->
-            <main class="p-6">
-                @yield('content')
-            </main>
-        </div>
+        <!-- Page Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            @yield('content')
+        </main>
     </div>
 
     <!-- Fixed Floating Toast Notifications -->
@@ -544,27 +345,18 @@
             };
         };
 
-        // GSAP Animations - ปรับให้ไม่กระทบการแสดงผล
-        gsap.registerPlugin(ScrollTrigger);
-
-        // Animate page entrance
+        // GSAP Animations
         document.addEventListener('DOMContentLoaded', function() {
-            // ปิด animations ที่อาจทำให้แสดงผลไม่ครบ
-            // Removed initial opacity animations to prevent display issues
-
-            // Subtle entrance animation - ใช้แค่ translateY ไม่ใช้ opacity
+            // Subtle entrance animation
             gsap.from('main > *', {
                 y: 10,
                 duration: 0.3,
                 stagger: 0.05,
                 ease: 'power2.out',
-                clearProps: 'all' // Clear all properties after animation
+                clearProps: 'all'
             });
 
-            // Removed scroll-triggered animations to prevent rendering issues
-            // เอา card animations ออกเพื่อป้องกันปัญหาการแสดงผล
-
-            // Subtle hover effects on buttons - ไม่กระทบการแสดงผล
+            // Subtle hover effects on buttons
             const buttons = document.querySelectorAll('button:not([type=submit]), .btn');
             buttons.forEach(button => {
                 button.addEventListener('mouseenter', () => {
@@ -576,7 +368,6 @@
             });
         });
     </script>
-
 
     <script>
         // Dark Mode Toggle Function for Windows UI

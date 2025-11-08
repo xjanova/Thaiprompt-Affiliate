@@ -295,56 +295,48 @@
         </a>
     </div>
 
-    <!-- Charts Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Charts Section - Compact & Beautiful -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Revenue Trend Chart -->
-        <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6">
-            <div class="flex items-center justify-between mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <div class="flex items-center justify-between mb-4">
                 <div>
-                    <h3 class="text-xl font-bold text-gray-900">รายได้รายเดือน</h3>
-                    <p class="text-sm text-gray-500">12 เดือนย้อนหลัง</p>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">รายได้รายเดือน</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">12 เดือนย้อนหลัง</p>
                 </div>
                 <div class="flex gap-2">
-                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">
+                    <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-lg text-xs font-semibold">
                         ฿{{ number_format($monthlyRevenue->sum('total'), 0) }}
                     </span>
                 </div>
             </div>
-            <canvas id="revenueChart" height="80"></canvas>
+            <div class="h-48">
+                <canvas id="revenueChart"></canvas>
+            </div>
         </div>
 
         <!-- Commission Status Donut Chart -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-6">สถานะคอมมิชชั่น</h3>
-            <canvas id="statusChart"></canvas>
-            <div class="mt-6 space-y-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600">รอดำเนินการ</span>
-                    </div>
-                    <span class="font-semibold text-gray-900">{{ $commissionStatus['pending'] }}</span>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">สถานะคอมมิชชั่น</h3>
+            <div class="h-48 flex items-center justify-center">
+                <canvas id="statusChart"></canvas>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                    <span class="text-xs text-gray-600 dark:text-gray-300">รอ: {{ $commissionStatus['pending'] }}</span>
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600">อนุมัติแล้ว</span>
-                    </div>
-                    <span class="font-semibold text-gray-900">{{ $commissionStatus['approved'] }}</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span class="text-xs text-gray-600 dark:text-gray-300">อนุมัติ: {{ $commissionStatus['approved'] }}</span>
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600">จ่ายแล้ว</span>
-                    </div>
-                    <span class="font-semibold text-gray-900">{{ $commissionStatus['paid'] }}</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span class="text-xs text-gray-600 dark:text-gray-300">จ่าย: {{ $commissionStatus['paid'] }}</span>
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600">ปฏิเสธ</span>
-                    </div>
-                    <span class="font-semibold text-gray-900">{{ $commissionStatus['rejected'] }}</span>
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                    <span class="text-xs text-gray-600 dark:text-gray-300">ปฏิเสธ: {{ $commissionStatus['rejected'] }}</span>
                 </div>
             </div>
         </div>
@@ -353,15 +345,19 @@
     <!-- Commission Types & Daily Activity -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Commission Types Bar Chart -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-6">ประเภทคอมมิชชั่น</h3>
-            <canvas id="typesChart"></canvas>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">ประเภทคอมมิชชั่น</h3>
+            <div class="h-48">
+                <canvas id="typesChart"></canvas>
+            </div>
         </div>
 
         <!-- Daily Activity Line Chart -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-6">กิจกรรมรายวัน (30 วัน)</h3>
-            <canvas id="dailyChart"></canvas>
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">กิจกรรมรายวัน (30 วัน)</h3>
+            <div class="h-48">
+                <canvas id="dailyChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -603,7 +599,7 @@ if (revenueCtx) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
@@ -674,7 +670,7 @@ if (statusCtx) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
@@ -712,7 +708,7 @@ if (typesCtx) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
@@ -777,7 +773,7 @@ if (dailyCtx) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
