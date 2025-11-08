@@ -68,6 +68,27 @@ class Kernel extends ConsoleKernel
             ->everySixHours()
             ->withoutOverlapping()
             ->runInBackground();
+
+        // System Analytics Collection
+        // Collect metrics every 5 minutes for detailed monitoring
+        $schedule->command('analytics:collect')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('System analytics collected successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('System analytics collection failed');
+            });
+
+        // Clean old analytics data daily at 02:00 AM (keep last 30 days)
+        $schedule->command('analytics:collect --cleanup')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->onSuccess(function () {
+                \Log::info('Old analytics data cleaned successfully');
+            });
     }
 
     /**
