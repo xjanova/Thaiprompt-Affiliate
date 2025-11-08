@@ -95,12 +95,8 @@
 <!-- Fullscreen Presentation Modal -->
 <div id="presentation-fullscreen" class="fixed inset-0 bg-black z-50 hidden">
     <!-- Logo Watermark Overlay -->
-    <div class="absolute top-8 left-8 z-20 opacity-15 pointer-events-none">
-        @if($logo && file_exists(storage_path('app/public/' . $logo)))
-            <img src="{{ asset('storage/' . $logo) }}" alt="{{ $appName }}" width="80" height="80" class="w-20 h-20 object-contain" onerror="this.src='{{ asset('images/logo.svg') }}'">
-        @else
-            <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="80" height="80" class="w-20 h-20 object-contain">
-        @endif
+    <div class="absolute top-8 left-8 z-20 opacity-20 pointer-events-none">
+        <img src="{{ asset('images/logo.svg') }}" alt="{{ $appName }}" width="80" height="80" class="w-20 h-20 object-contain filter drop-shadow-lg">
     </div>
 
     <!-- Control Panel -->
