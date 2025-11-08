@@ -56,6 +56,11 @@ use App\Http\Controllers\Admin\PosDeviceController;
 use App\Http\Controllers\Admin\PosTransactionController;
 use App\Http\Controllers\Admin\PosAdvertisementController;
 use App\Http\Controllers\Admin\TicketController;
+use App\Http\Controllers\Admin\AppSettingController;
+use App\Http\Controllers\Admin\AppThemeSettingController;
+use App\Http\Controllers\Admin\AppFeatureController;
+use App\Http\Controllers\Admin\AppBannerController;
+use App\Http\Controllers\Admin\AppMaintenanceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -1221,4 +1226,50 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
     // System Settings - Direct route for backward compatibility
     Route::get('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateSettings'])->name('settings.update');
+});
+
+// App Management (Mobile App Configuration)
+Route::prefix('app-management')->name('app-management.')->group(function () {
+    // App Settings
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [AppSettingController::class, 'index'])->name('index');
+        Route::put('/', [AppSettingController::class, 'update'])->name('update');
+    });
+
+    // App Theme Settings
+    Route::prefix('theme')->name('theme.')->group(function () {
+        Route::get('/', [AppThemeSettingController::class, 'index'])->name('index');
+        Route::put('/', [AppThemeSettingController::class, 'update'])->name('update');
+    });
+
+    // App Features
+    Route::prefix('features')->name('features.')->group(function () {
+        Route::get('/', [AppFeatureController::class, 'index'])->name('index');
+        Route::get('/create', [AppFeatureController::class, 'create'])->name('create');
+        Route::post('/', [AppFeatureController::class, 'store'])->name('store');
+        Route::get('/{appFeature}/edit', [AppFeatureController::class, 'edit'])->name('edit');
+        Route::put('/{appFeature}', [AppFeatureController::class, 'update'])->name('update');
+        Route::delete('/{appFeature}', [AppFeatureController::class, 'destroy'])->name('destroy');
+        Route::post('/{appFeature}/toggle', [AppFeatureController::class, 'toggle'])->name('toggle');
+    });
+
+    // App Banners
+    Route::prefix('banners')->name('banners.')->group(function () {
+        Route::get('/', [AppBannerController::class, 'index'])->name('index');
+        Route::get('/create', [AppBannerController::class, 'create'])->name('create');
+        Route::post('/', [AppBannerController::class, 'store'])->name('store');
+        Route::get('/{appBanner}/edit', [AppBannerController::class, 'edit'])->name('edit');
+        Route::put('/{appBanner}', [AppBannerController::class, 'update'])->name('update');
+        Route::delete('/{appBanner}', [AppBannerController::class, 'destroy'])->name('destroy');
+        Route::post('/{appBanner}/toggle', [AppBannerController::class, 'toggle'])->name('toggle');
+    });
+
+    // App Maintenance
+    Route::prefix('maintenance')->name('maintenance.')->group(function () {
+        Route::get('/', [AppMaintenanceController::class, 'index'])->name('index');
+        Route::put('/', [AppMaintenanceController::class, 'update'])->name('update');
+        Route::post('/toggle', [AppMaintenanceController::class, 'toggle'])->name('toggle');
+        Route::post('/enable', [AppMaintenanceController::class, 'enable'])->name('enable');
+        Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
+    });
 });
