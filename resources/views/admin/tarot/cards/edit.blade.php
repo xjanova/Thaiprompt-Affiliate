@@ -28,14 +28,54 @@
             <p class="text-sm text-gray-500 mt-1">เลือกรูปใหม่หากต้องการเปลี่ยน</p>
         </div>
 
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">คำสำคัญ (ไทย) - คั่นด้วยเครื่องหมายจุลภาค</label>
+            <input type="text" name="keywords_th" value="{{ is_array($card->keywords_th) ? implode(', ', $card->keywords_th) : $card->keywords_th }}" class="w-full rounded-lg border-gray-300" placeholder="ความรัก, ความสุข, โอกาสใหม่">
+            <p class="text-xs text-gray-500 mt-1">ตัวอย่าง: ความรัก, ความสุข, โอกาสใหม่</p>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">คำสำคัญ (อังกฤษ) - คั่นด้วยเครื่องหมายจุลภาค</label>
+            <input type="text" name="keywords_en" value="{{ is_array($card->keywords_en) ? implode(', ', $card->keywords_en) : $card->keywords_en }}" class="w-full rounded-lg border-gray-300" placeholder="love, happiness, new beginnings">
+            <p class="text-xs text-gray-500 mt-1">Example: love, happiness, new beginnings</p>
+        </div>
+
         <div class="grid grid-cols-2 gap-6 mb-6">
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">ความหมายหัวตั้ง (ไทย)</label>
-                <textarea name="upright_meaning_th" rows="4" class="w-full rounded-lg border-gray-300">{{ $card->upright_meaning_th }}</textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-2">คำอธิบาย (ไทย)</label>
+                <textarea name="description_th" rows="3" class="w-full rounded-lg border-gray-300">{{ $card->description_th }}</textarea>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">ความหมายกลับหัว (ไทย)</label>
-                <textarea name="reversed_meaning_th" rows="4" class="w-full rounded-lg border-gray-300">{{ $card->reversed_meaning_th }}</textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-2">คำอธิบาย (อังกฤษ)</label>
+                <textarea name="description_en" rows="3" class="w-full rounded-lg border-gray-300">{{ $card->description_en }}</textarea>
+            </div>
+        </div>
+
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-green-800 mb-3">ความหมายหัวตั้ง (Upright)</h3>
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ภาษาไทย</label>
+                    <textarea name="upright_meaning_th" rows="4" class="w-full rounded-lg border-gray-300">{{ $card->upright_meaning_th }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ภาษาอังกฤษ</label>
+                    <textarea name="upright_meaning_en" rows="4" class="w-full rounded-lg border-gray-300">{{ $card->upright_meaning_en }}</textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-red-800 mb-3">ความหมายกลับหัว (Reversed)</h3>
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ภาษาไทย</label>
+                    <textarea name="reversed_meaning_th" rows="4" class="w-full rounded-lg border-gray-300">{{ $card->reversed_meaning_th }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">ภาษาอังกฤษ</label>
+                    <textarea name="reversed_meaning_en" rows="4" class="w-full rounded-lg border-gray-300">{{ $card->reversed_meaning_en }}</textarea>
+                </div>
             </div>
         </div>
 
