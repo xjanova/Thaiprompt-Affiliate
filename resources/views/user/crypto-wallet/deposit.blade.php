@@ -34,10 +34,19 @@
             <a href="{{ route('user.crypto-wallet.deposit.currency', $currency->code) }}"
                class="group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all p-6 border-2 border-transparent hover:border-amber-500">
                 <div class="flex items-center mb-4">
-                    <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl mr-4"
-                         style="background: {{ $currency->color ?? 'linear-gradient(135deg, #F59E0B, #D97706)' }};">
-                        <span class="text-white font-bold">{{ substr($currency->code, 0, 1) }}</span>
-                    </div>
+                    @php
+                        $iconPath = public_path('icons/cryptocurrency/' . strtolower($currency->code) . '.svg');
+                    @endphp
+                    @if(file_exists($iconPath))
+                        <img src="{{ asset('icons/cryptocurrency/' . strtolower($currency->code) . '.svg') }}"
+                             alt="{{ $currency->code }}"
+                             class="w-14 h-14 mr-4">
+                    @else
+                        <div class="w-14 h-14 rounded-full flex items-center justify-center text-2xl mr-4"
+                             style="background: {{ $currency->color ?? 'linear-gradient(135deg, #F59E0B, #D97706)' }};">
+                            <span class="text-white font-bold">{{ substr($currency->code, 0, 1) }}</span>
+                        </div>
+                    @endif
                     <div>
                         <h3 class="text-xl font-bold text-gray-800 dark:text-gray-100">{{ $currency->code }}</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ $currency->name }}</p>

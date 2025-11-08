@@ -95,10 +95,19 @@
                             @foreach($wallet->cryptoAddresses->take(5) as $address)
                                 <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                                     <div class="flex items-center flex-1 mr-4">
-                                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
-                                             style="background: {{ $address->currency->color ?? 'linear-gradient(135deg, #F59E0B, #D97706)' }};">
-                                            {{ substr($address->currency->code, 0, 1) }}
-                                        </div>
+                                        @php
+                                            $iconPath = public_path('icons/cryptocurrency/' . strtolower($address->currency->code) . '.svg');
+                                        @endphp
+                                        @if(file_exists($iconPath))
+                                            <img src="{{ asset('icons/cryptocurrency/' . strtolower($address->currency->code) . '.svg') }}"
+                                                 alt="{{ $address->currency->code }}"
+                                                 class="w-10 h-10 mr-3">
+                                        @else
+                                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold mr-3"
+                                                 style="background: {{ $address->currency->color ?? 'linear-gradient(135deg, #F59E0B, #D97706)' }};">
+                                                {{ substr($address->currency->code, 0, 1) }}
+                                            </div>
+                                        @endif
                                         <div class="flex-1 min-w-0">
                                             <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $address->currency->code }}</div>
                                             <div class="font-mono text-xs text-gray-500 dark:text-gray-400 truncate">

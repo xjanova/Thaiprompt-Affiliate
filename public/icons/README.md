@@ -9,6 +9,7 @@ This directory contains all icons used in the application.
 - **custom/** - Custom icons uploaded by admin
 - **social/** - Social media icons (Facebook, LINE, Twitter, etc.)
 - **flags/** - Country flags
+- **cryptocurrency/** - Cryptocurrency icons (Bitcoin, Ethereum, etc.) - 222+ coins
 
 ## 📤 How to Add Icons
 
@@ -55,6 +56,7 @@ For detailed documentation, see: `ICON_SYSTEM_GUIDE.md`
 - [Font Awesome](https://fontawesome.com/)
 - [Material Icons](https://fonts.google.com/icons)
 - [Flaticon](https://www.flaticon.com/)
+- [Cryptocurrency Icons](https://github.com/spothq/cryptocurrency-icons) - For crypto icons
 
 ---
 

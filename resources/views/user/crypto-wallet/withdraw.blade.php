@@ -34,9 +34,18 @@
                 @foreach($balances as $code => $balance)
                     <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <div class="flex items-center">
-                            <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                {{ substr($code, 0, 1) }}
-                            </div>
+                            @php
+                                $iconPath = public_path('icons/cryptocurrency/' . strtolower($code) . '.svg');
+                            @endphp
+                            @if(file_exists($iconPath))
+                                <img src="{{ asset('icons/cryptocurrency/' . strtolower($code) . '.svg') }}"
+                                     alt="{{ $code }}"
+                                     class="w-10 h-10 mr-3">
+                            @else
+                                <div class="w-10 h-10 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                                    {{ substr($code, 0, 1) }}
+                                </div>
+                            @endif
                             <div>
                                 <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $balance['currency']->name }}</div>
                                 <div class="text-sm text-gray-500 dark:text-gray-400">{{ $code }}</div>
