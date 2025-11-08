@@ -15,6 +15,52 @@
     --primary: {{ $primaryColor }};
     --secondary: {{ $secondaryColor }};
     --accent: {{ $accentColor }};
+
+    /* Light mode colors */
+    --wiki-bg: #ffffff;
+    --wiki-border: #e5e7eb;
+    --wiki-text-primary: #111827;
+    --wiki-text-secondary: #374151;
+    --wiki-text-muted: #6b7280;
+    --wiki-hover-bg: #f3f4f6;
+    --wiki-card-bg: #ffffff;
+    --wiki-card-gradient: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
+    --wiki-shadow: rgba(0,0,0,0.05);
+    --wiki-shadow-hover: rgba(0,0,0,0.1);
+
+    /* Info box colors - Light */
+    --info-box-bg: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    --info-box-text: #1e40af;
+    --info-warning-bg: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    --info-warning-text: #92400e;
+    --info-success-bg: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    --info-success-text: #065f46;
+    --info-research-bg: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+    --info-research-text: #831843;
+}
+
+.dark {
+    /* Dark mode colors */
+    --wiki-bg: #1f2937;
+    --wiki-border: #374151;
+    --wiki-text-primary: #f9fafb;
+    --wiki-text-secondary: #e5e7eb;
+    --wiki-text-muted: #9ca3af;
+    --wiki-hover-bg: #374151;
+    --wiki-card-bg: #111827;
+    --wiki-card-gradient: linear-gradient(145deg, #1f2937 0%, #111827 100%);
+    --wiki-shadow: rgba(0,0,0,0.3);
+    --wiki-shadow-hover: rgba(0,0,0,0.5);
+
+    /* Info box colors - Dark */
+    --info-box-bg: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+    --info-box-text: #bfdbfe;
+    --info-warning-bg: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+    --info-warning-text: #fef3c7;
+    --info-success-bg: linear-gradient(135deg, #065f46 0%, #047857 100%);
+    --info-success-text: #d1fae5;
+    --info-research-bg: linear-gradient(135deg, #831843 0%, #9f1239 100%);
+    --info-research-text: #fce7f3;
 }
 
 /* Wikipedia-style Layout */
@@ -32,17 +78,18 @@
     position: sticky;
     top: 2rem;
     height: fit-content;
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--wiki-card-bg);
+    border: 1px solid var(--wiki-border);
     border-radius: 12px;
     padding: 1.5rem;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px var(--wiki-shadow);
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 .wiki-sidebar h3 {
     font-size: 0.875rem;
     font-weight: 700;
-    color: #6b7280;
+    color: var(--wiki-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 1rem;
@@ -61,7 +108,7 @@
 .wiki-nav a {
     display: block;
     padding: 0.5rem 0.75rem;
-    color: #374151;
+    color: var(--wiki-text-secondary);
     text-decoration: none;
     border-radius: 6px;
     font-size: 0.9rem;
@@ -69,7 +116,7 @@
 }
 
 .wiki-nav a:hover {
-    background: #f3f4f6;
+    background: var(--wiki-hover-bg);
     color: var(--primary);
 }
 
@@ -86,20 +133,21 @@
 
 .wiki-nav .sub-menu a {
     font-size: 0.85rem;
-    color: #6b7280;
+    color: var(--wiki-text-muted);
 }
 
 /* Main Content */
 .wiki-content {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--wiki-card-bg);
+    border: 1px solid var(--wiki-border);
     border-radius: 12px;
     padding: 3rem;
     min-height: 100vh;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 .wiki-header {
-    border-bottom: 2px solid #e5e7eb;
+    border-bottom: 2px solid var(--wiki-border);
     padding-bottom: 1.5rem;
     margin-bottom: 2rem;
 }
@@ -110,11 +158,12 @@
     background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
     margin-bottom: 0.5rem;
 }
 
 .wiki-subtitle {
-    color: #6b7280;
+    color: var(--wiki-text-muted);
     font-size: 1.125rem;
 }
 
@@ -127,7 +176,7 @@
 .wiki-section h2 {
     font-size: 2rem;
     font-weight: 700;
-    color: #111827;
+    color: var(--wiki-text-primary);
     margin-bottom: 1rem;
     padding-bottom: 0.5rem;
     border-bottom: 3px solid var(--primary);
@@ -136,7 +185,7 @@
 .wiki-section h3 {
     font-size: 1.5rem;
     font-weight: 600;
-    color: #1f2937;
+    color: var(--wiki-text-primary);
     margin-top: 2rem;
     margin-bottom: 1rem;
 }
@@ -144,40 +193,65 @@
 .wiki-section h4 {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #374151;
+    color: var(--wiki-text-secondary);
     margin-top: 1.5rem;
     margin-bottom: 0.75rem;
 }
 
 .wiki-section p {
     line-height: 1.8;
-    color: #374151;
+    color: var(--wiki-text-secondary);
     margin-bottom: 1rem;
     font-size: 1.05rem;
 }
 
+.wiki-section ul, .wiki-section ol {
+    color: var(--wiki-text-secondary);
+}
+
+.wiki-section li {
+    color: var(--wiki-text-secondary);
+}
+
 /* Info Boxes */
 .info-box {
-    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    background: var(--info-box-bg);
     border-left: 4px solid var(--primary);
     padding: 1.5rem;
     border-radius: 8px;
     margin: 1.5rem 0;
+    transition: background 0.3s;
+}
+
+.info-box h4, .info-box p, .info-box li {
+    color: var(--info-box-text);
 }
 
 .info-box.warning {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    background: var(--info-warning-bg);
     border-left-color: #f59e0b;
 }
 
+.info-box.warning h4, .info-box.warning p, .info-box.warning li {
+    color: var(--info-warning-text);
+}
+
 .info-box.success {
-    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    background: var(--info-success-bg);
     border-left-color: #10b981;
 }
 
+.info-box.success h4, .info-box.success p, .info-box.success li {
+    color: var(--info-success-text);
+}
+
 .info-box.research {
-    background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+    background: var(--info-research-bg);
     border-left-color: #ec4899;
+}
+
+.info-box.research h4, .info-box.research p, .info-box.research li {
+    color: var(--info-research-text);
 }
 
 .info-box h4 {
@@ -189,8 +263,8 @@
 
 /* Statistics Cards */
 .stat-card {
-    background: white;
-    border: 2px solid #e5e7eb;
+    background: var(--wiki-card-bg);
+    border: 2px solid var(--wiki-border);
     border-radius: 12px;
     padding: 1.5rem;
     text-align: center;
@@ -200,27 +274,28 @@
 .stat-card:hover {
     border-color: var(--primary);
     transform: translateY(-2px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 25px var(--wiki-shadow-hover);
 }
 
-.stat-number {
+.stat-number, .stat-value {
     font-size: 2.5rem;
     font-weight: 800;
     background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .stat-label {
-    color: #6b7280;
+    color: var(--wiki-text-muted);
     font-size: 0.875rem;
     margin-top: 0.5rem;
 }
 
 /* Feature Cards */
 .feature-card {
-    background: linear-gradient(145deg, #ffffff 0%, #f9fafb 100%);
-    border: 2px solid #e5e7eb;
+    background: var(--wiki-card-gradient);
+    border: 2px solid var(--wiki-border);
     border-radius: 12px;
     padding: 2rem;
     margin-bottom: 1.5rem;
@@ -229,7 +304,15 @@
 
 .feature-card:hover {
     border-color: var(--primary);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 10px 30px var(--wiki-shadow-hover);
+}
+
+.feature-card h4 {
+    color: var(--wiki-text-primary);
+}
+
+.feature-card p, .feature-card li {
+    color: var(--wiki-text-secondary);
 }
 
 .feature-icon {
@@ -254,6 +337,12 @@
     margin: 1.5rem 0;
     font-family: 'Monaco', 'Courier New', monospace;
     font-size: 0.9rem;
+    border: 1px solid var(--wiki-border);
+}
+
+.dark .code-block {
+    background: #0f172a;
+    border-color: #334155;
 }
 
 /* Tables */
@@ -261,6 +350,9 @@
     width: 100%;
     border-collapse: collapse;
     margin: 1.5rem 0;
+    border: 1px solid var(--wiki-border);
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .wiki-table th {
@@ -273,11 +365,13 @@
 
 .wiki-table td {
     padding: 1rem;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid var(--wiki-border);
+    color: var(--wiki-text-secondary);
+    background: var(--wiki-card-bg);
 }
 
-.wiki-table tr:hover {
-    background: #f9fafb;
+.wiki-table tr:hover td {
+    background: var(--wiki-hover-bg);
 }
 
 /* Timeline */
@@ -301,6 +395,14 @@
     padding-bottom: 2rem;
 }
 
+.timeline-item h4 {
+    color: var(--wiki-text-primary);
+}
+
+.timeline-item p {
+    color: var(--wiki-text-secondary);
+}
+
 .timeline-item::before {
     content: '';
     position: absolute;
@@ -310,7 +412,7 @@
     height: 1rem;
     background: var(--primary);
     border-radius: 50%;
-    border: 3px solid white;
+    border: 3px solid var(--wiki-card-bg);
     box-shadow: 0 0 0 3px var(--primary);
 }
 
@@ -343,7 +445,7 @@
     gap: 0.5rem;
     margin-bottom: 1.5rem;
     font-size: 0.875rem;
-    color: #6b7280;
+    color: var(--wiki-text-muted);
 }
 
 .wiki-breadcrumb a {
@@ -361,19 +463,20 @@
     right: 2rem;
     top: 50%;
     transform: translateY(-50%);
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--wiki-card-bg);
+    border: 1px solid var(--wiki-border);
     border-radius: 12px;
     padding: 1rem;
     max-width: 200px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px var(--wiki-shadow);
     z-index: 100;
+    transition: background-color 0.3s, border-color 0.3s;
 }
 
 .floating-toc h4 {
     font-size: 0.75rem;
     text-transform: uppercase;
-    color: #6b7280;
+    color: var(--wiki-text-muted);
     margin-bottom: 0.75rem;
 }
 
@@ -388,7 +491,7 @@
 }
 
 .floating-toc ul a {
-    color: #374151;
+    color: var(--wiki-text-secondary);
     text-decoration: none;
     font-size: 0.8rem;
 }
@@ -433,17 +536,54 @@
                 </ul>
             </li>
             <li><a href="#commission-simulator">🎯 Commission Simulator</a></li>
-            <li><a href="#ecommerce">E-Commerce System</a></li>
+            <li><a href="#ecommerce">🛒 E-Commerce System</a>
+                <ul class="sub-menu">
+                    <li><a href="#multi-vendor">Multi-Vendor Marketplace</a></li>
+                    <li><a href="#product-management">Product Management</a></li>
+                    <li><a href="#payment-methods">Payment Methods</a></li>
+                </ul>
+            </li>
+            <li><a href="#hotel-booking">🏨 Hotel Booking System</a></li>
             <li><a href="#export-trade">🌏 Export & Trade</a></li>
-            <li><a href="#wallet">Digital Wallet</a></li>
-            <li><a href="#ai-integration">AI & LINE Bot</a></li>
-            <li><a href="#security">ระบบรักษาความปลอดภัย</a></li>
-            <li><a href="#technology">สถาปัตยกรรมเทคโนโลยี</a></li>
-            <li><a href="#database">Database Design</a></li>
-            <li><a href="#business-model">Business Model</a></li>
-            <li><a href="#case-studies">กรณีศึกษา</a></li>
-            <li><a href="#roadmap">แผนอนาคต</a></li>
-            <li><a href="#for-investors">สำหรับนักลงทุน</a></li>
+            <li><a href="#wallet">💰 Digital Wallet & Crypto</a>
+                <ul class="sub-menu">
+                    <li><a href="#wallet-features">Wallet Features</a></li>
+                    <li><a href="#crypto-exchange">Crypto Exchange</a></li>
+                    <li><a href="#withdrawal">Withdrawal System</a></li>
+                </ul>
+            </li>
+            <li><a href="#investment">📈 Investment & Staking</a></li>
+            <li><a href="#ai-integration">🤖 AI & LINE Bot</a>
+                <ul class="sub-menu">
+                    <li><a href="#ai-bot-marketplace">AI Bot Marketplace</a></li>
+                    <li><a href="#line-integration">LINE Integration</a></li>
+                    <li><a href="#ai-providers">Multi-AI Providers</a></li>
+                </ul>
+            </li>
+            <li><a href="#hrm">👥 HRM System</a>
+                <ul class="sub-menu">
+                    <li><a href="#employee-management">Employee Management</a></li>
+                    <li><a href="#attendance">Attendance & Leave</a></li>
+                    <li><a href="#payroll">Payroll System</a></li>
+                </ul>
+            </li>
+            <li><a href="#academy">🎓 Academy & Learning</a></li>
+            <li><a href="#software-sales">💻 Software Sales System</a></li>
+            <li><a href="#ticket-system">🎫 Support Ticket System</a></li>
+            <li><a href="#pos-system">🏪 POS System</a></li>
+            <li><a href="#security">🔒 ระบบรักษาความปลอดภัย</a>
+                <ul class="sub-menu">
+                    <li><a href="#two-factor-auth">Two-Factor Authentication</a></li>
+                    <li><a href="#kyc-ocr">KYC/OCR Verification</a></li>
+                    <li><a href="#security-logging">Security Logging</a></li>
+                </ul>
+            </li>
+            <li><a href="#technology">⚙️ สถาปัตยกรรมเทคโนโลยี</a></li>
+            <li><a href="#database">💾 Database Design</a></li>
+            <li><a href="#business-model">💼 Business Model</a></li>
+            <li><a href="#case-studies">📚 กรณีศึกษา</a></li>
+            <li><a href="#roadmap">🗺️ แผนอนาคต</a></li>
+            <li><a href="#for-investors">💎 สำหรับนักลงทุน</a></li>
         </ul>
     </aside>
 
@@ -2451,6 +2591,591 @@ Step 9: Payment Settlement
                     <li>• คุณได้: <strong>฿20,930/เดือน</strong></li>
                 </ul>
                 <p class="text-sm mt-2 font-bold text-green-700">รายได้แบบ Passive Income!</p>
+            </div>
+        </section>
+
+        <!-- Hotel Booking System Section -->
+        <section id="hotel-booking" class="wiki-section">
+            <h2>🏨 Hotel Booking System - ระบบจองโรงแรมออนไลน์</h2>
+
+            <p>
+                ระบบจองโรงแรมที่ <strong>บูรณาการเต็มรูปแบบ</strong> กับ MLM และ E-Commerce
+                ทำให้สมาชิกสามารถจองโรงแรม พักผ่อน และ <strong>รับค่าคอมมิชชั่น</strong> จากการแนะนำได้
+            </p>
+
+            <h3>✨ ฟีเจอร์หลัก</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">🏨</div>
+                    <h4>Hotel Listings</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ รายละเอียดโรงแรมพร้อมรูปภาพ</li>
+                        <li>✓ ประเภทห้องพัก และราคา</li>
+                        <li>✓ สิ่งอำนวยความสะดวก</li>
+                        <li>✓ รีวิวจากผู้เข้าพัก</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📅</div>
+                    <h4>Booking Management</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ ตรวจสอบห้องว่างแบบ Real-time</li>
+                        <li>✓ จองและชำระเงินออนไลน์</li>
+                        <li>✓ ยืนยันการจองอัตโนมัติ</li>
+                        <li>✓ จัดการการยกเลิกและคืนเงิน</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="info-box success">
+                <h4>💰 รับค่าคอมมิชชั่นจากการจองโรงแรม</h4>
+                <p>สมาชิกที่แนะนำการจองโรงแรมจะได้รับค่าคอมมิชชั่นตามระบบ MLM</p>
+                <ul class="mt-2">
+                    <li>• Direct Referral: <strong>5-10% ของมูลค่าการจอง</strong></li>
+                    <li>• Unilevel Commission: <strong>1-3% จาก Downline</strong></li>
+                    <li>• สะสม PV เพื่อเลื่อนระดับ</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Investment & Staking Section -->
+        <section id="investment" class="wiki-section">
+            <h2>📈 Investment & Staking System - ระบบลงทุนและ Staking</h2>
+
+            <p>
+                ระบบลงทุนที่ให้สมาชิกสามารถ <strong>Stake เงิน</strong> เพื่อรับผลตอบแทนแบบ <strong>Passive Income</strong>
+                พร้อมความโปร่งใสและตรวจสอบได้ทุกขั้นตอน
+            </p>
+
+            <h3>💎 Investment Plans</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
+                <div class="feature-card border-l-4 border-green-500">
+                    <div class="text-4xl mb-3">🌱</div>
+                    <h4>Starter Plan</h4>
+                    <div class="text-center my-4">
+                        <div class="stat-number">8%</div>
+                        <div class="stat-label">ROI ต่อปี</div>
+                    </div>
+                    <ul class="text-sm space-y-1">
+                        <li>• เงินลงทุนขั้นต่ำ: ฿10,000</li>
+                        <li>• ระยะเวลา: 12 เดือน</li>
+                        <li>• จ่ายผลตอบแทนรายเดือน</li>
+                        <li>• ถอนคืนต้นทุนได้หลังครบกำหนด</li>
+                    </ul>
+                </div>
+                <div class="feature-card border-l-4 border-blue-500">
+                    <div class="text-4xl mb-3">💼</div>
+                    <h4>Professional Plan</h4>
+                    <div class="text-center my-4">
+                        <div class="stat-number">12%</div>
+                        <div class="stat-label">ROI ต่อปี</div>
+                    </div>
+                    <ul class="text-sm space-y-1">
+                        <li>• เงินลงทุนขั้นต่ำ: ฿100,000</li>
+                        <li>• ระยะเวลา: 18 เดือน</li>
+                        <li>• จ่ายผลตอบแทนรายสัปดาห์</li>
+                        <li>• โบนัสพิเศษ 2%</li>
+                    </ul>
+                </div>
+                <div class="feature-card border-l-4 border-purple-500">
+                    <div class="text-4xl mb-3">👑</div>
+                    <h4>VIP Plan</h4>
+                    <div class="text-center my-4">
+                        <div class="stat-number">15%</div>
+                        <div class="stat-label">ROI ต่อปี</div>
+                    </div>
+                    <ul class="text-sm space-y-1">
+                        <li>• เงินลงทุนขั้นต่ำ: ฿1,000,000</li>
+                        <li>• ระยะเวลา: 24 เดือน</li>
+                        <li>• จ่ายผลตอบแทนรายวัน</li>
+                        <li>• VIP Support 24/7</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🔐 Staking Features</h3>
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Flexible Staking</strong></td>
+                        <td>ถอนได้ทุกเมื่อ แต่ได้ดอกเบี้ยต่ำกว่า</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fixed Staking</strong></td>
+                        <td>ล็อคระยะเวลาแน่นอน ได้ดอกเบี้ยสูงกว่า</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auto Compound</strong></td>
+                        <td>ดอกเบี้ยเข้า Stake อัตโนมัติ</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Portfolio Tracking</strong></td>
+                        <td>ติดตามพอร์ตการลงทุนแบบ Real-time</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="info-box warning">
+                <h4>⚠️ ข้อควรระวัง</h4>
+                <p><strong>การลงทุนมีความเสี่ยง</strong> ควรศึกษาข้อมูลให้ครบถ้วนก่อนตัดสินใจลงทุน</p>
+                <ul class="mt-2">
+                    <li>• อ่านข้อกำหนดและเงื่อนไขอย่างละเอียด</li>
+                    <li>• ลงทุนเฉพาะเงินที่พร้อมจะเสี่ยง</li>
+                    <li>• กระจายความเสี่ยง (Diversification)</li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- HRM System Section -->
+        <section id="hrm" class="wiki-section">
+            <h2>👥 HRM System - ระบบบริหารจัดการทรัพยากรบุคคล</h2>
+
+            <p>
+                ระบบ HRM แบบครบวงจรสำหรับ <strong>จัดการพนักงาน</strong> ทั้งองค์กร
+                ตั้งแต่การรับสมัคร ลงเวลา เงินเดือน ไปจนถึงการประเมินผล
+            </p>
+
+            <h3 id="employee-management">👤 Employee Management</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">📋</div>
+                    <h4>ข้อมูลพนักงาน</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ ข้อมูลส่วนตัวและประวัติ</li>
+                        <li>✓ ตำแหน่งและแผนก</li>
+                        <li>✓ เอกสารและสัญญาจ้าง</li>
+                        <li>✓ ประวัติการทำงาน</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏢</div>
+                    <h4>โครงสร้างองค์กร</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ จัดการแผนก (Departments)</li>
+                        <li>✓ กำหนดตำแหน่งงาน</li>
+                        <li>✓ Org Chart แบบ Interactive</li>
+                        <li>✓ รายงานสายงาน</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 id="attendance">⏰ Attendance & Leave Management</h3>
+            <div class="info-box">
+                <h4>🕐 ระบบลงเวลาทำงาน</h4>
+                <ul class="mt-2 space-y-1">
+                    <li>• <strong>Check In/Out:</strong> ลงเวลาผ่านมือถือ พร้อม GPS</li>
+                    <li>• <strong>Overtime Tracking:</strong> บันทึก OT อัตโนมัติ</li>
+                    <li>• <strong>Shift Management:</strong> จัดกะทำงาน</li>
+                    <li>• <strong>Late/Absence:</strong> ตรวจสอบการมาสาย/ขาดงาน</li>
+                </ul>
+            </div>
+
+            <div class="info-box success mt-4">
+                <h4>🏖️ ระบบลาพักร้อน</h4>
+                <ul class="mt-2 space-y-1">
+                    <li>• <strong>Leave Types:</strong> ลาป่วย, ลากิจ, ลาพักร้อน</li>
+                    <li>• <strong>Leave Quota:</strong> จำนวนวันลาต่อปี</li>
+                    <li>• <strong>Approval Workflow:</strong> ระบบอนุมัติลา</li>
+                    <li>• <strong>Leave Calendar:</strong> ปฏิทินการลาของทีม</li>
+                </ul>
+            </div>
+
+            <h3 id="payroll">💰 Payroll System</h3>
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Salary Calculation</strong></td>
+                        <td>คำนวณเงินเดือนอัตโนมัติ รวม OT, โบนัส, หักเงิน</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Payslip Generation</strong></td>
+                        <td>สร้างสลิปเงินเดือนอัตโนมัติ ส่งทาง Email</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tax Calculation</strong></td>
+                        <td>คำนวณภาษีเงินได้บุคคลธรรมดา</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Social Security</strong></td>
+                        <td>คำนวณและจัดการประกันสังคม</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Provident Fund</strong></td>
+                        <td>จัดการกองทุนสำรองเลี้ยงชีพ</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📊 Performance Review</h3>
+            <div class="feature-card">
+                <h4>ระบบประเมินผลการทำงาน</h4>
+                <p class="mt-2">ประเมินผลพนักงานอย่างเป็นระบบ พร้อมรายงานและข้อเสนอแนะ</p>
+                <ul class="text-sm mt-3 space-y-1">
+                    <li>• <strong>KPI Tracking:</strong> ติดตามตัวชี้วัดผลงาน</li>
+                    <li>• <strong>360° Review:</strong> ประเมินแบบรอบด้าน</li>
+                    <li>• <strong>Self Assessment:</strong> พนักงานประเมินตัวเอง</li>
+                    <li>• <strong>Review Reports:</strong> รายงานผลการประเมิน</li>
+                </ul>
+            </div>
+
+            <h3>📢 Job Posting & Recruitment</h3>
+            <p>ระบบรับสมัครงานแบบครบวงจร ตั้งแต่ประกาศรับสมัคร จนถึงการคัดเลือก</p>
+            <ul class="mt-2 space-y-1">
+                <li>• ประกาศรับสมัครงานบนเว็บไซต์</li>
+                <li>• รับใบสมัครออนไลน์</li>
+                <li>• จัดการสถานะผู้สมัคร</li>
+                <li>• นัดหมายสัมภาษณ์</li>
+            </ul>
+        </section>
+
+        <!-- Academy & Learning Section -->
+        <section id="academy" class="wiki-section">
+            <h2>🎓 Academy & Learning Center - ศูนย์การเรียนรู้ออนไลน์</h2>
+
+            <p>
+                แพลตฟอร์มการเรียนรู้ออนไลน์แบบครบวงจร สำหรับ <strong>อบรมสมาชิก MLM</strong> และ
+                <strong>สร้างหลักสูตรขาย</strong> เพื่อสร้างรายได้เพิ่ม
+            </p>
+
+            <h3>📚 Course Management</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">🎬</div>
+                    <h4>สร้างหลักสูตร</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ อัปโหลดวิดีโอบทเรียน</li>
+                        <li>✓ เอกสารประกอบการสอน (PDF, PPT)</li>
+                        <li>✓ แบบทดสอบ (Quiz)</li>
+                        <li>✓ กำหนดราคาและโปรโมชั่น</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👨‍🏫</div>
+                    <h4>Instructor Dashboard</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ จัดการหลักสูตรและเนื้อหา</li>
+                        <li>✓ ติดตามยอดขาย</li>
+                        <li>✓ ดูรายงานนักเรียน</li>
+                        <li>✓ ตอบคำถามนักเรียน</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>🎯 Learning Features</h3>
+            <div class="info-box">
+                <h4>สำหรับนักเรียน</h4>
+                <ul class="mt-2 space-y-1">
+                    <li>• <strong>Video Streaming:</strong> ดูวิดีโอคุณภาพ HD</li>
+                    <li>• <strong>Progress Tracking:</strong> ติดตามความก้าวหน้า</li>
+                    <li>• <strong>Quiz & Exam:</strong> ทำแบบทดสอบ</li>
+                    <li>• <strong>Certificate:</strong> ใบประกาศนียบัตรอิเล็กทรอนิกส์</li>
+                    <li>• <strong>Discussion Forum:</strong> ถามตอบกับเพื่อนและครู</li>
+                </ul>
+            </div>
+
+            <h3>💰 สร้างรายได้จากการสอน</h3>
+            <div class="info-box success">
+                <h4>💡 ตัวอย่าง: ขายหลักสูตรออนไลน์</h4>
+                <p><strong>สมมติ:</strong> คุณสร้างหลักสูตร "MLM Marketing 101"</p>
+                <ul class="mt-2">
+                    <li>• ราคาหลักสูตร: <strong>฿1,990</strong></li>
+                    <li>• มีคนซื้อ 100 คน = <strong>฿199,000</strong></li>
+                    <li>• Platform รับ 20% = ฿39,800</li>
+                    <li>• คุณได้: <strong>฿159,200</strong></li>
+                </ul>
+                <p class="text-sm mt-2 font-bold">พร้อม Passive Income ตราบที่หลักสูตรยังขายได้!</p>
+            </div>
+
+            <h3>🏆 Gamification</h3>
+            <p>เพิ่มความสนุกในการเรียนรู้ด้วยระบบรางวัลและแต้ม</p>
+            <ul class="mt-2 space-y-1">
+                <li>• <strong>Points & Badges:</strong> รับแต้มและเหรียญเมื่อจบบทเรียน</li>
+                <li>• <strong>Leaderboard:</strong> แข่งขันกับเพื่อน</li>
+                <li>• <strong>Achievements:</strong> ปลดล็อคความสำเร็จ</li>
+                <li>• <strong>Rewards:</strong> แลกของรางวัล</li>
+            </ul>
+        </section>
+
+        <!-- Software Sales System Section -->
+        <section id="software-sales" class="wiki-section">
+            <h2>💻 Software Sales System - ระบบขายซอฟต์แวร์และ License</h2>
+
+            <p>
+                ระบบจัดการการขาย <strong>Software Products</strong> และ <strong>License Management</strong>
+                สำหรับขายซอฟต์แวร์, SaaS, และบริการต่างๆ
+            </p>
+
+            <h3>📦 Product Types</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="text-4xl mb-3">💿</div>
+                    <h4>Software License</h4>
+                    <p class="text-sm mt-2">ขาย License Keys สำหรับซอฟต์แวร์</p>
+                </div>
+                <div class="feature-card">
+                    <div class="text-4xl mb-3">☁️</div>
+                    <h4>SaaS Subscription</h4>
+                    <p class="text-sm mt-2">บริการแบบ Subscription รายเดือน/รายปี</p>
+                </div>
+                <div class="feature-card">
+                    <div class="text-4xl mb-3">🔧</div>
+                    <h4>Custom Software</h4>
+                    <p class="text-sm mt-2">รับพัฒนาซอฟต์แวร์ตามสั่ง</p>
+                </div>
+            </div>
+
+            <h3>🔑 License Management</h3>
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>License Generation</strong></td>
+                        <td>สร้าง License Key อัตโนมัติ</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Activation System</strong></td>
+                        <td>ระบบ Activate License ออนไลน์</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Expiration Tracking</strong></td>
+                        <td>ติดตามวันหมดอายุ License</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Auto Renewal</strong></td>
+                        <td>ต่ออายุอัตโนมัติสำหรับ Subscription</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Device Limit</strong></td>
+                        <td>จำกัดจำนวนอุปกรณ์ที่ใช้งาน</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📊 Quotation System</h3>
+            <div class="info-box">
+                <h4>ระบบใบเสนอราคา</h4>
+                <p>สร้างใบเสนอราคาแบบมืออาชีพสำหรับลูกค้าองค์กร</p>
+                <ul class="mt-2 space-y-1">
+                    <li>• สร้างใบเสนอราคา PDF อัตโนมัติ</li>
+                    <li>• กำหนดส่วนลดและเงื่อนไข</li>
+                    <li>• ติดตามสถานะ (Draft, Sent, Approved, Rejected)</li>
+                    <li>• แปลงเป็นใบแจ้งหนี้เมื่ออนุมัติ</li>
+                </ul>
+            </div>
+
+            <div class="info-box success">
+                <h4>💰 ค่าคอมมิชชั่นจากการขายซอฟต์แวร์</h4>
+                <p>สมาชิกที่ขายซอฟต์แวร์จะได้รับค่าคอมสูงกว่าสินค้าทั่วไป</p>
+                <ul class="mt-2">
+                    <li>• Direct Sale: <strong>20-30%</strong></li>
+                    <li>• Subscription Renewal: <strong>10% ทุกเดือน</strong></li>
+                    <li>• Upline Bonus: <strong>5%</strong></li>
+                </ul>
+            </div>
+        </section>
+
+        <!-- Ticket System Section -->
+        <section id="ticket-system" class="wiki-section">
+            <h2>🎫 Support Ticket System - ระบบแจ้งปัญหาและ Support</h2>
+
+            <p>
+                ระบบ Help Desk แบบครบวงจร สำหรับ <strong>จัดการคำถาม</strong> และ <strong>แก้ไขปัญหา</strong> ของลูกค้า
+                พร้อมติดตามสถานะแบบ Real-time
+            </p>
+
+            <h3>🎯 Ticket Features</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h4>Create & Track</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ สร้าง Ticket แจ้งปัญหา</li>
+                        <li>✓ แนบไฟล์และรูปภาพ</li>
+                        <li>✓ ติดตามสถานะ Real-time</li>
+                        <li>✓ รับการแจ้งเตือนทาง Email/LINE</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h4>Team Management</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ มอบหมาย Ticket ให้ทีม</li>
+                        <li>✓ กำหนดระดับความสำคัญ</li>
+                        <li>✓ SLA Tracking</li>
+                        <li>✓ Dashboard สำหรับทีม Support</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>📋 Ticket Status</h3>
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Open</strong></td>
+                        <td>Ticket ใหม่ รอการจัดการ</td>
+                    </tr>
+                    <tr>
+                        <td><strong>In Progress</strong></td>
+                        <td>กำลังแก้ไขปัญหา</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Pending</strong></td>
+                        <td>รอข้อมูลเพิ่มเติมจากลูกค้า</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Resolved</strong></td>
+                        <td>แก้ไขเสร็จแล้ว รอยืนยัน</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Closed</strong></td>
+                        <td>ปิดเคสแล้ว</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>🤖 AI Auto-Response</h3>
+            <div class="info-box">
+                <h4>ระบบตอบอัตโนมัติด้วย AI</h4>
+                <p>AI จะช่วยตอบคำถามพื้นฐานทันที ลดภาระทีม Support</p>
+                <ul class="mt-2 space-y-1">
+                    <li>• ค้นหาคำตอบจาก Knowledge Base</li>
+                    <li>• แนะนำบทความที่เกี่ยวข้อง</li>
+                    <li>• ยกระดับเป็น Human Support ถ้าจำเป็น</li>
+                </ul>
+            </div>
+
+            <h3>📊 Reports & Analytics</h3>
+            <p>รายงานและวิเคราะห์ประสิทธิภาพทีม Support</p>
+            <ul class="mt-2 space-y-1">
+                <li>• จำนวน Ticket แต่ละวัน/เดือน</li>
+                <li>• Average Response Time</li>
+                <li>• Customer Satisfaction Score</li>
+                <li>• Agent Performance</li>
+            </ul>
+        </section>
+
+        <!-- POS System Section -->
+        <section id="pos-system" class="wiki-section">
+            <h2>🏪 POS System - ระบบขายหน้าร้าน Point of Sale</h2>
+
+            <p>
+                ระบบ POS แบบครบวงจร สำหรับ <strong>ขายสินค้าหน้าร้าน</strong> พร้อมบูรณาการกับระบบ MLM และ E-Commerce
+                ทำให้การขายออนไลน์และออฟไลน์เป็นหนึ่งเดียว
+            </p>
+
+            <h3>💳 POS Features</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">🖥️</div>
+                    <h4>POS Terminal</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ หน้าจอขายที่ใช้งานง่าย</li>
+                        <li>✓ สแกน Barcode</li>
+                        <li>✓ คำนวณราคาและส่วนลดอัตโนมัติ</li>
+                        <li>✓ รองรับหลายช่องทางชำระเงิน</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h4>Mobile POS</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>✓ ขายผ่าน Tablet/มือถือ</li>
+                        <li>✓ ใช้งานได้ทุกที่</li>
+                        <li>✓ Sync ข้อมูลกับระบบหลัก</li>
+                        <li>✓ เหมาะสำหรับงานอีเว้นท์</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>💰 Payment Methods</h3>
+            <div class="info-box success">
+                <h4>รองรับการชำระเงินหลากหลายช่องทาง</h4>
+                <ul class="mt-2 space-y-1">
+                    <li>• <strong>เงินสด (Cash)</strong></li>
+                    <li>• <strong>บัตรเครดิต/เดบิต</strong> (Credit/Debit Card)</li>
+                    <li>• <strong>QR Code PromptPay</strong></li>
+                    <li>• <strong>E-Wallet</strong> (TrueMoney, ShopeePay)</li>
+                    <li>• <strong>Digital Wallet</strong> ในระบบ</li>
+                </ul>
+            </div>
+
+            <h3>📊 POS Management</h3>
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Device Management</strong></td>
+                        <td>จัดการอุปกรณ์ POS หลายเครื่อง</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Shift Management</strong></td>
+                        <td>จัดการกะทำงานและเปิด-ปิดเครื่อง</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cash Drawer</strong></td>
+                        <td>นับเงินในลิ้นชัก ตรวจสอบยอด</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Receipt Printing</strong></td>
+                        <td>พิมพ์ใบเสร็จ (กระดาษหรืออีเมล)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Inventory Sync</strong></td>
+                        <td>ซิงค์สต็อกแบบ Real-time</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>📈 Sales Reports</h3>
+            <div class="feature-card">
+                <h4>รายงานการขายแบบ Real-time</h4>
+                <p class="mt-2">ติดตามยอดขายและประสิทธิภาพการทำงาน</p>
+                <ul class="text-sm mt-3 space-y-1">
+                    <li>• <strong>Daily Sales:</strong> ยอดขายรายวัน</li>
+                    <li>• <strong>Best Sellers:</strong> สินค้าขายดี</li>
+                    <li>• <strong>Cashier Performance:</strong> ประสิทธิภาพพนักงานขาย</li>
+                    <li>• <strong>Payment Methods:</strong> สัดส่วนช่องทางชำระเงิน</li>
+                    <li>• <strong>Hourly Sales:</strong> Peak hours วิเคราะห์</li>
+                </ul>
+            </div>
+
+            <div class="info-box">
+                <h4>🔄 Omnichannel Integration</h4>
+                <p><strong>เชื่อมต่อการขายทุกช่องทาง:</strong></p>
+                <ul class="mt-2 space-y-1">
+                    <li>• ขายหน้าร้าน → บันทึกยอดใน MLM</li>
+                    <li>• สมาชิก MLM → รับค่าคอมจากยอดขาย POS</li>
+                    <li>• สต็อกสินค้า → ซิงค์กับ E-Commerce</li>
+                    <li>• ลูกค้า → ข้อมูลเดียวกันทุกช่องทาง</li>
+                </ul>
             </div>
         </section>
 
