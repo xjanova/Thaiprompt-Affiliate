@@ -326,12 +326,52 @@
                     <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">สินค้า</span>
                 </a>
 
-                <!-- POS Terminal -->
-                <a href="{{ route('seller.pos.terminal') }}"
-                   class="flex items-center px-3 py-2.5 mb-1 text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.pos.terminal') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg' : '' }}">
-                    <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏪</span>
-                    <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">POS ขายสินค้า</span>
-                </a>
+                <!-- POS Menu with Submenu -->
+                <div x-data="{ posOpen: {{ request()->routeIs('seller.pos*') ? 'true' : 'false' }} }" class="mb-1">
+                    <!-- POS Main Menu -->
+                    <button @click="posOpen = !posOpen"
+                            class="w-full flex items-center justify-between px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-600 hover:text-white rounded-lg transition-all duration-200 group {{ request()->routeIs('seller.pos*') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg' : '' }}">
+                        <div class="flex items-center">
+                            <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏪</span>
+                            <span class="ml-3 text-sm font-medium transition-all" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">ระบบ POS</span>
+                        </div>
+                        <svg x-show="!sidebarCollapsed || sidebarOpen" :class="{ 'rotate-180': posOpen }" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <!-- POS Submenu -->
+                    <div x-show="posOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-collapse
+                         class="ml-6 mt-1 space-y-1"
+                         :class="{ 'md:hidden': sidebarCollapsed }">
+                        <a href="{{ route('seller.pos.terminal') }}"
+                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.terminal') ? 'text-green-400 bg-gray-700/50' : '' }}">
+                            <span class="mr-2">💰</span>
+                            <span>ขายสินค้า</span>
+                        </a>
+                        <a href="{{ route('seller.pos.index') }}"
+                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.index') ? 'text-green-400 bg-gray-700/50' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>แดชบอร์ด</span>
+                        </a>
+                        <a href="{{ route('seller.pos.transactions') }}"
+                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.transactions*') ? 'text-green-400 bg-gray-700/50' : '' }}">
+                            <span class="mr-2">📝</span>
+                            <span>รายการขาย</span>
+                        </a>
+                        <a href="{{ route('seller.pos.sessions') }}"
+                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.sessions*') ? 'text-green-400 bg-gray-700/50' : '' }}">
+                            <span class="mr-2">⏰</span>
+                            <span>Session</span>
+                        </a>
+                        <a href="{{ route('seller.pos.settings') }}"
+                           class="flex items-center px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-gray-700/50 rounded-lg transition-all {{ request()->routeIs('seller.pos.settings') ? 'text-green-400 bg-gray-700/50' : '' }}">
+                            <span class="mr-2">⚙️</span>
+                            <span>ตั้งค่า POS</span>
+                        </a>
+                    </div>
+                </div>
 
                 <!-- Sales -->
                 <a href="{{ route('seller.orders.index') }}"
@@ -401,6 +441,15 @@
                     </div>
 
                     <div class="flex items-center space-x-3">
+                        <!-- Quick POS Access -->
+                        <a href="{{ route('seller.pos.terminal') }}"
+                           class="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                            <span class="text-sm">เปิด POS</span>
+                        </a>
+
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
 
