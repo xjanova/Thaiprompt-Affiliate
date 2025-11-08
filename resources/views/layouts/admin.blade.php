@@ -132,7 +132,7 @@
                 this.posMenuOpen = true;
             } else if (currentPath.includes('/admin/academy') || currentPath.includes('/admin/learning-center') || currentPath.includes('/admin/instructor') || currentPath.includes('/admin/quiz') || currentPath.includes('/admin/certificates')) {
                 this.academyMenuOpen = true;
-            } else if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications') || currentPath.includes('/admin/roles')) {
+            } else if (currentPath.includes('/admin/windows-ui') || currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications') || currentPath.includes('/admin/roles')) {
                 this.systemMenuOpen = true;
             }
 
@@ -1260,7 +1260,8 @@
                 <!-- System Management Dropdown -->
                 <div class="relative mb-1">
                     @php
-                        $systemActive = request()->routeIs('admin.premium-page.*') ||
+                        $systemActive = request()->routeIs('admin.windows-ui.*') ||
+                                       request()->routeIs('admin.premium-page.*') ||
                                        request()->routeIs('admin.header-editor.*') ||
                                        request()->routeIs('admin.templates.*') ||
                                        request()->routeIs('admin.pages.*') ||
@@ -1299,6 +1300,12 @@
                          x-transition:leave-end="opacity-0"
                          class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
                          style="display: none;">
+
+                        <a href="{{ route('admin.windows-ui.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.windows-ui.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg' : '' }}">
+                            <span class="mr-2">🖥️</span>
+                            <span>Windows UI Theme</span>
+                        </a>
 
                         <a href="{{ route('admin.premium-page.index') }}"
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-emerald-500 hover:to-teal-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.premium-page.*') ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : '' }}">
