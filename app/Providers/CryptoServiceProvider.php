@@ -11,6 +11,7 @@ use App\Services\Crypto\CryptoWalletService;
 use App\Services\Crypto\DepositDetectionService;
 use App\Services\Crypto\Web3Service;
 use App\Services\Crypto\WithdrawalProcessingService;
+use App\Services\WalletService;
 use Illuminate\Support\ServiceProvider;
 
 class CryptoServiceProvider extends ServiceProvider
@@ -43,8 +44,9 @@ class CryptoServiceProvider extends ServiceProvider
         // Register CryptoExchangeService as singleton
         $this->app->singleton(CryptoExchangeService::class, function ($app) {
             return new CryptoExchangeService(
-                $app->make(CryptoWalletService::class),
-                $app->make(CryptoPriceService::class)
+                $app->make(CryptoPriceService::class),
+                $app->make(WalletService::class),
+                $app->make(CryptoWalletService::class)
             );
         });
 
