@@ -50,9 +50,10 @@
     } else { // user
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('user.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
+            ['icon' => '💰', 'label' => 'เส้นทางเศรษฐี', 'url' => route('user.wealth-guide'), 'color' => 'from-yellow-600 via-amber-600 to-orange-600', 'highlight' => true],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('user.profile'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '🪪', 'label' => 'ยืนยันตัวตน (KYC)', 'url' => route('user.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
-            ['icon' => '💰', 'label' => 'คอมมิชชั่น', 'url' => route('user.commissions'), 'color' => 'from-yellow-600 to-orange-600'],
+            ['icon' => '💵', 'label' => 'คอมมิชชั่น', 'url' => route('user.commissions'), 'color' => 'from-green-600 to-emerald-600'],
             ['icon' => '🏨', 'label' => 'การจองโรงแรม', 'url' => route('hotels.bookings.index'), 'color' => 'from-orange-600 to-amber-600'],
             ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('user.tickets.index'), 'color' => 'from-blue-600 to-indigo-600'],
             ['icon' => '💳', 'label' => 'กระเป๋าเงิน THB', 'url' => route('user.wallet.index'), 'color' => 'from-indigo-600 to-purple-600'],
@@ -190,6 +191,18 @@
                    class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-indigo-500 hover:to-purple-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
                    title="Platform Wiki">
                     <span class="text-2xl">📚</span>
+                </a>
+                @endif
+
+                <!-- Wealth Guide (E-book) -->
+                @if(Route::has('user.wealth-guide'))
+                <a href="{{ route('user.wealth-guide') }}"
+                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-yellow-500 hover:via-amber-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-110 active:scale-95 animate-pulse"
+                   title="เส้นทางเศรษฐี - คู่มือสู่ความร่ำรวย">
+                    <span class="text-2xl">💰</span>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-xs font-bold">📖</span>
+                    </span>
                 </a>
                 @endif
 

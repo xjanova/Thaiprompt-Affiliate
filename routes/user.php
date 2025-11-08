@@ -216,6 +216,11 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     })->name('dividend-simulator');
 });
 
+// Wealth Guide E-book - Complete guide from beginner to expert
+Route::get('/wealth-guide', function () {
+    return view('user.wealth-guide');
+})->name('wealth-guide');
+
 // Investment & Staking System (User)
 Route::prefix('investments')->name('investments.')->group(function () {
     Route::get('/', [InvestmentController::class, 'index'])->name('index');
