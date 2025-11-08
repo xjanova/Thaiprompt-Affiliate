@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.83.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #592 from xjanova/claude/add-admin-management-011CUvfABX6bhVYdHisZFiJf (d99d525)
+- feat: Add comprehensive app management system for mobile app (1db5e81)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.82.4] - 2025-11-08
 
 ### ✨ Features
