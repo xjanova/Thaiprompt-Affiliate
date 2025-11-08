@@ -38,5 +38,8 @@ class AppServiceProvider extends ServiceProvider
 
         // Register Order Observer for MLM System
         \App\Models\Order::observe(\App\Observers\OrderObserver::class);
+
+        // Register Product Observer for Image Cleanup
+        \App\Models\Product::observe(\App\Observers\ProductObserver::class);
     }
 }

@@ -142,6 +142,7 @@ function imageUploader(config) {
         multiple: config.multiple,
         maxFiles: config.maxFiles,
         maxSize: config.maxSize * 1024 * 1024, // Convert to bytes
+        maxSizeMB: config.maxSize, // Keep original MB value for error messages
         files: [],
         existingImages: config.existingImages || [],
         deletedImageIds: [],
@@ -193,7 +194,7 @@ function imageUploader(config) {
             // Validate and add files
             imageFiles.forEach(file => {
                 if (file.size > this.maxSize) {
-                    this.errors.push(`${file.name}: ขนาดไฟล์เกิน ${config.maxSize}MB`);
+                    this.errors.push(`${file.name}: ขนาดไฟล์เกิน ${this.maxSizeMB}MB`);
                     return;
                 }
 

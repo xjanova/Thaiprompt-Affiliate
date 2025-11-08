@@ -358,7 +358,8 @@ class Product extends Model
         }
 
         // Otherwise, use first image from images relationship
-        $firstImage = $this->images()->first();
+        // Use eager loaded relationship to avoid N+1 query
+        $firstImage = $this->images->first();
         if ($firstImage && $firstImage->image_url) {
             return Storage::url($firstImage->image_url);
         }
