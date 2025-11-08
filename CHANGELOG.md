@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.71.3] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #567 from xjanova/claude/fix-missing-investment-view-011CUvSv9va7up6rCih7BmnH (dfbb846)
+- fix: add missing admin.investments.index view (12d5176)
+### 🔧 Other Changes
+
+
 ## [v2.71.2] - 2025-11-08
 
 ### ✨ Features
