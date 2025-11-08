@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.92.5] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #617 from xjanova/claude/fix-seeder-duplicate-constraint-011CUvuuUV9EgdDWJ6Dsrv98 (dda3c22)
+- Fix AccountingDemoSeeder duplicate entries for bank accounts, tax rates, contacts, and products (b4cc66b)
+- Fix AccountingDemoSeeder duplicate constraint violation (14a84e9)
+
 ## [v2.92.4] - 2025-11-08
 
 ### ✨ Features
