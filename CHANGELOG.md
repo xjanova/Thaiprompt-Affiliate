@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.95.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add comprehensive dark mode support to shop cart page (bc7c3c8)
+- fix: add dark mode support to main shop pages (b73b5c6)
+### 🔧 Other Changes
+- Merge pull request #624 from xjanova/claude/fix-dark-mode-shop-011CUvzdfHQUaKjJzgo9gfYo (a4dfc10)
+
 ## [v2.95.0] - 2025-11-08
 
 ### ✨ Features
