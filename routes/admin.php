@@ -1019,6 +1019,12 @@ Route::prefix('icons')->name('icons.')->group(function () {
     Route::get('/list', [\App\Http\Controllers\Admin\IconController::class, 'list'])->name('list');
 });
 
+// Floating Tools Management
+Route::prefix('floating-tools')->name('floating-tools.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\FloatingToolsController::class, 'index'])->name('index');
+    Route::post('/', [\App\Http\Controllers\Admin\FloatingToolsController::class, 'update'])->name('update');
+});
+
 // System Update Management
 Route::prefix('updates')->name('updates.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('index');
