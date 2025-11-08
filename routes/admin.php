@@ -1291,3 +1291,6 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
     });
 });
+
+// Bot Automation System Routes
+require __DIR__.'/bot_automation.php';
