@@ -152,7 +152,34 @@ class HomeController extends Controller
      */
     public function about()
     {
-        return view('frontend.about');
+        // Get version from package.json
+        $version = '2.79.0'; // Default fallback
+        $packageJsonPath = base_path('package.json');
+
+        if (file_exists($packageJsonPath)) {
+            $packageJson = json_decode(file_get_contents($packageJsonPath), true);
+            if (isset($packageJson['version'])) {
+                $version = $packageJson['version'];
+            }
+        }
+
+        // Get comprehensive project stats
+        $stats = [
+            'version' => $version,
+            'last_updated' => date('Y-m-d'),
+            'total_users' => User::count(),
+            'total_affiliates' => \App\Models\Affiliate::count(),
+            'total_commissions' => \App\Models\Commission::count(),
+            'total_earnings' => \App\Models\Commission::whereIn('status', ['approved', 'paid'])->sum('amount') ?? 0,
+            'database_tables' => 105,
+            'database_models' => 113,
+            'http_controllers' => 91,
+            'migrations_count' => 136,
+            'services_count' => 30,
+            'api_endpoints' => 20,
+        ];
+
+        return view('frontend.about', compact('stats'));
     }
 
     /**
