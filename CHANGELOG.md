@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.88.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #597 from xjanova/claude/crypto-wallet-validation-alerts-011CUvkPm1SMQPK4sqJ8Qiad (e291bf7)
+- feat: add comprehensive validation and alerts for crypto wallet system (6d8c2b2)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.87.1] - 2025-11-08
 
 ### ✨ Features
