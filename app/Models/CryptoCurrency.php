@@ -185,6 +185,14 @@ class CryptoCurrency extends Model
     }
 
     /**
+     * Alias for cryptoTransactions relationship
+     */
+    public function transactions()
+    {
+        return $this->cryptoTransactions();
+    }
+
+    /**
      * Exchange rates history
      */
     public function exchangeRates()
