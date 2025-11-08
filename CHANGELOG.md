@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.94.0] - 2025-11-08
+
+### ✨ Features
+- feat: add configurable content width settings in Windows UI (243ccaa)
+### 🐛 Bug Fixes
+- fix: update Alpine.js to specific version to fix submenu collapse (af9d5ec)
+### 🔧 Other Changes
+- Merge pull request #621 from xjanova/claude/center-start-menu-button-011CUvtU4UhUygnsDgs4aMHG (c03d647)
+
 ## [v2.93.0] - 2025-11-08
 
 ### ✨ Features
