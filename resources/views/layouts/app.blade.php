@@ -40,11 +40,29 @@
     @stack('styles')
 
     @stack('seo')
+
+    <style>
+        /* Ensure Windows UI has proper z-index */
+        body {
+            @php
+                $taskbarPosition = \App\Models\WindowsUiSetting::get('windows_taskbar_position', 'top');
+                $taskbarHeight = \App\Models\WindowsUiSetting::get('windows_taskbar_height', 48);
+            @endphp
+            @if($taskbarPosition === 'top')
+                padding-top: {{ $taskbarHeight }}px;
+            @else
+                padding-bottom: {{ $taskbarHeight }}px;
+            @endif
+        }
+    </style>
 </head>
-<body class="font-sans antialiased bg-gray-50">
+<body class="font-sans antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <!-- Spaceship Background -->
+    <x-spaceship-background />
+
     <div class="min-h-screen">
-        <!-- Navigation -->
-        @include('layouts.navigation')
+        <!-- Windows Taskbar (Replaces Navigation) -->
+        <x-windows-taskbar />
 
         <!-- Page Content -->
         <main>
@@ -56,6 +74,21 @@
     </div>
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
+
+    {{-- Dark Mode Toggle Function --}}
+    <script>
+        function toggleDarkMode() {
+            const isDark = document.documentElement.classList.contains('dark');
+
+            if (isDark) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('darkMode', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('darkMode', 'dark');
+            }
+        }
+    </script>
 
     {{-- Floating Tools --}}
     <x-floating-tools />
