@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('roi_distributions')) {
+            return;
+        }
+
         Schema::create('roi_distributions', function (Blueprint $table) {
             $table->id();
             $table->string('distribution_number')->unique(); // รหัสการจ่าย ROI

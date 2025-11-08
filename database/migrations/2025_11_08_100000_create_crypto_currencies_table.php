@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('crypto_currencies')) {
+            return;
+        }
+
         Schema::create('crypto_currencies', function (Blueprint $table) {
             $table->id();
             $table->string('code', 10)->unique()->comment('BTC, ETH, USDT, etc.');

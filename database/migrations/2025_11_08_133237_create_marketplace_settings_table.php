@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('marketplace_settings')) {
+            return;
+        }
+
         Schema::create('marketplace_settings', function (Blueprint $table) {
             $table->id();
             $table->string('setting_key', 100)->unique();

@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('crypto_addresses')) {
+            return;
+        }
+
         Schema::create('crypto_addresses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('crypto_wallet_id')->constrained()->onDelete('cascade');

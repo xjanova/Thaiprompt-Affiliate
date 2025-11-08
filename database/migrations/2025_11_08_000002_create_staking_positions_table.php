@@ -11,6 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('staking_positions')) {
+            return;
+        }
+
         Schema::create('staking_positions', function (Blueprint $table) {
             $table->id();
             $table->string('position_number')->unique(); // รหัสตำแหน่งการลงทุน
