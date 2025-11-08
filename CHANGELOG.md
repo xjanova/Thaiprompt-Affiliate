@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.71.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: properly detect existing git tags in release workflow (f6207f2)
+- fix: add automatic git tag creation to release workflow (cc89071)
+### 🔧 Other Changes
+- Merge pull request #565 from xjanova/claude/fix-unrelated-changelog-entries-011CUvRWMZ27vcYScuDCCjaT (c3c9de8)
+
 ## [v2.71.0] - 2025-11-08
 
 ### ✨ Features
