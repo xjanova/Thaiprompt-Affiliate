@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.95.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #623 from xjanova/claude/create-ebook-wealth-guide-011CUvyvLWuQTdS6o6HrZWp5 (4d55a22)
+- feat: add comprehensive Wealth Guide E-book (เส้นทางเศรษฐี) (13b3db8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.94.1] - 2025-11-08
 
 ### ✨ Features
