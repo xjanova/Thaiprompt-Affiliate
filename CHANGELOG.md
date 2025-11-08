@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.91.5] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #609 from xjanova/claude/enhance-hero-software-purchase-011CUvnMxEY1ijwcgoE4wnv4 (7790e0e)
+- fix: prevent duplicate entry errors in TarotSystemSeeder (48aa5d6)
+### 🔧 Other Changes
+
+
 ## [v2.91.4] - 2025-11-08
 
 ### ✨ Features
