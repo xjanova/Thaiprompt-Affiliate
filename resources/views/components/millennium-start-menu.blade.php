@@ -12,9 +12,29 @@
     if ($type === 'admin') {
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('admin.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
-            ['icon' => '👥', 'label' => 'ผู้ใช้งาน', 'url' => route('admin.users.index'), 'color' => 'from-blue-600 to-cyan-600'],
+            [
+                'icon' => '👥',
+                'label' => 'ผู้ใช้งาน',
+                'color' => 'from-blue-600 to-cyan-600',
+                'submenu' => [
+                    ['label' => 'รายชื่อผู้ใช้', 'url' => route('admin.users.index')],
+                    ['label' => 'สิทธิ์ผู้ใช้', 'url' => route('admin.users.permissions')],
+                    ['label' => 'บทบาท (Roles)', 'url' => route('admin.roles.index')],
+                ]
+            ],
             ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('admin.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
             ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('admin.tickets.index'), 'color' => 'from-blue-500 to-indigo-500'],
+            [
+                'icon' => '🤖',
+                'label' => 'AI Bots & ผู้ช่วย',
+                'color' => 'from-violet-600 to-purple-600',
+                'submenu' => [
+                    ['label' => 'จัดการ AI Bots', 'url' => route('admin.ai-bots.index')],
+                    ['label' => 'AI Providers', 'url' => route('admin.ai-providers.index')],
+                    ['label' => 'ติดตั้ง AI', 'url' => route('admin.ai-installation.index')],
+                    ['label' => 'Knowledge Base', 'url' => route('admin.knowledge-bases.index')],
+                ]
+            ],
             [
                 'icon' => '🏨',
                 'label' => 'จัดการโรงแรม',
@@ -28,32 +48,216 @@
                     ['label' => 'โปรโมชั่นพิเศษ', 'url' => route('admin.hotels.promotions.index')],
                 ]
             ],
-            ['icon' => '🛒', 'label' => 'อีคอมเมิร์ซ', 'url' => route('admin.ecommerce.products.index'), 'color' => 'from-green-600 to-emerald-600'],
-            ['icon' => '🏪', 'label' => 'ระบบ POS', 'url' => route('admin.pos.dashboard'), 'color' => 'from-teal-600 to-cyan-600'],
+            [
+                'icon' => '🛒',
+                'label' => 'อีคอมเมิร์ซ',
+                'color' => 'from-green-600 to-emerald-600',
+                'submenu' => [
+                    ['label' => 'สินค้าทั้งหมด', 'url' => route('admin.ecommerce.products.index')],
+                    ['label' => 'คำสั่งซื้อ', 'url' => route('admin.ecommerce.orders.index')],
+                    ['label' => 'หมวดหมู่', 'url' => route('admin.ecommerce.categories.index')],
+                    ['label' => 'รีวิวสินค้า', 'url' => route('admin.ecommerce.reviews.index')],
+                    ['label' => 'แดชบอร์ด', 'url' => route('admin.ecommerce.dashboard')],
+                ]
+            ],
+            [
+                'icon' => '🏪',
+                'label' => 'ระบบ POS',
+                'color' => 'from-teal-600 to-cyan-600',
+                'submenu' => [
+                    ['label' => 'แดชบอร์ด', 'url' => route('admin.pos.dashboard')],
+                    ['label' => 'อุปกรณ์ POS', 'url' => route('admin.pos.devices.index')],
+                    ['label' => 'ธุรกรรม', 'url' => route('admin.pos.transactions.index')],
+                    ['label' => 'วิเคราะห์ข้อมูล', 'url' => route('admin.pos.analytics')],
+                ]
+            ],
             [
                 'icon' => '💰',
-                'label' => 'กระเป๋าเงิน',
+                'label' => 'กระเป๋าเงิน THB',
                 'color' => 'from-yellow-600 to-orange-600',
                 'submenu' => [
                     ['label' => 'กระเป๋าเงินทั้งหมด', 'url' => route('admin.wallet.index')],
                     ['label' => 'ประวัติธุรกรรม', 'url' => route('admin.wallet.transactions')],
-                    ['label' => 'คำขอถอนเงิน', 'url' => route('admin.wallet.withdrawals')],
-                    ['label' => 'ตั้งค่า Payment Gateways', 'url' => route('admin.wallet.gateways')],
+                    ['label' => 'คำขอถอนเงิน', 'url' => route('admin.withdrawals.pending')],
+                    ['label' => 'ประวัติการถอน', 'url' => route('admin.withdrawals.index')],
+                    ['label' => 'ตั้งค่า Payment', 'url' => route('admin.payment-gateways.index')],
                 ]
             ],
-            ['icon' => '📧', 'label' => 'จัดการอีเมล', 'url' => route('admin.email.templates.index'), 'color' => 'from-blue-600 to-indigo-600'],
-            ['icon' => '📱', 'label' => 'LINE OA & AI', 'url' => route('admin.line-oa.index'), 'color' => 'from-green-500 to-emerald-500'],
-            ['icon' => '🎓', 'label' => 'Academy System', 'url' => route('admin.academy.courses.index'), 'color' => 'from-purple-600 to-pink-600'],
+            [
+                'icon' => '₿',
+                'label' => 'กระเป๋าคริปโต',
+                'color' => 'from-amber-500 to-yellow-600',
+                'submenu' => [
+                    ['label' => 'แดชบอร์ด', 'url' => route('admin.crypto.dashboard')],
+                    ['label' => 'ธุรกรรม', 'url' => route('admin.crypto.transactions')],
+                    ['label' => 'คำขอถอน', 'url' => route('admin.crypto.withdrawals')],
+                ]
+            ],
+            [
+                'icon' => '💵',
+                'label' => 'คอมมิชชั่น',
+                'color' => 'from-green-500 to-emerald-600',
+                'submenu' => [
+                    ['label' => 'รายการทั้งหมด', 'url' => route('admin.commissions.index')],
+                    ['label' => 'รายงานคอมมิชชั่น', 'url' => route('admin.mlm.commissions.index')],
+                ]
+            ],
+            [
+                'icon' => '📧',
+                'label' => 'จัดการอีเมล',
+                'color' => 'from-blue-600 to-indigo-600',
+                'submenu' => [
+                    ['label' => 'เทมเพลต', 'url' => route('admin.email.templates.index')],
+                    ['label' => 'ผู้ให้บริการ', 'url' => route('admin.email.providers')],
+                    ['label' => 'ประวัติการส่ง', 'url' => route('admin.email.logs')],
+                ]
+            ],
+            [
+                'icon' => '📱',
+                'label' => 'LINE OA & AI',
+                'color' => 'from-green-500 to-emerald-500',
+                'submenu' => [
+                    ['label' => 'ตั้งค่า LINE OA', 'url' => route('admin.line-oa.index')],
+                    ['label' => 'AI Chat Bot', 'url' => route('admin.line-bot.ai.index')],
+                    ['label' => 'Rich Menus', 'url' => route('admin.line-bot.rich-menus.index')],
+                    ['label' => 'Flex Messages', 'url' => route('admin.line-bot.flex-messages.index')],
+                    ['label' => 'Broadcast', 'url' => route('admin.line-bot.broadcast.index')],
+                    ['label' => 'Avatar', 'url' => route('admin.line-bot.avatars.index')],
+                    ['label' => 'Chat Widget', 'url' => route('admin.line-bot.chat-widget.index')],
+                ]
+            ],
+            [
+                'icon' => '🎓',
+                'label' => 'Academy System',
+                'color' => 'from-purple-600 to-pink-600',
+                'submenu' => [
+                    ['label' => 'คอร์สเรียน', 'url' => route('admin.academy.courses.index')],
+                    ['label' => 'ใบประกาศ', 'url' => route('admin.academy.certificates.index')],
+                    ['label' => 'ตั้งค่า', 'url' => route('admin.academy.settings.index')],
+                ]
+            ],
+            [
+                'icon' => '📚',
+                'label' => 'Learning Center',
+                'color' => 'from-indigo-500 to-blue-600',
+                'submenu' => [
+                    ['label' => 'บทความ', 'url' => route('admin.articles.index')],
+                    ['label' => 'หมวดหมู่', 'url' => route('admin.categories.index')],
+                    ['label' => 'ศูนย์เรียนรู้', 'url' => route('admin.learning-center.index')],
+                ]
+            ],
+            [
+                'icon' => '💎',
+                'label' => 'MLM System',
+                'color' => 'from-pink-600 to-rose-600',
+                'submenu' => [
+                    ['label' => 'สมาชิก MLM', 'url' => route('admin.mlm.members.index')],
+                    ['label' => 'แผน MLM', 'url' => route('admin.mlm.plans.index')],
+                    ['label' => 'ผังสายงาน', 'url' => route('admin.mlm.genealogy.index')],
+                    ['label' => 'คอมมิชชั่น', 'url' => route('admin.mlm.commissions.index')],
+                    ['label' => 'Product PV', 'url' => route('admin.mlm.product-pv.index')],
+                    ['label' => 'รายงาน', 'url' => route('admin.mlm.reports.dashboard')],
+                    ['label' => 'ตั้งค่า MLM', 'url' => route('admin.mlm.settings.index')],
+                ]
+            ],
             [
                 'icon' => '📈',
                 'label' => 'ระบบการตลาด',
-                'color' => 'from-pink-600 to-rose-600',
+                'color' => 'from-rose-600 to-pink-600',
                 'submenu' => [
                     ['label' => 'Affiliates', 'url' => route('admin.affiliates.index')],
-                    ['label' => 'โครงสร้างทีม', 'url' => route('admin.affiliates.teams')],
-                    ['label' => 'ระบบรักษายอด', 'url' => route('admin.affiliates.retention')],
-                    ['label' => 'จัดการระดับ Rank', 'url' => route('admin.affiliates.ranks')],
-                    ['label' => 'การเลื่อนระดับ', 'url' => route('admin.affiliates.promotions')],
+                    ['label' => 'โครงสร้างทีม', 'url' => route('admin.affiliates.tree')],
+                    ['label' => 'ระบบรักษายอด', 'url' => route('admin.retention.index')],
+                    ['label' => 'จัดการระดับ Rank', 'url' => route('admin.ranks.index')],
+                    ['label' => 'การเลื่อนระดับ', 'url' => route('admin.ranks.promotions')],
+                    ['label' => 'Cashback', 'url' => route('admin.cashback.index')],
+                ]
+            ],
+            [
+                'icon' => '👨‍💼',
+                'label' => 'HRM (HR)',
+                'color' => 'from-cyan-600 to-blue-600',
+                'submenu' => [
+                    ['label' => 'แดชบอร์ด', 'url' => route('admin.hrm.dashboard')],
+                    ['label' => 'พนักงาน', 'url' => route('admin.hrm.employees.index')],
+                    ['label' => 'แผนก', 'url' => route('admin.hrm.departments.index')],
+                    ['label' => 'ตำแหน่ง', 'url' => route('admin.hrm.positions.index')],
+                    ['label' => 'การลา', 'url' => route('admin.hrm.leave.index')],
+                    ['label' => 'เงินเดือน', 'url' => route('admin.hrm.payroll.index')],
+                ]
+            ],
+            [
+                'icon' => '📊',
+                'label' => 'บัญชี (Accounting)',
+                'color' => 'from-emerald-600 to-green-600',
+                'submenu' => [
+                    ['label' => 'แดชบอร์ด', 'url' => route('admin.accounting.dashboard')],
+                    ['label' => 'ใบแจ้งหนี้', 'url' => route('admin.accounting.invoices.index')],
+                    ['label' => 'ค่าใช้จ่าย', 'url' => route('admin.accounting.expenses.index')],
+                    ['label' => 'ผู้ติดต่อ', 'url' => route('admin.accounting.contacts.index')],
+                    ['label' => 'สินค้า', 'url' => route('admin.accounting.products.index')],
+                    ['label' => 'รายงาน', 'url' => route('admin.accounting.reports.index')],
+                    ['label' => 'FlowAccount', 'url' => route('admin.accounting.flowaccount.index')],
+                ]
+            ],
+            [
+                'icon' => '🔔',
+                'label' => 'การแจ้งเตือน',
+                'color' => 'from-yellow-500 to-amber-600',
+                'submenu' => [
+                    ['label' => 'ส่งการแจ้งเตือน', 'url' => route('admin.notifications.create')],
+                    ['label' => 'ประวัติ', 'url' => route('admin.notifications.index')],
+                    ['label' => 'เทมเพลต', 'url' => route('admin.notification-templates.index')],
+                    ['label' => 'สถิติ', 'url' => route('admin.notifications.statistics')],
+                ]
+            ],
+            [
+                'icon' => '🔒',
+                'label' => 'ความปลอดภัย',
+                'color' => 'from-red-600 to-rose-600',
+                'submenu' => [
+                    ['label' => 'ภาพรวม', 'url' => route('admin.security.index')],
+                    ['label' => 'Threat Intelligence', 'url' => route('admin.security.threat-intelligence')],
+                    ['label' => 'Analytics', 'url' => route('admin.security.analytics')],
+                    ['label' => 'OTP Settings', 'url' => route('admin.otp.settings')],
+                ]
+            ],
+            [
+                'icon' => '📄',
+                'label' => 'เพจ & SEO',
+                'color' => 'from-slate-600 to-gray-600',
+                'submenu' => [
+                    ['label' => 'จัดการเพจ', 'url' => route('admin.pages.index')],
+                    ['label' => 'SEO Settings', 'url' => route('admin.seo.index')],
+                ]
+            ],
+            [
+                'icon' => '📊',
+                'label' => 'Analytics',
+                'color' => 'from-purple-500 to-violet-600',
+                'submenu' => [
+                    ['label' => 'ภาพรวม', 'url' => route('admin.analytics.index')],
+                    ['label' => 'Cookie Analytics', 'url' => route('admin.cookie-analytics.index')],
+                ]
+            ],
+            [
+                'icon' => '🎨',
+                'label' => 'ธีม & UI',
+                'color' => 'from-fuchsia-600 to-pink-600',
+                'submenu' => [
+                    ['label' => 'Theme Builder', 'url' => route('admin.themes.builder')],
+                    ['label' => 'Windows UI', 'url' => route('admin.windows-ui.index')],
+                    ['label' => 'Icons', 'url' => route('admin.icons.index')],
+                    ['label' => 'Floating Tools', 'url' => route('admin.floating-tools.index')],
+                ]
+            ],
+            [
+                'icon' => '🌐',
+                'label' => 'ภาษา & แปล',
+                'color' => 'from-sky-600 to-blue-600',
+                'submenu' => [
+                    ['label' => 'การแปล', 'url' => route('admin.translations.index')],
+                    ['label' => 'ตั้งค่าภาษา', 'url' => route('admin.settings.languages')],
                 ]
             ],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าระบบ', 'url' => route('admin.settings.index'), 'color' => 'from-gray-600 to-slate-600'],
