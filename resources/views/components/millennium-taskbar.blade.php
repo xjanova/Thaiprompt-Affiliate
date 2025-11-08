@@ -9,6 +9,14 @@
     // Taskbar settings
     $taskbarHeight = WindowsUiSetting::get('windows_taskbar_height', 56);
     $taskbarPosition = WindowsUiSetting::get('windows_taskbar_position', 'top');
+
+    // Millennium-specific settings
+    $backButtonEnabled = WindowsUiSetting::get('millennium_back_button_enabled', true);
+    $backButtonText = WindowsUiSetting::get('millennium_back_button_text', 'กลับ');
+    $centerSectionEnabled = WindowsUiSetting::get('millennium_center_section_enabled', true);
+    $centerSectionText = WindowsUiSetting::get('millennium_center_section_text', '');
+    $millenniumRgbEnabled = WindowsUiSetting::get('millennium_rgb_enabled', true);
+    $millenniumRgbSpeed = WindowsUiSetting::get('millennium_rgb_speed', 5);
 @endphp
 
 <!-- Millennium Taskbar -->
@@ -33,7 +41,9 @@
     style="height: {{ $taskbarHeight }}px;">
 
     <!-- RGB Border Animation -->
-    <div class="absolute inset-0 millennium-taskbar-rgb"></div>
+    @if($millenniumRgbEnabled)
+        <div class="absolute inset-0 millennium-taskbar-rgb"></div>
+    @endif
 
     <!-- Taskbar Background -->
     <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900/40 to-blue-900/40 backdrop-blur-xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/10 shadow-2xl"></div>
@@ -70,28 +80,36 @@
             </button>
 
             <!-- Back Button -->
-            <button
-                onclick="window.history.back()"
-                class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
-                title="กลับ">
+            @if($backButtonEnabled)
+                <button
+                    onclick="window.history.back()"
+                    class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                    title="{{ $backButtonText }}">
 
-                <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                </svg>
+                    <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                    </svg>
 
-                <span class="font-semibold text-base hidden lg:inline-block">กลับ</span>
-            </button>
+                    <span class="font-semibold text-base hidden lg:inline-block">{{ $backButtonText }}</span>
+                </button>
+            @endif
 
         </div>
 
         <!-- Center Section: App Name + Current Page Title -->
-        <div class="hidden md:flex items-center gap-3 flex-1 justify-center">
-            <div class="px-6 py-2 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
-                <span class="text-white font-bold text-lg drop-shadow-lg">
-                    {{ $appName }} - <span class="text-pink-300">{{ $type === 'admin' ? 'Admin Dashboard' : 'Seller Dashboard' }}</span>
-                </span>
+        @if($centerSectionEnabled)
+            <div class="hidden md:flex items-center gap-3 flex-1 justify-center">
+                <div class="px-6 py-2 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+                    <span class="text-white font-bold text-lg drop-shadow-lg">
+                        @if($centerSectionText)
+                            {{ $centerSectionText }}
+                        @else
+                            {{ $appName }} - <span class="text-pink-300">{{ $type === 'admin' ? 'Admin Dashboard' : 'Seller Dashboard' }}</span>
+                        @endif
+                    </span>
+                </div>
             </div>
-        </div>
+        @endif
 
         <!-- Right Section: System Tray -->
         <div class="flex items-center gap-3">
@@ -180,7 +198,7 @@
             #FF0080 100%
         );
         background-size: 200% 100%;
-        animation: millenniumTaskbarRgb 5s linear infinite;
+        animation: millenniumTaskbarRgb {{ $millenniumRgbSpeed }}s linear infinite;
         filter: blur(2px);
         box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
     }
