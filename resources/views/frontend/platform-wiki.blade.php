@@ -28,6 +28,18 @@
     --wiki-shadow: rgba(0,0,0,0.05);
     --wiki-shadow-hover: rgba(0,0,0,0.1);
 
+    /* Badge colors - Light */
+    --badge-green-bg: #d1fae5;
+    --badge-green-text: #065f46;
+    --badge-blue-bg: #dbeafe;
+    --badge-blue-text: #1e40af;
+    --badge-purple-bg: #e0e7ff;
+    --badge-purple-text: #5b21b6;
+    --badge-red-bg: #fee2e2;
+    --badge-red-text: #991b1b;
+    --badge-orange-bg: #ffedd5;
+    --badge-orange-text: #9a3412;
+
     /* Info box colors - Light */
     --info-box-bg: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
     --info-box-text: #1e40af;
@@ -52,6 +64,18 @@
     --wiki-shadow: rgba(0,0,0,0.3);
     --wiki-shadow-hover: rgba(0,0,0,0.5);
 
+    /* Badge colors - Dark */
+    --badge-green-bg: #064e3b;
+    --badge-green-text: #d1fae5;
+    --badge-blue-bg: #1e3a8a;
+    --badge-blue-text: #dbeafe;
+    --badge-purple-bg: #4c1d95;
+    --badge-purple-text: #e0e7ff;
+    --badge-red-bg: #7f1d1d;
+    --badge-red-text: #fee2e2;
+    --badge-orange-bg: #7c2d12;
+    --badge-orange-text: #ffedd5;
+
     /* Info box colors - Dark */
     --info-box-bg: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
     --info-box-text: #bfdbfe;
@@ -63,14 +87,58 @@
     --info-research-text: #fce7f3;
 }
 
-/* Wikipedia-style Layout */
+/* Reading Progress Bar */
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+    z-index: 9999;
+    transition: width 0.1s ease-out;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.progress-text {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--wiki-card-bg);
+    border: 2px solid var(--wiki-border);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.875rem;
+    color: var(--primary);
+    box-shadow: 0 4px 12px var(--wiki-shadow-hover);
+    z-index: 9998;
+    transition: all 0.3s;
+}
+
+.progress-text:hover {
+    transform: scale(1.1);
+}
+
+/* Wikipedia-style Layout - Full Width */
 .wiki-layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+    grid-template-columns: 320px 1fr;
+    gap: 3rem;
+    max-width: 100%;
+    margin: 0;
+    padding: 2rem 3rem;
+}
+
+@media (min-width: 1920px) {
+    .wiki-layout {
+        grid-template-columns: 350px 1fr;
+        padding: 2rem 6rem;
+    }
 }
 
 /* Sidebar Navigation */
@@ -505,8 +573,111 @@
         display: none;
     }
 }
+
+/* Badge Styles */
+.wiki-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.wiki-badge-green {
+    background-color: var(--badge-green-bg);
+    color: var(--badge-green-text);
+}
+
+.wiki-badge-blue {
+    background-color: var(--badge-blue-bg);
+    color: var(--badge-blue-text);
+}
+
+.wiki-badge-purple {
+    background-color: var(--badge-purple-bg);
+    color: var(--badge-purple-text);
+}
+
+.wiki-badge-red {
+    background-color: var(--badge-red-bg);
+    color: var(--badge-red-text);
+}
+
+.wiki-badge-orange {
+    background-color: var(--badge-orange-bg);
+    color: var(--badge-orange-text);
+}
+
+/* Rounded corners for all elements */
+.rounded-xl {
+    border-radius: 16px;
+}
+
+.rounded-2xl {
+    border-radius: 20px;
+}
+
+/* Additional border colors */
+.border-green-500 {
+    border-left-color: #10b981 !important;
+}
+
+.border-blue-500 {
+    border-left-color: #3b82f6 !important;
+}
+
+.border-purple-500 {
+    border-left-color: #8b5cf6 !important;
+}
+
+.border-red-500 {
+    border-left-color: #ef4444 !important;
+}
+
+.border-orange-500 {
+    border-left-color: #f97316 !important;
+}
+
+.border-yellow-500 {
+    border-left-color: #eab308 !important;
+}
+
+.border-pink-500 {
+    border-left-color: #ec4899 !important;
+}
+
+/* SVG Animation */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-rotate {
+    animation: rotate 20s linear infinite;
+}
 </style>
 @endpush
+
+<div class="reading-progress" id="readingProgress"></div>
+<div class="progress-text" id="progressText">0%</div>
 
 <div class="wiki-layout">
     <!-- Sidebar Navigation -->
@@ -601,9 +772,9 @@
             <h1 class="wiki-title">Thaiprompt Affiliate Platform</h1>
             <p class="wiki-subtitle">สารานุกรมความรู้ฉบับสมบูรณ์ - แพลตฟอร์ม MLM & E-Commerce แห่งอนาคต</p>
             <div class="flex gap-4 mt-4">
-                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold">v{{ $stats['version'] ?? '1.159.0' }}</span>
-                <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Production Ready</span>
-                <span class="px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">113+ Models</span>
+                <span class="wiki-badge wiki-badge-green">v{{ $stats['version'] ?? '1.159.0' }}</span>
+                <span class="wiki-badge wiki-badge-blue">Production Ready</span>
+                <span class="wiki-badge wiki-badge-purple">113+ Models</span>
             </div>
         </header>
 
@@ -4270,8 +4441,12 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     });
 });
 
-// Scroll spy
+// Back to Top Button
+const backToTopButton = document.getElementById('backToTop');
+
+// Combined scroll handler for scroll spy, back to top, and reading progress
 window.addEventListener('scroll', () => {
+    // Scroll spy
     const sections = document.querySelectorAll('.wiki-section');
     let current = '';
 
@@ -4288,13 +4463,8 @@ window.addEventListener('scroll', () => {
             a.classList.add('active');
         }
     });
-});
 
-// Back to Top Button
-const backToTopButton = document.getElementById('backToTop');
-
-// Show/hide button based on scroll position
-window.addEventListener('scroll', () => {
+    // Back to top button visibility
     if (window.scrollY > 300) {
         backToTopButton.style.display = 'block';
         setTimeout(() => {
@@ -4309,6 +4479,24 @@ window.addEventListener('scroll', () => {
                 backToTopButton.style.display = 'none';
             }
         }, 300);
+    }
+
+    // Reading progress indicator
+    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const scrolled = (winScroll / height) * 100;
+
+    // Update progress bar
+    const progressBar = document.getElementById('readingProgress');
+    const progressText = document.getElementById('progressText');
+
+    if (progressBar) {
+        progressBar.style.width = scrolled + '%';
+    }
+
+    // Update progress text
+    if (progressText) {
+        progressText.textContent = Math.round(scrolled) + '%';
     }
 });
 
