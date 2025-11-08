@@ -32,7 +32,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index('software_product_id');
-            $table->index(['software_product_id', 'sort_order']);
+            // Custom index name to avoid MySQL 64-char limit
+            $table->index(['software_product_id', 'sort_order'], 'spo_sp_sort_idx');
         });
     }
 

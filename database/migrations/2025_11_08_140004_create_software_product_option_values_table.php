@@ -38,8 +38,9 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
 
-            $table->index('software_product_option_id');
-            $table->index(['software_product_option_id', 'sort_order']);
+            // Custom index names to avoid MySQL 64-char limit
+            $table->index('software_product_option_id', 'spov_spo_id_idx');
+            $table->index(['software_product_option_id', 'sort_order'], 'spov_spo_sort_idx');
         });
     }
 

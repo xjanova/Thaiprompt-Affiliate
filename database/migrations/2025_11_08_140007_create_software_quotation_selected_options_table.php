@@ -46,7 +46,8 @@ return new class extends Migration
             $table->integer('quantity')->default(1);
             $table->timestamps();
 
-            $table->index('software_quotation_item_id');
+            // Custom index name to avoid MySQL 64-char limit
+            $table->index('software_quotation_item_id', 'sqso_sqi_id_idx');
         });
     }
 
