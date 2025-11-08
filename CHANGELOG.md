@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.84.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #593 from xjanova/claude/menu-analysis-system-011CUvi281e5DzQwBVjsMhob (b4fd4a8)
+- feat: add System Analytics menu to admin sidebar (aef674c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.83.0] - 2025-11-08
 
 ### ✨ Features
