@@ -1066,3 +1066,54 @@ Route::prefix('updates')->name('updates.')->group(function () {
     Route::get('/notifications', [\App\Http\Controllers\Admin\UpdateController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/{id}/dismiss', [\App\Http\Controllers\Admin\UpdateController::class, 'dismissNotification'])->name('notifications.dismiss');
 });
+
+// Tarot Reading Management
+Route::prefix('tarot')->name('tarot.')->group(function () {
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'index'])->name('index');
+    Route::get('/analytics', [\App\Http\Controllers\Admin\TarotManagementController::class, 'analytics'])->name('analytics');
+
+    // Tarot Cards Management
+    Route::prefix('cards')->name('cards.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsCreate'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsStore'])->name('store');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsEdit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsUpdate'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardsDestroy'])->name('destroy');
+    });
+
+    // Categories Management
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesIndex'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesCreate'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesStore'])->name('store');
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesEdit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesUpdate'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'categoriesDestroy'])->name('destroy');
+    });
+
+    // Card Back Images Management
+    Route::prefix('card-backs')->name('card-backs.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksIndex'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksStore'])->name('store');
+        Route::post('/{id}/set-default', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksSetDefault'])->name('set-default');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'cardBacksDestroy'])->name('destroy');
+    });
+
+    // Spread Types Management
+    Route::prefix('spread-types')->name('spread-types.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'spreadTypesIndex'])->name('index');
+    });
+
+    // Readings Management
+    Route::prefix('readings')->name('readings.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsIndex'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsShow'])->name('show');
+        Route::delete('/{id}', [\App\Http\Controllers\Admin\TarotManagementController::class, 'readingsDestroy'])->name('destroy');
+    });
+
+    // Settings
+    Route::get('/settings', [\App\Http\Controllers\Admin\TarotManagementController::class, 'settings'])->name('settings');
+    Route::put('/settings', [\App\Http\Controllers\Admin\TarotManagementController::class, 'settingsUpdate'])->name('settings.update');
+});
