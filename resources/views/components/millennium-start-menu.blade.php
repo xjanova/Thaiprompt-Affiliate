@@ -265,7 +265,15 @@
     } elseif ($type === 'seller') {
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('seller.dashboard'), 'color' => 'from-cyan-600 to-blue-600'],
-            ['icon' => '📦', 'label' => 'สินค้า', 'url' => route('seller.products.index'), 'color' => 'from-blue-600 to-indigo-600'],
+            [
+                'icon' => '📦',
+                'label' => 'สินค้า',
+                'color' => 'from-blue-600 to-indigo-600',
+                'submenu' => [
+                    ['label' => 'รายการสินค้า', 'url' => route('seller.products.index')],
+                    ['label' => 'เพิ่มสินค้า', 'url' => route('seller.products.create')],
+                ]
+            ],
             [
                 'icon' => '🏪',
                 'label' => 'ระบบ POS',
@@ -278,8 +286,28 @@
                     ['label' => 'ตั้งค่า POS', 'url' => route('seller.pos.settings')],
                 ]
             ],
-            ['icon' => '🛒', 'label' => 'ยอดขาย', 'url' => route('seller.orders.index'), 'color' => 'from-orange-600 to-amber-600'],
+            [
+                'icon' => '🛒',
+                'label' => 'ยอดขาย',
+                'color' => 'from-orange-600 to-amber-600',
+                'submenu' => [
+                    ['label' => 'คำสั่งซื้อ', 'url' => route('seller.orders.index')],
+                    ['label' => 'รายงานยอดขาย', 'url' => route('seller.reports.sales')],
+                ]
+            ],
+            [
+                'icon' => '💰',
+                'label' => 'กระเป๋าเงิน',
+                'color' => 'from-yellow-600 to-orange-600',
+                'submenu' => [
+                    ['label' => 'กระเป๋าของฉัน', 'url' => route('seller.wallet.index')],
+                    ['label' => 'ถอนเงิน', 'url' => route('seller.wallet.withdraw')],
+                    ['label' => 'ประวัติการถอน', 'url' => route('seller.wallet.withdrawals')],
+                ]
+            ],
+            ['icon' => '💵', 'label' => 'คอมมิชชั่น', 'url' => route('seller.commissions'), 'color' => 'from-green-500 to-emerald-600'],
             ['icon' => '📈', 'label' => 'วิเคราะห์', 'url' => route('seller.analytics'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '⚙️', 'label' => 'ตั้งค่าร้าน', 'url' => route('seller.settings'), 'color' => 'from-gray-600 to-slate-600'],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('seller.profile'), 'color' => 'from-indigo-600 to-purple-600'],
         ];
     } else { // user
@@ -288,8 +316,25 @@
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('user.profile'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('user.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
             ['icon' => '💰', 'label' => 'คอมมิชชั่น', 'url' => route('user.commissions'), 'color' => 'from-yellow-600 to-orange-600'],
-            ['icon' => '🛒', 'label' => 'ไปช๊อปปิ้ง', 'url' => route('shop.index'), 'color' => 'from-green-600 to-teal-600'],
-            ['icon' => '🏨', 'label' => 'การจองโรงแรม', 'url' => route('hotels.bookings.index'), 'color' => 'from-orange-600 to-amber-600'],
+            [
+                'icon' => '🛒',
+                'label' => 'ช๊อปปิ้ง',
+                'color' => 'from-green-600 to-teal-600',
+                'submenu' => [
+                    ['label' => 'ช๊อปสินค้า', 'url' => route('shop.index')],
+                    ['label' => 'คำสั่งซื้อของฉัน', 'url' => route('user.orders.index')],
+                    ['label' => 'รายการโปรด', 'url' => route('user.wishlist')],
+                ]
+            ],
+            [
+                'icon' => '🏨',
+                'label' => 'โรงแรม',
+                'color' => 'from-orange-600 to-amber-600',
+                'submenu' => [
+                    ['label' => 'จองโรงแรม', 'url' => route('hotels.index')],
+                    ['label' => 'การจองของฉัน', 'url' => route('hotels.bookings.index')],
+                ]
+            ],
             ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('user.tickets.index'), 'color' => 'from-blue-600 to-indigo-600'],
             [
                 'icon' => '💳',
@@ -329,9 +374,35 @@
                     ['label' => 'ประวัติ ROI', 'url' => route('user.investments.history')],
                 ]
             ],
-            ['icon' => '👥', 'label' => 'ผู้แนะนำ', 'url' => route('user.referrals'), 'color' => 'from-pink-600 to-rose-600'],
-            ['icon' => '🌳', 'label' => 'ผังสายงาน', 'url' => route('user.organization'), 'color' => 'from-green-600 to-emerald-600'],
-            ['icon' => '🔷', 'label' => 'ผัง Binary', 'url' => route('user.organization.binary'), 'color' => 'from-cyan-600 to-blue-600'],
+            [
+                'icon' => '🎓',
+                'label' => 'เรียนรู้',
+                'color' => 'from-violet-500 to-purple-600',
+                'submenu' => [
+                    ['label' => 'คอร์สของฉัน', 'url' => route('user.courses.index')],
+                    ['label' => 'ใบประกาศ', 'url' => route('user.certificates.index')],
+                    ['label' => 'ศูนย์เรียนรู้', 'url' => route('learning-center.index')],
+                ]
+            ],
+            [
+                'icon' => '🤖',
+                'label' => 'AI Bots',
+                'color' => 'from-cyan-500 to-blue-600',
+                'submenu' => [
+                    ['label' => 'บอทของฉัน', 'url' => route('user.ai-bots.index')],
+                    ['label' => 'ตลาดบอท', 'url' => route('marketplace.index')],
+                ]
+            ],
+            [
+                'icon' => '👥',
+                'label' => 'ทีมงาน',
+                'color' => 'from-pink-600 to-rose-600',
+                'submenu' => [
+                    ['label' => 'ผู้แนะนำ', 'url' => route('user.referrals')],
+                    ['label' => 'ผังสายงาน', 'url' => route('user.organization')],
+                    ['label' => 'ผัง Binary', 'url' => route('user.organization.binary')],
+                ]
+            ],
             [
                 'icon' => '💖',
                 'label' => 'รักษายอด',
@@ -392,7 +463,7 @@
     x-transition:leave="transition ease-in duration-300"
     x-transition:leave-start="opacity-100 translate-x-0"
     x-transition:leave-end="opacity-0 -translate-x-full"
-    class="fixed left-0 top-0 bottom-0 w-96 md:w-[450px] z-[70] millennium-start-menu"
+    class="fixed left-0 top-0 bottom-0 w-80 md:w-96 z-[70] millennium-start-menu"
     style="display: none;">
 
     <!-- RGB Glow Border -->
@@ -410,25 +481,25 @@
         <div class="relative h-full flex flex-col">
 
             <!-- Header Section -->
-            <div class="p-8 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 millennium-header-glow">
-                <div class="flex items-center gap-5">
+            <div class="p-5 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 millennium-header-glow">
+                <div class="flex items-center gap-3">
                     @if($logo)
-                        <div class="w-20 h-20 rounded-2xl overflow-hidden ring-4 ring-white/30 millennium-logo-pulse">
+                        <div class="w-14 h-14 rounded-xl overflow-hidden ring-3 ring-white/30 millennium-logo-pulse">
                             <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-full h-full object-contain">
                         </div>
                     @else
-                        <div class="w-20 h-20 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-2xl flex items-center justify-center ring-4 ring-white/30 millennium-logo-pulse">
-                            <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <div class="w-14 h-14 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-xl flex items-center justify-center ring-3 ring-white/30 millennium-logo-pulse">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
                             </svg>
                         </div>
                     @endif
 
-                    <div class="flex-1">
-                        <h2 class="text-3xl font-bold text-white drop-shadow-lg">{{ $appName }}</h2>
+                    <div class="flex-1 min-w-0">
+                        <h2 class="text-xl font-bold text-white drop-shadow-lg truncate">{{ $appName }}</h2>
                         @if($user)
-                            <p class="text-lg text-blue-100 mt-2 font-semibold">{{ $user->name }}</p>
-                            <span class="inline-block mt-2 px-4 py-1 bg-white/20 backdrop-blur-sm rounded-full text-sm font-bold text-white">
+                            <p class="text-sm text-blue-100 mt-1 font-semibold truncate">{{ $user->name }}</p>
+                            <span class="inline-block mt-1 px-3 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-xs font-bold text-white">
                                 {{ $type === 'admin' ? '👑 Admin' : ($type === 'seller' ? '🏪 Seller' : '👤 User') }}
                             </span>
                         @endif
@@ -437,8 +508,8 @@
             </div>
 
             <!-- Menu Items Section -->
-            <div class="flex-1 p-5 overflow-y-auto millennium-scrollbar">
-                <div class="space-y-3">
+            <div class="flex-1 p-3 overflow-y-auto millennium-scrollbar">
+                <div class="space-y-2">
                     @foreach($menuItems as $index => $item)
                         <div class="millennium-menu-group">
                             @if(isset($item['submenu']))
@@ -447,27 +518,27 @@
                                     <!-- Main Menu Button -->
                                     <button
                                         @click="submenu_{{ $index }} = !submenu_{{ $index }}"
-                                        class="w-full group flex items-center gap-5 px-6 py-5 rounded-2xl bg-gradient-to-r from-white/5 to-white/10 hover:from-pink-500/30 hover:to-purple-500/30 border border-white/10 hover:border-pink-400/50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20 millennium-menu-item"
+                                        class="w-full group flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-white/5 to-white/10 hover:from-pink-500/30 hover:to-purple-500/30 border border-white/10 hover:border-pink-400/50 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-pink-500/20 millennium-menu-item"
                                         :class="submenu_{{ $index }} ? 'from-pink-500/20 to-purple-500/20 border-pink-400/50' : ''">
 
                                         <!-- Icon -->
-                                        <span class="text-5xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                                        <span class="text-3xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
                                             {{ $item['icon'] }}
                                         </span>
 
                                         <!-- Label -->
-                                        <span class="text-xl font-bold text-white group-hover:text-pink-200 transition-colors duration-300 flex-1 text-left">
+                                        <span class="text-base font-bold text-white group-hover:text-pink-200 transition-colors duration-300 flex-1 text-left">
                                             {{ $item['label'] }}
                                         </span>
 
                                         <!-- Chevron Arrow -->
                                         <svg
-                                            class="w-7 h-7 ml-auto text-white/40 group-hover:text-pink-300 transition-all duration-300"
+                                            class="w-5 h-5 ml-auto text-white/40 group-hover:text-pink-300 transition-all duration-300"
                                             :class="submenu_{{ $index }} ? 'rotate-90 text-pink-300' : ''"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
-                                            stroke-width="3">
+                                            stroke-width="2.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
                                         </svg>
                                     </button>
@@ -476,22 +547,22 @@
                                     <div
                                         x-show="submenu_{{ $index }}"
                                         x-collapse
-                                        class="mt-2 ml-8 space-y-2">
+                                        class="mt-1.5 ml-6 space-y-1.5">
                                         @foreach($item['submenu'] as $subitem)
                                             <a
                                                 href="{{ $subitem['url'] }}"
-                                                class="flex items-center gap-3 px-5 py-3 rounded-xl bg-gradient-to-r from-white/5 to-white/10 hover:from-purple-500/30 hover:to-blue-500/30 border border-white/10 hover:border-purple-400/50 transition-all duration-300 transform hover:translate-x-2 hover:shadow-lg hover:shadow-purple-500/20 group">
+                                                class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-white/5 to-white/10 hover:from-purple-500/30 hover:to-blue-500/30 border border-white/10 hover:border-purple-400/50 transition-all duration-300 transform hover:translate-x-1 hover:shadow-lg hover:shadow-purple-500/20 group">
 
                                                 <!-- Bullet Point -->
-                                                <span class="w-2 h-2 rounded-full bg-pink-400 group-hover:bg-purple-300 group-hover:scale-125 transition-all duration-300"></span>
+                                                <span class="w-1.5 h-1.5 rounded-full bg-pink-400 group-hover:bg-purple-300 group-hover:scale-125 transition-all duration-300"></span>
 
                                                 <!-- Submenu Label -->
-                                                <span class="text-lg font-semibold text-white/90 group-hover:text-white transition-colors duration-300 flex-1">
+                                                <span class="text-sm font-semibold text-white/90 group-hover:text-white transition-colors duration-300 flex-1">
                                                     {{ $subitem['label'] }}
                                                 </span>
 
                                                 <!-- Small Arrow -->
-                                                <svg class="w-5 h-5 text-white/30 group-hover:text-purple-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                                <svg class="w-4 h-4 text-white/30 group-hover:text-purple-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
                                                 </svg>
                                             </a>
@@ -502,20 +573,20 @@
                                 <!-- Regular Menu Item without Submenu -->
                                 <a
                                     href="{{ $item['url'] }}"
-                                    class="group flex items-center gap-5 px-6 py-5 rounded-2xl bg-gradient-to-r from-white/5 to-white/10 hover:from-pink-500/30 hover:to-purple-500/30 border border-white/10 hover:border-pink-400/50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20 millennium-menu-item">
+                                    class="group flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-white/5 to-white/10 hover:from-pink-500/30 hover:to-purple-500/30 border border-white/10 hover:border-pink-400/50 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg hover:shadow-pink-500/20 millennium-menu-item">
 
                                     <!-- Icon -->
-                                    <span class="text-5xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                                    <span class="text-3xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
                                         {{ $item['icon'] }}
                                     </span>
 
                                     <!-- Label -->
-                                    <span class="text-xl font-bold text-white group-hover:text-pink-200 transition-colors duration-300 flex-1">
+                                    <span class="text-base font-bold text-white group-hover:text-pink-200 transition-colors duration-300 flex-1">
                                         {{ $item['label'] }}
                                     </span>
 
                                     <!-- Arrow -->
-                                    <svg class="w-7 h-7 ml-auto text-white/40 group-hover:text-pink-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                    <svg class="w-5 h-5 ml-auto text-white/40 group-hover:text-pink-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
                                     </svg>
                                 </a>
@@ -526,26 +597,26 @@
             </div>
 
             <!-- Footer Section -->
-            <div class="p-5 bg-gradient-to-r from-gray-900 via-purple-900/50 to-blue-900/50 border-t border-white/10">
+            <div class="p-3 bg-gradient-to-r from-gray-900 via-purple-900/50 to-blue-900/50 border-t border-white/10">
                 @if($user)
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
                         <!-- User Avatar -->
-                        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-xl ring-4 ring-white/30">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/30">
                             {{ substr($user->name, 0, 2) }}
                         </div>
 
                         <!-- User Info & Logout -->
                         <div class="flex-1 min-w-0">
-                            <p class="text-lg font-bold text-white truncate">{{ $user->name }}</p>
-                            <p class="text-base text-gray-300 truncate">{{ $user->email }}</p>
+                            <p class="text-sm font-bold text-white truncate">{{ $user->name }}</p>
+                            <p class="text-xs text-gray-300 truncate">{{ $user->email }}</p>
                         </div>
 
                         <!-- Logout Button -->
                         <button
                             onclick="document.getElementById('millennium-logout-form').submit()"
-                            class="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 flex items-center justify-center text-white transition-all duration-300 transform hover:scale-110 hover:rotate-12 shadow-lg hover:shadow-red-500/50"
+                            class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 flex items-center justify-center text-white transition-all duration-300 transform hover:scale-110 hover:rotate-12 shadow-lg hover:shadow-red-500/50"
                             title="ออกจากระบบ">
-                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                             </svg>
                         </button>
@@ -556,11 +627,11 @@
                     </div>
                 @else
                     <!-- Login/Register Buttons -->
-                    <div class="flex gap-4">
-                        <a href="{{ route('login') }}" class="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-lg font-bold rounded-2xl text-center transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    <div class="flex gap-2">
+                        <a href="{{ route('login') }}" class="flex-1 px-3 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-sm font-bold rounded-xl text-center transition-all duration-300 transform hover:scale-105 shadow-lg">
                             เข้าสู่ระบบ
                         </a>
-                        <a href="{{ route('register') }}" class="flex-1 px-6 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-lg font-bold rounded-2xl text-center transition-all duration-300 transform hover:scale-105 shadow-lg">
+                        <a href="{{ route('register') }}" class="flex-1 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-bold rounded-xl text-center transition-all duration-300 transform hover:scale-105 shadow-lg">
                             สมัครสมาชิก
                         </a>
                     </div>
