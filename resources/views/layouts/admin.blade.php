@@ -1544,6 +1544,7 @@
                 <div class="relative mb-1">
                     @php
                         $systemActive = request()->routeIs('admin.windows-ui.*') ||
+                                       request()->routeIs('admin.analytics.*') ||
                                        request()->routeIs('admin.pages.*') ||
                                        request()->routeIs('admin.seo.*') ||
                                        request()->routeIs('admin.themes.*') ||
@@ -1585,6 +1586,12 @@
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.windows-ui.*') ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg' : '' }}">
                             <span class="mr-2">🖥️</span>
                             <span>Windows UI Theme</span>
+                        </a>
+
+                        <a href="{{ route('admin.analytics.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.analytics.*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>การวิเคราะห์ระบบ</span>
                         </a>
 
                         <a href="{{ route('admin.pages.index') }}"
