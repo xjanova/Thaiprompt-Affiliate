@@ -124,6 +124,7 @@
         posMenuOpen: localStorage.getItem('posMenuOpen') === 'true',
         academyMenuOpen: localStorage.getItem('academyMenuOpen') === 'true',
         hotelMenuOpen: localStorage.getItem('hotelMenuOpen') === 'true',
+        cryptoMenuOpen: localStorage.getItem('cryptoMenuOpen') === 'true',
         // Auto-open dropdown if current page is in submenu
         init() {
             this.checkActiveMenu();
@@ -148,6 +149,7 @@
             this.posMenuOpen = false;
             this.academyMenuOpen = false;
             this.hotelMenuOpen = false;
+            this.cryptoMenuOpen = false;
 
             // Open only the relevant menu based on current path
             if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/line-bot') || currentPath.includes('/admin/otp') || currentPath.includes('/admin/ai-bots') || currentPath.includes('/admin/ai-providers') || currentPath.includes('/admin/ai-monitoring') || currentPath.includes('/admin/ai-installation')) {
@@ -172,6 +174,8 @@
                 this.academyMenuOpen = true;
             } else if (currentPath.includes('/admin/hotels')) {
                 this.hotelMenuOpen = true;
+            } else if (currentPath.includes('/admin/crypto')) {
+                this.cryptoMenuOpen = true;
             } else if (currentPath.includes('/admin/windows-ui') || currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/themes') || currentPath.includes('/admin/icons') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications') || currentPath.includes('/admin/roles')) {
                 this.systemMenuOpen = true;
             }
@@ -187,6 +191,7 @@
             localStorage.setItem('posMenuOpen', this.posMenuOpen);
             localStorage.setItem('academyMenuOpen', this.academyMenuOpen);
             localStorage.setItem('hotelMenuOpen', this.hotelMenuOpen);
+            localStorage.setItem('cryptoMenuOpen', this.cryptoMenuOpen);
             localStorage.setItem('systemMenuOpen', this.systemMenuOpen);
         }
     }">
