@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.82.4] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #590 from xjanova/claude/fix-windows-ui-manager-011CUvf5qGaDFhFaHijnBXtU (8b9e52f)
+- fix: integrate Millennium taskbar controls into Windows UI manager (c5e5b18)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/fix-windows-ui-manager-011CUvf5qGaDFhFaHijnBXtU (344f6e4)
+
 ## [v2.82.3] - 2025-11-08
 
 ### ✨ Features
