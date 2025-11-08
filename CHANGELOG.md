@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.92.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #612 from xjanova/claude/center-start-menu-button-011CUvtU4UhUygnsDgs4aMHG (0e3d679)
+- feat: center start menu button and improve taskbar UI (e8eb451)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.91.7] - 2025-11-08
 
 ### ✨ Features
