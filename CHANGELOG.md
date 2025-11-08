@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.90.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #603 from xjanova/claude/enhance-hero-software-purchase-011CUvnMxEY1ijwcgoE4wnv4 (0eb9a49)
+- feat: enhance hero section with logo, software purchase card, and improved UI (403bd12)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.89.1] - 2025-11-08
 
 ### ✨ Features
