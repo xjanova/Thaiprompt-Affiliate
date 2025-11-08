@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
 use App\Http\Controllers\Api\AppConfigController;
+use App\Http\Controllers\Api\TrendApiController;
 use App\Http\Controllers\LineWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -126,6 +127,28 @@ Route::prefix('v1')->group(function () {
             Route::get('/banners', [AppConfigController::class, 'banners']);
             Route::post('/banners/{bannerId}/view', [AppConfigController::class, 'trackBannerView']);
             Route::post('/banners/{bannerId}/click', [AppConfigController::class, 'trackBannerClick']);
+        });
+
+        // Viral Trend Detection API
+        Route::prefix('trends')->group(function () {
+            Route::get('/dashboard', [TrendApiController::class, 'dashboard']);
+            Route::get('/', [TrendApiController::class, 'index']);
+            Route::get('/{trend}', [TrendApiController::class, 'show']);
+            Route::post('/{trend}/generate-content', [TrendApiController::class, 'generateContent']);
+
+            // Keywords
+            Route::get('/keywords/trending', [TrendApiController::class, 'trendingKeywords']);
+            Route::get('/keywords/emerging', [TrendApiController::class, 'emergingKeywords']);
+            Route::get('/keywords/{keyword}/related', [TrendApiController::class, 'relatedKeywords']);
+
+            // Sources
+            Route::get('/sources', [TrendApiController::class, 'sources']);
+            Route::post('/sources', [TrendApiController::class, 'createSource']);
+            Route::put('/sources/{source}', [TrendApiController::class, 'updateSource']);
+            Route::delete('/sources/{source}', [TrendApiController::class, 'deleteSource']);
+
+            // Analytics
+            Route::get('/analytics', [TrendApiController::class, 'analytics']);
         });
     });
 });

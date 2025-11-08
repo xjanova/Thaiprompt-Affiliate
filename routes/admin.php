@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\MlmGlobalSettingController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\AcademySettingsController;
 use App\Http\Controllers\Admin\CertificateManagementController;
+use App\Http\Controllers\Admin\TrendManagementController;
 use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
 use App\Http\Controllers\Admin\Accounting\InvoiceController;
 use App\Http\Controllers\Admin\Accounting\ExpenseController;
@@ -1289,5 +1290,24 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::post('/toggle', [AppMaintenanceController::class, 'toggle'])->name('toggle');
         Route::post('/enable', [AppMaintenanceController::class, 'enable'])->name('enable');
         Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
+    });
+
+    // Viral Trend Detection Routes
+    Route::prefix('trends')->name('trends.')->group(function () {
+        Route::get('/', [TrendManagementController::class, 'index'])->name('index');
+        Route::get('/keywords', [TrendManagementController::class, 'keywords'])->name('keywords');
+        Route::get('/{trend}', [TrendManagementController::class, 'show'])->name('show');
+        Route::post('/{trend}/generate-content', [TrendManagementController::class, 'generateContent'])->name('generate-content');
+
+        // Trend Sources Management
+        Route::prefix('sources')->name('sources.')->group(function () {
+            Route::get('/', [TrendManagementController::class, 'sources'])->name('index');
+            Route::get('/create', [TrendManagementController::class, 'createSource'])->name('create');
+            Route::post('/', [TrendManagementController::class, 'storeSource'])->name('store');
+            Route::get('/{source}/edit', [TrendManagementController::class, 'editSource'])->name('edit');
+            Route::put('/{source}', [TrendManagementController::class, 'updateSource'])->name('update');
+            Route::delete('/{source}', [TrendManagementController::class, 'deleteSource'])->name('delete');
+            Route::post('/{source}/test-scrape', [TrendManagementController::class, 'testScrape'])->name('test-scrape');
+        });
     });
 });
