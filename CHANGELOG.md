@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.91.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #605 from xjanova/claude/enhance-hero-software-purchase-011CUvnMxEY1ijwcgoE4wnv4 (fffd811)
+- fix: remove non-existent LineSignupFlowSeeder and add MlmGlobalSettingSeeder (80818f2)
+### 🔧 Other Changes
+
+
 ## [v2.91.0] - 2025-11-08
 
 ### ✨ Features
