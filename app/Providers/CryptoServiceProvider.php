@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\Crypto\BlockchainIndexerService;
 use App\Services\Crypto\BlockchainTransactionService;
 use App\Services\Crypto\CryptoExchangeService;
 use App\Services\Crypto\CryptoPriceService;
@@ -21,6 +22,11 @@ class CryptoServiceProvider extends ServiceProvider
         // Register Web3Service as singleton
         $this->app->singleton(Web3Service::class, function ($app) {
             return new Web3Service();
+        });
+
+        // Register BlockchainIndexerService as singleton
+        $this->app->singleton(BlockchainIndexerService::class, function ($app) {
+            return new BlockchainIndexerService();
         });
 
         // Register CryptoWalletService as singleton

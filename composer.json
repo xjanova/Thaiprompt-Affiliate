@@ -31,7 +31,8 @@
         },
         "files": [
             "app/Helpers/SeoHelper.php",
-            "app/Helpers/IconHelper.php"
+            "app/Helpers/IconHelper.php",
+            "app/Helpers/CryptoHelper.php"
         ]
     },
     "autoload-dev": {
