@@ -610,6 +610,23 @@ else
     log "Warning: google/cloud-vision is missing. Run 'composer require google/cloud-vision' locally and commit composer.lock"
 fi
 
+# Step 7.6: Install/Verify DomPDF for PDF Generation (Software Sales System)
+print_info "[7.6/20] Installing DomPDF for PDF generation..."
+if composer show barryvdh/laravel-dompdf &>/dev/null; then
+    DOMPDF_VERSION=$(composer show barryvdh/laravel-dompdf 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
+    print_success "DomPDF already installed (${DOMPDF_VERSION})"
+else
+    print_info "Installing DomPDF..."
+    if ! composer require barryvdh/laravel-dompdf --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+        print_warning "DomPDF installation failed - PDF quotations will use HTML fallback"
+        log "Warning: barryvdh/laravel-dompdf installation failed"
+    else
+        DOMPDF_VERSION=$(composer show barryvdh/laravel-dompdf 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
+        print_success "DomPDF installed successfully (${DOMPDF_VERSION})"
+        log "DomPDF installed: ${DOMPDF_VERSION}"
+    fi
+fi
+
 # Step 8: Install/Reinstall Laravel Sanctum
 print_info "[8/20] Installing Laravel Sanctum..."
 if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
