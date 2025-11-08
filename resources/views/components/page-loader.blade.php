@@ -19,9 +19,11 @@
                 </div>
                 @php
                     $logo = \App\Models\Setting::get('logo');
+                    $logoLoaderWidth = \App\Models\Setting::get('logo_loader_width', 40);
+                    $logoLoaderHeight = \App\Models\Setting::get('logo_loader_height', 40);
                 @endphp
                 @if($logo)
-                    <img src="{{ asset($logo) }}" alt="Logo" width="40" height="40" class="absolute inset-0 m-auto w-10 h-10 object-contain">
+                    <img src="{{ asset($logo) }}" alt="Logo" style="width: {{ $logoLoaderWidth }}px; height: {{ $logoLoaderHeight }}px;" class="absolute inset-0 m-auto object-contain">
                 @endif
             </div>
 

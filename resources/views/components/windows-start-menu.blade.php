@@ -7,12 +7,16 @@
             @php
                 $logo = \App\Models\Setting::get('logo');
                 $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+
+                // Logo size settings for start menu
+                $logoStartMenuWidth = \App\Models\Setting::get('logo_start_menu_width', 48);
+                $logoStartMenuHeight = \App\Models\Setting::get('logo_start_menu_height', 48);
             @endphp
 
             @if($logo)
-                <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-12 h-12 object-contain">
+                <img src="{{ asset($logo) }}" alt="{{ $appName }}" style="width: {{ $logoStartMenuWidth }}px; height: {{ $logoStartMenuHeight }}px;" class="object-contain">
             @else
-                <div class="w-12 h-12 bg-white/20 rounded-lg flex items-center justify-center">
+                <div style="width: {{ $logoStartMenuWidth }}px; height: {{ $logoStartMenuHeight }}px;" class="bg-white/20 rounded-lg flex items-center justify-center">
                     <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
                     </svg>

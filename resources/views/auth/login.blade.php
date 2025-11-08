@@ -8,6 +8,8 @@
         $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
         $logo = \App\Models\Setting::get('logo');
         $logoUrl = $logo ? asset($logo) : asset('images/logo.svg');
+        $logoAuthWidth = \App\Models\Setting::get('logo_auth_width', 112);
+        $logoAuthHeight = \App\Models\Setting::get('logo_auth_height', 112);
     @endphp
     <title>เข้าสู่ระบบ - {{ $appName }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -161,9 +163,8 @@
                     <div class="flex justify-center mb-6">
                         <img src="{{ $logoUrl }}"
                              alt="{{ $appName }} Logo"
-                             width="112"
-                             height="112"
-                             class="w-28 h-28 logo-glow float-animation object-contain">
+                             style="width: {{ $logoAuthWidth }}px; height: {{ $logoAuthHeight }}px;"
+                             class="logo-glow float-animation object-contain">
                     </div>
                     <h1 class="text-5xl font-extrabold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
                         {{ $appName }}

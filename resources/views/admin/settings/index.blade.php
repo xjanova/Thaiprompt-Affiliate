@@ -363,11 +363,13 @@
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โลโก้</label>
                             @php
                                 $logo = $settings->get('branding')->firstWhere('key', 'logo')->value ?? '';
+                                $logoAdminPreviewWidth = \App\Models\Setting::get('logo_admin_preview_width', 80);
+                                $logoAdminPreviewHeight = \App\Models\Setting::get('logo_admin_preview_height', 80);
                             @endphp
                             @if($logo)
                                 <div class="mb-3">
                                     <p class="text-xs text-gray-600 mb-1">โลโก้ปัจจุบัน:</p>
-                                    <img src="{{ asset($logo) }}" alt="Logo" class="h-20 object-contain border rounded p-2">
+                                    <img src="{{ asset($logo) }}" alt="Logo" style="width: {{ $logoAdminPreviewWidth }}px; height: {{ $logoAdminPreviewHeight }}px;" class="object-contain border rounded p-2">
                                 </div>
                             @endif
                             <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml" @change="handleLogoUpload"

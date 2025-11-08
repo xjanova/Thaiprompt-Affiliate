@@ -65,6 +65,12 @@ $gradientClass = $gradientDirections[$headerGradientDirection] ?? 'bg-gradient-t
 $logo = \App\Models\Setting::get('logo');
 $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 
+// Logo size settings for navigation header
+$logoNavigationWidth = \App\Models\Setting::get('logo_navigation_width', $headerLogoHeight ?? 60);
+$logoNavigationHeight = \App\Models\Setting::get('logo_navigation_height', $headerLogoHeight ?? 60);
+$logoNavigationScrolledWidth = \App\Models\Setting::get('logo_navigation_scrolled_width', $headerLogoHeightScrolled ?? 48);
+$logoNavigationScrolledHeight = \App\Models\Setting::get('logo_navigation_scrolled_height', $headerLogoHeightScrolled ?? 48);
+
 // Get dynamic menu items from database
 $menuItems = \App\Models\MenuItem::getForLocation('header');
 @endphp
@@ -128,11 +134,10 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                     @if($logo)
                         <img src="{{ asset($logo) }}"
                              alt="{{ $appName }}"
-                             width="{{ $headerLogoHeight }}"
-                             height="{{ $headerLogoHeight }}"
                              class="object-contain transition-all"
                              :style="{
-                                 height: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $headerLogoHeightScrolled }}px' : '{{ $headerLogoHeight }}px')
+                                 width: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $logoNavigationScrolledWidth }}px' : '{{ $logoNavigationWidth }}px'),
+                                 height: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $logoNavigationScrolledHeight }}px' : '{{ $logoNavigationHeight }}px')
                              }">
                     @else
                         <span class="text-2xl font-bold transition-all"
