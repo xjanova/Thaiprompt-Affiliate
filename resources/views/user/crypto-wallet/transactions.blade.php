@@ -100,8 +100,20 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $tx->currency->code }}</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $tx->network }}</div>
+                                    <div class="flex items-center space-x-2">
+                                        @php
+                                            $iconPath = public_path('icons/cryptocurrency/' . strtolower($tx->currency->code) . '.svg');
+                                        @endphp
+                                        @if(file_exists($iconPath))
+                                            <img src="{{ asset('icons/cryptocurrency/' . strtolower($tx->currency->code) . '.svg') }}"
+                                                 alt="{{ $tx->currency->code }}"
+                                                 class="w-6 h-6">
+                                        @endif
+                                        <div>
+                                            <div class="font-semibold text-gray-800 dark:text-gray-100">{{ $tx->currency->code }}</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $tx->network }}</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="font-bold {{ $tx->is_incoming ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
