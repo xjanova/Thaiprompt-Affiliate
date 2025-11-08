@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.92.4] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #616 from xjanova/claude/fix-user-shop-route-011CUvvB3GXux9yhXpdvYAUZ (968db84)
+- fix: remove reference to deleted user.shop.index route (e3b3a72)
+### 🔧 Other Changes
+
+
 ## [v2.92.3] - 2025-11-08
 
 ### ✨ Features
