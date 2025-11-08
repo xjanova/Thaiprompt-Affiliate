@@ -6,28 +6,74 @@
     $logo = \App\Models\Setting::get('logo');
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 
-    // Define comprehensive menu items based on type
+    // Define comprehensive menu items with submenu support
     $menuItems = [];
 
     if ($type === 'admin') {
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('admin.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
             ['icon' => '👥', 'label' => 'ผู้ใช้งาน', 'url' => route('admin.users.index'), 'color' => 'from-blue-600 to-cyan-600'],
-            ['icon' => '🏨', 'label' => 'จัดการโรงแรม', 'url' => route('admin.hotels.index'), 'color' => 'from-orange-600 to-amber-600'],
+            ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('admin.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('admin.tickets.index'), 'color' => 'from-blue-500 to-indigo-500'],
+            [
+                'icon' => '🏨',
+                'label' => 'จัดการโรงแรม',
+                'color' => 'from-orange-600 to-amber-600',
+                'submenu' => [
+                    ['label' => 'โรงแรมทั้งหมด', 'url' => route('admin.hotels.index')],
+                    ['label' => 'การจองทั้งหมด', 'url' => route('admin.hotels.bookings.index')],
+                    ['label' => 'รายงานและสถิติ', 'url' => route('admin.hotels.reports')],
+                    ['label' => 'จัดการรีวิว', 'url' => route('admin.hotels.reviews.index')],
+                    ['label' => 'สิ่งอำนวยความสะดวก', 'url' => route('admin.hotels.facilities.index')],
+                    ['label' => 'โปรโมชั่นพิเศษ', 'url' => route('admin.hotels.promotions.index')],
+                ]
+            ],
             ['icon' => '🛒', 'label' => 'อีคอมเมิร์ซ', 'url' => route('admin.ecommerce.products.index'), 'color' => 'from-green-600 to-emerald-600'],
             ['icon' => '🏪', 'label' => 'ระบบ POS', 'url' => route('admin.pos.dashboard'), 'color' => 'from-teal-600 to-cyan-600'],
-            ['icon' => '💰', 'label' => 'กระเป๋าเงิน', 'url' => route('admin.wallet.index'), 'color' => 'from-yellow-600 to-orange-600'],
+            [
+                'icon' => '💰',
+                'label' => 'กระเป๋าเงิน',
+                'color' => 'from-yellow-600 to-orange-600',
+                'submenu' => [
+                    ['label' => 'กระเป๋าเงินทั้งหมด', 'url' => route('admin.wallet.index')],
+                    ['label' => 'ประวัติธุรกรรม', 'url' => route('admin.wallet.transactions')],
+                    ['label' => 'คำขอถอนเงิน', 'url' => route('admin.wallet.withdrawals')],
+                    ['label' => 'ตั้งค่า Payment Gateways', 'url' => route('admin.wallet.gateways')],
+                ]
+            ],
             ['icon' => '📧', 'label' => 'จัดการอีเมล', 'url' => route('admin.email.templates.index'), 'color' => 'from-blue-600 to-indigo-600'],
             ['icon' => '📱', 'label' => 'LINE OA & AI', 'url' => route('admin.line-oa.index'), 'color' => 'from-green-500 to-emerald-500'],
             ['icon' => '🎓', 'label' => 'Academy System', 'url' => route('admin.academy.courses.index'), 'color' => 'from-purple-600 to-pink-600'],
-            ['icon' => '📈', 'label' => 'ระบบการตลาด', 'url' => route('admin.affiliates.index'), 'color' => 'from-pink-600 to-rose-600'],
+            [
+                'icon' => '📈',
+                'label' => 'ระบบการตลาด',
+                'color' => 'from-pink-600 to-rose-600',
+                'submenu' => [
+                    ['label' => 'Affiliates', 'url' => route('admin.affiliates.index')],
+                    ['label' => 'โครงสร้างทีม', 'url' => route('admin.affiliates.teams')],
+                    ['label' => 'ระบบรักษายอด', 'url' => route('admin.affiliates.retention')],
+                    ['label' => 'จัดการระดับ Rank', 'url' => route('admin.affiliates.ranks')],
+                    ['label' => 'การเลื่อนระดับ', 'url' => route('admin.affiliates.promotions')],
+                ]
+            ],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าระบบ', 'url' => route('admin.settings.index'), 'color' => 'from-gray-600 to-slate-600'],
         ];
     } elseif ($type === 'seller') {
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('seller.dashboard'), 'color' => 'from-cyan-600 to-blue-600'],
             ['icon' => '📦', 'label' => 'สินค้า', 'url' => route('seller.products.index'), 'color' => 'from-blue-600 to-indigo-600'],
-            ['icon' => '🏪', 'label' => 'ระบบ POS', 'url' => route('seller.pos.terminal'), 'color' => 'from-green-500 to-emerald-600'],
+            [
+                'icon' => '🏪',
+                'label' => 'ระบบ POS',
+                'color' => 'from-green-500 to-emerald-600',
+                'submenu' => [
+                    ['label' => 'ขายสินค้า', 'url' => route('seller.pos.terminal')],
+                    ['label' => 'แดชบอร์ด', 'url' => route('seller.pos.dashboard')],
+                    ['label' => 'รายการขาย', 'url' => route('seller.pos.sales')],
+                    ['label' => 'Session', 'url' => route('seller.pos.sessions')],
+                    ['label' => 'ตั้งค่า POS', 'url' => route('seller.pos.settings')],
+                ]
+            ],
             ['icon' => '🛒', 'label' => 'ยอดขาย', 'url' => route('seller.orders.index'), 'color' => 'from-orange-600 to-amber-600'],
             ['icon' => '📈', 'label' => 'วิเคราะห์', 'url' => route('seller.analytics'), 'color' => 'from-purple-600 to-pink-600'],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('seller.profile'), 'color' => 'from-indigo-600 to-purple-600'],
@@ -36,19 +82,82 @@
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('user.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('user.profile'), 'color' => 'from-blue-600 to-cyan-600'],
-            ['icon' => '🪪', 'label' => 'ยืนยันตัวตน (KYC)', 'url' => route('user.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('user.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
             ['icon' => '💰', 'label' => 'คอมมิชชั่น', 'url' => route('user.commissions'), 'color' => 'from-yellow-600 to-orange-600'],
             ['icon' => '🛒', 'label' => 'ไปช๊อปปิ้ง', 'url' => route('user.shop.index'), 'color' => 'from-green-600 to-teal-600'],
             ['icon' => '🏨', 'label' => 'การจองโรงแรม', 'url' => route('hotels.bookings.index'), 'color' => 'from-orange-600 to-amber-600'],
             ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('user.tickets.index'), 'color' => 'from-blue-600 to-indigo-600'],
-            ['icon' => '💳', 'label' => 'กระเป๋าเงิน THB', 'url' => route('user.wallet.index'), 'color' => 'from-indigo-600 to-purple-600'],
-            ['icon' => '₿', 'label' => 'กระเป๋าคริปโต', 'url' => route('user.crypto-wallet.index'), 'color' => 'from-amber-600 to-orange-600'],
-            ['icon' => '📈', 'label' => 'การลงทุน ROI', 'url' => route('user.investments.index'), 'color' => 'from-purple-600 to-pink-600'],
+            [
+                'icon' => '💳',
+                'label' => 'กระเป๋าเงิน THB',
+                'color' => 'from-indigo-600 to-purple-600',
+                'submenu' => [
+                    ['label' => 'กระเป๋าของฉัน', 'url' => route('user.wallet.index')],
+                    ['label' => 'ประวัติธุรกรรม', 'url' => route('user.wallet.transactions')],
+                    ['label' => 'ถอนเงิน', 'url' => route('user.wallet.withdraw')],
+                    ['label' => 'ประวัติการถอน', 'url' => route('user.wallet.withdrawals')],
+                    ['label' => 'ช่องทางรับเงิน', 'url' => route('user.wallet.payment-methods')],
+                ]
+            ],
+            [
+                'icon' => '₿',
+                'label' => 'กระเป๋าคริปโต',
+                'color' => 'from-amber-600 to-orange-600',
+                'submenu' => [
+                    ['label' => 'กระเป๋าคริปโต', 'url' => route('user.crypto-wallet.index')],
+                    ['label' => 'จัดการกระเป๋า', 'url' => route('user.crypto-wallet.manage')],
+                    ['label' => 'ประวัติธุรกรรม', 'url' => route('user.crypto-wallet.transactions')],
+                    ['label' => 'เทรดดิ้ง', 'url' => route('user.crypto-wallet.trading')],
+                    ['label' => 'พอร์ตโฟลิโอ', 'url' => route('user.crypto-wallet.portfolio')],
+                    ['label' => 'ฝากเหรียญ', 'url' => route('user.crypto-wallet.deposit')],
+                    ['label' => 'ถอนเหรียญ', 'url' => route('user.crypto-wallet.withdraw')],
+                    ['label' => 'ประวัติการถอน', 'url' => route('user.crypto-wallet.withdrawal-history')],
+                    ['label' => 'แลกเปลี่ยน THB ↔ Crypto', 'url' => route('user.crypto-wallet.exchange')],
+                ]
+            ],
+            [
+                'icon' => '📈',
+                'label' => 'การลงทุน ROI',
+                'color' => 'from-purple-600 to-pink-600',
+                'submenu' => [
+                    ['label' => 'แดชบอร์ด', 'url' => route('user.investments.index')],
+                    ['label' => 'แผนการลงทุน', 'url' => route('user.investments.plans')],
+                    ['label' => 'ประวัติ ROI', 'url' => route('user.investments.history')],
+                ]
+            ],
             ['icon' => '👥', 'label' => 'ผู้แนะนำ', 'url' => route('user.referrals'), 'color' => 'from-pink-600 to-rose-600'],
             ['icon' => '🌳', 'label' => 'ผังสายงาน', 'url' => route('user.organization'), 'color' => 'from-green-600 to-emerald-600'],
-            ['icon' => '💖', 'label' => 'รักษายอด', 'url' => route('user.retention.index'), 'color' => 'from-red-600 to-pink-600'],
+            ['icon' => '🔷', 'label' => 'ผัง Binary', 'url' => route('user.binary'), 'color' => 'from-cyan-600 to-blue-600'],
+            [
+                'icon' => '💖',
+                'label' => 'รักษายอด',
+                'color' => 'from-red-600 to-pink-600',
+                'submenu' => [
+                    ['label' => 'สถานะพลังชีวิต', 'url' => route('user.retention.index')],
+                    ['label' => 'ซ่อมสิทธิ์', 'url' => route('user.retention.repair')],
+                    ['label' => 'เติมวันล่วงหน้า', 'url' => route('user.retention.advance')],
+                ]
+            ],
+            [
+                'icon' => '🎯',
+                'label' => 'เครื่องมือการตลาด',
+                'color' => 'from-violet-600 to-purple-600',
+                'submenu' => [
+                    ['label' => 'จำลองรายได้', 'url' => route('user.marketing.income-simulator')],
+                    ['label' => 'เปรียบเทียบรายได้', 'url' => route('user.marketing.income-comparison')],
+                    ['label' => 'จำลองการปันผล', 'url' => route('user.marketing.dividend-simulator')],
+                ]
+            ],
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
         ];
+    }
+
+    // Create submenu state initialization for Alpine.js
+    $submenuStates = [];
+    foreach ($menuItems as $index => $item) {
+        if (isset($item['submenu'])) {
+            $submenuStates['submenu_' . $index] = false;
+        }
     }
 @endphp
 
@@ -70,6 +179,9 @@
 <div
     x-show="startMenuOpen"
     @click.away="startMenuOpen = false"
+    x-data="{
+        {{ collect($submenuStates)->map(fn($value, $key) => "$key: $value")->join(', ') }}
+    }"
     x-transition:enter="transition ease-out duration-400"
     x-transition:enter-start="opacity-0 -translate-x-full"
     x-transition:enter-end="opacity-100 translate-x-0"
@@ -123,26 +235,88 @@
             <!-- Menu Items Section -->
             <div class="flex-1 p-5 overflow-y-auto millennium-scrollbar">
                 <div class="space-y-3">
-                    @foreach($menuItems as $item)
-                        <a
-                            href="{{ $item['url'] }}"
-                            class="group flex items-center gap-5 px-6 py-5 rounded-2xl bg-gradient-to-r from-white/5 to-white/10 hover:from-pink-500/30 hover:to-purple-500/30 border border-white/10 hover:border-pink-400/50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20 millennium-menu-item">
+                    @foreach($menuItems as $index => $item)
+                        <div class="millennium-menu-group">
+                            @if(isset($item['submenu']))
+                                <!-- Menu Item with Submenu -->
+                                <div>
+                                    <!-- Main Menu Button -->
+                                    <button
+                                        @click="submenu_{{ $index }} = !submenu_{{ $index }}"
+                                        class="w-full group flex items-center gap-5 px-6 py-5 rounded-2xl bg-gradient-to-r from-white/5 to-white/10 hover:from-pink-500/30 hover:to-purple-500/30 border border-white/10 hover:border-pink-400/50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20 millennium-menu-item"
+                                        :class="submenu_{{ $index }} ? 'from-pink-500/20 to-purple-500/20 border-pink-400/50' : ''">
 
-                            <!-- Icon -->
-                            <span class="text-5xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
-                                {{ $item['icon'] }}
-                            </span>
+                                        <!-- Icon -->
+                                        <span class="text-5xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                                            {{ $item['icon'] }}
+                                        </span>
 
-                            <!-- Label -->
-                            <span class="text-xl font-bold text-white group-hover:text-pink-200 transition-colors duration-300 flex-1">
-                                {{ $item['label'] }}
-                            </span>
+                                        <!-- Label -->
+                                        <span class="text-xl font-bold text-white group-hover:text-pink-200 transition-colors duration-300 flex-1 text-left">
+                                            {{ $item['label'] }}
+                                        </span>
 
-                            <!-- Arrow -->
-                            <svg class="w-7 h-7 ml-auto text-white/40 group-hover:text-pink-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </a>
+                                        <!-- Chevron Arrow -->
+                                        <svg
+                                            class="w-7 h-7 ml-auto text-white/40 group-hover:text-pink-300 transition-all duration-300"
+                                            :class="submenu_{{ $index }} ? 'rotate-90 text-pink-300' : ''"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                            stroke-width="3">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                                        </svg>
+                                    </button>
+
+                                    <!-- Submenu Items with Smooth Transition -->
+                                    <div
+                                        x-show="submenu_{{ $index }}"
+                                        x-collapse
+                                        class="mt-2 ml-8 space-y-2">
+                                        @foreach($item['submenu'] as $subitem)
+                                            <a
+                                                href="{{ $subitem['url'] }}"
+                                                class="flex items-center gap-3 px-5 py-3 rounded-xl bg-gradient-to-r from-white/5 to-white/10 hover:from-purple-500/30 hover:to-blue-500/30 border border-white/10 hover:border-purple-400/50 transition-all duration-300 transform hover:translate-x-2 hover:shadow-lg hover:shadow-purple-500/20 group">
+
+                                                <!-- Bullet Point -->
+                                                <span class="w-2 h-2 rounded-full bg-pink-400 group-hover:bg-purple-300 group-hover:scale-125 transition-all duration-300"></span>
+
+                                                <!-- Submenu Label -->
+                                                <span class="text-lg font-semibold text-white/90 group-hover:text-white transition-colors duration-300 flex-1">
+                                                    {{ $subitem['label'] }}
+                                                </span>
+
+                                                <!-- Small Arrow -->
+                                                <svg class="w-5 h-5 text-white/30 group-hover:text-purple-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                                                </svg>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @else
+                                <!-- Regular Menu Item without Submenu -->
+                                <a
+                                    href="{{ $item['url'] }}"
+                                    class="group flex items-center gap-5 px-6 py-5 rounded-2xl bg-gradient-to-r from-white/5 to-white/10 hover:from-pink-500/30 hover:to-purple-500/30 border border-white/10 hover:border-pink-400/50 transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-pink-500/20 millennium-menu-item">
+
+                                    <!-- Icon -->
+                                    <span class="text-5xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                                        {{ $item['icon'] }}
+                                    </span>
+
+                                    <!-- Label -->
+                                    <span class="text-xl font-bold text-white group-hover:text-pink-200 transition-colors duration-300 flex-1">
+                                        {{ $item['label'] }}
+                                    </span>
+
+                                    <!-- Arrow -->
+                                    <svg class="w-7 h-7 ml-auto text-white/40 group-hover:text-pink-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </a>
+                            @endif
+                        </div>
                     @endforeach
                 </div>
             </div>
@@ -286,5 +460,10 @@
 
     .millennium-scrollbar::-webkit-scrollbar-thumb:hover {
         background: linear-gradient(180deg, #f472b6, #c084fc, #60a5fa);
+    }
+
+    /* Submenu Animations */
+    [x-cloak] {
+        display: none !important;
     }
 </style>
