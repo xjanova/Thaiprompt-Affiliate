@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             AppNameSettingSeeder::class,        // ตั้งค่าชื่อแอพ
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
             ThemeSeeder::class,                 // ธีมของระบบ
+            CookieSettingsSeeder::class,        // ตั้งค่า Cookie Consent & PDPA
 
             // 2. User & Demo Data
             DemoUsersSeeder::class,             // สร้างผู้ใช้ทดสอบ
@@ -57,6 +58,7 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,               // สินค้าตัวอย่าง
             VendorPackageSeeder::class,         // แพคเกจสำหรับผู้ขาย/Vendor
             VendorPackageFeatureSeeder::class,  // ฟีเจอร์ของแพคเกจ Vendor
+            MarketplacePlatformSeeder::class,   // Marketplace Platforms (Shopee, Lazada, etc.)
 
             // 9. Academy & Learning Platform
             AcademySeeder::class,               // ตั้งค่าระบบ Academy
