@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\TreeController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
+use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\LineWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -55,6 +56,12 @@ Route::prefix('v1')->group(function () {
 
     // Ranks (public - for marketing tools)
     Route::get('/ranks', [RankController::class, 'index']);
+
+    // App Configuration (public)
+    Route::prefix('app')->group(function () {
+        Route::get('/maintenance-status', [AppConfigController::class, 'maintenanceStatus']);
+        Route::get('/check-update', [AppConfigController::class, 'checkUpdate']);
+    });
 
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
@@ -108,6 +115,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/prices', [CryptoWalletApiController::class, 'getPrices']);
             Route::get('/transaction/{txHash}', [CryptoWalletApiController::class, 'checkTransaction']);
             Route::get('/gas-price', [CryptoWalletApiController::class, 'getGasPrice']);
+        });
+
+        // App Configuration (protected)
+        Route::prefix('app')->group(function () {
+            Route::get('/config', [AppConfigController::class, 'config']);
+            Route::get('/settings', [AppConfigController::class, 'settings']);
+            Route::get('/theme', [AppConfigController::class, 'theme']);
+            Route::get('/features', [AppConfigController::class, 'features']);
+            Route::get('/banners', [AppConfigController::class, 'banners']);
+            Route::post('/banners/{bannerId}/view', [AppConfigController::class, 'trackBannerView']);
+            Route::post('/banners/{bannerId}/click', [AppConfigController::class, 'trackBannerClick']);
         });
     });
 });

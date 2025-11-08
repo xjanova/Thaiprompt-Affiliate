@@ -95,10 +95,10 @@
                 @method('PUT')
 
                 <div class="space-y-8">
-                    <!-- Taskbar Settings -->
+                    <!-- Millennium Taskbar Settings -->
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <span class="text-2xl">🖥️</span> Taskbar Settings
+                            <span class="text-2xl">🖥️</span> Millennium Taskbar Settings
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -110,7 +110,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูง (px)</label>
-                                <input type="number" name="windows_taskbar_height" min="32" max="80" value="{{ $settings['windows_taskbar_height'] ?? 48 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <input type="number" name="windows_taskbar_height" min="32" max="80" value="{{ $settings['windows_taskbar_height'] ?? 56 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โปร่งแสง (%)</label>
@@ -122,6 +122,68 @@
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ Blur Effect</span>
                                 </label>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Millennium Back Button Settings -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">◀️</span> Millennium Back Button
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="millennium_back_button_enabled" value="1" {{ ($settings['millennium_back_button_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงปุ่มกลับ</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความปุ่มกลับ</label>
+                                <input type="text" name="millennium_back_button_text" value="{{ $settings['millennium_back_button_text'] ?? 'กลับ' }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Millennium Center Section Settings -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">📍</span> Millennium Center Section
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="millennium_center_section_enabled" value="1" {{ ($settings['millennium_center_section_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงส่วนกลาง</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความส่วนกลาง (เว้นว่างเพื่อใช้ค่าเริ่มต้น)</label>
+                                <input type="text" name="millennium_center_section_text" value="{{ $settings['millennium_center_section_text'] ?? '' }}" placeholder="เช่น: Admin Dashboard" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Millennium RGB Border Animation -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">🌈</span> Millennium RGB Border Animation
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="millennium_rgb_enabled" value="1" {{ ($settings['millennium_rgb_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Border</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความเร็ว (วินาที)</label>
+                                <input type="number" name="millennium_rgb_speed" min="1" max="10" value="{{ $settings['millennium_rgb_speed'] ?? 5 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                <strong>💡 หมายเหตุ:</strong> Millennium RGB Border คือแถบสีสันที่วิ่งตามขอบ Taskbar ซึ่งแตกต่างจาก RGB Animation ทั่วไปของระบบ
+                            </p>
                         </div>
                     </div>
 

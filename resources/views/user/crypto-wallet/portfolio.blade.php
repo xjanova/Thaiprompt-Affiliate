@@ -146,9 +146,18 @@
                             <tr class="border-b border-gray-800 hover:bg-gray-800/30 transition group">
                                 <td class="p-4">
                                     <div class="flex items-center space-x-3">
-                                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg font-bold">
-                                            {{ substr($balance['code'] ?? 'X', 0, 1) }}
-                                        </div>
+                                        @php
+                                            $iconPath = public_path('icons/cryptocurrency/' . strtolower($balance['code'] ?? 'x') . '.svg');
+                                        @endphp
+                                        @if(file_exists($iconPath))
+                                            <img src="{{ asset('icons/cryptocurrency/' . strtolower($balance['code']) . '.svg') }}"
+                                                 alt="{{ $balance['code'] }}"
+                                                 class="w-12 h-12">
+                                        @else
+                                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-lg font-bold">
+                                                {{ substr($balance['code'] ?? 'X', 0, 1) }}
+                                            </div>
+                                        @endif
                                         <div>
                                             <div class="font-bold text-lg">{{ $balance['code'] ?? '' }}</div>
                                             <div class="text-xs text-gray-400">{{ $balance['name'] ?? '' }}</div>

@@ -196,8 +196,20 @@
                         @if(isset($prices[$curr->code]))
                             <tr class="text-sm">
                                 <td class="py-3">
-                                    <div class="font-bold text-gray-800 dark:text-gray-100">{{ $curr->code }}</div>
-                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $curr->name }}</div>
+                                    <div class="flex items-center space-x-3">
+                                        @php
+                                            $iconPath = public_path('icons/cryptocurrency/' . strtolower($curr->code) . '.svg');
+                                        @endphp
+                                        @if(file_exists($iconPath))
+                                            <img src="{{ asset('icons/cryptocurrency/' . strtolower($curr->code) . '.svg') }}"
+                                                 alt="{{ $curr->code }}"
+                                                 class="w-8 h-8">
+                                        @endif
+                                        <div>
+                                            <div class="font-bold text-gray-800 dark:text-gray-100">{{ $curr->code }}</div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-400">{{ $curr->name }}</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="py-3 text-right font-semibold text-green-600 dark:text-green-400">
                                     ฿{{ number_format($prices[$curr->code]['buy_price'], 2) }}

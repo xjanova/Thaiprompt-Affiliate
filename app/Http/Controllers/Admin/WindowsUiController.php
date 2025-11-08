@@ -40,6 +40,14 @@ class WindowsUiController extends Controller
             'windows_start_button_text' => ['nullable', 'string', 'max:50'],
             'windows_start_button_use_logo' => ['nullable', 'boolean'],
 
+            // Millennium Taskbar Settings
+            'millennium_back_button_enabled' => ['nullable', 'boolean'],
+            'millennium_back_button_text' => ['nullable', 'string', 'max:20'],
+            'millennium_center_section_enabled' => ['nullable', 'boolean'],
+            'millennium_center_section_text' => ['nullable', 'string', 'max:100'],
+            'millennium_rgb_enabled' => ['nullable', 'boolean'],
+            'millennium_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:10'],
+
             // RGB Settings
             'windows_rgb_enabled' => ['nullable', 'boolean'],
             'windows_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:10'],
@@ -61,6 +69,9 @@ class WindowsUiController extends Controller
         // Handle checkboxes
         $validated['windows_taskbar_blur'] = $request->has('windows_taskbar_blur');
         $validated['windows_start_button_use_logo'] = $request->has('windows_start_button_use_logo');
+        $validated['millennium_back_button_enabled'] = $request->has('millennium_back_button_enabled');
+        $validated['millennium_center_section_enabled'] = $request->has('millennium_center_section_enabled');
+        $validated['millennium_rgb_enabled'] = $request->has('millennium_rgb_enabled');
         $validated['windows_rgb_enabled'] = $request->has('windows_rgb_enabled');
         $validated['windows_rgb_glow'] = $request->has('windows_rgb_glow');
         $validated['windows_spaceship_theme'] = $request->has('windows_spaceship_theme');
@@ -230,6 +241,9 @@ class WindowsUiController extends Controller
         if (in_array($key, [
             'windows_taskbar_blur',
             'windows_start_button_use_logo',
+            'millennium_back_button_enabled',
+            'millennium_center_section_enabled',
+            'millennium_rgb_enabled',
             'windows_rgb_enabled',
             'windows_rgb_glow',
             'windows_spaceship_theme',
@@ -242,6 +256,7 @@ class WindowsUiController extends Controller
         if (in_array($key, [
             'windows_taskbar_height',
             'windows_taskbar_transparency',
+            'millennium_rgb_speed',
             'windows_rgb_speed',
         ])) {
             return 'integer';

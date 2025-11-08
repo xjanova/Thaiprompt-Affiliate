@@ -10,7 +10,7 @@
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">แก้ไข Email Template</h1>
             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">{{ $template->name }}</p>
         </div>
-        <a href="{{ route('admin.email.templates') }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+        <a href="{{ route('admin.email.templates.index') }}" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
             ← กลับ
         </a>
     </div>
@@ -109,7 +109,7 @@
                 🗑️ ลบ Template
             </button>
             <div class="flex items-center space-x-4">
-                <a href="{{ route('admin.email.templates') }}" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                <a href="{{ route('admin.email.templates.index') }}" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
                     ยกเลิก
                 </a>
                 <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">

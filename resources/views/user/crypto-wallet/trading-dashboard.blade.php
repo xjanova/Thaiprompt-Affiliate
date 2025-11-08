@@ -53,9 +53,18 @@
                          @click="selectCurrency('{{ $currency->code }}')">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-lg font-bold">
-                                    {{ substr($currency->code, 0, 1) }}
-                                </div>
+                                @php
+                                    $iconPath = public_path('icons/cryptocurrency/' . strtolower($currency->code) . '.svg');
+                                @endphp
+                                @if(file_exists($iconPath))
+                                    <img src="{{ asset('icons/cryptocurrency/' . strtolower($currency->code) . '.svg') }}"
+                                         alt="{{ $currency->code }}"
+                                         class="w-10 h-10 rounded-full">
+                                @else
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-lg font-bold">
+                                        {{ substr($currency->code, 0, 1) }}
+                                    </div>
+                                @endif
                                 <div>
                                     <div class="font-bold">{{ $currency->code }}</div>
                                     <div class="text-xs text-gray-400">{{ $currency->name }}</div>

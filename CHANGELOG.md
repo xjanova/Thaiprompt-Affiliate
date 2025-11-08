@@ -2,6 +2,227 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.85.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #594 from xjanova/claude/improve-presentation-slides-011CUvhoAWLqfBcS7rkvV5fh (7841580)
+- feat: redesign presentation slides with glassmorphism and wiki-aligned content (b84a8a4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.84.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #593 from xjanova/claude/menu-analysis-system-011CUvi281e5DzQwBVjsMhob (b4fd4a8)
+- feat: add System Analytics menu to admin sidebar (aef674c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.83.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #592 from xjanova/claude/add-admin-management-011CUvfABX6bhVYdHisZFiJf (d99d525)
+- feat: Add comprehensive app management system for mobile app (1db5e81)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.82.4] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #590 from xjanova/claude/fix-windows-ui-manager-011CUvf5qGaDFhFaHijnBXtU (8b9e52f)
+- fix: integrate Millennium taskbar controls into Windows UI manager (c5e5b18)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/fix-windows-ui-manager-011CUvf5qGaDFhFaHijnBXtU (344f6e4)
+
+## [v2.82.3] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #589 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (07729ba)
+- fix: Fix Start Menu not opening and enhance Taskbar with comprehensive icons (f6b2a9b)
+### 🔧 Other Changes
+
+
+## [v2.82.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #588 from xjanova/claude/fix-crypto-transactions-view-011CUvdT5aQ6Z5jsr4rGdqgH (7b380f5)
+- fix: Create missing admin.crypto.withdrawals view (9ad2f3e)
+### 🔧 Other Changes
+
+
+## [v2.82.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #587 from xjanova/claude/update-about-us-page-011CUvceE7YxiXAy2U2gbMJt (3d93481)
+- fix: Update about-us page to use real-time version from package.json (e1e0416)
+### 🔧 Other Changes
+
+
+## [v2.82.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #586 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (11b5acd)
+- feat: Add cryptocurrency icons to index, transactions, and exchange history pages (729e340)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.81.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #585 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (144cce2)
+- feat: Add cryptocurrency icons to admin crypto dashboard (88a4292)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.80.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #584 from xjanova/claude/fix-crypto-transactions-view-011CUvdT5aQ6Z5jsr4rGdqgH (3cc5cf8)
+- fix: Create missing admin.crypto.transactions view (1a686ac)
+### 🔧 Other Changes
+
+
+## [v2.80.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #583 from xjanova/claude/update-about-us-page-011CUvceE7YxiXAy2U2gbMJt (a1190fb)
+- feat: Modernize about-us page with comprehensive content and interactive mindmap (314b920)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.79.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #582 from xjanova/claude/update-wiki-dark-mode-011CUvbQvf6S3Uqar4A6vgWW (b8492c8)
+- feat: Add comprehensive Cryptocurrency section to platform-wiki (8723ffa)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.78.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #581 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (64dbe5f)
+- feat: Apply Millennium UI to all layouts (User, App, Windows) (65ae6b5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.77.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #580 from xjanova/claude/update-wiki-dark-mode-011CUvbQvf6S3Uqar4A6vgWW (142b2a8)
+- feat: Update platform-wiki with dark mode support and comprehensive feature documentation (959d7b3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.76.5] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Fix CryptoExchangeService dependency injection order (2db8380)
+- fix: Fix crypto menu dropdown functionality in admin layout (2c6f8b4)
+### 🔧 Other Changes
+- Merge pull request #579 from xjanova/claude/fix-crypto-menu-issues-011CUvbBERnmsAEZtVDfMDcT (86e4311)
+
+## [v2.76.4] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #578 from xjanova/claude/fix-missing-email-templates-route-011CUva7pVvG91so7chuYNpk (8766927)
+- fix: Update all references to use admin.email.templates.index route (997d43a)
+### 🔧 Other Changes
+
+
+## [v2.76.3] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #577 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (3a6c8c5)
+- fix: Correct dependency injection order in CryptoExchangeService (04af4d4)
+### 🔧 Other Changes
+
+
+## [v2.76.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #576 from xjanova/claude/fix-missing-email-templates-route-011CUva7pVvG91so7chuYNpk (b80270b)
+- fix: Add missing admin.academy.courses.index route (c1501d2)
+### 🔧 Other Changes
+
+
+## [v2.76.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #575 from xjanova/claude/fix-missing-email-templates-route-011CUva7pVvG91so7chuYNpk (0722d70)
+- fix: Update email templates route name to follow Laravel conventions (e47d0f8)
+### 🔧 Other Changes
+
+
+## [v2.76.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #574 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (a17f700)
+- feat: Update all crypto views to use real cryptocurrency icons (db8da09)
+- feat: Add 222+ cryptocurrency icons for trading dashboard (2d67130)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.75.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #573 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (3576f28)
+- feat: Redesign menu with Millennium Start Button and RGB effects (3f2113d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.74.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #572 from xjanova/claude/fix-crypto-dashboard-view-011CUvVwwdnYSRumuLaMvAQ2 (0c48428)
+- feat: add missing crypto dashboard view (31d08ba)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.73.2] - 2025-11-08
 
 ### ✨ Features

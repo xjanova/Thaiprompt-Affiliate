@@ -108,8 +108,19 @@
                             <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">
                                 {{ number_format($exchange->from_amount, $exchange->from_currency_type === 'crypto' ? 8 : 2) }}
                             </div>
-                            <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {{ $exchange->from_currency_code }}
+                            <div class="flex items-center justify-center gap-2 mt-2">
+                                @php
+                                    $fromCode = strtolower($exchange->from_currency_code);
+                                    $fromIconPath = public_path('icons/cryptocurrency/' . $fromCode . '.svg');
+                                @endphp
+                                @if($exchange->from_currency_type === 'crypto' && file_exists($fromIconPath))
+                                    <img src="{{ asset('icons/cryptocurrency/' . $fromCode . '.svg') }}"
+                                         alt="{{ $exchange->from_currency_code }}"
+                                         class="w-5 h-5">
+                                @endif
+                                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ $exchange->from_currency_code }}
+                                </div>
                             </div>
                         </div>
 
@@ -122,8 +133,19 @@
                             <div class="text-2xl font-bold {{ $exchange->type === 'buy' ? 'text-green-600 dark:text-green-400' : 'text-blue-600 dark:text-blue-400' }}">
                                 {{ number_format($exchange->to_amount, $exchange->to_currency_type === 'crypto' ? 8 : 2) }}
                             </div>
-                            <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {{ $exchange->to_currency_code }}
+                            <div class="flex items-center justify-center gap-2 mt-2">
+                                @php
+                                    $toCode = strtolower($exchange->to_currency_code);
+                                    $toIconPath = public_path('icons/cryptocurrency/' . $toCode . '.svg');
+                                @endphp
+                                @if($exchange->to_currency_type === 'crypto' && file_exists($toIconPath))
+                                    <img src="{{ asset('icons/cryptocurrency/' . $toCode . '.svg') }}"
+                                         alt="{{ $exchange->to_currency_code }}"
+                                         class="w-5 h-5">
+                                @endif
+                                <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {{ $exchange->to_currency_code }}
+                                </div>
                             </div>
                         </div>
                     </div>
