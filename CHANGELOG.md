@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.98.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #628 from xjanova/claude/fix-cart-syntax-errors-011CUw269SAcXGAztBniFZFq (6b89cc2)
+- fix: correct syntax error in cart quantity increment button (df96616)
+### 🔧 Other Changes
+
+
 ## [v2.98.0] - 2025-11-08
 
 ### ✨ Features
