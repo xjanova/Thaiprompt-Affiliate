@@ -34,8 +34,9 @@
     <!-- GSAP -->
     <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
 
-    {{-- Theme System v2 --}}
-    <x-theme-style :theme="$currentTheme ?? null" :mode="$currentThemeMode ?? 'auto'" />
+    {{-- Dark Mode System --}}
+    <x-dark-mode-init />
+    <x-dark-mode-styles />
 
     @php
         // Gradient color variables from settings with defaults
@@ -574,8 +575,8 @@
                         <!-- Dashboard Switcher -->
                         <x-dashboard-switcher />
 
-                        <!-- Theme Toggle -->
-                        <x-theme-toggle />
+                        <!-- Dark Mode Toggle -->
+                        <x-dark-mode-toggle />
 
                         <!-- Notification Bell -->
                         <x-notification-bell />
@@ -702,11 +703,6 @@
 
     {{-- Immediate Notification Popup --}}
     <x-immediate-notification-popup />
-
-    {{-- Theme System v2 - JavaScript --}}
-    @if(class_exists('\App\Models\Theme'))
-        <x-theme-script :mode="$currentThemeMode ?? 'auto'" />
-    @endif
 
     @stack('scripts')
 </body>
