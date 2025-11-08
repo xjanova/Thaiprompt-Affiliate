@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.92.7] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #619 from xjanova/claude/center-start-menu-button-011CUvtU4UhUygnsDgs4aMHG (23c2fec)
+- fix: move back button to taskbar and enable submenu functionality (96c619b)
+### 🔧 Other Changes
+
+
 ## [v2.92.6] - 2025-11-08
 
 ### ✨ Features
