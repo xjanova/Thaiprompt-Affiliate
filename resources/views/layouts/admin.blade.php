@@ -90,6 +90,7 @@
         mlmMenuOpen: localStorage.getItem('mlmMenuOpen') === 'true',
         posMenuOpen: localStorage.getItem('posMenuOpen') === 'true',
         academyMenuOpen: localStorage.getItem('academyMenuOpen') === 'true',
+        hotelMenuOpen: localStorage.getItem('hotelMenuOpen') === 'true',
         // Auto-open dropdown if current page is in submenu
         init() {
             this.checkActiveMenu();
@@ -112,6 +113,7 @@
             this.mlmMenuOpen = false;
             this.posMenuOpen = false;
             this.academyMenuOpen = false;
+            this.hotelMenuOpen = false;
 
             // Open only the relevant menu based on current path
             if (currentPath.includes('/admin/line-oa') || currentPath.includes('/admin/line-bot') || currentPath.includes('/admin/otp') || currentPath.includes('/admin/ai-bots') || currentPath.includes('/admin/ai-providers') || currentPath.includes('/admin/ai-monitoring') || currentPath.includes('/admin/ai-installation')) {
@@ -132,6 +134,8 @@
                 this.posMenuOpen = true;
             } else if (currentPath.includes('/admin/academy') || currentPath.includes('/admin/learning-center') || currentPath.includes('/admin/instructor') || currentPath.includes('/admin/quiz') || currentPath.includes('/admin/certificates')) {
                 this.academyMenuOpen = true;
+            } else if (currentPath.includes('/admin/hotels')) {
+                this.hotelMenuOpen = true;
             } else if (currentPath.includes('/admin/settings') || currentPath.includes('/admin/premium-page') || currentPath.includes('/admin/header-editor') || currentPath.includes('/admin/templates') || currentPath.includes('/admin/pages') || currentPath.includes('/admin/seo') || currentPath.includes('/admin/translations') || currentPath.includes('/admin/notifications') || currentPath.includes('/admin/roles')) {
                 this.systemMenuOpen = true;
             }
@@ -146,6 +150,7 @@
             localStorage.setItem('mlmMenuOpen', this.mlmMenuOpen);
             localStorage.setItem('posMenuOpen', this.posMenuOpen);
             localStorage.setItem('academyMenuOpen', this.academyMenuOpen);
+            localStorage.setItem('hotelMenuOpen', this.hotelMenuOpen);
             localStorage.setItem('systemMenuOpen', this.systemMenuOpen);
         }
     }">
@@ -241,6 +246,74 @@
                         <span class="ml-auto bg-blue-500 text-white text-xs rounded-full px-1.5 py-0.5" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $openTicketCount }}</span>
                     @endif
                 </a>
+
+                <!-- Hotel Management Dropdown -->
+                <div class="relative mb-1">
+                    @php
+                        $hotelActive = request()->routeIs('admin.hotels.*');
+                    @endphp
+
+                    <!-- Main Hotel Menu Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-orange-600 hover:to-amber-600 hover:text-white rounded-lg transition-all duration-200 group {{ $hotelActive ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('hotelMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">🏨</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            จัดการโรงแรม
+                        </span>
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': hotelMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="hotelMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <a href="{{ route('admin.hotels.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hotels.index') || request()->routeIs('admin.hotels.show') || request()->routeIs('admin.hotels.create') || request()->routeIs('admin.hotels.edit') ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white' : '' }}">
+                            <span class="mr-2">🏢</span>
+                            <span>โรงแรมทั้งหมด</span>
+                        </a>
+
+                        <a href="{{ route('admin.hotels.bookings.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hotels.bookings.*') ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white' : '' }}">
+                            <span class="mr-2">📅</span>
+                            <span>การจองทั้งหมด</span>
+                        </a>
+
+                        <a href="{{ route('admin.hotels.bookings.analytics') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hotels.bookings.analytics') ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span>รายงานและสถิติ</span>
+                        </a>
+
+                        <a href="{{ route('admin.hotels.reviews.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hotels.reviews.*') ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white' : '' }}">
+                            <span class="mr-2">⭐</span>
+                            <span>จัดการรีวิว</span>
+                        </a>
+
+                        <a href="{{ route('admin.hotels.facilities.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hotels.facilities.*') ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white' : '' }}">
+                            <span class="mr-2">🏊</span>
+                            <span>สิ่งอำนวยความสะดวก</span>
+                        </a>
+
+                        <a href="{{ route('admin.hotels.special-offers.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-orange-500 hover:to-amber-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.hotels.special-offers.*') ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white' : '' }}">
+                            <span class="mr-2">🎁</span>
+                            <span>โปรโมชั่นพิเศษ</span>
+                        </a>
+                    </div>
+                </div>
 
                 <!-- Marketing System Dropdown -->
                 <div class="relative mb-1">
