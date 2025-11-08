@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         // Cookie Tracking Table
-        Schema::create('cookie_tracking', function (Blueprint $table) {
+        if (!Schema::hasTable('cookie_tracking')) {
+            Schema::create('cookie_tracking', function (Blueprint $table) {
             $table->id();
             $table->string('session_id')->index();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
@@ -61,10 +62,12 @@ return new class extends Migration
             $table->index(['user_id', 'session_id']);
             $table->index(['country', 'city']);
             $table->index('last_activity_at');
-        });
+            });
+        }
 
         // Cookie Consents Table
-        Schema::create('cookie_consents', function (Blueprint $table) {
+        if (!Schema::hasTable('cookie_consents')) {
+            Schema::create('cookie_consents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
             $table->string('session_id')->index();
@@ -87,7 +90,8 @@ return new class extends Migration
             // Indexes
             $table->index(['session_id', 'ip_address']);
             $table->index('consented_at');
-        });
+            });
+        }
     }
 
     /**
