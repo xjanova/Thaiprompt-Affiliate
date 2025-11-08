@@ -180,6 +180,12 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">ช๊อปปิ้ง</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-pink-600 to-rose-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
+                    <a href="{{ route('hotels.index') }}"
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 dark:hover:from-orange-900/30 dark:hover:to-amber-900/30 hover:text-orange-700 dark:hover:text-orange-300 hover:shadow-md">
+                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">🏨</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">จองโรงแรม</span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-orange-600 to-amber-600 group-hover:w-full transition-all duration-300"></span>
+                    </a>
                     @auth
                         <a href="{{ route('my-rentals.index') }}"
                            class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-emerald-50 hover:to-teal-50 dark:hover:from-emerald-900/30 dark:hover:to-teal-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 hover:shadow-md">
@@ -354,6 +360,11 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};">
                     🛍️ ช๊อปปิ้ง
+                </a>
+                <a href="{{ route('hotels.index') }}"
+                   class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                   style="color: {{ $headerTextColor }};">
+                    🏨 จองโรงแรม
                 </a>
                 @auth
                     <a href="{{ route('my-rentals.index') }}"
