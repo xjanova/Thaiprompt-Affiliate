@@ -196,6 +196,66 @@ class User extends Authenticatable
     }
 
     /**
+     * Cryptocurrency Wallet Relationships
+     */
+
+    /**
+     * Get all crypto wallets for the user
+     */
+    public function cryptoWallets()
+    {
+        return $this->hasMany(CryptoWallet::class);
+    }
+
+    /**
+     * Get default crypto wallet
+     */
+    public function defaultCryptoWallet()
+    {
+        return $this->hasOne(CryptoWallet::class)->where('is_default', true);
+    }
+
+    /**
+     * Get all crypto addresses across all wallets
+     */
+    public function cryptoAddresses()
+    {
+        return $this->hasManyThrough(CryptoAddress::class, CryptoWallet::class);
+    }
+
+    /**
+     * Get all crypto transactions
+     */
+    public function cryptoTransactions()
+    {
+        return $this->hasMany(CryptoTransaction::class);
+    }
+
+    /**
+     * Get all crypto exchange transactions
+     */
+    public function cryptoExchangeTransactions()
+    {
+        return $this->hasMany(CryptoExchangeTransaction::class);
+    }
+
+    /**
+     * Get all crypto withdrawal requests
+     */
+    public function cryptoWithdrawalRequests()
+    {
+        return $this->hasMany(CryptoWithdrawalRequest::class);
+    }
+
+    /**
+     * Get all crypto deposit addresses
+     */
+    public function cryptoDepositAddresses()
+    {
+        return $this->hasMany(CryptoDepositAddress::class);
+    }
+
+    /**
      * Get all notifications for the user
      */
     public function notifications()
@@ -462,6 +522,11 @@ class User extends Authenticatable
             'view_kyc_verifications',
             'approve_kyc',
             'manage_kyc',
+            'manage_crypto_wallets',
+            'approve_crypto_withdrawals',
+            'view_all_crypto_wallets',
+            'manage_crypto_settings',
+            'manage_crypto_currencies',
         ];
     }
 
