@@ -28,7 +28,7 @@ return new class extends Migration
 
             // Configuration
             $table->json('config')->nullable(); // Store gateway-specific configuration
-            $table->json('credentials')->nullable(); // Encrypted sensitive data
+            $table->longText('credentials')->nullable(); // Encrypted sensitive data (stored as encrypted string, not JSON)
             $table->json('fees')->nullable(); // Fee structure
             $table->json('limits')->nullable(); // Min/max amounts
 
@@ -40,7 +40,7 @@ return new class extends Migration
 
             // Testing
             $table->boolean('test_mode')->default(false);
-            $table->json('test_credentials')->nullable();
+            $table->longText('test_credentials')->nullable(); // Encrypted sensitive data (stored as encrypted string, not JSON)
 
             // Priority & Sorting
             $table->integer('sort_order')->default(0);
