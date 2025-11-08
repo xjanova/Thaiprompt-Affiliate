@@ -160,15 +160,14 @@ class HomeController extends Controller
      */
     public function aboutProfessional()
     {
-        // Get version from CHANGELOG
-        $version = '1.159.0'; // Default fallback
-        $changelogPath = base_path('CHANGELOG.md');
+        // Get version from package.json (real-time)
+        $version = '2.79.0'; // Default fallback
+        $packageJsonPath = base_path('package.json');
 
-        if (file_exists($changelogPath)) {
-            $changelog = file_get_contents($changelogPath);
-            // Extract latest version from CHANGELOG
-            if (preg_match('/##\s*\[v?(\d+\.\d+\.\d+)\]/', $changelog, $matches)) {
-                $version = $matches[1];
+        if (file_exists($packageJsonPath)) {
+            $packageJson = json_decode(file_get_contents($packageJsonPath), true);
+            if (isset($packageJson['version'])) {
+                $version = $packageJson['version'];
             }
         }
 
@@ -179,6 +178,7 @@ class HomeController extends Controller
             'total_users' => User::count(),
             'total_affiliates' => \App\Models\Affiliate::count(),
             'total_commissions' => \App\Models\Commission::count(),
+            'total_earnings' => \App\Models\Commission::whereIn('status', ['approved', 'paid'])->sum('amount') ?? 0,
             'database_tables' => 105,
             'database_models' => 113,
             'http_controllers' => 91,
