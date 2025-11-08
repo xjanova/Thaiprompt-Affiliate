@@ -1192,12 +1192,12 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
     // Dashboard
     Route::get('/dashboard', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'dashboard'])->name('dashboard');
 
-    // Withdrawal Management
-    Route::prefix('withdrawals')->name('withdrawals.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'withdrawals'])->name('index');
-        Route::post('/{id}/approve', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'approveWithdrawal'])->name('approve');
-        Route::post('/{id}/reject', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'rejectWithdrawal'])->name('reject');
-    });
+    // Withdrawal Management - Direct route for backward compatibility
+    Route::get('/withdrawals', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'withdrawals'])->name('withdrawals');
+
+    // Withdrawal actions
+    Route::post('/withdrawals/{id}/approve', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'approveWithdrawal'])->name('withdrawals.approve');
+    Route::post('/withdrawals/{id}/reject', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'rejectWithdrawal'])->name('withdrawals.reject');
 
     // Transaction Monitor
     Route::get('/transactions', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'transactions'])->name('transactions');
@@ -1205,19 +1205,15 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
     // Wallet Management
     Route::get('/wallets', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'wallets'])->name('wallets');
 
-    // Currency Management
-    Route::prefix('currencies')->name('currencies.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'currencies'])->name('index');
-        Route::put('/{id}', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateCurrency'])->name('update');
-    });
+    // Currency Management - Direct route for backward compatibility
+    Route::get('/currencies', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'currencies'])->name('currencies');
+    Route::put('/currencies/{id}', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateCurrency'])->name('currencies.update');
 
     // Manual Operations
     Route::post('/scan-deposits', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'scanDeposits'])->name('scan-deposits');
     Route::post('/process-withdrawals', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'processWithdrawals'])->name('process-withdrawals');
 
-    // System Settings
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'settings'])->name('index');
-        Route::post('/', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateSettings'])->name('update');
-    });
+    // System Settings - Direct route for backward compatibility
+    Route::get('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'settings'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateSettings'])->name('settings.update');
 });
