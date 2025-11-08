@@ -115,8 +115,8 @@
             <div class="flex items-center gap-2 flex-1">
 
                 <!-- Shopping Cart -->
-                @if(Route::has('user.shop.cart'))
-                <a href="{{ route('user.shop.cart') }}"
+                @if(Route::has('cart.index'))
+                <a href="{{ route('cart.index') }}"
                    class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-green-500 hover:to-emerald-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
                    title="รถเข็น">
                     <span class="text-2xl">🛒</span>
