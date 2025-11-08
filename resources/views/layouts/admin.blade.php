@@ -24,6 +24,9 @@
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Alpine.js Plugins -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
@@ -105,17 +108,7 @@
         <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <!-- Back Button -->
-                        <button
-                            onclick="window.history.back()"
-                            class="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-indigo-500/50"
-                            title="กลับ">
-                            <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                            </svg>
-                            <span class="font-bold text-sm">กลับ</span>
-                        </button>
+                    <div class="flex items-center">
                         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
                     </div>
 

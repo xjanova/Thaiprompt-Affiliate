@@ -66,8 +66,21 @@
         <!-- Taskbar Content -->
         <div class="relative h-full max-w-full mx-auto px-3 flex items-center justify-between gap-3">
 
-            <!-- Left Section: Quick Icons -->
+            <!-- Left Section: Back Button + Quick Icons -->
             <div class="flex items-center gap-2 flex-1">
+
+                <!-- Back Button -->
+                @if($backButtonEnabled)
+                    <button
+                        onclick="window.history.back()"
+                        class="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-700/80 to-gray-800/80 hover:from-indigo-600 hover:to-purple-600 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-indigo-500/50"
+                        title="{{ $backButtonText }}">
+                        <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        <span class="font-bold text-sm hidden lg:inline-block">{{ $backButtonText }}</span>
+                    </button>
+                @endif
 
                 <!-- Shopping Cart -->
                 @if(Route::has('user.shop.cart'))
