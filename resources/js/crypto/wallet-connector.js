@@ -26,7 +26,9 @@ export class WalletConnector {
      */
     async connectMetaMask() {
         if (!this.isMetaMaskInstalled()) {
-            throw new Error('MetaMask is not installed. Please install it from metamask.io');
+            const error = new Error('MetaMask ไม่ได้ติดตั้งในเบราว์เซอร์ กรุณาติดตั้งจาก metamask.io');
+            error.code = 'METAMASK_NOT_INSTALLED';
+            throw error;
         }
 
         try {
@@ -34,6 +36,11 @@ export class WalletConnector {
             const accounts = await window.ethereum.request({
                 method: 'eth_requestAccounts'
             });
+
+            // Validate accounts
+            if (!accounts || accounts.length === 0) {
+                throw new Error('ไม่พบบัญชีในกระเป๋าเงิน กรุณาสร้างบัญชีใน MetaMask ก่อน');
+            }
 
             // Create provider and signer
             this.provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -56,6 +63,18 @@ export class WalletConnector {
             };
         } catch (error) {
             console.error('Failed to connect MetaMask:', error);
+
+            // Enhance error messages
+            if (error.code === 4001) {
+                error.message = 'คุณปฏิเสธการเชื่อมต่อกับ MetaMask';
+            } else if (error.code === -32002) {
+                error.message = 'กรุณาเปิด MetaMask และอนุมัติคำขอการเชื่อมต่อ';
+            } else if (error.code === -32603) {
+                error.message = 'เกิดข้อผิดพลาดภายใน กรุณาลองใหม่อีกครั้ง';
+            } else if (!error.message || error.message === '') {
+                error.message = 'ไม่สามารถเชื่อมต่อกับ MetaMask ได้';
+            }
+
             throw error;
         }
     }
@@ -105,7 +124,15 @@ export class WalletConnector {
      */
     async signMessage(message) {
         if (!this.signer) {
-            throw new Error('Wallet not connected');
+            const error = new Error('กระเป๋าเงินยังไม่ได้เชื่อมต่อ กรุณาเชื่อมต่อก่อน');
+            error.code = 'WALLET_NOT_CONNECTED';
+            throw error;
+        }
+
+        if (!message || message.trim() === '') {
+            const error = new Error('ข้อความสำหรับลงชื่อไม่สามารถเป็นค่าว่างได้');
+            error.code = 'INVALID_MESSAGE';
+            throw error;
         }
 
         try {
@@ -113,6 +140,16 @@ export class WalletConnector {
             return signature;
         } catch (error) {
             console.error('Failed to sign message:', error);
+
+            // Enhance error messages
+            if (error.code === 4001) {
+                error.message = 'คุณปฏิเสธการลงชื่อข้อความใน MetaMask';
+            } else if (error.code === 'ACTION_REJECTED') {
+                error.message = 'คุณยกเลิกการลงชื่อข้อความ';
+            } else if (!error.message || error.message === '') {
+                error.message = 'ไม่สามารถลงชื่อข้อความได้ กรุณาลองใหม่อีกครั้ง';
+            }
+
             throw error;
         }
     }
@@ -135,15 +172,27 @@ export class WalletConnector {
      */
     async getBalance(address = null) {
         if (!this.provider) {
-            throw new Error('Provider not initialized');
+            const error = new Error('ระบบยังไม่พร้อมใช้งาน กรุณาเชื่อมต่อกระเป๋าเงินก่อน');
+            error.code = 'PROVIDER_NOT_INITIALIZED';
+            throw error;
         }
 
         try {
             const addr = address || this.address;
+
+            if (!addr) {
+                throw new Error('ไม่พบที่อยู่กระเป๋าเงิน');
+            }
+
             const balance = await this.provider.getBalance(addr);
             return ethers.utils.formatEther(balance);
         } catch (error) {
             console.error('Failed to get balance:', error);
+
+            if (!error.message || error.message === '') {
+                error.message = 'ไม่สามารถดึงข้อมูลยอดเงินได้ กรุณาลองใหม่อีกครั้ง';
+            }
+
             throw error;
         }
     }
@@ -184,7 +233,15 @@ export class WalletConnector {
      */
     async switchNetwork(chainId) {
         if (!window.ethereum) {
-            throw new Error('MetaMask not found');
+            const error = new Error('ไม่พบ MetaMask กรุณาติดตั้งก่อนใช้งาน');
+            error.code = 'METAMASK_NOT_FOUND';
+            throw error;
+        }
+
+        if (!chainId) {
+            const error = new Error('กรุณาระบุ Chain ID ของเครือข่าย');
+            error.code = 'INVALID_CHAIN_ID';
+            throw error;
         }
 
         try {
@@ -193,10 +250,23 @@ export class WalletConnector {
                 params: [{ chainId: `0x${chainId.toString(16)}` }],
             });
         } catch (error) {
+            console.error('Failed to switch network:', error);
+
             // This error code indicates that the chain has not been added to MetaMask
             if (error.code === 4902) {
-                await this.addNetwork(chainId);
+                try {
+                    await this.addNetwork(chainId);
+                } catch (addError) {
+                    addError.message = 'ไม่สามารถเพิ่มเครือข่ายใน MetaMask ได้';
+                    throw addError;
+                }
+            } else if (error.code === 4001) {
+                error.message = 'คุณปฏิเสธการเปลี่ยนเครือข่าย';
+                throw error;
             } else {
+                if (!error.message || error.message === '') {
+                    error.message = 'ไม่สามารถเปลี่ยนเครือข่ายได้ กรุณาลองใหม่อีกครั้ง';
+                }
                 throw error;
             }
         }
@@ -229,16 +299,30 @@ export class WalletConnector {
 
         const network = networks[chainId];
         if (!network) {
-            throw new Error(`Network ${chainId} not supported`);
+            const error = new Error(`เครือข่าย ${chainId} ยังไม่รองรับในขณะนี้`);
+            error.code = 'UNSUPPORTED_NETWORK';
+            throw error;
         }
 
-        await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [{
-                chainId: `0x${chainId.toString(16)}`,
-                ...network
-            }],
-        });
+        try {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                    chainId: `0x${chainId.toString(16)}`,
+                    ...network
+                }],
+            });
+        } catch (error) {
+            console.error('Failed to add network:', error);
+
+            if (error.code === 4001) {
+                error.message = 'คุณปฏิเสธการเพิ่มเครือข่าย';
+            } else if (!error.message || error.message === '') {
+                error.message = 'ไม่สามารถเพิ่มเครือข่ายใน MetaMask ได้';
+            }
+
+            throw error;
+        }
     }
 
     /**
@@ -298,7 +382,22 @@ export class WalletConnector {
      */
     async sendTransaction(to, value, data = '0x') {
         if (!this.signer) {
-            throw new Error('Wallet not connected');
+            const error = new Error('กระเป๋าเงินยังไม่ได้เชื่อมต่อ กรุณาเชื่อมต่อก่อนส่งธุรกรรม');
+            error.code = 'WALLET_NOT_CONNECTED';
+            throw error;
+        }
+
+        // Validate parameters
+        if (!to || !ethers.utils.isAddress(to)) {
+            const error = new Error('ที่อยู่ผู้รับไม่ถูกต้อง');
+            error.code = 'INVALID_RECIPIENT';
+            throw error;
+        }
+
+        if (!value || parseFloat(value) <= 0) {
+            const error = new Error('จำนวนเงินต้องมากกว่า 0');
+            error.code = 'INVALID_AMOUNT';
+            throw error;
         }
 
         try {
@@ -311,6 +410,15 @@ export class WalletConnector {
             return tx;
         } catch (error) {
             console.error('Failed to send transaction:', error);
+
+            if (error.code === 4001 || error.code === 'ACTION_REJECTED') {
+                error.message = 'คุณปฏิเสธการส่งธุรกรรม';
+            } else if (error.code === 'INSUFFICIENT_FUNDS') {
+                error.message = 'ยอดเงินไม่เพียงพอสำหรับการทำธุรกรรม';
+            } else if (!error.message || error.message === '') {
+                error.message = 'ไม่สามารถส่งธุรกรรมได้ กรุณาลองใหม่อีกครั้ง';
+            }
+
             throw error;
         }
     }
