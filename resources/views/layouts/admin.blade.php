@@ -82,6 +82,7 @@
         // Dropdown states with persistence
         marketingMenuOpen: localStorage.getItem('marketingMenuOpen') === 'true',
         walletOpen: localStorage.getItem('walletOpen') === 'true',
+        investmentMenuOpen: localStorage.getItem('investmentMenuOpen') === 'true',
         emailMenuOpen: localStorage.getItem('emailMenuOpen') === 'true',
         lineMenuOpen: localStorage.getItem('lineMenuOpen') === 'true',
         accountingMenuOpen: localStorage.getItem('accountingMenuOpen') === 'true',
@@ -103,6 +104,7 @@
             // Reset all menus first
             this.marketingMenuOpen = false;
             this.walletOpen = false;
+            this.investmentMenuOpen = false;
             this.emailMenuOpen = false;
             this.lineMenuOpen = false;
             this.systemMenuOpen = false;
@@ -119,6 +121,8 @@
                 this.marketingMenuOpen = true;
             } else if (currentPath.includes('/admin/wallet') || currentPath.includes('/admin/withdrawals') || currentPath.includes('/admin/payment-gateways')) {
                 this.walletOpen = true;
+            } else if (currentPath.includes('/admin/investments')) {
+                this.investmentMenuOpen = true;
             } else if (currentPath.includes('/admin/email')) {
                 this.emailMenuOpen = true;
             } else if (currentPath.includes('/admin/accounting')) {
@@ -412,6 +416,84 @@
                            class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-indigo-500 hover:to-purple-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.wallet.logs') ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white' : '' }}">
                             <span class="mr-2">🔒</span>
                             <span>ประวัติความปลอดภัย</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Investment Management Dropdown Menu -->
+                <div class="relative mb-1">
+                    @php
+                        $investmentActive = request()->routeIs('admin.investments.*');
+                        $pendingInvestments = \App\Models\StakingPosition::where('status', 'pending')->count();
+                    @endphp
+
+                    <!-- Main Investment Button -->
+                    <button
+                       class="flex items-center w-full px-3 py-2.5 text-gray-300 hover:bg-gradient-to-r hover:from-purple-600 hover:to-pink-600 hover:text-white rounded-lg transition-all duration-200 group {{ $investmentActive ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : '' }}"
+                       @click="toggleMenu('investmentMenuOpen')">
+                        <span class="text-xl transition-all" :class="{ 'md:mx-auto': sidebarCollapsed }">📈</span>
+                        <span class="ml-3 text-sm font-medium transition-all flex-1 text-left" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">
+                            จัดการลงทุน ROI
+                        </span>
+                        @if($pendingInvestments > 0)
+                            <span class="ml-auto bg-yellow-500 text-white text-xs rounded-full px-1.5 py-0.5 animate-pulse" :class="{ 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen">{{ $pendingInvestments }}</span>
+                        @endif
+                        <svg class="w-3.5 h-3.5 ml-2 transition-transform duration-200" :class="{ 'rotate-180': investmentMenuOpen, 'md:hidden': sidebarCollapsed }" x-show="!sidebarCollapsed || sidebarOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <!-- Dropdown Submenu -->
+                    <div x-show="investmentMenuOpen && (!sidebarCollapsed || sidebarOpen)"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 transform -translate-y-2"
+                         x-transition:enter-end="opacity-100 transform translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         class="mt-1 mb-2 ml-3 space-y-0.5 bg-gray-800/30 rounded-lg p-1.5 backdrop-blur-sm border border-gray-700/30"
+                         style="display: none;">
+
+                        <!-- Dashboard -->
+                        <a href="{{ route('admin.investments.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.investments.index') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">🏠</span>
+                            <span>ภาพรวม</span>
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- Investment Plans -->
+                        <a href="{{ route('admin.investments.plans.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.investments.plans.*') ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : '' }}">
+                            <span class="mr-2">💎</span>
+                            <span>จัดการแผนลงทุน</span>
+                        </a>
+
+                        <!-- Staking Positions -->
+                        <a href="{{ route('admin.investments.positions.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-yellow-500 hover:to-orange-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.investments.positions.*') ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white' : '' }}">
+                            <span class="mr-2">📊</span>
+                            <span class="flex-1">การลงทุนทั้งหมด</span>
+                            @if($pendingInvestments > 0)
+                                <span class="bg-yellow-500 text-white text-[10px] rounded-full px-1.5 py-0.5 animate-pulse">{{ $pendingInvestments }}</span>
+                            @endif
+                        </a>
+
+                        <div class="border-t border-gray-700/30 my-1"></div>
+
+                        <!-- ROI Distributions -->
+                        <a href="{{ route('admin.investments.distributions.index') }}"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-green-500 hover:to-emerald-500 hover:text-white rounded-md transition-all duration-200 {{ request()->routeIs('admin.investments.distributions.*') ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' : '' }}">
+                            <span class="mr-2">💰</span>
+                            <span>การจ่าย ROI</span>
+                        </a>
+
+                        <!-- Statistics & Reports -->
+                        <a href="{{ route('admin.investments.index') }}#statistics"
+                           class="flex items-center px-3 py-1.5 text-xs text-gray-300 hover:bg-gradient-to-r hover:from-blue-500 hover:to-cyan-500 hover:text-white rounded-md transition-all duration-200">
+                            <span class="mr-2">📈</span>
+                            <span>สถิติและรายงาน</span>
                         </a>
                     </div>
                 </div>
