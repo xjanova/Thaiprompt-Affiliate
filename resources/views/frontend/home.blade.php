@@ -183,6 +183,165 @@
         </div>
     </section>
 
+    @if($premiumSections['investment'] && $investmentPlans->count() > 0)
+    <!-- Investment ROI Hero Section -->
+    <section class="py-20 bg-gradient-to-br from-purple-900 via-pink-900 to-red-900 relative overflow-hidden">
+        <!-- Animated Background -->
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute top-0 left-0 w-96 h-96 bg-yellow-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
+            <div class="absolute top-0 right-0 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-2000"></div>
+            <div class="absolute bottom-0 left-1/2 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-blob animation-delay-4000"></div>
+        </div>
+
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <!-- Section Header -->
+            <div class="text-center mb-16">
+                <div class="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-6 animate-pulse">
+                    <span class="relative flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                    </span>
+                    <span class="text-white font-semibold">🚀 ระบบลงทุนใหม่!</span>
+                </div>
+
+                <h2 class="text-5xl md:text-7xl font-black mb-6 leading-tight">
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-300 to-purple-300">
+                        ลงทุน ROI
+                    </span>
+                    <br>
+                    <span class="text-white">รับผลตอบแทนเติบโตต่อเนื่อง</span>
+                </h2>
+
+                <p class="text-xl md:text-2xl text-pink-100 max-w-4xl mx-auto mb-12 leading-relaxed">
+                    ระบบการลงทุนที่โปร่งใส ปลอดภัย จ่าย ROI อัตโนมัติทุกวัน
+                    <br>
+                    <span class="text-yellow-300 font-semibold">เริ่มต้นเพียง {{ number_format($investmentPlans->min('min_amount'), 0) }} บาท</span>
+                </p>
+
+                <!-- Investment Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto mb-12">
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 transform hover:scale-105 transition-all">
+                        <div class="text-4xl mb-2">💰</div>
+                        <div class="text-3xl font-bold text-white mb-1">฿{{ number_format($stats['total_invested'] / 1000000, 1) }}M</div>
+                        <div class="text-pink-200 text-sm">ลงทุนทั้งหมด</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 transform hover:scale-105 transition-all">
+                        <div class="text-4xl mb-2">📈</div>
+                        <div class="text-3xl font-bold text-yellow-300 mb-1">฿{{ number_format($stats['total_roi_paid'] / 1000000, 1) }}M</div>
+                        <div class="text-pink-200 text-sm">ROI ที่จ่ายแล้ว</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 transform hover:scale-105 transition-all">
+                        <div class="text-4xl mb-2">👥</div>
+                        <div class="text-3xl font-bold text-green-300 mb-1">{{ number_format($stats['active_investors']) }}+</div>
+                        <div class="text-pink-200 text-sm">นักลงทุนที่ใช้งาน</div>
+                    </div>
+                </div>
+
+                <!-- CTA Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                    @auth
+                        <a href="{{ route('user.investments.plans') }}" class="group relative inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 text-lg font-bold rounded-xl shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
+                            <span class="relative z-10">ดูแผนการลงทุน</span>
+                            <svg class="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                        </a>
+                        <a href="{{ route('user.investments.index') }}" class="inline-flex items-center justify-center px-10 py-5 bg-white/10 backdrop-blur-sm text-white text-lg font-bold rounded-xl border-2 border-white/30 hover:bg-white/20 transition-all duration-300 transform hover:scale-105">
+                            Dashboard การลงทุน
+                        </a>
+                    @else
+                        <a href="{{ route('register') }}" class="group relative inline-flex items-center justify-center px-10 py-5 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 text-lg font-bold rounded-xl shadow-2xl hover:shadow-yellow-500/50 transition-all duration-300 transform hover:scale-105">
+                            <span class="relative z-10">เริ่มลงทุนวันนี้</span>
+                            <svg class="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                        </a>
+                        <a href="{{ route('login') }}" class="inline-flex items-center justify-center px-10 py-5 bg-white/10 backdrop-blur-sm text-white text-lg font-bold rounded-xl border-2 border-white/30 hover:bg-white/20 transition-all duration-300 transform hover:scale-105">
+                            เข้าสู่ระบบ
+                        </a>
+                    @endauth
+                </div>
+
+                <!-- Trust Indicators -->
+                <div class="flex flex-wrap items-center justify-center gap-6 text-white/90">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-sm">จ่าย ROI อัตโนมัติทุกวัน</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-sm">ถอนได้ตลอดเวลา</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-sm">โปร่งใส ตรวจสอบได้</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Investment Plans Preview -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+                @foreach($investmentPlans->take(4) as $plan)
+                <div class="group bg-white/10 backdrop-blur-lg border-2 border-white/20 rounded-2xl p-6 hover:bg-white/20 hover:border-yellow-400/50 transition-all duration-300 transform hover:scale-105 hover:-translate-y-2 {{ $plan->is_featured ? 'ring-2 ring-yellow-400' : '' }}">
+                    @if($plan->is_featured)
+                    <div class="mb-3">
+                        <span class="px-3 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 text-xs font-bold rounded-full">
+                            ⭐ แนะนำ
+                        </span>
+                    </div>
+                    @endif
+
+                    <div class="text-center mb-4">
+                        <div class="text-5xl mb-3">{{ $plan->icon ?? '💎' }}</div>
+                        <h3 class="text-2xl font-bold text-white mb-2">{{ $plan->display_name }}</h3>
+                        <p class="text-pink-200 text-sm">{{ Str::limit($plan->display_description, 50) }}</p>
+                    </div>
+
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-pink-200">อัตรา ROI:</span>
+                            <span class="text-yellow-300 font-bold text-lg">{{ $plan->roi_rate }}%</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-pink-200">ระยะเวลา:</span>
+                            <span class="text-white font-semibold">{{ $plan->term_days }} วัน</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-pink-200">ขั้นต่ำ:</span>
+                            <span class="text-white font-semibold">฿{{ number_format($plan->min_amount, 0) }}</span>
+                        </div>
+                    </div>
+
+                    <a href="@auth{{ route('user.investments.plans.show', $plan) }}@else{{ route('register') }}@endauth"
+                       class="block w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 group-hover:from-yellow-400 group-hover:to-orange-500 text-white group-hover:text-gray-900 rounded-lg font-bold text-center transition-all duration-300 shadow-lg">
+                        ดูรายละเอียด
+                    </a>
+                </div>
+                @endforeach
+            </div>
+
+            <!-- View All Plans Link -->
+            @if($investmentPlans->count() > 4)
+            <div class="text-center mt-12">
+                <a href="@auth{{ route('user.investments.plans') }}@else{{ route('register') }}@endauth"
+                   class="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm text-white font-bold rounded-xl border-2 border-white/30 hover:bg-white/20 transition-all duration-300">
+                    <span>ดูแผนการลงทุนทั้งหมด</span>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </a>
+            </div>
+            @endif
+        </div>
+    </section>
+    @endif
+
     <!-- Epic Wiki Hero Section - Knowledge Base Entry Point -->
     <section class="py-20 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden">
         <!-- Animated Grid Background -->
