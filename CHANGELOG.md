@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.73.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #570 from xjanova/claude/fix-duplicate-tag-push-011CUvVHmCRKJhMVe4zqs2rR (8bc8da5)
+- fix: prevent duplicate tag push attempts in release workflow (0c3bf71)
+### 🔧 Other Changes
+
+
 ## [v2.73.0] - 2025-11-08
 
 ### ✨ Features
