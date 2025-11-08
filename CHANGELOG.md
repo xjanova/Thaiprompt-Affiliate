@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.74.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #572 from xjanova/claude/fix-crypto-dashboard-view-011CUvVwwdnYSRumuLaMvAQ2 (0c48428)
+- feat: add missing crypto dashboard view (31d08ba)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.73.2] - 2025-11-08
 
 ### ✨ Features
