@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.76.5] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Fix CryptoExchangeService dependency injection order (2db8380)
+- fix: Fix crypto menu dropdown functionality in admin layout (2c6f8b4)
+### 🔧 Other Changes
+- Merge pull request #579 from xjanova/claude/fix-crypto-menu-issues-011CUvbBERnmsAEZtVDfMDcT (86e4311)
+
 ## [v2.76.4] - 2025-11-08
 
 ### ✨ Features
