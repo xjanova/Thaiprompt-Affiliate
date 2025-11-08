@@ -100,9 +100,18 @@
                 <div class="bg-gradient-to-br from-gray-50 to-white dark:from-slate-700 dark:to-slate-800 rounded-xl p-4 border border-gray-100 dark:border-slate-600 hover:shadow-md transition">
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                                {{ strtoupper(substr($currency->code, 0, 1)) }}
-                            </div>
+                            @php
+                                $iconPath = public_path('icons/cryptocurrency/' . strtolower($currency->code) . '.svg');
+                            @endphp
+                            @if(file_exists($iconPath))
+                                <img src="{{ asset('icons/cryptocurrency/' . strtolower($currency->code) . '.svg') }}"
+                                     alt="{{ $currency->code }}"
+                                     class="w-10 h-10">
+                            @else
+                                <div class="w-10 h-10 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold">
+                                    {{ strtoupper(substr($currency->code, 0, 1)) }}
+                                </div>
+                            @endif
                             <div>
                                 <h3 class="font-semibold text-gray-900 dark:text-white">{{ $currency->code }}</h3>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">{{ $currency->name }}</p>
