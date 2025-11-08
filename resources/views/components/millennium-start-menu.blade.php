@@ -180,7 +180,7 @@
     x-show="startMenuOpen"
     @click.away="startMenuOpen = false"
     x-data="{
-        {{ collect($submenuStates)->map(fn($value, $key) => "$key: $value")->join(', ') }}
+        {{ collect($submenuStates)->map(fn($value, $key) => "$key: " . ($value ? 'true' : 'false'))->join(', ') }}
     }"
     x-transition:enter="transition ease-out duration-400"
     x-transition:enter-start="opacity-0 -translate-x-full"
