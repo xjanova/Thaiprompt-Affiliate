@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.87.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #595 from xjanova/claude/improve-presentation-slides-011CUvhoAWLqfBcS7rkvV5fh (bcebd4e)
+- feat: add MLM Plans presentation slides with topic selector (23b312d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.86.0] - 2025-11-08
 
 ### ✨ Features
