@@ -222,6 +222,7 @@ Route::prefix('investments')->name('investments.')->group(function () {
     Route::get('/', [InvestmentController::class, 'index'])->name('index');
     Route::get('/plans', [InvestmentController::class, 'plans'])->name('plans');
     Route::get('/plans/{plan}', [InvestmentController::class, 'showPlan'])->name('plans.show');
+    Route::get('/history', [InvestmentController::class, 'history'])->name('history');
     Route::post('/invest', [InvestmentController::class, 'store'])->name('store');
     Route::post('/calculate-roi', [InvestmentController::class, 'calculateROI'])->name('calculate-roi');
 

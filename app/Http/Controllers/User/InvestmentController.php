@@ -216,4 +216,32 @@ class InvestmentController extends Controller
             'lock_days' => $plan->lock_days,
         ]);
     }
+
+    /**
+     * Display investment history
+     */
+    public function history(Request $request)
+    {
+        $user = Auth::user();
+
+        // Get all user's staking positions with filters
+        $query = StakingPosition::where('user_id', $user->id)
+            ->with(['investmentPlan', 'roiDistributions']);
+
+        // Apply filters
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('plan_id')) {
+            $query->where('investment_plan_id', $request->plan_id);
+        }
+
+        $positions = $query->latest()->paginate(20);
+
+        // Get available plans for filter
+        $plans = InvestmentPlan::active()->get();
+
+        return view('user.investments.history', compact('positions', 'plans'));
+    }
 }
