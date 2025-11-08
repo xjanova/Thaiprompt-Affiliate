@@ -19,6 +19,13 @@ use Illuminate\Support\Facades\Route;
 // Webhooks (no CSRF, no auth)
 Route::post('/webhook/line', [LineWebhookController::class, 'handle'])->name('api.line.webhook');
 
+// Cookie Consent API (no auth required)
+Route::post('/cookie-consent', [\App\Http\Controllers\CookieConsentController::class, 'store']);
+Route::get('/cookie-consent', [\App\Http\Controllers\CookieConsentController::class, 'getConsent']);
+Route::post('/cookie-track-page', [\App\Http\Controllers\CookieConsentController::class, 'trackPage']);
+Route::post('/cookie-track-keyword', [\App\Http\Controllers\CookieConsentController::class, 'trackKeyword']);
+Route::post('/cookie-track-product', [\App\Http\Controllers\CookieConsentController::class, 'trackProduct']);
+
 // Payment Gateway Webhooks
 Route::prefix('webhook')->name('api.webhook.')->group(function () {
     Route::post('/paysolutions', [\App\Http\Controllers\PaymentWebhookController::class, 'handlePaySolutions'])

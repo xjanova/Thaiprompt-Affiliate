@@ -60,6 +60,9 @@
     {{-- Floating Tools --}}
     <x-floating-tools />
 
+    {{-- Cookie Consent Banner --}}
+    <x-cookie-consent-banner />
+
     @stack('scripts')
 </body>
 </html>
