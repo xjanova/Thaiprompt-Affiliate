@@ -805,6 +805,11 @@ Route::prefix('academy')->name('academy.')->group(function () {
         Route::post('/bulk-generate', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'bulkGenerate'])->name('bulk-generate');
         Route::get('/export/csv', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'export'])->name('export');
     });
+
+    // Courses alias (redirects to certificates)
+    Route::prefix('courses')->name('courses.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\CertificateManagementController::class, 'index'])->name('index');
+    });
 });
 
 
