@@ -293,18 +293,48 @@ SoftwareProductOptionValue::create([
 - ✅ Rate Limiting on API endpoints
 - ✅ Input Validation
 
+## ✅ อัพเดตล่าสุด (2025-11-08)
+
+### Controllers เสร็จสมบูรณ์แล้ว!
+
+**Customer Controllers:**
+- ✅ SoftwareProductController - ดูสินค้า, ค้นหา, กรอง
+- ✅ QuotationController - สร้างใบเสนอราคา, ยอมรับ/ปฏิเสธ, แปลงเป็นออเดอร์
+- ✅ InstallmentController - ดูแผนผ่อนชำระ, ชำระเงิน
+
+**Admin Controllers:**
+- ✅ SoftwareCategoryController - จัดการหมวดหมู่
+- ✅ SoftwareProductManagementController - จัดการสินค้า
+- ✅ SoftwareQuotationManagementController - จัดการใบเสนอราคา, ส่งอีเมล
+- ✅ InstallmentPlanController - จัดการผ่อนชำระ
+
+**API Controllers:**
+- ✅ QuotationCalculatorController - คำนวณราคาเรียลไทม์
+- ✅ SoftwareProductController - ดึงข้อมูลออฟชั่น
+
+### PDF System เสร็จสมบูรณ์!
+- ✅ QuotationPdfService - สร้าง PDF (รองรับ DomPDF)
+- ✅ Template PDF ภาษาไทยสวยงาม
+- ✅ Download/Stream/Save PDF
+- ✅ Fallback เป็น HTML
+
+### Middleware & Security
+- ✅ AdminMiddleware - ตรวจสอบสิทธิ์ admin
+- ✅ Input Validation ครบทุก endpoint
+- ✅ CSRF Protection
+- ✅ XSS Protection
+
 ## 📝 TODO / Future Enhancements
 
-- [ ] สร้าง Controllers เต็มรูปแบบ (ปัจจุบันมีแค่ Routes และ Structure)
-- [ ] สร้าง Views/UI สำหรับหน้า Admin และลูกค้า
-- [ ] เพิ่มระบบ PDF สำหรับใบเสนอราคา
+- [ ] สร้าง Views/UI สำหรับหน้า Admin และลูกค้า (Blade templates)
 - [ ] Integration กับ Payment Gateways (Stripe, PayPal, PromptPay)
 - [ ] ระบบส่วนลดและโค้ดคูปอง
-- [ ] Multi-language support
+- [ ] Multi-language support (Laravel Localization)
 - [ ] API Documentation (Swagger/OpenAPI)
 - [ ] Unit Tests & Feature Tests
-- [ ] Performance Optimization
-- [ ] Caching Strategy
+- [ ] Performance Optimization & Caching
+- [ ] Excel/CSV Export สำหรับรายงาน
+- [ ] Dashboard Analytics & Charts
 
 ## 🤝 Support
 
