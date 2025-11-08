@@ -234,7 +234,13 @@ class AppManagementSeeder extends Seeder
         ];
 
         foreach ($banners as $banner) {
-            AppBanner::create($banner);
+            AppBanner::updateOrCreate(
+                [
+                    'title' => $banner['title'],
+                    'position' => $banner['position']
+                ],
+                $banner
+            );
         }
 
         $this->command->info('  ✓ ' . count($banners) . ' App Banners created');

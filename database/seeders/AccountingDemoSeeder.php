@@ -663,167 +663,193 @@ class AccountingDemoSeeder extends Seeder
         $accounts = [];
 
         // Assets
-        $accounts['cash_in_bank'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '1120',
-            'name' => 'เงินฝากธนาคาร',
-            'name_eng' => 'Cash in Bank',
-            'type' => 'asset',
-            'sub_type' => 'current_asset',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-            'opening_balance' => 800000.00,
-            'current_balance' => 800000.00,
-        ]);
+        $accounts['cash_in_bank'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '1120'],
+            [
+                'user_id' => $user->id,
+                'name' => 'เงินฝากธนาคาร',
+                'name_eng' => 'Cash in Bank',
+                'type' => 'asset',
+                'sub_type' => 'current_asset',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+                'opening_balance' => 800000.00,
+                'current_balance' => 800000.00,
+            ]
+        );
 
-        $accounts['accounts_receivable'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '1130',
-            'name' => 'ลูกหนี้การค้า',
-            'name_eng' => 'Accounts Receivable',
-            'type' => 'asset',
-            'sub_type' => 'current_asset',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['accounts_receivable'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '1130'],
+            [
+                'user_id' => $user->id,
+                'name' => 'ลูกหนี้การค้า',
+                'name_eng' => 'Accounts Receivable',
+                'type' => 'asset',
+                'sub_type' => 'current_asset',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
         // Liabilities
-        $accounts['accounts_payable'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '2110',
-            'name' => 'เจ้าหนี้การค้า',
-            'name_eng' => 'Accounts Payable',
-            'type' => 'liability',
-            'sub_type' => 'current_liability',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['accounts_payable'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '2110'],
+            [
+                'user_id' => $user->id,
+                'name' => 'เจ้าหนี้การค้า',
+                'name_eng' => 'Accounts Payable',
+                'type' => 'liability',
+                'sub_type' => 'current_liability',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
-        $accounts['output_vat'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '2130',
-            'name' => 'ภาษีขาย',
-            'name_eng' => 'Output VAT',
-            'type' => 'liability',
-            'sub_type' => 'current_liability',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['output_vat'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '2130'],
+            [
+                'user_id' => $user->id,
+                'name' => 'ภาษีขาย',
+                'name_eng' => 'Output VAT',
+                'type' => 'liability',
+                'sub_type' => 'current_liability',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
         // Equity
-        $accounts['retained_earnings'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '3200',
-            'name' => 'กำไร (ขาดทุน) สะสม',
-            'name_eng' => 'Retained Earnings',
-            'type' => 'equity',
-            'sub_type' => 'owner_equity',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['retained_earnings'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '3200'],
+            [
+                'user_id' => $user->id,
+                'name' => 'กำไร (ขาดทุน) สะสม',
+                'name_eng' => 'Retained Earnings',
+                'type' => 'equity',
+                'sub_type' => 'owner_equity',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
         // Revenue
-        $accounts['product_sales'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '4110',
-            'name' => 'รายได้จากการขายสินค้า',
-            'name_eng' => 'Product Sales',
-            'type' => 'revenue',
-            'sub_type' => 'revenue',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['product_sales'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '4110'],
+            [
+                'user_id' => $user->id,
+                'name' => 'รายได้จากการขายสินค้า',
+                'name_eng' => 'Product Sales',
+                'type' => 'revenue',
+                'sub_type' => 'revenue',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
-        $accounts['service_revenue'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '4120',
-            'name' => 'รายได้จากการให้บริการ',
-            'name_eng' => 'Service Revenue',
-            'type' => 'revenue',
-            'sub_type' => 'revenue',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['service_revenue'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '4120'],
+            [
+                'user_id' => $user->id,
+                'name' => 'รายได้จากการให้บริการ',
+                'name_eng' => 'Service Revenue',
+                'type' => 'revenue',
+                'sub_type' => 'revenue',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
         // Expenses
-        $accounts['cost_of_goods'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '5110',
-            'name' => 'ต้นทุนสินค้า',
-            'name_eng' => 'Cost of Goods',
-            'type' => 'expense',
-            'sub_type' => 'cost_of_goods_sold',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['cost_of_goods'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5110'],
+            [
+                'user_id' => $user->id,
+                'name' => 'ต้นทุนสินค้า',
+                'name_eng' => 'Cost of Goods',
+                'type' => 'expense',
+                'sub_type' => 'cost_of_goods_sold',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
-        $accounts['salaries'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '5210',
-            'name' => 'เงินเดือนและค่าจ้าง',
-            'name_eng' => 'Salaries and Wages',
-            'type' => 'expense',
-            'sub_type' => 'operating_expense',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['salaries'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5210'],
+            [
+                'user_id' => $user->id,
+                'name' => 'เงินเดือนและค่าจ้าง',
+                'name_eng' => 'Salaries and Wages',
+                'type' => 'expense',
+                'sub_type' => 'operating_expense',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
-        $accounts['rent'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '5220',
-            'name' => 'ค่าเช่า',
-            'name_eng' => 'Rent Expense',
-            'type' => 'expense',
-            'sub_type' => 'operating_expense',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['rent'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5220'],
+            [
+                'user_id' => $user->id,
+                'name' => 'ค่าเช่า',
+                'name_eng' => 'Rent Expense',
+                'type' => 'expense',
+                'sub_type' => 'operating_expense',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
-        $accounts['utilities'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '5230',
-            'name' => 'ค่าน้ำ ค่าไฟ',
-            'name_eng' => 'Utilities Expense',
-            'type' => 'expense',
-            'sub_type' => 'operating_expense',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['utilities'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5230'],
+            [
+                'user_id' => $user->id,
+                'name' => 'ค่าน้ำ ค่าไฟ',
+                'name_eng' => 'Utilities Expense',
+                'type' => 'expense',
+                'sub_type' => 'operating_expense',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
-        $accounts['office_supplies'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '5260',
-            'name' => 'ค่าวัสดุสำนักงาน',
-            'name_eng' => 'Office Supplies',
-            'type' => 'expense',
-            'sub_type' => 'operating_expense',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['office_supplies'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5260'],
+            [
+                'user_id' => $user->id,
+                'name' => 'ค่าวัสดุสำนักงาน',
+                'name_eng' => 'Office Supplies',
+                'type' => 'expense',
+                'sub_type' => 'operating_expense',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
-        $accounts['marketing'] = AccountingChartOfAccount::create([
-            'user_id' => $user->id,
-            'code' => '5280',
-            'name' => 'ค่าการตลาดและโฆษณา',
-            'name_eng' => 'Marketing and Advertising',
-            'type' => 'expense',
-            'sub_type' => 'operating_expense',
-            'level' => 1,
-            'is_system' => true,
-            'is_active' => true,
-        ]);
+        $accounts['marketing'] = AccountingChartOfAccount::updateOrCreate(
+            ['code' => '5280'],
+            [
+                'user_id' => $user->id,
+                'name' => 'ค่าการตลาดและโฆษณา',
+                'name_eng' => 'Marketing and Advertising',
+                'type' => 'expense',
+                'sub_type' => 'operating_expense',
+                'level' => 1,
+                'is_system' => true,
+                'is_active' => true,
+            ]
+        );
 
         return $accounts;
     }

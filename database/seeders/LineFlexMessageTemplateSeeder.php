@@ -408,7 +408,10 @@ class LineFlexMessageTemplateSeeder extends Seeder
         ];
 
         foreach ($templates as $template) {
-            LineFlexMessageTemplate::create($template);
+            LineFlexMessageTemplate::updateOrCreate(
+                ['name' => $template['name']],
+                $template
+            );
         }
     }
 }
