@@ -376,6 +376,9 @@ class AccountingDemoSeeder extends Seeder
             // 9. Create Invoices
             $this->command->info('9. Creating invoices...');
 
+            // Clean up existing demo invoices for this user to avoid duplicates
+            AccountingInvoice::where('user_id', $user->id)->delete();
+
             // Invoice 1 - Paid
             $invoice1 = AccountingInvoice::create([
                 'user_id' => $user->id,
@@ -561,6 +564,9 @@ class AccountingDemoSeeder extends Seeder
 
             // 10. Create Expenses
             $this->command->info('10. Creating expenses...');
+
+            // Clean up existing demo expenses for this user to avoid duplicates
+            AccountingExpense::where('user_id', $user->id)->delete();
 
             // Expense 1 - Paid
             $expense1 = AccountingExpense::create([
