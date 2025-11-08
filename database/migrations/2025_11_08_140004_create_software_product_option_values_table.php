@@ -17,7 +17,11 @@ return new class extends Migration
 
         Schema::create('software_product_option_values', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('software_product_option_id')->constrained('software_product_options')->cascadeOnDelete();
+            $table->unsignedBigInteger('software_product_option_id');
+            $table->foreign('software_product_option_id', 'spov_spo_id_fk')
+                ->references('id')
+                ->on('software_product_options')
+                ->onDelete('cascade');
             $table->string('value'); // ค่าของ option เช่น "10 users", "Payment Module"
             $table->string('display_label'); // Label ที่แสดงให้ลูกค้า
             $table->text('description')->nullable();

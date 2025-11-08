@@ -17,9 +17,25 @@ return new class extends Migration
 
         Schema::create('software_quotation_selected_options', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('software_quotation_item_id')->constrained('software_quotation_items')->cascadeOnDelete();
-            $table->foreignId('software_product_option_id')->nullable()->constrained('software_product_options')->nullOnDelete();
-            $table->foreignId('software_product_option_value_id')->nullable()->constrained('software_product_option_values')->nullOnDelete();
+
+            // Foreign key with custom constraint name to avoid MySQL 64-char limit
+            $table->unsignedBigInteger('software_quotation_item_id');
+            $table->foreign('software_quotation_item_id', 'sqso_sqi_id_fk')
+                ->references('id')
+                ->on('software_quotation_items')
+                ->onDelete('cascade');
+
+            $table->unsignedBigInteger('software_product_option_id')->nullable();
+            $table->foreign('software_product_option_id', 'sqso_spo_id_fk')
+                ->references('id')
+                ->on('software_product_options')
+                ->onDelete('set null');
+
+            $table->unsignedBigInteger('software_product_option_value_id')->nullable();
+            $table->foreign('software_product_option_value_id', 'sqso_spov_id_fk')
+                ->references('id')
+                ->on('software_product_option_values')
+                ->onDelete('set null');
 
             $table->string('option_name');
             $table->string('option_value');
