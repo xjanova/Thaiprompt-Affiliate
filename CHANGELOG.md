@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.91.6] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #610 from xjanova/claude/fix-migration-column-reference-011CUvsSLE4fbenfjxsgRYBW (db3356a)
+- fix: correct column reference in prospect settings migration (7866bbd)
+### 🔧 Other Changes
+
+
 ## [v2.91.5] - 2025-11-08
 
 ### ✨ Features
