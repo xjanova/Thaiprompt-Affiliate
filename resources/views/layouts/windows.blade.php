@@ -90,6 +90,9 @@
         }
     </script>
 
+    {{-- Cookie Consent Banner --}}
+    <x-cookie-consent-banner />
+
     @stack('scripts')
 </body>
 </html>

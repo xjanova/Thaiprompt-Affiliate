@@ -206,9 +206,12 @@
             <div class="flex items-center justify-center h-16 bg-gradient-primary relative">
                 @php
                     $logo = \App\Models\Setting::get('logo');
+                    // Logo size settings for sidebar
+                    $logoSidebarWidth = \App\Models\Setting::get('logo_sidebar_width', 48);
+                    $logoSidebarHeight = \App\Models\Setting::get('logo_sidebar_height', 48);
                 @endphp
                 @if($logo)
-                    <img src="{{ asset($logo) }}" alt="Logo" width="48" height="48" class="h-12 object-contain" :class="{ 'md:h-10': sidebarCollapsed }">
+                    <img src="{{ asset($logo) }}" alt="Logo" style="width: {{ $logoSidebarWidth }}px; height: {{ $logoSidebarHeight }}px;" class="object-contain" :class="{ 'md:w-10 md:h-10': sidebarCollapsed }">
                 @else
                     @php
                         $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');

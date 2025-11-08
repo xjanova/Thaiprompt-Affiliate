@@ -12,6 +12,10 @@
     $startButtonText = WindowsUiSetting::get('windows_start_button_text', 'เริ่ม');
     $useLogoForStart = WindowsUiSetting::get('windows_start_button_use_logo', true);
 
+    // Logo size settings for taskbar
+    $logoTaskbarWidth = \App\Models\Setting::get('logo_taskbar_width', 32);
+    $logoTaskbarHeight = \App\Models\Setting::get('logo_taskbar_height', 32);
+
     $position = $taskbarSettings['position'];
     $height = $taskbarSettings['height'];
     $transparency = $taskbarSettings['transparency'];
@@ -44,9 +48,9 @@
                 class="group flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-white/20 transition-all duration-300 transform hover:scale-105 active:scale-95">
 
                 @if($useLogoForStart && $logo)
-                    <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-8 h-8 object-contain">
+                    <img src="{{ asset($logo) }}" alt="{{ $appName }}" style="width: {{ $logoTaskbarWidth }}px; height: {{ $logoTaskbarHeight }}px;" class="object-contain">
                 @else
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded flex items-center justify-center">
+                    <div style="width: {{ $logoTaskbarWidth }}px; height: {{ $logoTaskbarHeight }}px;" class="bg-gradient-to-br from-blue-500 to-cyan-500 rounded flex items-center justify-center">
                         <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
                         </svg>
