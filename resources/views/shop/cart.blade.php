@@ -131,7 +131,7 @@
                                                    max="{{ $product->stock_quantity ?? 999 }}"
                                                    onchange="updateCartQuantity({{ $item->id }}, this.value)"
                                                    class="w-16 text-center border-x-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 py-1 font-semibold focus:outline-none">
-                                            <button onclick="updateCartQuantity({{ $item->id }}, {{ $item->quantity + 1) }})"
+                                            <button onclick="updateCartQuantity({{ $item->id }}, {{ $item->quantity + 1 }})"
                                                     class="px-3 py-1 hover:bg-gray-100 dark:hover:bg-gray-600 font-bold transition text-gray-900 dark:text-gray-100">
                                                 +
                                             </button>
