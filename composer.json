@@ -12,7 +12,8 @@
         "intervention/image": "^3.11",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
-        "laravel/tinker": "^2.8"
+        "laravel/tinker": "^2.8",
+        "web3p/web3.php": "^0.1.6"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

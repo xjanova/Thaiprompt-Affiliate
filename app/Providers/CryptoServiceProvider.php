@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Crypto\CryptoExchangeService;
 use App\Services\Crypto\CryptoPriceService;
 use App\Services\Crypto\CryptoWalletService;
+use App\Services\Crypto\Web3Service;
 use Illuminate\Support\ServiceProvider;
 
 class CryptoServiceProvider extends ServiceProvider
@@ -14,6 +15,11 @@ class CryptoServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Register Web3Service as singleton
+        $this->app->singleton(Web3Service::class, function ($app) {
+            return new Web3Service();
+        });
+
         // Register CryptoWalletService as singleton
         $this->app->singleton(CryptoWalletService::class, function ($app) {
             return new CryptoWalletService();
