@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.windows')
 
-@section('title', 'หน้าแรก')
+@section('title', 'หน้าแรก | Windows Theme')
 
 @section('content')
 
@@ -344,7 +344,9 @@
                 <p class="text-xl md:text-2xl text-pink-100 max-w-4xl mx-auto mb-12 leading-relaxed">
                     ระบบการลงทุนที่โปร่งใส ปลอดภัย จ่าย ROI อัตโนมัติทุกวัน
                     <br>
-                    <span class="text-yellow-300 font-semibold">เริ่มต้นเพียง {{ number_format($investmentPlans->min('min_amount'), 0) }} บาท</span>
+                    @if($investmentPlans->isNotEmpty())
+                    <span class="text-yellow-300 font-semibold">เริ่มต้นเพียง ฿{{ number_format($investmentPlans->min('min_amount'), 0) }}</span>
+                    @endif
                 </p>
 
                 <!-- Investment Stats -->
@@ -630,7 +632,7 @@
             <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="text-center mb-16">
                     <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                        ตัวเลxที่พิสูจน์ความสำเร็จ
+                        ตัวเลขที่พิสูจน์ความสำเร็จ
                     </h2>
                     <p class="text-xl text-gray-600">ข้อมูลสถิติแบบเรียลไทม์ จากผู้ใช้งานจริง</p>
                 </div>
@@ -1095,6 +1097,48 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
 .animate-fade-in-up {
     animation: fade-in-up 1s ease-out;
+}
+
+@keyframes fade-in-down {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-down {
+    animation: fade-in-down 1s ease-out;
+}
+
+@keyframes blob {
+    0% {
+        transform: translate(0px, 0px) scale(1);
+    }
+    33% {
+        transform: translate(30px, -50px) scale(1.1);
+    }
+    66% {
+        transform: translate(-20px, 20px) scale(0.9);
+    }
+    100% {
+        transform: translate(0px, 0px) scale(1);
+    }
+}
+
+.animate-blob {
+    animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+    animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+    animation-delay: 4s;
 }
 
 @keyframes pulse {

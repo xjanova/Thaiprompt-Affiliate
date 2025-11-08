@@ -17,9 +17,9 @@ class MlmPackageSeeder extends Seeder
      */
     public function run(): void
     {
-        // ลบข้อมูลเก่าทั้งหมดเพื่อป้องกันความซ้ำซ้อน
+        // ลบข้อมูลเก่าทั้งหมดเพื่อป้องกันความซ้ำซ้อน (ใช้ forceDelete เพื่อลบถาวร)
         $this->command->info('🗑️  Cleaning old MLM Packages...');
-        MlmPackage::query()->delete();
+        MlmPackage::query()->forceDelete();
 
         $this->command->info('📦 Creating MLM Packages...');
 
