@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\AffiliateController;
@@ -64,6 +65,22 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+// System Analytics
+Route::prefix('analytics')->name('analytics.')->group(function () {
+    Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+    Route::get('/realtime', [AnalyticsController::class, 'realtime'])->name('realtime');
+    Route::get('/historical', [AnalyticsController::class, 'historical'])->name('historical');
+    Route::get('/performance', [AnalyticsController::class, 'performance'])->name('performance');
+    Route::get('/database', [AnalyticsController::class, 'database'])->name('database');
+    Route::get('/cache', [AnalyticsController::class, 'cache'])->name('cache');
+    Route::get('/traffic', [AnalyticsController::class, 'traffic'])->name('traffic');
+    Route::get('/business', [AnalyticsController::class, 'business'])->name('business');
+    Route::get('/security', [AnalyticsController::class, 'security'])->name('security');
+    Route::get('/capacity', [AnalyticsController::class, 'capacity'])->name('capacity');
+    Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
+    Route::post('/collect', [AnalyticsController::class, 'collect'])->name('collect');
+});
 
 // CSRF Token Refresh (for long-running forms)
 Route::get('/csrf-token', function () {
