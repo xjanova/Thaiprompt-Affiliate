@@ -166,7 +166,16 @@ class RankSeeder extends Seeder
             $bonuses = $rankData['bonuses'];
             unset($rankData['requirements'], $rankData['bonuses']);
 
-            $rank = Rank::create($rankData);
+            // Use updateOrCreate to prevent duplicate entry errors on re-run
+            $rank = Rank::updateOrCreate(
+                ['level' => $rankData['level']], // Match by level (unique key)
+                $rankData
+            );
+
+            // Delete existing requirements and bonuses before recreating
+            // This ensures data is always fresh when seeder is re-run
+            RankRequirement::where('rank_id', $rank->id)->delete();
+            RankBonus::where('rank_id', $rank->id)->delete();
 
             // Create requirements
             foreach ($requirements as $req) {
