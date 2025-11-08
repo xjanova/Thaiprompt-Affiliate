@@ -89,6 +89,31 @@ class Kernel extends ConsoleKernel
             ->onSuccess(function () {
                 \Log::info('Old analytics data cleaned successfully');
             });
+
+        // Crypto Payment Gateway Scheduled Tasks
+        // Scan for new cryptocurrency deposits every minute
+        $schedule->command('crypto:scan-deposits')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('Crypto deposit scan completed');
+            })
+            ->onFailure(function () {
+                \Log::error('Crypto deposit scan failed');
+            });
+
+        // Process pending withdrawals every 2 minutes
+        $schedule->command('crypto:process-withdrawals')
+            ->everyTwoMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('Crypto withdrawal processing completed');
+            })
+            ->onFailure(function () {
+                \Log::error('Crypto withdrawal processing failed');
+            });
     }
 
     /**

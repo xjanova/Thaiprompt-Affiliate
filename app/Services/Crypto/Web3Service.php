@@ -356,4 +356,107 @@ class Web3Service
             return null;
         }
     }
+
+    /**
+     * Get transaction count (nonce) for address
+     */
+    public function getNonce(string $network, string $address): int
+    {
+        try {
+            $web3 = $this->getWeb3($network);
+            $nonce = null;
+
+            $web3->eth->getTransactionCount($address, 'pending', function ($err, $result) use (&$nonce) {
+                if ($err) {
+                    throw new \Exception($err->getMessage());
+                }
+                $nonce = hexdec($result->toString());
+            });
+
+            return $nonce ?? 0;
+        } catch (\Exception $e) {
+            Log::error('Failed to get nonce', [
+                'network' => $network,
+                'address' => $address,
+                'error' => $e->getMessage(),
+            ]);
+            return 0;
+        }
+    }
+
+    /**
+     * Get current block number (alias for getBlockNumber)
+     */
+    public function getCurrentBlockNumber(string $network): int
+    {
+        return $this->getBlockNumber($network) ?? 0;
+    }
+
+    /**
+     * Get transactions for address in block range
+     * Note: This is a simplified implementation
+     * In production, use blockchain indexer API (Etherscan, etc.)
+     */
+    public function getTransactions(
+        string $network,
+        string $address,
+        int $fromBlock,
+        int $toBlock
+    ): array {
+        // This would require blockchain indexing service
+        // For now, return empty array and recommend using API
+        Log::warning('getTransactions called - requires indexer service', [
+            'network' => $network,
+            'address' => $address,
+            'fromBlock' => $fromBlock,
+            'toBlock' => $toBlock,
+        ]);
+
+        // In production, use services like:
+        // - Etherscan API
+        // - The Graph
+        // - Moralis
+        // - Alchemy
+        return [];
+    }
+
+    /**
+     * Get ERC-20 token transfer events
+     * Note: This is a simplified implementation
+     * In production, use blockchain indexer API
+     */
+    public function getTokenTransferEvents(
+        string $network,
+        string $contractAddress,
+        string $toAddress,
+        int $fromBlock,
+        int $toBlock
+    ): array {
+        // This would require blockchain indexing service or event logs
+        // For now, return empty array and recommend using API
+        Log::warning('getTokenTransferEvents called - requires indexer service', [
+            'network' => $network,
+            'contract' => $contractAddress,
+            'toAddress' => $toAddress,
+            'fromBlock' => $fromBlock,
+            'toBlock' => $toBlock,
+        ]);
+
+        // In production, use getLogs with Transfer event filter
+        // or use indexer services like Etherscan API
+        return [];
+    }
+
+    /**
+     * Get chain ID for network
+     */
+    public function getChainId(string $network): int
+    {
+        return match ($network) {
+            'ethereum' => 1,
+            'bsc' => 56,
+            'polygon' => 137,
+            default => 1,
+        };
+    }
 }
