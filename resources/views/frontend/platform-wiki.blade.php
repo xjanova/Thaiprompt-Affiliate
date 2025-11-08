@@ -2478,6 +2478,459 @@ Step 9: Payment Settlement
                     <div class="stat-label">Total Withdrawn</div>
                 </div>
             </div>
+
+            <h3 id="wallet-features">💎 Multi-Currency Wallet Features</h3>
+
+            <p>
+                กระเป๋าเงินของเรารองรับ <strong>หลายสกุลเงิน</strong> ในที่เดียว ทั้ง <strong>เงินบาท (THB)</strong>,
+                <strong>Points</strong>, และ <strong>Cryptocurrency</strong> พร้อมระบบแลกเปลี่ยนอัตโนมัติ
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
+                <div class="feature-card border-l-4 border-green-500">
+                    <div class="text-4xl mb-3">💵</div>
+                    <h4>THB Wallet</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• เงินบาทไทย</li>
+                        <li>• ใช้จ่ายในระบบ</li>
+                        <li>• ถอนเข้าบัญชีธนาคาร</li>
+                        <li>• รับค่าคอมมิชชั่น</li>
+                    </ul>
+                </div>
+                <div class="feature-card border-l-4 border-blue-500">
+                    <div class="text-4xl mb-3">⭐</div>
+                    <h4>Points Wallet</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• คะแนนสะสม</li>
+                        <li>• แลกของรางวัล</li>
+                        <li>• แลกเป็นเงิน THB</li>
+                        <li>• โบนัสพิเศษ</li>
+                    </ul>
+                </div>
+                <div class="feature-card border-l-4 border-orange-500">
+                    <div class="text-4xl mb-3">₿</div>
+                    <h4>Crypto Wallet</h4>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• BTC, ETH, USDT</li>
+                        <li>• ฝาก-ถอน Crypto</li>
+                        <li>• แลกเปลี่ยนสกุลเงิน</li>
+                        <li>• ติดตามราคา Real-time</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 id="crypto-exchange">🪙 Cryptocurrency Integration - ระบบ Crypto แบบครบวงจร</h3>
+
+            <p>
+                ระบบ Crypto ของเราเป็น <strong>Non-Custodial Wallet</strong> ที่ให้คุณ <strong>ครอบครองกุญแจส่วนตัว</strong> (Private Key) เอง
+                พร้อมฟีเจอร์ <strong>ซื้อ-ขาย-แลกเปลี่ยน</strong> Cryptocurrency ได้ภายในระบบ
+            </p>
+
+            <div class="info-box">
+                <h4>🔐 Non-Custodial vs Custodial Wallet</h4>
+                <table class="wiki-table mt-3">
+                    <thead>
+                        <tr>
+                            <th>ประเภท</th>
+                            <th>Non-Custodial (เรา)</th>
+                            <th>Custodial (แลกเปลี่ยนทั่วไป)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ครอบครอง Private Key</strong></td>
+                            <td>✅ คุณถือเอง (ปลอดภัย)</td>
+                            <td>❌ แพลตฟอร์มถือให้</td>
+                        </tr>
+                        <tr>
+                            <td><strong>ความเสี่ยง</strong></td>
+                            <td>✅ ต่ำ (คุณควบคุมเอง)</td>
+                            <td>⚠️ สูง (ถ้าแพลตฟอร์มล่ม)</td>
+                        </tr>
+                        <tr>
+                            <td><strong>การถอนเงิน</strong></td>
+                            <td>✅ ทันที (ไม่ต้องรออนุมัติ)</td>
+                            <td>⏱️ รอ 1-3 วัน</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h4>💰 Supported Cryptocurrencies</h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+                <div class="feature-card text-center">
+                    <div class="text-5xl mb-2">₿</div>
+                    <h4 class="text-lg font-bold">Bitcoin (BTC)</h4>
+                    <p class="text-sm text-gray-600">King of Crypto</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-500">Network</div>
+                        <div class="text-sm font-semibold">Bitcoin Mainnet</div>
+                    </div>
+                </div>
+
+                <div class="feature-card text-center">
+                    <div class="text-5xl mb-2">Ξ</div>
+                    <h4 class="text-lg font-bold">Ethereum (ETH)</h4>
+                    <p class="text-sm text-gray-600">Smart Contracts</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-500">Network</div>
+                        <div class="text-sm font-semibold">ERC-20</div>
+                    </div>
+                </div>
+
+                <div class="feature-card text-center">
+                    <div class="text-5xl mb-2">₮</div>
+                    <h4 class="text-lg font-bold">Tether (USDT)</h4>
+                    <p class="text-sm text-gray-600">Stablecoin</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-500">Network</div>
+                        <div class="text-sm font-semibold">TRC-20 / ERC-20</div>
+                    </div>
+                </div>
+
+                <div class="feature-card text-center">
+                    <div class="text-5xl mb-2">🪙</div>
+                    <h4 class="text-lg font-bold">USDC</h4>
+                    <p class="text-sm text-gray-600">USD Coin</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-500">Network</div>
+                        <div class="text-sm font-semibold">ERC-20</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
+                <div class="feature-card text-center">
+                    <div class="text-5xl mb-2">🅱</div>
+                    <h4 class="text-lg font-bold">Binance Coin (BNB)</h4>
+                    <p class="text-sm text-gray-600">Binance Ecosystem</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-500">Network</div>
+                        <div class="text-sm font-semibold">BEP-20</div>
+                    </div>
+                </div>
+
+                <div class="feature-card text-center">
+                    <div class="text-5xl mb-2">◎</div>
+                    <h4 class="text-lg font-bold">Solana (SOL)</h4>
+                    <p class="text-sm text-gray-600">High Performance</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-500">Network</div>
+                        <div class="text-sm font-semibold">Solana Mainnet</div>
+                    </div>
+                </div>
+
+                <div class="feature-card text-center">
+                    <div class="text-5xl mb-2">🔷</div>
+                    <h4 class="text-lg font-bold">Polygon (MATIC)</h4>
+                    <p class="text-sm text-gray-600">Layer 2 Solution</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-500">Network</div>
+                        <div class="text-sm font-semibold">Polygon Mainnet</div>
+                    </div>
+                </div>
+
+                <div class="feature-card text-center">
+                    <div class="text-5xl mb-2">🌊</div>
+                    <h4 class="text-lg font-bold">Ripple (XRP)</h4>
+                    <p class="text-sm text-gray-600">Fast Payments</p>
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-500">Network</div>
+                        <div class="text-sm font-semibold">XRP Ledger</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-box success">
+                <h4>🎯 เพิ่มเติม: รองรับ 20+ Cryptocurrencies</h4>
+                <p>นอกจากนี้ยังรองรับ: ADA, DOT, LINK, UNI, AAVE, และอีกมากมาย</p>
+            </div>
+
+            <h4>⚡ Crypto Exchange Features</h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">💱</div>
+                    <h4>Instant Exchange</h4>
+                    <p class="text-sm mt-2">แลกเปลี่ยน Crypto ได้ทันที ไม่ต้องรอ</p>
+                    <ul class="text-sm mt-3 space-y-1">
+                        <li>• แลกระหว่าง Crypto ↔ Crypto</li>
+                        <li>• แลก Crypto ↔ THB</li>
+                        <li>• ราคาอัพเดททุก 10 วินาที</li>
+                        <li>• ค่าธรรมเนียมต่ำเพียง 0.5%</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h4>Live Price Tracking</h4>
+                    <p class="text-sm mt-2">ติดตามราคา Real-time ด้วย Chart</p>
+                    <ul class="text-sm mt-3 space-y-1">
+                        <li>• กราฟราคา TradingView</li>
+                        <li>• 24h Change, Volume</li>
+                        <li>• Price Alert (แจ้งเตือนราคา)</li>
+                        <li>• Historical Data</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <h4>Auto-Swap</h4>
+                    <p class="text-sm mt-2">แลกเปลี่ยนอัตโนมัติตามเงื่อนไข</p>
+                    <ul class="text-sm mt-3 space-y-1">
+                        <li>• ตั้งเงื่อนไข "ถ้าราคาถึง X บาท ให้ขาย"</li>
+                        <li>• Stop Loss / Take Profit</li>
+                        <li>• DCA (Dollar Cost Averaging)</li>
+                        <li>• Portfolio Rebalancing</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">🏦</div>
+                    <h4>Fiat On-Ramp</h4>
+                    <p class="text-sm mt-2">ซื้อ Crypto ด้วยเงินบาท</p>
+                    <ul class="text-sm mt-3 space-y-1">
+                        <li>• โอนเงินผ่านธนาคาร</li>
+                        <li>• QR Code PromptPay</li>
+                        <li>• บัตรเครดิต/เดบิต</li>
+                        <li>• ได้ Crypto ทันทีภายใน 5 นาที</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h4>🔐 Crypto Security</h4>
+
+            <table class="wiki-table">
+                <thead>
+                    <tr>
+                        <th>Security Feature</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>HD Wallet</strong></td>
+                        <td>Hierarchical Deterministic Wallet - สร้าง Address ใหม่ทุกครั้ง</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Multi-Signature</strong></td>
+                        <td>ต้องลายเซ็นหลายคีย์ก่อนทำธุรกรรม (สำหรับยอดใหญ่)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Cold Storage</strong></td>
+                        <td>95% ของ Crypto เก็บใน Cold Wallet (ออฟไลน์)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hot Wallet Limit</strong></td>
+                        <td>มีเพียง 5% ใน Hot Wallet สำหรับถอนทันที</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Withdrawal Whitelist</strong></td>
+                        <td>กำหนด Address ที่ไว้วางใจไว้ล่วงหน้า</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Time Lock</strong></td>
+                        <td>การถอน Crypto ยอดใหญ่ต้องรอ 24 ชม.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h4>💡 ตัวอย่าง: แลกเปลี่ยน Crypto</h4>
+
+            <div class="info-box">
+                <h4>📝 Scenario: แลก BTC → USDT</h4>
+                <div class="code-block">
+<pre>
+สมมติคุณมี 0.01 BTC (ราคา ฿1,500,000)
+
+1. เลือก From: BTC
+   ↓
+2. เลือก To: USDT
+   ↓
+3. ระบบคำนวณอัตราแลกเปลี่ยน:
+   0.01 BTC × $45,000 = $450 USDT
+   ↓
+4. หักค่าธรรมเนียม 0.5%:
+   $450 × 0.995 = $447.75 USDT
+   ↓
+5. คุณได้รับ: 447.75 USDT
+   ↓
+6. เสร็จภายใน 30 วินาที
+</pre>
+                </div>
+            </div>
+
+            <h4 id="withdrawal">💸 Crypto Withdrawal (ถอน Crypto)</h4>
+
+            <p><strong>ขั้นตอนการถอน Crypto:</strong></p>
+
+            <div class="feature-card">
+                <ol class="space-y-2">
+                    <li><strong>1. เลือก Crypto:</strong> เลือกสกุลเงินที่ต้องการถอน (BTC, ETH, USDT, etc.)</li>
+                    <li><strong>2. กรอก Address:</strong> วาง Wallet Address ปลายทาง (ตรวจสอบให้ถูกต้อง!)</li>
+                    <li><strong>3. เลือก Network:</strong> เลือก Network (ERC-20, TRC-20, BEP-20)</li>
+                    <li><strong>4. ระบุจำนวน:</strong> กรอกจำนวนที่ต้องการถอน</li>
+                    <li><strong>5. ยืนยันตัวตน:</strong> กรอก PIN + 2FA</li>
+                    <li><strong>6. ชำระค่า Gas Fee:</strong> ระบบคำนวณค่า Gas อัตโนมัติ</li>
+                    <li><strong>7. รอยืนยัน:</strong> รอ Blockchain Confirmation (5-30 นาที)</li>
+                    <li><strong>8. เสร็จสิ้น:</strong> Crypto ถูกส่งไปยัง Address ปลายทาง</li>
+                </ol>
+            </div>
+
+            <div class="info-box warning">
+                <h4>⚠️ คำเตือนสำคัญ</h4>
+                <ul class="space-y-2">
+                    <li><strong>⛔ ตรวจสอบ Address:</strong> Address ผิดจะทำให้เงินหายถาวร (ไม่สามารถกู้คืนได้)</li>
+                    <li><strong>🌐 เลือก Network ให้ถูก:</strong> ส่งผิด Network (เช่น ERC-20 ไป TRC-20) จะหายเงิน</li>
+                    <li><strong>💰 Gas Fee:</strong> ยอมรับว่าค่า Gas สูงในช่วง Network ติดขัด</li>
+                    <li><strong>⏱️ Confirmation Time:</strong> BTC อาจใช้เวลา 30-60 นาที, ETH 5-15 นาที</li>
+                    <li><strong>🔒 Minimum Withdrawal:</strong> แต่ละ Crypto มียอดถอนขั้นต่ำต่างกัน</li>
+                </ul>
+            </div>
+
+            <h4>💵 Crypto Deposit (ฝาก Crypto)</h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-6">
+                <div class="feature-card">
+                    <div class="feature-icon">📥</div>
+                    <h4>ฝาก Crypto เข้าระบบ</h4>
+                    <ul class="text-sm mt-3 space-y-2">
+                        <li><strong>1.</strong> เลือก Crypto ที่ต้องการฝาก</li>
+                        <li><strong>2.</strong> ระบบสร้าง Deposit Address (พร้อม QR Code)</li>
+                        <li><strong>3.</strong> โอน Crypto จาก Wallet ภายนอก</li>
+                        <li><strong>4.</strong> รอ Blockchain Confirmation</li>
+                        <li><strong>5.</strong> Crypto เข้าบัญชีอัตโนมัติ</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <h4>Confirmation Requirements</h4>
+                    <table class="wiki-table mt-3 text-xs">
+                        <thead>
+                            <tr>
+                                <th>Crypto</th>
+                                <th>Confirmations</th>
+                                <th>เวลา</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>BTC</td>
+                                <td>3 confirmations</td>
+                                <td>~30 นาที</td>
+                            </tr>
+                            <tr>
+                                <td>ETH</td>
+                                <td>12 confirmations</td>
+                                <td>~5 นาที</td>
+                            </tr>
+                            <tr>
+                                <td>USDT (TRC-20)</td>
+                                <td>19 confirmations</td>
+                                <td>~1 นาที</td>
+                            </tr>
+                            <tr>
+                                <td>BNB</td>
+                                <td>15 confirmations</td>
+                                <td>~3 นาที</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <h4>📈 Crypto Price Charts</h4>
+
+            <p>ระบบแสดงกราฟราคา Crypto แบบ Real-time โดยใช้ TradingView Widget</p>
+
+            <div class="feature-card">
+                <h4>Chart Features</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <ul class="text-sm space-y-1">
+                        <li>• <strong>Candlestick Chart:</strong> กราฟแท่งเทียน</li>
+                        <li>• <strong>Time Frames:</strong> 1m, 5m, 15m, 1h, 4h, 1D, 1W</li>
+                        <li>• <strong>Technical Indicators:</strong> MA, RSI, MACD, Bollinger Bands</li>
+                        <li>• <strong>Drawing Tools:</strong> เส้นแนวรับ-แนวต้าน</li>
+                    </ul>
+                    <ul class="text-sm space-y-1">
+                        <li>• <strong>Volume:</strong> ปริมาณการซื้อขาย</li>
+                        <li>• <strong>Market Depth:</strong> Order Book</li>
+                        <li>• <strong>Historical Data:</strong> ข้อมูลย้อนหลัง 5 ปี</li>
+                        <li>• <strong>Multi-Chart:</strong> ดูหลายคู่พร้อมกัน</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h4>🎯 Use Cases: ใช้ Crypto ทำอะไรได้บ้าง?</h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
+                <div class="info-box success">
+                    <h4>💰 Investment</h4>
+                    <p class="text-sm">ลงทุนระยะยาว Hold BTC, ETH</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• ซื้อเก็งกำไร</li>
+                        <li>• DCA Strategy</li>
+                        <li>• HODLing</li>
+                    </ul>
+                </div>
+
+                <div class="info-box">
+                    <h4>🔄 Trading</h4>
+                    <p class="text-sm">เทรดระยะสั้น รายวัน</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• Day Trading</li>
+                        <li>• Swing Trading</li>
+                        <li>• Arbitrage</li>
+                    </ul>
+                </div>
+
+                <div class="info-box warning">
+                    <h4>💸 Payment</h4>
+                    <p class="text-sm">ชำระค่าสินค้า/บริการ</p>
+                    <ul class="text-sm mt-2 space-y-1">
+                        <li>• จ่ายเงินข้ามประเทศ</li>
+                        <li>• โอนเงินไว</li>
+                        <li>• ค่าธรรมเนียมต่ำ</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="info-box research">
+                <h4>📊 Crypto Market Statistics (2024)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <div>
+                        <p><strong>ตลาด Crypto โลก:</strong></p>
+                        <ul class="text-sm space-y-1">
+                            <li>• Market Cap: <strong>$2.5 Trillion</strong></li>
+                            <li>• Daily Volume: <strong>$100+ Billion</strong></li>
+                            <li>• Total Cryptocurrencies: <strong>10,000+</strong></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <p><strong>ตลาด Crypto ไทย:</strong></p>
+                        <ul class="text-sm space-y-1">
+                            <li>• นักลงทุนไทย: <strong>2+ ล้านคน</strong></li>
+                            <li>• ปริมาณซื้อขาย: <strong>฿50,000+ ล้าน/วัน</strong></li>
+                            <li>• เติบโต: <strong>300% ในปี 2024</strong></li>
+                        </ul>
+                    </div>
+                </div>
+                <p class="text-sm mt-3">*ที่มา: CoinMarketCap, Thai SEC</p>
+            </div>
+
+            <div class="info-box warning mt-6">
+                <h4>⚠️ คำเตือนการลงทุน Crypto</h4>
+                <p class="font-bold">Cryptocurrency มีความเสี่ยงสูง ราคาผันผวนมาก</p>
+                <ul class="mt-2 space-y-1">
+                    <li>• <strong>อย่าลงทุนเกินกำลัง:</strong> ใช้เงินที่พร้อมเสีย</li>
+                    <li>• <strong>DYOR:</strong> Do Your Own Research - ศึกษาก่อนลงทุน</li>
+                    <li>• <strong>Not Your Keys, Not Your Coins:</strong> ควบคุม Private Key เอง</li>
+                    <li>• <strong>Diversify:</strong> อย่าใส่ไข่ไว้ในตะกร้าเดียว</li>
+                    <li>• <strong>ระวังมิจฉาชีพ:</strong> ไม่แชร์ Seed Phrase/Private Key ให้ใคร</li>
+                </ul>
+            </div>
         </section>
 
         <!-- AI & LINE Bot Section -->
