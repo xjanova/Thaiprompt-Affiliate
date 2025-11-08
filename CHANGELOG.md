@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.73.0] - 2025-11-08
+
+### ✨ Features
+- feat: move user menu to button in header (e078aac)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #569 from xjanova/claude/resolve-user-layout-conflicts-011CUvUmgUqAfyCw484zzD9v (c689d57)
+- Resolve merge conflict in user layout (30bf027)
+
 ## [v2.72.0] - 2025-11-08
 
 ### ✨ Features
