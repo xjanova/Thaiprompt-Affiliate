@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.91.4] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #608 from xjanova/claude/enhance-hero-software-purchase-011CUvnMxEY1ijwcgoE4wnv4 (6389529)
+- fix: remove incorrect fresh() calls in AccountingDemoSeeder to prevent null total_amount (b1bd869)
+### 🔧 Other Changes
+
+
 ## [v2.91.3] - 2025-11-08
 
 ### ✨ Features
