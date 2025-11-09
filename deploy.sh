@@ -440,7 +440,7 @@ echo -e "${GREEN}║${NC}     ${MAGENTA}██╔██╗ ██║╚██╔
 echo -e "${GREEN}║${NC}    ${MAGENTA}██╔╝ ██╗██║ ╚═╝ ██║██║  ██║██║ ╚████║${NC}                      ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}    ${MAGENTA}╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝${NC}                      ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}    ${BLUE}🚀 TP-Affiliate Deployment System v3.0.1${NC}                    ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${BLUE}🚀 TP-Affiliate Deployment System v3.0.2${NC}                    ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}    ${YELLOW}⚡ Intelligent • Fast • Ultra-Safe Deployment${NC}             ${GREEN}║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
@@ -1052,8 +1052,87 @@ if [ "$PENDING_COUNT" != "0" ]; then
 fi
 echo ""
 
-# Step 11: Smart Database Seeding System
-print_info "[11/20] 🌱 Smart Database Seeding System..."
+# Analyze seeder safety (checks if seeder uses safe methods)
+analyze_seeder_safety() {
+    local seeder_file="$1"
+    local safety_score=0
+    local issues=()
+    local safe_methods=()
+
+    # Check for safe methods
+    if grep -q "updateOrCreate\|firstOrCreate\|firstOrNew" "$seeder_file"; then
+        safety_score=$((safety_score + 2))
+        safe_methods+=("updateOrCreate/firstOrCreate")
+    fi
+
+    # Check for conditional creation
+    if grep -q "if.*exists\|if.*count\|if.*find" "$seeder_file"; then
+        safety_score=$((safety_score + 1))
+        safe_methods+=("conditional checks")
+    fi
+
+    # Check for potentially unsafe methods
+    if grep -q "truncate\|delete\|DB::statement.*DROP\|DB::statement.*TRUNCATE" "$seeder_file"; then
+        safety_score=$((safety_score - 3))
+        issues+=("uses truncate/delete")
+    fi
+
+    # Check for factory with count (mass creation)
+    if grep -q "factory.*->count\|factory.*->create" "$seeder_file"; then
+        if ! grep -q "updateOrCreate\|firstOrCreate" "$seeder_file"; then
+            safety_score=$((safety_score - 1))
+            issues+=("mass creation without checks")
+        fi
+    fi
+
+    # Determine safety level
+    if [ $safety_score -ge 2 ]; then
+        echo "SAFE|${safe_methods[*]}|${issues[*]}"
+    elif [ $safety_score -ge 0 ]; then
+        echo "CAUTION|${safe_methods[*]}|${issues[*]}"
+    else
+        echo "UNSAFE|${safe_methods[*]}|${issues[*]}"
+    fi
+}
+
+# Track individual seeder changes
+track_seeder_changes() {
+    local seeder_dir="$1"
+    local checksum_dir=".seeder_checksums"
+    mkdir -p "$checksum_dir"
+
+    local changed_seeders=()
+    local new_seeders=()
+    local unchanged_count=0
+
+    # Iterate through all seeder files
+    while IFS= read -r seeder_file; do
+        local seeder_name=$(basename "$seeder_file")
+        local checksum_file="$checksum_dir/$seeder_name.md5"
+        local current_checksum=$(md5sum "$seeder_file" 2>/dev/null | cut -d' ' -f1)
+
+        if [ ! -f "$checksum_file" ]; then
+            # New seeder
+            new_seeders+=("$seeder_name")
+            echo "$current_checksum" > "$checksum_file"
+        else
+            # Existing seeder - check if changed
+            local old_checksum=$(cat "$checksum_file" 2>/dev/null)
+            if [ "$old_checksum" != "$current_checksum" ]; then
+                changed_seeders+=("$seeder_name")
+                echo "$current_checksum" > "$checksum_file"
+            else
+                unchanged_count=$((unchanged_count + 1))
+            fi
+        fi
+    done < <(find "$seeder_dir" -name "*Seeder.php" ! -name "DatabaseSeeder.php" 2>/dev/null)
+
+    # Return results
+    echo "${#new_seeders[@]}|${#changed_seeders[@]}|$unchanged_count|${new_seeders[*]}|${changed_seeders[*]}"
+}
+
+# Step 11: Smart Database Seeding System v2
+print_info "[11/20] 🌱 Smart Database Seeding System v2..."
 echo ""
 
 # Step 11.1: Verify all seeders are included in DatabaseSeeder.php
@@ -1086,82 +1165,130 @@ else
         print_info "No seeders found - skipping seeding"
     else
         print_info "→ Found $SEEDER_COUNT seeder file(s)"
-
-        # Check if seeders have changed using checksum
-        local seeders_changed=0
-        local seeder_checksum_file=".seeders.checksum"
-
-        # Calculate current seeder checksum
-        local current_checksum=$(find "$SEEDER_DIR" -name "*Seeder.php" -type f -exec md5sum {} \; 2>/dev/null | sort | md5sum | cut -d' ' -f1)
-
-        if [ -f "$seeder_checksum_file" ]; then
-            local old_checksum=$(cat "$seeder_checksum_file" 2>/dev/null || echo "")
-            if [ "$old_checksum" != "$current_checksum" ]; then
-                seeders_changed=1
-                print_info "  • Seeders have changed - may need to re-seed"
-            else
-                print_success "  • Seeders unchanged since last deployment"
-            fi
-        else
-            seeders_changed=1
-        fi
-
-        # Check if database needs seeding by checking key tables
-        NEEDS_SEEDING=0
-
-        # Check users table
-        USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tail -1 || echo "0")
-        print_info "  • Users in database: $USER_COUNT"
-
-        # Check email_templates table (if it exists)
-        EMAIL_TEMPLATE_COUNT=$(php artisan tinker --execute="echo DB::table('email_templates')->count();" 2>/dev/null | tail -1 || echo "0")
-        print_info "  • Email templates: $EMAIL_TEMPLATE_COUNT"
-
         echo ""
 
-        # Determine if seeding is needed
-        if [ "$USER_COUNT" = "0" ] || [ "$EMAIL_TEMPLATE_COUNT" = "0" ]; then
-            NEEDS_SEEDING=1
-            print_warning "⚠ Database appears to need seeding (some tables are empty)"
-        elif [ $seeders_changed -eq 1 ]; then
-            print_warning "⚠ Seeders have changed - may need to update data"
+        # Step 11.2: Track individual seeder changes
+        print_info "→ Analyzing seeder changes..."
+        local tracking_result=$(track_seeder_changes "$SEEDER_DIR")
+        IFS='|' read -r new_count changed_count unchanged_count new_list changed_list <<< "$tracking_result"
+
+        print_info "  • New seeders: $new_count"
+        print_info "  • Changed seeders: $changed_count"
+        print_info "  • Unchanged seeders: $unchanged_count"
+        echo ""
+
+        # Step 11.3: Safety analysis for new/changed seeders
+        local has_changes=0
+        if [ "$new_count" != "0" ] || [ "$changed_count" != "0" ]; then
+            has_changes=1
+            print_info "→ Safety Analysis:"
+            echo ""
+
+            # Analyze new seeders
+            if [ "$new_count" != "0" ]; then
+                print_warning "📦 New Seeders:"
+                for seeder in $new_list; do
+                    local seeder_path="$SEEDER_DIR/$seeder"
+                    if [ -f "$seeder_path" ]; then
+                        local safety_result=$(analyze_seeder_safety "$seeder_path")
+                        IFS='|' read -r safety_level safe_methods issues <<< "$safety_result"
+
+                        case "$safety_level" in
+                            SAFE)
+                                echo "  ✅ $seeder [${GREEN}SAFE${NC}]"
+                                [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
+                                ;;
+                            CAUTION)
+                                echo "  ⚠️  $seeder [${YELLOW}CAUTION${NC}]"
+                                [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
+                                [ -n "$issues" ] && echo "     → Issues: $issues"
+                                ;;
+                            UNSAFE)
+                                echo "  ❌ $seeder [${RED}UNSAFE${NC}]"
+                                [ -n "$issues" ] && echo "     → Issues: $issues"
+                                ;;
+                        esac
+                    fi
+                done
+                echo ""
+            fi
+
+            # Analyze changed seeders
+            if [ "$changed_count" != "0" ]; then
+                print_warning "🔄 Updated Seeders:"
+                for seeder in $changed_list; do
+                    local seeder_path="$SEEDER_DIR/$seeder"
+                    if [ -f "$seeder_path" ]; then
+                        local safety_result=$(analyze_seeder_safety "$seeder_path")
+                        IFS='|' read -r safety_level safe_methods issues <<< "$safety_result"
+
+                        case "$safety_level" in
+                            SAFE)
+                                echo "  ✅ $seeder [${GREEN}SAFE${NC}]"
+                                [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
+                                ;;
+                            CAUTION)
+                                echo "  ⚠️  $seeder [${YELLOW}CAUTION${NC}]"
+                                [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
+                                [ -n "$issues" ] && echo "     → Issues: $issues"
+                                ;;
+                            UNSAFE)
+                                echo "  ❌ $seeder [${RED}UNSAFE${NC}]"
+                                [ -n "$issues" ] && echo "     → Issues: $issues"
+                                ;;
+                        esac
+                    fi
+                done
+                echo ""
+            fi
         else
-            print_success "✓ Database seeded and seeders unchanged - skipping"
-            NEEDS_SEEDING=0
+            print_success "✓ No seeder changes detected - skipping seeding"
+            has_changes=0
         fi
 
-        if [ $NEEDS_SEEDING -eq 1 ] || [ $seeders_changed -eq 1 ]; then
-            echo ""
-            # Show available seeders
-            print_info "→ Available seeders:"
-            find "$SEEDER_DIR" -name "*Seeder.php" ! -name "DatabaseSeeder.php" -exec basename {} \; 2>/dev/null | sed 's/^/  • /'
+        # Step 11.4: Determine if seeding should run
+        if [ $has_changes -eq 1 ]; then
+            # Check if database is empty
+            USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tail -1 || echo "0")
+            EMAIL_TEMPLATE_COUNT=$(php artisan tinker --execute="echo DB::table('email_templates')->count();" 2>/dev/null | tail -1 || echo "0")
+
+            print_info "→ Database Status:"
+            echo "  • Users: $USER_COUNT"
+            echo "  • Email templates: $EMAIL_TEMPLATE_COUNT"
             echo ""
 
-            if [ $NEEDS_SEEDING -eq 1 ]; then
-                # Auto-run if database is empty
-                print_info "Auto-running seeders (database is empty)..."
+            # Auto-run if database is empty
+            if [ "$USER_COUNT" = "0" ] || [ "$EMAIL_TEMPLATE_COUNT" = "0" ]; then
+                print_warning "⚠ Database appears empty - Auto-running seeders..."
                 if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
                     print_warning "Seeding failed (continuing anyway)"
                 else
                     print_success "✓ Database seeded successfully"
-                    # Save seeder checksum
-                    echo "$current_checksum" > "$seeder_checksum_file"
                 fi
             else
-                # Ask user if seeders changed but DB has data
-                read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
+                # Database has data - ask user
+                print_warning "⚠ Database has existing data"
+                echo ""
+                print_info "💡 Recommendation:"
+                echo "  • SAFE seeders use updateOrCreate() - won't duplicate data"
+                echo "  • CAUTION seeders may need manual review"
+                echo "  • UNSAFE seeders may overwrite existing data"
+                echo ""
+
+                read -p "Run seeders now? (y/n) [n]: " -n 1 -r RUN_SEEDER
                 echo
+                echo ""
+
                 if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
                     print_info "Running database seeders..."
                     if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
                         print_warning "Seeding failed (continuing anyway)"
                     else
                         print_success "✓ Database seeded successfully"
-                        # Save seeder checksum
-                        echo "$current_checksum" > "$seeder_checksum_file"
                     fi
                 else
                     print_info "Skipping database seeders"
+                    print_warning "⚠ Run manually later: php artisan db:seed"
                 fi
             fi
         fi
