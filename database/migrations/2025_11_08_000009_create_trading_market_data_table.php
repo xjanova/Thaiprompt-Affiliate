@@ -36,7 +36,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->unique(['exchange_id', 'symbol', 'timeframe', 'timestamp']);
+            $table->unique(['exchange_id', 'symbol', 'timeframe', 'timestamp'], 'mktdata_exchange_symbol_tf_ts_unique');
             $table->index(['symbol', 'timeframe', 'timestamp']);
             $table->index('timestamp');
         });
