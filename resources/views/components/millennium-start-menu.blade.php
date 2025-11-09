@@ -56,8 +56,10 @@
 
     // RGB Border
     $menuRgbEnabled = WindowsUiSetting::get('millennium_menu_rgb_enabled', true);
+    $menuItemHoverRgb = WindowsUiSetting::get('millennium_menu_item_hover_rgb', true);
     $menuRgbBorderWidth = WindowsUiSetting::get('millennium_menu_rgb_border_width', 2);
     $menuRgbGlowSize = WindowsUiSetting::get('millennium_menu_rgb_glow_size', 10);
+    $menuRgbSpeed = WindowsUiSetting::get('millennium_menu_rgb_speed', 5);
 
     // Search & Footer
     $menuSearchEnabled = WindowsUiSetting::get('millennium_menu_search_enabled', true);
@@ -544,7 +546,7 @@
                                 <!-- Menu Item with Submenu - MAIN HEADER -->
                                 <button
                                     @click="openSubmenus[{{ $index }}] = !openSubmenus[{{ $index }}]"
-                                    class="w-full group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                    class="w-full group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : '' }}"
                                     style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;"
                                     :style="openSubmenus[{{ $index }}] ? 'background: linear-gradient(90deg, {{ $mainGradientFrom }}99 0%, {{ $mainGradientTo }}99 100%)' : ''">
 
@@ -605,7 +607,7 @@
                                 <!-- Regular Menu Item without Submenu - MAIN STYLE -->
                                 <a
                                     href="{{ $item['url'] }}"
-                                    class="group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                    class="group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : '' }}"
                                     style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
 
                                     <!-- Icon with 3D Effect -->
@@ -794,7 +796,7 @@
     .millennium-menu-rgb {
         border-style: solid;
         border-image: linear-gradient(90deg, #FF0080, #00F0FF, #7F00FF, #FFD700, #FF0080) 1;
-        animation: millenniumMenuRgbBorder 5s linear infinite;
+        animation: millenniumMenuRgbBorder {{ $menuRgbSpeed }}s linear infinite;
         filter: blur(1px);
         box-shadow: 0 0 {{ $menuRgbGlowSize }}px currentColor;
     }
@@ -803,4 +805,51 @@
         0% { filter: hue-rotate(0deg) blur(1px); }
         100% { filter: hue-rotate(360deg) blur(1px); }
     }
+
+    /* RGB Hover Effect for Menu Items */
+    @if($menuItemHoverRgb)
+    .millennium-menu-item-hover-rgb {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .millennium-menu-item-hover-rgb::before {
+        content: '';
+        position: absolute;
+        inset: -{{ $menuRgbBorderWidth }}px;
+        background: linear-gradient(90deg,
+            #FF0080, #FF3D9F, #7F00FF, #00F0FF, #00D4FF, #FFD700, #FFA500, #FF0080
+        );
+        background-size: 400% 100%;
+        border-radius: inherit;
+        opacity: 0;
+        z-index: -1;
+        animation: millenniumMenuItemRgbBorder {{ $menuRgbSpeed }}s linear infinite;
+        filter: blur({{ $menuRgbBorderWidth * 0.5 }}px);
+        transition: opacity 0.3s ease;
+    }
+
+    .millennium-menu-item-hover-rgb:hover::before {
+        opacity: 1;
+        box-shadow:
+            0 0 {{ $menuRgbGlowSize }}px rgba(255, 0, 128, 0.6),
+            0 0 {{ $menuRgbGlowSize * 1.5 }}px rgba(127, 0, 255, 0.4),
+            0 0 {{ $menuRgbGlowSize * 2 }}px rgba(0, 240, 255, 0.3);
+    }
+
+    .millennium-menu-item-hover-rgb::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: inherit;
+        border-radius: inherit;
+        z-index: -1;
+    }
+
+    @keyframes millenniumMenuItemRgbBorder {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    @endif
 </style>
