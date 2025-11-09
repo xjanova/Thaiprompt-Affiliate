@@ -162,8 +162,12 @@
                 'label' => 'กระเป๋าคริปโต',
                 'submenu' => [
                     ['label' => 'แดชบอร์ด', 'url' => route('admin.crypto.dashboard')],
+                    ['label' => 'จัดการ Wallets', 'url' => route('admin.crypto.wallets')],
                     ['label' => 'ธุรกรรม', 'url' => route('admin.crypto.transactions')],
                     ['label' => 'คำขอถอน', 'url' => route('admin.crypto.withdrawals')],
+                    ['label' => 'จัดการเหรียญ/สกุลเงิน', 'url' => route('admin.crypto.currencies')],
+                    ['label' => 'ตั้งค่ากระเป๋าเงิน', 'url' => route('admin.wallet-settings.index')],
+                    ['label' => 'ตั้งค่าคริปโต', 'url' => route('admin.crypto.settings')],
                 ]
             ],
             [
@@ -321,7 +325,6 @@
                 'label' => 'ตั้งค่าระบบ',
                 'submenu' => [
                     ['label' => 'ตั้งค่าทั่วไป', 'url' => route('admin.settings.index')],
-                    ['label' => 'ตั้งค่ากระเป๋าเงิน', 'url' => route('admin.wallet-settings.index')],
                     ['label' => 'ตั้งค่า Mobile App', 'url' => route('admin.app-management.settings.index')],
                     ['label' => 'ตั้งค่า OCR', 'url' => route('admin.settings.ocr')],
                     ['label' => 'ตั้งค่า 2FA', 'url' => route('admin.two-factor.settings')],
