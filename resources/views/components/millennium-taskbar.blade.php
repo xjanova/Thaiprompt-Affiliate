@@ -50,8 +50,8 @@
     $clockDateFormat = WindowsUiSetting::get('millennium_clock_date_format', 'short');
     $clockStyle = WindowsUiSetting::get('millennium_clock_style', 'digital');
 
-    // Taskbar Icons
-    $taskbarIcons = WindowsUiSetting::get('millennium_taskbar_icons', [
+    // Taskbar Icons (read from windows_taskbar_apps which is managed in admin panel)
+    $taskbarIcons = WindowsUiSetting::get('windows_taskbar_apps', [
         ['icon' => '🛒', 'label' => 'รถเข็น', 'url' => '/cart', 'border' => false, 'opacity' => 10, 'order' => 1],
         ['icon' => '🔮', 'label' => 'ดูดวง', 'url' => '/tarot', 'border' => false, 'opacity' => 10, 'order' => 2],
         ['icon' => '🤖', 'label' => 'เช่าบอท', 'url' => '/marketplace', 'border' => false, 'opacity' => 10, 'order' => 3],
@@ -345,6 +345,8 @@
 
             <!-- Right Section: System Tray -->
             <div class="flex items-center gap-3 flex-1 justify-end">
+                <!-- System Tray Separator (Windows-style) -->
+                <div class="h-12 w-0.5 bg-gradient-to-b from-transparent via-white/40 to-transparent mx-2 shadow-lg" style="box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);"></div>
 
                 <!-- Dark Mode Toggle -->
                 <button

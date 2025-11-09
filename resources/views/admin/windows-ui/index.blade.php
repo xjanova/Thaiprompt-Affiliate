@@ -110,9 +110,13 @@
                                     <option value="bottom" {{ ($settings['windows_taskbar_position'] ?? 'top') === 'bottom' ? 'selected' : '' }}>ล่าง (Bottom)</option>
                                 </select>
                             </div>
-                            <div>
+                            <div x-data="{ height: {{ $settings['windows_taskbar_height'] ?? 56 }} }">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูง (px)</label>
-                                <input type="number" name="windows_taskbar_height" min="32" max="80" value="{{ $settings['windows_taskbar_height'] ?? 56 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <div class="flex items-center gap-4">
+                                    <input type="range" name="windows_taskbar_height" x-model="height" min="32" max="80" step="2" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600">
+                                    <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 min-w-[4rem] text-center" x-text="height + 'px'"></span>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">แนะนำ: 48-64px สำหรับหน้าจอทั่วไป</p>
                             </div>
                             <div x-data="{ transparency: {{ $settings['windows_taskbar_transparency'] ?? 95 }} }">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โปร่งแสง (%)</label>
