@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.98.4] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #631 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (bd5b8e0)
+- refactor: use millennium-start-menu component in taskbar (3992123)
+
 ## [v2.98.3] - 2025-11-09
 
 ### ✨ Features
