@@ -62,6 +62,26 @@ class PageBuilderSectionController extends Controller
     }
 
     /**
+     * Get section data for editing
+     */
+    public function edit(PageBuilderSection $section)
+    {
+        return response()->json([
+            'success' => true,
+            'section' => [
+                'id' => $section->id,
+                'name' => $section->name,
+                'section_type' => $section->section_type,
+                'content' => $section->content ?? [],
+                'settings' => $section->settings ?? [],
+                'is_active' => $section->is_active,
+                'is_visible' => $section->is_visible,
+                'order' => $section->order,
+            ],
+        ]);
+    }
+
+    /**
      * Update the specified section
      */
     public function update(Request $request, PageBuilderSection $section)

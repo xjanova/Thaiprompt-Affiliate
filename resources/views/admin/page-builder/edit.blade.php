@@ -235,6 +235,134 @@
             </div>
         </div>
     </div>
+
+    <!-- Edit Section Modal -->
+    <div x-show="showEditModal"
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div x-show="showEditModal"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="closeEditModal()"
+                 class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"></div>
+
+            <!-- Modal panel -->
+            <div x-show="showEditModal"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block w-full max-w-4xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 rounded-2xl shadow-xl">
+
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                        Edit Section
+                    </h3>
+                    <button @click="closeEditModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="px-6 py-4 max-h-[70vh] overflow-y-auto">
+                    <form id="edit-section-form" class="space-y-6">
+                        <!-- Section Name -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Section Name
+                            </label>
+                            <input type="text"
+                                   x-model="editingSectionData.name"
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500">
+                        </div>
+
+                        <!-- Section Type (Read-only) -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Section Type
+                            </label>
+                            <input type="text"
+                                   x-model="editingSectionData.section_type"
+                                   readonly
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-700 dark:text-white">
+                        </div>
+
+                        <!-- Content JSON Editor -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Content (JSON)
+                            </label>
+                            <textarea x-model="editingSectionContent"
+                                      rows="12"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500"
+                                      placeholder='{"title": "Your title", "subtitle": "Your subtitle"}'></textarea>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Enter valid JSON format. Example: {"title": "Hello", "subtitle": "World"}
+                            </p>
+                        </div>
+
+                        <!-- Settings JSON Editor -->
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                Settings (JSON)
+                            </label>
+                            <textarea x-model="editingSectionSettings"
+                                      rows="8"
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500"
+                                      placeholder='{"padding_y": "py-20", "bg_color": "#ffffff"}'></textarea>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                Enter valid JSON format for section settings.
+                            </p>
+                        </div>
+
+                        <!-- Active & Visible Toggles -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox"
+                                           x-model="editingSectionData.is_active"
+                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded">
+                                    <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Active</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox"
+                                           x-model="editingSectionData.is_visible"
+                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded">
+                                    <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">Visible</span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+                    <button @click="closeEditModal()"
+                            class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="saveEditSection()"
+                            class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -245,10 +373,75 @@ function pageBuilder() {
         activeTab: 'sections',
         previewDevice: 'desktop',
         showTemplateGallery: false,
+        showEditModal: false,
+        editingSectionId: null,
+        editingSectionData: {},
+        editingSectionContent: '{}',
+        editingSectionSettings: '{}',
 
         init() {
             this.initSortable();
             this.initAutoSave();
+        },
+
+        openEditModal(sectionId, sectionData) {
+            this.editingSectionId = sectionId;
+            this.editingSectionData = { ...sectionData };
+            this.editingSectionContent = JSON.stringify(sectionData.content || {}, null, 2);
+            this.editingSectionSettings = JSON.stringify(sectionData.settings || {}, null, 2);
+            this.showEditModal = true;
+        },
+
+        closeEditModal() {
+            this.showEditModal = false;
+            this.editingSectionId = null;
+            this.editingSectionData = {};
+            this.editingSectionContent = '{}';
+            this.editingSectionSettings = '{}';
+        },
+
+        saveEditSection() {
+            try {
+                // Parse JSON content
+                const content = JSON.parse(this.editingSectionContent);
+                const settings = JSON.parse(this.editingSectionSettings);
+
+                const updateData = {
+                    name: this.editingSectionData.name,
+                    section_type: this.editingSectionData.section_type,
+                    content: content,
+                    settings: settings,
+                    is_active: this.editingSectionData.is_active ? 1 : 0,
+                    is_visible: this.editingSectionData.is_visible ? 1 : 0,
+                };
+
+                fetch(`/admin/page-builder/sections/${this.editingSectionId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-HTTP-Method-Override': 'PUT'
+                    },
+                    body: JSON.stringify(updateData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('✅ Section updated successfully!');
+                        this.closeEditModal();
+                        this.refreshPreview();
+                        setTimeout(() => location.reload(), 500);
+                    } else {
+                        alert('❌ Error: ' + (data.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('❌ Error updating section. Check console for details.');
+                });
+            } catch (error) {
+                alert('❌ Invalid JSON format: ' + error.message);
+            }
         },
 
         initSortable() {
@@ -315,10 +508,58 @@ function pageBuilder() {
         },
 
         initAutoSave() {
-            // Auto-save every 30 seconds
+            // Auto-save page settings every 30 seconds
             setInterval(() => {
-                // Optional: implement auto-save
+                this.autoSavePage();
             }, 30000);
+
+            // Also save on window blur (user switches tab/window)
+            window.addEventListener('blur', () => {
+                this.autoSavePage();
+            });
+        },
+
+        autoSavePage() {
+            const formData = new FormData(document.getElementById('page-settings-form'));
+
+            // Only auto-save if form exists and has data
+            if (!formData || formData.entries().next().done) {
+                return;
+            }
+
+            formData.append('_method', 'PUT');
+
+            fetch('{{ route("admin.page-builder.update", $page) }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show subtle notification
+                    this.showAutoSaveNotification('✓ Auto-saved');
+                }
+            })
+            .catch(error => {
+                console.log('Auto-save skipped:', error.message);
+            });
+        },
+
+        showAutoSaveNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg text-sm z-50 transition-opacity duration-300';
+            document.body.appendChild(notification);
+
+            // Remove after 2 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 2000);
         }
     }
 }
@@ -347,8 +588,27 @@ function toggleVisibility(sectionId) {
 }
 
 function editSection(sectionId) {
-    // TODO: Open modal to edit section
-    alert('Edit section ' + sectionId + ' - Modal coming soon!');
+    // Fetch section data from API
+    fetch(`/admin/page-builder/sections/${sectionId}/edit`, {
+        headers: {
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.section) {
+            // Get Alpine.js component instance
+            const builderComponent = document.querySelector('[x-data="pageBuilder()"]').__x.$data;
+            builderComponent.openEditModal(sectionId, data.section);
+        } else {
+            alert('❌ Error loading section data');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error loading section. Check console for details.');
+    });
 }
 
 function duplicateSection(sectionId) {
