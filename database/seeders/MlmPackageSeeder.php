@@ -17,13 +17,73 @@ class MlmPackageSeeder extends Seeder
      */
     public function run(): void
     {
-        // ลบข้อมูลเก่าทั้งหมดเพื่อป้องกันความซ้ำซ้อน (ใช้ forceDelete เพื่อลบถาวร)
-        $this->command->info('🗑️  Cleaning old MLM Packages...');
-        MlmPackage::query()->forceDelete();
+        // Check if MLM packages already exist
+        $existingPackagesCount = MlmPackage::whereIn('slug', [
+            'bronze-package',
+            'silver-package',
+            'gold-package'
+        ])->count();
 
-        $this->command->info('📦 Creating MLM Packages...');
+        if ($existingPackagesCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
 
-        $packages = [
+    /**
+     * Fresh install mode - seed all packages
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all MLM packages...');
+
+        $packages = $this->getAllPackages();
+
+        foreach ($packages as $package) {
+            MlmPackage::create($package);
+        }
+
+        $this->command->info('✅ Created 5 MLM Packages: Bronze, Silver, Gold, Diamond, Premier');
+    }
+
+    /**
+     * Update mode - add only missing packages
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing MLM packages detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing packages only)...');
+
+        $packages = $this->getAllPackages();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($packages as $package) {
+            if (!MlmPackage::where('slug', $package['slug'])->exists()) {
+                MlmPackage::create($package);
+                $this->command->info("   ➕ Added: {$package['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new MLM packages.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing packages (preserved).");
+        }
+    }
+
+    /**
+     * Get all default MLM packages
+     */
+    private function getAllPackages(): array
+    {
+        return [
             [
                 'name' => 'Bronze Package',
                 'name_th' => 'แพคเกจ Bronze',
@@ -206,12 +266,5 @@ class MlmPackageSeeder extends Seeder
                 'upgrade_options' => [],
             ],
         ];
-
-        foreach ($packages as $package) {
-            MlmPackage::create($package);
-        }
-
-        $this->command->info('✅ Created 5 MLM Packages: Bronze, Silver, Gold, Diamond, Premier');
-        $this->command->info('ℹ️  หากต้องการดูแผนคอมมิชชัน ให้รัน: php artisan db:seed --class=MlmPlanSeeder');
     }
 }

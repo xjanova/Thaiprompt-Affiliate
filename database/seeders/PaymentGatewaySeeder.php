@@ -12,7 +12,73 @@ class PaymentGatewaySeeder extends Seeder
      */
     public function run(): void
     {
-        $gateways = [
+        // Check if payment gateways already exist
+        $existingGatewaysCount = PaymentGateway::whereIn('code', [
+            'promptpay',
+            'bank_transfer',
+            'omise'
+        ])->count();
+
+        if ($existingGatewaysCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all gateways
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all payment gateways...');
+
+        $gateways = $this->getAllGateways();
+
+        foreach ($gateways as $gateway) {
+            PaymentGateway::create($gateway);
+        }
+
+        $this->command->info('✅ Payment gateways seeded successfully: ' . count($gateways) . ' gateways');
+    }
+
+    /**
+     * Update mode - add only missing gateways
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing payment gateways detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing gateways only)...');
+
+        $gateways = $this->getAllGateways();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($gateways as $gateway) {
+            if (!PaymentGateway::where('code', $gateway['code'])->exists()) {
+                PaymentGateway::create($gateway);
+                $this->command->info("   ➕ Added: {$gateway['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new payment gateways.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing gateways (preserved).");
+        }
+    }
+
+    /**
+     * Get all default payment gateways
+     */
+    private function getAllGateways(): array
+    {
+        return [
             // Thai Payment Methods
             [
                 'code' => 'promptpay',
@@ -250,14 +316,5 @@ class PaymentGatewaySeeder extends Seeder
                 ],
             ],
         ];
-
-        foreach ($gateways as $gateway) {
-            PaymentGateway::updateOrCreate(
-                ['code' => $gateway['code']],
-                $gateway
-            );
-        }
-
-        $this->command->info('Payment Gateways seeded successfully!');
     }
 }

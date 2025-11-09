@@ -25,15 +25,46 @@ class ThemeSeeder extends Seeder
      */
     protected function seedThemePresets()
     {
-        $presets = ThemePreset::defaultPresets();
+        // Check if theme presets already exist
+        $existingPresetsCount = ThemePreset::count();
 
-        foreach ($presets as $presetData) {
-            ThemePreset::updateOrCreate(
-                ['name' => $presetData['name']],
-                $presetData
-            );
+        if ($existingPresetsCount > 0) {
+            $this->command->warn('⚠️  Existing theme presets detected!');
+            $this->command->info('   Running in UPDATE mode (adding missing presets only)...');
 
-            $this->command->info("Created/Updated theme preset: {$presetData['display_name']}");
+            $presets = ThemePreset::defaultPresets();
+            $added = 0;
+            $skipped = 0;
+
+            foreach ($presets as $presetData) {
+                if (!ThemePreset::where('name', $presetData['name'])->exists()) {
+                    ThemePreset::create($presetData);
+                    $this->command->info("   ➕ Added preset: {$presetData['display_name']}");
+                    $added++;
+                } else {
+                    $skipped++;
+                }
+            }
+
+            if ($added > 0) {
+                $this->command->info("✅ Added {$added} new theme presets.");
+            }
+
+            if ($skipped > 0) {
+                $this->command->info("   ⏭️  Skipped {$skipped} existing presets (preserved).");
+            }
+        } else {
+            // Fresh install - create all presets
+            $this->command->info('🌱 Fresh install: Seeding all theme presets...');
+
+            $presets = ThemePreset::defaultPresets();
+
+            foreach ($presets as $presetData) {
+                ThemePreset::create($presetData);
+                $this->command->info("   Created preset: {$presetData['display_name']}");
+            }
+
+            $this->command->info('✅ Theme presets seeded successfully!');
         }
     }
 

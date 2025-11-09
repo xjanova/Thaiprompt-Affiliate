@@ -12,7 +12,73 @@ class LineFlexMessageTemplateSeeder extends Seeder
      */
     public function run(): void
     {
-        $templates = [
+        // Check if LINE Flex templates already exist
+        $existingTemplatesCount = LineFlexMessageTemplate::whereIn('name', [
+            'Welcome Message - Classic',
+            'Promotion - Flash Sale',
+            'Product Card'
+        ])->count();
+
+        if ($existingTemplatesCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all templates
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all LINE Flex message templates...');
+
+        $templates = $this->getAllTemplates();
+
+        foreach ($templates as $template) {
+            LineFlexMessageTemplate::create($template);
+        }
+
+        $this->command->info('✅ LINE Flex message templates seeded successfully: ' . count($templates) . ' templates');
+    }
+
+    /**
+     * Update mode - add only missing templates
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing LINE Flex templates detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing templates only)...');
+
+        $templates = $this->getAllTemplates();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($templates as $template) {
+            if (!LineFlexMessageTemplate::where('name', $template['name'])->exists()) {
+                LineFlexMessageTemplate::create($template);
+                $this->command->info("   ➕ Added: {$template['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new LINE Flex templates.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing templates (preserved).");
+        }
+    }
+
+    /**
+     * Get all default LINE Flex message templates
+     */
+    private function getAllTemplates(): array
+    {
+        return [
             // Welcome Message
             [
                 'name' => 'Welcome Message - Classic',
@@ -406,12 +472,5 @@ class LineFlexMessageTemplateSeeder extends Seeder
                 ],
             ],
         ];
-
-        foreach ($templates as $template) {
-            LineFlexMessageTemplate::updateOrCreate(
-                ['name' => $template['name']],
-                $template
-            );
-        }
     }
 }

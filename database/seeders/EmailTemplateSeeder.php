@@ -12,7 +12,73 @@ class EmailTemplateSeeder extends Seeder
      */
     public function run(): void
     {
-        $templates = [
+        // Check if email templates already exist
+        $existingTemplatesCount = EmailTemplate::whereIn('name', [
+            'welcome_email',
+            'password_reset',
+            'commission_earned'
+        ])->count();
+
+        if ($existingTemplatesCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all templates
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all email templates...');
+
+        $templates = $this->getAllTemplates();
+
+        foreach ($templates as $template) {
+            EmailTemplate::create($template);
+        }
+
+        $this->command->info('✅ Email templates seeded successfully: ' . count($templates) . ' templates');
+    }
+
+    /**
+     * Update mode - add only missing templates
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing email templates detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing templates only)...');
+
+        $templates = $this->getAllTemplates();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($templates as $template) {
+            if (!EmailTemplate::where('name', $template['name'])->exists()) {
+                EmailTemplate::create($template);
+                $this->command->info("   ➕ Added: {$template['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new email templates.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing templates (preserved).");
+        }
+    }
+
+    /**
+     * Get all default email templates
+     */
+    private function getAllTemplates(): array
+    {
+        return [
             // System Templates
             [
                 'name' => 'welcome_email',
@@ -412,14 +478,5 @@ IP Address: {{ip_address}}
                 'description' => 'รายงานสรุปประจำสัปดาห์',
             ],
         ];
-
-        foreach ($templates as $template) {
-            EmailTemplate::updateOrCreate(
-                ['name' => $template['name']],
-                $template
-            );
-        }
-
-        $this->command->info('✅ สร้าง Email Templates สำเร็จ: ' . count($templates) . ' templates');
     }
 }

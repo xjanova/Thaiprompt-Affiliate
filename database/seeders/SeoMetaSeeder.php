@@ -12,7 +12,77 @@ class SeoMetaSeeder extends Seeder
      */
     public function run(): void
     {
-        $seoData = [
+        // Check if SEO meta data already exists
+        $existingSeoCount = SeoMeta::whereIn('page_type', [
+            'home',
+            'about',
+            'contact'
+        ])->count();
+
+        if ($existingSeoCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all SEO data
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all SEO meta data...');
+
+        $seoData = $this->getAllSeoData();
+
+        foreach ($seoData as $data) {
+            SeoMeta::create($data);
+        }
+
+        $this->command->info('✅ SEO meta data seeded successfully: ' . count($seoData) . ' entries');
+    }
+
+    /**
+     * Update mode - add only missing SEO data
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing SEO meta data detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing entries only)...');
+
+        $seoData = $this->getAllSeoData();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($seoData as $data) {
+            $exists = SeoMeta::where('page_type', $data['page_type'])
+                ->where('language', $data['language'])
+                ->exists();
+
+            if (!$exists) {
+                SeoMeta::create($data);
+                $this->command->info("   ➕ Added: {$data['page_type']} ({$data['language']})");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new SEO entries.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing entries (preserved).");
+        }
+    }
+
+    /**
+     * Get all default SEO meta data
+     */
+    private function getAllSeoData(): array
+    {
+        return [
             // Homepage - Thai
             [
                 'page_type' => 'home',
@@ -131,17 +201,5 @@ class SeoMetaSeeder extends Seeder
                 'follow' => false,
             ],
         ];
-
-        foreach ($seoData as $data) {
-            SeoMeta::updateOrCreate(
-                [
-                    'page_type' => $data['page_type'],
-                    'language' => $data['language'],
-                ],
-                $data
-            );
-        }
-
-        $this->command->info('SEO Meta data seeded successfully!');
     }
 }
