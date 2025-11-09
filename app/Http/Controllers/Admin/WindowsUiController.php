@@ -64,6 +64,10 @@ class WindowsUiController extends Controller
             // System Tray Info
             'windows_license_text' => ['nullable', 'string', 'max:100'],
             'windows_copyright_text' => ['nullable', 'string', 'max:200'],
+
+            // Content Width Settings
+            'content_width_mode' => ['nullable', 'string', 'in:max,container,custom'],
+            'content_width_custom' => ['nullable', 'integer', 'min:800', 'max:3000'],
         ]);
 
         // Handle checkboxes
@@ -258,6 +262,7 @@ class WindowsUiController extends Controller
             'windows_taskbar_transparency',
             'millennium_rgb_speed',
             'windows_rgb_speed',
+            'content_width_custom',
         ])) {
             return 'integer';
         }
