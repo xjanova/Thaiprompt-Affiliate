@@ -10,25 +10,34 @@ class WindowsUiSeeder extends Seeder
     /**
      * Run the database seeds.
      *
-     * This seeder populates Windows UI settings with current menu structure
-     * from millennium-start-menu.blade.php to ensure Windows UI management
-     * reflects the actual menu configuration with working submenus.
+     * Smart Seeding Strategy:
+     * - Fresh Install: Seeds all default settings
+     * - Update Mode: Adds only missing settings (preserves customizations)
      *
-     * NOTE: This seeder will NOT overwrite existing settings to preserve user customizations.
+     * This follows the Smart Seeding Guidelines in .claude/seeder-guidelines.md
      */
     public function run(): void
     {
-        // Check if settings already exist
-        $existingSettings = WindowsUiSetting::where('key', 'windows_taskbar_position')->first();
+        // Check if core settings exist (indicates previous seeding)
+        $coreSettingsExist = WindowsUiSetting::whereIn('key', [
+            'windows_taskbar_position',
+            'windows_taskbar_height',
+            'windows_start_button_position',
+        ])->count() > 0;
 
-        if ($existingSettings) {
-            $this->command->warn('⚠️  Windows UI settings already exist!');
-            $this->command->info('   Skipping seeding to preserve your customizations.');
-            $this->command->info('   To re-seed, delete existing settings first or use --force flag.');
-            return;
+        if ($coreSettingsExist) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
         }
+    }
 
-        $this->command->info('🌱 Seeding Windows UI settings...');
+    /**
+     * Fresh Install Mode: Seed all default settings
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all Windows UI settings...');
         // Start Menu Items - Admin Menu Structure
         // Based on millennium-start-menu.blade.php lines 84-324
         $startMenuItems = [
@@ -644,5 +653,119 @@ class WindowsUiSeeder extends Seeder
         $this->command->info('   - Start Menu (User): ' . count($userMenuItems) . ' items with submenus');
         $this->command->info('   - Taskbar Apps: ' . count($taskbarApps) . ' apps');
         $this->command->info('   - System Tray: ' . count($systemTrayIcons) . ' icons');
+    }
+
+    /**
+     * Update Mode: Add only missing settings (preserves user customizations)
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing settings detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing settings only)...');
+
+        $added = 0;
+        $skipped = 0;
+
+        // Define all possible settings with their default values
+        $allSettings = $this->getAllDefaultSettings();
+
+        // Check and add only missing settings
+        foreach ($allSettings as $key => $config) {
+            if (!WindowsUiSetting::where('key', $key)->exists()) {
+                WindowsUiSetting::set($key, $config['value'], $config['type']);
+                $this->command->info("   ➕ Added: {$key}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new settings.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing settings (preserved).");
+        }
+
+        if ($added === 0) {
+            $this->command->info('✅ All settings are up to date. No changes needed.');
+        }
+    }
+
+    /**
+     * Get all default settings
+     *
+     * @return array
+     */
+    private function getAllDefaultSettings(): array
+    {
+        // Note: Menu items are handled separately as they're complex structures
+        // This method only tracks scalar settings
+        return [
+            // Taskbar Settings
+            'windows_taskbar_position' => ['value' => 'top', 'type' => 'string'],
+            'windows_taskbar_height' => ['value' => 60, 'type' => 'integer'],
+            'windows_taskbar_blur' => ['value' => true, 'type' => 'boolean'],
+            'windows_taskbar_transparency' => ['value' => 95, 'type' => 'integer'],
+
+            // Start Button Settings
+            'windows_start_button_text' => ['value' => 'เริ่ม', 'type' => 'string'],
+            'windows_start_button_use_logo' => ['value' => true, 'type' => 'boolean'],
+            'windows_start_button_position' => ['value' => 'center', 'type' => 'string'],
+
+            // Back Button Settings
+            'millennium_back_button_enabled' => ['value' => true, 'type' => 'boolean'],
+            'millennium_back_button_text' => ['value' => 'กลับ', 'type' => 'string'],
+
+            // Center Section Settings
+            'millennium_center_section_enabled' => ['value' => true, 'type' => 'boolean'],
+            'millennium_center_section_text' => ['value' => 'Thai Prompt Affiliate', 'type' => 'string'],
+
+            // RGB Settings
+            'millennium_rgb_enabled' => ['value' => true, 'type' => 'boolean'],
+            'millennium_rgb_speed' => ['value' => 5, 'type' => 'integer'],
+
+            // Millennium Start Menu Settings
+            'millennium_menu_position' => ['value' => 'center', 'type' => 'string'],
+            'millennium_menu_width' => ['value' => '400', 'type' => 'string'],
+            'millennium_menu_width_unit' => ['value' => 'px', 'type' => 'string'],
+            'millennium_menu_max_height' => ['value' => '600', 'type' => 'string'],
+            'millennium_menu_max_height_unit' => ['value' => 'px', 'type' => 'string'],
+            'millennium_menu_rgb_enabled' => ['value' => true, 'type' => 'boolean'],
+
+            // Responsive Taskbar Settings
+            'millennium_taskbar_collapse_enabled' => ['value' => true, 'type' => 'boolean'],
+            'millennium_taskbar_collapse_breakpoint' => ['value' => 768, 'type' => 'integer'],
+
+            // Clock Settings
+            'millennium_clock_style' => ['value' => 'digital', 'type' => 'string'],
+            'millennium_clock_format' => ['value' => '24h', 'type' => 'string'],
+            'millennium_clock_show_seconds' => ['value' => false, 'type' => 'boolean'],
+            'millennium_clock_show_date' => ['value' => false, 'type' => 'boolean'],
+            'millennium_clock_date_format' => ['value' => 'short', 'type' => 'string'],
+
+            // RGB Settings
+            'windows_rgb_enabled' => ['value' => true, 'type' => 'boolean'],
+            'windows_rgb_speed' => ['value' => 3, 'type' => 'integer'],
+            'windows_rgb_glow' => ['value' => true, 'type' => 'boolean'],
+            'windows_rgb_colors' => ['value' => ['#FF0080', '#00F0FF', '#7F00FF', '#FF3D00'], 'type' => 'json'],
+
+            // Theme Settings
+            'windows_theme_mode' => ['value' => 'auto', 'type' => 'string'],
+            'windows_accent_color' => ['value' => '#667eea', 'type' => 'color'],
+
+            // Spaceship Theme
+            'windows_spaceship_theme' => ['value' => true, 'type' => 'boolean'],
+            'windows_spaceship_stars' => ['value' => true, 'type' => 'boolean'],
+
+            // System Tray Info
+            'windows_license_text' => ['value' => 'Licensed to Thai Prompt', 'type' => 'string'],
+            'windows_copyright_text' => ['value' => '© 2025 TP-Affiliate Platform', 'type' => 'string'],
+
+            // Content Width Settings
+            'content_width_mode' => ['value' => 'max', 'type' => 'string'],
+            'content_width_custom' => ['value' => 1400, 'type' => 'integer'],
+        ];
     }
 }
