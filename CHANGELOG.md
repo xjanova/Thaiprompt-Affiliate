@@ -2,6 +2,46 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.103.1] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #641 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (3e1ad36)
+- chore: register PageBuilderSeeder in DatabaseSeeder (949abda)
+
+## [v2.103.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #640 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (dcae7f5)
+- feat: add comprehensive Page Builder system with drag & drop (52bda84)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.102.1] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #639 from xjanova/claude/fix-seller-pos-sales-route-011CUwi3TfcDHpAED5oJyUZq (baf3a73)
+- fix: remove admin.users.permissions from menu (requires user parameter) (1435136)
+### 🔧 Other Changes
+
+
+## [v2.102.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #638 from xjanova/claude/fix-seller-pos-sales-route-011CUwi3TfcDHpAED5oJyUZq (7268553)
+- feat: restore 40 missing menu items in admin and seller panels (ced356b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.101.0] - 2025-11-09
 
 ### ✨ Features
