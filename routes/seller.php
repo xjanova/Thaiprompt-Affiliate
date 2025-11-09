@@ -19,6 +19,23 @@ Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard
 Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
 Route::get('/marketing', [DashboardController::class, 'marketing'])->name('marketing');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
+Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
+Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
+
+// ========================================
+// WALLET MANAGEMENT
+// ========================================
+Route::prefix('wallet')->name('wallet.')->group(function () {
+    Route::get('/', [DashboardController::class, 'walletIndex'])->name('index');
+    Route::get('/withdraw', [DashboardController::class, 'walletWithdraw'])->name('withdraw');
+});
+
+// ========================================
+// REPORTS
+// ========================================
+Route::prefix('reports')->name('reports.')->group(function () {
+    Route::get('/sales', [DashboardController::class, 'salesReport'])->name('sales');
+});
 
 // ========================================
 // VENDOR PACKAGES & SUBSCRIPTIONS

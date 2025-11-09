@@ -213,7 +213,7 @@
                 'label' => 'ระบบ POS',
                 'submenu' => [
                     ['label' => 'ขายสินค้า', 'url' => route('seller.pos.terminal')],
-                    ['label' => 'รายการขาย', 'url' => route('seller.pos.sales')],
+                    ['label' => 'รายการขาย', 'url' => route('seller.pos.transactions')],
                 ]
             ],
             [
