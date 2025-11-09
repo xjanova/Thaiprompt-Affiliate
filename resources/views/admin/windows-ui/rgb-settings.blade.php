@@ -314,9 +314,9 @@
 function rgbSettingsManager() {
     return {
         settings: {
-            windows_rgb_enabled: {{ $rgbSettings['enabled'] ?? true ? 'true' : 'false' }},
+            windows_rgb_enabled: {{ ($rgbSettings['enabled'] ?? true) ? 'true' : 'false' }},
             windows_rgb_speed: {{ $rgbSettings['speed'] ?? 3 }},
-            windows_rgb_glow: {{ $rgbSettings['glow'] ?? true ? 'true' : 'false' }},
+            windows_rgb_glow: {{ ($rgbSettings['glow'] ?? true) ? 'true' : 'false' }},
             millennium_rgb_enabled: {{ \App\Models\WindowsUiSetting::get('millennium_rgb_enabled', true) ? 'true' : 'false' }},
             millennium_rgb_speed: {{ \App\Models\WindowsUiSetting::get('millennium_rgb_speed', 5) }},
         },
