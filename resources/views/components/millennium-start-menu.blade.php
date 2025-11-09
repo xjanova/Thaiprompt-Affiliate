@@ -262,6 +262,8 @@
                 'label' => 'ธีม & UI',
                 'submenu' => [
                     ['label' => 'Theme Builder', 'url' => route('admin.themes.builder')],
+                    ['label' => 'Page Builder', 'url' => route('admin.page-builder.index')],
+                    ['label' => 'Windows UI', 'url' => route('admin.windows-ui.index')],
                 ]
             ],
             [
