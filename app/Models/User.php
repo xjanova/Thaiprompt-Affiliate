@@ -705,4 +705,32 @@ class User extends Authenticatable
             ->where('check_out_date', '<', now())
             ->orderBy('check_out_date', 'desc');
     }
+
+    /**
+     * Scopes
+     */
+
+    /**
+     * Scope to filter users by role
+     */
+    public function scopeRole($query, $role)
+    {
+        return $query->where('role', $role);
+    }
+
+    /**
+     * Scope to filter super admins
+     */
+    public function scopeSuperAdmin($query)
+    {
+        return $query->where('is_super_admin', true);
+    }
+
+    /**
+     * Scope to filter verified users
+     */
+    public function scopeVerified($query)
+    {
+        return $query->whereNotNull('email_verified_at');
+    }
 }
