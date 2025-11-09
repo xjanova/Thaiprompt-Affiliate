@@ -10,13 +10,64 @@
     $taskbarHeight = WindowsUiSetting::get('windows_taskbar_height', 60);
     $taskbarPosition = WindowsUiSetting::get('windows_taskbar_position', 'top');
 
-    // Millennium-specific settings
-    $backButtonEnabled = WindowsUiSetting::get('millennium_back_button_enabled', true);
-    $backButtonText = WindowsUiSetting::get('millennium_back_button_text', 'กลับ');
-    $centerSectionEnabled = WindowsUiSetting::get('millennium_center_section_enabled', true);
-    $centerSectionText = WindowsUiSetting::get('millennium_center_section_text', '');
+    // Millennium Taskbar Customization
+    $taskbarOpacity = WindowsUiSetting::get('millennium_taskbar_opacity', 95);
+    $taskbarBlurAmount = WindowsUiSetting::get('millennium_taskbar_blur_amount', 20);
+
+    // RGB Settings
     $millenniumRgbEnabled = WindowsUiSetting::get('millennium_rgb_enabled', true);
     $millenniumRgbSpeed = WindowsUiSetting::get('millennium_rgb_speed', 5);
+    $millenniumRgbBlur = WindowsUiSetting::get('millennium_rgb_blur', 2);
+    $millenniumRgbGlowSize = WindowsUiSetting::get('millennium_rgb_glow_size', 15);
+    $millenniumRgbColors = WindowsUiSetting::get('millennium_rgb_colors', ['#FF0080', '#00F0FF', '#7F00FF', '#FFD700']);
+
+    // Start Button Settings
+    $startButtonPosition = WindowsUiSetting::get('millennium_start_button_position', 'center');
+    $startButtonWidth = WindowsUiSetting::get('millennium_start_button_width', 120);
+    $startButtonHeight = WindowsUiSetting::get('millennium_start_button_height', 48);
+    $startButtonShape = WindowsUiSetting::get('millennium_start_button_shape', 'rounded');
+    $startButtonBorderRadius = WindowsUiSetting::get('millennium_start_button_border_radius', 16);
+    $startButtonShowIcon = WindowsUiSetting::get('millennium_start_button_show_icon', true);
+    $startButtonShowText = WindowsUiSetting::get('millennium_start_button_show_text', true);
+    $startButtonIconSize = WindowsUiSetting::get('millennium_start_button_icon_size', 32);
+    $startButtonFontSize = WindowsUiSetting::get('millennium_start_button_font_size', 20);
+
+    // Back Button Settings
+    $backButtonEnabled = WindowsUiSetting::get('millennium_back_button_enabled', true);
+    $backButtonText = WindowsUiSetting::get('millennium_back_button_text', 'กลับ');
+    $backButtonShowIcon = WindowsUiSetting::get('millennium_back_button_show_icon', true);
+    $backButtonShowText = WindowsUiSetting::get('millennium_back_button_show_text', true);
+
+    // Clock Settings
+    $clockFormat = WindowsUiSetting::get('millennium_clock_format', '24h');
+    $clockShowSeconds = WindowsUiSetting::get('millennium_clock_show_seconds', false);
+    $clockShowDate = WindowsUiSetting::get('millennium_clock_show_date', false);
+    $clockDateFormat = WindowsUiSetting::get('millennium_clock_date_format', 'short');
+    $clockStyle = WindowsUiSetting::get('millennium_clock_style', 'digital');
+
+    // Taskbar Icons
+    $taskbarIcons = WindowsUiSetting::get('millennium_taskbar_icons', [
+        ['icon' => '🛒', 'label' => 'รถเข็น', 'url' => '/cart', 'border' => false, 'opacity' => 10, 'order' => 1],
+        ['icon' => '🔮', 'label' => 'ดูดวง', 'url' => '/tarot', 'border' => false, 'opacity' => 10, 'order' => 2],
+        ['icon' => '🤖', 'label' => 'เช่าบอท', 'url' => '/marketplace', 'border' => false, 'opacity' => 10, 'order' => 3],
+        ['icon' => '💰', 'label' => 'กระเป๋าเงิน', 'url' => '/user/wallet', 'border' => false, 'opacity' => 10, 'order' => 4],
+        ['icon' => '📈', 'label' => 'การลงทุน ROI', 'url' => '/user/investments', 'border' => false, 'opacity' => 10, 'order' => 5],
+        ['icon' => '📚', 'label' => 'Platform Wiki', 'url' => '/platform-wiki', 'border' => false, 'opacity' => 10, 'order' => 6],
+    ]);
+    $taskbarIconSize = WindowsUiSetting::get('millennium_taskbar_icon_size', 48);
+    $taskbarIconBorderRadius = WindowsUiSetting::get('millennium_taskbar_icon_border_radius', 12);
+
+    // Sort taskbar icons by order
+    usort($taskbarIcons, fn($a, $b) => ($a['order'] ?? 0) - ($b['order'] ?? 0));
+
+    // Calculate start button border radius based on shape
+    $startButtonRadius = match($startButtonShape) {
+        'square' => 0,
+        'rounded' => $startButtonBorderRadius,
+        'pill' => 9999,
+        'circle' => 9999,
+        default => $startButtonBorderRadius,
+    };
 
     // Get user info
     $user = auth()->user();
@@ -72,11 +123,34 @@
         startMenuOpen: false,
         isDark: localStorage.getItem('darkMode') === 'dark' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches),
         currentTime: '',
+        currentDate: '',
+        clockFormat: '{{ $clockFormat }}',
+        showSeconds: {{ $clockShowSeconds ? 'true' : 'false' }},
+        showDate: {{ $clockShowDate ? 'true' : 'false' }},
+        dateFormat: '{{ $clockDateFormat }}',
         updateTime() {
             const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
+            let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            this.currentTime = hours + ':' + minutes;
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            // Format based on clock format
+            if (this.clockFormat === '12h') {
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                this.currentTime = String(hours).padStart(2, '0') + ':' + minutes + (this.showSeconds ? ':' + seconds : '') + ' ' + ampm;
+            } else {
+                this.currentTime = String(hours).padStart(2, '0') + ':' + minutes + (this.showSeconds ? ':' + seconds : '');
+            }
+
+            // Format date if enabled
+            if (this.showDate) {
+                if (this.dateFormat === 'long') {
+                    this.currentDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                } else {
+                    this.currentDate = now.toLocaleDateString('th-TH', { year: '2-digit', month: '2-digit', day: '2-digit' });
+                }
+            }
         },
         toggleDarkMode() {
             this.isDark = !this.isDark;
@@ -89,7 +163,8 @@
         },
         init() {
             this.updateTime();
-            setInterval(() => this.updateTime(), 60000);
+            const interval = this.showSeconds ? 1000 : 60000;
+            setInterval(() => this.updateTime(), interval);
         }
     }"
     x-init="init()"
@@ -105,7 +180,8 @@
         @endif
 
         <!-- Taskbar Background -->
-        <div class="absolute inset-0 bg-gradient-to-r from-gray-900/95 via-purple-900/50 to-blue-900/50 backdrop-blur-2xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 shadow-2xl rounded-2xl mx-2 my-1" style="box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900/50 to-blue-900/50 backdrop-blur border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 shadow-2xl rounded-2xl mx-2 my-1"
+             style="opacity: {{ $taskbarOpacity / 100 }}; backdrop-filter: blur({{ $taskbarBlurAmount }}px); box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
 
         <!-- Taskbar Content -->
         <div class="relative h-full max-w-full mx-auto px-3 flex items-center justify-between gap-3">
@@ -119,108 +195,67 @@
                         onclick="window.history.back()"
                         class="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-700/80 to-gray-800/80 hover:from-indigo-600 hover:to-purple-600 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-indigo-500/50"
                         title="{{ $backButtonText }}">
-                        <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                        <span class="font-bold text-sm hidden lg:inline-block">{{ $backButtonText }}</span>
+                        @if($backButtonShowIcon)
+                            <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        @endif
+                        @if($backButtonShowText)
+                            <span class="font-bold text-sm hidden lg:inline-block">{{ $backButtonText }}</span>
+                        @endif
                     </button>
                 @endif
 
-                <!-- Shopping Cart -->
-                @if(Route::has('cart.index'))
-                <a href="{{ route('cart.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-green-500 hover:to-emerald-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="รถเข็น">
-                    <span class="text-2xl">🛒</span>
-                    @php
-                        $cartCount = 0;
-                        try {
-                            if (auth()->check() && session()->has('cart')) {
-                                $cartCount = count(session('cart', []));
-                            }
-                        } catch (\Exception $e) {}
-                    @endphp
-                    @if($cartCount > 0)
-                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                            {{ $cartCount > 9 ? '9+' : $cartCount }}
-                        </span>
-                    @endif
-                </a>
-                @endif
-
-                <!-- Tarot / ดูดวง -->
-                @if(Route::has('tarot.index'))
-                <a href="{{ route('tarot.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-purple-500 hover:to-pink-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="ดูดวง">
-                    <span class="text-2xl">🔮</span>
-                </a>
-                @endif
-
-                <!-- Bot Marketplace / เช่าบอท -->
-                @if(Route::has('bots.marketplace'))
-                <a href="{{ route('bots.marketplace') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-blue-500 hover:to-cyan-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="เช่าบอท">
-                    <span class="text-2xl">🤖</span>
-                </a>
-                @endif
-
-                <!-- Wallet / กระเป๋าเงิน -->
-                @if(Route::has('user.wallet.index'))
-                <a href="{{ route('user.wallet.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="กระเป๋าเงิน">
-                    <span class="text-2xl">💰</span>
-                </a>
-                @endif
-
-                <!-- ROI Investment -->
-                @if(Route::has('user.investments.index'))
-                <a href="{{ route('user.investments.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-pink-500 hover:to-red-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="การลงทุน ROI">
-                    <span class="text-2xl">📈</span>
-                </a>
-                @endif
-
-                <!-- Wiki -->
-                @if(Route::has('wiki.index'))
-                <a href="{{ route('wiki.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-indigo-500 hover:to-purple-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="Platform Wiki">
-                    <span class="text-2xl">📚</span>
-                </a>
-                @endif
+                <!-- Dynamic Taskbar Icons -->
+                @foreach($taskbarIcons as $taskbarIcon)
+                    <a href="{{ $taskbarIcon['url'] }}"
+                       class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ $taskbarIcon['border'] ? 'border-2 border-white/20' : '' }}"
+                       style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
+                       title="{{ $taskbarIcon['label'] }}">
+                        <span style="font-size: {{ ($taskbarIconSize * 0.5) }}px;">{{ $taskbarIcon['icon'] }}</span>
+                    </a>
+                @endforeach
 
             </div>
 
             <!-- Center Section: Start Button -->
-            <div class="flex items-center justify-center absolute left-1/2 transform -translate-x-1/2">
+            @php
+                $startButtonJustify = match($startButtonPosition) {
+                    'left' => 'justify-start',
+                    'right' => 'justify-end',
+                    default => 'justify-center',
+                };
+                $startButtonAbsoluteClass = $startButtonPosition === 'center' ? 'absolute left-1/2 transform -translate-x-1/2' : '';
+            @endphp
+            <div class="flex items-center {{ $startButtonPosition === 'center' ? $startButtonAbsoluteClass : $startButtonJustify }}">
                 <!-- Start Button -->
                 <button
                     @click="startMenuOpen = !startMenuOpen"
                     :class="{'millennium-start-active': startMenuOpen}"
-                    class="millennium-start-button group flex items-center gap-3 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
-                    style="margin-top: -8px; margin-bottom: -8px;">
+                    class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                    style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
 
-                    @if($logo)
-                        <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-11 h-11 object-contain drop-shadow-2xl">
-                    @else
-                        <div class="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
-                            <svg class="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
-                            </svg>
-                        </div>
+                    @if($startButtonShowIcon)
+                        @if($logo)
+                            <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                        @else
+                            <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                    <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                </svg>
+                            </div>
+                        @endif
                     @endif
 
-                    <span class="text-white font-bold text-2xl hidden md:inline-block drop-shadow-2xl">
-                        เริ่ม
-                    </span>
+                    @if($startButtonShowText)
+                        <span class="text-white font-bold hidden md:inline-block drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                            เริ่ม
+                        </span>
+                    @endif
 
                     <!-- Glow Effect on Hover -->
-                    <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                         style="background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                         style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
                 </button>
             </div>
 
@@ -266,13 +301,20 @@
                     </div>
                 @endif
 
-                <!-- Current Time -->
-                <div class="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                    <svg class="w-5 h-5 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-white font-bold text-base" x-text="currentTime"></span>
-                </div>
+                <!-- Current Time & Date -->
+                @if($clockStyle === 'digital')
+                    <div class="hidden lg:flex flex-col items-end gap-1 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-white font-bold text-base" x-text="currentTime"></span>
+                        </div>
+                        @if($clockShowDate)
+                            <span class="text-white/70 text-xs" x-text="currentDate"></span>
+                        @endif
+                    </div>
+                @endif
 
             </div>
 
@@ -289,11 +331,11 @@
     @keyframes millenniumTaskbarRgb {
         0%, 100% {
             background: linear-gradient(90deg,
-                rgba(255, 0, 128, 0.8) 0%,
-                rgba(0, 240, 255, 0.8) 25%,
-                rgba(127, 0, 255, 0.8) 50%,
-                rgba(255, 215, 0, 0.8) 75%,
-                rgba(255, 0, 128, 0.8) 100%
+                {{ $millenniumRgbColors[0] ?? '#FF0080' }}80 0%,
+                {{ $millenniumRgbColors[1] ?? '#00F0FF' }}80 25%,
+                {{ $millenniumRgbColors[2] ?? '#7F00FF' }}80 50%,
+                {{ $millenniumRgbColors[3] ?? '#FFD700' }}80 75%,
+                {{ $millenniumRgbColors[0] ?? '#FF0080' }}80 100%
             );
             background-size: 200% 100%;
             background-position: 0% 50%;
@@ -307,16 +349,16 @@
         height: 3px;
         {{ $taskbarPosition === 'bottom' ? 'top: 0;' : 'bottom: 0;' }}
         background: linear-gradient(90deg,
-            #FF0080 0%,
-            #00F0FF 25%,
-            #7F00FF 50%,
-            #FFD700 75%,
-            #FF0080 100%
+            {{ $millenniumRgbColors[0] ?? '#FF0080' }} 0%,
+            {{ $millenniumRgbColors[1] ?? '#00F0FF' }} 25%,
+            {{ $millenniumRgbColors[2] ?? '#7F00FF' }} 50%,
+            {{ $millenniumRgbColors[3] ?? '#FFD700' }} 75%,
+            {{ $millenniumRgbColors[0] ?? '#FF0080' }} 100%
         );
         background-size: 200% 100%;
         animation: millenniumTaskbarRgb {{ $millenniumRgbSpeed }}s linear infinite;
-        filter: blur(2px);
-        box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+        filter: blur({{ $millenniumRgbBlur }}px);
+        box-shadow: 0 0 {{ $millenniumRgbGlowSize }}px currentColor, 0 0 {{ $millenniumRgbGlowSize * 2 }}px currentColor;
     }
 
     /* Start Button Glow */
@@ -355,6 +397,7 @@
             0 0 30px rgba(236, 72, 153, 0.8),
             0 0 50px rgba(168, 85, 247, 0.6),
             inset 0 0 20px rgba(255, 255, 255, 0.2) !important;
+        border-radius: {{ $startButtonRadius }}px !important;
     }
 
     /* Taskbar Glass Morphism */
