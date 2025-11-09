@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.107.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #645 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (d28bbe7)
+- feat: consolidate Windows UI management into comprehensive pages (e59bdb4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.106.0] - 2025-11-09
 
 ### ✨ Features
