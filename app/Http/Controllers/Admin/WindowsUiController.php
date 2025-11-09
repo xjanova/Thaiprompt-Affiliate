@@ -88,6 +88,12 @@ class WindowsUiController extends Controller
             // Content Width Settings
             'content_width_mode' => ['nullable', 'string', 'in:max,container,custom'],
             'content_width_custom' => ['nullable', 'integer', 'min:800', 'max:3000'],
+
+            // Back to Top Button Settings
+            'millennium_back_to_top_enabled' => ['nullable', 'boolean'],
+            'millennium_back_to_top_threshold' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'millennium_back_to_top_animation' => ['nullable', 'string', 'in:fade,slide,bounce,scale,zoom'],
+            'millennium_back_to_top_position' => ['nullable', 'string', 'in:bottom-right,bottom-left,bottom-center'],
         ]);
 
         // Handle checkboxes
@@ -104,6 +110,7 @@ class WindowsUiController extends Controller
         $validated['windows_rgb_glow'] = $request->has('windows_rgb_glow');
         $validated['windows_spaceship_theme'] = $request->has('windows_spaceship_theme');
         $validated['windows_spaceship_stars'] = $request->has('windows_spaceship_stars');
+        $validated['millennium_back_to_top_enabled'] = $request->has('millennium_back_to_top_enabled');
 
         // Save each setting
         foreach ($validated as $key => $value) {
@@ -296,6 +303,7 @@ class WindowsUiController extends Controller
             'windows_rgb_glow',
             'windows_spaceship_theme',
             'windows_spaceship_stars',
+            'millennium_back_to_top_enabled',
         ])) {
             return 'boolean';
         }
@@ -308,6 +316,7 @@ class WindowsUiController extends Controller
             'millennium_taskbar_collapse_breakpoint',
             'windows_rgb_speed',
             'content_width_custom',
+            'millennium_back_to_top_threshold',
         ])) {
             return 'integer';
         }
