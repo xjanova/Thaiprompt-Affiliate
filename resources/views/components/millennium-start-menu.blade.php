@@ -93,7 +93,6 @@
                 'label' => 'ผู้ใช้งาน',
                 'submenu' => [
                     ['label' => 'รายชื่อผู้ใช้', 'url' => route('admin.users.index')],
-                    ['label' => 'สิทธิ์ผู้ใช้', 'url' => route('admin.users.permissions')],
                     ['label' => 'บทบาท (Roles)', 'url' => route('admin.roles.index')],
                 ]
             ],
