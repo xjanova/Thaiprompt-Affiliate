@@ -38,6 +38,10 @@
         flex-wrap: wrap;
         gap: 16px;
     }
+    .dark .dashboard-header {
+        background: #1e293b;
+        border-color: #475569;
+    }
 
     .header-left h1 {
         font-size: 28px;
@@ -106,6 +110,10 @@
         transition: all 0.3s ease;
         position: relative;
         overflow: hidden;
+    }
+    .dark .metric-card {
+        background: #1e293b;
+        border-color: #475569;
     }
 
     .metric-card::before {
@@ -259,9 +267,15 @@
         padding: 24px;
         transition: all 0.3s ease;
     }
-
+    .dark .chart-section {
+        background: #1e293b;
+        border-color: #475569;
+    }
     .chart-section:hover {
         box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    }
+    .dark .chart-section:hover {
+        box-shadow: 0 8px 24px rgba(0,0,0,0.3);
     }
 
     .chart-header {
@@ -272,7 +286,9 @@
         padding-bottom: 16px;
         border-bottom: 2px solid #F5F5F5;
     }
-
+    .dark .chart-header {
+        border-bottom-color: #334155;
+    }
     .chart-title {
         font-size: 18px;
         font-weight: 700;
@@ -280,6 +296,9 @@
         display: flex;
         align-items: center;
         gap: 10px;
+    }
+    .dark .chart-title {
+        color: #f3f4f6;
     }
 
     .chart-section:nth-child(1) .chart-title i {
@@ -323,6 +342,11 @@
         transition: opacity 0.3s;
         box-shadow: 0 4px 16px rgba(0,0,0,0.12);
         font-weight: 500;
+    }
+    .dark .refresh-indicator {
+        background: #1e293b;
+        border-color: #475569;
+        color: #f3f4f6;
     }
 
     .refresh-indicator.active {
