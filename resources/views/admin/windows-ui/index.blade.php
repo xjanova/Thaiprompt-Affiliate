@@ -94,7 +94,9 @@
                 @csrf
                 @method('PUT')
 
-                <div class="space-y-8">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    <!-- Left Column: Settings Sections -->
+                    <div class="lg:col-span-3 space-y-8">
                     <!-- Millennium Taskbar Settings -->
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -487,6 +489,63 @@
                         </div>
                     </div>
 
+                    <!-- Back to Top Button Settings -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">⬆️</span> Back to Top Button (ปุ่มกลับด้านบน)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="millennium_back_to_top_enabled" value="1" {{ ($settings['millennium_back_to_top_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ปุ่ม Back to Top</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่งปุ่ม</label>
+                                <select name="millennium_back_to_top_position" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="bottom-right" {{ ($settings['millennium_back_to_top_position'] ?? 'bottom-right') === 'bottom-right' ? 'selected' : '' }}>ล่างขวา (Bottom Right)</option>
+                                    <option value="bottom-left" {{ ($settings['millennium_back_to_top_position'] ?? 'bottom-right') === 'bottom-left' ? 'selected' : '' }}>ล่างซ้าย (Bottom Left)</option>
+                                    <option value="bottom-center" {{ ($settings['millennium_back_to_top_position'] ?? 'bottom-right') === 'bottom-center' ? 'selected' : '' }}>ล่างกลาง (Bottom Center)</option>
+                                </select>
+                            </div>
+                            <div x-data="{ threshold: {{ $settings['millennium_back_to_top_threshold'] ?? 20 }} }">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    แสดงปุ่มเมื่อเลื่อนลง (%)
+                                </label>
+                                <div class="flex items-center gap-4">
+                                    <input
+                                        type="range"
+                                        name="millennium_back_to_top_threshold"
+                                        x-model="threshold"
+                                        min="0"
+                                        max="100"
+                                        step="5"
+                                        class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600">
+                                    <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400 min-w-[4rem] text-center" x-text="threshold + '%'"></span>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    ปุ่มจะปรากฏเมื่อเลื่อนลงมา <span x-text="threshold"></span>% ของหน้า
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">อนิเมชั่น</label>
+                                <select name="millennium_back_to_top_animation" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="fade" {{ ($settings['millennium_back_to_top_animation'] ?? 'fade') === 'fade' ? 'selected' : '' }}>Fade (จางเข้า/ออก)</option>
+                                    <option value="slide" {{ ($settings['millennium_back_to_top_animation'] ?? 'fade') === 'slide' ? 'selected' : '' }}>Slide (เลื่อนขึ้น/ลง)</option>
+                                    <option value="bounce" {{ ($settings['millennium_back_to_top_animation'] ?? 'fade') === 'bounce' ? 'selected' : '' }}>Bounce (เด้ง)</option>
+                                    <option value="scale" {{ ($settings['millennium_back_to_top_animation'] ?? 'fade') === 'scale' ? 'selected' : '' }}>Scale (ขยาย/หด)</option>
+                                    <option value="zoom" {{ ($settings['millennium_back_to_top_animation'] ?? 'fade') === 'zoom' ? 'selected' : '' }}>Zoom (ซูมเข้า/ออก)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                <strong>💡 คำแนะนำ:</strong> ปุ่ม Back to Top จะช่วยให้ผู้ใช้สามารถกลับไปยังด้านบนของหน้าได้อย่างรวดเร็ว โดยจะปรากฏขึ้นเมื่อเลื่อนหน้าลงมาตามเปอร์เซ็นต์ที่กำหนด (แนะนำ: 20-30%)
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- System Tray Info -->
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -503,13 +562,29 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Submit Button -->
-                    <div class="flex justify-end pt-6 border-t border-gray-200 dark:border-slate-700">
-                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 dark:hover:from-blue-600 dark:hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
-                            <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
-                        </button>
                     </div>
+                    <!-- End Left Column -->
+
+                    <!-- Right Column: Sticky Save Button -->
+                    <div class="lg:col-span-1">
+                        <div class="sticky top-4">
+                            <div class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-slate-700 dark:to-slate-800 rounded-xl p-6 shadow-lg border border-blue-100 dark:border-slate-600">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                    <span class="text-2xl">💾</span> บันทึกการตั้งค่า
+                                </h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                                    กดปุ่มด้านล่างเพื่อบันทึกการเปลี่ยนแปลงทั้งหมด
+                                </p>
+                                <button type="submit" class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 dark:from-blue-500 dark:to-cyan-500 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 dark:hover:from-blue-600 dark:hover:to-cyan-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
+                                    <i class="fas fa-save mr-2"></i>บันทึก
+                                </button>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
+                                    ⚠️ อย่าลืมบันทึกหลังจากแก้ไข
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- End Right Column -->
                 </div>
             </form>
         </div>

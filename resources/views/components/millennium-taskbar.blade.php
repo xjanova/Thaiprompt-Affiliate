@@ -186,8 +186,8 @@
         @endif
 
         <!-- Taskbar Background -->
-        <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900/50 to-blue-900/50 backdrop-blur border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 shadow-2xl rounded-2xl mx-2 my-1"
-             style="opacity: {{ $taskbarOpacity / 100 }}; backdrop-filter: blur({{ $taskbarBlurAmount }}px); box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900 to-blue-900 border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 shadow-2xl rounded-2xl mx-2 my-1"
+             style="opacity: {{ $taskbarOpacity / 100 }}; backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px); box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
 
         <!-- Taskbar Content -->
         <div class="relative h-full max-w-full mx-auto px-3 flex items-center justify-between gap-3">
