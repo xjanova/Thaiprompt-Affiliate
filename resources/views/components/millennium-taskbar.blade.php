@@ -228,7 +228,7 @@
                     ">
                         @foreach($taskbarIcons as $taskbarIcon)
                             <a href="{{ $taskbarIcon['url'] }}"
-                               class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ $taskbarIcon['border'] ? 'border-2 border-white/20' : '' }}"
+                               class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ ($taskbarIcon['border'] ?? false) ? 'border-2 border-white/20' : '' }}"
                                style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
                                title="{{ $taskbarIcon['label'] }}">
                                 <span style="font-size: {{ ($taskbarIconSize * 0.5) }}px;">{{ $taskbarIcon['icon'] }}</span>
@@ -280,7 +280,7 @@
                     <!-- No responsive collapse - show all icons normally -->
                     @foreach($taskbarIcons as $taskbarIcon)
                         <a href="{{ $taskbarIcon['url'] }}"
-                           class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ $taskbarIcon['border'] ? 'border-2 border-white/20' : '' }}"
+                           class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ ($taskbarIcon['border'] ?? false) ? 'border-2 border-white/20' : '' }}"
                            style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
                            title="{{ $taskbarIcon['label'] }}">
                             <span style="font-size: {{ ($taskbarIconSize * 0.5) }}px;">{{ $taskbarIcon['icon'] }}</span>
