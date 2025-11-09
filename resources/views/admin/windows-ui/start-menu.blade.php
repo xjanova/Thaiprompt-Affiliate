@@ -235,7 +235,7 @@
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <span>📐</span> ขนาด & ตำแหน่ง
                 </h3>
-                <form method="POST" action="{{ route('admin.windows-ui.update') }}">
+                <form method="POST" action="{{ route('admin.windows-ui.menu-settings.update') }}">
                     @csrf
                     @method('PUT')
 
