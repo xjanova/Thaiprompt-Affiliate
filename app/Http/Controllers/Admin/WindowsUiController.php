@@ -111,11 +111,19 @@ class WindowsUiController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function startMenu()
+    public function startMenu(Request $request)
     {
-        $items = WindowsUiSetting::getStartMenuItems();
+        $role = $request->get('role', 'admin'); // admin, seller, user
 
-        return view('admin.windows-ui.start-menu', compact('items'));
+        // Validate role
+        if (!in_array($role, ['admin', 'seller', 'user'])) {
+            $role = 'admin';
+        }
+
+        $settingKey = 'windows_start_menu_items_' . $role;
+        $items = WindowsUiSetting::get($settingKey, []);
+
+        return view('admin.windows-ui.start-menu', compact('items', 'role'));
     }
 
     /**
@@ -126,6 +134,13 @@ class WindowsUiController extends Controller
      */
     public function updateStartMenu(Request $request)
     {
+        $role = $request->input('role', 'admin');
+
+        // Validate role
+        if (!in_array($role, ['admin', 'seller', 'user'])) {
+            $role = 'admin';
+        }
+
         $validated = $request->validate([
             'items' => ['required', 'array'],
             'items.*.icon' => ['required', 'string', 'max:10'],
@@ -134,10 +149,11 @@ class WindowsUiController extends Controller
             'items.*.order' => ['required', 'integer', 'min:0'],
         ]);
 
-        WindowsUiSetting::set('windows_start_menu_items', $validated['items']);
+        $settingKey = 'windows_start_menu_items_' . $role;
+        WindowsUiSetting::set($settingKey, $validated['items']);
 
-        return redirect()->route('admin.windows-ui.start-menu')
-            ->with('success', 'อัพเดตเมนู Start สำเร็จ');
+        return redirect()->route('admin.windows-ui.start-menu', ['role' => $role])
+            ->with('success', 'อัพเดตเมนู Start (' . ucfirst($role) . ') สำเร็จ');
     }
 
     /**
