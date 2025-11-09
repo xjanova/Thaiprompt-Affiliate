@@ -233,7 +233,17 @@
                     ['label' => 'ตั้งค่าภาษา', 'url' => route('admin.settings.languages')],
                 ]
             ],
-            ['icon' => '⚙️', 'label' => 'ตั้งค่าระบบ', 'url' => route('admin.settings.index')],
+            [
+                'icon' => '⚙️',
+                'label' => 'ตั้งค่าระบบ',
+                'submenu' => [
+                    ['label' => 'ตั้งค่าทั่วไป', 'url' => route('admin.settings.index')],
+                    ['label' => 'ตั้งค่ากระเป๋าเงิน', 'url' => route('admin.wallet-settings.index')],
+                    ['label' => 'ตั้งค่า Mobile App', 'url' => route('admin.app-management.settings.index')],
+                    ['label' => 'ตั้งค่า OCR', 'url' => route('admin.settings.ocr')],
+                    ['label' => 'ตั้งค่า 2FA', 'url' => route('admin.two-factor.settings')],
+                ]
+            ],
         ];
     } elseif ($type === 'seller') {
         $menuItems = [
