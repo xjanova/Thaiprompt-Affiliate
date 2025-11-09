@@ -94,6 +94,10 @@ class WindowsUiController extends Controller
             'millennium_back_to_top_threshold' => ['nullable', 'integer', 'min:0', 'max:100'],
             'millennium_back_to_top_animation' => ['nullable', 'string', 'in:fade,slide,bounce,scale,zoom'],
             'millennium_back_to_top_position' => ['nullable', 'string', 'in:bottom-right,bottom-left,bottom-center'],
+
+            // Start Button Display Settings
+            'millennium_start_button_show_icon' => ['nullable', 'boolean'],
+            'millennium_start_button_show_text' => ['nullable', 'boolean'],
         ]);
 
         // Handle checkboxes
@@ -111,6 +115,8 @@ class WindowsUiController extends Controller
         $validated['windows_spaceship_theme'] = $request->has('windows_spaceship_theme');
         $validated['windows_spaceship_stars'] = $request->has('windows_spaceship_stars');
         $validated['millennium_back_to_top_enabled'] = $request->has('millennium_back_to_top_enabled');
+        $validated['millennium_start_button_show_icon'] = $request->has('millennium_start_button_show_icon');
+        $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
 
         // Save each setting
         foreach ($validated as $key => $value) {
@@ -304,6 +310,8 @@ class WindowsUiController extends Controller
             'windows_spaceship_theme',
             'windows_spaceship_stars',
             'millennium_back_to_top_enabled',
+            'millennium_start_button_show_icon',
+            'millennium_start_button_show_text',
         ])) {
             return 'boolean';
         }
