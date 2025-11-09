@@ -23,7 +23,7 @@
     $millenniumRgbColors = WindowsUiSetting::get('millennium_rgb_colors', ['#FF0080', '#00F0FF', '#7F00FF', '#FFD700']);
 
     // Start Button Settings
-    $startButtonPosition = WindowsUiSetting::get('millennium_start_button_position', 'center');
+    $startButtonPosition = WindowsUiSetting::get('windows_start_button_position', 'center');
     $startButtonWidth = WindowsUiSetting::get('millennium_start_button_width', 120);
     $startButtonHeight = WindowsUiSetting::get('millennium_start_button_height', 48);
     $startButtonShape = WindowsUiSetting::get('millennium_start_button_shape', 'rounded');
@@ -32,6 +32,10 @@
     $startButtonShowText = WindowsUiSetting::get('millennium_start_button_show_text', true);
     $startButtonIconSize = WindowsUiSetting::get('millennium_start_button_icon_size', 32);
     $startButtonFontSize = WindowsUiSetting::get('millennium_start_button_font_size', 20);
+
+    // Responsive Taskbar Settings
+    $taskbarCollapseEnabled = WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true);
+    $taskbarCollapseBreakpoint = WindowsUiSetting::get('millennium_taskbar_collapse_breakpoint', 768);
 
     // Back Button Settings
     $backButtonEnabled = WindowsUiSetting::get('millennium_back_button_enabled', true);

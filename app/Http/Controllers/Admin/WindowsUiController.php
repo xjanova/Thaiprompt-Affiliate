@@ -39,6 +39,7 @@ class WindowsUiController extends Controller
             // Start Button Settings
             'windows_start_button_text' => ['nullable', 'string', 'max:50'],
             'windows_start_button_use_logo' => ['nullable', 'boolean'],
+            'windows_start_button_position' => ['nullable', 'string', 'in:left,center,right'],
 
             // Millennium Taskbar Settings
             'millennium_back_button_enabled' => ['nullable', 'boolean'],
@@ -54,6 +55,11 @@ class WindowsUiController extends Controller
             'millennium_menu_width_unit' => ['nullable', 'string', 'in:px,%'],
             'millennium_menu_max_height' => ['nullable', 'string', 'max:20'],
             'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
+            'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
+
+            // Responsive Taskbar Settings
+            'millennium_taskbar_collapse_enabled' => ['nullable', 'boolean'],
+            'millennium_taskbar_collapse_breakpoint' => ['nullable', 'integer', 'min:320', 'max:1920'],
 
             // RGB Settings
             'windows_rgb_enabled' => ['nullable', 'boolean'],
@@ -83,6 +89,8 @@ class WindowsUiController extends Controller
         $validated['millennium_back_button_enabled'] = $request->has('millennium_back_button_enabled');
         $validated['millennium_center_section_enabled'] = $request->has('millennium_center_section_enabled');
         $validated['millennium_rgb_enabled'] = $request->has('millennium_rgb_enabled');
+        $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
+        $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
         $validated['windows_rgb_enabled'] = $request->has('windows_rgb_enabled');
         $validated['windows_rgb_glow'] = $request->has('windows_rgb_glow');
         $validated['windows_spaceship_theme'] = $request->has('windows_spaceship_theme');
@@ -255,6 +263,8 @@ class WindowsUiController extends Controller
             'millennium_back_button_enabled',
             'millennium_center_section_enabled',
             'millennium_rgb_enabled',
+            'millennium_menu_rgb_enabled',
+            'millennium_taskbar_collapse_enabled',
             'windows_rgb_enabled',
             'windows_rgb_glow',
             'windows_spaceship_theme',
@@ -268,6 +278,7 @@ class WindowsUiController extends Controller
             'windows_taskbar_height',
             'windows_taskbar_transparency',
             'millennium_rgb_speed',
+            'millennium_taskbar_collapse_breakpoint',
             'windows_rgb_speed',
             'content_width_custom',
         ])) {
