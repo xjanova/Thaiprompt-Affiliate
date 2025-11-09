@@ -85,6 +85,7 @@ class DatabaseSeeder extends Seeder
             TarotSystemSeeder::class,           // ระบบดูดวงไพ่ทาโรต์
             HotelSeeder::class,                 // ระบบจองโรงแรม
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
+            TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
         ]);
 
         $this->command->info('');
