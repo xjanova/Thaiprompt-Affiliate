@@ -155,19 +155,47 @@ class DashboardController extends Controller
     /**
      * Display seller analytics
      */
-    public function analytics()
+    public function analytics(Request $request)
     {
         $user = Auth::user();
+        $store = VendorStore::where('user_id', $user->id)->first();
 
-        // Analytics data (placeholder)
-        $analyticsData = [
-            'page_views' => 0,
-            'unique_visitors' => 0,
-            'conversion_rate' => 0,
-            'average_order_value' => 0,
-        ];
+        if (!$store) {
+            return redirect()->route('seller.dashboard')
+                ->with('error', 'Store not found. Please set up your store first.');
+        }
 
-        return view('seller.analytics', compact('analyticsData', 'user'));
+        // Get date range from request or default to last 30 days
+        $endDate = $request->input('end_date', now()->toDateString());
+        $startDate = $request->input('start_date', now()->subDays(29)->toDateString());
+
+        $analyticsService = app(\App\Services\VendorAnalyticsService::class);
+
+        // Get summary data
+        $summary = $analyticsService->getAnalyticsSummary($store, $startDate, $endDate);
+
+        // Get chart data
+        $chartData = $analyticsService->getDailyChartData($store, $startDate, $endDate);
+
+        // Get real-time stats (today)
+        $realTimeStats = $analyticsService->getRealTimeStats($store);
+
+        // Get recent analytics by day
+        $dailyAnalytics = \App\Models\VendorAnalytics::where('store_id', $store->id)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get();
+
+        return view('seller.analytics', compact(
+            'user',
+            'store',
+            'summary',
+            'chartData',
+            'realTimeStats',
+            'dailyAnalytics',
+            'startDate',
+            'endDate'
+        ));
     }
 
     /**

@@ -127,38 +127,8 @@ class VendorAnalytics extends Model
      */
     public static function recordDailyAnalytics(VendorStore $store, $date = null): self
     {
-        $date = $date ?? now()->toDateString();
-
-        $analytics = self::firstOrNew([
-            'store_id' => $store->id,
-            'date' => $date,
-        ]);
-
-        // Calculate metrics here
-        // This is a placeholder - implement actual calculations
-        $analytics->page_views = 0; // Implement tracking
-        $analytics->unique_visitors = 0; // Implement tracking
-        $analytics->orders_count = $store->orders()
-            ->whereDate('created_at', $date)
-            ->count();
-
-        $analytics->total_sales = $store->orders()
-            ->whereDate('created_at', $date)
-            ->sum('total_amount');
-
-        $analytics->gross_revenue = $analytics->total_sales;
-        $analytics->commission_paid = $store->orders()
-            ->whereDate('created_at', $date)
-            ->sum('store_commission');
-
-        $analytics->net_revenue = $analytics->gross_revenue - $analytics->commission_paid;
-
-        if ($analytics->orders_count > 0) {
-            $analytics->avg_order_value = $analytics->total_sales / $analytics->orders_count;
-        }
-
-        $analytics->save();
-
-        return $analytics;
+        // Use the VendorAnalyticsService to record analytics
+        $service = app(\App\Services\VendorAnalyticsService::class);
+        return $service->recordDailyAnalytics($store, $date);
     }
 }
