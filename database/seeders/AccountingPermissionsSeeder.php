@@ -9,10 +9,74 @@ class AccountingPermissionsSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing accounting permissions only, preserves existing ones.
      */
     public function run(): void
     {
-        $permissions = [
+        $existingPermissionsCount = Permission::where('category', 'accounting')->count();
+
+        if ($existingPermissionsCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all permissions
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all accounting permissions...');
+
+        $permissions = $this->getAllPermissions();
+
+        foreach ($permissions as $permission) {
+            Permission::create($permission);
+        }
+
+        $this->command->info('✅ Accounting permissions seeded successfully: ' . count($permissions) . ' permissions');
+    }
+
+    /**
+     * Update mode - add only missing permissions
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing accounting permissions detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing permissions only)...');
+
+        $permissions = $this->getAllPermissions();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($permissions as $permission) {
+            if (!Permission::where('name', $permission['name'])->exists()) {
+                Permission::create($permission);
+                $this->command->info("   ➕ Added: {$permission['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new accounting permissions.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing permissions (preserved).");
+        }
+    }
+
+    /**
+     * Get all accounting permissions
+     */
+    private function getAllPermissions(): array
+    {
+        return [
             // Dashboard
             [
                 'name' => 'accounting.view_dashboard',
@@ -275,14 +339,5 @@ class AccountingPermissionsSeeder extends Seeder
                 'category' => 'accounting',
             ],
         ];
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(
-                ['name' => $permission['name']],
-                $permission
-            );
-        }
-
-        $this->command->info('Accounting permissions created successfully!');
     }
 }
