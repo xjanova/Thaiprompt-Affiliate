@@ -13,9 +13,22 @@ class WindowsUiSeeder extends Seeder
      * This seeder populates Windows UI settings with current menu structure
      * from millennium-start-menu.blade.php to ensure Windows UI management
      * reflects the actual menu configuration with working submenus.
+     *
+     * NOTE: This seeder will NOT overwrite existing settings to preserve user customizations.
      */
     public function run(): void
     {
+        // Check if settings already exist
+        $existingSettings = WindowsUiSetting::where('key', 'windows_taskbar_position')->first();
+
+        if ($existingSettings) {
+            $this->command->warn('⚠️  Windows UI settings already exist!');
+            $this->command->info('   Skipping seeding to preserve your customizations.');
+            $this->command->info('   To re-seed, delete existing settings first or use --force flag.');
+            return;
+        }
+
+        $this->command->info('🌱 Seeding Windows UI settings...');
         // Start Menu Items - Admin Menu Structure
         // Based on millennium-start-menu.blade.php lines 84-324
         $startMenuItems = [
@@ -600,6 +613,13 @@ class WindowsUiSeeder extends Seeder
         // Responsive Taskbar Settings
         WindowsUiSetting::set('millennium_taskbar_collapse_enabled', true, 'boolean');
         WindowsUiSetting::set('millennium_taskbar_collapse_breakpoint', 768, 'integer');
+
+        // Clock Settings
+        WindowsUiSetting::set('millennium_clock_style', 'digital', 'string');
+        WindowsUiSetting::set('millennium_clock_format', '24h', 'string');
+        WindowsUiSetting::set('millennium_clock_show_seconds', false, 'boolean');
+        WindowsUiSetting::set('millennium_clock_show_date', false, 'boolean');
+        WindowsUiSetting::set('millennium_clock_date_format', 'short', 'string');
 
         WindowsUiSetting::set('windows_rgb_enabled', true, 'boolean');
         WindowsUiSetting::set('windows_rgb_speed', 3, 'integer');

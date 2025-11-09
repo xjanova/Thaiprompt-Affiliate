@@ -109,9 +109,54 @@
 
                                         <!-- Form Fields -->
                                         <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div>
-                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ไอคอน (Emoji)</label>
-                                                <input type="text" x-model="item.icon" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-600 dark:text-white rounded-lg" placeholder="🏠" maxlength="10">
+                                            <div x-data="{ showIconPicker: false, popularEmojis: ['📊', '👥', '🛒', '📦', '💰', '📈', '⚙️', '🏠', '🔔', '📧', '💼', '🎁', '⭐', '🏪', '🚀', '🎨', '🎓', '🔧', '📱', '💳', '🌐', '🔮', '🤖', '📝', '🔒', '🏨', '✨', '💡', '🎯', '🌈'] }">
+                                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ไอคอน</label>
+                                                <div class="relative">
+                                                    <div class="flex gap-2">
+                                                        <div class="flex items-center justify-center w-12 h-12 bg-white dark:bg-slate-800 border-2 border-gray-300 dark:border-slate-600 rounded-lg text-2xl">
+                                                            <span x-text="item.icon || '📄'"></span>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            x-model="item.icon"
+                                                            @focus="showIconPicker = true"
+                                                            class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-600 dark:text-white rounded-lg"
+                                                            placeholder="🏠 หรือพิมพ์ emoji">
+                                                        <button
+                                                            type="button"
+                                                            @click="showIconPicker = !showIconPicker"
+                                                            class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                                                            😀
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- Quick Emoji Picker -->
+                                                    <div
+                                                        x-show="showIconPicker"
+                                                        @click.outside="showIconPicker = false"
+                                                        x-transition
+                                                        class="absolute z-50 mt-2 p-3 bg-white dark:bg-slate-800 rounded-lg shadow-xl border-2 border-indigo-200 dark:border-indigo-700 w-full max-w-md">
+                                                        <div class="flex items-center justify-between mb-2">
+                                                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">เลือก Emoji ยอดนิยม</span>
+                                                            <button
+                                                                type="button"
+                                                                @click="showIconPicker = false"
+                                                                class="text-gray-400 hover:text-gray-600">✕</button>
+                                                        </div>
+                                                        <div class="grid grid-cols-10 gap-1">
+                                                            <template x-for="emoji in popularEmojis" :key="emoji">
+                                                                <button
+                                                                    type="button"
+                                                                    @click="item.icon = emoji; showIconPicker = false"
+                                                                    class="p-2 text-xl hover:bg-indigo-50 dark:hover:bg-slate-700 rounded transition-colors"
+                                                                    x-text="emoji"></button>
+                                                            </template>
+                                                        </div>
+                                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                                            💡 หรือคัดลอก emoji จาก <a href="https://emojipedia.org" target="_blank" class="text-indigo-600 hover:underline">Emojipedia</a>
+                                                        </p>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div>
                                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อเมนู</label>
@@ -163,7 +208,15 @@
                             </template>
                         </div>
 
-                        <input type="hidden" name="items" x-model="menuItemsJson">
+                        <!-- Hidden inputs for menu items -->
+                        <template x-for="(item, index) in menuItems" :key="index">
+                            <div>
+                                <input type="hidden" :name="`items[${index}][icon]`" x-model="item.icon">
+                                <input type="hidden" :name="`items[${index}][label]`" x-model="item.label">
+                                <input type="hidden" :name="`items[${index}][url]`" x-model="item.url">
+                                <input type="hidden" :name="`items[${index}][order]`" x-model="item.order">
+                            </div>
+                        </template>
 
                         <div class="mt-6 flex justify-end">
                             <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg">

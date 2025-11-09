@@ -112,9 +112,13 @@
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูง (px)</label>
                                 <input type="number" name="windows_taskbar_height" min="32" max="80" value="{{ $settings['windows_taskbar_height'] ?? 56 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
-                            <div>
+                            <div x-data="{ transparency: {{ $settings['windows_taskbar_transparency'] ?? 95 }} }">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โปร่งแสง (%)</label>
-                                <input type="number" name="windows_taskbar_transparency" min="0" max="100" value="{{ $settings['windows_taskbar_transparency'] ?? 95 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                <div class="flex items-center gap-4">
+                                    <input type="range" name="windows_taskbar_transparency" x-model="transparency" min="0" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600">
+                                    <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 min-w-[4rem] text-center" x-text="transparency + '%'"></span>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">0 = โปร่งใสสุด, 100 = ทึบสุด</p>
                             </div>
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
@@ -304,6 +308,50 @@
                                 <li><strong>ค่ามาตรฐาน:</strong> ความกว้างสูงสุด ~1280px (max-w-7xl)</li>
                                 <li><strong>กำหนดเอง:</strong> กำหนดความกว้างได้ตามต้องการ (800-3000px)</li>
                             </ul>
+                        </div>
+                    </div>
+
+                    <!-- Clock Settings -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">🕐</span> Clock Settings
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบนาฬิกา</label>
+                                <select name="millennium_clock_style" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="digital" {{ ($settings['millennium_clock_style'] ?? 'digital') === 'digital' ? 'selected' : '' }}>Digital (ดิจิทัล)</option>
+                                    <option value="minimal" {{ ($settings['millennium_clock_style'] ?? 'digital') === 'minimal' ? 'selected' : '' }}>Minimal (แบบย่อ)</option>
+                                    <option value="full" {{ ($settings['millennium_clock_style'] ?? 'digital') === 'full' ? 'selected' : '' }}>Full (แบบเต็ม)</option>
+                                    <option value="hidden" {{ ($settings['millennium_clock_style'] ?? 'digital') === 'hidden' ? 'selected' : '' }}>Hidden (ซ่อน)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบเวลา</label>
+                                <select name="millennium_clock_format" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="24h" {{ ($settings['millennium_clock_format'] ?? '24h') === '24h' ? 'selected' : '' }}>24 ชั่วโมง (13:45)</option>
+                                    <option value="12h" {{ ($settings['millennium_clock_format'] ?? '24h') === '12h' ? 'selected' : '' }}>12 ชั่วโมง (01:45 PM)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="millennium_clock_show_seconds" value="1" {{ ($settings['millennium_clock_show_seconds'] ?? false) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงวินาที</span>
+                                </label>
+                            </div>
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="millennium_clock_show_date" value="1" {{ ($settings['millennium_clock_show_date'] ?? false) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงวันที่</span>
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบวันที่</label>
+                                <select name="millennium_clock_date_format" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="short" {{ ($settings['millennium_clock_date_format'] ?? 'short') === 'short' ? 'selected' : '' }}>แบบสั้น (09/01/68)</option>
+                                    <option value="long" {{ ($settings['millennium_clock_date_format'] ?? 'short') === 'long' ? 'selected' : '' }}>แบบยาว (9 มกราคม 2568)</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
