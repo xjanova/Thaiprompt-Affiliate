@@ -11,7 +11,8 @@
     $taskbarPosition = WindowsUiSetting::get('windows_taskbar_position', 'top');
 
     // Millennium Taskbar Customization
-    $taskbarOpacity = WindowsUiSetting::get('millennium_taskbar_opacity', 95);
+    $taskbarOpacity = WindowsUiSetting::get('windows_taskbar_transparency', 95);
+    $taskbarBlur = WindowsUiSetting::get('windows_taskbar_blur', true);
     $taskbarBlurAmount = WindowsUiSetting::get('millennium_taskbar_blur_amount', 20);
 
     // RGB Settings
