@@ -132,7 +132,7 @@
     <!-- AI Settings Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($aiSettings as $setting)
-            <div class="group bg-white rounded-2xl shadow-xl border-2 border-gray-100 overflow-hidden hover:shadow-2xl hover:border-purple-300 transition-all duration-500 transform hover:-translate-y-2">
+            <div class="group bg-white dark:bg-slate-800 rounded-2xl shadow-xl border-2 border-gray-100 dark:border-slate-700 overflow-hidden hover:shadow-2xl hover:border-purple-300 dark:hover:border-purple-700 transition-all duration-500 transform hover:-translate-y-2">
                 <!-- Premium Header with Provider Badge -->
                 <div class="relative bg-gradient-to-br
                     @if($setting->provider === 'openai') from-emerald-500 via-green-600 to-teal-700
@@ -183,56 +183,56 @@
                 <div class="p-6 space-y-5">
                     <!-- Model Info with Premium Design -->
                     <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 group-hover:border-purple-200 transition-colors">
+                        <div class="flex items-center justify-between p-3 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-slate-600 group-hover:border-purple-200 dark:group-hover:border-purple-700 transition-colors">
                             <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                                    <i class="fas fa-microchip text-purple-600 text-sm"></i>
+                                <div class="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-microchip text-purple-600 dark:text-purple-400 text-sm"></i>
                                 </div>
-                                <span class="text-xs font-medium text-gray-600">Model</span>
+                                <span class="text-xs font-medium text-gray-600 dark:text-gray-400">Model</span>
                             </div>
-                            <span class="font-bold text-sm text-gray-900 px-3 py-1 bg-white rounded-lg shadow-sm">{{ $setting->model }}</span>
+                            <span class="font-bold text-sm text-gray-900 dark:text-gray-100 px-3 py-1 bg-white dark:bg-slate-700 rounded-lg shadow-sm">{{ $setting->model }}</span>
                         </div>
 
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                            <div class="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl border border-blue-100 dark:border-blue-800/50">
                                 <div class="flex items-center gap-2 mb-1">
-                                    <i class="fas fa-thermometer-half text-blue-600 text-xs"></i>
-                                    <span class="text-[10px] font-medium text-blue-700 uppercase tracking-wide">Temp</span>
+                                    <i class="fas fa-thermometer-half text-blue-600 dark:text-blue-400 text-xs"></i>
+                                    <span class="text-[10px] font-medium text-blue-700 dark:text-blue-400 uppercase tracking-wide">Temp</span>
                                 </div>
-                                <p class="text-xl font-bold text-blue-900">{{ $setting->temperature }}</p>
+                                <p class="text-xl font-bold text-blue-900 dark:text-blue-300">{{ $setting->temperature }}</p>
                             </div>
 
-                            <div class="p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+                            <div class="p-3 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/30 dark:to-emerald-900/30 rounded-xl border border-green-100 dark:border-green-800/50">
                                 <div class="flex items-center gap-2 mb-1">
-                                    <i class="fas fa-coins text-green-600 text-xs"></i>
-                                    <span class="text-[10px] font-medium text-green-700 uppercase tracking-wide">Tokens</span>
+                                    <i class="fas fa-coins text-green-600 dark:text-green-400 text-xs"></i>
+                                    <span class="text-[10px] font-medium text-green-700 dark:text-green-400 uppercase tracking-wide">Tokens</span>
                                 </div>
-                                <p class="text-xl font-bold text-green-900">{{ number_format($setting->max_tokens) }}</p>
+                                <p class="text-xl font-bold text-green-900 dark:text-green-300">{{ number_format($setting->max_tokens) }}</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Knowledge Base & Memory Status -->
                     <div class="flex gap-3">
-                        <div class="flex-1 p-3 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl border border-purple-100">
+                        <div class="flex-1 p-3 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-xl border border-purple-100 dark:border-purple-800/50">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
-                                    <i class="fas fa-book text-purple-600"></i>
-                                    <span class="text-xs font-medium text-purple-700">Knowledge</span>
+                                    <i class="fas fa-book text-purple-600 dark:text-purple-400"></i>
+                                    <span class="text-xs font-medium text-purple-700 dark:text-purple-400">Knowledge</span>
                                 </div>
-                                <span class="px-2.5 py-1 bg-purple-600 text-white rounded-lg text-xs font-bold shadow-md">
+                                <span class="px-2.5 py-1 bg-purple-600 dark:bg-purple-700 text-white rounded-lg text-xs font-bold shadow-md">
                                     {{ $setting->knowledgeBases->count() }}
                                 </span>
                             </div>
                         </div>
 
-                        <div class="flex-1 p-3 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border border-orange-100">
+                        <div class="flex-1 p-3 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/30 dark:to-amber-900/30 rounded-xl border border-orange-100 dark:border-orange-800/50">
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center gap-2">
-                                    <i class="fas fa-history text-orange-600"></i>
-                                    <span class="text-xs font-medium text-orange-700">Memory</span>
+                                    <i class="fas fa-history text-orange-600 dark:text-orange-400"></i>
+                                    <span class="text-xs font-medium text-orange-700 dark:text-orange-400">Memory</span>
                                 </div>
-                                <span class="px-2.5 py-1 bg-orange-600 text-white rounded-lg text-xs font-bold shadow-md">
+                                <span class="px-2.5 py-1 bg-orange-600 dark:bg-orange-700 text-white rounded-lg text-xs font-bold shadow-md">
                                     {{ $setting->conversation_memory_limit ?? 10 }}
                                 </span>
                             </div>
@@ -240,10 +240,10 @@
                     </div>
 
                     <!-- API Key Status -->
-                    <div class="p-3 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-200">
+                    <div class="p-3 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-slate-700 dark:to-slate-600 rounded-xl border border-gray-200 dark:border-slate-600">
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-key text-gray-500 text-sm"></i>
-                            <span class="font-mono text-xs text-gray-700">{{ $setting->getMaskedApiKey() }}</span>
+                            <i class="fas fa-key text-gray-500 dark:text-gray-400 text-sm"></i>
+                            <span class="font-mono text-xs text-gray-700 dark:text-gray-300">{{ $setting->getMaskedApiKey() }}</span>
                         </div>
                     </div>
 
@@ -271,12 +271,12 @@
             </div>
         @empty
             <div class="col-span-3">
-                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-12 text-center">
-                    <div class="w-24 h-24 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-6">
-                        <i class="fas fa-robot text-purple-500 text-4xl"></i>
+                <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-12 text-center">
+                    <div class="w-24 h-24 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-robot text-purple-500 dark:text-purple-400 text-4xl"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2">No AI Settings Yet</h3>
-                    <p class="text-gray-600 mb-6">Get started by creating your first AI configuration</p>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">No AI Settings Yet</h3>
+                    <p class="text-gray-600 dark:text-gray-400 mb-6">Get started by creating your first AI configuration</p>
                     <a href="{{ route('admin.line-bot.ai.create') }}"
                        class="inline-block px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition shadow-lg">
                         <i class="fas fa-plus mr-2"></i>Create First AI Setting
@@ -289,7 +289,7 @@
 
 <!-- Test AI Modal -->
 <div id="testModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all" x-data="{ testing: false, result: '', error: '' }">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all border border-gray-100 dark:border-slate-700" x-data="{ testing: false, result: '', error: '' }">
         <div class="bg-gradient-to-r from-purple-500 to-indigo-600 px-6 py-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-xl font-bold text-white flex items-center">
@@ -305,13 +305,13 @@
             <input type="hidden" id="test-ai-id" name="ai_id">
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-comment text-purple-500 mr-1"></i> Test Message
                 </label>
                 <textarea id="test-message" name="message" rows="3" required
-                    class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                    class="w-full px-4 py-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                     placeholder="Hello! Please introduce yourself.">Hello! Please introduce yourself.</textarea>
-                <p class="text-xs text-gray-500 mt-1">The AI will respond to this message</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">The AI will respond to this message</p>
             </div>
 
             <!-- Result Area -->
@@ -342,7 +342,7 @@
 
             <div class="flex gap-3 pt-4">
                 <button type="button" onclick="closeTestModal()"
-                        class="flex-1 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition font-semibold">
+                        class="flex-1 px-4 py-3 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition font-semibold">
                     Close
                 </button>
                 <button type="submit" id="test-submit-btn"

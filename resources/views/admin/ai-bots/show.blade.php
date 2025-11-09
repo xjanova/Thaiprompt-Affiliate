@@ -10,12 +10,19 @@
         overflow: hidden;
         margin-bottom: 24px;
     }
+    .dark .detail-card {
+        background: #1e293b;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
     .detail-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
         padding: 32px;
         border-radius: 16px;
         margin-bottom: 24px;
+    }
+    .dark .detail-header {
+        background: linear-gradient(135deg, #5568d3 0%, #6941a0 100%);
     }
     .stat-box {
         background: white;
@@ -24,9 +31,16 @@
         box-shadow: 0 2px 12px rgba(0,0,0,0.05);
         transition: transform 0.3s ease;
     }
+    .dark .stat-box {
+        background: #1e293b;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    }
     .stat-box:hover {
         transform: translateY(-4px);
         box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .dark .stat-box:hover {
+        box-shadow: 0 8px 20px rgba(0,0,0,0.4);
     }
     .stat-label {
         font-size: 12px;
@@ -36,10 +50,16 @@
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
+    .dark .stat-label {
+        color: #9ca3af;
+    }
     .stat-value {
         font-size: 32px;
         font-weight: 700;
         color: #1f2937;
+    }
+    .dark .stat-value {
+        color: #f3f4f6;
     }
     .stat-icon {
         font-size: 24px;
@@ -57,6 +77,10 @@
         align-items: center;
         gap: 8px;
     }
+    .dark .section-title {
+        color: #f3f4f6;
+        border-bottom-color: #334155;
+    }
     .section-title i {
         color: #667eea;
     }
@@ -67,6 +91,9 @@
         justify-content: space-between;
         align-items: center;
     }
+    .dark .info-row {
+        border-bottom-color: #334155;
+    }
     .info-row:last-child {
         border-bottom: none;
     }
@@ -75,10 +102,16 @@
         font-weight: 600;
         color: #6b7280;
     }
+    .dark .info-label {
+        color: #9ca3af;
+    }
     .info-value {
         font-size: 14px;
         color: #1f2937;
         text-align: right;
+    }
+    .dark .info-value {
+        color: #e5e7eb;
     }
     .badge {
         display: inline-block;
@@ -104,6 +137,9 @@
         border-radius: 12px;
         padding: 24px;
     }
+    .dark .test-panel {
+        background: #0f172a;
+    }
     .chat-message {
         padding: 16px;
         border-radius: 12px;
@@ -115,10 +151,18 @@
         color: white;
         margin-left: auto;
     }
+    .dark .chat-message.user {
+        background: linear-gradient(135deg, #5568d3 0%, #6941a0 100%);
+    }
     .chat-message.bot {
         background: white;
         border: 2px solid #e5e7eb;
         margin-right: auto;
+    }
+    .dark .chat-message.bot {
+        background: #1e293b;
+        border-color: #475569;
+        color: #e5e7eb;
     }
     .btn {
         padding: 12px 24px;
@@ -375,7 +419,7 @@
 
                         <div class="flex gap-2">
                             <textarea id="test-message" x-model="testMessage"
-                                      class="flex-1 p-3 border-2 border-gray-300 rounded-lg resize-none focus:outline-none focus:border-purple-500"
+                                      class="flex-1 p-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100 rounded-lg resize-none focus:outline-none focus:border-purple-500"
                                       rows="3" placeholder="พิมพ์ข้อความที่ต้องการทดสอบ..."
                                       @keydown.ctrl.enter="testBot()"></textarea>
                             <button @click="testBot()" :disabled="testing || !testMessage"
