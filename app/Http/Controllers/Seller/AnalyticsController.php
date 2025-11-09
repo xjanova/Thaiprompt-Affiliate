@@ -8,6 +8,7 @@ use App\Models\VendorAnalytics;
 use App\Models\VendorStoreVisit;
 use App\Models\VendorAnalyticsSetting;
 use App\Services\VendorAnalyticsService;
+use App\Services\AnalyticsAIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Artisan;
@@ -16,10 +17,14 @@ use Carbon\Carbon;
 class AnalyticsController extends Controller
 {
     protected VendorAnalyticsService $analyticsService;
+    protected AnalyticsAIService $aiService;
 
-    public function __construct(VendorAnalyticsService $analyticsService)
-    {
+    public function __construct(
+        VendorAnalyticsService $analyticsService,
+        AnalyticsAIService $aiService
+    ) {
         $this->analyticsService = $analyticsService;
+        $this->aiService = $aiService;
     }
 
     /**
@@ -230,5 +235,141 @@ class AnalyticsController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * AI Insights Dashboard
+     */
+    public function aiInsights()
+    {
+        $user = Auth::user();
+        $store = VendorStore::where('user_id', $user->id)->first();
+
+        if (!$store) {
+            return redirect()->route('seller.dashboard')
+                ->with('error', 'Store not found.');
+        }
+
+        // Get AI-powered insights
+        $insights = $this->aiService->generateInsights($store);
+
+        // Get revenue prediction
+        $revenueForecast = $this->aiService->predictRevenue($store, 30);
+
+        // Get anomaly detection
+        $anomalies = $this->aiService->detectAnomalies($store, 30);
+
+        // Get funnel analysis
+        $funnel = $this->aiService->funnelAnalysis($store, 30);
+
+        return view('seller.analytics.ai-insights', compact(
+            'user',
+            'store',
+            'insights',
+            'revenueForecast',
+            'anomalies',
+            'funnel'
+        ));
+    }
+
+    /**
+     * Customer Segmentation (RFM Analysis)
+     */
+    public function customerSegmentation()
+    {
+        $user = Auth::user();
+        $store = VendorStore::where('user_id', $user->id)->first();
+
+        if (!$store) {
+            return redirect()->route('seller.dashboard')
+                ->with('error', 'Store not found.');
+        }
+
+        $rfmSegments = $this->aiService->rfmAnalysis($store);
+
+        return view('seller.analytics.segmentation', compact(
+            'user',
+            'store',
+            'rfmSegments'
+        ));
+    }
+
+    /**
+     * Cohort Analysis
+     */
+    public function cohortAnalysis()
+    {
+        $user = Auth::user();
+        $store = VendorStore::where('user_id', $user->id)->first();
+
+        if (!$store) {
+            return redirect()->route('seller.dashboard')
+                ->with('error', 'Store not found.');
+        }
+
+        $cohorts = $this->aiService->cohortAnalysis($store);
+
+        return view('seller.analytics.cohort', compact(
+            'user',
+            'store',
+            'cohorts'
+        ));
+    }
+
+    /**
+     * Product Performance
+     */
+    public function productPerformance()
+    {
+        $user = Auth::user();
+        $store = VendorStore::where('user_id', $user->id)->first();
+
+        if (!$store) {
+            return redirect()->route('seller.dashboard')
+                ->with('error', 'Store not found.');
+        }
+
+        $products = $this->aiService->productPerformance($store, 30);
+
+        return view('seller.analytics.products', compact(
+            'user',
+            'store',
+            'products'
+        ));
+    }
+
+    /**
+     * API: Get revenue prediction
+     */
+    public function apiRevenuePrediction(Request $request)
+    {
+        $user = Auth::user();
+        $store = VendorStore::where('user_id', $user->id)->first();
+
+        if (!$store) {
+            return response()->json(['error' => 'Store not found'], 404);
+        }
+
+        $days = $request->input('days', 30);
+        $prediction = $this->aiService->predictRevenue($store, $days);
+
+        return response()->json($prediction);
+    }
+
+    /**
+     * API: Get AI insights
+     */
+    public function apiInsights()
+    {
+        $user = Auth::user();
+        $store = VendorStore::where('user_id', $user->id)->first();
+
+        if (!$store) {
+            return response()->json(['error' => 'Store not found'], 404);
+        }
+
+        $insights = $this->aiService->generateInsights($store);
+
+        return response()->json(['insights' => $insights]);
     }
 }
