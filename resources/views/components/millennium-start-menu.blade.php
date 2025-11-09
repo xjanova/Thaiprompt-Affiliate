@@ -18,13 +18,13 @@
                 'submenu' => [
                     ['label' => 'รายชื่อผู้ใช้', 'url' => route('admin.users.index')],
                     ['label' => 'บทบาท (Roles)', 'url' => route('admin.roles.index')],
-                    ['label' => 'ยืนยันตัวตน KYC', 'url' => route('admin.kyc.index')],
                 ]
             ],
+            ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('admin.kyc.index')],
             ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('admin.tickets.index')],
             [
                 'icon' => '🤖',
-                'label' => 'AI & ระบบอัตโนมัติ',
+                'label' => 'AI Bots & ผู้ช่วย',
                 'submenu' => [
                     ['label' => 'จัดการ AI Bots', 'url' => route('admin.ai-bots.index')],
                     ['label' => 'AI Providers', 'url' => route('admin.ai-providers.index')],
@@ -213,7 +213,6 @@
                 'label' => 'ระบบ POS',
                 'submenu' => [
                     ['label' => 'ขายสินค้า', 'url' => route('seller.pos.terminal')],
-                    ['label' => 'แดชบอร์ด', 'url' => route('seller.pos.dashboard')],
                     ['label' => 'รายการขาย', 'url' => route('seller.pos.sales')],
                 ]
             ],
@@ -389,35 +388,35 @@
                     @foreach($menuItems as $index => $item)
                         <div>
                             @if(isset($item['submenu']))
-                                <!-- Menu Item with Submenu -->
+                                <!-- Menu Item with Submenu - MAIN HEADER -->
                                 <button
                                     @click="openSubmenus[{{ $index }}] = !openSubmenus[{{ $index }}]"
-                                    class="w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gradient-to-r from-white/5 to-white/10 hover:from-purple-500/30 hover:to-pink-500/30 border border-white/10 hover:border-purple-400/50 transition-all duration-300 transform hover:translate-x-1 hover:scale-[1.02] shadow-3d-card hover:shadow-3d-card-hover"
-                                    :class="openSubmenus[{{ $index }}] ? 'from-purple-500/20 to-pink-500/20 border-purple-400/40' : ''">
+                                    class="w-full group flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600/40 to-pink-600/40 hover:from-purple-600/60 hover:to-pink-600/60 border-2 border-purple-400/40 hover:border-purple-300/60 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                    :class="openSubmenus[{{ $index }}] ? 'from-purple-600/60 to-pink-600/60 border-purple-300/60 shadow-xl' : ''">
 
-                                    <!-- Icon with 3D Effect -->
-                                    <span class="text-2xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg filter-3d">
+                                    <!-- Icon with 3D Effect - LARGER -->
+                                    <span class="text-3xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
                                         {{ $item['icon'] }}
                                     </span>
 
-                                    <!-- Label -->
-                                    <span class="text-sm font-semibold text-white/90 group-hover:text-white transition-colors duration-300 flex-1 text-left drop-shadow">
+                                    <!-- Label - LARGER & BOLDER -->
+                                    <span class="text-base font-bold text-white transition-colors duration-300 flex-1 text-left">
                                         {{ $item['label'] }}
                                     </span>
 
                                     <!-- Chevron Arrow -->
                                     <svg
-                                        class="w-4 h-4 text-white/40 group-hover:text-purple-300 transition-all duration-300"
-                                        :class="openSubmenus[{{ $index }}] ? 'rotate-90 text-purple-300' : ''"
+                                        class="w-5 h-5 text-white/60 transition-all duration-300"
+                                        :class="openSubmenus[{{ $index }}] ? 'rotate-90 text-white' : ''"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
-                                        stroke-width="2">
+                                        stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
                                     </svg>
                                 </button>
 
-                                <!-- Submenu Items with Animation -->
+                                <!-- Submenu Items with Animation - CLEARLY DIFFERENT -->
                                 <div
                                     x-show="openSubmenus[{{ $index }}]"
                                     x-transition:enter="transition ease-out duration-200"
@@ -426,46 +425,46 @@
                                     x-transition:leave="transition ease-in duration-150"
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 -translate-y-2"
-                                    class="mt-1.5 ml-6 space-y-1.5"
+                                    class="mt-2 ml-8 space-y-1.5 pb-2"
                                     style="display: none;">
                                     @foreach($item['submenu'] as $subitem)
                                         <a
                                             href="{{ $subitem['url'] }}"
-                                            class="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-white/5 to-white/10 hover:from-purple-500/30 hover:to-blue-500/30 border border-white/10 hover:border-purple-400/50 transition-all duration-300 transform hover:translate-x-1 shadow-3d-card hover:shadow-3d-card-hover group">
+                                            class="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-blue-500/20 border border-white/10 hover:border-blue-400/40 transition-all duration-200 transform hover:translate-x-1 group">
 
-                                            <!-- Bullet Point -->
-                                            <span class="w-1.5 h-1.5 rounded-full bg-pink-400 group-hover:bg-purple-300 group-hover:scale-125 transition-all duration-300"></span>
+                                            <!-- Bullet Point - SMALLER -->
+                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400/60 group-hover:bg-blue-300 group-hover:scale-125 transition-all duration-200"></span>
 
-                                            <!-- Submenu Label -->
-                                            <span class="text-sm font-semibold text-white/90 group-hover:text-white transition-colors duration-300 flex-1">
+                                            <!-- Submenu Label - SMALLER & LIGHTER -->
+                                            <span class="text-sm font-medium text-white/80 group-hover:text-white transition-colors duration-200 flex-1">
                                                 {{ $subitem['label'] }}
                                             </span>
 
                                             <!-- Small Arrow -->
-                                            <svg class="w-4 h-4 text-white/30 group-hover:text-purple-300 group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                            <svg class="w-3.5 h-3.5 text-white/30 group-hover:text-blue-300 group-hover:translate-x-0.5 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
                                             </svg>
                                         </a>
                                     @endforeach
                                 </div>
                             @else
-                                <!-- Regular Menu Item without Submenu -->
+                                <!-- Regular Menu Item without Submenu - MAIN STYLE -->
                                 <a
                                     href="{{ $item['url'] }}"
-                                    class="group flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gradient-to-r from-white/5 to-white/10 hover:from-purple-500/30 hover:to-pink-500/30 border border-white/10 hover:border-purple-400/50 transition-all duration-300 transform hover:translate-x-1 hover:scale-[1.02] shadow-3d-card hover:shadow-3d-card-hover">
+                                    class="group flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600/40 to-pink-600/40 hover:from-purple-600/60 hover:to-pink-600/60 border-2 border-purple-400/40 hover:border-purple-300/60 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
 
-                                    <!-- Icon with 3D Effect -->
-                                    <span class="text-2xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg filter-3d">
+                                    <!-- Icon with 3D Effect - LARGER -->
+                                    <span class="text-3xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
                                         {{ $item['icon'] }}
                                     </span>
 
-                                    <!-- Label -->
-                                    <span class="text-sm font-semibold text-white/90 group-hover:text-white transition-colors duration-300 flex-1 drop-shadow">
+                                    <!-- Label - LARGER & BOLDER -->
+                                    <span class="text-base font-bold text-white transition-colors duration-300 flex-1">
                                         {{ $item['label'] }}
                                     </span>
 
                                     <!-- Arrow -->
-                                    <svg class="w-4 h-4 text-white/30 group-hover:text-purple-300 group-hover:translate-x-1 transition-all duration-300 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <svg class="w-5 h-5 text-white/60 group-hover:text-white group-hover:translate-x-1 transition-all duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path>
                                     </svg>
                                 </a>
@@ -566,22 +565,6 @@
             inset 1px 1px 2px rgba(255, 255, 255, 0.1);
     }
 
-    .shadow-3d-card {
-        box-shadow:
-            3px 3px 10px rgba(0, 0, 0, 0.3),
-            -1px -1px 5px rgba(255, 255, 255, 0.03),
-            inset 1px 1px 2px rgba(255, 255, 255, 0.08);
-    }
-
-    .shadow-3d-card:hover,
-    .shadow-3d-card-hover {
-        box-shadow:
-            5px 5px 20px rgba(168, 85, 247, 0.4),
-            0 0 15px rgba(236, 72, 153, 0.3),
-            -2px -2px 8px rgba(255, 255, 255, 0.05),
-            inset 1px 1px 3px rgba(255, 255, 255, 0.15);
-    }
-
     .shadow-3d-button {
         box-shadow:
             0 4px 12px rgba(0, 0, 0, 0.4),
@@ -602,10 +585,6 @@
     .drop-shadow-3d {
         filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5))
                 drop-shadow(0 0 8px rgba(168, 85, 247, 0.3));
-    }
-
-    .filter-3d {
-        filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.4));
     }
 
     /* Grid Pattern */
@@ -647,10 +626,5 @@
             3px 3px 8px rgba(0, 0, 0, 0.5),
             0 0 10px rgba(168, 85, 247, 0.5),
             inset 1px 1px 2px rgba(255, 255, 255, 0.4);
-    }
-
-    /* Perspective for 3D transforms */
-    .millennium-start-menu {
-        perspective: 1000px;
     }
 </style>
