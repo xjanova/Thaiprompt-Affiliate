@@ -290,6 +290,7 @@ function pageBuilder() {
 
         savePage() {
             const formData = new FormData(document.getElementById('page-settings-form'));
+            formData.append('_method', 'PUT');
 
             fetch('{{ route("admin.page-builder.update", $page) }}', {
                 method: 'POST',
@@ -300,8 +301,16 @@ function pageBuilder() {
             })
             .then(response => response.json())
             .then(data => {
-                alert('Page saved successfully!');
-                this.refreshPreview();
+                if (data.success) {
+                    alert('✅ Page saved successfully!');
+                    this.refreshPreview();
+                } else {
+                    alert('❌ Error: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('❌ Error saving page. Check console for details.');
             });
         },
 
@@ -325,8 +334,15 @@ function toggleVisibility(sectionId) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            alert('✅ Visibility toggled successfully!');
             location.reload();
+        } else {
+            alert('❌ Error: ' + (data.message || 'Unknown error'));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error toggling visibility. Check console for details.');
     });
 }
 
@@ -336,7 +352,7 @@ function editSection(sectionId) {
 }
 
 function duplicateSection(sectionId) {
-    if (confirm('Duplicate this section?')) {
+    if (confirm('📋 Duplicate this section?')) {
         fetch(`/admin/page-builder/sections/${sectionId}/duplicate`, {
             method: 'POST',
             headers: {
@@ -346,25 +362,43 @@ function duplicateSection(sectionId) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                alert('✅ Section duplicated successfully!');
                 location.reload();
+            } else {
+                alert('❌ Error: ' + (data.message || 'Unknown error'));
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error duplicating section. Check console for details.');
         });
     }
 }
 
 function deleteSection(sectionId) {
-    if (confirm('Are you sure you want to delete this section?')) {
+    if (confirm('⚠️ Are you sure you want to delete this section?')) {
+        const formData = new FormData();
+        formData.append('_method', 'DELETE');
+
         fetch(`/admin/page-builder/sections/${sectionId}`, {
-            method: 'DELETE',
+            method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            }
+            },
+            body: formData
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                alert('✅ Section deleted successfully!');
                 location.reload();
+            } else {
+                alert('❌ Error: ' + (data.message || 'Unknown error'));
             }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Error deleting section. Check console for details.');
         });
     }
 }
@@ -380,14 +414,23 @@ function addSectionFromType(type) {
             section_type: type,
             name: type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()),
             settings: {},
-            content: {}
+            content: {},
+            is_active: true,
+            is_visible: true
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            alert('✅ Section added successfully!');
             location.reload();
+        } else {
+            alert('❌ Error: ' + (data.message || 'Unknown error'));
         }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('❌ Error adding section. Check console for details.');
     });
 }
 </script>
