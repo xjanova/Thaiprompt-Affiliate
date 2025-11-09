@@ -245,14 +245,14 @@ function editCategory(category) {
     // Create image upload component HTML
     imageUploadDiv.innerHTML = `
         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">รูปภาพหมวดหมู่${category.image_url ? ' (อัปโหลดใหม่เพื่อเปลี่ยน)' : ''}</label>
-        <x-image-upload
-            name="category_image"
-            :multiple="false"
-            :maxFiles="1"
-            :maxSize="5"
-            :existingImages="json_encode(${JSON.stringify(existingImages)})"
-        />
-        <p class="text-xs text-gray-500 mt-2">ขนาดแนะนำ: 800x800px</p>
+        <input type="file" name="category_image" accept="image/*"
+            class="block w-full text-sm text-gray-900 dark:text-gray-300
+            border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer
+            bg-gray-50 dark:bg-slate-700 focus:outline-none
+            file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0
+            file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700
+            hover:file:bg-orange-100 dark:file:bg-orange-900 dark:file:text-orange-200">
+        <p class="text-xs text-gray-500 mt-2">ขนาดแนะนำ: 800x800px (ไฟล์สูงสุด 5MB)</p>
     `;
 
     // Show modal
