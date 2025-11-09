@@ -48,6 +48,35 @@
         </div>
     @endif
 
+    <!-- Role Tabs -->
+    <div class="mb-6">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-2">
+            <div class="flex gap-2">
+                <a href="{{ route('admin.windows-ui.start-menu', ['role' => 'admin']) }}"
+                   class="flex-1 px-4 py-3 text-center rounded-xl transition-all {{ $role === 'admin' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600' }}">
+                    <div class="flex items-center justify-center gap-2">
+                        <span class="text-2xl">👑</span>
+                        <span class="font-semibold">Admin Menu</span>
+                    </div>
+                </a>
+                <a href="{{ route('admin.windows-ui.start-menu', ['role' => 'seller']) }}"
+                   class="flex-1 px-4 py-3 text-center rounded-xl transition-all {{ $role === 'seller' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600' }}">
+                    <div class="flex items-center justify-center gap-2">
+                        <span class="text-2xl">🏪</span>
+                        <span class="font-semibold">Seller Menu</span>
+                    </div>
+                </a>
+                <a href="{{ route('admin.windows-ui.start-menu', ['role' => 'user']) }}"
+                   class="flex-1 px-4 py-3 text-center rounded-xl transition-all {{ $role === 'user' ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg' : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600' }}">
+                    <div class="flex items-center justify-center gap-2">
+                        <span class="text-2xl">👤</span>
+                        <span class="font-semibold">User Menu</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Left: Menu Items Manager -->
         <div class="lg:col-span-2">
@@ -65,6 +94,7 @@
                     <form method="POST" action="{{ route('admin.windows-ui.start-menu.update') }}" @submit="prepareSubmit">
                         @csrf
                         @method('PUT')
+                        <input type="hidden" name="role" value="{{ $role }}">
 
                         <div id="menu-items-list" class="space-y-3">
                             <template x-for="(item, index) in menuItems" :key="index">
