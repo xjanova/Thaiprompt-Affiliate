@@ -4,6 +4,16 @@
 
 ## [v2.110.0] - 2025-11-09
 
+### ✨ Features
+- Merge pull request #651 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (771717e)
+- feat: add Windows UI Configuration System with seeder and enhanced menu controls (ff07d7f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- chore: merge claude/Main and resolve CHANGELOG.md conflict (e0e376c)
+
+## [v2.110.0] - 2025-11-09
+
 ### ✨ Features - Windows UI Configuration System
 - **WindowsUiSeeder**: Created comprehensive seeder for Windows UI settings
   - Start Menu Items with current grouped menu structure (14 main categories with submenus)
