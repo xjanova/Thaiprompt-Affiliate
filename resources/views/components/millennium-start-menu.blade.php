@@ -16,7 +16,6 @@
             ]],
             ['section' => 'ผู้ใช้งาน', 'items' => [
                 ['icon' => '👥', 'label' => 'รายชื่อผู้ใช้', 'url' => route('admin.users.index')],
-                ['icon' => '🔑', 'label' => 'สิทธิ์ผู้ใช้', 'url' => route('admin.users.permissions')],
                 ['icon' => '🎭', 'label' => 'บทบาท (Roles)', 'url' => route('admin.roles.index')],
                 ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('admin.kyc.index')],
             ]],
