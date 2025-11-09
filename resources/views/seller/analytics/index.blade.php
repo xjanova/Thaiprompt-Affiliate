@@ -6,23 +6,61 @@
 <div class="space-y-6">
     <!-- Page Header -->
     <div class="bg-white rounded-2xl shadow-xl p-6">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between items-center mb-4">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">📊 วิเคราะห์ยอดขาย</h1>
                 <p class="text-gray-600 mt-2">ข้อมูลการวิเคราะห์ร้านค้าของคุณ</p>
             </div>
 
-            <!-- Date Range Selector -->
-            <form method="GET" action="{{ route('seller.analytics') }}" class="flex gap-2">
-                <input type="date" name="start_date" value="{{ $startDate }}"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <input type="date" name="end_date" value="{{ $endDate }}"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    ค้นหา
-                </button>
-            </form>
+            <div class="flex gap-2">
+                <a href="{{ route('seller.analytics.settings') }}" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                    ⚙️ ตั้งค่า
+                </a>
+                <a href="{{ route('seller.analytics.export', request()->query()) }}" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    📥 Export CSV
+                </a>
+            </div>
         </div>
+
+        <!-- Filters -->
+        <form method="GET" action="{{ route('seller.analytics.index') }}" class="grid grid-cols-1 md:grid-cols-6 gap-3" id="analyticsFilterForm">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">วันที่เริ่มต้น</label>
+                <input type="date" name="start_date" value="{{ $startDate }}"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">วันที่สิ้นสุด</label>
+                <input type="date" name="end_date" value="{{ $endDate }}"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">ออเดอร์ขั้นต่ำ</label>
+                <input type="number" name="min_orders" value="{{ $minOrders }}" min="0"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="0">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Conversion ขั้นต่ำ (%)</label>
+                <input type="number" name="min_conversion" value="{{ $minConversion }}" min="0" max="100" step="0.1"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="0">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Bounce สูงสุด (%)</label>
+                <input type="number" name="max_bounce" value="{{ $maxBounce }}" min="0" max="100" step="0.1"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="100">
+            </div>
+            <div class="flex items-end gap-2">
+                <button type="submit" class="flex-1 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    🔍 กรอง
+                </button>
+                <a href="{{ route('seller.analytics.index') }}" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                    ล้าง
+                </a>
+            </div>
+        </form>
     </div>
 
     <!-- Real-time Stats -->
