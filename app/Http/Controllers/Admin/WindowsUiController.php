@@ -384,8 +384,13 @@ class WindowsUiController extends Controller
         $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
         $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
 
-        // Save each setting
+        // Save each setting (only save fields that have actual values)
         foreach ($validated as $key => $value) {
+            // Skip null values to avoid overwriting existing settings
+            if ($value === null) {
+                continue;
+            }
+
             $type = $this->getSettingType($key, $value);
             WindowsUiSetting::set($key, $value, $type);
         }
@@ -415,8 +420,13 @@ class WindowsUiController extends Controller
         $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
         $validated['millennium_menu_item_hover_rgb'] = $request->has('millennium_menu_item_hover_rgb');
 
-        // Save each setting
+        // Save each setting (only save fields that have actual values)
         foreach ($validated as $key => $value) {
+            // Skip null values to avoid overwriting existing settings
+            if ($value === null) {
+                continue;
+            }
+
             $type = $this->getSettingType($key, $value);
             WindowsUiSetting::set($key, $value, $type);
         }
@@ -448,8 +458,13 @@ class WindowsUiController extends Controller
         // Handle checkbox - always set it (true if checked, false if not)
         $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
 
-        // Save each setting
+        // Save each setting (only save fields that have actual values)
         foreach ($validated as $key => $value) {
+            // Skip null values to avoid overwriting existing settings
+            if ($value === null) {
+                continue;
+            }
+
             $type = $this->getSettingType($key, $value);
             WindowsUiSetting::set($key, $value, $type);
         }
