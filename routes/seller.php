@@ -25,6 +25,7 @@ Route::get('/settings', [DashboardController::class, 'settings'])->name('setting
 // ========================================
 // ANALYTICS
 // ========================================
+Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
 Route::prefix('analytics')->name('analytics.')->group(function () {
     // Basic Analytics
     Route::get('/', [AnalyticsController::class, 'index'])->name('index');
