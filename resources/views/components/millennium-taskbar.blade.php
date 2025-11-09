@@ -249,7 +249,7 @@
                         window.addEventListener('resize', checkBreakpoint);
                     ">
                         @foreach($taskbarIcons as $taskbarIcon)
-                            <a href="{{ $taskbarIcon['url'] }}"
+                            <a href="{{ url($taskbarIcon['url']) }}"
                                class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ ($taskbarIcon['border'] ?? false) ? 'border-2 border-white/20' : '' }}"
                                style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
                                title="{{ $taskbarIcon['label'] }}">
@@ -290,7 +290,7 @@
                                  class="absolute {{ $taskbarPosition === 'top' ? 'top-full mt-2' : 'bottom-full mb-2' }} left-0 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 p-3 z-[60] grid grid-cols-3 gap-2 min-w-[250px]"
                                  style="display: none;">
                                 @foreach($taskbarIcons as $taskbarIcon)
-                                    <a href="{{ $taskbarIcon['url'] }}"
+                                    <a href="{{ url($taskbarIcon['url']) }}"
                                        class="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-white/10 transition-all duration-200"
                                        @click="iconsOpen = false">
                                         <span class="text-3xl mb-1">{{ $taskbarIcon['icon'] }}</span>
@@ -322,7 +322,7 @@
                                     </div>
                                     <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                                         @foreach($taskbarIcons as $taskbarIcon)
-                                            <a href="{{ $taskbarIcon['url'] }}"
+                                            <a href="{{ url($taskbarIcon['url']) }}"
                                                class="flex flex-col items-center justify-center p-4 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 transition-all duration-200 transform hover:scale-105"
                                                @click="iconsOpen = false">
                                                 <span class="text-4xl mb-2">{{ $taskbarIcon['icon'] }}</span>
@@ -356,7 +356,7 @@
                                     </div>
                                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                                         @foreach($taskbarIcons as $taskbarIcon)
-                                            <a href="{{ $taskbarIcon['url'] }}"
+                                            <a href="{{ url($taskbarIcon['url']) }}"
                                                class="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-xl hover:shadow-2xl"
                                                @click="iconsOpen = false">
                                                 <span class="text-5xl mb-3">{{ $taskbarIcon['icon'] }}</span>
@@ -371,7 +371,7 @@
                 @else
                     <!-- No responsive collapse - show all icons normally -->
                     @foreach($taskbarIcons as $taskbarIcon)
-                        <a href="{{ $taskbarIcon['url'] }}"
+                        <a href="{{ url($taskbarIcon['url']) }}"
                            class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ ($taskbarIcon['border'] ?? false) ? 'border-2 border-white/20' : '' }}"
                            style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
                            title="{{ $taskbarIcon['label'] }}">
