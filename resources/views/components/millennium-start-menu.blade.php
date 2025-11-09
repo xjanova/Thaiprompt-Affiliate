@@ -1,10 +1,86 @@
 @props(['type' => 'admin'])
 
 @php
+    use App\Models\WindowsUiSetting;
+
     // Get user and role info
     $user = auth()->user();
     $logo = \App\Models\Setting::get('logo');
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+
+    // Millennium Menu Customization Settings
+    $menuWidth = WindowsUiSetting::get('millennium_menu_width', 400);
+    $menuMaxHeight = WindowsUiSetting::get('millennium_menu_max_height', 600);
+    $menuPadding = WindowsUiSetting::get('millennium_menu_padding', 16);
+    $menuItemSpacing = WindowsUiSetting::get('millennium_menu_item_spacing', 8);
+    $menuPosition = WindowsUiSetting::get('millennium_menu_position', 'center');
+    $menuOffsetX = WindowsUiSetting::get('millennium_menu_offset_x', 0);
+    $menuOffsetY = WindowsUiSetting::get('millennium_menu_offset_y', 10);
+
+    // Main Header Style
+    $mainIconSize = WindowsUiSetting::get('millennium_menu_main_icon_size', 28);
+    $mainFontSize = WindowsUiSetting::get('millennium_menu_main_font_size', 16);
+    $mainFontWeight = WindowsUiSetting::get('millennium_menu_main_font_weight', 'bold');
+    $mainPaddingX = WindowsUiSetting::get('millennium_menu_main_padding_x', 16);
+    $mainPaddingY = WindowsUiSetting::get('millennium_menu_main_padding_y', 12);
+    $mainBorderRadius = WindowsUiSetting::get('millennium_menu_main_border_radius', 12);
+    $mainBorderWidth = WindowsUiSetting::get('millennium_menu_main_border_width', 2);
+    $mainGradientFrom = WindowsUiSetting::get('millennium_menu_main_gradient_from', '#9333ea');
+    $mainGradientTo = WindowsUiSetting::get('millennium_menu_main_gradient_to', '#db2777');
+
+    // Submenu Style
+    $subFontSize = WindowsUiSetting::get('millennium_menu_sub_font_size', 14);
+    $subFontWeight = WindowsUiSetting::get('millennium_menu_sub_font_weight', 'medium');
+    $subPaddingX = WindowsUiSetting::get('millennium_menu_sub_padding_x', 12);
+    $subPaddingY = WindowsUiSetting::get('millennium_menu_sub_padding_y', 8);
+    $subBorderRadius = WindowsUiSetting::get('millennium_menu_sub_border_radius', 8);
+    $subIndent = WindowsUiSetting::get('millennium_menu_sub_indent', 32);
+    $subBulletSize = WindowsUiSetting::get('millennium_menu_sub_bullet_size', 6);
+
+    // Background & Effects
+    $menuBgOpacity = WindowsUiSetting::get('millennium_menu_bg_opacity', 95);
+    $menuBlurAmount = WindowsUiSetting::get('millennium_menu_blur_amount', 24);
+    $menuShadowSize = WindowsUiSetting::get('millennium_menu_shadow_size', 'xl');
+    $menuBorderWidth = WindowsUiSetting::get('millennium_menu_border_width', 1);
+    $menuBorderColor = WindowsUiSetting::get('millennium_menu_border_color', 'rgba(255, 255, 255, 0.2)');
+
+    // Animation
+    $menuAnimationDuration = WindowsUiSetting::get('millennium_menu_animation_duration', 200);
+    $menuAnimationStyle = WindowsUiSetting::get('millennium_menu_animation_style', 'slide');
+
+    // RGB Border
+    $menuRgbEnabled = WindowsUiSetting::get('millennium_menu_rgb_enabled', true);
+    $menuRgbBorderWidth = WindowsUiSetting::get('millennium_menu_rgb_border_width', 2);
+    $menuRgbGlowSize = WindowsUiSetting::get('millennium_menu_rgb_glow_size', 10);
+
+    // Search & Footer
+    $menuSearchEnabled = WindowsUiSetting::get('millennium_menu_search_enabled', true);
+    $menuSearchPlaceholder = WindowsUiSetting::get('millennium_menu_search_placeholder', 'ค้นหาเมนู...');
+    $menuFooterEnabled = WindowsUiSetting::get('millennium_menu_footer_enabled', true);
+    $menuFooterText = WindowsUiSetting::get('millennium_menu_footer_text', 'Licensed © 2025 TP-Affiliate');
+
+    // Calculate font weight CSS value
+    $mainFontWeightValue = match($mainFontWeight) {
+        'normal' => '400',
+        'medium' => '500',
+        'semibold' => '600',
+        'bold' => '700',
+        default => '700',
+    };
+    $subFontWeightValue = match($subFontWeight) {
+        'normal' => '400',
+        'medium' => '500',
+        'semibold' => '600',
+        'bold' => '700',
+        default => '500',
+    };
+
+    // Calculate menu position class
+    $menuPositionClass = match($menuPosition) {
+        'left' => 'left-0',
+        'right' => 'right-0',
+        default => 'left-1/2 -translate-x-1/2',
+    };
 
     // Define menu items with working submenu support
     $menuItems = [];
@@ -335,17 +411,18 @@
     x-show="startMenuOpen"
     @click.away="startMenuOpen = false"
     x-data="{ openSubmenus: {} }"
-    x-transition:enter="transition ease-out duration-400"
-    x-transition:enter-start="opacity-0 -translate-x-full scale-95"
+    x-transition:enter="transition ease-out duration-{{ $menuAnimationDuration }}"
+    x-transition:enter-start="opacity-0 {{ $menuAnimationStyle === 'slide' ? '-translate-x-full' : '' }} {{ $menuAnimationStyle === 'scale' ? 'scale-95' : '' }}"
     x-transition:enter-end="opacity-100 translate-x-0 scale-100"
-    x-transition:leave="transition ease-in duration-300"
+    x-transition:leave="transition ease-in duration-{{ $menuAnimationDuration * 0.75 }}"
     x-transition:leave-start="opacity-100 translate-x-0 scale-100"
-    x-transition:leave-end="opacity-0 -translate-x-full scale-95"
-    class="fixed left-0 top-0 bottom-0 w-80 md:w-96 z-[70]"
-    style="display: none;">
+    x-transition:leave-end="opacity-0 {{ $menuAnimationStyle === 'slide' ? '-translate-x-full' : '' }} {{ $menuAnimationStyle === 'scale' ? 'scale-95' : '' }}"
+    class="fixed {{ $menuPositionClass }} top-0 bottom-0 z-[70]"
+    style="width: {{ $menuWidth }}px; max-height: {{ $menuMaxHeight }}px; display: none; margin-left: {{ $menuPosition === 'left' ? $menuOffsetX : 0 }}px; margin-right: {{ $menuPosition === 'right' ? $menuOffsetX : 0 }}px; margin-top: {{ $menuOffsetY }}px;">
 
     <!-- Main Panel with 3D Effect -->
-    <div class="relative h-full bg-gradient-to-br from-slate-900 via-purple-900/40 to-blue-900/40 backdrop-blur-xl border-r-4 border-purple-500/30 overflow-hidden shadow-3d">
+    <div class="relative h-full bg-gradient-to-br from-slate-900 via-purple-900/40 to-blue-900/40 overflow-hidden shadow-{{ $menuShadowSize }}"
+         style="opacity: {{ $menuBgOpacity / 100 }}; backdrop-filter: blur({{ $menuBlurAmount }}px); border-right-width: {{ $menuBorderWidth }}px; border-color: {{ $menuBorderColor }};">
 
         <!-- Animated Background -->
         <div class="absolute inset-0 opacity-5">
@@ -383,24 +460,25 @@
             </div>
 
             <!-- Menu Items Section -->
-            <div class="flex-1 p-4 overflow-y-auto millennium-scrollbar">
-                <div class="space-y-2">
+            <div class="flex-1 overflow-y-auto millennium-scrollbar" style="padding: {{ $menuPadding }}px;">
+                <div style="display: flex; flex-direction: column; gap: {{ $menuItemSpacing }}px;">
                     @foreach($menuItems as $index => $item)
                         <div>
                             @if(isset($item['submenu']))
                                 <!-- Menu Item with Submenu - MAIN HEADER -->
                                 <button
                                     @click="openSubmenus[{{ $index }}] = !openSubmenus[{{ $index }}]"
-                                    class="w-full group flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600/40 to-pink-600/40 hover:from-purple-600/60 hover:to-pink-600/60 border-2 border-purple-400/40 hover:border-purple-300/60 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-                                    :class="openSubmenus[{{ $index }}] ? 'from-purple-600/60 to-pink-600/60 border-purple-300/60 shadow-xl' : ''">
+                                    class="w-full group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                    style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;"
+                                    :style="openSubmenus[{{ $index }}] ? 'background: linear-gradient(90deg, {{ $mainGradientFrom }}99 0%, {{ $mainGradientTo }}99 100%)' : ''">
 
-                                    <!-- Icon with 3D Effect - LARGER -->
-                                    <span class="text-3xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                                    <!-- Icon with 3D Effect -->
+                                    <span class="group-hover:scale-110 transition-transform duration-300 drop-shadow-lg" style="font-size: {{ $mainIconSize }}px;">
                                         {{ $item['icon'] }}
                                     </span>
 
-                                    <!-- Label - LARGER & BOLDER -->
-                                    <span class="text-base font-bold text-white transition-colors duration-300 flex-1 text-left">
+                                    <!-- Label -->
+                                    <span class="text-white transition-colors duration-300 flex-1 text-left" style="font-size: {{ $mainFontSize }}px; font-weight: {{ $mainFontWeightValue }};">
                                         {{ $item['label'] }}
                                     </span>
 
@@ -419,24 +497,24 @@
                                 <!-- Submenu Items with Animation - CLEARLY DIFFERENT -->
                                 <div
                                     x-show="openSubmenus[{{ $index }}]"
-                                    x-transition:enter="transition ease-out duration-200"
+                                    x-transition:enter="transition ease-out duration-{{ $menuAnimationDuration }}"
                                     x-transition:enter-start="opacity-0 -translate-y-2"
                                     x-transition:enter-end="opacity-100 translate-y-0"
-                                    x-transition:leave="transition ease-in duration-150"
+                                    x-transition:leave="transition ease-in duration-{{ $menuAnimationDuration * 0.75 }}"
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 -translate-y-2"
-                                    class="mt-2 ml-8 space-y-1.5 pb-2"
-                                    style="display: none;">
+                                    style="margin-top: {{ $menuItemSpacing }}px; margin-left: {{ $subIndent }}px; display: flex; flex-direction: column; gap: {{ $menuItemSpacing / 2 }}px; padding-bottom: {{ $menuItemSpacing }}px; display: none;">
                                     @foreach($item['submenu'] as $subitem)
                                         <a
                                             href="{{ $subitem['url'] }}"
-                                            class="flex items-center gap-2.5 px-3 py-2 rounded-lg bg-white/5 hover:bg-blue-500/20 border border-white/10 hover:border-blue-400/40 transition-all duration-200 transform hover:translate-x-1 group">
+                                            class="flex items-center gap-2.5 bg-white/5 hover:bg-blue-500/20 border border-white/10 hover:border-blue-400/40 transition-all duration-200 transform hover:translate-x-1 group"
+                                            style="padding: {{ $subPaddingY }}px {{ $subPaddingX }}px; border-radius: {{ $subBorderRadius }}px;">
 
-                                            <!-- Bullet Point - SMALLER -->
-                                            <span class="w-1.5 h-1.5 rounded-full bg-blue-400/60 group-hover:bg-blue-300 group-hover:scale-125 transition-all duration-200"></span>
+                                            <!-- Bullet Point -->
+                                            <span class="rounded-full bg-blue-400/60 group-hover:bg-blue-300 group-hover:scale-125 transition-all duration-200" style="width: {{ $subBulletSize }}px; height: {{ $subBulletSize }}px;"></span>
 
-                                            <!-- Submenu Label - SMALLER & LIGHTER -->
-                                            <span class="text-sm font-medium text-white/80 group-hover:text-white transition-colors duration-200 flex-1">
+                                            <!-- Submenu Label -->
+                                            <span class="text-white/80 group-hover:text-white transition-colors duration-200 flex-1" style="font-size: {{ $subFontSize }}px; font-weight: {{ $subFontWeightValue }};">
                                                 {{ $subitem['label'] }}
                                             </span>
 
@@ -451,15 +529,16 @@
                                 <!-- Regular Menu Item without Submenu - MAIN STYLE -->
                                 <a
                                     href="{{ $item['url'] }}"
-                                    class="group flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-purple-600/40 to-pink-600/40 hover:from-purple-600/60 hover:to-pink-600/60 border-2 border-purple-400/40 hover:border-purple-300/60 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl">
+                                    class="group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
+                                    style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
 
-                                    <!-- Icon with 3D Effect - LARGER -->
-                                    <span class="text-3xl group-hover:scale-110 transition-transform duration-300 drop-shadow-lg">
+                                    <!-- Icon with 3D Effect -->
+                                    <span class="group-hover:scale-110 transition-transform duration-300 drop-shadow-lg" style="font-size: {{ $mainIconSize }}px;">
                                         {{ $item['icon'] }}
                                     </span>
 
-                                    <!-- Label - LARGER & BOLDER -->
-                                    <span class="text-base font-bold text-white transition-colors duration-300 flex-1">
+                                    <!-- Label -->
+                                    <span class="text-white transition-colors duration-300 flex-1" style="font-size: {{ $mainFontSize }}px; font-weight: {{ $mainFontWeightValue }};">
                                         {{ $item['label'] }}
                                     </span>
 
@@ -475,7 +554,7 @@
             </div>
 
             <!-- Footer Section with 3D Effect -->
-            <div class="p-3 bg-gradient-to-r from-gray-900 via-purple-900/50 to-blue-900/50 border-t-2 border-white/10 shadow-3d-footer">
+            <div class="bg-gradient-to-r from-gray-900 via-purple-900/50 to-blue-900/50 border-t-2 border-white/10 shadow-3d-footer" style="padding: {{ $menuPadding / 2 }}px;">
                 @if($user)
                     <div class="flex items-center gap-2">
                         <!-- User Avatar with 3D Effect -->
@@ -512,6 +591,13 @@
                         <a href="{{ route('register') }}" class="flex-1 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white text-sm font-bold rounded-xl text-center transition-all duration-300 transform hover:scale-105 shadow-3d-button hover:shadow-3d-button-hover">
                             สมัครสมาชิก
                         </a>
+                    </div>
+                @endif
+
+                <!-- Footer Text -->
+                @if($menuFooterEnabled && $menuFooterText)
+                    <div class="mt-2 pt-2 border-t border-white/10 text-center">
+                        <p class="text-xs text-white/50">{{ $menuFooterText }}</p>
                     </div>
                 @endif
             </div>
