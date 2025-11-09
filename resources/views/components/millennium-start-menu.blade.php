@@ -24,15 +24,14 @@
                 ['icon' => '🤖', 'label' => 'จัดการ AI Bots', 'url' => route('admin.ai-bots.index')],
                 ['icon' => '🧠', 'label' => 'AI Providers', 'url' => route('admin.ai-providers.index')],
                 ['icon' => '⚙️', 'label' => 'ติดตั้ง AI', 'url' => route('admin.ai-installation.index')],
-                ['icon' => '📚', 'label' => 'Knowledge Base', 'url' => route('admin.knowledge-bases.index')],
             ]],
             ['section' => 'โรงแรม & การท่องเที่ยว', 'items' => [
                 ['icon' => '🏨', 'label' => 'โรงแรมทั้งหมด', 'url' => route('admin.hotels.index')],
                 ['icon' => '📅', 'label' => 'การจองทั้งหมด', 'url' => route('admin.hotels.bookings.index')],
-                ['icon' => '📊', 'label' => 'รายงานและสถิติ', 'url' => route('admin.hotels.reports')],
+                ['icon' => '📊', 'label' => 'สถิติการจอง', 'url' => route('admin.hotels.bookings.analytics')],
                 ['icon' => '⭐', 'label' => 'จัดการรีวิว', 'url' => route('admin.hotels.reviews.index')],
                 ['icon' => '🏊', 'label' => 'สิ่งอำนวยความสะดวก', 'url' => route('admin.hotels.facilities.index')],
-                ['icon' => '🎁', 'label' => 'โปรโมชั่นพิเศษ', 'url' => route('admin.hotels.promotions.index')],
+                ['icon' => '🎁', 'label' => 'โปรโมชั่นพิเศษ', 'url' => route('admin.hotels.special-offers.index')],
             ]],
             ['section' => 'อีคอมเมิร์ซ & ร้านค้า', 'items' => [
                 ['icon' => '🛒', 'label' => 'สินค้าทั้งหมด', 'url' => route('admin.ecommerce.products.index')],
@@ -127,8 +126,6 @@
             ]],
             ['section' => 'ช๊อปปิ้ง', 'items' => [
                 ['icon' => '🛒', 'label' => 'ช๊อปสินค้า', 'url' => route('shop.index')],
-                ['icon' => '📦', 'label' => 'คำสั่งซื้อของฉัน', 'url' => route('user.orders.index')],
-                ['icon' => '❤️', 'label' => 'รายการโปรด', 'url' => route('user.wishlist')],
             ]],
             ['section' => 'โรงแรม', 'items' => [
                 ['icon' => '🏨', 'label' => 'จองโรงแรม', 'url' => route('hotels.index')],
@@ -145,13 +142,10 @@
                 ['icon' => '💎', 'label' => 'แผนการลงทุน', 'url' => route('user.investments.plans')],
             ]],
             ['section' => 'การเรียนรู้', 'items' => [
-                ['icon' => '🎓', 'label' => 'คอร์สของฉัน', 'url' => route('user.courses.index')],
-                ['icon' => '📜', 'label' => 'ใบประกาศ', 'url' => route('user.certificates.index')],
                 ['icon' => '📚', 'label' => 'ศูนย์เรียนรู้', 'url' => route('learning-center.index')],
             ]],
             ['section' => 'AI & เครื่องมือ', 'items' => [
-                ['icon' => '🤖', 'label' => 'บอทของฉัน', 'url' => route('user.ai-bots.index')],
-                ['icon' => '🛒', 'label' => 'ตลาดบอท', 'url' => route('marketplace.index')],
+                ['icon' => '🤖', 'label' => 'ตลาดบอท', 'url' => route('marketplace.index')],
             ]],
             ['section' => 'ทีมงาน & MLM', 'items' => [
                 ['icon' => '👥', 'label' => 'ผู้แนะนำ', 'url' => route('user.referrals')],
