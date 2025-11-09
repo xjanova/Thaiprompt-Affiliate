@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.98.6] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #633 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (329a9ff)
+- fix: remove learning-center.index from user menu (admin-only route) (c131112)
+### 🔧 Other Changes
+
+
 ## [v2.98.5] - 2025-11-09
 
 ### ✨ Features
