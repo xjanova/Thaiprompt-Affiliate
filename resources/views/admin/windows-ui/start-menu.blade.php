@@ -374,6 +374,32 @@
                             </label>
                         </div>
 
+                        <div class="pt-4 border-t border-gray-200 dark:border-slate-600">
+                            <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg cursor-pointer mb-3">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white">📱 Responsive Mode</span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">รวมไอคอนเป็นปุ่มเมื่อหน้าจอเล็ก</p>
+                                </div>
+                                <input type="checkbox" name="millennium_taskbar_collapse_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                            </label>
+
+                            <div class="mb-3">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Breakpoint (px)</label>
+                                <input type="number" name="millennium_taskbar_collapse_breakpoint" min="320" max="1920" value="{{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_breakpoint', 768) }}" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">หน้าจอที่แคบกว่านี้จะแสดงโหมด Responsive</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบเมนู</label>
+                                <select name="millennium_taskbar_collapse_style" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                    <option value="dropdown" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_style', 'slide-up') === 'dropdown' ? 'selected' : '' }}>Dropdown (เล็กๆ)</option>
+                                    <option value="slide-up" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_style', 'slide-up') === 'slide-up' ? 'selected' : '' }}>Slide Up (ยืดขึ้นเต็มความกว้าง)</option>
+                                    <option value="fullscreen" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_style', 'slide-up') === 'fullscreen' ? 'selected' : '' }}>Fullscreen (เต็มจอ)</option>
+                                </select>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เลือกรูปแบบการแสดงเมนูบนมือถือ</p>
+                            </div>
+                        </div>
+
                         <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all">
                             <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
                         </button>

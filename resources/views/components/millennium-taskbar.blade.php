@@ -36,6 +36,7 @@
     // Responsive Taskbar Settings
     $taskbarCollapseEnabled = WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true);
     $taskbarCollapseBreakpoint = WindowsUiSetting::get('millennium_taskbar_collapse_breakpoint', 768);
+    $taskbarCollapseStyle = WindowsUiSetting::get('millennium_taskbar_collapse_style', 'slide-up'); // dropdown, slide-up, fullscreen
 
     // Back Button Settings
     $backButtonEnabled = WindowsUiSetting::get('millennium_back_button_enabled', true);
@@ -276,26 +277,96 @@
                             </svg>
                         </button>
 
-                        <!-- Dropdown Menu -->
-                        <div x-show="iconsOpen"
-                             @click.away="iconsOpen = false"
-                             x-transition:enter="transition ease-out duration-200"
-                             x-transition:enter-start="opacity-0 transform scale-90"
-                             x-transition:enter-end="opacity-100 transform scale-100"
-                             x-transition:leave="transition ease-in duration-150"
-                             x-transition:leave-start="opacity-100 transform scale-100"
-                             x-transition:leave-end="opacity-0 transform scale-90"
-                             class="absolute {{ $taskbarPosition === 'top' ? 'top-full mt-2' : 'bottom-full mb-2' }} left-0 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 p-3 z-[60] grid grid-cols-3 gap-2 min-w-[250px]"
-                             style="display: none;">
-                            @foreach($taskbarIcons as $taskbarIcon)
-                                <a href="{{ $taskbarIcon['url'] }}"
-                                   class="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-white/10 transition-all duration-200"
-                                   @click="iconsOpen = false">
-                                    <span class="text-3xl mb-1">{{ $taskbarIcon['icon'] }}</span>
-                                    <span class="text-white text-xs text-center">{{ $taskbarIcon['label'] }}</span>
-                                </a>
-                            @endforeach
-                        </div>
+                        @if($taskbarCollapseStyle === 'dropdown')
+                            <!-- Dropdown Menu -->
+                            <div x-show="iconsOpen"
+                                 @click.away="iconsOpen = false"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 transform scale-90"
+                                 x-transition:enter-end="opacity-100 transform scale-100"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 transform scale-100"
+                                 x-transition:leave-end="opacity-0 transform scale-90"
+                                 class="absolute {{ $taskbarPosition === 'top' ? 'top-full mt-2' : 'bottom-full mb-2' }} left-0 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 p-3 z-[60] grid grid-cols-3 gap-2 min-w-[250px]"
+                                 style="display: none;">
+                                @foreach($taskbarIcons as $taskbarIcon)
+                                    <a href="{{ $taskbarIcon['url'] }}"
+                                       class="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-white/10 transition-all duration-200"
+                                       @click="iconsOpen = false">
+                                        <span class="text-3xl mb-1">{{ $taskbarIcon['icon'] }}</span>
+                                        <span class="text-white text-xs text-center">{{ $taskbarIcon['label'] }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+
+                        @elseif($taskbarCollapseStyle === 'slide-up')
+                            <!-- Slide Up Menu (ยืดขึ้นจากด้านล่าง/บน) -->
+                            <div x-show="iconsOpen"
+                                 @click.away="iconsOpen = false"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 {{ $taskbarPosition === 'top' ? 'transform -translate-y-full' : 'transform translate-y-full' }}"
+                                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                                 x-transition:leave="transition ease-in duration-200"
+                                 x-transition:leave-start="opacity-100 transform translate-y-0"
+                                 x-transition:leave-end="opacity-0 {{ $taskbarPosition === 'top' ? 'transform -translate-y-full' : 'transform translate-y-full' }}"
+                                 class="fixed {{ $taskbarPosition === 'top' ? 'top-[60px]' : 'bottom-[60px]' }} left-0 right-0 bg-slate-800/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 p-6 z-[60]"
+                                 style="display: none;">
+                                <div class="max-w-5xl mx-auto">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-xl font-bold text-white">📱 Quick Access</h3>
+                                        <button @click="iconsOpen = false" class="text-white/70 hover:text-white transition-colors">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                        @foreach($taskbarIcons as $taskbarIcon)
+                                            <a href="{{ $taskbarIcon['url'] }}"
+                                               class="flex flex-col items-center justify-center p-4 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 transition-all duration-200 transform hover:scale-105"
+                                               @click="iconsOpen = false">
+                                                <span class="text-4xl mb-2">{{ $taskbarIcon['icon'] }}</span>
+                                                <span class="text-white text-xs text-center font-medium">{{ $taskbarIcon['label'] }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+
+                        @else
+                            <!-- Fullscreen Overlay Menu (เต็มจอ) -->
+                            <div x-show="iconsOpen"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0"
+                                 x-transition:enter-end="opacity-100"
+                                 x-transition:leave="transition ease-in duration-200"
+                                 x-transition:leave-start="opacity-100"
+                                 x-transition:leave-end="opacity-0"
+                                 class="fixed inset-0 bg-gradient-to-br from-slate-900/98 via-purple-900/98 to-blue-900/98 backdrop-blur-xl z-[70] flex items-center justify-center p-6"
+                                 style="display: none;"
+                                 @click.self="iconsOpen = false">
+                                <div class="max-w-6xl w-full">
+                                    <div class="flex items-center justify-between mb-8">
+                                        <h2 class="text-3xl font-bold text-white">🚀 เมนูหลัก</h2>
+                                        <button @click="iconsOpen = false" class="text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg">
+                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                        @foreach($taskbarIcons as $taskbarIcon)
+                                            <a href="{{ $taskbarIcon['url'] }}"
+                                               class="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-xl hover:shadow-2xl"
+                                               @click="iconsOpen = false">
+                                                <span class="text-5xl mb-3">{{ $taskbarIcon['icon'] }}</span>
+                                                <span class="text-white text-sm text-center font-semibold">{{ $taskbarIcon['label'] }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 @else
                     <!-- No responsive collapse - show all icons normally -->

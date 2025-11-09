@@ -361,11 +361,17 @@ class WindowsUiController extends Controller
             'millennium_start_button_show_text' => ['nullable', 'boolean'],
             'millennium_start_button_icon_size' => ['nullable', 'integer', 'min:16', 'max:64'],
             'millennium_start_button_font_size' => ['nullable', 'integer', 'min:12', 'max:32'],
+
+            // Responsive Taskbar Settings
+            'millennium_taskbar_collapse_enabled' => ['nullable', 'boolean'],
+            'millennium_taskbar_collapse_breakpoint' => ['nullable', 'integer', 'min:320', 'max:1920'],
+            'millennium_taskbar_collapse_style' => ['nullable', 'string', 'in:dropdown,slide-up,fullscreen'],
         ]);
 
         // Handle checkboxes (only the ones in this form)
         $validated['millennium_start_button_show_icon'] = $request->has('millennium_start_button_show_icon');
         $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
+        $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
 
         // Save each setting
         foreach ($validated as $key => $value) {
