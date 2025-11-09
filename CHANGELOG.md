@@ -49,6 +49,12 @@ Windows UI Configuration is now **complete** with:
 ✅ Comprehensive seeder with current menu structure
 ✅ All settings persist and apply correctly
 
+## [v2.109.1] - 2025-11-09
+
+### 🐛 Bug Fixes
+- Merge pull request #650 from xjanova/claude/fix-blade-syntax-error-011CUxCCkvwCTEoeML9dyM8L (208fd35)
+- fix: resolve Blade syntax error in rgb-settings template (34ce41b)
+
 ## [v2.109.0] - 2025-11-09
 
 ### ✨ Features - Page Builder Completion
