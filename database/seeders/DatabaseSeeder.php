@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
             SeoMetaSeeder::class,               // สร้าง SEO meta data
             MenuItemSeeder::class,              // สร้างเมนูสำหรับ Header
+            PageBuilderSeeder::class,           // Page Builder Templates (Homepage, Wiki, About builder)
 
             // 4. Communication Templates
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
