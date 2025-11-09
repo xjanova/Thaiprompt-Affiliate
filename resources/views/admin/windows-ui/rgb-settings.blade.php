@@ -320,7 +320,7 @@ function rgbSettingsManager() {
             millennium_rgb_enabled: {{ \App\Models\WindowsUiSetting::get('millennium_rgb_enabled', true) ? 'true' : 'false' }},
             millennium_rgb_speed: {{ \App\Models\WindowsUiSetting::get('millennium_rgb_speed', 5) }},
         },
-        colors: @json($rgbSettings['colors'] ?? ['#FF0080', '#00F0FF', '#7F00FF', '#FF3D00']),
+        colors: {!! json_encode($rgbSettings['colors'] ?? ['#FF0080', '#00F0FF', '#7F00FF', '#FF3D00']) !!},
 
         addColor() {
             this.colors.push('#FF00FF');
