@@ -160,24 +160,39 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่งเมนู</label>
                             <select name="millennium_menu_position" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                                <option value="left">ซ้าย</option>
-                                <option value="center" selected>กลาง</option>
-                                <option value="right">ขวา</option>
+                                <option value="left" {{ \App\Models\WindowsUiSetting::get('millennium_menu_position', 'center') === 'left' ? 'selected' : '' }}>ซ้าย</option>
+                                <option value="center" {{ \App\Models\WindowsUiSetting::get('millennium_menu_position', 'center') === 'center' ? 'selected' : '' }}>กลาง</option>
+                                <option value="right" {{ \App\Models\WindowsUiSetting::get('millennium_menu_position', 'center') === 'right' ? 'selected' : '' }}>ขวา</option>
                             </select>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความกว้าง (px)</label>
-                            <input type="number" name="millennium_menu_width" min="300" max="800" value="400" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความกว้าง</label>
+                            <div class="flex gap-2">
+                                <input type="number" name="millennium_menu_width" min="1" max="3000" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_width', '400') }}" class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                <select name="millennium_menu_width_unit" class="w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                    <option value="px" {{ \App\Models\WindowsUiSetting::get('millennium_menu_width_unit', 'px') === 'px' ? 'selected' : '' }}>px</option>
+                                    <option value="%" {{ \App\Models\WindowsUiSetting::get('millennium_menu_width_unit', 'px') === '%' ? 'selected' : '' }}>%</option>
+                                </select>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">แนะนำ: 400-600px หรือ 30-50%</p>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูงสูงสุด (px)</label>
-                            <input type="number" name="millennium_menu_max_height" min="400" max="1000" value="600" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูงสูงสุด</label>
+                            <div class="flex gap-2">
+                                <input type="number" name="millennium_menu_max_height" min="1" max="3000" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height', '600') }}" class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                <select name="millennium_menu_max_height_unit" class="w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                    <option value="px" {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') === 'px' ? 'selected' : '' }}>px</option>
+                                    <option value="%" {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') === '%' ? 'selected' : '' }}>%</option>
+                                    <option value="vh" {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') === 'vh' ? 'selected' : '' }}>vh</option>
+                                </select>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">แนะนำ: 600-800px หรือ 70-90vh</p>
                         </div>
 
-                        <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                            บันทึก
+                        <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all">
+                            <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
                         </button>
                     </div>
                 </form>

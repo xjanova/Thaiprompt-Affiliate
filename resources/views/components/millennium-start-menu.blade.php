@@ -9,13 +9,19 @@
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 
     // Millennium Menu Customization Settings
-    $menuWidth = WindowsUiSetting::get('millennium_menu_width', 400);
-    $menuMaxHeight = WindowsUiSetting::get('millennium_menu_max_height', 600);
+    $menuWidth = WindowsUiSetting::get('millennium_menu_width', '400');
+    $menuWidthUnit = WindowsUiSetting::get('millennium_menu_width_unit', 'px');
+    $menuMaxHeight = WindowsUiSetting::get('millennium_menu_max_height', '600');
+    $menuMaxHeightUnit = WindowsUiSetting::get('millennium_menu_max_height_unit', 'px');
     $menuPadding = WindowsUiSetting::get('millennium_menu_padding', 16);
     $menuItemSpacing = WindowsUiSetting::get('millennium_menu_item_spacing', 8);
     $menuPosition = WindowsUiSetting::get('millennium_menu_position', 'center');
     $menuOffsetX = WindowsUiSetting::get('millennium_menu_offset_x', 0);
     $menuOffsetY = WindowsUiSetting::get('millennium_menu_offset_y', 10);
+
+    // Build width and height CSS values
+    $menuWidthCss = $menuWidth . $menuWidthUnit;
+    $menuMaxHeightCss = $menuMaxHeight . $menuMaxHeightUnit;
 
     // Main Header Style
     $mainIconSize = WindowsUiSetting::get('millennium_menu_main_icon_size', 28);
@@ -469,7 +475,7 @@
     x-transition:leave-start="opacity-100 translate-x-0 scale-100"
     x-transition:leave-end="opacity-0 {{ $menuAnimationStyle === 'slide' ? '-translate-x-full' : '' }} {{ $menuAnimationStyle === 'scale' ? 'scale-95' : '' }}"
     class="fixed {{ $menuPositionClass }} top-0 bottom-0 z-[70]"
-    style="width: {{ $menuWidth }}px; max-height: {{ $menuMaxHeight }}px; display: none; margin-left: {{ $menuPosition === 'left' ? $menuOffsetX : 0 }}px; margin-right: {{ $menuPosition === 'right' ? $menuOffsetX : 0 }}px; margin-top: {{ $menuOffsetY }}px;">
+    style="width: {{ $menuWidthCss }}; max-height: {{ $menuMaxHeightCss }}; display: none; margin-left: {{ $menuPosition === 'left' ? $menuOffsetX : 0 }}px; margin-right: {{ $menuPosition === 'right' ? $menuOffsetX : 0 }}px; margin-top: {{ $menuOffsetY }}px;">
 
     <!-- Main Panel with 3D Effect -->
     <div class="relative h-full bg-gradient-to-br from-slate-900 via-purple-900/40 to-blue-900/40 overflow-hidden shadow-{{ $menuShadowSize }}"
