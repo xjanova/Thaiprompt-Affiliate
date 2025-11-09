@@ -6,6 +6,7 @@ use App\Http\Controllers\Seller\OrderManagementController;
 use App\Http\Controllers\Seller\PackageController;
 use App\Http\Controllers\Seller\StoreController;
 use App\Http\Controllers\Seller\SellerPosController;
+use App\Http\Controllers\Seller\AnalyticsController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,11 +17,21 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
 Route::get('/marketing', [DashboardController::class, 'marketing'])->name('marketing');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
 Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
+
+// ========================================
+// ANALYTICS
+// ========================================
+Route::prefix('analytics')->name('analytics.')->group(function () {
+    Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+    Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
+    Route::get('/settings', [AnalyticsController::class, 'settings'])->name('settings');
+    Route::put('/settings', [AnalyticsController::class, 'updateSettings'])->name('settings.update');
+    Route::post('/cleanup', [AnalyticsController::class, 'cleanup'])->name('cleanup');
+});
 
 // ========================================
 // WALLET MANAGEMENT
