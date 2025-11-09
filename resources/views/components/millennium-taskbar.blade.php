@@ -212,23 +212,42 @@
              style="opacity: {{ $taskbarOpacity / 100 }}; backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px); box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
 
         <!-- Taskbar Content -->
-        @php
-            // Calculate flex order for Start Button position
-            $leftSectionOrder = 1;
-            $startButtonOrder = match($startButtonPosition) {
-                'left' => 0,      // Start Button first (before icons)
-                'right' => 3,     // Start Button last (after system tray)
-                default => 2,     // Start Button center (between icons and system tray)
-            };
-            $systemTrayOrder = match($startButtonPosition) {
-                'right' => 2,     // System tray before Start when Start is right
-                default => 3,     // System tray last normally
-            };
-        @endphp
         <div class="relative h-full max-w-full mx-auto px-3 flex items-center gap-3">
 
-            <!-- Left Section: Back Button + Quick Icons -->
-            <div class="flex items-center gap-2 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }}" style="order: {{ $leftSectionOrder }}">
+            <!-- Left Section: Back Button + Quick Icons + Start Button (if position is 'left') -->
+            <div class="flex items-center gap-2 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }}">
+
+                <!-- Start Button (Left Position) -->
+                @if($startButtonPosition === 'left')
+                    <button
+                        @click="startMenuOpen = !startMenuOpen"
+                        :class="{'millennium-start-active': startMenuOpen}"
+                        class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                        style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+
+                        @if($startButtonShowIcon)
+                            @if($logo)
+                                <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                            @else
+                                <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                    <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                        <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                    </svg>
+                                </div>
+                            @endif
+                        @endif
+
+                        @if($startButtonShowText)
+                            <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                                เริ่ม
+                            </span>
+                        @endif
+
+                        <!-- Glow Effect on Hover -->
+                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                             style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                    </button>
+                @endif
 
                 <!-- Back Button -->
                 @if($backButtonEnabled)
@@ -407,41 +426,75 @@
 
             </div>
 
-            <!-- Start Button Section -->
-            <div class="flex items-center" style="order: {{ $startButtonOrder }}">
-                <!-- Start Button -->
-                <button
-                    @click="startMenuOpen = !startMenuOpen"
-                    :class="{'millennium-start-active': startMenuOpen}"
-                    class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
-                    style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+            <!-- Center Section: Start Button (if position is 'center') -->
+            @if($startButtonPosition === 'center')
+                <div class="flex items-center justify-center">
+                    <button
+                        @click="startMenuOpen = !startMenuOpen"
+                        :class="{'millennium-start-active': startMenuOpen}"
+                        class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                        style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
 
-                    @if($startButtonShowIcon)
-                        @if($logo)
-                            <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
-                        @else
-                            <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
-                                <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
-                                    <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
-                                </svg>
-                            </div>
+                        @if($startButtonShowIcon)
+                            @if($logo)
+                                <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                            @else
+                                <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                    <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                        <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                    </svg>
+                                </div>
+                            @endif
                         @endif
-                    @endif
 
-                    @if($startButtonShowText)
-                        <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
-                            เริ่ม
-                        </span>
-                    @endif
+                        @if($startButtonShowText)
+                            <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                                เริ่ม
+                            </span>
+                        @endif
 
-                    <!-- Glow Effect on Hover -->
-                    <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                         style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
-                </button>
-            </div>
+                        <!-- Glow Effect on Hover -->
+                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                             style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                    </button>
+                </div>
+            @endif
 
-            <!-- Right Section: System Tray -->
-            <div class="flex items-center gap-3 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }} justify-end" style="order: {{ $systemTrayOrder }}">
+            <!-- Right Section: System Tray (Always on the right) -->
+            <div class="flex items-center gap-3 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }} justify-end ml-auto">
+
+                <!-- Start Button (Right Position - Before separator) -->
+                @if($startButtonPosition === 'right')
+                    <button
+                        @click="startMenuOpen = !startMenuOpen"
+                        :class="{'millennium-start-active': startMenuOpen}"
+                        class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                        style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+
+                        @if($startButtonShowIcon)
+                            @if($logo)
+                                <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                            @else
+                                <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                    <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                        <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                    </svg>
+                                </div>
+                            @endif
+                        @endif
+
+                        @if($startButtonShowText)
+                            <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                                เริ่ม
+                            </span>
+                        @endif
+
+                        <!-- Glow Effect on Hover -->
+                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                             style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                    </button>
+                @endif
+
                 <!-- System Tray Separator (Windows-style) -->
                 <div class="h-12 w-0.5 bg-gradient-to-b from-transparent via-white/40 to-transparent mx-2 shadow-lg" style="box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);"></div>
 
