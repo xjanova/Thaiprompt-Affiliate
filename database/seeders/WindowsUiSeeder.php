@@ -196,7 +196,255 @@ class WindowsUiSeeder extends Seeder
             ],
         ];
 
-        WindowsUiSetting::set('windows_start_menu_items', $startMenuItems, 'json');
+        WindowsUiSetting::set('windows_start_menu_items_admin', $startMenuItems, 'json');
+
+        // Start Menu Items - Seller Menu Structure
+        $sellerMenuItems = [
+            [
+                'icon' => '📊',
+                'label' => 'Dashboard',
+                'url' => '/seller/dashboard',
+                'has_submenu' => false,
+                'submenu' => [],
+                'order' => 0,
+            ],
+            [
+                'icon' => '📦',
+                'label' => 'สินค้า',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'สินค้าของฉัน', 'url' => '/seller/products'],
+                    ['label' => 'เพิ่มสินค้า', 'url' => '/seller/products/create'],
+                    ['label' => 'หมวดหมู่', 'url' => '/seller/categories'],
+                    ['label' => 'คลังสินค้า', 'url' => '/seller/inventory'],
+                ],
+                'order' => 1,
+            ],
+            [
+                'icon' => '🛒',
+                'label' => 'คำสั่งซื้อ',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'คำสั่งซื้อทั้งหมด', 'url' => '/seller/orders'],
+                    ['label' => 'รอดำเนินการ', 'url' => '/seller/orders?status=pending'],
+                    ['label' => 'กำลังจัดส่ง', 'url' => '/seller/orders?status=shipping'],
+                    ['label' => 'เสร็จสิ้น', 'url' => '/seller/orders?status=completed'],
+                ],
+                'order' => 2,
+            ],
+            [
+                'icon' => '💰',
+                'label' => 'กระเป๋าเงิน',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'ยอดเงิน', 'url' => '/seller/wallet'],
+                    ['label' => 'รายรับ', 'url' => '/seller/income'],
+                    ['label' => 'ถอนเงิน', 'url' => '/seller/withdrawals'],
+                    ['label' => 'ธุรกรรม', 'url' => '/seller/transactions'],
+                ],
+                'order' => 3,
+            ],
+            [
+                'icon' => '📈',
+                'label' => 'รายงาน',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'ภาพรวม', 'url' => '/seller/reports'],
+                    ['label' => 'ยอดขาย', 'url' => '/seller/reports/sales'],
+                    ['label' => 'สินค้ายอดนิยม', 'url' => '/seller/reports/products'],
+                    ['label' => 'ลูกค้า', 'url' => '/seller/reports/customers'],
+                ],
+                'order' => 4,
+            ],
+            [
+                'icon' => '🎁',
+                'label' => 'โปรโมชั่น',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'คูปอง', 'url' => '/seller/coupons'],
+                    ['label' => 'ส่วนลด', 'url' => '/seller/discounts'],
+                    ['label' => 'แคมเปญ', 'url' => '/seller/campaigns'],
+                ],
+                'order' => 5,
+            ],
+            [
+                'icon' => '⭐',
+                'label' => 'รีวิว',
+                'url' => '/seller/reviews',
+                'has_submenu' => false,
+                'submenu' => [],
+                'order' => 6,
+            ],
+            [
+                'icon' => '📧',
+                'label' => 'การสื่อสาร',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'ข้อความ', 'url' => '/seller/messages'],
+                    ['label' => 'การแจ้งเตือน', 'url' => '/seller/notifications'],
+                    ['label' => 'แชท', 'url' => '/seller/chat'],
+                ],
+                'order' => 7,
+            ],
+            [
+                'icon' => '🏪',
+                'label' => 'ร้านค้า',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'ข้อมูลร้าน', 'url' => '/seller/shop/profile'],
+                    ['label' => 'การตั้งค่า', 'url' => '/seller/shop/settings'],
+                    ['label' => 'การจัดส่ง', 'url' => '/seller/shop/shipping'],
+                    ['label' => 'แพคเกจ', 'url' => '/seller/packages'],
+                ],
+                'order' => 8,
+            ],
+            [
+                'icon' => '⚙️',
+                'label' => 'ตั้งค่า',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'โปรไฟล์', 'url' => '/seller/profile'],
+                    ['label' => 'ธนาคาร', 'url' => '/seller/settings/bank'],
+                    ['label' => 'การชำระเงิน', 'url' => '/seller/settings/payment'],
+                    ['label' => 'ความปลอดภัย', 'url' => '/seller/settings/security'],
+                ],
+                'order' => 9,
+            ],
+        ];
+
+        WindowsUiSetting::set('windows_start_menu_items_seller', $sellerMenuItems, 'json');
+
+        // Start Menu Items - User Menu Structure
+        $userMenuItems = [
+            [
+                'icon' => '🏠',
+                'label' => 'หน้าแรก',
+                'url' => '/dashboard',
+                'has_submenu' => false,
+                'submenu' => [],
+                'order' => 0,
+            ],
+            [
+                'icon' => '💰',
+                'label' => 'กระเป๋าเงิน',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'ยอดเงิน', 'url' => '/wallet'],
+                    ['label' => 'เติมเงิน', 'url' => '/wallet/deposit'],
+                    ['label' => 'ถอนเงิน', 'url' => '/wallet/withdraw'],
+                    ['label' => 'ประวัติ', 'url' => '/wallet/history'],
+                ],
+                'order' => 1,
+            ],
+            [
+                'icon' => '📈',
+                'label' => 'การลงทุน',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'แพลนการลงทุน', 'url' => '/investments'],
+                    ['label' => 'พอร์ตของฉัน', 'url' => '/investments/portfolio'],
+                    ['label' => 'รายได้', 'url' => '/investments/earnings'],
+                    ['label' => 'ประวัติ', 'url' => '/investments/history'],
+                ],
+                'order' => 2,
+            ],
+            [
+                'icon' => '💼',
+                'label' => 'Affiliate',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'แดชบอร์ด', 'url' => '/affiliate/dashboard'],
+                    ['label' => 'ลิงค์ของฉัน', 'url' => '/affiliate/links'],
+                    ['label' => 'คอมมิชชั่น', 'url' => '/affiliate/commissions'],
+                    ['label' => 'ทีมงาน', 'url' => '/affiliate/team'],
+                ],
+                'order' => 3,
+            ],
+            [
+                'icon' => '🛒',
+                'label' => 'ตลาด',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'ช็อปปิ้ง', 'url' => '/marketplace'],
+                    ['label' => 'คำสั่งซื้อ', 'url' => '/orders'],
+                    ['label' => 'รายการโปรด', 'url' => '/wishlist'],
+                    ['label' => 'ตะกร้า', 'url' => '/cart'],
+                ],
+                'order' => 4,
+            ],
+            [
+                'icon' => '🔮',
+                'label' => 'ดูดวง',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'ไพ่ทาโรต์', 'url' => '/tarot'],
+                    ['label' => 'ดวงประจำวัน', 'url' => '/horoscope'],
+                    ['label' => 'ประวัติการดูดวง', 'url' => '/tarot/history'],
+                ],
+                'order' => 5,
+            ],
+            [
+                'icon' => '🎓',
+                'label' => 'การเรียนรู้',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'คอร์สเรียน', 'url' => '/academy'],
+                    ['label' => 'คอร์สของฉัน', 'url' => '/academy/my-courses'],
+                    ['label' => 'วิกิ', 'url' => '/wiki'],
+                    ['label' => 'คู่มือ', 'url' => '/guides'],
+                ],
+                'order' => 6,
+            ],
+            [
+                'icon' => '🤖',
+                'label' => 'AI ผู้ช่วย',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'แชทกับ AI', 'url' => '/ai/chat'],
+                    ['label' => 'AI Bots', 'url' => '/ai/bots'],
+                    ['label' => 'ประวัติการสนทนา', 'url' => '/ai/conversations'],
+                ],
+                'order' => 7,
+            ],
+            [
+                'icon' => '🔔',
+                'label' => 'การแจ้งเตือน',
+                'url' => '/notifications',
+                'has_submenu' => false,
+                'submenu' => [],
+                'order' => 8,
+            ],
+            [
+                'icon' => '👤',
+                'label' => 'โปรไฟล์',
+                'url' => '#',
+                'has_submenu' => true,
+                'submenu' => [
+                    ['label' => 'ข้อมูลส่วนตัว', 'url' => '/profile'],
+                    ['label' => 'ตั้งค่า', 'url' => '/settings'],
+                    ['label' => 'ความปลอดภัย', 'url' => '/security'],
+                    ['label' => 'ออกจากระบบ', 'url' => '/logout'],
+                ],
+                'order' => 9,
+            ],
+        ];
+
+        WindowsUiSetting::set('windows_start_menu_items_user', $userMenuItems, 'json');
 
         // Taskbar Apps - Common Quick Access Apps
         $taskbarApps = [
@@ -371,7 +619,9 @@ class WindowsUiSeeder extends Seeder
         WindowsUiSetting::set('content_width_custom', 1400, 'integer');
 
         $this->command->info('✅ Windows UI settings seeded successfully!');
-        $this->command->info('   - Start Menu: ' . count($startMenuItems) . ' items with submenus');
+        $this->command->info('   - Start Menu (Admin): ' . count($startMenuItems) . ' items with submenus');
+        $this->command->info('   - Start Menu (Seller): ' . count($sellerMenuItems) . ' items with submenus');
+        $this->command->info('   - Start Menu (User): ' . count($userMenuItems) . ' items with submenus');
         $this->command->info('   - Taskbar Apps: ' . count($taskbarApps) . ' apps');
         $this->command->info('   - System Tray: ' . count($systemTrayIcons) . ' icons');
     }
