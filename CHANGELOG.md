@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.104.0] - 2025-11-09
+
+### ✨ Features
+- feat: add Page Builder to Theme & UI menu (62a2fde)
+### 🐛 Bug Fixes
+- fix: add missing content_width settings validation in WindowsUiController (fbdd5b2)
+### 🔧 Other Changes
+- Merge pull request #642 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (0dc66ad)
+- chore: resolve merge conflict in millennium-start-menu.blade.php (0ff9e6b)
+
 ## [v2.103.1] - 2025-11-09
 
 ### ✨ Features
