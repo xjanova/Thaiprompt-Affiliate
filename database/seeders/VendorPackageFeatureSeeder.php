@@ -9,10 +9,75 @@ class VendorPackageFeatureSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing vendor package features only, preserves existing configurations.
+     * User customizations (prices, settings, requirements) are preserved.
      */
     public function run(): void
     {
-        $features = [
+        $existingFeaturesCount = VendorPackageFeature::count();
+
+        if ($existingFeaturesCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all vendor package features
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all vendor package features...');
+
+        $features = $this->getAllFeatures();
+
+        foreach ($features as $feature) {
+            VendorPackageFeature::create($feature);
+        }
+
+        $this->command->info('✅ Vendor package features seeded successfully: ' . count($features) . ' features');
+    }
+
+    /**
+     * Update mode - add only missing vendor package features
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing vendor package features detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing features only)...');
+
+        $features = $this->getAllFeatures();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($features as $feature) {
+            if (!VendorPackageFeature::where('feature_slug', $feature['feature_slug'])->exists()) {
+                VendorPackageFeature::create($feature);
+                $this->command->info("   ➕ Added: {$feature['feature_name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new vendor package features.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing features (preserved).");
+        }
+    }
+
+    /**
+     * Get all default vendor package features
+     */
+    private function getAllFeatures(): array
+    {
+        return [
             // Marketing Features
             [
                 'feature_name' => 'AI ChatBot',
@@ -242,14 +307,5 @@ class VendorPackageFeatureSeeder extends Seeder
                 'sort_order' => 12,
             ],
         ];
-
-        foreach ($features as $feature) {
-            VendorPackageFeature::updateOrCreate(
-                ['feature_slug' => $feature['feature_slug']],
-                $feature
-            );
-        }
-
-        $this->command->info('✅ Vendor package features seeded successfully!');
     }
 }

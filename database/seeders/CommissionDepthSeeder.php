@@ -9,19 +9,29 @@ class CommissionDepthSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Only creates commission depth setting if it doesn't exist.
+     * Preserves user-customized commission depth value.
      */
     public function run(): void
     {
-        // Set default commission depth if not exists
-        Setting::firstOrCreate(
-            ['key' => 'commission_depth'],
-            [
-                'value' => '10',
-                'type' => 'integer',
-                'group' => 'affiliate',
-            ]
-        );
+        $existingSetting = Setting::where('key', 'commission_depth')->first();
 
-        $this->command->info('Commission depth setting created successfully.');
+        if ($existingSetting) {
+            $this->command->warn('⚠️  Commission depth setting already exists!');
+            $this->command->info("   Current value: {$existingSetting->value}");
+            $this->command->info('   Skipping to preserve your customization.');
+            return;
+        }
+
+        Setting::create([
+            'key' => 'commission_depth',
+            'value' => '10',
+            'type' => 'integer',
+            'group' => 'affiliate',
+        ]);
+
+        $this->command->info('✅ Commission depth setting created successfully (default: 10 levels).');
     }
 }
