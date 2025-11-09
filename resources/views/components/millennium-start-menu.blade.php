@@ -296,6 +296,7 @@
                 'label' => 'ธีม & UI',
                 'submenu' => [
                     ['label' => 'Theme Builder', 'url' => route('admin.themes.builder')],
+                    ['label' => 'Page Builder', 'url' => route('admin.page-builder.index')],
                     ['label' => 'Windows UI', 'url' => route('admin.windows-ui.index')],
                     ['label' => 'Icons', 'url' => route('admin.icons.index')],
                     ['label' => 'Floating Tools', 'url' => route('admin.floating-tools.index')],
