@@ -874,6 +874,111 @@ echo "  • Total migrations: $TOTAL_MIGRATIONS"
 echo "  • Pending migrations: $PENDING_COUNT"
 echo ""
 
+# Step 10.5: Smart Migration Handler with Auto-Recovery
+handle_migration_with_smart_recovery() {
+    local migration_output_file="/tmp/migration_output_$$.log"
+
+    print_info "→ Executing migrations with smart error recovery..."
+
+    # Run migrations and capture output
+    if php artisan migrate --force 2>&1 | tee "$migration_output_file" | tee -a "$LOG_FILE"; then
+        print_success "✓ Migrations applied successfully!"
+        rm -f "$migration_output_file"
+        return 0
+    fi
+
+    # Migration failed - check if it's a "table already exists" error
+    if grep -q "Base table or view already exists" "$migration_output_file"; then
+        print_warning "⚠ Detected 'table already exists' error - Attempting auto-recovery..."
+        echo ""
+
+        # Extract table name from error
+        local table_name=$(grep -oP "Table '\K[^']+(?=' already exists)" "$migration_output_file" | head -1)
+
+        if [ -z "$table_name" ]; then
+            print_error "✗ Could not extract table name from error"
+            rm -f "$migration_output_file"
+            return 1
+        fi
+
+        print_info "→ Problem table: $table_name"
+
+        # Find the migration file that creates this table
+        print_info "→ Searching for migration file..."
+        local migration_file=$(grep -l "create table.*$table_name" database/migrations/*.php 2>/dev/null | head -1)
+
+        if [ -z "$migration_file" ]; then
+            # Try alternative search pattern
+            migration_file=$(grep -l "'$table_name'" database/migrations/*.php 2>/dev/null | head -1)
+        fi
+
+        if [ -n "$migration_file" ]; then
+            local migration_name=$(basename "$migration_file" .php)
+            print_info "→ Found migration: $migration_name"
+            echo ""
+
+            print_warning "📋 Auto-Recovery Options:"
+            echo "  1. Table exists but migration not recorded"
+            echo "  2. Will register migration as completed without running it"
+            echo ""
+
+            # Get current max batch number
+            local max_batch=$(php artisan tinker --execute="echo DB::table('migrations')->max('batch') ?? 0;" 2>/dev/null | tail -1 || echo "1")
+            local next_batch=$((max_batch + 1))
+
+            print_info "→ Registering migration as completed (batch: $next_batch)..."
+
+            # Insert migration record directly into database
+            php artisan tinker --execute="
+                DB::table('migrations')->insert([
+                    'migration' => '$migration_name',
+                    'batch' => $next_batch
+                ]);
+                echo 'Migration registered successfully';
+            " 2>&1 | tee -a "$LOG_FILE"
+
+            if [ $? -eq 0 ]; then
+                print_success "✓ Migration '$migration_name' registered as completed"
+                echo ""
+
+                # Try running remaining migrations
+                print_info "→ Attempting to run remaining migrations..."
+                if php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
+                    print_success "✓ All remaining migrations applied successfully!"
+                    rm -f "$migration_output_file"
+                    return 0
+                else
+                    # Check if there are more "table exists" errors
+                    print_warning "⚠ More migration errors detected - running recovery again..."
+                    rm -f "$migration_output_file"
+                    # Recursive call to handle next error
+                    handle_migration_with_smart_recovery
+                    return $?
+                fi
+            else
+                print_error "✗ Failed to register migration"
+                rm -f "$migration_output_file"
+                return 1
+            fi
+        else
+            print_error "✗ Could not find migration file for table: $table_name"
+            echo ""
+            print_info "💡 Manual recovery steps:"
+            echo "  1. Check which migration creates '$table_name'"
+            echo "  2. Run: php artisan migrate:status"
+            echo "  3. Manually insert migration record if needed"
+            rm -f "$migration_output_file"
+            return 1
+        fi
+    else
+        # Different type of error
+        print_error "✗ Migration failed with different error"
+        cat "$migration_output_file"
+        rm -f "$migration_output_file"
+        return 1
+    fi
+}
+
 # Step 10.5: Run migrations if needed
 if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     print_warning "⚠ Found $PENDING_COUNT pending migration(s) - Will apply now"
@@ -901,18 +1006,24 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     fi
     echo ""
 
-    # Run migrations with detailed output
-    print_info "→ Executing migrations..."
-    if ! php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
-        print_error "✗ Migration failed!"
+    # Run migrations with smart error recovery
+    if ! handle_migration_with_smart_recovery; then
+        print_error "✗ Migration failed after auto-recovery attempts!"
         echo ""
         print_warning "→ Rollback information:"
         echo "  • Backup file: $MIGRATION_BACKUP"
         echo "  • Rollback command: php artisan migrate:rollback"
         echo "  • Restore DB: mysql -u $DB_USERNAME -p $DB_DATABASE < $MIGRATION_BACKUP"
+        echo ""
+        print_info "💡 Manual Fix:"
+        echo "  1. Check migration status: php artisan migrate:status"
+        echo "  2. Identify problematic migrations"
+        echo "  3. Either:"
+        echo "     a) Drop the existing table and re-run migration"
+        echo "     b) Manually insert migration record if table is correct"
         error_exit "Database migration failed - ตรวจสอบ logs และ backup"
     fi
-    print_success "✓ Migrations applied successfully!"
+    print_success "✓ Migrations completed successfully!"
     echo ""
 else
     print_success "✓ No pending migrations - Database schema is up to date"
