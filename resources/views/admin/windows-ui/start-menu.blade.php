@@ -342,7 +342,7 @@
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <span>🎮</span> Taskbar & Start Button
                 </h3>
-                <form method="POST" action="{{ route('admin.windows-ui.update') }}">
+                <form method="POST" action="{{ route('admin.windows-ui.start-button-settings.update') }}">
                     @csrf
                     @method('PUT')
 
@@ -374,22 +374,6 @@
                             </label>
                         </div>
 
-                        <div class="pt-4 border-t border-gray-200 dark:border-slate-600">
-                            <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg cursor-pointer mb-3">
-                                <div>
-                                    <span class="font-semibold text-gray-900 dark:text-white">📱 Responsive Mode</span>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400">รวมไอคอนเป็นปุ่มเมื่อหน้าจอเล็ก</p>
-                                </div>
-                                <input type="checkbox" name="millennium_taskbar_collapse_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
-                            </label>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Breakpoint (px)</label>
-                                <input type="number" name="millennium_taskbar_collapse_breakpoint" min="320" max="1920" value="{{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_breakpoint', 768) }}" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">หน้าจอที่แคบกว่านี้จะแสดงโหมด Responsive</p>
-                            </div>
-                        </div>
-
                         <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all">
                             <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
                         </button>
@@ -397,17 +381,51 @@
                 </form>
             </div>
 
-            <!-- RGB Settings Preview -->
+            <!-- RGB Settings -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <span>🌈</span> RGB Effects
                 </h3>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    ตั้งค่า RGB Border Animation ที่หน้าหลัก Windows UI หรือที่
-                </p>
-                <a href="{{ route('admin.windows-ui.rgb-settings') }}" class="block w-full text-center px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700">
-                    ไปที่ RGB Settings →
-                </a>
+                <form method="POST" action="{{ route('admin.windows-ui.menu-rgb-settings.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="space-y-4">
+                        <div class="pt-2">
+                            <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg cursor-pointer">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white">✨ เปิดใช้ RGB Border</span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">แสดงเอฟเฟค RGB วิ่งรอบเมนู</p>
+                                </div>
+                                <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                            </label>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความเร็ว (วินาที)</label>
+                            <input type="number" name="millennium_menu_rgb_speed" min="1" max="20" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_speed', 5) }}" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ความเร็วในการเปลี่ยนสี</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความหนาขอบ (px)</label>
+                            <input type="number" name="millennium_menu_rgb_border_width" min="1" max="10" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_border_width', 2) }}" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ขนาด Glow (px)</label>
+                            <input type="number" name="millennium_menu_rgb_glow_size" min="0" max="50" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_glow_size', 15) }}" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                        </div>
+
+                        <button type="submit" class="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all">
+                            <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า RGB
+                        </button>
+
+                        <a href="{{ route('admin.windows-ui.rgb-settings') }}" class="block w-full text-center px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 transition-all">
+                            ตั้งค่า RGB เพิ่มเติม →
+                        </a>
+                    </div>
+                </form>
             </div>
 
             <!-- Quick Tips -->

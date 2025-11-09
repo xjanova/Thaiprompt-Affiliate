@@ -337,4 +337,72 @@ class WindowsUiController extends Controller
         // Default to string
         return 'string';
     }
+
+    /**
+     * Update Start Button Settings (from start-menu page)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateStartButtonSettings(Request $request)
+    {
+        $validated = $request->validate([
+            // Start Button Position
+            'windows_start_button_position' => ['nullable', 'string', 'in:left,center,right'],
+
+            // Start Button Dimensions & Style
+            'millennium_start_button_width' => ['nullable', 'integer', 'min:80', 'max:200'],
+            'millennium_start_button_height' => ['nullable', 'integer', 'min:32', 'max:80'],
+            'millennium_start_button_shape' => ['nullable', 'string', 'in:square,rounded,pill,circle'],
+            'millennium_start_button_border_radius' => ['nullable', 'integer', 'min:0', 'max:50'],
+
+            // Start Button Display Options
+            'millennium_start_button_show_icon' => ['nullable', 'boolean'],
+            'millennium_start_button_show_text' => ['nullable', 'boolean'],
+            'millennium_start_button_icon_size' => ['nullable', 'integer', 'min:16', 'max:64'],
+            'millennium_start_button_font_size' => ['nullable', 'integer', 'min:12', 'max:32'],
+        ]);
+
+        // Handle checkboxes (only the ones in this form)
+        $validated['millennium_start_button_show_icon'] = $request->has('millennium_start_button_show_icon');
+        $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
+
+        // Save each setting
+        foreach ($validated as $key => $value) {
+            $type = $this->getSettingType($key, $value);
+            WindowsUiSetting::set($key, $value, $type);
+        }
+
+        return redirect()->route('admin.windows-ui.start-menu')
+            ->with('success', 'อัพเดตการตั้งค่าปุ่ม Start สำเร็จ');
+    }
+
+    /**
+     * Update Menu RGB Settings (from start-menu page)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateMenuRgbSettings(Request $request)
+    {
+        $validated = $request->validate([
+            // Menu RGB Settings
+            'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
+            'millennium_menu_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'millennium_menu_rgb_border_width' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'millennium_menu_rgb_glow_size' => ['nullable', 'integer', 'min:0', 'max:50'],
+        ]);
+
+        // Handle checkbox (only the one in this form)
+        $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
+
+        // Save each setting
+        foreach ($validated as $key => $value) {
+            $type = $this->getSettingType($key, $value);
+            WindowsUiSetting::set($key, $value, $type);
+        }
+
+        return redirect()->route('admin.windows-ui.start-menu')
+            ->with('success', 'อัพเดตการตั้งค่า RGB สำเร็จ');
+    }
 }
