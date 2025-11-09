@@ -86,38 +86,16 @@ class TarotReadingController extends Controller
             ]);
         }
 
-        // Create the reading
+        // Create the reading (without cards yet - user will select them)
         $reading = $this->createReading($category, $spreadType, $request->question, $isFree);
 
-        // Select random cards
-        $cards = $this->selectRandomCards($spreadType->card_count, $spreadType);
-
-        // Create reading cards
-        foreach ($cards as $index => $cardData) {
-            TarotReadingCard::create([
-                'reading_id' => $reading->id,
-                'card_id' => $cardData['card']->id,
-                'position' => $index + 1,
-                'position_name' => $spreadType->getPositionName($index + 1),
-                'is_reversed' => $cardData['is_reversed'],
-            ]);
-        }
-
-        // Update user limits if free
-        if ($isFree) {
-            TarotUserLimit::incrementFreeReading(
-                $category->id,
-                $userId,
-                $sessionId,
-                $request->ip()
-            );
-        }
+        // Store whether this is a free reading in session for card selection page
+        session(['tarot_reading_' . $reading->id . '_is_free' => $isFree]);
 
         return response()->json([
             'success' => true,
             'reading_id' => $reading->id,
-            'cards' => $cards,
-            'redirect_url' => route('tarot.reading.show', $reading->id)
+            'redirect_url' => route('tarot.select-cards', $reading->id)
         ]);
     }
 
@@ -277,6 +255,103 @@ class TarotReadingController extends Controller
             session()->getId(),
             $request->ip()
         );
+
+        return response()->json([
+            'success' => true,
+            'reading_id' => $reading->id,
+            'redirect_url' => route('tarot.reading.show', $reading->id)
+        ]);
+    }
+
+    /**
+     * Show interactive card selection page
+     */
+    public function showCardSelection($readingId)
+    {
+        $reading = TarotReading::with(['category', 'spreadType'])->findOrFail($readingId);
+
+        // Check if user has access to this reading
+        $userId = Auth::id();
+        $sessionId = session()->getId();
+
+        if (!$reading->belongsToUser($userId, $sessionId) && !Auth::check()) {
+            abort(403, 'Unauthorized access to this reading');
+        }
+
+        // Check if cards are already selected
+        if ($reading->cards()->count() > 0) {
+            return redirect()->route('tarot.reading.show', $reading->id);
+        }
+
+        $spreadType = $reading->spreadType;
+        $cardBackImage = TarotCardBackImage::getDefault();
+
+        return view('frontend.tarot.select-cards', compact('reading', 'spreadType', 'cardBackImage', 'readingId'));
+    }
+
+    /**
+     * Save user's card selection
+     */
+    public function saveCardSelection(Request $request)
+    {
+        $request->validate([
+            'reading_id' => 'required|exists:tarot_readings,id',
+            'selected_card_indices' => 'required|array',
+        ]);
+
+        $reading = TarotReading::with('spreadType')->findOrFail($request->reading_id);
+
+        // Check if user has access
+        $userId = Auth::id();
+        $sessionId = session()->getId();
+
+        if (!$reading->belongsToUser($userId, $sessionId) && !Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // Check if cards are already selected
+        if ($reading->cards()->count() > 0) {
+            return response()->json(['success' => false, 'message' => 'Cards already selected']);
+        }
+
+        // Validate correct number of cards
+        if (count($request->selected_card_indices) != $reading->spreadType->card_count) {
+            return response()->json(['success' => false, 'message' => 'Invalid number of cards selected']);
+        }
+
+        // Get all active tarot cards
+        $allCards = TarotCard::active()->get();
+
+        // Map selected indices to actual cards
+        $selectedCardIndices = $request->selected_card_indices;
+
+        foreach ($selectedCardIndices as $position => $cardIndex) {
+            // Use the card index to select from the deck (simulate random selection based on user's choice)
+            $card = $allCards->get($cardIndex % $allCards->count());
+            $isReversed = rand(0, 1) === 1; // 50% chance of reversed
+
+            TarotReadingCard::create([
+                'reading_id' => $reading->id,
+                'card_id' => $card->id,
+                'position' => $position + 1,
+                'position_name' => $reading->spreadType->getPositionName($position + 1),
+                'is_reversed' => $isReversed,
+            ]);
+        }
+
+        // Update user limits if free
+        $isFree = session('tarot_reading_' . $reading->id . '_is_free', false);
+        if ($isFree) {
+            TarotUserLimit::incrementFreeReading(
+                $reading->category_id,
+                $userId,
+                $sessionId,
+                request()->ip()
+            );
+
+            // Clear session
+            session()->forget('tarot_reading_' . $reading->id . '_is_free');
+        }
 
         return response()->json([
             'success' => true,
