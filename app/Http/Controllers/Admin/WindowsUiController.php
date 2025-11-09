@@ -51,9 +51,9 @@ class WindowsUiController extends Controller
 
             // Millennium Start Menu Settings
             'millennium_menu_position' => ['nullable', 'string', 'in:left,center,right'],
-            'millennium_menu_width' => ['nullable', 'string', 'max:20'],
+            'millennium_menu_width' => ['nullable', 'integer', 'min:1', 'max:3000'],
             'millennium_menu_width_unit' => ['nullable', 'string', 'in:px,%'],
-            'millennium_menu_max_height' => ['nullable', 'string', 'max:20'],
+            'millennium_menu_max_height' => ['nullable', 'integer', 'min:1', 'max:3000'],
             'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
             'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
 
@@ -325,6 +325,16 @@ class WindowsUiController extends Controller
             'windows_rgb_speed',
             'content_width_custom',
             'millennium_back_to_top_threshold',
+            'millennium_menu_width',
+            'millennium_menu_max_height',
+            'millennium_menu_rgb_speed',
+            'millennium_menu_rgb_border_width',
+            'millennium_menu_rgb_glow_size',
+            'millennium_start_button_width',
+            'millennium_start_button_height',
+            'millennium_start_button_border_radius',
+            'millennium_start_button_icon_size',
+            'millennium_start_button_font_size',
         ])) {
             return 'integer';
         }
@@ -432,10 +442,8 @@ class WindowsUiController extends Controller
             'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
         ]);
 
-        // Handle checkbox (only the one in this form if present)
-        if ($request->has('millennium_menu_rgb_enabled')) {
-            $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
-        }
+        // Handle checkbox - always set it (true if checked, false if not)
+        $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
 
         // Save each setting
         foreach ($validated as $key => $value) {

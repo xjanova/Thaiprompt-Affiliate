@@ -212,7 +212,7 @@
              style="opacity: {{ $taskbarOpacity / 100 }}; backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px); box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
 
         <!-- Taskbar Content -->
-        <div class="relative h-full max-w-full mx-auto px-3 flex items-center gap-3">
+        <div class="relative h-full w-full px-3 flex items-center gap-3">
 
             <!-- Left Section: Back Button + Quick Icons + Start Button (if position is 'left') -->
             <div class="flex items-center gap-2 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }}">
