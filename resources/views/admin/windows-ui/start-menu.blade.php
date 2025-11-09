@@ -77,9 +77,9 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <!-- Left: Menu Items Manager -->
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-3">
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">
                 <div class="p-6 border-b border-gray-200 dark:border-slate-700">
                     <div class="flex items-center justify-between">
@@ -330,6 +330,12 @@
                     </div>
                 </form>
             </div>
+        </div>
+        <!-- End Left Column -->
+
+        <!-- Right Column: Sticky Settings -->
+        <div class="lg:col-span-1">
+            <div class="sticky top-4 space-y-6">
 
             <!-- Start Button & Taskbar Settings -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6">
@@ -348,6 +354,24 @@
                                 <option value="center" {{ \App\Models\WindowsUiSetting::get('windows_start_button_position', 'center') === 'center' ? 'selected' : '' }}>กลาง</option>
                                 <option value="right" {{ \App\Models\WindowsUiSetting::get('windows_start_button_position', 'center') === 'right' ? 'selected' : '' }}>ขวา</option>
                             </select>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-200 dark:border-slate-600">
+                            <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg cursor-pointer mb-3">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white">🖼️ แสดงโลโก้</span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">แสดงไอคอน/โลโก้ในปุ่ม Start</p>
+                                </div>
+                                <input type="checkbox" name="millennium_start_button_show_icon" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_show_icon', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                            </label>
+
+                            <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg cursor-pointer">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white">📝 แสดงข้อความ</span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">แสดงข้อความ "เริ่ม" ในปุ่ม Start</p>
+                                </div>
+                                <input type="checkbox" name="millennium_start_button_show_text" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_show_text', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                            </label>
                         </div>
 
                         <div class="pt-4 border-t border-gray-200 dark:border-slate-600">
@@ -408,7 +432,11 @@
                     </li>
                 </ul>
             </div>
+
+            </div>
+            <!-- End Sticky Wrapper -->
         </div>
+        <!-- End Right Column -->
     </div>
 </div>
 
