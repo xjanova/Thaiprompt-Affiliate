@@ -281,6 +281,79 @@ error_exit() {
 # Trap errors - disable for now to handle errors manually
 # trap 'error_exit "An error occurred on line $LINENO"' ERR
 
+# Clean old backups (keep only recent 2 days)
+cleanup_old_backups() {
+    print_info "Cleaning old backups (>2 days)..."
+
+    if [ -d "$BACKUP_DIR" ]; then
+        # Count total backups before cleanup
+        local total_before=$(find "$BACKUP_DIR" -type f -name "*.sql" -o -type d -name "critical_*" | wc -l)
+
+        # Remove SQL backups older than 2 days
+        find "$BACKUP_DIR" -type f -name "*.sql" -mtime +2 -delete 2>/dev/null || true
+
+        # Remove critical backup directories older than 2 days
+        find "$BACKUP_DIR" -type d -name "critical_*" -mtime +2 -exec rm -rf {} + 2>/dev/null || true
+
+        # Count total backups after cleanup
+        local total_after=$(find "$BACKUP_DIR" -type f -name "*.sql" -o -type d -name "critical_*" 2>/dev/null | wc -l)
+        local deleted=$((total_before - total_after))
+
+        if [ $deleted -gt 0 ]; then
+            print_success "Cleaned up $deleted old backup(s)"
+            log "Cleanup: Removed $deleted old backups (>2 days)"
+        else
+            print_success "No old backups to clean"
+        fi
+    else
+        mkdir -p "$BACKUP_DIR"
+        print_info "Created backup directory"
+    fi
+}
+
+# Save deployment history for rollback
+save_deployment_history() {
+    local commit_hash=$1
+    local branch=$2
+    local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
+
+    # Create deployment history file
+    local history_file="$BACKUP_DIR/.deployment_history"
+
+    # Add new entry at the beginning (most recent first)
+    echo "$timestamp|$commit_hash|$branch" | cat - "$history_file" 2>/dev/null | head -10 > "$history_file.tmp" 2>/dev/null || echo "$timestamp|$commit_hash|$branch" > "$history_file.tmp"
+    mv "$history_file.tmp" "$history_file"
+
+    log "Deployment history saved: $commit_hash"
+}
+
+# Generate rollback commands
+generate_rollback_commands() {
+    local history_file="$BACKUP_DIR/.deployment_history"
+
+    if [ ! -f "$history_file" ]; then
+        return
+    fi
+
+    echo ""
+    print_warning "🔄 Quick Rollback Commands (Copy & Paste):"
+    echo ""
+
+    local count=1
+    while IFS='|' read -r timestamp commit_hash branch_name; do
+        if [ $count -gt 5 ]; then
+            break
+        fi
+
+        if [ -n "$commit_hash" ]; then
+            echo -e "${YELLOW}[$count]${NC} Rollback to: ${BLUE}${timestamp}${NC} (${commit_hash:0:8})"
+            echo -e "${GREEN}git reset --hard $commit_hash && composer install --no-dev --optimize-autoloader && php artisan migrate:rollback && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan up${NC}"
+            echo ""
+            count=$((count + 1))
+        fi
+    done < "$history_file"
+}
+
 # Backup critical files (PREVENT DATA LOSS!)
 backup_critical_files() {
     local backup_timestamp=$(date +'%Y%m%d_%H%M%S')
@@ -367,8 +440,8 @@ echo -e "${GREEN}║${NC}     ${MAGENTA}██╔██╗ ██║╚██╔
 echo -e "${GREEN}║${NC}    ${MAGENTA}██╔╝ ██╗██║ ╚═╝ ██║██║  ██║██║ ╚████║${NC}                      ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}    ${MAGENTA}╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝${NC}                      ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}    ${BLUE}🚀 TP-Affiliate Deployment System v2.0${NC}                      ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}    ${YELLOW}⚡ Safe • Smart • Secure Deployment${NC}                       ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${BLUE}🚀 TP-Affiliate Deployment System v3.0${NC}                      ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${YELLOW}⚡ Intelligent • Fast • Ultra-Safe Deployment${NC}             ${GREEN}║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -439,8 +512,8 @@ if [[ -n $(git status -s) ]]; then
     log "WARNING: Local changes will be overwritten by deployment"
 fi
 
-# Create backup directory
-mkdir -p "$BACKUP_DIR"
+# Clean old backups first
+cleanup_old_backups
 
 # Start deployment
 print_header "📦 Deployment Process"
@@ -552,6 +625,9 @@ fi
 NEW_COMMIT=$(git rev-parse HEAD)
 log "New commit: $NEW_COMMIT"
 print_info "New commit: ${NEW_COMMIT:0:8}"
+
+# Save deployment history for future rollback
+save_deployment_history "$NEW_COMMIT" "$BRANCH"
 
 # Step 6: Ensure Base Controller Exists
 print_info "[6/20] Ensuring base Controller exists..."
@@ -665,12 +741,21 @@ check_package "google/cloud-vision" "Google Cloud Vision (OCR/KYC)" false
 check_package "barryvdh/laravel-dompdf" "DomPDF (PDF Generation)" false
 echo ""
 
-# Step 8: Install/Reinstall Laravel Sanctum
-print_info "[8/20] Installing Laravel Sanctum..."
-if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
-    error_exit "Sanctum installation failed" "$?"
+# Step 8: Smart Laravel Sanctum Installation
+print_info "[8/20] Smart Laravel Sanctum Installation..."
+
+# Check if Sanctum migrations already exist
+if [ -f "database/migrations/*_create_personal_access_tokens_table.php" ] || \
+   ls database/migrations/*_create_personal_access_tokens_table.php 1> /dev/null 2>&1; then
+    print_success "Sanctum already installed (skipped re-publish)"
+else
+    print_info "Installing Sanctum for the first time..."
+    if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" 2>&1 | tee -a "$LOG_FILE"; then
+        print_warning "Sanctum publish failed (may already exist)"
+    else
+        print_success "Sanctum installed successfully"
+    fi
 fi
-print_success "Laravel Sanctum installed and configured"
 
 # Step 9: Clear All Cache (before migration)
 print_info "[9/20] Clearing all caches..."
@@ -849,7 +934,7 @@ fi
 echo ""
 
 # Step 11: Smart Database Seeding System
-print_info "[11/20] 🌱 Checking database seeding status..."
+print_info "[11/20] 🌱 Smart Database Seeding System..."
 echo ""
 
 # Step 11.1: Verify all seeders are included in DatabaseSeeder.php
@@ -875,13 +960,32 @@ SEEDER_DIR="database/seeders"
 if [ ! -d "$SEEDER_DIR" ]; then
     print_warning "No seeders directory found - skipping seeding"
 else
-    # Count seeder files (excluding DatabaseSeeder.php and README.md)
+    # Count seeder files (excluding DatabaseSeeder.php)
     SEEDER_COUNT=$(find "$SEEDER_DIR" -name "*Seeder.php" ! -name "DatabaseSeeder.php" 2>/dev/null | wc -l)
 
     if [ "$SEEDER_COUNT" -eq 0 ]; then
         print_info "No seeders found - skipping seeding"
     else
         print_info "→ Found $SEEDER_COUNT seeder file(s)"
+
+        # Check if seeders have changed using checksum
+        local seeders_changed=0
+        local seeder_checksum_file=".seeders.checksum"
+
+        # Calculate current seeder checksum
+        local current_checksum=$(find "$SEEDER_DIR" -name "*Seeder.php" -type f -exec md5sum {} \; 2>/dev/null | sort | md5sum | cut -d' ' -f1)
+
+        if [ -f "$seeder_checksum_file" ]; then
+            local old_checksum=$(cat "$seeder_checksum_file" 2>/dev/null || echo "")
+            if [ "$old_checksum" != "$current_checksum" ]; then
+                seeders_changed=1
+                print_info "  • Seeders have changed - may need to re-seed"
+            else
+                print_success "  • Seeders unchanged since last deployment"
+            fi
+        else
+            seeders_changed=1
+        fi
 
         # Check if database needs seeding by checking key tables
         NEEDS_SEEDING=0
@@ -900,28 +1004,47 @@ else
         if [ "$USER_COUNT" = "0" ] || [ "$EMAIL_TEMPLATE_COUNT" = "0" ]; then
             NEEDS_SEEDING=1
             print_warning "⚠ Database appears to need seeding (some tables are empty)"
-            echo ""
+        elif [ $seeders_changed -eq 1 ]; then
+            print_warning "⚠ Seeders have changed - may need to update data"
+        else
+            print_success "✓ Database seeded and seeders unchanged - skipping"
+            NEEDS_SEEDING=0
+        fi
 
+        if [ $NEEDS_SEEDING -eq 1 ] || [ $seeders_changed -eq 1 ]; then
+            echo ""
             # Show available seeders
             print_info "→ Available seeders:"
             find "$SEEDER_DIR" -name "*Seeder.php" ! -name "DatabaseSeeder.php" -exec basename {} \; 2>/dev/null | sed 's/^/  • /'
             echo ""
 
-            read -p "Run database seeders? (y/n) [y]: " -n 1 -r RUN_SEEDER
-            echo
-            if [[ -z $RUN_SEEDER ]] || [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
-                print_info "Running database seeders..."
+            if [ $NEEDS_SEEDING -eq 1 ]; then
+                # Auto-run if database is empty
+                print_info "Auto-running seeders (database is empty)..."
                 if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
                     print_warning "Seeding failed (continuing anyway)"
                 else
                     print_success "✓ Database seeded successfully"
+                    # Save seeder checksum
+                    echo "$current_checksum" > "$seeder_checksum_file"
                 fi
             else
-                print_info "Skipping database seeders"
+                # Ask user if seeders changed but DB has data
+                read -p "Run database seeders? (y/n) [n]: " -n 1 -r RUN_SEEDER
+                echo
+                if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
+                    print_info "Running database seeders..."
+                    if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
+                        print_warning "Seeding failed (continuing anyway)"
+                    else
+                        print_success "✓ Database seeded successfully"
+                        # Save seeder checksum
+                        echo "$current_checksum" > "$seeder_checksum_file"
+                    fi
+                else
+                    print_info "Skipping database seeders"
+                fi
             fi
-        else
-            print_success "✓ Database already has data - skipping seeders"
-            print_info "  (Run 'php artisan db:seed --force' manually if needed)"
         fi
     fi
 fi
@@ -1120,14 +1243,17 @@ echo "  □ Verify database migrations: php artisan migrate:status"
 echo "  □ Check queue workers: php artisan queue:monitor"
 echo ""
 
-print_warning "🔄 Rollback Command (if needed):"
-echo "  git reset --hard $CURRENT_COMMIT"
-echo "  composer install --no-dev --optimize-autoloader"
-echo "  php artisan migrate:rollback"
-echo "  php artisan up"
-echo ""
+# Generate rollback commands from history
+generate_rollback_commands
 
 print_success "Happy deploying! 🚀"
+echo ""
+
+print_info "📌 Quick Commands:"
+echo "  • View logs: tail -f storage/logs/laravel.log"
+echo "  • View deployment logs: tail -f storage/logs/deployment.log"
+echo "  • Check queue: php artisan queue:monitor"
+echo "  • Manual rollback: git reset --hard $CURRENT_COMMIT && ./deploy.sh"
 echo ""
 
 # Clean up environment variable
