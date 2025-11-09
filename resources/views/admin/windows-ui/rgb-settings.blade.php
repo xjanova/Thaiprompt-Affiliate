@@ -159,7 +159,7 @@
 
                     <!-- Hidden inputs for colors -->
                     <template x-for="(color, index) in colors" :key="index">
-                        <input type="hidden" :name="'rgb_colors[' + index + ']'" :value="color">
+                        <input type="hidden" :name="`rgb_colors[${index}]`" :value="color">
                     </template>
 
                     <!-- Preset Palettes -->
