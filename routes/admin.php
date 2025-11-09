@@ -1315,6 +1315,7 @@ Route::prefix('page-builder')->name('page-builder.')->group(function () {
     });
 
     Route::prefix('sections/{section}')->name('sections.')->group(function () {
+        Route::get('/edit', [PageBuilderSectionController::class, 'edit'])->name('edit');
         Route::put('/', [PageBuilderSectionController::class, 'update'])->name('update');
         Route::delete('/', [PageBuilderSectionController::class, 'destroy'])->name('destroy');
         Route::post('/duplicate', [PageBuilderSectionController::class, 'duplicate'])->name('duplicate');
