@@ -537,23 +537,41 @@
                     @csrf
                     @method('PUT')
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="space-y-4">
+                    <!-- RGB Toggle Switches -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <label class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl cursor-pointer border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-all">
                             <div>
-                                <label class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl cursor-pointer border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-all">
-                                    <div>
-                                        <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                            <span class="text-xl">✨</span> เปิดใช้ RGB Border
-                                        </span>
-                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเอฟเฟค RGB วิ่งรอบเมนู</p>
-                                    </div>
-                                    <label class="toggle-switch">
-                                        <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }}>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                </label>
+                                <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="text-xl">✨</span> RGB Border (เมนูหลัก)
+                                </span>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเอฟเฟค RGB วิ่งรอบเมนู Start</p>
                             </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
 
+                        <label class="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl cursor-pointer border-2 border-cyan-200 dark:border-cyan-800 hover:border-cyan-400 dark:hover:border-cyan-600 transition-all">
+                            <div>
+                                <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="text-xl">🎯</span> RGB Hover (รายการเมนู)
+                                </span>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเอฟเฟค RGB เมื่อเมาส์ชี้รายการเมนู</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="millennium_menu_item_hover_rgb" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_item_hover_rgb', true) ? 'checked' : '' }}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+                    </div>
+
+                    <!-- RGB Settings -->
+                    <div class="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-6 border border-gray-200 dark:border-slate-700 mb-6">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-sliders-h text-purple-600"></i> การตั้งค่า RGB
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-tachometer-alt mr-2 text-purple-600"></i>ความเร็ว (วินาที)
@@ -561,9 +579,7 @@
                                 <input type="number" name="millennium_menu_rgb_speed" min="1" max="20" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_speed', 5) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ความเร็วในการเปลี่ยนสี (แนะนำ: 3-7)</p>
                             </div>
-                        </div>
 
-                        <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-border-style mr-2 text-purple-600"></i>ความหนาขอบ (px)

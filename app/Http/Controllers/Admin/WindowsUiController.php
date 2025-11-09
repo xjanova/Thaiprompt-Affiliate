@@ -302,6 +302,7 @@ class WindowsUiController extends Controller
             'millennium_center_section_enabled',
             'millennium_rgb_enabled',
             'millennium_menu_rgb_enabled',
+            'millennium_menu_item_hover_rgb',
             'millennium_taskbar_collapse_enabled',
             'millennium_clock_show_seconds',
             'millennium_clock_show_date',
@@ -404,13 +405,15 @@ class WindowsUiController extends Controller
         $validated = $request->validate([
             // Menu RGB Settings
             'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
+            'millennium_menu_item_hover_rgb' => ['nullable', 'boolean'],
             'millennium_menu_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:20'],
             'millennium_menu_rgb_border_width' => ['nullable', 'integer', 'min:1', 'max:10'],
             'millennium_menu_rgb_glow_size' => ['nullable', 'integer', 'min:0', 'max:50'],
         ]);
 
-        // Handle checkbox (only the one in this form)
+        // Handle checkboxes
         $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
+        $validated['millennium_menu_item_hover_rgb'] = $request->has('millennium_menu_item_hover_rgb');
 
         // Save each setting
         foreach ($validated as $key => $value) {
