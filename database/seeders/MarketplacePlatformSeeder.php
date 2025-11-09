@@ -2,17 +2,81 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\MarketplacePlatform;
 use Illuminate\Database\Seeder;
 
 class MarketplacePlatformSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing marketplace platforms only, preserves existing configurations.
      */
     public function run(): void
     {
-        $platforms = [
+        $existingPlatformsCount = MarketplacePlatform::count();
+
+        if ($existingPlatformsCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all platforms
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all marketplace platforms...');
+
+        $platforms = $this->getAllPlatforms();
+
+        foreach ($platforms as $platform) {
+            MarketplacePlatform::create($platform);
+        }
+
+        $this->command->info('✅ Marketplace platforms seeded successfully: ' . count($platforms) . ' platforms');
+    }
+
+    /**
+     * Update mode - add only missing platforms
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing marketplace platforms detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing platforms only)...');
+
+        $platforms = $this->getAllPlatforms();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($platforms as $platform) {
+            if (!MarketplacePlatform::where('slug', $platform['slug'])->exists()) {
+                MarketplacePlatform::create($platform);
+                $this->command->info("   ➕ Added: {$platform['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new marketplace platforms.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing platforms (preserved).");
+        }
+    }
+
+    /**
+     * Get all default marketplace platforms
+     */
+    private function getAllPlatforms(): array
+    {
+        return [
             [
                 'name' => 'Lazada',
                 'slug' => 'lazada',
@@ -91,14 +155,5 @@ class MarketplacePlatformSeeder extends Seeder
                 'supports_real_time_webhook' => true,
             ],
         ];
-
-        foreach ($platforms as $platform) {
-            \App\Models\MarketplacePlatform::updateOrCreate(
-                ['slug' => $platform['slug']],
-                $platform
-            );
-        }
-
-        $this->command->info('Marketplace platforms seeded successfully!');
     }
 }

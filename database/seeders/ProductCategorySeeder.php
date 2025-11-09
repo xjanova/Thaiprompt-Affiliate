@@ -9,10 +9,90 @@ class ProductCategorySeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing product categories only, preserves existing ones.
      */
     public function run(): void
     {
-        $categories = [
+        $existingCategoriesCount = ProductCategory::whereNull('parent_id')->count();
+
+        if ($existingCategoriesCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all categories
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all product categories...');
+
+        $categories = $this->getAllCategories();
+
+        foreach ($categories as $index => $category) {
+            ProductCategory::create([
+                'name' => $category['name'],
+                'slug' => $category['slug'],
+                'description' => $category['description'],
+                'is_active' => $category['is_active'],
+                'sort_order' => $index + 1,
+                'parent_id' => null,
+                'image_url' => null,
+            ]);
+        }
+
+        $this->command->info('✅ Product categories seeded successfully: ' . count($categories) . ' categories');
+    }
+
+    /**
+     * Update mode - add only missing categories
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing product categories detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing categories only)...');
+
+        $categories = $this->getAllCategories();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($categories as $index => $category) {
+            if (!ProductCategory::where('slug', $category['slug'])->exists()) {
+                ProductCategory::create([
+                    'name' => $category['name'],
+                    'slug' => $category['slug'],
+                    'description' => $category['description'],
+                    'is_active' => $category['is_active'],
+                    'sort_order' => $index + 1,
+                    'parent_id' => null,
+                    'image_url' => null,
+                ]);
+                $this->command->info("   ➕ Added: {$category['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new product categories.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing categories (preserved).");
+        }
+    }
+
+    /**
+     * Get all default product categories
+     */
+    private function getAllCategories(): array
+    {
+        return [
             [
                 'name' => 'อิเล็กทรอนิกส์',
                 'slug' => 'electronics',
@@ -104,21 +184,5 @@ class ProductCategorySeeder extends Seeder
                 'is_active' => true,
             ],
         ];
-
-        foreach ($categories as $index => $category) {
-            ProductCategory::updateOrCreate(
-                ['slug' => $category['slug']],
-                [
-                    'name' => $category['name'],
-                    'description' => $category['description'],
-                    'is_active' => $category['is_active'],
-                    'sort_order' => $index + 1,
-                    'parent_id' => null,
-                    'image_url' => null,
-                ]
-            );
-        }
-
-        $this->command->info('✓ Created ' . count($categories) . ' product categories successfully!');
     }
 }
