@@ -256,6 +256,299 @@ class PageBuilderSeeder extends Seeder
                 ],
                 'default_content' => [],
             ],
+
+            // Hero Gradient Template
+            [
+                'template_type' => 'hero_gradient',
+                'name' => 'Hero - Gradient Animated',
+                'slug' => 'hero-gradient-animated',
+                'description' => 'Hero section with animated gradient and badges',
+                'category' => 'animated',
+                'sort_order' => 3,
+                'is_active' => true,
+                'default_settings' => [
+                    'gradient_from' => '#667eea',
+                    'gradient_to' => '#764ba2',
+                    'gradient_direction' => '135deg',
+                    'text_align' => 'center',
+                    'has_animation' => true,
+                ],
+                'default_content' => [
+                    'badge_text' => 'NEW',
+                    'title' => 'Build Something Amazing',
+                    'subtitle' => 'The best platform for your next project',
+                    'cta_primary_text' => 'Get Started Free',
+                    'cta_primary_url' => '/register',
+                    'trust_badges' => ['✓ 30-day free trial', '✓ No credit card required'],
+                ],
+            ],
+
+            // Hero Video Template
+            [
+                'template_type' => 'hero_video',
+                'name' => 'Hero - Video Background',
+                'slug' => 'hero-video-bg',
+                'description' => 'Hero section with video background',
+                'category' => 'modern',
+                'sort_order' => 4,
+                'is_active' => true,
+                'default_settings' => [
+                    'video_type' => 'mp4',
+                    'overlay_opacity' => '0.5',
+                    'overlay_color' => '#000000',
+                    'text_align' => 'center',
+                    'show_scroll_indicator' => true,
+                ],
+                'default_content' => [
+                    'video_url' => '/videos/hero-bg.mp4',
+                    'title' => 'Experience Innovation',
+                    'subtitle' => 'Watch your business transform',
+                    'cta_primary_text' => 'Watch Demo',
+                    'cta_primary_url' => '#demo',
+                ],
+            ],
+
+            // Features List Template
+            [
+                'template_type' => 'features_list',
+                'name' => 'Features - Detailed List',
+                'slug' => 'features-detailed-list',
+                'description' => 'Detailed features list with icons and descriptions',
+                'category' => 'business',
+                'sort_order' => 12,
+                'is_active' => true,
+                'default_settings' => [
+                    'layout' => 'two-column',
+                    'icon_style' => 'gradient',
+                ],
+                'default_content' => [
+                    'title' => 'Powerful Features',
+                    'subtitle' => 'Everything you need to succeed',
+                    'features' => [
+                        [
+                            'icon' => '⚡',
+                            'title' => 'Lightning Fast Performance',
+                            'description' => 'Optimized for speed and efficiency',
+                            'items' => ['Sub-second load times', 'CDN delivery', 'Smart caching'],
+                        ],
+                    ],
+                ],
+            ],
+
+            // Testimonials Template
+            [
+                'template_type' => 'testimonials',
+                'name' => 'Testimonials - 3 Column Grid',
+                'slug' => 'testimonials-grid-3',
+                'description' => 'Customer testimonials in 3-column grid',
+                'category' => 'modern',
+                'sort_order' => 60,
+                'is_active' => true,
+                'default_settings' => [
+                    'columns' => 3,
+                    'show_rating' => true,
+                ],
+                'default_content' => [
+                    'title' => 'What Our Customers Say',
+                    'subtitle' => 'Don\'t just take our word for it',
+                    'testimonials' => [
+                        [
+                            'name' => 'John Doe',
+                            'role' => 'CEO',
+                            'company' => 'Example Corp',
+                            'text' => 'This platform transformed our business!',
+                            'rating' => 5,
+                            'verified' => true,
+                        ],
+                    ],
+                ],
+            ],
+
+            // Pricing Template
+            [
+                'template_type' => 'pricing',
+                'name' => 'Pricing - Modern Cards',
+                'slug' => 'pricing-modern-cards',
+                'description' => 'Modern pricing table with feature comparison',
+                'category' => 'business',
+                'sort_order' => 70,
+                'is_active' => true,
+                'default_settings' => [
+                    'billing_cycle' => 'monthly',
+                    'highlight_popular' => true,
+                ],
+                'default_content' => [
+                    'title' => 'Simple, Transparent Pricing',
+                    'subtitle' => 'Choose the plan that fits your needs',
+                    'plans' => [
+                        [
+                            'name' => 'Starter',
+                            'price' => 990,
+                            'period' => 'month',
+                            'currency' => '฿',
+                            'features' => ['10 Projects', '100 GB Storage', 'Basic Support'],
+                            'cta_text' => 'Get Started',
+                            'cta_url' => '/register',
+                        ],
+                    ],
+                ],
+            ],
+
+            // Team Template
+            [
+                'template_type' => 'team',
+                'name' => 'Team - 4 Column Grid',
+                'slug' => 'team-grid-4',
+                'description' => 'Team members showcase in 4-column grid',
+                'category' => 'business',
+                'sort_order' => 80,
+                'is_active' => true,
+                'default_settings' => [
+                    'columns' => 4,
+                    'show_social' => true,
+                ],
+                'default_content' => [
+                    'title' => 'Meet Our Team',
+                    'subtitle' => 'The people behind our success',
+                    'members' => [
+                        [
+                            'name' => 'Jane Smith',
+                            'position' => 'CEO & Founder',
+                            'bio' => 'Leading with vision and innovation',
+                            'image' => '/images/team/jane.jpg',
+                            'social' => [
+                                'twitter' => 'https://twitter.com/janesmith',
+                                'linkedin' => 'https://linkedin.com/in/janesmith',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+
+            // FAQ Template
+            [
+                'template_type' => 'faq',
+                'name' => 'FAQ - Accordion Style',
+                'slug' => 'faq-accordion',
+                'description' => 'Frequently asked questions with accordion',
+                'category' => 'modern',
+                'sort_order' => 90,
+                'is_active' => true,
+                'default_settings' => [
+                    'layout' => 'single',
+                    'accordion_style' => 'default',
+                ],
+                'default_content' => [
+                    'title' => 'Frequently Asked Questions',
+                    'subtitle' => 'Everything you need to know',
+                    'faqs' => [
+                        [
+                            'question' => 'How do I get started?',
+                            'answer' => 'Simply click the Get Started button and follow the onboarding process.',
+                        ],
+                        [
+                            'question' => 'What payment methods do you accept?',
+                            'answer' => 'We accept all major credit cards, PayPal, and bank transfers.',
+                        ],
+                    ],
+                ],
+            ],
+
+            // Contact Form Template
+            [
+                'template_type' => 'contact_form',
+                'name' => 'Contact - Split Layout',
+                'slug' => 'contact-split-layout',
+                'description' => 'Contact form with split layout and info',
+                'category' => 'business',
+                'sort_order' => 100,
+                'is_active' => true,
+                'default_settings' => [
+                    'layout' => 'split',
+                    'show_contact_info' => true,
+                    'enable_privacy_checkbox' => true,
+                ],
+                'default_content' => [
+                    'title' => 'Get In Touch',
+                    'subtitle' => 'We\'d love to hear from you',
+                    'contact_email' => 'hello@example.com',
+                    'contact_phone' => '+66 2-123-4567',
+                    'contact_address' => 'Bangkok, Thailand',
+                    'business_hours' => 'Mon-Fri: 9AM-6PM',
+                ],
+            ],
+
+            // Gallery Template
+            [
+                'template_type' => 'gallery',
+                'name' => 'Gallery - Grid Layout',
+                'slug' => 'gallery-grid',
+                'description' => 'Image gallery with lightbox',
+                'category' => 'modern',
+                'sort_order' => 110,
+                'is_active' => true,
+                'default_settings' => [
+                    'layout' => 'grid',
+                    'columns' => 3,
+                    'enable_lightbox' => true,
+                ],
+                'default_content' => [
+                    'title' => 'Our Gallery',
+                    'subtitle' => 'Explore our work',
+                    'images' => [
+                        [
+                            'url' => '/images/gallery/1.jpg',
+                            'title' => 'Project 1',
+                            'description' => 'Beautiful design',
+                        ],
+                    ],
+                ],
+            ],
+
+            // Image Text Template
+            [
+                'template_type' => 'image_text',
+                'name' => 'Image + Text - Split',
+                'slug' => 'image-text-split',
+                'description' => 'Image and text side by side',
+                'category' => 'modern',
+                'sort_order' => 120,
+                'is_active' => true,
+                'default_settings' => [
+                    'image_position' => 'left',
+                    'image_size' => '50',
+                    'vertical_align' => 'center',
+                ],
+                'default_content' => [
+                    'image' => '/images/about.jpg',
+                    'title' => 'About Our Company',
+                    'subtitle' => 'Building the future',
+                    'description' => 'We are passionate about creating innovative solutions.',
+                    'features' => ['Industry leaders', '10+ years experience', '1000+ happy clients'],
+                    'cta_text' => 'Learn More',
+                    'cta_url' => '/about',
+                ],
+            ],
+
+            // Custom HTML Template
+            [
+                'template_type' => 'custom_html',
+                'name' => 'Custom HTML Section',
+                'slug' => 'custom-html-section',
+                'description' => 'Custom HTML, CSS, and JavaScript',
+                'category' => 'creative',
+                'sort_order' => 130,
+                'is_active' => true,
+                'default_settings' => [
+                    'container_class' => 'container mx-auto px-4',
+                    'padding_y' => 'py-20',
+                    'enable_scripts' => false,
+                    'enable_styles' => false,
+                ],
+                'default_content' => [
+                    'html' => '<div class="text-center"><h2 class="text-3xl font-bold">Custom Content</h2><p class="mt-4">Add your custom HTML here</p></div>',
+                ],
+            ],
         ];
 
         foreach ($templates as $template) {
