@@ -21,8 +21,22 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+    <!-- Bootstrap CSS (for hotel management views) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Prevent Tailwind-Bootstrap conflicts -->
+    <style>
+        /* Ensure Bootstrap components work properly */
+        .bootstrap-wrapper .container,
+        .bootstrap-wrapper .container-fluid,
+        .bootstrap-wrapper .row,
+        .bootstrap-wrapper [class*="col-"] {
+            all: revert;
+        }
+    </style>
 
     <!-- Alpine.js -->
     <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.3/dist/cdn.min.js"></script>
@@ -258,6 +272,12 @@
             });
         });
     </script>
+
+    <!-- jQuery (for Bootstrap and hotel views) -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <!-- Bootstrap JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         // Dark Mode Toggle Function for Windows UI
