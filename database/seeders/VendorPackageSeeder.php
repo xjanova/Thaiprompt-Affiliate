@@ -9,10 +9,75 @@ class VendorPackageSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing vendor packages only, preserves existing configurations.
+     * User customizations (prices, limits, features, commission rates) are preserved.
      */
     public function run(): void
     {
-        $packages = [
+        $existingPackagesCount = VendorPackage::count();
+
+        if ($existingPackagesCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all vendor packages
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all vendor packages...');
+
+        $packages = $this->getAllPackages();
+
+        foreach ($packages as $package) {
+            VendorPackage::create($package);
+        }
+
+        $this->command->info('✅ Vendor packages seeded successfully: ' . count($packages) . ' packages');
+    }
+
+    /**
+     * Update mode - add only missing vendor packages
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing vendor packages detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing packages only)...');
+
+        $packages = $this->getAllPackages();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($packages as $package) {
+            if (!VendorPackage::where('package_slug', $package['package_slug'])->exists()) {
+                VendorPackage::create($package);
+                $this->command->info("   ➕ Added: {$package['package_name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new vendor packages.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing packages (preserved).");
+        }
+    }
+
+    /**
+     * Get all default vendor packages
+     */
+    private function getAllPackages(): array
+    {
+        return [
             [
                 'package_name' => 'Free',
                 'package_slug' => 'free',
@@ -188,14 +253,5 @@ class VendorPackageSeeder extends Seeder
                 'is_default' => false,
             ],
         ];
-
-        foreach ($packages as $package) {
-            VendorPackage::updateOrCreate(
-                ['package_slug' => $package['package_slug']],
-                $package
-            );
-        }
-
-        $this->command->info('✅ Vendor packages seeded successfully!');
     }
 }

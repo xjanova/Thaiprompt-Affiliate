@@ -191,6 +191,45 @@
                         </div>
                     </div>
 
+                    <!-- Responsive Taskbar Settings -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">📱</span> Responsive Taskbar (การรวมไอคอนเมื่อจอเล็ก)
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="millennium_taskbar_collapse_enabled" value="1" {{ ($settings['millennium_taskbar_collapse_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้การรวมไอคอนบนหน้าจอเล็ก</span>
+                                </label>
+                            </div>
+                            <div x-data="{ breakpoint: {{ $settings['millennium_taskbar_collapse_breakpoint'] ?? 768 }} }">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Breakpoint ความกว้างหน้าจอ (px)
+                                </label>
+                                <div class="flex items-center gap-4">
+                                    <input
+                                        type="range"
+                                        name="millennium_taskbar_collapse_breakpoint"
+                                        x-model="breakpoint"
+                                        min="320"
+                                        max="1920"
+                                        step="10"
+                                        class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600">
+                                    <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400 min-w-[5rem] text-center" x-text="breakpoint + 'px'"></span>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    เมื่อหน้าจอเล็กกว่า <span x-text="breakpoint"></span>px จะรวมไอคอนเข้าเมนู
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                <strong>💡 คำแนะนำ:</strong> เมื่อเปิดใช้งาน ไอคอนบน Taskbar จะถูกรวมเข้าเมนูแบบ hamburger บนหน้าจอที่เล็กกว่า breakpoint ที่กำหนด (แนะนำ: 768px สำหรับมือถือ, 1024px สำหรับแท็บเล็ต)
+                            </p>
+                        </div>
+                    </div>
+
                     <!-- Start Button Settings -->
                     <div>
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -201,12 +240,105 @@
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความ Start Button</label>
                                 <input type="text" name="windows_start_button_text" value="{{ $settings['windows_start_button_text'] ?? 'เริ่ม' }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่งปุ่ม Start</label>
+                                <select name="windows_start_button_position" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="left" {{ ($settings['windows_start_button_position'] ?? 'left') === 'left' ? 'selected' : '' }}>ซ้าย (Left)</option>
+                                    <option value="center" {{ ($settings['windows_start_button_position'] ?? 'left') === 'center' ? 'selected' : '' }}>กลาง (Center)</option>
+                                    <option value="right" {{ ($settings['windows_start_button_position'] ?? 'left') === 'right' ? 'selected' : '' }}>ขวา (Right)</option>
+                                </select>
+                            </div>
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
                                     <input type="checkbox" name="windows_start_button_use_logo" value="1" {{ ($settings['windows_start_button_use_logo'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้โลโก้แทนข้อความ</span>
                                 </label>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- Millennium Start Menu Settings -->
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">📋</span> Millennium Start Menu Settings
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่ง Start Menu</label>
+                                <select name="millennium_menu_position" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option value="left" {{ ($settings['millennium_menu_position'] ?? 'left') === 'left' ? 'selected' : '' }}>ซ้าย (Left)</option>
+                                    <option value="center" {{ ($settings['millennium_menu_position'] ?? 'left') === 'center' ? 'selected' : '' }}>กลาง (Center)</option>
+                                    <option value="right" {{ ($settings['millennium_menu_position'] ?? 'left') === 'right' ? 'selected' : '' }}>ขวา (Right)</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ ($settings['millennium_menu_rgb_enabled'] ?? false) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Border ใน Menu</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4" x-data="{
+                            menuWidth: '{{ $settings['millennium_menu_width'] ?? '400' }}',
+                            menuWidthUnit: '{{ $settings['millennium_menu_width_unit'] ?? 'px' }}',
+                            menuMaxHeight: '{{ $settings['millennium_menu_max_height'] ?? '600' }}',
+                            menuMaxHeightUnit: '{{ $settings['millennium_menu_max_height_unit'] ?? 'px' }}'
+                        }">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    ความกว้าง Menu (<span x-text="menuWidthUnit"></span>)
+                                </label>
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-4">
+                                        <input
+                                            type="number"
+                                            x-model.number="menuWidth"
+                                            name="millennium_menu_width"
+                                            :min="menuWidthUnit === 'px' ? 300 : 20"
+                                            :max="menuWidthUnit === 'px' ? 800 : 100"
+                                            class="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400 min-w-[5rem] text-center" x-text="menuWidth + menuWidthUnit"></span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="menuWidthUnit = 'px'; menuWidth = 400" :class="menuWidthUnit === 'px' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">px</button>
+                                        <button type="button" @click="menuWidthUnit = '%'; menuWidth = 90" :class="menuWidthUnit === '%' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">%</button>
+                                    </div>
+                                    <input type="hidden" name="millennium_menu_width_unit" x-model="menuWidthUnit">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    ความสูงสูงสุด (<span x-text="menuMaxHeightUnit"></span>)
+                                </label>
+                                <div class="space-y-2">
+                                    <div class="flex items-center gap-4">
+                                        <input
+                                            type="number"
+                                            x-model.number="menuMaxHeight"
+                                            name="millennium_menu_max_height"
+                                            :min="menuMaxHeightUnit === 'px' ? 400 : (menuMaxHeightUnit === '%' ? 50 : 50)"
+                                            :max="menuMaxHeightUnit === 'px' ? 1000 : (menuMaxHeightUnit === '%' ? 100 : 100)"
+                                            class="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
+                                        <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400 min-w-[5rem] text-center" x-text="menuMaxHeight + menuMaxHeightUnit"></span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button type="button" @click="menuMaxHeightUnit = 'px'; menuMaxHeight = 600" :class="menuMaxHeightUnit === 'px' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">px</button>
+                                        <button type="button" @click="menuMaxHeightUnit = '%'; menuMaxHeight = 80" :class="menuMaxHeightUnit === '%' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">%</button>
+                                        <button type="button" @click="menuMaxHeightUnit = 'vh'; menuMaxHeight = 80" :class="menuMaxHeightUnit === 'vh' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">vh</button>
+                                    </div>
+                                    <input type="hidden" name="millennium_menu_max_height_unit" x-model="menuMaxHeightUnit">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                <strong>💡 คำแนะนำ:</strong>
+                            </p>
+                            <ul class="text-sm text-blue-700 dark:text-blue-300 list-disc ml-5 mt-2 space-y-1">
+                                <li><strong>px:</strong> ขนาดคงที่ (เช่น 400px, 600px)</li>
+                                <li><strong>%:</strong> เปอร์เซ็นต์ของหน้าจอ (เช่น 90%, 80%)</li>
+                                <li><strong>vh:</strong> เปอร์เซ็นต์ของความสูงหน้าจอ (เช่น 80vh)</li>
+                            </ul>
                         </div>
                     </div>
 
