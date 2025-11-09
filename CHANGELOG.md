@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.107.2] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #647 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (b238bbe)
+- fix: PageBuilderController update method return JSON for AJAX (4f6616d)
+### 🔧 Other Changes
+
+
 ## [v2.107.1] - 2025-11-09
 
 ### ✨ Features
