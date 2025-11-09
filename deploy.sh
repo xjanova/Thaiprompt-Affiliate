@@ -574,58 +574,96 @@ else
     print_success "Base Controller.php exists"
 fi
 
-# Step 7: Install/Update Composer Dependencies
-print_info "[7/20] Installing composer dependencies..."
+# Smart Composer Management System
+smart_composer_install() {
+    local needs_install=0
+    local lock_changed=0
 
-# Remove vendor directory to ensure clean install
-if [ -d "vendor" ]; then
-    print_info "Removing old vendor directory for clean install..."
-    rm -rf vendor
-fi
+    # Check if composer.lock changed
+    if [ -f ".composer.lock.checksum" ]; then
+        local old_checksum=$(cat .composer.lock.checksum 2>/dev/null || echo "")
+        local new_checksum=$(md5sum composer.lock 2>/dev/null | cut -d' ' -f1 || echo "")
 
-# Clear composer cache
-composer clear-cache 2>/dev/null || true
-
-# Install dependencies from scratch
-print_info "Installing composer dependencies..."
-if ! composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
-    error_exit "Composer install failed - อาจเป็นปัญหา network หรือ Packagist" "$?"
-fi
-print_success "Composer dependencies installed (clean)"
-
-# Verify composer lock file matches
-if [ -f "composer.lock" ]; then
-    composer validate --no-check-all --no-check-publish 2>/dev/null && \
-        print_success "Composer.lock is valid" || \
-        print_warning "Composer.lock validation failed"
-fi
-
-# Step 7.5: Verify Google Cloud Vision is installed (for OCR/KYC)
-print_info "[7.5/20] Verifying Google Cloud Vision for OCR..."
-if composer show google/cloud-vision &>/dev/null; then
-    VISION_VERSION=$(composer show google/cloud-vision 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
-    print_success "Google Cloud Vision installed (${VISION_VERSION})"
-else
-    print_warning "Google Cloud Vision not found! OCR/KYC features will not work."
-    log "Warning: google/cloud-vision is missing. Run 'composer require google/cloud-vision' locally and commit composer.lock"
-fi
-
-# Step 7.6: Install/Verify DomPDF for PDF Generation (Software Sales System)
-print_info "[7.6/20] Installing DomPDF for PDF generation..."
-if composer show barryvdh/laravel-dompdf &>/dev/null; then
-    DOMPDF_VERSION=$(composer show barryvdh/laravel-dompdf 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
-    print_success "DomPDF already installed (${DOMPDF_VERSION})"
-else
-    print_info "Installing DomPDF..."
-    if ! composer require barryvdh/laravel-dompdf --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
-        print_warning "DomPDF installation failed - PDF quotations will use HTML fallback"
-        log "Warning: barryvdh/laravel-dompdf installation failed"
+        if [ "$old_checksum" != "$new_checksum" ]; then
+            lock_changed=1
+            print_info "composer.lock has changed - will update dependencies"
+        else
+            print_success "composer.lock unchanged - checking existing dependencies"
+        fi
     else
-        DOMPDF_VERSION=$(composer show barryvdh/laravel-dompdf 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
-        print_success "DomPDF installed successfully (${DOMPDF_VERSION})"
-        log "DomPDF installed: ${DOMPDF_VERSION}"
+        lock_changed=1
     fi
-fi
+
+    # Check if vendor directory exists and is valid
+    if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
+        needs_install=1
+        print_warning "vendor directory missing or invalid"
+    fi
+
+    # If lock changed or vendor missing, do full install
+    if [ $needs_install -eq 1 ] || [ $lock_changed -eq 1 ]; then
+        print_info "Running composer install..."
+        composer clear-cache 2>/dev/null || true
+
+        if ! composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+            error_exit "Composer install failed - อาจเป็นปัญหา network หรือ Packagist" "$?"
+        fi
+
+        # Save checksum for future comparisons
+        md5sum composer.lock 2>/dev/null | cut -d' ' -f1 > .composer.lock.checksum
+        print_success "Composer dependencies installed"
+    else
+        print_success "Composer dependencies up-to-date (skipped install)"
+    fi
+
+    # Validate composer.lock
+    composer validate --no-check-all --no-check-publish 2>/dev/null && \
+        print_success "composer.lock is valid" || \
+        print_warning "composer.lock validation warning"
+}
+
+# Check and install missing packages
+check_package() {
+    local package=$1
+    local description=$2
+    local required=${3:-false}
+
+    if composer show "$package" &>/dev/null; then
+        local version=$(composer show "$package" 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
+        print_success "$description installed ($version)"
+        return 0
+    else
+        print_warning "$description not found"
+
+        if [ "$required" = "true" ]; then
+            print_info "Installing $package..."
+            if composer require "$package" --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+                local version=$(composer show "$package" 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
+                print_success "$description installed successfully ($version)"
+                md5sum composer.lock 2>/dev/null | cut -d' ' -f1 > .composer.lock.checksum
+                return 0
+            else
+                print_error "$description installation failed"
+                return 1
+            fi
+        fi
+        return 1
+    fi
+}
+
+# Step 7: Smart Composer Management
+print_info "[7/20] Smart Composer Management..."
+echo ""
+
+# Run smart composer install
+smart_composer_install
+echo ""
+
+# Check critical packages
+print_info "Verifying critical packages..."
+check_package "google/cloud-vision" "Google Cloud Vision (OCR/KYC)" false
+check_package "barryvdh/laravel-dompdf" "DomPDF (PDF Generation)" false
+echo ""
 
 # Step 8: Install/Reinstall Laravel Sanctum
 print_info "[8/20] Installing Laravel Sanctum..."
