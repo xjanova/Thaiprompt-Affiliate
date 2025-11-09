@@ -2,25 +2,58 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
-## [v2.109.1] - 2025-11-09
+## [v2.110.0] - 2025-11-09
 
-### ✨ Features
+### ✨ Features - Windows UI Configuration System
+- **WindowsUiSeeder**: Created comprehensive seeder for Windows UI settings
+  - Start Menu Items with current grouped menu structure (14 main categories with submenus)
+  - Taskbar Apps quick access configuration (7 default apps)
+  - System Tray Icons with visibility controls (9 default icons)
+  - All settings seeded from actual millennium-start-menu.blade.php structure
+
+- **Start Menu Size & Position Controls**: Fixed and enhanced settings
+  - Position control (left, center, right) now works correctly
+  - Width and height settings now save and apply properly
+  - Added percentage support for responsive sizing
+  - Unit selector for width (px, %)
+  - Unit selector for height (px, %, vh)
+  - Settings are properly loaded and displayed
+  - Real-time application of size and position changes
+
+### 🎨 Improvements
+- Enhanced Start Menu management UI with unit selectors
+- Added helpful hints for recommended sizes
+- Improved form validation for menu settings
+- Better default values in WindowsUiSeeder
+
+### 🔧 Technical Details
+- Updated WindowsUiController validation rules for new menu settings
+- Modified millennium-start-menu component to support flexible units
+- Added millennium_menu_width_unit and millennium_menu_max_height_unit settings
+- Registered WindowsUiSeeder in DatabaseSeeder
+- All settings now persist correctly to database
+
+### 📚 Files Changed
+- New: `database/seeders/WindowsUiSeeder.php` (~370 lines)
+- Modified: `database/seeders/DatabaseSeeder.php` (added WindowsUiSeeder)
+- Modified: `app/Http/Controllers/Admin/WindowsUiController.php` (added menu setting validation)
+- Modified: `resources/views/admin/windows-ui/start-menu.blade.php` (enhanced UI with units)
+- Modified: `resources/views/components/millennium-start-menu.blade.php` (support flexible units)
+
+### 🚀 System Status
+Windows UI Configuration is now **complete** with:
+✅ Start Menu with 14 grouped categories and working submenus
+✅ Taskbar Apps quick access configuration
+✅ System Tray Icons with visibility controls
+✅ Working size and position controls with percentage support
+✅ Comprehensive seeder with current menu structure
+✅ All settings persist and apply correctly
+
+## [v2.109.1] - 2025-11-09
 
 ### 🐛 Bug Fixes
 - Merge pull request #650 from xjanova/claude/fix-blade-syntax-error-011CUxCCkvwCTEoeML9dyM8L (208fd35)
 - fix: resolve Blade syntax error in rgb-settings template (34ce41b)
-### 🔧 Other Changes
-
-
-## [v2.109.0] - 2025-11-09
-
-### ✨ Features
-- Merge pull request #649 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (d52a3ae)
-- feat: complete Page Builder v2.104.0 with validation, permissions, and templates (063862b)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-- chore: resolve merge conflict with main branch (5f287eb)
 
 ## [v2.109.0] - 2025-11-09
 

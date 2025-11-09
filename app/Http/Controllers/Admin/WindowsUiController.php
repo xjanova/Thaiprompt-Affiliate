@@ -48,6 +48,13 @@ class WindowsUiController extends Controller
             'millennium_rgb_enabled' => ['nullable', 'boolean'],
             'millennium_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:10'],
 
+            // Millennium Start Menu Settings
+            'millennium_menu_position' => ['nullable', 'string', 'in:left,center,right'],
+            'millennium_menu_width' => ['nullable', 'string', 'max:20'],
+            'millennium_menu_width_unit' => ['nullable', 'string', 'in:px,%'],
+            'millennium_menu_max_height' => ['nullable', 'string', 'max:20'],
+            'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
+
             // RGB Settings
             'windows_rgb_enabled' => ['nullable', 'boolean'],
             'windows_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:10'],
