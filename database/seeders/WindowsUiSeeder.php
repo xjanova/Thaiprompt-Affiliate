@@ -332,6 +332,7 @@ class WindowsUiSeeder extends Seeder
 
         WindowsUiSetting::set('windows_start_button_text', 'START', 'string');
         WindowsUiSetting::set('windows_start_button_use_logo', false, 'boolean');
+        WindowsUiSetting::set('windows_start_button_position', 'center', 'string');
 
         WindowsUiSetting::set('millennium_back_button_enabled', true, 'boolean');
         WindowsUiSetting::set('millennium_back_button_text', '← Back', 'string');
@@ -346,6 +347,11 @@ class WindowsUiSeeder extends Seeder
         WindowsUiSetting::set('millennium_menu_width_unit', 'px', 'string');
         WindowsUiSetting::set('millennium_menu_max_height', '600', 'string');
         WindowsUiSetting::set('millennium_menu_max_height_unit', 'px', 'string');
+        WindowsUiSetting::set('millennium_menu_rgb_enabled', true, 'boolean');
+
+        // Responsive Taskbar Settings
+        WindowsUiSetting::set('millennium_taskbar_collapse_enabled', true, 'boolean');
+        WindowsUiSetting::set('millennium_taskbar_collapse_breakpoint', 768, 'integer');
 
         WindowsUiSetting::set('windows_rgb_enabled', true, 'boolean');
         WindowsUiSetting::set('windows_rgb_speed', 3, 'integer');

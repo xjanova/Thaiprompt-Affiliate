@@ -168,27 +168,114 @@
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความกว้าง</label>
-                            <div class="flex gap-2">
-                                <input type="number" name="millennium_menu_width" min="1" max="3000" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_width', '400') }}" class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                                <select name="millennium_menu_width_unit" class="w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                                    <option value="px" {{ \App\Models\WindowsUiSetting::get('millennium_menu_width_unit', 'px') === 'px' ? 'selected' : '' }}>px</option>
-                                    <option value="%" {{ \App\Models\WindowsUiSetting::get('millennium_menu_width_unit', 'px') === '%' ? 'selected' : '' }}>%</option>
+
+                            <!-- Number Input for px -->
+                            <div x-show="widthUnit === 'px'" class="flex gap-2">
+                                <input type="number" name="millennium_menu_width" x-model="widthValue" min="1" max="3000" class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                <select name="millennium_menu_width_unit" x-model="widthUnit" class="w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                    <option value="px">px</option>
+                                    <option value="%">%</option>
                                 </select>
                             </div>
+
+                            <!-- Slider for % -->
+                            <div x-show="widthUnit === '%'">
+                                <div class="flex gap-2 mb-2">
+                                    <div class="flex-1 flex items-center gap-4">
+                                        <input type="range" name="millennium_menu_width" x-model="widthValue" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600">
+                                        <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 min-w-[4rem] text-center" x-text="widthValue + '%'"></span>
+                                    </div>
+                                    <select name="millennium_menu_width_unit" x-model="widthUnit" class="w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                        <option value="px">px</option>
+                                        <option value="%">%</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">แนะนำ: 400-600px หรือ 30-50%</p>
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความสูงสูงสุด</label>
-                            <div class="flex gap-2">
-                                <input type="number" name="millennium_menu_max_height" min="1" max="3000" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height', '600') }}" class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                                <select name="millennium_menu_max_height_unit" class="w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                                    <option value="px" {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') === 'px' ? 'selected' : '' }}>px</option>
-                                    <option value="%" {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') === '%' ? 'selected' : '' }}>%</option>
-                                    <option value="vh" {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') === 'vh' ? 'selected' : '' }}>vh</option>
+
+                            <!-- Number Input for px -->
+                            <div x-show="heightUnit === 'px'" class="flex gap-2">
+                                <input type="number" name="millennium_menu_max_height" x-model="heightValue" min="1" max="3000" class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                <select name="millennium_menu_max_height_unit" x-model="heightUnit" class="w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                    <option value="px">px</option>
+                                    <option value="%">%</option>
+                                    <option value="vh">vh</option>
                                 </select>
                             </div>
+
+                            <!-- Slider for % and vh -->
+                            <div x-show="heightUnit === '%' || heightUnit === 'vh'">
+                                <div class="flex gap-2 mb-2">
+                                    <div class="flex-1 flex items-center gap-4">
+                                        <input type="range" name="millennium_menu_max_height" x-model="heightValue" min="1" max="100" class="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600">
+                                        <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 min-w-[4rem] text-center" x-text="heightValue + heightUnit"></span>
+                                    </div>
+                                    <select name="millennium_menu_max_height_unit" x-model="heightUnit" class="w-20 px-2 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                        <option value="px">px</option>
+                                        <option value="%">%</option>
+                                        <option value="vh">vh</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">แนะนำ: 600-800px หรือ 70-90vh</p>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-200 dark:border-slate-600">
+                            <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg cursor-pointer">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white">🌈 RGB Border Effect</span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">แสดงเอฟเฟค RGB วิ่งรอบเมนู</p>
+                                </div>
+                                <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                            </label>
+                        </div>
+
+                        <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all">
+                            <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Start Button & Taskbar Settings -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 p-6">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                    <span>🎮</span> Taskbar & Start Button
+                </h3>
+                <form method="POST" action="{{ route('admin.windows-ui.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่งปุ่ม Start</label>
+                            <select name="windows_start_button_position" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                <option value="left" {{ \App\Models\WindowsUiSetting::get('windows_start_button_position', 'center') === 'left' ? 'selected' : '' }}>ซ้าย</option>
+                                <option value="center" {{ \App\Models\WindowsUiSetting::get('windows_start_button_position', 'center') === 'center' ? 'selected' : '' }}>กลาง</option>
+                                <option value="right" {{ \App\Models\WindowsUiSetting::get('windows_start_button_position', 'center') === 'right' ? 'selected' : '' }}>ขวา</option>
+                            </select>
+                        </div>
+
+                        <div class="pt-4 border-t border-gray-200 dark:border-slate-600">
+                            <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg cursor-pointer mb-3">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white">📱 Responsive Mode</span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">รวมไอคอนเป็นปุ่มเมื่อหน้าจอเล็ก</p>
+                                </div>
+                                <input type="checkbox" name="millennium_taskbar_collapse_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                            </label>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Breakpoint (px)</label>
+                                <input type="number" name="millennium_taskbar_collapse_breakpoint" min="320" max="1920" value="{{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_breakpoint', 768) }}" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">หน้าจอที่แคบกว่านี้จะแสดงโหมด Responsive</p>
+                            </div>
                         </div>
 
                         <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-all">
@@ -243,6 +330,12 @@
 function startMenuManager() {
     return {
         menuItems: @json($items ?? []),
+
+        // Menu size settings
+        widthValue: {{ \App\Models\WindowsUiSetting::get('millennium_menu_width', '400') }},
+        widthUnit: '{{ \App\Models\WindowsUiSetting::get('millennium_menu_width_unit', 'px') }}',
+        heightValue: {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height', '600') }},
+        heightUnit: '{{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') }}',
 
         init() {
             // Initialize Sortable.js
