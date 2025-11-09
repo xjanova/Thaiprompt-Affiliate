@@ -118,12 +118,33 @@ class PageBuilderController extends Controller
         ]);
 
         if ($validator->fails()) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
         }
 
-        $this->pageBuilderService->updatePage($page, $request->all());
+        // Handle checkbox for is_active (unchecked = false)
+        $data = $request->all();
+        $data['is_active'] = $request->has('is_active');
+
+        $this->pageBuilderService->updatePage($page, $data);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Page updated successfully!',
+                'page' => $page->fresh()
+            ]);
+        }
 
         return redirect()->route('admin.page-builder.edit', $page)
             ->with('success', 'Page updated successfully!');
