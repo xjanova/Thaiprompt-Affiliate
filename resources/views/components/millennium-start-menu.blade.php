@@ -17,6 +17,7 @@
                 'label' => 'ผู้ใช้งาน',
                 'submenu' => [
                     ['label' => 'รายชื่อผู้ใช้', 'url' => route('admin.users.index')],
+                    ['label' => 'สิทธิ์ผู้ใช้', 'url' => route('admin.users.permissions')],
                     ['label' => 'บทบาท (Roles)', 'url' => route('admin.roles.index')],
                 ]
             ],
@@ -47,6 +48,7 @@
                 'icon' => '🛒',
                 'label' => 'อีคอมเมิร์ซ',
                 'submenu' => [
+                    ['label' => 'แดชบอร์ด', 'url' => route('admin.ecommerce.dashboard')],
                     ['label' => 'สินค้าทั้งหมด', 'url' => route('admin.ecommerce.products.index')],
                     ['label' => 'คำสั่งซื้อ', 'url' => route('admin.ecommerce.orders.index')],
                     ['label' => 'หมวดหมู่', 'url' => route('admin.ecommerce.categories.index')],
@@ -70,6 +72,7 @@
                     ['label' => 'กระเป๋าเงินทั้งหมด', 'url' => route('admin.wallet.index')],
                     ['label' => 'ประวัติธุรกรรม', 'url' => route('admin.wallet.transactions')],
                     ['label' => 'คำขอถอนเงิน', 'url' => route('admin.withdrawals.pending')],
+                    ['label' => 'ประวัติการถอน', 'url' => route('admin.withdrawals.index')],
                     ['label' => 'ตั้งค่า Payment', 'url' => route('admin.payment-gateways.index')],
                 ]
             ],
@@ -78,6 +81,8 @@
                 'label' => 'กระเป๋าคริปโต',
                 'submenu' => [
                     ['label' => 'แดชบอร์ด', 'url' => route('admin.crypto.dashboard')],
+                    ['label' => 'ธุรกรรม', 'url' => route('admin.crypto.transactions')],
+                    ['label' => 'คำขอถอน', 'url' => route('admin.crypto.withdrawals')],
                 ]
             ],
             [
@@ -85,6 +90,7 @@
                 'label' => 'คอมมิชชั่น',
                 'submenu' => [
                     ['label' => 'รายการทั้งหมด', 'url' => route('admin.commissions.index')],
+                    ['label' => 'รายงานคอมมิชชั่น', 'url' => route('admin.mlm.commissions.index')],
                 ]
             ],
             [
@@ -92,6 +98,8 @@
                 'label' => 'จัดการอีเมล',
                 'submenu' => [
                     ['label' => 'เทมเพลต', 'url' => route('admin.email.templates.index')],
+                    ['label' => 'ผู้ให้บริการ', 'url' => route('admin.email.providers')],
+                    ['label' => 'ประวัติการส่ง', 'url' => route('admin.email.logs')],
                 ]
             ],
             [
@@ -100,6 +108,9 @@
                 'submenu' => [
                     ['label' => 'ตั้งค่า LINE OA', 'url' => route('admin.line-oa.index')],
                     ['label' => 'AI Chat Bot', 'url' => route('admin.line-bot.ai.index')],
+                    ['label' => 'Broadcast', 'url' => route('admin.line-bot.broadcast.index')],
+                    ['label' => 'Avatar', 'url' => route('admin.line-bot.avatars.index')],
+                    ['label' => 'Chat Widget', 'url' => route('admin.line-bot.chat-widget.index')],
                 ]
             ],
             [
@@ -108,6 +119,7 @@
                 'submenu' => [
                     ['label' => 'คอร์สเรียน', 'url' => route('admin.academy.courses.index')],
                     ['label' => 'ใบประกาศ', 'url' => route('admin.academy.certificates.index')],
+                    ['label' => 'ตั้งค่า', 'url' => route('admin.academy.settings.index')],
                 ]
             ],
             [
@@ -115,6 +127,7 @@
                 'label' => 'Learning Center',
                 'submenu' => [
                     ['label' => 'บทความ', 'url' => route('admin.articles.index')],
+                    ['label' => 'หมวดหมู่', 'url' => route('admin.categories.index')],
                     ['label' => 'ศูนย์เรียนรู้', 'url' => route('admin.learning-center.index')],
                 ]
             ],
@@ -125,6 +138,10 @@
                     ['label' => 'สมาชิก MLM', 'url' => route('admin.mlm.members.index')],
                     ['label' => 'แผน MLM', 'url' => route('admin.mlm.plans.index')],
                     ['label' => 'ผังสายงาน', 'url' => route('admin.mlm.genealogy.index')],
+                    ['label' => 'คอมมิชชั่น', 'url' => route('admin.mlm.commissions.index')],
+                    ['label' => 'Product PV', 'url' => route('admin.mlm.product-pv.index')],
+                    ['label' => 'รายงาน', 'url' => route('admin.mlm.reports.dashboard')],
+                    ['label' => 'ตั้งค่า MLM', 'url' => route('admin.mlm.settings.index')],
                 ]
             ],
             [
@@ -132,9 +149,11 @@
                 'label' => 'ระบบการตลาด',
                 'submenu' => [
                     ['label' => 'Affiliates', 'url' => route('admin.affiliates.index')],
+                    ['label' => 'โครงสร้างทีม', 'url' => route('admin.affiliates.tree')],
                     ['label' => 'ระบบรักษายอด', 'url' => route('admin.retention.index')],
                     ['label' => 'จัดการระดับ Rank', 'url' => route('admin.ranks.index')],
                     ['label' => 'การเลื่อนระดับ', 'url' => route('admin.ranks.promotions.index')],
+                    ['label' => 'Cashback', 'url' => route('admin.cashback.index')],
                 ]
             ],
             [
@@ -143,6 +162,10 @@
                 'submenu' => [
                     ['label' => 'แดชบอร์ด', 'url' => route('admin.hrm.dashboard')],
                     ['label' => 'พนักงาน', 'url' => route('admin.hrm.employees.index')],
+                    ['label' => 'แผนก', 'url' => route('admin.hrm.departments.index')],
+                    ['label' => 'ตำแหน่ง', 'url' => route('admin.hrm.positions.index')],
+                    ['label' => 'การลา', 'url' => route('admin.hrm.leave.index')],
+                    ['label' => 'เงินเดือน', 'url' => route('admin.hrm.payroll.index')],
                 ]
             ],
             [
@@ -150,6 +173,12 @@
                 'label' => 'บัญชี (Accounting)',
                 'submenu' => [
                     ['label' => 'แดชบอร์ด', 'url' => route('admin.accounting.dashboard')],
+                    ['label' => 'ใบแจ้งหนี้', 'url' => route('admin.accounting.invoices.index')],
+                    ['label' => 'ค่าใช้จ่าย', 'url' => route('admin.accounting.expenses.index')],
+                    ['label' => 'ผู้ติดต่อ', 'url' => route('admin.accounting.contacts.index')],
+                    ['label' => 'สินค้า', 'url' => route('admin.accounting.products.index')],
+                    ['label' => 'รายงาน', 'url' => route('admin.accounting.reports.index')],
+                    ['label' => 'FlowAccount', 'url' => route('admin.accounting.flowaccount.index')],
                 ]
             ],
             [
@@ -158,6 +187,8 @@
                 'submenu' => [
                     ['label' => 'ส่งการแจ้งเตือน', 'url' => route('admin.notifications.create')],
                     ['label' => 'ประวัติ', 'url' => route('admin.notifications.index')],
+                    ['label' => 'เทมเพลต', 'url' => route('admin.notification-templates.index')],
+                    ['label' => 'สถิติ', 'url' => route('admin.notifications.statistics')],
                 ]
             ],
             [
@@ -165,6 +196,9 @@
                 'label' => 'ความปลอดภัย',
                 'submenu' => [
                     ['label' => 'ภาพรวม', 'url' => route('admin.security.index')],
+                    ['label' => 'Threat Intelligence', 'url' => route('admin.security.threat-intelligence')],
+                    ['label' => 'Analytics', 'url' => route('admin.security.analytics')],
+                    ['label' => 'OTP Settings', 'url' => route('admin.otp.settings')],
                 ]
             ],
             [
@@ -172,6 +206,7 @@
                 'label' => 'เพจ & SEO',
                 'submenu' => [
                     ['label' => 'จัดการเพจ', 'url' => route('admin.pages.index')],
+                    ['label' => 'SEO Settings', 'url' => route('admin.seo.index')],
                 ]
             ],
             [
@@ -186,6 +221,9 @@
                 'label' => 'ธีม & UI',
                 'submenu' => [
                     ['label' => 'Theme Builder', 'url' => route('admin.themes.builder')],
+                    ['label' => 'Windows UI', 'url' => route('admin.windows-ui.index')],
+                    ['label' => 'Icons', 'url' => route('admin.icons.index')],
+                    ['label' => 'Floating Tools', 'url' => route('admin.floating-tools.index')],
                 ]
             ],
             [
@@ -193,6 +231,7 @@
                 'label' => 'ภาษา & แปล',
                 'submenu' => [
                     ['label' => 'การแปล', 'url' => route('admin.translations.index')],
+                    ['label' => 'ตั้งค่าภาษา', 'url' => route('admin.settings.languages')],
                 ]
             ],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าระบบ', 'url' => route('admin.settings.index')],
@@ -214,6 +253,8 @@
                 'submenu' => [
                     ['label' => 'ขายสินค้า', 'url' => route('seller.pos.terminal')],
                     ['label' => 'รายการขาย', 'url' => route('seller.pos.transactions')],
+                    ['label' => 'Session', 'url' => route('seller.pos.sessions')],
+                    ['label' => 'ตั้งค่า POS', 'url' => route('seller.pos.settings')],
                 ]
             ],
             [
