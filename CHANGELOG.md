@@ -4,6 +4,16 @@
 
 ## [v2.109.0] - 2025-11-09
 
+### ✨ Features
+- Merge pull request #649 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (d52a3ae)
+- feat: complete Page Builder v2.104.0 with validation, permissions, and templates (063862b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- chore: resolve merge conflict with main branch (5f287eb)
+
+## [v2.109.0] - 2025-11-09
+
 ### ✨ Features - Page Builder Completion
 - **Section Templates**: Created 11 missing section templates bringing total to 19
   - hero-gradient: Hero section with animated gradient backgrounds
