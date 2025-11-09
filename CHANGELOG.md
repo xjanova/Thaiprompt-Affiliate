@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.102.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #638 from xjanova/claude/fix-seller-pos-sales-route-011CUwi3TfcDHpAED5oJyUZq (7268553)
+- feat: restore 40 missing menu items in admin and seller panels (ced356b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.101.0] - 2025-11-09
 
 ### ✨ Features
