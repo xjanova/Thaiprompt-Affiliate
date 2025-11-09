@@ -481,6 +481,11 @@
     <div class="relative h-full bg-gradient-to-br from-slate-900 via-purple-900/40 to-blue-900/40 overflow-hidden shadow-{{ $menuShadowSize }}"
          style="opacity: {{ $menuBgOpacity / 100 }}; backdrop-filter: blur({{ $menuBlurAmount }}px); border-right-width: {{ $menuBorderWidth }}px; border-color: {{ $menuBorderColor }};">
 
+        @if($menuRgbEnabled)
+        <!-- RGB Border Effect -->
+        <div class="absolute inset-0 millennium-menu-rgb pointer-events-none" style="border-width: {{ $menuRgbBorderWidth }}px;"></div>
+        @endif
+
         <!-- Animated Background -->
         <div class="absolute inset-0 opacity-5">
             <div class="absolute inset-0 millennium-grid"></div>
@@ -769,5 +774,19 @@
             3px 3px 8px rgba(0, 0, 0, 0.5),
             0 0 10px rgba(168, 85, 247, 0.5),
             inset 1px 1px 2px rgba(255, 255, 255, 0.4);
+    }
+
+    /* RGB Border Animation for Menu */
+    .millennium-menu-rgb {
+        border-style: solid;
+        border-image: linear-gradient(90deg, #FF0080, #00F0FF, #7F00FF, #FFD700, #FF0080) 1;
+        animation: millenniumMenuRgbBorder 5s linear infinite;
+        filter: blur(1px);
+        box-shadow: 0 0 {{ $menuRgbGlowSize }}px currentColor;
+    }
+
+    @keyframes millenniumMenuRgbBorder {
+        0% { filter: hue-rotate(0deg) blur(1px); }
+        100% { filter: hue-rotate(360deg) blur(1px); }
     }
 </style>

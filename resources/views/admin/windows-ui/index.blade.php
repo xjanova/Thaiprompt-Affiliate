@@ -94,16 +94,35 @@
                 @csrf
                 @method('PUT')
 
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-8" x-data="{ openSections: ['taskbar', 'backButton', 'centerSection', 'rgbBorder', 'rgb', 'theme', 'spaceship', 'contentWidth', 'clock', 'backToTop', 'systemTray'] }">
                     <!-- Left Column: Settings Sections -->
-                    <div class="lg:col-span-3 space-y-8">
+                    <div class="lg:col-span-3 space-y-6">
+
+                    <!-- Category: Taskbar & Interface -->
+                    <div class="relative">
+                        <div class="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-cyan-500 rounded-full"></div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3 pb-2 border-b-2 border-gray-200 dark:border-slate-700">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-xl">
+                                🖥️
+                            </div>
+                            <span>Taskbar & Interface</span>
+                        </h2>
+                    </div>
+
                     <!-- Millennium Taskbar Settings -->
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <span class="text-2xl">🖥️</span> Millennium Taskbar Settings
-                        </h3>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
+                        <button type="button" @click="openSections.includes('taskbar') ? openSections = openSections.filter(s => s !== 'taskbar') : openSections.push('taskbar')" class="w-full flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <span class="text-2xl">🖥️</span> Millennium Taskbar Settings
+                            </h3>
+                            <svg class="w-6 h-6 text-gray-500 transition-transform" :class="openSections.includes('taskbar') ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4" x-show="openSections.includes('taskbar')">ปรับแต่งลักษณะและพฤติกรรมของ Taskbar หลัก</p>
+                        <div x-show="openSections.includes('taskbar')" x-collapse>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่ง Taskbar</label>
                                 <select name="windows_taskbar_position" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                     <option value="top" {{ ($settings['windows_taskbar_position'] ?? 'top') === 'top' ? 'selected' : '' }}>บน (Top)</option>
@@ -133,13 +152,21 @@
                                 </label>
                             </div>
                         </div>
+                        </div>
                     </div>
 
                     <!-- Millennium Back Button Settings -->
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <span class="text-2xl">◀️</span> Millennium Back Button
-                        </h3>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
+                        <button type="button" @click="openSections.includes('backButton') ? openSections = openSections.filter(s => s !== 'backButton') : openSections.push('backButton')" class="w-full flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <span class="text-2xl">◀️</span> Millennium Back Button
+                            </h3>
+                            <svg class="w-6 h-6 text-gray-500 transition-transform" :class="openSections.includes('backButton') ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4" x-show="openSections.includes('backButton')">ปรับแต่งปุ่มย้อนกลับใน Taskbar</p>
+                        <div x-show="openSections.includes('backButton')" x-collapse>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
@@ -147,18 +174,20 @@
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงปุ่มกลับ</span>
                                 </label>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความปุ่มกลับ</label>
                                 <input type="text" name="millennium_back_button_text" value="{{ $settings['millennium_back_button_text'] ?? 'กลับ' }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
                         </div>
+                        </div>
                     </div>
 
                     <!-- Millennium Center Section Settings -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">📍</span> Millennium Center Section
                         </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">ข้อความที่แสดงในส่วนกลางของ Taskbar</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
@@ -166,18 +195,30 @@
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงส่วนกลาง</span>
                                 </label>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความส่วนกลาง (เว้นว่างเพื่อใช้ค่าเริ่มต้น)</label>
                                 <input type="text" name="millennium_center_section_text" value="{{ $settings['millennium_center_section_text'] ?? '' }}" placeholder="เช่น: Admin Dashboard" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
                         </div>
                     </div>
 
+                    <!-- Category: Visual Effects -->
+                    <div class="relative mt-12">
+                        <div class="absolute -left-4 top-0 bottom-0 w-1 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3 pb-2 border-b-2 border-gray-200 dark:border-slate-700">
+                            <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl">
+                                ✨
+                            </div>
+                            <span>Visual Effects & Themes</span>
+                        </h2>
+                    </div>
+
                     <!-- Millennium RGB Border Animation -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">🌈</span> Millennium RGB Border Animation
                         </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">แถบสีสันที่วิ่งตามขอบ Taskbar</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
@@ -185,7 +226,7 @@
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Border</span>
                                 </label>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความเร็ว (วินาที)</label>
                                 <input type="number" name="millennium_rgb_speed" min="1" max="10" value="{{ $settings['millennium_rgb_speed'] ?? 5 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
@@ -197,96 +238,12 @@
                         </div>
                     </div>
 
-                    <!-- Millennium Start Menu Settings -->
-                    <div>
-                        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                            <span class="text-2xl">📋</span> Millennium Start Menu Settings
-                        </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่ง Start Menu</label>
-                                <select name="millennium_menu_position" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
-                                    <option value="left" {{ ($settings['millennium_menu_position'] ?? 'left') === 'left' ? 'selected' : '' }}>ซ้าย (Left)</option>
-                                    <option value="center" {{ ($settings['millennium_menu_position'] ?? 'left') === 'center' ? 'selected' : '' }}>กลาง (Center)</option>
-                                    <option value="right" {{ ($settings['millennium_menu_position'] ?? 'left') === 'right' ? 'selected' : '' }}>ขวา (Right)</option>
-                                </select>
-                            </div>
-                            <div class="flex items-center">
-                                <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ ($settings['millennium_menu_rgb_enabled'] ?? false) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Border ใน Menu</span>
-                                </label>
-                            </div>
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4" x-data="{
-                            menuWidth: '{{ $settings['millennium_menu_width'] ?? '400' }}',
-                            menuWidthUnit: '{{ $settings['millennium_menu_width_unit'] ?? 'px' }}',
-                            menuMaxHeight: '{{ $settings['millennium_menu_max_height'] ?? '600' }}',
-                            menuMaxHeightUnit: '{{ $settings['millennium_menu_max_height_unit'] ?? 'px' }}'
-                        }">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    ความกว้าง Menu (<span x-text="menuWidthUnit"></span>)
-                                </label>
-                                <div class="space-y-2">
-                                    <div class="flex items-center gap-4">
-                                        <input
-                                            type="number"
-                                            x-model.number="menuWidth"
-                                            name="millennium_menu_width"
-                                            :min="menuWidthUnit === 'px' ? 300 : 20"
-                                            :max="menuWidthUnit === 'px' ? 800 : 100"
-                                            class="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400 min-w-[5rem] text-center" x-text="menuWidth + menuWidthUnit"></span>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button type="button" @click="menuWidthUnit = 'px'; menuWidth = 400" :class="menuWidthUnit === 'px' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">px</button>
-                                        <button type="button" @click="menuWidthUnit = '%'; menuWidth = 90" :class="menuWidthUnit === '%' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">%</button>
-                                    </div>
-                                    <input type="hidden" name="millennium_menu_width_unit" x-model="menuWidthUnit">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                    ความสูงสูงสุด (<span x-text="menuMaxHeightUnit"></span>)
-                                </label>
-                                <div class="space-y-2">
-                                    <div class="flex items-center gap-4">
-                                        <input
-                                            type="number"
-                                            x-model.number="menuMaxHeight"
-                                            name="millennium_menu_max_height"
-                                            :min="menuMaxHeightUnit === 'px' ? 400 : (menuMaxHeightUnit === '%' ? 50 : 50)"
-                                            :max="menuMaxHeightUnit === 'px' ? 1000 : (menuMaxHeightUnit === '%' ? 100 : 100)"
-                                            class="flex-1 px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
-                                        <span class="text-lg font-bold text-indigo-600 dark:text-indigo-400 min-w-[5rem] text-center" x-text="menuMaxHeight + menuMaxHeightUnit"></span>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <button type="button" @click="menuMaxHeightUnit = 'px'; menuMaxHeight = 600" :class="menuMaxHeightUnit === 'px' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">px</button>
-                                        <button type="button" @click="menuMaxHeightUnit = '%'; menuMaxHeight = 80" :class="menuMaxHeightUnit === '%' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">%</button>
-                                        <button type="button" @click="menuMaxHeightUnit = 'vh'; menuMaxHeight = 80" :class="menuMaxHeightUnit === 'vh' ? 'bg-indigo-600 text-white' : 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300'" class="px-3 py-1 rounded text-sm font-medium">vh</button>
-                                    </div>
-                                    <input type="hidden" name="millennium_menu_max_height_unit" x-model="menuMaxHeightUnit">
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                            <p class="text-sm text-blue-700 dark:text-blue-300">
-                                <strong>💡 คำแนะนำ:</strong>
-                            </p>
-                            <ul class="text-sm text-blue-700 dark:text-blue-300 list-disc ml-5 mt-2 space-y-1">
-                                <li><strong>px:</strong> ขนาดคงที่ (เช่น 400px, 600px)</li>
-                                <li><strong>%:</strong> เปอร์เซ็นต์ของหน้าจอ (เช่น 90%, 80%)</li>
-                                <li><strong>vh:</strong> เปอร์เซ็นต์ของความสูงหน้าจอ (เช่น 80vh)</li>
-                            </ul>
-                        </div>
-                    </div>
-
                     <!-- RGB Settings -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">🌈</span> RGB Animation
                         </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">เอฟเฟคแสงสีที่เปลี่ยนสีตลอดเวลา</p>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
@@ -294,7 +251,7 @@
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Animation</span>
                                 </label>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความเร็ว (วินาที)</label>
                                 <input type="number" name="windows_rgb_speed" min="1" max="10" value="{{ $settings['windows_rgb_speed'] ?? 3 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
@@ -311,12 +268,12 @@
                     </div>
 
                     <!-- Theme Settings -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">🎨</span> Theme Settings
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โหมดธีม</label>
                                 <select name="windows_theme_mode" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                     <option value="auto" {{ ($settings['windows_theme_mode'] ?? 'auto') === 'auto' ? 'selected' : '' }}>อัตโนมัติ (Auto)</option>
@@ -324,7 +281,7 @@
                                     <option value="dark" {{ ($settings['windows_theme_mode'] ?? 'auto') === 'dark' ? 'selected' : '' }}>มืด (Dark)</option>
                                 </select>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สี Accent</label>
                                 <input type="color" name="windows_accent_color" value="{{ $settings['windows_accent_color'] ?? '#0078D4' }}" class="w-full h-10 px-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 rounded-lg">
                             </div>
@@ -332,7 +289,7 @@
                     </div>
 
                     <!-- Spaceship Theme -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">🚀</span> Spaceship Theme
                         </h3>
@@ -353,12 +310,12 @@
                     </div>
 
                     <!-- Content Area Width Settings -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">📏</span> ความกว้างพื้นที่ใช้งาน (Content Area Width)
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โหมดความกว้าง</label>
                                 <select name="content_width_mode" id="content_width_mode" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                     <option value="max" {{ ($settings['content_width_mode'] ?? 'container') === 'max' ? 'selected' : '' }}>เต็มความกว้างจอ (Full Width)</option>
@@ -384,12 +341,12 @@
                     </div>
 
                     <!-- Clock Settings -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">🕐</span> Clock Settings
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบนาฬิกา</label>
                                 <select name="millennium_clock_style" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                     <option value="digital" {{ ($settings['millennium_clock_style'] ?? 'digital') === 'digital' ? 'selected' : '' }}>Digital (ดิจิทัล)</option>
@@ -398,7 +355,7 @@
                                     <option value="hidden" {{ ($settings['millennium_clock_style'] ?? 'digital') === 'hidden' ? 'selected' : '' }}>Hidden (ซ่อน)</option>
                                 </select>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบเวลา</label>
                                 <select name="millennium_clock_format" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                     <option value="24h" {{ ($settings['millennium_clock_format'] ?? '24h') === '24h' ? 'selected' : '' }}>24 ชั่วโมง (13:45)</option>
@@ -417,7 +374,7 @@
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงวันที่</span>
                                 </label>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบวันที่</label>
                                 <select name="millennium_clock_date_format" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                     <option value="short" {{ ($settings['millennium_clock_date_format'] ?? 'short') === 'short' ? 'selected' : '' }}>แบบสั้น (09/01/68)</option>
@@ -428,7 +385,7 @@
                     </div>
 
                     <!-- Back to Top Button Settings -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">⬆️</span> Back to Top Button (ปุ่มกลับด้านบน)
                         </h3>
@@ -439,7 +396,7 @@
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ปุ่ม Back to Top</span>
                                 </label>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่งปุ่ม</label>
                                 <select name="millennium_back_to_top_position" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                     <option value="bottom-right" {{ ($settings['millennium_back_to_top_position'] ?? 'bottom-right') === 'bottom-right' ? 'selected' : '' }}>ล่างขวา (Bottom Right)</option>
@@ -466,7 +423,7 @@
                                     ปุ่มจะปรากฏเมื่อเลื่อนลงมา <span x-text="threshold"></span>% ของหน้า
                                 </p>
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">อนิเมชั่น</label>
                                 <select name="millennium_back_to_top_animation" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                                     <option value="fade" {{ ($settings['millennium_back_to_top_animation'] ?? 'fade') === 'fade' ? 'selected' : '' }}>Fade (จางเข้า/ออก)</option>
@@ -485,16 +442,16 @@
                     </div>
 
                     <!-- System Tray Info -->
-                    <div>
+                    <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <span class="text-2xl">ℹ️</span> System Tray Info
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความไลเซ่น</label>
                                 <input type="text" name="windows_license_text" value="{{ $settings['windows_license_text'] ?? 'Licensed' }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>
-                            <div>
+                            <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความลิขสิทธิ์</label>
                                 <input type="text" name="windows_copyright_text" value="{{ $settings['windows_copyright_text'] ?? '© 2025 TP-Affiliate' }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
                             </div>

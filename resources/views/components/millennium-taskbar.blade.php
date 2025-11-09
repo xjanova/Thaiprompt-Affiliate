@@ -50,6 +50,11 @@
     $clockDateFormat = WindowsUiSetting::get('millennium_clock_date_format', 'short');
     $clockStyle = WindowsUiSetting::get('millennium_clock_style', 'digital');
 
+    // Back to Top Button Settings
+    $backToTopEnabled = WindowsUiSetting::get('millennium_back_to_top_enabled', true);
+    $backToTopThreshold = WindowsUiSetting::get('millennium_back_to_top_threshold', 20);
+    $backToTopAnimation = WindowsUiSetting::get('millennium_back_to_top_animation', 'fade');
+
     // Taskbar Icons (read from windows_taskbar_apps which is managed in admin panel)
     $taskbarIcons = WindowsUiSetting::get('windows_taskbar_apps', [
         ['icon' => '🛒', 'label' => 'รถเข็น', 'url' => '/cart', 'border' => false, 'opacity' => 10, 'order' => 1],
@@ -134,6 +139,8 @@
         showSeconds: {{ $clockShowSeconds ? 'true' : 'false' }},
         showDate: {{ $clockShowDate ? 'true' : 'false' }},
         dateFormat: '{{ $clockDateFormat }}',
+        showBackToTop: false,
+        backToTopThreshold: {{ $backToTopThreshold }},
         updateTime() {
             const now = new Date();
             let hours = now.getHours();
@@ -167,10 +174,24 @@
                 document.documentElement.classList.remove('dark');
             }
         },
+        scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        },
+        handleScroll() {
+            const scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+            this.showBackToTop = scrollPercentage >= this.backToTopThreshold;
+        },
         init() {
             this.updateTime();
             const interval = this.showSeconds ? 1000 : 60000;
             setInterval(() => this.updateTime(), interval);
+
+            // Set up scroll listener for Back to Top button
+            window.addEventListener('scroll', () => this.handleScroll());
+            this.handleScroll();
         }
     }"
     x-init="init()"
@@ -332,7 +353,7 @@
                     @endif
 
                     @if($startButtonShowText)
-                        <span class="text-white font-bold hidden md:inline-block drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                        <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
                             เริ่ม
                         </span>
                     @endif
@@ -347,6 +368,21 @@
             <div class="flex items-center gap-3 flex-1 justify-end">
                 <!-- System Tray Separator (Windows-style) -->
                 <div class="h-12 w-0.5 bg-gradient-to-b from-transparent via-white/40 to-transparent mx-2 shadow-lg" style="box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);"></div>
+
+                <!-- Back to Top Button -->
+                @if($backToTopEnabled)
+                    <button
+                        x-show="showBackToTop"
+                        @click="scrollToTop()"
+                        x-transition:enter="millennium-back-to-top-{{ $backToTopAnimation }}-enter"
+                        x-transition:leave="millennium-back-to-top-{{ $backToTopAnimation }}-leave"
+                        class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-lg hover:shadow-purple-500/50"
+                        title="กลับขึ้นด้านบน">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                        </svg>
+                    </button>
+                @endif
 
                 <!-- Dark Mode Toggle -->
                 <button
@@ -510,5 +546,100 @@
     /* Taskbar Glass Morphism */
     .millennium-taskbar {
         backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    /* Back to Top Button Animations */
+    /* Fade Animation */
+    .millennium-back-to-top-fade-enter {
+        transition: opacity 300ms ease-out;
+        opacity: 0;
+    }
+    .millennium-back-to-top-fade-enter.millennium-back-to-top-fade-enter-active {
+        opacity: 1;
+    }
+    .millennium-back-to-top-fade-leave {
+        transition: opacity 300ms ease-in;
+        opacity: 1;
+    }
+    .millennium-back-to-top-fade-leave.millennium-back-to-top-fade-leave-active {
+        opacity: 0;
+    }
+
+    /* Slide Animation */
+    .millennium-back-to-top-slide-enter {
+        transition: all 300ms ease-out;
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    .millennium-back-to-top-slide-enter.millennium-back-to-top-slide-enter-active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .millennium-back-to-top-slide-leave {
+        transition: all 300ms ease-in;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .millennium-back-to-top-slide-leave.millennium-back-to-top-slide-leave-active {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    /* Bounce Animation */
+    .millennium-back-to-top-bounce-enter {
+        animation: bounceIn 600ms ease-out;
+    }
+    .millennium-back-to-top-bounce-leave {
+        animation: bounceOut 300ms ease-in;
+    }
+    @keyframes bounceIn {
+        0% { opacity: 0; transform: scale(0.3) translateY(20px); }
+        50% { opacity: 1; transform: scale(1.05); }
+        70% { transform: scale(0.9); }
+        100% { transform: scale(1); }
+    }
+    @keyframes bounceOut {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0.3) translateY(20px); opacity: 0; }
+    }
+
+    /* Scale Animation */
+    .millennium-back-to-top-scale-enter {
+        transition: all 300ms ease-out;
+        opacity: 0;
+        transform: scale(0);
+    }
+    .millennium-back-to-top-scale-enter.millennium-back-to-top-scale-enter-active {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .millennium-back-to-top-scale-leave {
+        transition: all 300ms ease-in;
+        opacity: 1;
+        transform: scale(1);
+    }
+    .millennium-back-to-top-scale-leave.millennium-back-to-top-scale-leave-active {
+        opacity: 0;
+        transform: scale(0);
+    }
+
+    /* Zoom Animation */
+    .millennium-back-to-top-zoom-enter {
+        transition: all 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    .millennium-back-to-top-zoom-enter.millennium-back-to-top-zoom-enter-active {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .millennium-back-to-top-zoom-leave {
+        transition: all 200ms ease-in;
+        opacity: 1;
+        transform: scale(1);
+    }
+    .millennium-back-to-top-zoom-leave.millennium-back-to-top-zoom-leave-active {
+        opacity: 0;
+        transform: scale(0.5);
     }
 </style>
