@@ -141,9 +141,6 @@
                 ['icon' => '📈', 'label' => 'การลงทุน ROI', 'url' => route('user.investments.index')],
                 ['icon' => '💎', 'label' => 'แผนการลงทุน', 'url' => route('user.investments.plans')],
             ]],
-            ['section' => 'การเรียนรู้', 'items' => [
-                ['icon' => '📚', 'label' => 'ศูนย์เรียนรู้', 'url' => route('learning-center.index')],
-            ]],
             ['section' => 'AI & เครื่องมือ', 'items' => [
                 ['icon' => '🤖', 'label' => 'ตลาดบอท', 'url' => route('marketplace.index')],
             ]],
