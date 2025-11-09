@@ -61,6 +61,8 @@ use App\Http\Controllers\Admin\AppThemeSettingController;
 use App\Http\Controllers\Admin\AppFeatureController;
 use App\Http\Controllers\Admin\AppBannerController;
 use App\Http\Controllers\Admin\AppMaintenanceController;
+use App\Http\Controllers\Admin\PageBuilderController;
+use App\Http\Controllers\Admin\PageBuilderSectionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -1289,5 +1291,36 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::post('/toggle', [AppMaintenanceController::class, 'toggle'])->name('toggle');
         Route::post('/enable', [AppMaintenanceController::class, 'enable'])->name('enable');
         Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
+    });
+});
+
+// Page Builder (Homepage/Wiki Builder)
+Route::prefix('page-builder')->name('page-builder.')->group(function () {
+    // Page Management
+    Route::get('/', [PageBuilderController::class, 'index'])->name('index');
+    Route::get('/create', [PageBuilderController::class, 'create'])->name('create');
+    Route::post('/', [PageBuilderController::class, 'store'])->name('store');
+    Route::get('/{page}/edit', [PageBuilderController::class, 'edit'])->name('edit');
+    Route::put('/{page}', [PageBuilderController::class, 'update'])->name('update');
+    Route::delete('/{page}', [PageBuilderController::class, 'destroy'])->name('destroy');
+    Route::post('/{page}/duplicate', [PageBuilderController::class, 'duplicate'])->name('duplicate');
+    Route::post('/{page}/toggle-active', [PageBuilderController::class, 'toggleActive'])->name('toggle-active');
+    Route::post('/{page}/reorder-sections', [PageBuilderController::class, 'reorderSections'])->name('reorder-sections');
+    Route::get('/{page}/preview', [PageBuilderController::class, 'preview'])->name('preview');
+
+    // Section Management
+    Route::prefix('{page}/sections')->name('sections.')->group(function () {
+        Route::post('/', [PageBuilderSectionController::class, 'store'])->name('store');
+        Route::post('/from-template/{template}', [PageBuilderSectionController::class, 'createFromTemplate'])->name('from-template');
+    });
+
+    Route::prefix('sections/{section}')->name('sections.')->group(function () {
+        Route::put('/', [PageBuilderSectionController::class, 'update'])->name('update');
+        Route::delete('/', [PageBuilderSectionController::class, 'destroy'])->name('destroy');
+        Route::post('/duplicate', [PageBuilderSectionController::class, 'duplicate'])->name('duplicate');
+        Route::post('/move-up', [PageBuilderSectionController::class, 'moveUp'])->name('move-up');
+        Route::post('/move-down', [PageBuilderSectionController::class, 'moveDown'])->name('move-down');
+        Route::post('/toggle-visibility', [PageBuilderSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
+        Route::post('/toggle-active', [PageBuilderSectionController::class, 'toggleActive'])->name('toggle-active');
     });
 });
