@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.99.0] - 2025-11-09
+
+### ✨ Features
+- feat: rebuild menu with working submenu system and animations (8ad797f)
+### 🐛 Bug Fixes
+- fix: remove admin.users.permissions (requires user parameter) (df0ef9c)
+### 🔧 Other Changes
+- Merge pull request #634 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (6e55462)
+
 ## [v2.98.6] - 2025-11-09
 
 ### ✨ Features
