@@ -369,7 +369,18 @@
                 ]
             ],
             ['icon' => '💵', 'label' => 'คอมมิชชั่น', 'url' => route('seller.commissions')],
-            ['icon' => '📈', 'label' => 'วิเคราะห์', 'url' => route('seller.analytics')],
+            [
+                'icon' => '📈',
+                'label' => 'วิเคราะห์',
+                'submenu' => [
+                    ['label' => 'Dashboard', 'url' => route('seller.analytics.index')],
+                    ['label' => '🤖 AI Insights', 'url' => route('seller.analytics.ai-insights')],
+                    ['label' => '👥 Customer Segments', 'url' => route('seller.analytics.segmentation')],
+                    ['label' => '📊 Cohort Analysis', 'url' => route('seller.analytics.cohort')],
+                    ['label' => '🏆 Products Ranking', 'url' => route('seller.analytics.products')],
+                    ['label' => '⚙️ Settings', 'url' => route('seller.analytics.settings')],
+                ]
+            ],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าร้าน', 'url' => route('seller.settings')],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('seller.profile')],
         ];
