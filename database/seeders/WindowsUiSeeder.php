@@ -13,9 +13,22 @@ class WindowsUiSeeder extends Seeder
      * This seeder populates Windows UI settings with current menu structure
      * from millennium-start-menu.blade.php to ensure Windows UI management
      * reflects the actual menu configuration with working submenus.
+     *
+     * NOTE: This seeder will NOT overwrite existing settings to preserve user customizations.
      */
     public function run(): void
     {
+        // Check if settings already exist
+        $existingSettings = WindowsUiSetting::where('key', 'windows_taskbar_position')->first();
+
+        if ($existingSettings) {
+            $this->command->warn('⚠️  Windows UI settings already exist!');
+            $this->command->info('   Skipping seeding to preserve your customizations.');
+            $this->command->info('   To re-seed, delete existing settings first or use --force flag.');
+            return;
+        }
+
+        $this->command->info('🌱 Seeding Windows UI settings...');
         // Start Menu Items - Admin Menu Structure
         // Based on millennium-start-menu.blade.php lines 84-324
         $startMenuItems = [

@@ -84,10 +84,47 @@
                                     </div>
 
                                     <!-- Form Fields -->
-                                    <div class="space-y-3">
-                                        <div>
-                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ไอคอน (Emoji)</label>
-                                            <input type="text" x-model="app.icon" class="w-full px-3 py-2 text-center text-2xl border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg" placeholder="📱" maxlength="10">
+                                    <div class="space-y-3" x-data="{ showIconPicker: false, popularEmojis: ['📊', '👥', '🛒', '📦', '💰', '📈', '⚙️', '🏠', '🔔', '📧', '💼', '🎁', '⭐', '🏪', '🚀', '🎨', '🎓', '🔧', '📱', '💳', '🌐', '🔮', '🤖', '📝', '🔒', '🏨', '✨', '💡', '🎯', '🌈'] }">
+                                        <div class="relative">
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ไอคอน</label>
+                                            <div class="flex gap-2">
+                                                <input
+                                                    type="text"
+                                                    x-model="app.icon"
+                                                    @focus="showIconPicker = true"
+                                                    class="flex-1 px-3 py-2 text-center text-2xl border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg"
+                                                    placeholder="📱">
+                                                <button
+                                                    type="button"
+                                                    @click="showIconPicker = !showIconPicker"
+                                                    class="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-xl">
+                                                    😀
+                                                </button>
+                                            </div>
+
+                                            <!-- Quick Emoji Picker -->
+                                            <div
+                                                x-show="showIconPicker"
+                                                @click.outside="showIconPicker = false"
+                                                x-transition
+                                                class="absolute z-50 mt-2 p-3 bg-white dark:bg-slate-800 rounded-lg shadow-xl border-2 border-cyan-200 dark:border-cyan-700 w-full">
+                                                <div class="flex items-center justify-between mb-2">
+                                                    <span class="text-xs font-medium text-gray-700 dark:text-gray-300">เลือก Emoji</span>
+                                                    <button
+                                                        type="button"
+                                                        @click="showIconPicker = false"
+                                                        class="text-gray-400 hover:text-gray-600">✕</button>
+                                                </div>
+                                                <div class="grid grid-cols-6 gap-1">
+                                                    <template x-for="emoji in popularEmojis" :key="emoji">
+                                                        <button
+                                                            type="button"
+                                                            @click="app.icon = emoji; showIconPicker = false"
+                                                            class="p-2 text-xl hover:bg-cyan-50 dark:hover:bg-slate-700 rounded transition-colors"
+                                                            x-text="emoji"></button>
+                                                    </template>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div>
                                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ชื่อแอป</label>
