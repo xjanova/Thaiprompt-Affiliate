@@ -200,6 +200,8 @@ Route::prefix('windows-ui')->name('windows-ui.')->group(function () {
     Route::put('/', [\App\Http\Controllers\Admin\WindowsUiController::class, 'update'])->name('update');
     Route::get('/start-menu', [\App\Http\Controllers\Admin\WindowsUiController::class, 'startMenu'])->name('start-menu');
     Route::put('/start-menu', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateStartMenu'])->name('start-menu.update');
+    Route::put('/start-button-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateStartButtonSettings'])->name('start-button-settings.update');
+    Route::put('/menu-rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateMenuRgbSettings'])->name('menu-rgb-settings.update');
     Route::get('/taskbar-apps', [\App\Http\Controllers\Admin\WindowsUiController::class, 'taskbarApps'])->name('taskbar-apps');
     Route::put('/taskbar-apps', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateTaskbarApps'])->name('taskbar-apps.update');
     Route::get('/system-tray', [\App\Http\Controllers\Admin\WindowsUiController::class, 'systemTray'])->name('system-tray');
