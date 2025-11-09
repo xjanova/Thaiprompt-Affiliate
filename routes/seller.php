@@ -26,11 +26,22 @@ Route::get('/settings', [DashboardController::class, 'settings'])->name('setting
 // ANALYTICS
 // ========================================
 Route::prefix('analytics')->name('analytics.')->group(function () {
+    // Basic Analytics
     Route::get('/', [AnalyticsController::class, 'index'])->name('index');
     Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     Route::get('/settings', [AnalyticsController::class, 'settings'])->name('settings');
     Route::put('/settings', [AnalyticsController::class, 'updateSettings'])->name('settings.update');
     Route::post('/cleanup', [AnalyticsController::class, 'cleanup'])->name('cleanup');
+
+    // AI-Powered Analytics
+    Route::get('/ai-insights', [AnalyticsController::class, 'aiInsights'])->name('ai-insights');
+    Route::get('/segmentation', [AnalyticsController::class, 'customerSegmentation'])->name('segmentation');
+    Route::get('/cohort', [AnalyticsController::class, 'cohortAnalysis'])->name('cohort');
+    Route::get('/products', [AnalyticsController::class, 'productPerformance'])->name('products');
+
+    // API Endpoints
+    Route::get('/api/prediction', [AnalyticsController::class, 'apiRevenuePrediction'])->name('api.prediction');
+    Route::get('/api/insights', [AnalyticsController::class, 'apiInsights'])->name('api.insights');
 });
 
 // ========================================

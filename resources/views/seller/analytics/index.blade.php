@@ -13,6 +13,9 @@
             </div>
 
             <div class="flex gap-2">
+                <a href="{{ route('seller.analytics.ai-insights') }}" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg hover:from-purple-700 hover:to-pink-700 transition font-bold shadow-lg">
+                    🤖 AI Insights
+                </a>
                 <a href="{{ route('seller.analytics.settings') }}" class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
                     ⚙️ ตั้งค่า
                 </a>
