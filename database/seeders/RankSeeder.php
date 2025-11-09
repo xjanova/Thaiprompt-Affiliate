@@ -11,8 +11,110 @@ class RankSeeder extends Seeder
 {
     public function run(): void
     {
-        // Define ranks with beautiful Thai names and icons
-        $ranks = [
+        // Check if ranks already exist
+        $existingRanksCount = Rank::whereIn('level', [1, 2, 3])->count();
+
+        if ($existingRanksCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all ranks
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all ranks with requirements and bonuses...');
+
+        $ranks = $this->getAllRanks();
+
+        foreach ($ranks as $rankData) {
+            $this->createRankWithRelations($rankData);
+        }
+
+        $this->command->info('✅ Ranks, Requirements, and Bonuses seeded successfully!');
+    }
+
+    /**
+     * Update mode - add only missing ranks
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing ranks detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing ranks only)...');
+
+        $ranks = $this->getAllRanks();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($ranks as $rankData) {
+            if (!Rank::where('level', $rankData['level'])->exists()) {
+                $this->createRankWithRelations($rankData);
+                $this->command->info("   ➕ Added: {$rankData['name']} (Level {$rankData['level']})");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new ranks.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing ranks (preserved).");
+        }
+    }
+
+    /**
+     * Create rank with requirements and bonuses
+     */
+    private function createRankWithRelations(array $rankData): void
+    {
+        $requirements = $rankData['requirements'];
+        $bonuses = $rankData['bonuses'];
+        unset($rankData['requirements'], $rankData['bonuses']);
+
+        $rank = Rank::create($rankData);
+
+        // Create requirements
+        foreach ($requirements as $req) {
+            RankRequirement::create([
+                'rank_id' => $rank->id,
+                'requirement_type' => $req['type'],
+                'name' => $req['name'],
+                'name_th' => $req['name_th'],
+                'target_value' => $req['target'],
+                'operator' => $req['operator'],
+                'is_required' => true,
+                'is_active' => true,
+            ]);
+        }
+
+        // Create bonuses
+        foreach ($bonuses as $bonus) {
+            RankBonus::create([
+                'rank_id' => $rank->id,
+                'bonus_type' => $bonus['type'],
+                'name' => $bonus['name'],
+                'name_th' => $bonus['name_th'],
+                'amount' => $bonus['amount'] ?? null,
+                'percentage' => $bonus['percentage'] ?? null,
+                'reward_type' => $bonus['reward_type'] ?? null,
+                'is_active' => true,
+                'auto_apply' => true,
+            ]);
+        }
+    }
+
+    /**
+     * Get all default ranks
+     */
+    private function getAllRanks(): array
+    {
+        return [
             [
                 'name' => 'Bronze',
                 'name_th' => 'สำริด',
@@ -160,53 +262,5 @@ class RankSeeder extends Seeder
                 ],
             ],
         ];
-
-        foreach ($ranks as $rankData) {
-            $requirements = $rankData['requirements'];
-            $bonuses = $rankData['bonuses'];
-            unset($rankData['requirements'], $rankData['bonuses']);
-
-            // Use updateOrCreate to prevent duplicate entry errors on re-run
-            $rank = Rank::updateOrCreate(
-                ['level' => $rankData['level']], // Match by level (unique key)
-                $rankData
-            );
-
-            // Delete existing requirements and bonuses before recreating
-            // This ensures data is always fresh when seeder is re-run
-            RankRequirement::where('rank_id', $rank->id)->delete();
-            RankBonus::where('rank_id', $rank->id)->delete();
-
-            // Create requirements
-            foreach ($requirements as $req) {
-                RankRequirement::create([
-                    'rank_id' => $rank->id,
-                    'requirement_type' => $req['type'],
-                    'name' => $req['name'],
-                    'name_th' => $req['name_th'],
-                    'target_value' => $req['target'],
-                    'operator' => $req['operator'],
-                    'is_required' => true,
-                    'is_active' => true,
-                ]);
-            }
-
-            // Create bonuses
-            foreach ($bonuses as $bonus) {
-                RankBonus::create([
-                    'rank_id' => $rank->id,
-                    'bonus_type' => $bonus['type'],
-                    'name' => $bonus['name'],
-                    'name_th' => $bonus['name_th'],
-                    'amount' => $bonus['amount'] ?? null,
-                    'percentage' => $bonus['percentage'] ?? null,
-                    'reward_type' => $bonus['reward_type'] ?? null,
-                    'is_active' => true,
-                    'auto_apply' => true,
-                ]);
-            }
-        }
-
-        $this->command->info('✅ Ranks, Requirements, and Bonuses seeded successfully!');
     }
 }
