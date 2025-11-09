@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.107.1] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: improve Page Builder edit page functionality (a55b0e3)
+- fix: replace Vite with CDN assets in Page Builder preview (c6676a8)
+### 🔧 Other Changes
+- Merge pull request #646 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (781fd97)
+
 ## [v2.107.0] - 2025-11-09
 
 ### ✨ Features
