@@ -270,6 +270,8 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
     Route::get('/', [\App\Http\Controllers\TarotReadingController::class, 'index'])->name('index');
     Route::get('/category/{slug}', [\App\Http\Controllers\TarotReadingController::class, 'showCategory'])->name('category');
     Route::post('/start', [\App\Http\Controllers\TarotReadingController::class, 'startReading'])->name('start');
+    Route::get('/select-cards/{readingId}', [\App\Http\Controllers\TarotReadingController::class, 'showCardSelection'])->name('select-cards');
+    Route::post('/save-selection', [\App\Http\Controllers\TarotReadingController::class, 'saveCardSelection'])->name('save-selection');
     Route::get('/reading/{id}', [\App\Http\Controllers\TarotReadingController::class, 'showReading'])->name('reading.show');
     Route::get('/card-backs', [\App\Http\Controllers\TarotReadingController::class, 'getCardBackImages'])->name('card-backs');
 

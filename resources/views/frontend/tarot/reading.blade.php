@@ -24,7 +24,7 @@
                 <!-- Single Card -->
                 <div class="flex justify-center">
                     @foreach($reading->cards as $readingCard)
-                    <div class="tarot-card" data-aos="flip-left">
+                    <div class="tarot-card">
                         <div class="bg-white rounded-xl shadow-2xl p-6 max-w-sm">
                             <img src="{{ $readingCard->card->image_url }}"
                                  alt="{{ $readingCard->card->getName() }}"
@@ -50,7 +50,7 @@
                 <!-- 3 Cards Layout -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     @foreach($reading->cards as $readingCard)
-                    <div class="tarot-card" data-aos="flip-left" data-aos-delay="{{ $loop->index * 200 }}">
+                    <div class="tarot-card">
                         <div class="bg-white rounded-xl shadow-xl p-6">
                             <img src="{{ $readingCard->card->image_url }}"
                                  alt="{{ $readingCard->card->getName() }}"
@@ -76,7 +76,7 @@
                 <!-- Multiple Cards Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     @foreach($reading->cards as $readingCard)
-                    <div class="tarot-card" data-aos="flip-left" data-aos-delay="{{ $loop->index * 100 }}">
+                    <div class="tarot-card">
                         <div class="bg-white rounded-lg shadow-lg p-3">
                             <img src="{{ $readingCard->card->image_url }}"
                                  alt="{{ $readingCard->card->getName() }}"
@@ -130,16 +130,101 @@
 </div>
 
 @push('styles')
-<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<style>
+    .tarot-card {
+        perspective: 1500px;
+    }
+
+    .tarot-card > div {
+        transform-style: preserve-3d;
+        transition: transform 0.1s ease;
+    }
+
+    .tarot-card:hover > div {
+        transform: scale(1.05) translateY(-10px);
+    }
+
+    /* Card back for flip animation */
+    .card-container {
+        position: relative;
+        transform-style: preserve-3d;
+    }
+
+    .card-face {
+        backface-visibility: hidden;
+    }
+
+    .card-back {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 4rem;
+        transform: rotateY(180deg);
+    }
+</style>
 @endpush
 
 @push('scripts')
-<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    AOS.init({
-        duration: 1000,
-        once: true
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.tarot-card');
+
+        cards.forEach((card, index) => {
+            const cardInner = card.querySelector('div');
+
+            // Initial state - card back (rotated 180deg on Y axis)
+            gsap.set(cardInner, {
+                rotationY: 180,
+                opacity: 0,
+                scale: 0.8,
+                y: 50
+            });
+
+            // Animate card appearance and flip
+            gsap.to(cardInner, {
+                duration: 0.6,
+                delay: index * 0.2,
+                opacity: 1,
+                scale: 1,
+                y: 0,
+                ease: "power2.out"
+            });
+
+            // Flip animation
+            gsap.to(cardInner, {
+                duration: 0.8,
+                delay: index * 0.2 + 0.4,
+                rotationY: 0,
+                ease: "power2.inOut"
+            });
+
+            // Add subtle floating animation after flip
+            gsap.to(cardInner, {
+                duration: 2,
+                delay: index * 0.2 + 1.2,
+                y: -5,
+                repeat: -1,
+                yoyo: true,
+                ease: "sine.inOut"
+            });
+
+            // Add sparkle effect on flip complete
+            setTimeout(() => {
+                cardInner.style.boxShadow = '0 0 30px rgba(139, 92, 246, 0.6), 0 10px 40px rgba(0, 0, 0, 0.3)';
+                setTimeout(() => {
+                    cardInner.style.boxShadow = '';
+                }, 500);
+            }, (index * 200) + 1200);
+        });
     });
 
     function saveReading() {
