@@ -61,6 +61,13 @@ class WindowsUiController extends Controller
             'millennium_taskbar_collapse_enabled' => ['nullable', 'boolean'],
             'millennium_taskbar_collapse_breakpoint' => ['nullable', 'integer', 'min:320', 'max:1920'],
 
+            // Clock Settings
+            'millennium_clock_style' => ['nullable', 'string', 'in:digital,minimal,full,hidden'],
+            'millennium_clock_format' => ['nullable', 'string', 'in:12h,24h'],
+            'millennium_clock_show_seconds' => ['nullable', 'boolean'],
+            'millennium_clock_show_date' => ['nullable', 'boolean'],
+            'millennium_clock_date_format' => ['nullable', 'string', 'in:short,long'],
+
             // RGB Settings
             'windows_rgb_enabled' => ['nullable', 'boolean'],
             'windows_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:10'],
@@ -91,6 +98,8 @@ class WindowsUiController extends Controller
         $validated['millennium_rgb_enabled'] = $request->has('millennium_rgb_enabled');
         $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
         $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
+        $validated['millennium_clock_show_seconds'] = $request->has('millennium_clock_show_seconds');
+        $validated['millennium_clock_show_date'] = $request->has('millennium_clock_show_date');
         $validated['windows_rgb_enabled'] = $request->has('windows_rgb_enabled');
         $validated['windows_rgb_glow'] = $request->has('windows_rgb_glow');
         $validated['windows_spaceship_theme'] = $request->has('windows_spaceship_theme');
@@ -281,6 +290,8 @@ class WindowsUiController extends Controller
             'millennium_rgb_enabled',
             'millennium_menu_rgb_enabled',
             'millennium_taskbar_collapse_enabled',
+            'millennium_clock_show_seconds',
+            'millennium_clock_show_date',
             'windows_rgb_enabled',
             'windows_rgb_glow',
             'windows_spaceship_theme',

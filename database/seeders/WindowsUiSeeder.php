@@ -601,6 +601,13 @@ class WindowsUiSeeder extends Seeder
         WindowsUiSetting::set('millennium_taskbar_collapse_enabled', true, 'boolean');
         WindowsUiSetting::set('millennium_taskbar_collapse_breakpoint', 768, 'integer');
 
+        // Clock Settings
+        WindowsUiSetting::set('millennium_clock_style', 'digital', 'string');
+        WindowsUiSetting::set('millennium_clock_format', '24h', 'string');
+        WindowsUiSetting::set('millennium_clock_show_seconds', false, 'boolean');
+        WindowsUiSetting::set('millennium_clock_show_date', false, 'boolean');
+        WindowsUiSetting::set('millennium_clock_date_format', 'short', 'string');
+
         WindowsUiSetting::set('windows_rgb_enabled', true, 'boolean');
         WindowsUiSetting::set('windows_rgb_speed', 3, 'integer');
         WindowsUiSetting::set('windows_rgb_glow', true, 'boolean');

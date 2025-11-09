@@ -163,7 +163,15 @@
                             </template>
                         </div>
 
-                        <input type="hidden" name="items" x-model="menuItemsJson">
+                        <!-- Hidden inputs for menu items -->
+                        <template x-for="(item, index) in menuItems" :key="index">
+                            <div>
+                                <input type="hidden" :name="`items[${index}][icon]`" x-model="item.icon">
+                                <input type="hidden" :name="`items[${index}][label]`" x-model="item.label">
+                                <input type="hidden" :name="`items[${index}][url]`" x-model="item.url">
+                                <input type="hidden" :name="`items[${index}][order]`" x-model="item.order">
+                            </div>
+                        </template>
 
                         <div class="mt-6 flex justify-end">
                             <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg">
