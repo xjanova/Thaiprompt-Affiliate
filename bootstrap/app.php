@@ -20,6 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SetLocale::class, // Multi-language support
+            \App\Http\Middleware\TrackVendorStoreVisit::class, // Track vendor store visits
+            \App\Http\Middleware\TrackRequestMetrics::class, // Track request/response metrics
             // \App\Http\Middleware\LoadTheme::class, // Theme System v2 - Disabled
         ]);
 
