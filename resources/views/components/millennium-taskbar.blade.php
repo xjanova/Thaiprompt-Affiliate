@@ -212,10 +212,23 @@
              style="opacity: {{ $taskbarOpacity / 100 }}; backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px); box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
 
         <!-- Taskbar Content -->
-        <div class="relative h-full max-w-full mx-auto px-3 flex items-center justify-between gap-3">
+        @php
+            // Calculate flex order for Start Button position
+            $leftSectionOrder = 1;
+            $startButtonOrder = match($startButtonPosition) {
+                'left' => 0,      // Start Button first (before icons)
+                'right' => 3,     // Start Button last (after system tray)
+                default => 2,     // Start Button center (between icons and system tray)
+            };
+            $systemTrayOrder = match($startButtonPosition) {
+                'right' => 2,     // System tray before Start when Start is right
+                default => 3,     // System tray last normally
+            };
+        @endphp
+        <div class="relative h-full max-w-full mx-auto px-3 flex items-center gap-3">
 
             <!-- Left Section: Back Button + Quick Icons -->
-            <div class="flex items-center gap-2 flex-1">
+            <div class="flex items-center gap-2 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }}" style="order: {{ $leftSectionOrder }}">
 
                 <!-- Back Button -->
                 @if($backButtonEnabled)
@@ -394,16 +407,8 @@
 
             </div>
 
-            <!-- Center Section: Start Button -->
-            @php
-                $startButtonJustify = match($startButtonPosition) {
-                    'left' => 'justify-start',
-                    'right' => 'justify-end',
-                    default => 'justify-center',
-                };
-                $startButtonAbsoluteClass = $startButtonPosition === 'center' ? 'absolute left-1/2 transform -translate-x-1/2' : '';
-            @endphp
-            <div class="flex items-center {{ $startButtonPosition === 'center' ? $startButtonAbsoluteClass : $startButtonJustify }}">
+            <!-- Start Button Section -->
+            <div class="flex items-center" style="order: {{ $startButtonOrder }}">
                 <!-- Start Button -->
                 <button
                     @click="startMenuOpen = !startMenuOpen"
@@ -436,7 +441,7 @@
             </div>
 
             <!-- Right Section: System Tray -->
-            <div class="flex items-center gap-3 flex-1 justify-end">
+            <div class="flex items-center gap-3 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }} justify-end" style="order: {{ $systemTrayOrder }}">
                 <!-- System Tray Separator (Windows-style) -->
                 <div class="h-12 w-0.5 bg-gradient-to-b from-transparent via-white/40 to-transparent mx-2 shadow-lg" style="box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);"></div>
 
