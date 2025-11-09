@@ -16,6 +16,74 @@
         transform: translateY(-2px);
         box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     }
+
+    /* Toggle Switch Styles */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #cbd5e1;
+        transition: 0.3s;
+        border-radius: 24px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+
+    .toggle-switch input:focus + .toggle-slider {
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    }
+
+    .toggle-switch input:disabled + .toggle-slider {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Dark mode styles */
+    .dark .toggle-slider {
+        background: #475569;
+    }
+
+    .dark .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+    }
 </style>
 @endpush
 
@@ -235,7 +303,7 @@
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                     <span>📐</span> ขนาด & ตำแหน่ง
                 </h3>
-                <form method="POST" action="{{ route('admin.windows-ui.update') }}">
+                <form method="POST" action="{{ route('admin.windows-ui.menu-settings.update') }}">
                     @csrf
                     @method('PUT')
 
@@ -320,7 +388,10 @@
                                     <span class="font-semibold text-gray-900 dark:text-white">🌈 RGB Border Effect</span>
                                     <p class="text-xs text-gray-600 dark:text-gray-400">แสดงเอฟเฟค RGB วิ่งรอบเมนู</p>
                                 </div>
-                                <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </label>
                         </div>
 
@@ -362,7 +433,10 @@
                                     <span class="font-semibold text-gray-900 dark:text-white">🖼️ แสดงโลโก้</span>
                                     <p class="text-xs text-gray-600 dark:text-gray-400">แสดงไอคอน/โลโก้ในปุ่ม Start</p>
                                 </div>
-                                <input type="checkbox" name="millennium_start_button_show_icon" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_show_icon', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="millennium_start_button_show_icon" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_show_icon', true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </label>
 
                             <label class="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-700 rounded-lg cursor-pointer">
@@ -370,7 +444,10 @@
                                     <span class="font-semibold text-gray-900 dark:text-white">📝 แสดงข้อความ</span>
                                     <p class="text-xs text-gray-600 dark:text-gray-400">แสดงข้อความ "เริ่ม" ในปุ่ม Start</p>
                                 </div>
-                                <input type="checkbox" name="millennium_start_button_show_text" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_show_text', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="millennium_start_button_show_text" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_show_text', true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </label>
                         </div>
 
@@ -380,7 +457,10 @@
                                     <span class="font-semibold text-gray-900 dark:text-white">📱 Responsive Mode</span>
                                     <p class="text-xs text-gray-600 dark:text-gray-400">รวมไอคอนเป็นปุ่มเมื่อหน้าจอเล็ก</p>
                                 </div>
-                                <input type="checkbox" name="millennium_taskbar_collapse_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="millennium_taskbar_collapse_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </label>
 
                             <div class="mb-3">
@@ -423,7 +503,10 @@
                                     <span class="font-semibold text-gray-900 dark:text-white">✨ เปิดใช้ RGB Border</span>
                                     <p class="text-xs text-gray-600 dark:text-gray-400">แสดงเอฟเฟค RGB วิ่งรอบเมนู</p>
                                 </div>
-                                <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }} class="w-5 h-5 text-indigo-600 rounded">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
                             </label>
                         </div>
 

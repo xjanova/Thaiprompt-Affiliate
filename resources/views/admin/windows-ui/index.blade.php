@@ -2,6 +2,78 @@
 
 @section('title', 'จัดการ Windows UI')
 
+@push('styles')
+<style>
+    /* Toggle Switch Styles */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 24px;
+        flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #cbd5e1;
+        transition: 0.3s;
+        border-radius: 24px;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.3s;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+
+    .toggle-switch input:focus + .toggle-slider {
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+    }
+
+    .toggle-switch input:disabled + .toggle-slider {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    /* Dark mode styles */
+    .dark .toggle-slider {
+        background: #475569;
+    }
+
+    .dark .toggle-switch input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="container-fluid px-4 py-6">
     <!-- Header -->
@@ -147,7 +219,7 @@
                             </div>
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="windows_taskbar_blur" value="1" {{ ($settings['windows_taskbar_blur'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="windows_taskbar_blur" value="1" {{ ($settings['windows_taskbar_blur'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ Blur Effect</span>
                                 </label>
                             </div>
@@ -170,7 +242,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="millennium_back_button_enabled" value="1" {{ ($settings['millennium_back_button_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="millennium_back_button_enabled" value="1" {{ ($settings['millennium_back_button_enabled'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงปุ่มกลับ</span>
                                 </label>
                             </div>
@@ -191,7 +263,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="millennium_center_section_enabled" value="1" {{ ($settings['millennium_center_section_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="millennium_center_section_enabled" value="1" {{ ($settings['millennium_center_section_enabled'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงส่วนกลาง</span>
                                 </label>
                             </div>
@@ -222,7 +294,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="millennium_rgb_enabled" value="1" {{ ($settings['millennium_rgb_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="millennium_rgb_enabled" value="1" {{ ($settings['millennium_rgb_enabled'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Border</span>
                                 </label>
                             </div>
@@ -247,7 +319,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="windows_rgb_enabled" value="1" {{ ($settings['windows_rgb_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="windows_rgb_enabled" value="1" {{ ($settings['windows_rgb_enabled'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Animation</span>
                                 </label>
                             </div>
@@ -257,7 +329,7 @@
                             </div>
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="windows_rgb_glow" value="1" {{ ($settings['windows_rgb_glow'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="windows_rgb_glow" value="1" {{ ($settings['windows_rgb_glow'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ Glow Effect</span>
                                 </label>
                             </div>
@@ -296,13 +368,13 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="windows_spaceship_theme" value="1" {{ ($settings['windows_spaceship_theme'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="windows_spaceship_theme" value="1" {{ ($settings['windows_spaceship_theme'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ธีมยานอวกาศ</span>
                                 </label>
                             </div>
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="windows_spaceship_stars" value="1" {{ ($settings['windows_spaceship_stars'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="windows_spaceship_stars" value="1" {{ ($settings['windows_spaceship_stars'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงดาวพื้นหลัง</span>
                                 </label>
                             </div>
@@ -364,13 +436,13 @@
                             </div>
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="millennium_clock_show_seconds" value="1" {{ ($settings['millennium_clock_show_seconds'] ?? false) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="millennium_clock_show_seconds" value="1" {{ ($settings['millennium_clock_show_seconds'] ?? false) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงวินาที</span>
                                 </label>
                             </div>
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="millennium_clock_show_date" value="1" {{ ($settings['millennium_clock_show_date'] ?? false) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="millennium_clock_show_date" value="1" {{ ($settings['millennium_clock_show_date'] ?? false) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">แสดงวันที่</span>
                                 </label>
                             </div>
@@ -392,7 +464,7 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div class="flex items-center">
                                 <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="millennium_back_to_top_enabled" value="1" {{ ($settings['millennium_back_to_top_enabled'] ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    <label class="toggle-switch"><input type="checkbox" name="millennium_back_to_top_enabled" value="1" {{ ($settings['millennium_back_to_top_enabled'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ปุ่ม Back to Top</span>
                                 </label>
                             </div>

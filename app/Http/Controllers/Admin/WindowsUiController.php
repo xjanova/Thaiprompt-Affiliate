@@ -411,4 +411,39 @@ class WindowsUiController extends Controller
         return redirect()->route('admin.windows-ui.start-menu')
             ->with('success', 'อัพเดตการตั้งค่า RGB สำเร็จ');
     }
+
+    /**
+     * Update Menu Size & Position Settings (from start-menu page)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateMenuSettings(Request $request)
+    {
+        $validated = $request->validate([
+            // Menu Position & Size
+            'millennium_menu_position' => ['nullable', 'string', 'in:left,center,right'],
+            'millennium_menu_width' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'millennium_menu_width_unit' => ['nullable', 'string', 'in:px,%'],
+            'millennium_menu_max_height' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
+
+            // Menu RGB (can be set from this form too)
+            'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
+        ]);
+
+        // Handle checkbox (only the one in this form if present)
+        if ($request->has('millennium_menu_rgb_enabled')) {
+            $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
+        }
+
+        // Save each setting
+        foreach ($validated as $key => $value) {
+            $type = $this->getSettingType($key, $value);
+            WindowsUiSetting::set($key, $value, $type);
+        }
+
+        return redirect()->route('admin.windows-ui.start-menu')
+            ->with('success', 'อัพเดตการตั้งค่าเมนู Start สำเร็จ');
+    }
 }
