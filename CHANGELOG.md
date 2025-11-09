@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.98.3] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: make millenniumMenu function global for Alpine.js access (e4a08ec)
+### 🔧 Other Changes
+- Merge pull request #630 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (eedcce9)
+- refactor: redesign menu with simple 3D design (d13809b)
+
 ## [v2.98.2] - 2025-11-08
 
 ### ✨ Features
