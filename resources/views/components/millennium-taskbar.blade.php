@@ -15,6 +15,16 @@
     $taskbarBlur = WindowsUiSetting::get('windows_taskbar_blur', true);
     $taskbarBlurAmount = WindowsUiSetting::get('millennium_taskbar_blur_amount', 20);
 
+    // Taskbar Color Settings
+    $taskbarBgColor = WindowsUiSetting::get('windows_taskbar_bg_color', '#1e293b');
+    $taskbarTextColor = WindowsUiSetting::get('windows_taskbar_text_color', '#ffffff');
+    $taskbarHoverBgColor = WindowsUiSetting::get('windows_taskbar_hover_bg_color', '#334155');
+    $taskbarActiveBgColor = WindowsUiSetting::get('windows_taskbar_active_bg_color', '#475569');
+    $taskbarBorderColor = WindowsUiSetting::get('windows_taskbar_border_color', '#475569');
+    $taskbarUseGradient = WindowsUiSetting::get('windows_taskbar_use_gradient', false);
+    $taskbarGradientFrom = WindowsUiSetting::get('windows_taskbar_gradient_from', '#1e293b');
+    $taskbarGradientTo = WindowsUiSetting::get('windows_taskbar_gradient_to', '#0f172a');
+
     // RGB Settings
     $millenniumRgbEnabled = WindowsUiSetting::get('millennium_rgb_enabled', true);
     $millenniumRgbSpeed = WindowsUiSetting::get('millennium_rgb_speed', 5);
@@ -262,7 +272,12 @@
 
     <!-- Millennium Taskbar -->
     <div class="fixed left-0 right-0 z-50 {{ $taskbarPosition === 'top' ? 'top-0' : 'bottom-0' }} millennium-taskbar"
-         style="height: {{ $taskbarHeight }}px;">
+         style="
+            height: {{ $taskbarHeight }}px;
+            --taskbar-text-color: {{ $taskbarTextColor }};
+            --taskbar-hover-bg: {{ $taskbarHoverBgColor }};
+            --taskbar-active-bg: {{ $taskbarActiveBgColor }};
+         ">
 
         <!-- RGB Border Animation -->
         @if($millenniumRgbEnabled)
@@ -270,8 +285,18 @@
         @endif
 
         <!-- Taskbar Background -->
-        <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900 to-blue-900 border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 shadow-2xl rounded-2xl mx-2 my-1"
-             style="opacity: {{ $taskbarOpacity / 100 }}; backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px); box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);"></div>
+        <div class="absolute inset-0 border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 shadow-2xl rounded-2xl mx-2 my-1"
+             style="
+                opacity: {{ $taskbarOpacity / 100 }};
+                backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px);
+                border-color: {{ $taskbarBorderColor }};
+                @if($taskbarUseGradient)
+                background: linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }});
+                @else
+                background-color: {{ $taskbarBgColor }};
+                @endif
+                box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);
+             "></div>
 
         <!-- Taskbar Content -->
         <div class="relative h-full w-full px-3 flex items-center gap-3">
@@ -801,6 +826,21 @@
     /* Taskbar Glass Morphism */
     .millennium-taskbar {
         backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    /* Taskbar Color Customization */
+    .millennium-taskbar .text-white {
+        color: var(--taskbar-text-color, #ffffff);
+    }
+
+    .millennium-taskbar a:hover,
+    .millennium-taskbar button:hover {
+        background-color: var(--taskbar-hover-bg, rgba(255, 255, 255, 0.1));
+    }
+
+    .millennium-taskbar a.active,
+    .millennium-taskbar button.active {
+        background-color: var(--taskbar-active-bg, rgba(255, 255, 255, 0.2));
     }
 
     /* Back to Top Button Animations */

@@ -656,6 +656,16 @@ class WindowsUiSeeder extends Seeder
             'windows_taskbar_blur' => ['value' => true, 'type' => 'boolean'],
             'windows_taskbar_transparency' => ['value' => 95, 'type' => 'integer'],
 
+            // Taskbar Color Settings
+            'windows_taskbar_bg_color' => ['value' => '#1e293b', 'type' => 'color'],
+            'windows_taskbar_text_color' => ['value' => '#ffffff', 'type' => 'color'],
+            'windows_taskbar_hover_bg_color' => ['value' => '#334155', 'type' => 'color'],
+            'windows_taskbar_active_bg_color' => ['value' => '#475569', 'type' => 'color'],
+            'windows_taskbar_border_color' => ['value' => '#475569', 'type' => 'color'],
+            'windows_taskbar_use_gradient' => ['value' => false, 'type' => 'boolean'],
+            'windows_taskbar_gradient_from' => ['value' => '#1e293b', 'type' => 'color'],
+            'windows_taskbar_gradient_to' => ['value' => '#0f172a', 'type' => 'color'],
+
             // Start Button Settings
             'windows_start_button_text' => ['value' => 'เริ่ม', 'type' => 'string'],
             'windows_start_button_use_logo' => ['value' => true, 'type' => 'boolean'],
