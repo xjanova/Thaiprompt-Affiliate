@@ -65,6 +65,7 @@ use App\Http\Controllers\Admin\AppBannerController;
 use App\Http\Controllers\Admin\AppMaintenanceController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageBuilderSectionController;
+use App\Http\Controllers\Admin\SystemResetController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -1369,4 +1370,13 @@ Route::prefix('hotels')->name('hotels.api.')->group(function () {
     Route::patch('/{id}/toggle-active', [SuperAdminHotelController::class, 'toggleActive'])->name('toggle-active');
     Route::patch('/{id}/toggle-featured', [SuperAdminHotelController::class, 'toggleFeatured'])->name('toggle-featured');
     Route::delete('/{id}/gallery-image', [SuperAdminHotelController::class, 'removeGalleryImage'])->name('remove-gallery-image');
+});
+
+// System Reset (Super Admin Only)
+Route::prefix('system-reset')->name('system-reset.')->group(function () {
+    Route::get('/', [SystemResetController::class, 'index'])->name('index');
+    Route::post('/reset', [SystemResetController::class, 'reset'])->name('reset');
+    Route::get('/statistics', [SystemResetController::class, 'getStatistics'])->name('statistics');
+    Route::get('/logs', [SystemResetController::class, 'getLogs'])->name('logs');
+    Route::get('/logs/{id}', [SystemResetController::class, 'showLog'])->name('show');
 });
