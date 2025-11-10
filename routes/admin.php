@@ -203,19 +203,13 @@ Route::prefix('security')->name('security.')->group(function () {
 Route::resource('pages', PageController::class);
 Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
 
-// Windows UI Management
+// Windows UI Management (Visual Customization Only - Menus are hard-coded)
 Route::prefix('windows-ui')->name('windows-ui.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\WindowsUiController::class, 'index'])->name('index');
     Route::put('/', [\App\Http\Controllers\Admin\WindowsUiController::class, 'update'])->name('update');
-    Route::get('/start-menu', [\App\Http\Controllers\Admin\WindowsUiController::class, 'startMenu'])->name('start-menu');
-    Route::put('/start-menu', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateStartMenu'])->name('start-menu.update');
     Route::put('/start-button-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateStartButtonSettings'])->name('start-button-settings.update');
     Route::put('/menu-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateMenuSettings'])->name('menu-settings.update');
     Route::put('/menu-rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateMenuRgbSettings'])->name('menu-rgb-settings.update');
-    Route::get('/taskbar-apps', [\App\Http\Controllers\Admin\WindowsUiController::class, 'taskbarApps'])->name('taskbar-apps');
-    Route::put('/taskbar-apps', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateTaskbarApps'])->name('taskbar-apps.update');
-    Route::get('/system-tray', [\App\Http\Controllers\Admin\WindowsUiController::class, 'systemTray'])->name('system-tray');
-    Route::put('/system-tray', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateSystemTray'])->name('system-tray.update');
     Route::get('/rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'rgbSettings'])->name('rgb-settings');
     Route::put('/rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateRgbSettings'])->name('rgb-settings.update');
 });

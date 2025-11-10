@@ -140,146 +140,6 @@ class WindowsUiController extends Controller
     }
 
     /**
-     * Manage Start Menu items
-     *
-     * @return \Illuminate\View\View
-     */
-    public function startMenu(Request $request)
-    {
-        $role = $request->get('role', 'admin'); // admin, seller, user
-
-        // Validate role
-        if (!in_array($role, ['admin', 'seller', 'user'])) {
-            $role = 'admin';
-        }
-
-        $settingKey = 'windows_start_menu_items_' . $role;
-        $items = WindowsUiSetting::get($settingKey, []);
-
-        return view('admin.windows-ui.start-menu', compact('items', 'role'));
-    }
-
-    /**
-     * Update Start Menu items
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function updateStartMenu(Request $request)
-    {
-        $role = $request->input('role', 'admin');
-
-        // Validate role
-        if (!in_array($role, ['admin', 'seller', 'user'])) {
-            $role = 'admin';
-        }
-
-        $validated = $request->validate([
-            'items' => ['required', 'array'],
-            'items.*.icon' => ['required', 'string', 'max:10'],
-            'items.*.label' => ['required', 'string', 'max:100'],
-            'items.*.url' => ['required', 'string', 'max:500'],
-            'items.*.order' => ['required', 'integer', 'min:0'],
-            'items.*.submenu' => ['nullable', 'array'],
-            'items.*.submenu.*.label' => ['required_with:items.*.submenu', 'string', 'max:100'],
-            'items.*.submenu.*.url' => ['required_with:items.*.submenu', 'string', 'max:500'],
-        ]);
-
-        // Process menu items - บันทึกให้ตรงกับโครงสร้างของ WindowsUiSeeder
-        $menuItems = collect($validated['items'])->map(function($item) {
-            $processedItem = [
-                'icon' => $item['icon'],
-                'label' => $item['label'],
-                'url' => $item['url'],
-                'order' => $item['order'],
-            ];
-
-            // เพิ่ม submenu ถ้ามี (ตรงกับ seeder)
-            if (!empty($item['submenu']) && is_array($item['submenu']) && count($item['submenu']) > 0) {
-                $processedItem['submenu'] = $item['submenu'];
-            }
-
-            return $processedItem;
-        })->toArray();
-
-        $settingKey = 'windows_start_menu_items_' . $role;
-        WindowsUiSetting::set($settingKey, $menuItems);
-
-        return redirect()->route('admin.windows-ui.start-menu', ['role' => $role])
-            ->with('success', 'อัพเดตเมนู Start (' . ucfirst($role) . ') สำเร็จ');
-    }
-
-    /**
-     * Manage Taskbar Apps
-     *
-     * @return \Illuminate\View\View
-     */
-    public function taskbarApps()
-    {
-        $apps = WindowsUiSetting::getTaskbarApps();
-
-        return view('admin.windows-ui.taskbar-apps', compact('apps'));
-    }
-
-    /**
-     * Update Taskbar Apps
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function updateTaskbarApps(Request $request)
-    {
-        $validated = $request->validate([
-            'apps' => ['required', 'array'],
-            'apps.*.icon' => ['required', 'string', 'max:10'],
-            'apps.*.label' => ['required', 'string', 'max:100'],
-            'apps.*.url' => ['required', 'string', 'max:500'],
-            'apps.*.order' => ['required', 'integer', 'min:0'],
-        ]);
-
-        WindowsUiSetting::set('windows_taskbar_apps', $validated['apps']);
-
-        return redirect()->route('admin.windows-ui.taskbar-apps')
-            ->with('success', 'อัพเดต Taskbar Apps สำเร็จ');
-    }
-
-    /**
-     * Manage System Tray Icons
-     *
-     * @return \Illuminate\View\View
-     */
-    public function systemTray()
-    {
-        $icons = WindowsUiSetting::getSystemTrayIcons();
-
-        return view('admin.windows-ui.system-tray', compact('icons'));
-    }
-
-    /**
-     * Update System Tray Icons
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function updateSystemTray(Request $request)
-    {
-        $validated = $request->validate([
-            'icons' => ['required', 'array'],
-            'icons.*.icon' => ['required', 'string', 'max:20'],
-            'icons.*.label' => ['required', 'string', 'max:100'],
-            'icons.*.url' => ['required', 'string', 'max:500'],
-            'icons.*.requires_auth' => ['nullable', 'boolean'],
-            'icons.*.requires_guest' => ['nullable', 'boolean'],
-            'icons.*.order' => ['required', 'integer', 'min:0'],
-        ]);
-
-        WindowsUiSetting::set('windows_system_tray_icons', $validated['icons']);
-
-        return redirect()->route('admin.windows-ui.system-tray')
-            ->with('success', 'อัพเดต System Tray สำเร็จ');
-    }
-
-    /**
      * Manage RGB Settings
      *
      * @return \Illuminate\View\View
@@ -473,7 +333,7 @@ class WindowsUiController extends Controller
             WindowsUiSetting::set($key, $value, $type);
         }
 
-        return redirect()->route('admin.windows-ui.start-menu')
+        return redirect()->route('admin.windows-ui.index')
             ->with('success', 'อัพเดตการตั้งค่าปุ่ม Start สำเร็จ');
     }
 
@@ -509,7 +369,7 @@ class WindowsUiController extends Controller
             WindowsUiSetting::set($key, $value, $type);
         }
 
-        return redirect()->route('admin.windows-ui.start-menu')
+        return redirect()->route('admin.windows-ui.index')
             ->with('success', 'อัพเดตการตั้งค่า RGB สำเร็จ');
     }
 
@@ -547,7 +407,7 @@ class WindowsUiController extends Controller
             WindowsUiSetting::set($key, $value, $type);
         }
 
-        return redirect()->route('admin.windows-ui.start-menu')
+        return redirect()->route('admin.windows-ui.index')
             ->with('success', 'อัพเดตการตั้งค่าเมนู Start สำเร็จ');
     }
 }
