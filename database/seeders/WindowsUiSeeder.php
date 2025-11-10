@@ -353,8 +353,6 @@ class WindowsUiSeeder extends Seeder
             ],
         ];
 
-        WindowsUiSetting::set('windows_start_menu_items_admin', $adminMenuItems, 'json');
-
         // Start Menu Items - Seller Menu Structure
         // Extracted from millennium-start-menu.blade.php (complete seller menu)
         $sellerMenuItems = [
@@ -420,8 +418,6 @@ class WindowsUiSeeder extends Seeder
             ['icon' => '⚙️', 'label' => 'ตั้งค่าร้าน', 'route' => 'seller.settings', 'order' => 7],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'route' => 'seller.profile', 'order' => 8],
         ];
-
-        WindowsUiSetting::set('windows_start_menu_items_seller', $sellerMenuItems, 'json');
 
         // Start Menu Items - User Menu Structure
         // Extracted from millennium-start-menu.blade.php (complete user menu)
