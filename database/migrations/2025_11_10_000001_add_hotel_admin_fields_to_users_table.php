@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_hotel_admin')->default(false)->after('is_admin');
+            $table->boolean('is_hotel_admin')->default(false)->after('is_super_admin');
             $table->unsignedBigInteger('managed_hotel_id')->nullable()->after('is_hotel_admin');
 
             $table->foreign('managed_hotel_id')
