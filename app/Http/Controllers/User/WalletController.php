@@ -64,13 +64,36 @@ class WalletController extends Controller
             })->sum('amount'),
         ];
 
+        // Get admin adjustments and refunds statistics
+        $adminTransactions = $wallet->transactions()
+            ->where('status', 'completed')
+            ->where(function($query) {
+                $query->where('reference_type', 'admin_adjustment')
+                      ->orWhere('reference_type', 'admin_refund')
+                      ->orWhere('reference_type', 'refund')
+                      ->orWhere('type', 'refund');
+            })
+            ->get();
+
+        $adminStats = [
+            'total' => $adminTransactions->sum('amount'),
+            'count' => $adminTransactions->count(),
+            'this_month' => $adminTransactions->filter(function($t) {
+                return $t->created_at->isCurrentMonth();
+            })->sum('amount'),
+            'last_30_days' => $adminTransactions->filter(function($t) {
+                return $t->created_at->greaterThanOrEqualTo(now()->subDays(30));
+            })->sum('amount'),
+        ];
+
         return view('user.wallet.index', compact(
             'wallet',
             'statistics',
             'recentTransactions',
             'paymentMethods',
             'availableGateways',
-            'cashbackStats'
+            'cashbackStats',
+            'adminStats'
         ));
     }
 
