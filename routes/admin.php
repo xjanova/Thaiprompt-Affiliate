@@ -16,7 +16,6 @@ use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\LanguageSettingController;
-use App\Http\Controllers\Admin\TranslationMappingController;
 use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\VisualBuilderController;
@@ -63,8 +62,11 @@ use App\Http\Controllers\Admin\AppThemeSettingController;
 use App\Http\Controllers\Admin\AppFeatureController;
 use App\Http\Controllers\Admin\AppBannerController;
 use App\Http\Controllers\Admin\AppMaintenanceController;
+use App\Http\Controllers\Admin\AppControlSectionController;
+use App\Http\Controllers\Admin\ComponentSettingController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageBuilderSectionController;
+use App\Http\Controllers\Admin\SystemResetController;
 use App\Http\Controllers\Admin\ApiEndpointController;
 use App\Http\Controllers\Admin\ApiKeyController;
 use Illuminate\Support\Facades\Route;
@@ -303,19 +305,6 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('ocr', [SettingsController::class, 'updateOcr'])->name('ocr.update');
     Route::post('ocr/test', [SettingsController::class, 'testOcrConnection'])->name('ocr.test');
     Route::get('ocr/setup-guide', [SettingsController::class, 'setupGuide'])->name('ocr.setup-guide');
-});
-
-// Translation Mapping Management (Custom Translations)
-Route::prefix('translations')->name('translations.')->group(function () {
-    Route::get('/', [TranslationMappingController::class, 'index'])->name('index');
-    Route::get('/create', [TranslationMappingController::class, 'create'])->name('create');
-    Route::post('/', [TranslationMappingController::class, 'store'])->name('store');
-    Route::get('/{mapping}/edit', [TranslationMappingController::class, 'edit'])->name('edit');
-    Route::put('/{mapping}', [TranslationMappingController::class, 'update'])->name('update');
-    Route::delete('/{mapping}', [TranslationMappingController::class, 'destroy'])->name('destroy');
-    Route::post('/{mapping}/toggle', [TranslationMappingController::class, 'toggle'])->name('toggle');
-    Route::post('/import', [TranslationMappingController::class, 'import'])->name('import');
-    Route::get('/export', [TranslationMappingController::class, 'export'])->name('export');
 });
 
 // Notification Management
@@ -1314,6 +1303,31 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::post('/enable', [AppMaintenanceController::class, 'enable'])->name('enable');
         Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
     });
+
+    // App Control Sections
+    Route::prefix('control-sections')->name('control-sections.')->group(function () {
+        Route::get('/', [AppControlSectionController::class, 'index'])->name('index');
+        Route::get('/create', [AppControlSectionController::class, 'create'])->name('create');
+        Route::post('/', [AppControlSectionController::class, 'store'])->name('store');
+        Route::get('/{appControlSection}/edit', [AppControlSectionController::class, 'edit'])->name('edit');
+        Route::put('/{appControlSection}', [AppControlSectionController::class, 'update'])->name('update');
+        Route::delete('/{appControlSection}', [AppControlSectionController::class, 'destroy'])->name('destroy');
+        Route::post('/{appControlSection}/toggle-visibility', [AppControlSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
+        Route::post('/{appControlSection}/toggle-active', [AppControlSectionController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('/update-order', [AppControlSectionController::class, 'updateOrder'])->name('update-order');
+    });
+
+    // Component Settings
+    Route::prefix('component-settings')->name('component-settings.')->group(function () {
+        Route::get('/', [ComponentSettingController::class, 'index'])->name('index');
+        Route::get('/create', [ComponentSettingController::class, 'create'])->name('create');
+        Route::post('/', [ComponentSettingController::class, 'store'])->name('store');
+        Route::get('/{componentSetting}/edit', [ComponentSettingController::class, 'edit'])->name('edit');
+        Route::put('/{componentSetting}', [ComponentSettingController::class, 'update'])->name('update');
+        Route::delete('/{componentSetting}', [ComponentSettingController::class, 'destroy'])->name('destroy');
+        Route::post('/{componentSetting}/toggle-enabled', [ComponentSettingController::class, 'toggleEnabled'])->name('toggle-enabled');
+        Route::post('/{componentSetting}/duplicate', [ComponentSettingController::class, 'duplicate'])->name('duplicate');
+    });
 });
 
 // Page Builder (Homepage/Wiki Builder)
@@ -1371,6 +1385,15 @@ Route::prefix('hotels')->name('hotels.api.')->group(function () {
     Route::patch('/{id}/toggle-active', [SuperAdminHotelController::class, 'toggleActive'])->name('toggle-active');
     Route::patch('/{id}/toggle-featured', [SuperAdminHotelController::class, 'toggleFeatured'])->name('toggle-featured');
     Route::delete('/{id}/gallery-image', [SuperAdminHotelController::class, 'removeGalleryImage'])->name('remove-gallery-image');
+});
+
+// System Reset (Super Admin Only)
+Route::prefix('system-reset')->name('system-reset.')->group(function () {
+    Route::get('/', [SystemResetController::class, 'index'])->name('index');
+    Route::post('/reset', [SystemResetController::class, 'reset'])->name('reset');
+    Route::get('/statistics', [SystemResetController::class, 'getStatistics'])->name('statistics');
+    Route::get('/logs', [SystemResetController::class, 'getLogs'])->name('logs');
+    Route::get('/logs/{id}', [SystemResetController::class, 'showLog'])->name('show');
 });
 
 // API Management - จัดการ API endpoints และ API keys
