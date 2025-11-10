@@ -1,0 +1,189 @@
+# ==============================================================================
+# Git Attributes for Production Release Export
+# ==============================================================================
+#
+# This file ensures that development files and sensitive files are excluded
+# from GitHub's automatically generated ZIP/TAR releases.
+#
+# When customers download a release, they will ONLY get production-ready files.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Development Files (NEVER export to production)
+# ------------------------------------------------------------------------------
+
+# Developer-only controllers and features (IP-locked features)
+/app/Http/Controllers/Admin/Dev/ export-ignore
+/app/Http/Middleware/DevMode.php export-ignore
+
+# Developer-only views
+/resources/views/admin/dev/ export-ignore
+
+# Git repository files
+/.git export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore
+
+# GitHub-specific files
+/.github export-ignore
+.github/** export-ignore
+
+# ------------------------------------------------------------------------------
+# Environment & Configuration Files (NEVER export)
+# ------------------------------------------------------------------------------
+
+/.env export-ignore
+/.env.* export-ignore
+/phpunit.xml export-ignore
+/phpunit.xml.dist export-ignore
+
+# ------------------------------------------------------------------------------
+# Testing Files (NEVER export to production)
+# ------------------------------------------------------------------------------
+
+/tests export-ignore
+/tests/** export-ignore
+/.phpunit.result.cache export-ignore
+
+# ------------------------------------------------------------------------------
+# Documentation Files (Optional - can be included or excluded)
+# ------------------------------------------------------------------------------
+
+# Uncomment these if you don't want docs in production releases:
+# /README.md export-ignore
+# /INSTALLATION-GUIDE.md export-ignore
+# /RELEASE-GUIDE.md export-ignore
+# /CHANGELOG.md export-ignore
+
+# Development guides (EXCLUDE from production)
+/RELEASE-GUIDE.md export-ignore
+
+# ------------------------------------------------------------------------------
+# Build & Dependency Files
+# ------------------------------------------------------------------------------
+
+# Node.js
+/node_modules export-ignore
+/package.json export-ignore
+/package-lock.json export-ignore
+/webpack.mix.js export-ignore
+/vite.config.js export-ignore
+
+# Composer (keep composer.json for production, but not lock file)
+# /composer.lock export-ignore
+
+# ------------------------------------------------------------------------------
+# IDE & Editor Files
+# ------------------------------------------------------------------------------
+
+/.vscode export-ignore
+/.idea export-ignore
+/.fleet export-ignore
+*.swp export-ignore
+*.swo export-ignore
+*~ export-ignore
+
+# ------------------------------------------------------------------------------
+# OS Files
+# ------------------------------------------------------------------------------
+
+.DS_Store export-ignore
+Thumbs.db export-ignore
+desktop.ini export-ignore
+
+# ------------------------------------------------------------------------------
+# CI/CD Files
+# ------------------------------------------------------------------------------
+
+/.gitlab-ci.yml export-ignore
+/.travis.yml export-ignore
+/bitbucket-pipelines.yml export-ignore
+/azure-pipelines.yml export-ignore
+/Jenkinsfile export-ignore
+
+# ------------------------------------------------------------------------------
+# Other Development Files
+# ------------------------------------------------------------------------------
+
+/.editorconfig export-ignore
+/.php-cs-fixer.php export-ignore
+/.php-cs-fixer.cache export-ignore
+/phpstan.neon export-ignore
+/phpstan.neon.dist export-ignore
+/psalm.xml export-ignore
+/psalm.xml.dist export-ignore
+
+# ------------------------------------------------------------------------------
+# Storage & Cache (NEVER export)
+# ------------------------------------------------------------------------------
+
+/storage/logs export-ignore
+/storage/framework/cache export-ignore
+/storage/framework/sessions export-ignore
+/storage/framework/testing export-ignore
+/storage/framework/views export-ignore
+/bootstrap/cache export-ignore
+
+# ==============================================================================
+# Line Ending Normalization
+# ==============================================================================
+
+# Auto detect text files and normalize line endings to LF
+* text=auto
+
+# PHP files
+*.php text eol=lf
+*.blade.php text eol=lf
+
+# JavaScript
+*.js text eol=lf
+*.json text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+
+# CSS
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.less text eol=lf
+
+# HTML/Templates
+*.html text eol=lf
+*.htm text eol=lf
+*.xml text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Config files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.ini text eol=lf
+*.toml text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.flv binary
+*.fla binary
+*.swf binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.ttf binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+*.pdf binary

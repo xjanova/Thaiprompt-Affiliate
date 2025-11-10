@@ -2,6 +2,66 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+---
+
+## 📝 คำแนะนำสำหรับการสร้าง Release
+
+**สำหรับ Product Releases (ที่จะให้ผู้ใช้อัพเดท):**
+
+ใช้คำสั่ง:
+```bash
+php artisan release:create v1.2.0 --changelog="สรุปการเปลี่ยนแปลงที่สำคัญ" --push
+```
+
+**หลักการเขียน Changelog สำหรับ Release:**
+- ✅ **เน้นสิ่งที่ผู้ใช้จะได้รับ** ไม่ใช่รายละเอียดทางเทคนิค
+- ✅ **ใช้ภาษาที่เข้าใจง่าย** หลีกเลี่ยงศัพท์เทคนิค
+- ✅ **สรุปเฉพาะฟีเจอร์สำคัญ** ไม่ต้องระบุการแก้บัคทั้งหมด
+- ❌ **ไม่ต้องระบุ git commits, PRs, bug fixes** เว้นแต่เป็น security fix
+
+**ประเภท Release:**
+- `--type=major` - การเปลี่ยนแปลงใหญ่ (Breaking Changes)
+- `--type=minor` - ฟีเจอร์ใหม่ (ค่า default)
+- `--type=patch` - ปรับปรุงเล็กน้อย/แก้บัค
+
+**ตัวอย่างการเขียน Changelog ที่ดี (ภาษาไทยเท่านั้น):**
+
+```
+✅ ดี:
+"เพิ่มระบบติดตามผลแบบเรียลไทม์ และปรับปรุงหน้าแดชบอร์ดให้แสดงข้อมูลได้ละเอียดขึ้น รองรับหลายสกุลเงิน และมีกราฟแสดงสถิติแบบโต้ตอบ"
+
+❌ ไม่ดี:
+"Fixed bug in tracking system, Added real-time feature"
+"แก้บัค issue #123, #124, #125"
+```
+
+**ตัวอย่างคำสั่ง:**
+```bash
+# Minor Release (ฟีเจอร์ใหม่)
+php artisan release:create v2.1.0 --type=minor \
+  --changelog="เพิ่มระบบติดตามผลแบบเรียลไทม์ พร้อมกราฟสถิติแบบโต้ตอบและรองรับหลายสกุลเงิน" \
+  --push
+
+# Patch Release (ปรับปรุง/แก้บัค)
+php artisan release:create v2.0.1 --type=patch \
+  --changelog="ปรับปรุงประสิทธิภาพการทำงานและเพิ่มความเสถียรของระบบ" \
+  --push
+
+# Draft Release (ยังไม่พร้อมให้อัพเดท - ใช้ทดสอบก่อน)
+php artisan release:create v3.0.0 --type=major \
+  --changelog="ระบบวิเคราะห์ข้อมูลด้วย AI และรายงานแบบอัตโนมัติ" \
+  --draft --push
+```
+
+**สำคัญ:**
+- การสร้าง Release จะสร้าง Git tag และ push ไปยัง GitHub
+- เฉพาะ **Official Releases** (ไม่ใช่ draft) เท่านั้นที่จะปรากฏในระบบอัพเดท
+- ผู้ใช้จะเห็น changelog นี้เมื่อกดอัพเดทในระบบ
+
+---
+
+## 🔄 Development Changelog (สำหรับ Developer)
+
 ## [v2.110.1] - 2025-11-09
 
 ### ✨ Features

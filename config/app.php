@@ -59,6 +59,20 @@ return [
         // App\Providers\ThemeServiceProvider::class, // Theme System v2 - Disabled in favor of simple dark mode
         App\Providers\CryptoServiceProvider::class, // Crypto Payment Gateway Services
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Developer Mode Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Developer Mode provides special features and tools for developers only.
+    | Access is restricted to whitelisted IP addresses for security.
+    | Features include: Release Management, Real-time Git Updates, etc.
+    |
+    */
+    'dev_mode_enabled' => env('DEV_MODE_ENABLED', false),
+    'dev_ips' => array_filter(explode(',', env('DEV_WHITELIST_IPS', ''))),
+
     'aliases' => Facade::defaultAliases()->merge([
         // Custom aliases...
     ])->toArray(),

@@ -106,8 +106,14 @@
             ['icon' => '📱', 'label' => 'LINE OA & AI', 'url' => route('admin.line-oa.index'), 'color' => 'from-green-500 to-emerald-500'],
             ['icon' => '🎓', 'label' => 'Academy System', 'url' => route('admin.academy.courses.index'), 'color' => 'from-purple-600 to-pink-600'],
             ['icon' => '📈', 'label' => 'ระบบการตลาด', 'url' => route('admin.affiliates.index'), 'color' => 'from-pink-600 to-rose-600'],
+            ['icon' => '🔄', 'label' => 'อัพเดทระบบ', 'url' => route('admin.updates.index'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าระบบ', 'url' => route('admin.settings.index'), 'color' => 'from-gray-600 to-slate-600'],
         ];
+
+        // Add Developer Release Manager (only visible to whitelisted IPs)
+        if (\App\Http\Middleware\DevMode::isDevMode()) {
+            $menuItems[] = ['icon' => '🛠️', 'label' => 'Dev Release Manager', 'url' => route('admin.dev.releases.index'), 'color' => 'from-red-600 to-orange-600', 'highlight' => true];
+        }
     } elseif ($type === 'seller') {
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('seller.dashboard'), 'color' => 'from-cyan-600 to-blue-600'],

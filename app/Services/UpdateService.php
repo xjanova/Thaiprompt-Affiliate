@@ -42,6 +42,16 @@ class UpdateService
             $availableUpdates = [];
 
             foreach ($releases as $release) {
+                // Skip draft releases (not approved for release yet)
+                if ($release['draft'] ?? false) {
+                    continue;
+                }
+
+                // Skip pre-releases (beta, alpha, etc.) unless explicitly enabled
+                if (($release['prerelease'] ?? false) && !config('version.update.allow_prerelease', false)) {
+                    continue;
+                }
+
                 $version = ltrim($release['tag_name'], 'v');
 
                 // Skip if older than current version
