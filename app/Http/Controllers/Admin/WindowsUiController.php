@@ -370,6 +370,7 @@ class WindowsUiController extends Controller
             // Start Button Display Options
             'millennium_start_button_show_icon' => ['nullable', 'boolean'],
             'millennium_start_button_show_text' => ['nullable', 'boolean'],
+            'millennium_start_button_text' => ['nullable', 'string', 'max:20'],
             'millennium_start_button_icon_size' => ['nullable', 'integer', 'min:16', 'max:64'],
             'millennium_start_button_font_size' => ['nullable', 'integer', 'min:12', 'max:32'],
 

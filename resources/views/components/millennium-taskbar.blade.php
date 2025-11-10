@@ -30,6 +30,7 @@
     $startButtonBorderRadius = WindowsUiSetting::get('millennium_start_button_border_radius', 16);
     $startButtonShowIcon = WindowsUiSetting::get('millennium_start_button_show_icon', true);
     $startButtonShowText = WindowsUiSetting::get('millennium_start_button_show_text', true);
+    $startButtonText = WindowsUiSetting::get('millennium_start_button_text', 'เริ่ม');
     $startButtonIconSize = WindowsUiSetting::get('millennium_start_button_icon_size', 32);
     $startButtonFontSize = WindowsUiSetting::get('millennium_start_button_font_size', 20);
 
@@ -239,7 +240,7 @@
 
                         @if($startButtonShowText)
                             <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
-                                เริ่ม
+                                {{ $startButtonText }}
                             </span>
                         @endif
 
@@ -449,7 +450,7 @@
 
                         @if($startButtonShowText)
                             <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
-                                เริ่ม
+                                {{ $startButtonText }}
                             </span>
                         @endif
 
@@ -485,7 +486,7 @@
 
                         @if($startButtonShowText)
                             <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
-                                เริ่ม
+                                {{ $startButtonText }}
                             </span>
                         @endif
 
