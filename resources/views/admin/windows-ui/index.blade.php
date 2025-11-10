@@ -71,6 +71,18 @@
     .dark .toggle-switch input:checked + .toggle-slider {
         background: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
     }
+
+    /* Settings Tab Styles */
+    .settings-tab {
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .settings-tab.active {
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+        color: white;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
 </style>
 @endpush
 
@@ -706,6 +718,432 @@
             </form>
         </div>
     </div>
+
+    <!-- Start Menu & Button Settings Panel -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden mt-8" x-data="menuSettingsManager()">
+        <div class="p-6 border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/50 dark:to-pink-950/50">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-1">⚙️ การตั้งค่า Start Menu & Button</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400">ปรับแต่งขนาด ตำแหน่ง ปุ่ม Start และเอฟเฟกต์ของ Start Menu</p>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200 dark:border-slate-700">
+            <div class="flex p-2 gap-2 bg-gray-50 dark:bg-slate-900">
+                <button @click="activeTab = 'menu'" :class="activeTab === 'menu' ? 'active' : ''" class="settings-tab flex-1 px-6 py-3 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-align-justify mr-2"></i>ตำแหน่งและขนาดเมนู
+                </button>
+                <button @click="activeTab = 'startbutton'" :class="activeTab === 'startbutton' ? 'active' : ''" class="settings-tab flex-1 px-6 py-3 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-window-maximize mr-2"></i>ปุ่ม Start & Responsive
+                </button>
+                <button @click="activeTab = 'menurgb'" :class="activeTab === 'menurgb' ? 'active' : ''" class="settings-tab flex-1 px-6 py-3 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-palette mr-2"></i>RGB Effects (เมนู)
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="p-6">
+            <!-- Menu Position & Size Tab -->
+            <div x-show="activeTab === 'menu'">
+                <form method="POST" action="{{ route('admin.windows-ui.menu-settings.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-arrows-alt-h mr-2 text-indigo-600"></i>ตำแหน่งเมนู
+                                </label>
+                                <select name="millennium_menu_position" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
+                                    <option value="left" {{ \App\Models\WindowsUiSetting::get('millennium_menu_position', 'center') === 'left' ? 'selected' : '' }}>ซ้าย (Left)</option>
+                                    <option value="center" {{ \App\Models\WindowsUiSetting::get('millennium_menu_position', 'center') === 'center' ? 'selected' : '' }}>กลาง (Center)</option>
+                                    <option value="right" {{ \App\Models\WindowsUiSetting::get('millennium_menu_position', 'center') === 'right' ? 'selected' : '' }}>ขวา (Right)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-arrows-alt-h mr-2 text-indigo-600"></i>ความกว้าง
+                                </label>
+                                <div class="flex gap-2">
+                                    <template x-if="widthUnit === 'px'">
+                                        <input type="number" x-model="widthValue" min="200" max="1200" class="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
+                                    </template>
+                                    <template x-if="widthUnit === '%'">
+                                        <div class="flex-1 flex items-center gap-4">
+                                            <input type="range" x-model="widthValue" min="20" max="100" class="flex-1 h-3 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-lg appearance-none cursor-pointer dark:from-indigo-800 dark:to-purple-800 accent-indigo-600">
+                                            <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 min-w-[5rem] text-center" x-text="widthValue + widthUnit"></span>
+                                        </div>
+                                    </template>
+                                    <select x-model="widthUnit" class="w-24 px-3 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-indigo-500">
+                                        <option value="px">px</option>
+                                        <option value="%">%</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" name="millennium_menu_width" x-model="widthValue">
+                                <input type="hidden" name="millennium_menu_width_unit" x-model="widthUnit">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">แนะนำ: 400-600px หรือ 30-50%</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-arrows-alt-v mr-2 text-indigo-600"></i>ความสูงสูงสุด
+                                </label>
+                                <div class="flex gap-2">
+                                    <template x-if="heightUnit === 'px'">
+                                        <input type="number" x-model="heightValue" min="300" max="1200" class="flex-1 px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
+                                    </template>
+                                    <template x-if="heightUnit === '%' || heightUnit === 'vh'">
+                                        <div class="flex-1 flex items-center gap-4">
+                                            <input type="range" x-model="heightValue" min="50" max="100" class="flex-1 h-3 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-lg appearance-none cursor-pointer dark:from-indigo-800 dark:to-purple-800 accent-indigo-600">
+                                            <span class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 min-w-[5rem] text-center" x-text="heightValue + heightUnit"></span>
+                                        </div>
+                                    </template>
+                                    <select x-model="heightUnit" class="w-24 px-3 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-indigo-500">
+                                        <option value="px">px</option>
+                                        <option value="%">%</option>
+                                        <option value="vh">vh</option>
+                                    </select>
+                                </div>
+                                <input type="hidden" name="millennium_menu_max_height" x-model="heightValue">
+                                <input type="hidden" name="millennium_menu_max_height_unit" x-model="heightUnit">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">แนะนำ: 600px หรือ 80vh</p>
+                            </div>
+
+                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border-2 border-purple-200 dark:border-purple-800">
+                                <label class="flex items-center justify-between cursor-pointer">
+                                    <div>
+                                        <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                            <span class="text-xl">🌈</span> RGB Border (ขอบเมนู)
+                                        </span>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเส้นขอบ RGB รอบเมนู Start</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end">
+                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl">
+                            <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่าเมนู
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Start Button & Responsive Tab -->
+            <div x-show="activeTab === 'startbutton'">
+                <form method="POST" action="{{ route('admin.windows-ui.start-button-settings.update') }}" enctype="multipart/form-data">
+                    @csrf
+                    @method('PUT')
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-font mr-2 text-indigo-600"></i>ข้อความปุ่ม Start
+                                </label>
+                                <input type="text" name="millennium_start_button_text" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_text', 'เริ่ม') }}" maxlength="20" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all" placeholder="เริ่ม">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ข้อความที่จะแสดงบนปุ่ม Start (สูงสุด 20 ตัวอักษร)</p>
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-all border-2 border-transparent hover:border-indigo-300 dark:hover:border-indigo-700">
+                                    <div>
+                                        <span class="font-semibold text-gray-900 dark:text-white">🖼️ แสดงโลโก้</span>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงไอคอน/โลโก้ในปุ่ม Start</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="millennium_start_button_show_icon" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_show_icon', true) ? 'checked' : '' }}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </label>
+
+                                <label class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-all border-2 border-transparent hover:border-indigo-300 dark:hover:border-indigo-700">
+                                    <div>
+                                        <span class="font-semibold text-gray-900 dark:text-white">📝 แสดงข้อความ</span>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงข้อความ "เริ่ม" ในปุ่ม Start</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="millennium_start_button_show_text" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_show_text', true) ? 'checked' : '' }}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </label>
+                            </div>
+
+                            <!-- Icon Settings -->
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
+                                <h4 class="font-semibold text-blue-900 dark:text-blue-300 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-icons"></i> การตั้งค่าไอคอน
+                                </h4>
+
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ประเภทไอคอน</label>
+                                        <select name="millennium_start_button_icon_type" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
+                                            <option value="default" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_type', 'default') === 'default' ? 'selected' : '' }}>โลโก้เริ่มต้น</option>
+                                            <option value="upload" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_type', 'default') === 'upload' ? 'selected' : '' }}>อัพโหลดรูปภาพ</option>
+                                            <option value="fontawesome" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_type', 'default') === 'fontawesome' ? 'selected' : '' }}>Font Awesome Icon</option>
+                                            <option value="emoji" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_type', 'default') === 'emoji' ? 'selected' : '' }}>Emoji</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">อัพโหลดไอคอน</label>
+                                        <input type="file" name="millennium_start_button_custom_icon" accept="image/*" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
+                                        @if(\App\Models\WindowsUiSetting::get('millennium_start_button_custom_icon_path'))
+                                            <div class="mt-2 p-2 bg-white dark:bg-slate-800 rounded border">
+                                                <img src="{{ asset(\App\Models\WindowsUiSetting::get('millennium_start_button_custom_icon_path')) }}" alt="Current Icon" class="h-12 w-12 object-contain">
+                                                <p class="text-xs text-gray-500 mt-1">ไอคอนปัจจุบัน</p>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Font Awesome Icon Class</label>
+                                        <input type="text" name="millennium_start_button_fontawesome_icon" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_fontawesome_icon', 'fa-solid fa-rocket') }}" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500" placeholder="fa-solid fa-rocket">
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ตัวอย่าง: fa-solid fa-rocket, fa-brands fa-windows</p>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Emoji</label>
+                                        <input type="text" name="millennium_start_button_emoji" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_emoji', '🚀') }}" maxlength="4" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500 text-2xl" placeholder="🚀">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่งไอคอน</label>
+                                        <select name="millennium_start_button_icon_position" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
+                                            <option value="left" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_position', 'left') === 'left' ? 'selected' : '' }}>ซ้าย (ก่อนข้อความ)</option>
+                                            <option value="right" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_position', 'left') === 'right' ? 'selected' : '' }}>ขวา (หลังข้อความ)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Button Style Settings -->
+                            <div class="bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-xl p-4 border-2 border-pink-200 dark:border-pink-800">
+                                <h4 class="font-semibold text-pink-900 dark:text-pink-300 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-palette"></i> ลักษณะปุ่ม
+                                </h4>
+
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สไตล์ปุ่ม</label>
+                                        <select name="millennium_start_button_style" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-pink-500">
+                                            <option value="gradient" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'gradient' ? 'selected' : '' }}>🌈 Gradient (ไล่สี)</option>
+                                            <option value="solid" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'solid' ? 'selected' : '' }}>🎨 Solid (สีเดียว)</option>
+                                            <option value="outline" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'outline' ? 'selected' : '' }}>⭕ Outline (เส้นขอบ)</option>
+                                            <option value="glass" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'glass' ? 'selected' : '' }}>💎 Glass Morphism</option>
+                                            <option value="neon" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'neon' ? 'selected' : '' }}>⚡ Neon (เรืองแสง)</option>
+                                            <option value="3d" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === '3d' ? 'selected' : '' }}>🎭 3D Effect</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีหลัก</label>
+                                            <input type="color" name="millennium_start_button_color_primary" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_color_primary', '#ec4899') }}" class="w-full h-10 border-2 border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีรอง</label>
+                                            <input type="color" name="millennium_start_button_color_secondary" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_color_secondary', '#3b82f6') }}" class="w-full h-10 border-2 border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีข้อความ</label>
+                                        <input type="color" name="millennium_start_button_text_color" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_text_color', '#ffffff') }}" class="w-full h-10 border-2 border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Start Button Tooltip Settings -->
+                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border-2 border-purple-200 dark:border-purple-800">
+                                <h4 class="font-semibold text-purple-900 dark:text-purple-300 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-comment-dots"></i> กล่องคำพูดต้อนรับ (Tooltip)
+                                </h4>
+
+                                <label class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg cursor-pointer mb-3">
+                                    <div>
+                                        <span class="font-medium text-gray-900 dark:text-white">เปิดใช้กล่องคำพูด</span>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงกล่องคำพูดเมื่อเข้ามาครั้งแรก</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="millennium_start_button_tooltip_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_enabled', true) ? 'checked' : '' }}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </label>
+
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความในกล่องคำพูด</label>
+                                        <textarea name="millennium_start_button_tooltip_text" rows="2" maxlength="100" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-purple-500" placeholder="คลิกที่นี่เพื่อเริ่มต้น! 🚀">{{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_text', 'คลิกที่นี่เพื่อเริ่มต้น! 🚀') }}</textarea>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ข้อความที่จะแสดงในกล่องคำพูด (สูงสุด 100 ตัวอักษร)</p>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ระยะเวลาแสดง (วินาที)</label>
+                                            <input type="number" name="millennium_start_button_tooltip_duration" min="3" max="30" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_duration', 8) }}" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-purple-500">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">3-30 วินาที</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่ง</label>
+                                            <select name="millennium_start_button_tooltip_position" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-purple-500">
+                                                <option value="top" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top') === 'top' ? 'selected' : '' }}>ด้านบน</option>
+                                                <option value="bottom" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top') === 'bottom' ? 'selected' : '' }}>ด้านล่าง</option>
+                                                <option value="left" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top') === 'left' ? 'selected' : '' }}>ซ้าย</option>
+                                                <option value="right" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top') === 'right' ? 'selected' : '' }}>ขวา</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">แอนิเมชั่น</label>
+                                        <select name="millennium_start_button_tooltip_animation" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-purple-500">
+                                            <option value="bounce" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'bounce' ? 'selected' : '' }}>🎪 Bounce (เด้ง)</option>
+                                            <option value="pulse" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'pulse' ? 'selected' : '' }}>💓 Pulse (เต้น)</option>
+                                            <option value="shake" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'shake' ? 'selected' : '' }}>🔔 Shake (สั่น)</option>
+                                            <option value="swing" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'swing' ? 'selected' : '' }}>🎭 Swing (แกว่ง)</option>
+                                            <option value="tada" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'tada' ? 'selected' : '' }}>🎉 Tada (ปรบมือ)</option>
+                                            <option value="flash" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'flash' ? 'selected' : '' }}>⚡ Flash (กระพริบ)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Responsive Mode Settings -->
+                            <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border-2 border-indigo-200 dark:border-indigo-800">
+                                <h4 class="font-semibold text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-mobile-alt"></i> Responsive Mode
+                                </h4>
+                                <label class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg cursor-pointer mb-3">
+                                    <div>
+                                        <span class="font-medium text-gray-900 dark:text-white">เปิดใช้ Responsive</span>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">รวมไอคอนเป็นปุ่มเมื่อหน้าจอเล็ก</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="millennium_taskbar_collapse_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true) ? 'checked' : '' }}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </label>
+
+                                <div class="mb-3">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Breakpoint (px)</label>
+                                    <input type="number" name="millennium_taskbar_collapse_breakpoint" min="320" max="1920" value="{{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_breakpoint', 768) }}" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">หน้าจอที่แคบกว่านี้จะแสดงโหมด Responsive</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบเมนู</label>
+                                    <select name="millennium_taskbar_collapse_style" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500">
+                                        <option value="dropdown" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_style', 'slide-up') === 'dropdown' ? 'selected' : '' }}>Dropdown (เล็กๆ)</option>
+                                        <option value="slide-up" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_style', 'slide-up') === 'slide-up' ? 'selected' : '' }}>Slide Up (ยืดขึ้นเต็มความกว้าง)</option>
+                                        <option value="fullscreen" {{ \App\Models\WindowsUiSetting::get('millennium_taskbar_collapse_style', 'slide-up') === 'fullscreen' ? 'selected' : '' }}>Fullscreen (เต็มจอ)</option>
+                                    </select>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เลือกรูปแบบการแสดงเมนูบนมือถือ</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-end">
+                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl">
+                            <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่าปุ่ม Start
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- RGB Effects Tab -->
+            <div x-show="activeTab === 'menurgb'">
+                <form method="POST" action="{{ route('admin.windows-ui.menu-rgb-settings.update') }}">
+                    @csrf
+                    @method('PUT')
+
+                    <!-- RGB Toggle Switches -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <label class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl cursor-pointer border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-all">
+                            <div>
+                                <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="text-xl">✨</span> RGB Border (เมนูหลัก)
+                                </span>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเอฟเฟค RGB วิ่งรอบเมนู Start</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+
+                        <label class="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-xl cursor-pointer border-2 border-cyan-200 dark:border-cyan-800 hover:border-cyan-400 dark:hover:border-cyan-600 transition-all">
+                            <div>
+                                <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <span class="text-xl">🎯</span> RGB Hover (รายการเมนู)
+                                </span>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเอฟเฟค RGB เมื่อเมาส์ชี้รายการเมนู</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" name="millennium_menu_item_hover_rgb" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_item_hover_rgb', true) ? 'checked' : '' }}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </label>
+                    </div>
+
+                    <!-- RGB Settings -->
+                    <div class="bg-gray-50 dark:bg-slate-900/50 rounded-xl p-6 border border-gray-200 dark:border-slate-700 mb-6">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-sliders-h text-purple-600"></i> การตั้งค่า RGB
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-tachometer-alt mr-2 text-purple-600"></i>ความเร็ว (วินาที)
+                                </label>
+                                <input type="number" name="millennium_menu_rgb_speed" min="1" max="20" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_speed', 5) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ความเร็วในการเปลี่ยนสี (แนะนำ: 3-7)</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-border-style mr-2 text-purple-600"></i>ความหนาขอบ (px)
+                                </label>
+                                <input type="number" name="millennium_menu_rgb_border_width" min="1" max="10" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_border_width', 2) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ความหนาของเส้นขอบ RGB (แนะนำ: 2-4)</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-sun mr-2 text-purple-600"></i>ขนาด Glow (px)
+                                </label>
+                                <input type="number" name="millennium_menu_rgb_glow_size" min="0" max="50" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_glow_size', 15) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ขนาดของแสงเรืองรอบขอบ (แนะนำ: 10-20)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 flex justify-between items-center">
+                        <a href="{{ route('admin.windows-ui.rgb-settings') }}" class="px-6 py-3 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-600 transition-all">
+                            <i class="fas fa-cog mr-2"></i>ตั้งค่า RGB เพิ่มเติม
+                        </a>
+                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg hover:shadow-xl">
+                            <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า RGB
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -779,6 +1217,17 @@
             });
         });
     });
+
+    // Alpine.js data for menu settings manager
+    function menuSettingsManager() {
+        return {
+            activeTab: 'menu',
+            widthValue: {{ \App\Models\WindowsUiSetting::get('millennium_menu_width', '400') }},
+            widthUnit: '{{ \App\Models\WindowsUiSetting::get('millennium_menu_width_unit', 'px') }}',
+            heightValue: {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height', '600') }},
+            heightUnit: '{{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') }}'
+        };
+    }
 </script>
 @endpush
 @endsection
