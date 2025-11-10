@@ -24,6 +24,9 @@ class User extends Authenticatable
         'role',
         'role_id',
         'is_super_admin',
+        'is_admin',
+        'is_hotel_admin',
+        'managed_hotel_id',
         'affiliate_id',
         'current_rank_id',
         'rank_points',
@@ -109,6 +112,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'is_admin' => 'boolean',
+            'is_hotel_admin' => 'boolean',
             'permissions' => 'array',
             'rank_updated_at' => 'datetime',
             'line_linked_at' => 'datetime',
@@ -137,6 +142,22 @@ class User extends Authenticatable
     public function roleModel()
     {
         return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    /**
+     * Get the managed hotel (for hotel admins)
+     */
+    public function managedHotel()
+    {
+        return $this->belongsTo(Hotel::class, 'managed_hotel_id');
+    }
+
+    /**
+     * Check if user is hotel admin
+     */
+    public function isHotelAdmin(): bool
+    {
+        return $this->is_hotel_admin === true && $this->managed_hotel_id !== null;
     }
 
     /**
