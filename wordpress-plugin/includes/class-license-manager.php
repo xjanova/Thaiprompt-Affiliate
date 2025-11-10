@@ -37,12 +37,15 @@ class TP_License_Manager
 
         // API
         require_once TP_LICENSE_PLUGIN_DIR . 'api/class-api.php';
+        require_once TP_LICENSE_PLUGIN_DIR . 'api/class-installation-api.php';
 
         // WooCommerce
         if (class_exists('WooCommerce')) {
-            require_once TP_LICENSE_PLUGIN_DIR . 'woocommerce/class-woocommerce.php';
-            require_once TP_LICENSE_PLUGIN_DIR . 'woocommerce/class-product-type.php';
-            require_once TP_LICENSE_PLUGIN_DIR . 'woocommerce/class-order-handler.php';
+            if (file_exists(TP_LICENSE_PLUGIN_DIR . 'woocommerce/class-woocommerce.php')) {
+                require_once TP_LICENSE_PLUGIN_DIR . 'woocommerce/class-woocommerce.php';
+                require_once TP_LICENSE_PLUGIN_DIR . 'woocommerce/class-product-type.php';
+                require_once TP_LICENSE_PLUGIN_DIR . 'woocommerce/class-order-handler.php';
+            }
         }
 
         $this->loader = new TP_License_Loader();
@@ -75,6 +78,9 @@ class TP_License_Manager
     {
         $plugin_api = new TP_License_API();
         $this->loader->add_action('rest_api_init', $plugin_api, 'register_routes');
+
+        $installation_api = new TP_License_Installation_API();
+        $this->loader->add_action('rest_api_init', $installation_api, 'register_routes');
     }
 
     private function define_woocommerce_hooks()
