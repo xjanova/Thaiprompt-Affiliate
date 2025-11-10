@@ -111,8 +111,8 @@
     </div>
     @endif
 
-    <!-- Quick Stats Grid (3 sections) -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- Quick Stats Grid (4 sections) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Crypto Withdrawals -->
         <a href="{{ route('admin.crypto.withdrawals') }}" class="block group">
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-5 hover:shadow-lg transition">
@@ -199,6 +199,38 @@
                 </div>
             </div>
         </a>
+
+        <!-- Support Tickets -->
+        <a href="{{ route('admin.tickets.index') }}" class="block group">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-5 hover:shadow-lg transition">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white flex items-center">
+                        <span class="text-xl mr-2">🎫</span> Tickets
+                    </h3>
+                    @if($ticketStats['new_today'] > 0)
+                        <span class="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-xs font-bold animate-pulse">
+                            {{ $ticketStats['new_today'] }} ใหม่
+                        </span>
+                    @endif
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">เปิดอยู่</span>
+                        <span class="font-semibold text-blue-600 dark:text-blue-400">{{ $ticketStats['open'] }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">ไม่มีผู้รับผิดชอบ</span>
+                        <span class="font-semibold text-orange-600 dark:text-orange-400">{{ $ticketStats['unassigned'] }}</span>
+                    </div>
+                    <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">🔥 Priority สูง</span>
+                            <span class="text-xl font-bold text-red-600 dark:text-red-400">{{ $ticketStats['high_priority'] }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </a>
     </div>
 
     <!-- Charts Row (Compact) -->
@@ -257,8 +289,8 @@
         </div>
     </div>
 
-    <!-- Bottom Section: Top Affiliates & Recent Activity (Compact) -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+    <!-- Bottom Section: Top Affiliates, Recent Activity & Recent Tickets (Compact) -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <!-- Top Affiliates -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
             <div class="flex items-center justify-between mb-3">
@@ -314,7 +346,7 @@
                 </a>
             </div>
             <div class="space-y-2 max-h-80 overflow-y-auto">
-                @forelse($recentCommissions->take(8) as $commission)
+                @forelse($recentCommissions->take(5) as $commission)
                     <div class="flex items-start gap-2 p-2 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition">
                         <img src="{{ $commission->affiliate->user->profile_picture_url }}"
                              alt="{{ $commission->affiliate->user->name }}"
@@ -342,6 +374,65 @@
                 @endforelse
             </div>
         </div>
+
+        <!-- Recent Tickets -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white">🎫 Tickets ล่าสุด</h3>
+                <a href="{{ route('admin.tickets.index') }}" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
+                    ดูทั้งหมด →
+                </a>
+            </div>
+            <div class="space-y-2 max-h-80 overflow-y-auto">
+                @forelse($recentTickets as $ticket)
+                    <a href="{{ route('admin.tickets.show', $ticket->id) }}" class="block p-2 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition">
+                        <div class="flex items-start gap-2">
+                            <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                                {{ $ticket->priority === 'critical' ? 'bg-red-100 dark:bg-red-900' : '' }}
+                                {{ $ticket->priority === 'high' ? 'bg-orange-100 dark:bg-orange-900' : '' }}
+                                {{ $ticket->priority === 'medium' ? 'bg-blue-100 dark:bg-blue-900' : '' }}
+                                {{ $ticket->priority === 'low' ? 'bg-gray-100 dark:bg-gray-700' : '' }}">
+                                <span class="text-xs font-bold
+                                    {{ $ticket->priority === 'critical' ? 'text-red-600 dark:text-red-200' : '' }}
+                                    {{ $ticket->priority === 'high' ? 'text-orange-600 dark:text-orange-200' : '' }}
+                                    {{ $ticket->priority === 'medium' ? 'text-blue-600 dark:text-blue-200' : '' }}
+                                    {{ $ticket->priority === 'low' ? 'text-gray-600 dark:text-gray-300' : '' }}">
+                                    {{ strtoupper(substr($ticket->priority, 0, 1)) }}
+                                </span>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                                    #{{ $ticket->ticket_number }}
+                                </p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 truncate">
+                                    {{ $ticket->subject }}
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                    {{ $ticket->user->name }} • {{ $ticket->created_at->diffForHumans() }}
+                                </p>
+                            </div>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0
+                                    {{ $ticket->status === 'open' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                                    {{ $ticket->status === 'in_progress' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                                    {{ $ticket->status === 'waiting_customer' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : '' }}
+                                    {{ $ticket->status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}
+                                    {{ $ticket->status === 'closed' ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200' : '' }}">
+                                    {{ $ticket->status_label }}
+                                </span>
+                                @if($ticket->category)
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $ticket->category->name }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </a>
+                @empty
+                    <div class="text-center text-gray-500 py-4 text-sm">
+                        ยังไม่มี Tickets
+                    </div>
+                @endforelse
+            </div>
+        </div>
     </div>
 
     <!-- Quick Actions (Compact) -->
@@ -359,6 +450,16 @@
             <a href="{{ route('admin.crypto.withdrawals') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white">
                 <div class="text-2xl mb-1">💸</div>
                 <p class="text-xs font-semibold">การถอนเงิน</p>
+            </a>
+            <a href="{{ route('admin.tickets.index') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white relative">
+                @if($ticketStats['new_today'] > 0)
+                    <span class="absolute -top-1 -right-1 flex h-5 w-5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-5 w-5 bg-red-500 text-white text-xs items-center justify-center font-bold">{{ $ticketStats['new_today'] }}</span>
+                    </span>
+                @endif
+                <div class="text-2xl mb-1">🎫</div>
+                <p class="text-xs font-semibold">Tickets</p>
             </a>
             <a href="{{ route('admin.kyc.index') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white">
                 <div class="text-2xl mb-1">🆔</div>
