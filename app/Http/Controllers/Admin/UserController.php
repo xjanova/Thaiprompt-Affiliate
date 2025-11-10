@@ -201,4 +201,21 @@ class UserController extends Controller
 
         return view('admin.users.dashboard', compact('user', 'stats', 'recentCommissions', 'chartData'));
     }
+
+    /**
+     * Generate member number for a user
+     */
+    public function generateMemberNumber(User $user)
+    {
+        // Check if user already has a member number
+        if ($user->member_number) {
+            return back()->with('error', 'ผู้ใช้นี้มีเลขสมาชิกแล้ว');
+        }
+
+        // Generate new member number
+        $user->member_number = User::generateMemberNumber();
+        $user->save();
+
+        return back()->with('success', 'สร้างเลขสมาชิกสำเร็จ: ' . $user->member_number);
+    }
 }
