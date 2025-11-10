@@ -55,7 +55,7 @@ class AppSettingController extends Controller
         $appSettings->update($validated);
 
         return redirect()
-            ->route('admin.app-settings.index')
+            ->route('admin.app-management.settings.index')
             ->with('success', 'อัพเดทการตั้งค่าแอพสำเร็จ');
     }
 
