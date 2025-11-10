@@ -70,23 +70,23 @@ return new class extends Migration
         // orders: Critical for revenue calculations
         if (Schema::hasTable('orders')) {
             Schema::table('orders', function (Blueprint $table) {
-                // Composite index for store orders
-                if (!$this->hasIndex('orders', 'idx_orders_store_created')) {
+                // Composite index for store orders (only if store_id column exists)
+                if ($this->hasColumns('orders', ['store_id', 'created_at']) && !$this->hasIndex('orders', 'idx_orders_store_created')) {
                     $table->index(['store_id', 'created_at'], 'idx_orders_store_created');
                 }
 
                 // Index for status filtering
-                if (!$this->hasIndex('orders', 'idx_orders_status')) {
+                if ($this->hasColumn('orders', 'status') && !$this->hasIndex('orders', 'idx_orders_status')) {
                     $table->index('status', 'idx_orders_status');
                 }
 
-                // Composite index for completed orders
-                if (!$this->hasIndex('orders', 'idx_orders_store_status')) {
+                // Composite index for completed orders (only if store_id column exists)
+                if ($this->hasColumns('orders', ['store_id', 'status']) && !$this->hasIndex('orders', 'idx_orders_store_status')) {
                     $table->index(['store_id', 'status'], 'idx_orders_store_status');
                 }
 
                 // Index for user orders
-                if (!$this->hasIndex('orders', 'idx_orders_user')) {
+                if ($this->hasColumn('orders', 'user_id') && !$this->hasIndex('orders', 'idx_orders_user')) {
                     $table->index('user_id', 'idx_orders_user');
                 }
             });
@@ -95,23 +95,23 @@ return new class extends Migration
         // products: Critical for product listing
         if (Schema::hasTable('products')) {
             Schema::table('products', function (Blueprint $table) {
-                // Composite index for active store products
-                if (!$this->hasIndex('products', 'idx_products_store_status')) {
+                // Composite index for active store products (only if columns exist)
+                if ($this->hasColumns('products', ['store_id', 'status']) && !$this->hasIndex('products', 'idx_products_store_status')) {
                     $table->index(['store_id', 'status'], 'idx_products_store_status');
                 }
 
                 // Index for product search
-                if (!$this->hasIndex('products', 'idx_products_name')) {
+                if ($this->hasColumn('products', 'name') && !$this->hasIndex('products', 'idx_products_name')) {
                     $table->index('name', 'idx_products_name');
                 }
 
                 // Index for price filtering
-                if (!$this->hasIndex('products', 'idx_products_price')) {
+                if ($this->hasColumn('products', 'price') && !$this->hasIndex('products', 'idx_products_price')) {
                     $table->index('price', 'idx_products_price');
                 }
 
-                // Index for stock management
-                if (!$this->hasIndex('products', 'idx_products_stock')) {
+                // Index for stock management (check for 'stock' or 'stock_quantity')
+                if ($this->hasColumn('products', 'stock') && !$this->hasIndex('products', 'idx_products_stock')) {
                     $table->index('stock', 'idx_products_stock');
                 }
             });
@@ -255,19 +255,35 @@ return new class extends Migration
 
         if (Schema::hasTable('products')) {
             Schema::table('products', function (Blueprint $table) {
-                $table->dropIndex('idx_products_store_status');
-                $table->dropIndex('idx_products_name');
-                $table->dropIndex('idx_products_price');
-                $table->dropIndex('idx_products_stock');
+                if ($this->hasIndex('products', 'idx_products_store_status')) {
+                    $table->dropIndex('idx_products_store_status');
+                }
+                if ($this->hasIndex('products', 'idx_products_name')) {
+                    $table->dropIndex('idx_products_name');
+                }
+                if ($this->hasIndex('products', 'idx_products_price')) {
+                    $table->dropIndex('idx_products_price');
+                }
+                if ($this->hasIndex('products', 'idx_products_stock')) {
+                    $table->dropIndex('idx_products_stock');
+                }
             });
         }
 
         if (Schema::hasTable('orders')) {
             Schema::table('orders', function (Blueprint $table) {
-                $table->dropIndex('idx_orders_store_created');
-                $table->dropIndex('idx_orders_status');
-                $table->dropIndex('idx_orders_store_status');
-                $table->dropIndex('idx_orders_user');
+                if ($this->hasIndex('orders', 'idx_orders_store_created')) {
+                    $table->dropIndex('idx_orders_store_created');
+                }
+                if ($this->hasIndex('orders', 'idx_orders_status')) {
+                    $table->dropIndex('idx_orders_status');
+                }
+                if ($this->hasIndex('orders', 'idx_orders_store_status')) {
+                    $table->dropIndex('idx_orders_store_status');
+                }
+                if ($this->hasIndex('orders', 'idx_orders_user')) {
+                    $table->dropIndex('idx_orders_user');
+                }
             });
         }
 
@@ -307,5 +323,38 @@ return new class extends Migration
         );
 
         return $result[0]->count > 0;
+    }
+
+    /**
+     * Check if column exists in table
+     */
+    protected function hasColumn(string $table, string $columnName): bool
+    {
+        $connection = Schema::getConnection();
+        $databaseName = $connection->getDatabaseName();
+
+        $result = $connection->select(
+            "SELECT COUNT(*) as count
+             FROM information_schema.columns
+             WHERE table_schema = ?
+             AND table_name = ?
+             AND column_name = ?",
+            [$databaseName, $table, $columnName]
+        );
+
+        return $result[0]->count > 0;
+    }
+
+    /**
+     * Check if all columns exist in table
+     */
+    protected function hasColumns(string $table, array $columnNames): bool
+    {
+        foreach ($columnNames as $columnName) {
+            if (!$this->hasColumn($table, $columnName)) {
+                return false;
+            }
+        }
+        return true;
     }
 };
