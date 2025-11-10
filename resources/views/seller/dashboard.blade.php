@@ -206,7 +206,7 @@
                 <span class="text-sm font-semibold text-center">แต่งร้าน</span>
             </a>
 
-            <a href="{{ route('seller.analytics') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
+            <a href="{{ route('seller.analytics.index') }}" class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl hover:scale-105 transition shadow-lg">
                 <span class="text-3xl mb-2">📊</span>
                 <span class="text-sm font-semibold text-center">รายงาน</span>
             </a>
