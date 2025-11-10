@@ -16,7 +16,6 @@ use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\LanguageSettingController;
-use App\Http\Controllers\Admin\TranslationMappingController;
 use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\VisualBuilderController;
@@ -302,19 +301,6 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('ocr', [SettingsController::class, 'updateOcr'])->name('ocr.update');
     Route::post('ocr/test', [SettingsController::class, 'testOcrConnection'])->name('ocr.test');
     Route::get('ocr/setup-guide', [SettingsController::class, 'setupGuide'])->name('ocr.setup-guide');
-});
-
-// Translation Mapping Management (Custom Translations)
-Route::prefix('translations')->name('translations.')->group(function () {
-    Route::get('/', [TranslationMappingController::class, 'index'])->name('index');
-    Route::get('/create', [TranslationMappingController::class, 'create'])->name('create');
-    Route::post('/', [TranslationMappingController::class, 'store'])->name('store');
-    Route::get('/{mapping}/edit', [TranslationMappingController::class, 'edit'])->name('edit');
-    Route::put('/{mapping}', [TranslationMappingController::class, 'update'])->name('update');
-    Route::delete('/{mapping}', [TranslationMappingController::class, 'destroy'])->name('destroy');
-    Route::post('/{mapping}/toggle', [TranslationMappingController::class, 'toggle'])->name('toggle');
-    Route::post('/import', [TranslationMappingController::class, 'import'])->name('import');
-    Route::get('/export', [TranslationMappingController::class, 'export'])->name('export');
 });
 
 // Notification Management

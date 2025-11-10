@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\LanguageSetting;
-use App\Models\TranslationMapping;
 use Google\Cloud\Translate\V2\TranslateClient;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -113,17 +112,6 @@ class TranslationService
         // Don't translate if source and target are the same
         if ($sourceLang === $targetLang) {
             return $text;
-        }
-
-        // 🆕 PRIORITY 1: Check custom translation mappings first
-        $customTranslation = TranslationMapping::findTranslation($text, $sourceLang, $targetLang);
-        if ($customTranslation !== null) {
-            Log::info('Custom translation used', [
-                'source' => $sourceLang,
-                'target' => $targetLang,
-                'key' => $text,
-            ]);
-            return $customTranslation;
         }
 
         // If translation is disabled or not configured, return original text
