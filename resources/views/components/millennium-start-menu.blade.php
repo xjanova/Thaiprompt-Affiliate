@@ -684,7 +684,7 @@
                                     type="button"
                                     @click="open = !open"
                                     class="w-full group flex items-center justify-between gap-3 hover:opacity-80 transition-all duration-300 {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : 'transform hover:scale-[1.02] shadow-lg hover:shadow-xl' }}"
-                                    style="position: relative; padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
+                                    style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
 
                                     <div class="flex items-center gap-3">
                                         <!-- Icon with 3D Effect -->
@@ -742,7 +742,7 @@
                                 href="{{ $item['url'] }}"
                                 @click.stop
                                 class="group flex items-center gap-3 hover:opacity-80 transition-all duration-300 {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : 'transform hover:scale-[1.02] shadow-lg hover:shadow-xl' }}"
-                                style="position: relative; padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
+                                style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
 
                                 <!-- Icon with 3D Effect -->
                                 <span class="group-hover:scale-110 transition-transform duration-300 drop-shadow-lg" style="font-size: {{ $mainIconSize }}px;">
@@ -821,56 +821,33 @@
         animation: millenniumMenuRgb {{ $menuRgbSpeed }}s linear infinite;
     }
 
-    /* RGB Hover Effect for Menu Items - สีวิ่งรอบกรอบ */
-    @keyframes rgbRotate {
-        0% {
-            transform: rotate(0deg);
+    /* RGB Hover Effect for Menu Items - เหมือนกรอบใหญ่ */
+    @keyframes menuItemRgbHover {
+        0%, 100% {
+            border-image: linear-gradient(90deg, #FF0080, #00F0FF, #7F00FF, #FFD700, #FF0080) 1;
+            filter: drop-shadow(0 0 {{ $menuRgbGlowSize }}px #FF0080);
         }
-        100% {
-            transform: rotate(360deg);
+        25% {
+            border-image: linear-gradient(90deg, #00F0FF, #7F00FF, #FFD700, #FF0080, #00F0FF) 1;
+            filter: drop-shadow(0 0 {{ $menuRgbGlowSize }}px #00F0FF);
+        }
+        50% {
+            border-image: linear-gradient(90deg, #7F00FF, #FFD700, #FF0080, #00F0FF, #7F00FF) 1;
+            filter: drop-shadow(0 0 {{ $menuRgbGlowSize }}px #7F00FF);
+        }
+        75% {
+            border-image: linear-gradient(90deg, #FFD700, #FF0080, #00F0FF, #7F00FF, #FFD700) 1;
+            filter: drop-shadow(0 0 {{ $menuRgbGlowSize }}px #FFD700);
         }
     }
 
-    /* สร้างกรอบ RGB ที่วิ่งรอบ */
     .millennium-menu-item-hover-rgb {
-        position: relative;
-        z-index: 1;
+        border-style: solid;
     }
 
-    .millennium-menu-item-hover-rgb::before {
-        content: '';
-        position: absolute;
-        inset: -{{ $menuRgbBorderWidth }}px;
-        border-radius: {{ $mainBorderRadius }}px;
-        padding: {{ $menuRgbBorderWidth }}px;
-        background: conic-gradient(
-            from 0deg,
-            #FF0080 0deg,
-            #00F0FF 90deg,
-            #7F00FF 180deg,
-            #FFD700 270deg,
-            #FF0080 360deg
-        );
-        -webkit-mask:
-            linear-gradient(#fff 0 0) content-box,
-            linear-gradient(#fff 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-        z-index: -1;
-    }
-
-    .millennium-menu-item-hover-rgb:hover::before {
-        opacity: 1;
-        animation: rgbRotate {{ $menuRgbSpeed }}s linear infinite;
-    }
-
-    /* เพิ่ม glow effect เบาๆ */
     .millennium-menu-item-hover-rgb:hover {
+        animation: menuItemRgbHover {{ $menuRgbSpeed }}s linear infinite;
         transform: scale(1.02);
-        filter: drop-shadow(0 0 {{ $menuRgbGlowSize }}px rgba(255, 0, 128, 0.5));
     }
 
     /* Grid Background Animation */
