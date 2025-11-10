@@ -1,5 +1,34 @@
 # Laravel Seeder Guidelines for Claude
 
+## 🚨 CRITICAL RULE #1: DatabaseSeeder.php Synchronization
+
+> **⚠️ MANDATORY FOR ALL SEEDER OPERATIONS ⚠️**
+
+**EVERY TIME** you create, update, or delete a seeder file, you **MUST** update `DatabaseSeeder.php`:
+
+| Operation | Required Action in DatabaseSeeder.php |
+|-----------|--------------------------------------|
+| ✨ **Create new seeder** | Add `NewSeeder::class` with description comment |
+| 🗑️ **Delete seeder** | Remove `DeletedSeeder::class` from the list |
+| 📝 **Rename seeder** | Update class name from `OldName::class` to `NewName::class` |
+| 🔄 **Refactor seeder** | Verify the class is still properly included |
+
+### Why This Rule Exists
+
+- ❌ **Without this**: Seeders won't run during deployment → incomplete database → production errors
+- ✅ **With this**: All seeders run properly → complete database → stable production
+
+### How to Verify
+
+Always run after any seeder changes:
+```bash
+php scripts/verify-seeders.php
+```
+
+If you see errors, **STOP** and fix them before committing!
+
+---
+
 ## 🎯 Smart Seeding Strategy
 
 When creating or updating database seeders, **ALWAYS** follow these principles to prevent data loss and preserve user customizations:
