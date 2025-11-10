@@ -11,6 +11,7 @@
     $menuLogo = WindowsUiSetting::get('millennium_menu_logo'); // Custom menu logo path
     $mainLogo = \App\Models\Setting::get('logo'); // Main logo
     $showLogo = WindowsUiSetting::get('millennium_menu_show_logo', true); // Show/hide logo
+    $logoSize = WindowsUiSetting::get('millennium_menu_logo_size', 40); // Logo size in px
 
     // Menu Text Settings
     $showAppName = WindowsUiSetting::get('millennium_menu_show_app_name', true); // Show/hide app name
@@ -633,13 +634,13 @@
                     @if($showLogo)
                         @if($menuLogo)
                             <!-- Custom menu logo -->
-                            <img src="{{ asset('storage/' . $menuLogo) }}" alt="{{ $appName }}" class="h-10 w-10 rounded-lg object-cover">
+                            <img src="{{ asset('storage/' . $menuLogo) }}" alt="{{ $appName }}" class="rounded-lg object-cover" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px;">
                         @elseif($mainLogo)
                             <!-- Main system logo -->
-                            <img src="{{ Storage::url($mainLogo) }}" alt="{{ $appName }}" class="h-10 w-10 rounded-lg object-cover">
+                            <img src="{{ Storage::url($mainLogo) }}" alt="{{ $appName }}" class="rounded-lg object-cover" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px;">
                         @else
                             <!-- Default gradient logo with first letter -->
-                            <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold">
+                            <div class="rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px; font-size: {{ $logoSize * 0.5 }}px;">
                                 {{ substr($appName, 0, 1) }}
                             </div>
                         @endif
@@ -682,7 +683,7 @@
                                 <button
                                     type="button"
                                     @click="open = !open"
-                                    class="w-full group flex items-center justify-between gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : '' }}"
+                                    class="w-full group flex items-center justify-between gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : 'transform hover:scale-[1.02] shadow-lg hover:shadow-xl' }}"
                                     style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
 
                                     <div class="flex items-center gap-3">
@@ -740,7 +741,7 @@
                             <a
                                 href="{{ $item['url'] }}"
                                 @click.stop
-                                class="group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : '' }}"
+                                class="group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : 'transform hover:scale-[1.02] shadow-lg hover:shadow-xl' }}"
                                 style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
 
                                 <!-- Icon with 3D Effect -->

@@ -894,6 +894,15 @@
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">อัพโหลดโลโก้สำหรับแสดงในเมนู Start (ถ้าไม่อัพโหลดจะใช้โลโก้หลักของระบบ)</p>
                             </div>
 
+                            <!-- Logo Size -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-expand-arrows-alt mr-2 text-blue-600"></i>ขนาดโลโก้ (px)
+                                </label>
+                                <input type="number" name="millennium_menu_logo_size" min="20" max="100" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_logo_size', 40) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ขนาดของโลโก้ในเมนู (แนะนำ: 30-60px)</p>
+                            </div>
+
                             <!-- Custom App Name -->
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">

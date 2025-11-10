@@ -224,6 +224,7 @@ class WindowsUiController extends Controller
             'millennium_menu_rgb_speed',
             'millennium_menu_rgb_border_width',
             'millennium_menu_rgb_glow_size',
+            'millennium_menu_logo_size',
             'millennium_start_button_width',
             'millennium_start_button_height',
             'millennium_start_button_border_radius',
@@ -394,6 +395,7 @@ class WindowsUiController extends Controller
 
             // Menu Logo & Text Visibility
             'millennium_menu_show_logo' => ['nullable', 'boolean'],
+            'millennium_menu_logo_size' => ['nullable', 'integer', 'min:20', 'max:100'],
             'millennium_menu_show_app_name' => ['nullable', 'boolean'],
             'millennium_menu_show_subtitle' => ['nullable', 'boolean'],
 

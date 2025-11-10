@@ -113,6 +113,7 @@ class WindowsUiSeeder extends Seeder
             // Menu Logo Settings
             'millennium_menu_logo' => ['value' => null, 'type' => 'string'], // Custom logo path (falls back to main logo if null)
             'millennium_menu_show_logo' => ['value' => true, 'type' => 'boolean'], // Show/hide logo
+            'millennium_menu_logo_size' => ['value' => 40, 'type' => 'integer'], // Logo size in px (20-100)
 
             // Menu Text Settings
             'millennium_menu_show_app_name' => ['value' => true, 'type' => 'boolean'], // Show/hide app name
