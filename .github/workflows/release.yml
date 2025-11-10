@@ -5,15 +5,15 @@ on:
     branches:
       - main
       - master
-      # - claude/Main  # Disabled to prevent version conflicts
+      - claude/Main
   pull_request:
     types:
       - closed
     branches:
       - main
       - master
-      # - claude/Main  # Disabled to prevent version conflicts
-      # - 'claude/**'  # Disabled to prevent frequent version conflicts on feature branches
+      - claude/Main
+      - 'claude/**'  # Support merges to all claude feature branches
   workflow_dispatch:  # Allow manual trigger from any branch
 
 jobs:
