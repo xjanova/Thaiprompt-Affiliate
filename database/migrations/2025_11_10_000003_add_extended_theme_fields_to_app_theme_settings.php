@@ -19,7 +19,7 @@ return new class extends Migration
                 $table->integer('heading1_size')->default(32)->after('font_size_xlarge');
             }
             if (!Schema::hasColumn('app_theme_settings', 'heading1_weight')) {
-                $table->string('heading1_weight', 20)->default('bold')->after('heading1_size');
+                $table->text('heading1_weight')->after('heading1_size');
             }
             if (!Schema::hasColumn('app_theme_settings', 'heading1_line_height')) {
                 $table->decimal('heading1_line_height', 4, 2)->default(1.25)->after('heading1_weight');
@@ -29,7 +29,7 @@ return new class extends Migration
                 $table->integer('heading2_size')->default(28)->after('heading1_line_height');
             }
             if (!Schema::hasColumn('app_theme_settings', 'heading2_weight')) {
-                $table->string('heading2_weight', 20)->default('bold')->after('heading2_size');
+                $table->text('heading2_weight')->after('heading2_size');
             }
             if (!Schema::hasColumn('app_theme_settings', 'heading2_line_height')) {
                 $table->decimal('heading2_line_height', 4, 2)->default(1.30)->after('heading2_weight');
@@ -39,7 +39,7 @@ return new class extends Migration
                 $table->integer('heading3_size')->default(24)->after('heading2_line_height');
             }
             if (!Schema::hasColumn('app_theme_settings', 'heading3_weight')) {
-                $table->string('heading3_weight', 20)->default('600')->after('heading3_size');
+                $table->text('heading3_weight')->after('heading3_size');
             }
             if (!Schema::hasColumn('app_theme_settings', 'heading3_line_height')) {
                 $table->decimal('heading3_line_height', 4, 2)->default(1.35)->after('heading3_weight');
@@ -49,7 +49,7 @@ return new class extends Migration
                 $table->integer('heading4_size')->default(20)->after('heading3_line_height');
             }
             if (!Schema::hasColumn('app_theme_settings', 'heading4_weight')) {
-                $table->string('heading4_weight', 20)->default('600')->after('heading4_size');
+                $table->text('heading4_weight')->after('heading4_size');
             }
             if (!Schema::hasColumn('app_theme_settings', 'heading4_line_height')) {
                 $table->decimal('heading4_line_height', 4, 2)->default(1.40)->after('heading4_weight');
@@ -60,7 +60,7 @@ return new class extends Migration
                 $table->integer('body_size')->default(16)->after('heading4_line_height');
             }
             if (!Schema::hasColumn('app_theme_settings', 'body_weight')) {
-                $table->string('body_weight', 20)->default('normal')->after('body_size');
+                $table->text('body_weight')->after('body_size');
             }
             if (!Schema::hasColumn('app_theme_settings', 'body_line_height')) {
                 $table->decimal('body_line_height', 4, 2)->default(1.50)->after('body_weight');
@@ -70,7 +70,7 @@ return new class extends Migration
                 $table->integer('body_small_size')->default(14)->after('body_line_height');
             }
             if (!Schema::hasColumn('app_theme_settings', 'body_small_weight')) {
-                $table->string('body_small_weight', 20)->default('normal')->after('body_small_size');
+                $table->text('body_small_weight')->after('body_small_size');
             }
             if (!Schema::hasColumn('app_theme_settings', 'body_small_line_height')) {
                 $table->decimal('body_small_line_height', 4, 2)->default(1.45)->after('body_small_weight');
@@ -80,7 +80,7 @@ return new class extends Migration
                 $table->integer('caption_size')->default(12)->after('body_small_line_height');
             }
             if (!Schema::hasColumn('app_theme_settings', 'caption_weight')) {
-                $table->string('caption_weight', 20)->default('normal')->after('caption_size');
+                $table->text('caption_weight')->after('caption_size');
             }
             if (!Schema::hasColumn('app_theme_settings', 'caption_line_height')) {
                 $table->decimal('caption_line_height', 4, 2)->default(1.35)->after('caption_weight');
@@ -91,10 +91,10 @@ return new class extends Migration
                 $table->integer('button_text_size')->default(16)->after('caption_line_height');
             }
             if (!Schema::hasColumn('app_theme_settings', 'button_text_weight')) {
-                $table->string('button_text_weight', 20)->default('600')->after('button_text_size');
+                $table->text('button_text_weight')->after('button_text_size');
             }
             if (!Schema::hasColumn('app_theme_settings', 'button_text_transform')) {
-                $table->string('button_text_transform', 20)->nullable()->after('button_text_weight'); // uppercase, lowercase, capitalize
+                $table->text('button_text_transform')->nullable()->after('button_text_weight'); // uppercase, lowercase, capitalize
             }
 
             // Spacing Scale (Design Tokens)
@@ -104,114 +104,114 @@ return new class extends Migration
 
             // Color Variants - Button States
             if (!Schema::hasColumn('app_theme_settings', 'button_primary_hover')) {
-                $table->string('button_primary_hover', 50)->nullable()->after('primary_light_color');
+                $table->text('button_primary_hover')->nullable()->after('primary_light_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'button_primary_active')) {
-                $table->string('button_primary_active', 50)->nullable()->after('button_primary_hover');
+                $table->text('button_primary_active')->nullable()->after('button_primary_hover');
             }
             if (!Schema::hasColumn('app_theme_settings', 'button_primary_disabled')) {
-                $table->string('button_primary_disabled', 50)->nullable()->after('button_primary_active');
+                $table->text('button_primary_disabled')->nullable()->after('button_primary_active');
             }
 
             if (!Schema::hasColumn('app_theme_settings', 'button_secondary_hover')) {
-                $table->string('button_secondary_hover', 50)->nullable()->after('secondary_light_color');
+                $table->text('button_secondary_hover')->nullable()->after('secondary_light_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'button_secondary_active')) {
-                $table->string('button_secondary_active', 50)->nullable()->after('button_secondary_hover');
+                $table->text('button_secondary_active')->nullable()->after('button_secondary_hover');
             }
             if (!Schema::hasColumn('app_theme_settings', 'button_secondary_disabled')) {
-                $table->string('button_secondary_disabled', 50)->nullable()->after('button_secondary_active');
+                $table->text('button_secondary_disabled')->nullable()->after('button_secondary_active');
             }
 
             // Input States
             if (!Schema::hasColumn('app_theme_settings', 'input_background')) {
-                $table->string('input_background', 50)->nullable()->after('background_dark_color');
+                $table->text('input_background')->nullable()->after('background_dark_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_background_dark')) {
-                $table->string('input_background_dark', 50)->nullable()->after('input_background');
+                $table->text('input_background_dark')->nullable()->after('input_background');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_border')) {
-                $table->string('input_border', 50)->nullable()->after('border_dark_color');
+                $table->text('input_border')->nullable()->after('border_dark_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_border_dark')) {
-                $table->string('input_border_dark', 50)->nullable()->after('input_border');
+                $table->text('input_border_dark')->nullable()->after('input_border');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_border_focus')) {
-                $table->string('input_border_focus', 50)->nullable()->after('input_border_dark');
+                $table->text('input_border_focus')->nullable()->after('input_border_dark');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_border_error')) {
-                $table->string('input_border_error', 50)->nullable()->after('input_border_focus');
+                $table->text('input_border_error')->nullable()->after('input_border_focus');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_text')) {
-                $table->string('input_text', 50)->nullable()->after('text_secondary_dark_color');
+                $table->text('input_text')->nullable()->after('text_secondary_dark_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_text_dark')) {
-                $table->string('input_text_dark', 50)->nullable()->after('input_text');
+                $table->text('input_text_dark')->nullable()->after('input_text');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_placeholder')) {
-                $table->string('input_placeholder', 50)->nullable()->after('input_text_dark');
+                $table->text('input_placeholder')->nullable()->after('input_text_dark');
             }
             if (!Schema::hasColumn('app_theme_settings', 'input_placeholder_dark')) {
-                $table->string('input_placeholder_dark', 50)->nullable()->after('input_placeholder');
+                $table->text('input_placeholder_dark')->nullable()->after('input_placeholder');
             }
 
             // Link Colors
             if (!Schema::hasColumn('app_theme_settings', 'link_color')) {
-                $table->string('link_color', 50)->nullable()->after('info_color');
+                $table->text('link_color')->nullable()->after('info_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'link_dark_color')) {
-                $table->string('link_dark_color', 50)->nullable()->after('link_color');
+                $table->text('link_dark_color')->nullable()->after('link_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'link_hover_color')) {
-                $table->string('link_hover_color', 50)->nullable()->after('link_dark_color');
+                $table->text('link_hover_color')->nullable()->after('link_dark_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'link_hover_dark_color')) {
-                $table->string('link_hover_dark_color', 50)->nullable()->after('link_hover_color');
+                $table->text('link_hover_dark_color')->nullable()->after('link_hover_color');
             }
 
             // Card & Container Colors
             if (!Schema::hasColumn('app_theme_settings', 'card_background')) {
-                $table->string('card_background', 50)->nullable()->after('surface_dark_color');
+                $table->text('card_background')->nullable()->after('surface_dark_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'card_background_dark')) {
-                $table->string('card_background_dark', 50)->nullable()->after('card_background');
+                $table->text('card_background_dark')->nullable()->after('card_background');
             }
             if (!Schema::hasColumn('app_theme_settings', 'card_border')) {
-                $table->string('card_border', 50)->nullable()->after('card_background_dark');
+                $table->text('card_border')->nullable()->after('card_background_dark');
             }
             if (!Schema::hasColumn('app_theme_settings', 'card_border_dark')) {
-                $table->string('card_border_dark', 50)->nullable()->after('card_border');
+                $table->text('card_border_dark')->nullable()->after('card_border');
             }
 
             // Overlay & Modal
             if (!Schema::hasColumn('app_theme_settings', 'overlay_color')) {
-                $table->string('overlay_color', 50)->nullable()->after('card_border_dark');
+                $table->text('overlay_color')->nullable()->after('card_border_dark');
             }
             if (!Schema::hasColumn('app_theme_settings', 'overlay_opacity')) {
                 $table->decimal('overlay_opacity', 3, 2)->default(0.50)->after('overlay_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'modal_background')) {
-                $table->string('modal_background', 50)->nullable()->after('overlay_opacity');
+                $table->text('modal_background')->nullable()->after('overlay_opacity');
             }
             if (!Schema::hasColumn('app_theme_settings', 'modal_background_dark')) {
-                $table->string('modal_background_dark', 50)->nullable()->after('modal_background');
+                $table->text('modal_background_dark')->nullable()->after('modal_background');
             }
 
             // Status Badge Colors
             if (!Schema::hasColumn('app_theme_settings', 'badge_success')) {
-                $table->string('badge_success', 50)->nullable()->after('success_color');
+                $table->text('badge_success')->nullable()->after('success_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'badge_warning')) {
-                $table->string('badge_warning', 50)->nullable()->after('warning_color');
+                $table->text('badge_warning')->nullable()->after('warning_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'badge_error')) {
-                $table->string('badge_error', 50)->nullable()->after('error_color');
+                $table->text('badge_error')->nullable()->after('error_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'badge_info')) {
-                $table->string('badge_info', 50)->nullable()->after('info_color');
+                $table->text('badge_info')->nullable()->after('info_color');
             }
             if (!Schema::hasColumn('app_theme_settings', 'badge_neutral')) {
-                $table->string('badge_neutral', 50)->nullable()->after('badge_info');
+                $table->text('badge_neutral')->nullable()->after('badge_info');
             }
 
             // Shadow Tokens
