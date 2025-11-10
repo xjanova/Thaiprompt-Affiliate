@@ -120,6 +120,8 @@ Route::resource('commissions', CommissionController::class);
 Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
 Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
 Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
+Route::post('commissions/bulk-approve', [CommissionController::class, 'bulkApprove'])->name('commissions.bulk-approve');
+Route::post('commissions/bulk-reject', [CommissionController::class, 'bulkReject'])->name('commissions.bulk-reject');
 
 // Investment & Staking Management
 Route::prefix('investments')->name('investments.')->group(function () {
