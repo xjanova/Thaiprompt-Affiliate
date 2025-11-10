@@ -36,6 +36,16 @@ class WindowsUiController extends Controller
             'windows_taskbar_blur' => ['nullable', 'boolean'],
             'windows_taskbar_transparency' => ['nullable', 'integer', 'min:0', 'max:100'],
 
+            // Taskbar Color Settings
+            'windows_taskbar_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_text_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_hover_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_active_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_border_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_use_gradient' => ['nullable', 'boolean'],
+            'windows_taskbar_gradient_from' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_gradient_to' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+
             // Start Button Settings
             'windows_start_button_text' => ['nullable', 'string', 'max:50'],
             'windows_start_button_use_logo' => ['nullable', 'boolean'],
@@ -102,6 +112,7 @@ class WindowsUiController extends Controller
 
         // Handle checkboxes
         $validated['windows_taskbar_blur'] = $request->has('windows_taskbar_blur');
+        $validated['windows_taskbar_use_gradient'] = $request->has('windows_taskbar_use_gradient');
         $validated['windows_start_button_use_logo'] = $request->has('windows_start_button_use_logo');
         $validated['millennium_back_button_enabled'] = $request->has('millennium_back_button_enabled');
         $validated['millennium_center_section_enabled'] = $request->has('millennium_center_section_enabled');
@@ -317,6 +328,7 @@ class WindowsUiController extends Controller
         // Boolean types
         if (in_array($key, [
             'windows_taskbar_blur',
+            'windows_taskbar_use_gradient',
             'windows_start_button_use_logo',
             'millennium_back_button_enabled',
             'millennium_center_section_enabled',
@@ -363,7 +375,16 @@ class WindowsUiController extends Controller
         }
 
         // Color types
-        if (in_array($key, ['windows_accent_color'])) {
+        if (in_array($key, [
+            'windows_accent_color',
+            'windows_taskbar_bg_color',
+            'windows_taskbar_text_color',
+            'windows_taskbar_hover_bg_color',
+            'windows_taskbar_active_bg_color',
+            'windows_taskbar_border_color',
+            'windows_taskbar_gradient_from',
+            'windows_taskbar_gradient_to',
+        ])) {
             return 'color';
         }
 
