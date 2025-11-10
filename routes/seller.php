@@ -28,8 +28,7 @@ Route::get('/settings', [DashboardController::class, 'settings'])->name('setting
 // ========================================
 Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
 Route::prefix('analytics')->name('analytics.')->group(function () {
-    // Basic Analytics
-    Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+    // Basic Analytics - Note: root route is defined above as 'seller.analytics'
     Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
     Route::get('/settings', [AnalyticsController::class, 'settings'])->name('settings');
     Route::put('/settings', [AnalyticsController::class, 'updateSettings'])->name('settings.update');
