@@ -167,12 +167,33 @@ class WindowsUiController extends Controller
             'items' => ['required', 'array'],
             'items.*.icon' => ['required', 'string', 'max:10'],
             'items.*.label' => ['required', 'string', 'max:100'],
-            'items.*.url' => ['required', 'string', 'max:500'],
+            'items.*.route' => ['nullable', 'string', 'max:500'],
             'items.*.order' => ['required', 'integer', 'min:0'],
+            'items.*.has_submenu' => ['nullable', 'boolean'],
+            'items.*.submenu' => ['nullable', 'array'],
+            'items.*.submenu.*.label' => ['required_with:items.*.submenu', 'string', 'max:100'],
+            'items.*.submenu.*.route' => ['required_with:items.*.submenu', 'string', 'max:500'],
         ]);
 
+        // Process menu items to clean up structure
+        $menuItems = collect($validated['items'])->map(function($item) {
+            $processedItem = [
+                'icon' => $item['icon'],
+                'label' => $item['label'],
+                'route' => $item['route'] ?? null,
+                'order' => $item['order'],
+            ];
+
+            // Add submenu if exists
+            if (!empty($item['has_submenu']) && !empty($item['submenu'])) {
+                $processedItem['submenu'] = $item['submenu'];
+            }
+
+            return $processedItem;
+        })->toArray();
+
         $settingKey = 'windows_start_menu_items_' . $role;
-        WindowsUiSetting::set($settingKey, $validated['items']);
+        WindowsUiSetting::set($settingKey, $menuItems);
 
         return redirect()->route('admin.windows-ui.start-menu', ['role' => $role])
             ->with('success', 'อัพเดตเมนู Start (' . ucfirst($role) . ') สำเร็จ');
