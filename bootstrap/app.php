@@ -49,6 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // Crypto wallet middleware
             'crypto.wallet.exists' => \App\Http\Middleware\EnsureCryptoWalletExists::class,
             'crypto.wallet.active' => \App\Http\Middleware\CheckCryptoWalletStatus::class,
+            // API Access Control middleware
+            'api.access' => \App\Http\Middleware\ApiAccessControl::class,
         ]);
 
         // Global middleware for IP blocking

@@ -65,6 +65,8 @@ use App\Http\Controllers\Admin\AppBannerController;
 use App\Http\Controllers\Admin\AppMaintenanceController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageBuilderSectionController;
+use App\Http\Controllers\Admin\ApiEndpointController;
+use App\Http\Controllers\Admin\ApiKeyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -1369,4 +1371,35 @@ Route::prefix('hotels')->name('hotels.api.')->group(function () {
     Route::patch('/{id}/toggle-active', [SuperAdminHotelController::class, 'toggleActive'])->name('toggle-active');
     Route::patch('/{id}/toggle-featured', [SuperAdminHotelController::class, 'toggleFeatured'])->name('toggle-featured');
     Route::delete('/{id}/gallery-image', [SuperAdminHotelController::class, 'removeGalleryImage'])->name('remove-gallery-image');
+});
+
+// API Management - จัดการ API endpoints และ API keys
+Route::prefix('api-management')->name('api-management.')->group(function () {
+
+    // API Endpoints Management
+    Route::prefix('endpoints')->name('endpoints.')->group(function () {
+        Route::get('/', [ApiEndpointController::class, 'index'])->name('index');
+        Route::get('/create', [ApiEndpointController::class, 'create'])->name('create');
+        Route::post('/', [ApiEndpointController::class, 'store'])->name('store');
+        Route::get('/{apiEndpoint}', [ApiEndpointController::class, 'show'])->name('show');
+        Route::get('/{apiEndpoint}/edit', [ApiEndpointController::class, 'edit'])->name('edit');
+        Route::put('/{apiEndpoint}', [ApiEndpointController::class, 'update'])->name('update');
+        Route::delete('/{apiEndpoint}', [ApiEndpointController::class, 'destroy'])->name('destroy');
+        Route::post('/{apiEndpoint}/toggle-status', [ApiEndpointController::class, 'toggleStatus'])->name('toggle-status');
+        Route::get('/{apiEndpoint}/analytics', [ApiEndpointController::class, 'analytics'])->name('analytics');
+    });
+
+    // API Keys Management
+    Route::prefix('keys')->name('keys.')->group(function () {
+        Route::get('/', [ApiKeyController::class, 'index'])->name('index');
+        Route::get('/create', [ApiKeyController::class, 'create'])->name('create');
+        Route::post('/', [ApiKeyController::class, 'store'])->name('store');
+        Route::get('/{apiKey}', [ApiKeyController::class, 'show'])->name('show');
+        Route::get('/{apiKey}/edit', [ApiKeyController::class, 'edit'])->name('edit');
+        Route::put('/{apiKey}', [ApiKeyController::class, 'update'])->name('update');
+        Route::delete('/{apiKey}', [ApiKeyController::class, 'destroy'])->name('destroy');
+        Route::post('/{apiKey}/toggle-status', [ApiKeyController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{apiKey}/reset-usage', [ApiKeyController::class, 'resetUsage'])->name('reset-usage');
+        Route::get('/{apiKey}/analytics', [ApiKeyController::class, 'analytics'])->name('analytics');
+    });
 });
