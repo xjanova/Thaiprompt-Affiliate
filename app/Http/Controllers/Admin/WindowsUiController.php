@@ -313,6 +313,7 @@ class WindowsUiController extends Controller
             'millennium_back_to_top_enabled',
             'millennium_start_button_show_icon',
             'millennium_start_button_show_text',
+            'millennium_start_button_tooltip_enabled',
         ])) {
             return 'boolean';
         }
@@ -336,6 +337,7 @@ class WindowsUiController extends Controller
             'millennium_start_button_border_radius',
             'millennium_start_button_icon_size',
             'millennium_start_button_font_size',
+            'millennium_start_button_tooltip_duration',
         ])) {
             return 'integer';
         }
@@ -374,6 +376,13 @@ class WindowsUiController extends Controller
             'millennium_start_button_icon_size' => ['nullable', 'integer', 'min:16', 'max:64'],
             'millennium_start_button_font_size' => ['nullable', 'integer', 'min:12', 'max:32'],
 
+            // Start Button Tooltip Settings
+            'millennium_start_button_tooltip_enabled' => ['nullable', 'boolean'],
+            'millennium_start_button_tooltip_text' => ['nullable', 'string', 'max:100'],
+            'millennium_start_button_tooltip_duration' => ['nullable', 'integer', 'min:3', 'max:30'],
+            'millennium_start_button_tooltip_position' => ['nullable', 'string', 'in:top,bottom,left,right'],
+            'millennium_start_button_tooltip_animation' => ['nullable', 'string', 'in:bounce,pulse,shake,swing,tada,flash'],
+
             // Responsive Taskbar Settings
             'millennium_taskbar_collapse_enabled' => ['nullable', 'boolean'],
             'millennium_taskbar_collapse_breakpoint' => ['nullable', 'integer', 'min:320', 'max:1920'],
@@ -383,6 +392,7 @@ class WindowsUiController extends Controller
         // Handle checkboxes (only the ones in this form)
         $validated['millennium_start_button_show_icon'] = $request->has('millennium_start_button_show_icon');
         $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
+        $validated['millennium_start_button_tooltip_enabled'] = $request->has('millennium_start_button_tooltip_enabled');
         $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
 
         // Save each setting (only save fields that have actual values)
