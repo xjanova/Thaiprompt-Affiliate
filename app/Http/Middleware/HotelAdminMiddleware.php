@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdminMiddleware
+class HotelAdminMiddleware
 {
     /**
      * Handle an incoming request.
@@ -19,9 +19,14 @@ class AdminMiddleware
 
         $user = auth()->user();
 
-        // Check if user is admin or super admin
-        if (!$user->is_admin && !$user->is_super_admin) {
-            abort(403, 'Unauthorized access. Admin privileges required.');
+        // Super admin can access everything
+        if ($user->is_admin) {
+            return $next($request);
+        }
+
+        // Check if user is hotel admin
+        if (!$user->is_hotel_admin || !$user->managed_hotel_id) {
+            abort(403, 'Unauthorized access. You need hotel admin privileges.');
         }
 
         return $next($request);
