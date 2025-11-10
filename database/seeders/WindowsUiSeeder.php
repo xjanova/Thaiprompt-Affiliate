@@ -124,6 +124,16 @@ class WindowsUiSeeder extends Seeder
             // Menu Appearance
             'millennium_menu_item_spacing' => ['value' => 8, 'type' => 'integer'], // Gap between menu items in px
             'millennium_menu_padding' => ['value' => 12, 'type' => 'integer'], // Padding inside each menu item in px
+            'millennium_menu_item_height' => ['value' => null, 'type' => 'integer'], // Main menu item height in px (null = auto)
+            'millennium_menu_subitem_height' => ['value' => null, 'type' => 'integer'], // Submenu item height in px (null = auto)
+
+            // Menu Colors (gradient และสี)
+            'millennium_menu_use_gradient' => ['value' => true, 'type' => 'boolean'], // Use gradient or solid color
+            'millennium_menu_gradient_from' => ['value' => '#9333ea', 'type' => 'color'], // Menu gradient start color
+            'millennium_menu_gradient_to' => ['value' => '#db2777', 'type' => 'color'], // Menu gradient end color
+            'millennium_menu_bg_color' => ['value' => '#9333ea', 'type' => 'color'], // Solid background color (if gradient disabled)
+            'millennium_menu_text_color' => ['value' => '#ffffff', 'type' => 'color'], // Menu text color
+            'millennium_menu_border_color' => ['value' => '#9333ea', 'type' => 'color'], // Menu border color
 
             // Menu RGB Effects
             'millennium_menu_rgb_enabled' => ['value' => true, 'type' => 'boolean'],

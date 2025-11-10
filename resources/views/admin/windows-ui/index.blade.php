@@ -949,6 +949,148 @@
                         </div>
                     </div>
 
+                    <!-- Menu Item Height Settings -->
+                    <div class="mt-6 p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl border-2 border-purple-200 dark:border-purple-700">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-arrows-alt-v text-purple-600"></i> ความสูงของเมนู
+                        </h3>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Main Menu Item Height -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-arrows-alt-v mr-2 text-purple-600"></i>ความสูงเมนูหลัก (px)
+                                </label>
+                                <input type="number" name="millennium_menu_item_height" min="30" max="100" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_item_height') }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all" placeholder="เว้นว่างใช้ค่าอัตโนมัติ">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">กำหนดความสูงรายการเมนูหลัก (เว้นว่าง = อัตโนมัติ)</p>
+                            </div>
+
+                            <!-- Submenu Item Height -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-arrows-alt-v mr-2 text-purple-600"></i>ความสูงเมนูย่อย (px)
+                                </label>
+                                <input type="number" name="millennium_menu_subitem_height" min="20" max="80" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_subitem_height') }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all" placeholder="เว้นว่างใช้ค่าอัตโนมัติ">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">กำหนดความสูงรายการเมนูย่อย (เว้นว่าง = อัตโนมัติ)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Menu Color Settings -->
+                    <div class="mt-6 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <span class="text-2xl">🎨</span> การตั้งค่าสีเมนู
+                        </h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">ปรับแต่งสีของเมนู Start ให้ตรงกับธีมของคุณ</p>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Background Color (Solid) -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    🎨 สีพื้นหลัง (แบบทึบ)
+                                </label>
+                                <div class="flex items-center gap-3">
+                                    <input type="color"
+                                           name="millennium_menu_bg_color"
+                                           value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_bg_color', '#9333ea') }}"
+                                           class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                    <input type="text"
+                                           value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_bg_color', '#9333ea') }}"
+                                           class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                           readonly>
+                                </div>
+                            </div>
+
+                            <!-- Text Color -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    📝 สีข้อความ
+                                </label>
+                                <div class="flex items-center gap-3">
+                                    <input type="color"
+                                           name="millennium_menu_text_color"
+                                           value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_text_color', '#ffffff') }}"
+                                           class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                    <input type="text"
+                                           value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_text_color', '#ffffff') }}"
+                                           class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                           readonly>
+                                </div>
+                            </div>
+
+                            <!-- Border Color -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    🔲 สีขอบ
+                                </label>
+                                <div class="flex items-center gap-3">
+                                    <input type="color"
+                                           name="millennium_menu_border_color"
+                                           value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_border_color', '#9333ea') }}"
+                                           class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                    <input type="text"
+                                           value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_border_color', '#9333ea') }}"
+                                           class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                           readonly>
+                                </div>
+                            </div>
+
+                            <!-- Use Gradient Toggle -->
+                            <div class="flex items-center">
+                                <label class="flex items-center cursor-pointer">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox"
+                                               name="millennium_menu_use_gradient"
+                                               value="1"
+                                               {{ \App\Models\WindowsUiSetting::get('millennium_menu_use_gradient', true) ? 'checked' : '' }}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้ Gradient</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Gradient Settings -->
+                        <div class="mt-6 p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg border border-blue-200 dark:border-blue-700">
+                            <h5 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">การตั้งค่า Gradient (ใช้เมื่อเปิด "ใช้ Gradient")</h5>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Gradient From -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        🌈 สีเริ่มต้น Gradient
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color"
+                                               name="millennium_menu_gradient_from"
+                                               value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_gradient_from', '#9333ea') }}"
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                        <input type="text"
+                                               value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_gradient_from', '#9333ea') }}"
+                                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                               readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Gradient To -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        🌈 สีสิ้นสุด Gradient
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color"
+                                               name="millennium_menu_gradient_to"
+                                               value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_gradient_to', '#db2777') }}"
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                        <input type="text"
+                                               value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_gradient_to', '#db2777') }}"
+                                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                               readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="mt-6 flex justify-end">
                         <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl">
                             <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่าเมนู

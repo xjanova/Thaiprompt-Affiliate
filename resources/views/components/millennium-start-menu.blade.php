@@ -46,6 +46,8 @@
     $menuMaxHeightUnit = WindowsUiSetting::get('millennium_menu_max_height_unit', 'px');
     $menuPadding = WindowsUiSetting::get('millennium_menu_padding', 12); // Padding around menu content
     $menuItemSpacing = WindowsUiSetting::get('millennium_menu_item_spacing', 8); // Gap between menu items
+    $menuItemHeight = WindowsUiSetting::get('millennium_menu_item_height'); // Main menu item height
+    $menuSubitemHeight = WindowsUiSetting::get('millennium_menu_subitem_height'); // Submenu item height
     $menuPosition = WindowsUiSetting::get('millennium_menu_position', 'center');
     $menuOffsetX = WindowsUiSetting::get('millennium_menu_offset_x', 0);
     $menuOffsetY = WindowsUiSetting::get('millennium_menu_offset_y', 10);
@@ -62,8 +64,14 @@
     $mainPaddingY = WindowsUiSetting::get('millennium_menu_main_padding_y', 12);
     $mainBorderRadius = WindowsUiSetting::get('millennium_menu_main_border_radius', 12);
     $mainBorderWidth = WindowsUiSetting::get('millennium_menu_main_border_width', 2);
-    $mainGradientFrom = WindowsUiSetting::get('millennium_menu_main_gradient_from', '#9333ea');
-    $mainGradientTo = WindowsUiSetting::get('millennium_menu_main_gradient_to', '#db2777');
+
+    // Menu Colors
+    $menuUseGradient = WindowsUiSetting::get('millennium_menu_use_gradient', true);
+    $mainGradientFrom = WindowsUiSetting::get('millennium_menu_gradient_from', '#9333ea');
+    $mainGradientTo = WindowsUiSetting::get('millennium_menu_gradient_to', '#db2777');
+    $menuBgColor = WindowsUiSetting::get('millennium_menu_bg_color', '#9333ea');
+    $menuTextColor = WindowsUiSetting::get('millennium_menu_text_color', '#ffffff');
+    $menuBorderColorSetting = WindowsUiSetting::get('millennium_menu_border_color', '#9333ea');
 
     // Submenu Style
     $subFontSize = WindowsUiSetting::get('millennium_menu_sub_font_size', 14);
@@ -684,7 +692,7 @@
                                     type="button"
                                     @click="open = !open"
                                     class="w-full group flex items-center justify-between gap-3 hover:opacity-80 transition-all duration-300 {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : 'transform hover:scale-[1.02] shadow-lg hover:shadow-xl' }}"
-                                    style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
+                                    style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; {{ $menuItemHeight ? 'height: ' . $menuItemHeight . 'px;' : '' }} background: {{ $menuUseGradient ? 'linear-gradient(90deg, ' . $mainGradientFrom . '66 0%, ' . $mainGradientTo . '66 100%)' : $menuBgColor }}; border-color: {{ $menuBorderColorSetting }}; color: {{ $menuTextColor }};">
 
                                     <div class="flex items-center gap-3">
                                         <!-- Icon with 3D Effect -->
@@ -718,7 +726,7 @@
                                             href="{{ $subitem['url'] }}"
                                             @click.stop
                                             class="flex items-center gap-2.5 bg-white/5 border border-white/10 transition-all duration-200 group {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : 'hover:bg-blue-500/20 hover:border-blue-400/40 transform hover:translate-x-1' }}"
-                                            style="padding: {{ $subPaddingY }}px {{ $subPaddingX }}px; border-radius: {{ $subBorderRadius }}px; border-width: 1px;">
+                                            style="padding: {{ $subPaddingY }}px {{ $subPaddingX }}px; border-radius: {{ $subBorderRadius }}px; border-width: 1px; {{ $menuSubitemHeight ? 'height: ' . $menuSubitemHeight . 'px;' : '' }} color: {{ $menuTextColor }};">
 
                                             <!-- Bullet Point -->
                                             <span class="rounded-full bg-blue-400/60 group-hover:bg-blue-300 group-hover:scale-125 transition-all duration-200" style="width: {{ $subBulletSize }}px; height: {{ $subBulletSize }}px;"></span>
@@ -742,7 +750,7 @@
                                 href="{{ $item['url'] }}"
                                 @click.stop
                                 class="group flex items-center gap-3 hover:opacity-80 transition-all duration-300 {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : 'transform hover:scale-[1.02] shadow-lg hover:shadow-xl' }}"
-                                style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
+                                style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; {{ $menuItemHeight ? 'height: ' . $menuItemHeight . 'px;' : '' }} background: {{ $menuUseGradient ? 'linear-gradient(90deg, ' . $mainGradientFrom . '66 0%, ' . $mainGradientTo . '66 100%)' : $menuBgColor }}; border-color: {{ $menuBorderColorSetting }}; color: {{ $menuTextColor }};">
 
                                 <!-- Icon with 3D Effect -->
                                 <span class="group-hover:scale-110 transition-transform duration-300 drop-shadow-lg" style="font-size: {{ $mainIconSize }}px;">

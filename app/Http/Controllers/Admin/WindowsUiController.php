@@ -193,6 +193,10 @@ class WindowsUiController extends Controller
             'millennium_rgb_enabled',
             'millennium_menu_rgb_enabled',
             'millennium_menu_item_hover_rgb',
+            'millennium_menu_use_gradient',
+            'millennium_menu_show_logo',
+            'millennium_menu_show_app_name',
+            'millennium_menu_show_subtitle',
             'millennium_taskbar_collapse_enabled',
             'millennium_clock_show_seconds',
             'millennium_clock_show_date',
@@ -223,6 +227,10 @@ class WindowsUiController extends Controller
             'millennium_menu_rgb_border_width',
             'millennium_menu_rgb_glow_size',
             'millennium_menu_logo_size',
+            'millennium_menu_item_spacing',
+            'millennium_menu_padding',
+            'millennium_menu_item_height',
+            'millennium_menu_subitem_height',
             'millennium_start_button_width',
             'millennium_start_button_height',
             'millennium_start_button_border_radius',
@@ -243,6 +251,11 @@ class WindowsUiController extends Controller
             'windows_taskbar_border_color',
             'windows_taskbar_gradient_from',
             'windows_taskbar_gradient_to',
+            'millennium_menu_bg_color',
+            'millennium_menu_text_color',
+            'millennium_menu_border_color',
+            'millennium_menu_gradient_from',
+            'millennium_menu_gradient_to',
         ])) {
             return 'color';
         }
@@ -405,6 +418,18 @@ class WindowsUiController extends Controller
             'millennium_menu_item_spacing' => ['nullable', 'integer', 'min:0', 'max:32'],
             'millennium_menu_padding' => ['nullable', 'integer', 'min:4', 'max:32'],
 
+            // Menu Item Heights
+            'millennium_menu_item_height' => ['nullable', 'integer', 'min:30', 'max:100'],
+            'millennium_menu_subitem_height' => ['nullable', 'integer', 'min:20', 'max:80'],
+
+            // Menu Color Settings
+            'millennium_menu_use_gradient' => ['nullable', 'boolean'],
+            'millennium_menu_gradient_from' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_gradient_to' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_text_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_border_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+
             // Menu RGB (can be set from this form too)
             'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
         ]);
@@ -423,6 +448,7 @@ class WindowsUiController extends Controller
         $validated['millennium_menu_show_logo'] = $request->has('millennium_menu_show_logo');
         $validated['millennium_menu_show_app_name'] = $request->has('millennium_menu_show_app_name');
         $validated['millennium_menu_show_subtitle'] = $request->has('millennium_menu_show_subtitle');
+        $validated['millennium_menu_use_gradient'] = $request->has('millennium_menu_use_gradient');
 
         // Save each setting (only save fields that have actual values)
         foreach ($validated as $key => $value) {
