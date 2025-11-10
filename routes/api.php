@@ -61,6 +61,11 @@ Route::prefix('v1')->group(function () {
     Route::prefix('app')->group(function () {
         Route::get('/maintenance-status', [AppConfigController::class, 'maintenanceStatus']);
         Route::get('/check-update', [AppConfigController::class, 'checkUpdate']);
+
+        // Emergency Alert Banners (public - anyone can view)
+        Route::get('/banners', [\App\Http\Controllers\Admin\AppBannerController::class, 'apiBanners']);
+        Route::post('/banners/{appBanner}/view', [\App\Http\Controllers\Admin\AppBannerController::class, 'trackView']);
+        Route::post('/banners/{appBanner}/click', [\App\Http\Controllers\Admin\AppBannerController::class, 'trackClick']);
     });
 
     // Protected routes
