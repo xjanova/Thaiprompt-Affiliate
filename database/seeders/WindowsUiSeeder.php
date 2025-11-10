@@ -109,9 +109,22 @@ class WindowsUiSeeder extends Seeder
             'millennium_menu_width_unit' => ['value' => 'px', 'type' => 'string'],
             'millennium_menu_max_height' => ['value' => '600', 'type' => 'string'],
             'millennium_menu_max_height_unit' => ['value' => 'px', 'type' => 'string'],
+
+            // Menu Logo Settings
             'millennium_menu_logo' => ['value' => null, 'type' => 'string'], // Custom logo path (falls back to main logo if null)
+            'millennium_menu_show_logo' => ['value' => true, 'type' => 'boolean'], // Show/hide logo
+
+            // Menu Text Settings
+            'millennium_menu_show_app_name' => ['value' => true, 'type' => 'boolean'], // Show/hide app name
+            'millennium_menu_show_subtitle' => ['value' => true, 'type' => 'boolean'], // Show/hide subtitle
+            'millennium_menu_app_name' => ['value' => null, 'type' => 'string'], // Custom app name (falls back to main app name)
+            'millennium_menu_subtitle' => ['value' => null, 'type' => 'string'], // Custom subtitle (falls back to "{role} Dashboard")
+
+            // Menu Appearance
             'millennium_menu_item_spacing' => ['value' => 8, 'type' => 'integer'], // Gap between menu items in px
             'millennium_menu_padding' => ['value' => 12, 'type' => 'integer'], // Padding inside each menu item in px
+
+            // Menu RGB Effects
             'millennium_menu_rgb_enabled' => ['value' => true, 'type' => 'boolean'],
             'millennium_menu_item_hover_rgb' => ['value' => true, 'type' => 'boolean'],
             'millennium_menu_rgb_speed' => ['value' => 5, 'type' => 'integer'],
