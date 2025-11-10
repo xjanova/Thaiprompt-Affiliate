@@ -20,10 +20,15 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'member_number',
         'profile_picture',
         'role',
         'role_id',
         'is_super_admin',
+        'is_admin',
+        'is_hotel_admin',
+        'managed_hotel_id',
+        'blocked_at',
         'affiliate_id',
         'current_rank_id',
         'rank_points',
@@ -107,8 +112,11 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'blocked_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'is_admin' => 'boolean',
+            'is_hotel_admin' => 'boolean',
             'permissions' => 'array',
             'rank_updated_at' => 'datetime',
             'line_linked_at' => 'datetime',
@@ -137,6 +145,22 @@ class User extends Authenticatable
     public function roleModel()
     {
         return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    /**
+     * Get the managed hotel (for hotel admins)
+     */
+    public function managedHotel()
+    {
+        return $this->belongsTo(Hotel::class, 'managed_hotel_id');
+    }
+
+    /**
+     * Check if user is hotel admin
+     */
+    public function isHotelAdmin(): bool
+    {
+        return $this->is_hotel_admin === true && $this->managed_hotel_id !== null;
     }
 
     /**
@@ -788,5 +812,81 @@ class User extends Authenticatable
     public function videoReferralRewards()
     {
         return $this->hasMany(\App\Models\VideoReferralReward::class, 'referrer_id');
+    }
+
+    /**
+     * Scopes
+     */
+
+    /**
+     * Scope to filter users by role
+     */
+    public function scopeRole($query, $role)
+    {
+        return $query->where('role', $role);
+    }
+
+    /**
+     * Scope to filter super admins
+     */
+    public function scopeSuperAdmin($query)
+    {
+        return $query->where('is_super_admin', true);
+    }
+
+    /**
+     * Scope to filter verified users
+     */
+    public function scopeVerified($query)
+    {
+        return $query->whereNotNull('email_verified_at');
+    }
+
+    /**
+     * Generate a unique member number
+     */
+    public static function generateMemberNumber(): string
+    {
+        $prefix = config('member.prefix', 'MEM');
+        $startingNumber = config('member.starting_number', 1);
+        $padding = config('member.padding', 5);
+
+        // Get the last member number
+        $lastUser = static::whereNotNull('member_number')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($lastUser && $lastUser->member_number) {
+            // Extract number from last member number
+            $lastNumber = (int) preg_replace('/\D/', '', $lastUser->member_number);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = $startingNumber;
+        }
+
+        // Generate member number with padding
+        $memberNumber = $prefix . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
+
+        // Ensure uniqueness
+        while (static::where('member_number', $memberNumber)->exists()) {
+            $nextNumber++;
+            $memberNumber = $prefix . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
+        }
+
+        return $memberNumber;
+    }
+
+    /**
+     * Boot method to auto-generate member number
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            if (config('member.auto_generate', true) && empty($user->member_number)) {
+                $user->member_number = static::generateMemberNumber();
+            }
+        });
     }
 }

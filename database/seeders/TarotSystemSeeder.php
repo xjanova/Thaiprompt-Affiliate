@@ -28,6 +28,11 @@ class TarotSystemSeeder extends Seeder
      */
     private function seedTarotCards(): void
     {
+        // Skip if cards already exist
+        if (TarotCard::count() >= 78) {
+            return;
+        }
+
         // Major Arcana (22 cards)
         $majorArcana = [
             [
@@ -390,7 +395,10 @@ class TarotSystemSeeder extends Seeder
         ];
 
         foreach ($spreadTypes as $spreadType) {
-            TarotSpreadType::create($spreadType);
+            TarotSpreadType::updateOrCreate(
+                ['name_en' => $spreadType['name_en']],
+                $spreadType
+            );
         }
     }
 
@@ -463,7 +471,10 @@ class TarotSystemSeeder extends Seeder
         ];
 
         foreach ($categories as $category) {
-            TarotReadingCategory::create($category);
+            TarotReadingCategory::updateOrCreate(
+                ['slug' => $category['slug']],
+                $category
+            );
         }
     }
 
@@ -483,7 +494,10 @@ class TarotSystemSeeder extends Seeder
         ];
 
         foreach ($settings as $setting) {
-            TarotSetting::create($setting);
+            TarotSetting::updateOrCreate(
+                ['key' => $setting['key']],
+                $setting
+            );
         }
     }
 
@@ -492,12 +506,15 @@ class TarotSystemSeeder extends Seeder
      */
     private function seedCardBackImages(): void
     {
-        TarotCardBackImage::create([
-            'name' => 'Default Purple',
-            'image_url' => '/images/tarot/card-backs/default-purple.png',
-            'is_default' => true,
-            'is_active' => true,
-            'sort_order' => 1,
-        ]);
+        TarotCardBackImage::updateOrCreate(
+            ['name' => 'Default Purple'],
+            [
+                'name' => 'Default Purple',
+                'image_url' => '/images/tarot/card-backs/default-purple.png',
+                'is_default' => true,
+                'is_active' => true,
+                'sort_order' => 1,
+            ]
+        );
     }
 }

@@ -4,28 +4,24 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\Response;
 
 class AdminMiddleware
 {
     /**
      * Handle an incoming request.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @return mixed
      */
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'กรุณาเข้าสู่ระบบก่อน');
+        if (!auth()->check()) {
+            return redirect()->route('login');
         }
 
-        $user = Auth::user();
+        $user = auth()->user();
 
-        // Check if user is admin
-        if (!$user->is_admin && !$user->hasRole('admin') && !$user->hasRole('super_admin')) {
-            abort(403, 'คุณไม่มีสิทธิ์เข้าถึงหน้านี้');
+        // Check if user is admin or super admin
+        if (!$user->is_admin && !$user->is_super_admin) {
+            abort(403, 'Unauthorized access. Admin privileges required.');
         }
 
         return $next($request);

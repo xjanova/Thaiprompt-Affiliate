@@ -11,6 +11,9 @@
         transform: translateY(-4px);
         box-shadow: 0 10px 25px rgba(0,0,0,0.1);
     }
+    .dark .bot-card:hover {
+        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
     .bot-card.active {
         border-left-color: #10b981;
     }
@@ -22,6 +25,27 @@
         color: white;
         border-radius: 12px;
         transition: transform 0.3s ease;
+    }
+    .dark .stat-card {
+        background: linear-gradient(135deg, #5568d3 0%, #6941a0 100%);
+    }
+    .stat-card.dark-stat-pink {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .dark .stat-card.dark-stat-pink {
+        background: linear-gradient(135deg, #d87fe8 0%, #d94a5f 100%);
+    }
+    .stat-card.dark-stat-blue {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .dark .stat-card.dark-stat-blue {
+        background: linear-gradient(135deg, #3d92e5 0%, #00d9e5 100%);
+    }
+    .stat-card.dark-stat-green {
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    }
+    .dark .stat-card.dark-stat-green {
+        background: linear-gradient(135deg, #36d066 0%, #2de0be 100%);
     }
     .stat-card:hover {
         transform: scale(1.05);
@@ -121,6 +145,9 @@
         font-size: 13px;
         color: #6b7280;
     }
+    .dark .bot-meta-item {
+        color: #9ca3af;
+    }
     .bot-meta-item i {
         font-size: 12px;
     }
@@ -136,12 +163,12 @@
     <!-- Page Header -->
     <div class="flex justify-between items-center mb-6">
         <div>
-            <h2 class="text-3xl font-bold text-gray-800">
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100">
                 <i class="fas fa-robot mr-3"></i>AI Bots
             </h2>
-            <p class="text-gray-600 mt-1">จัดการ AI Bot ทั้งหมดของคุณ</p>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">จัดการ AI Bot ทั้งหมดของคุณ</p>
         </div>
-        <a href="{{ route('admin.ai-bots.create') }}" class="action-btn bg-gradient-to-r from-purple-500 to-indigo-600 text-white">
+        <a href="{{ route('admin.ai-bots.create') }}" class="action-btn bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white">
             <i class="fas fa-plus mr-2"></i>สร้าง Bot ใหม่
         </a>
     </div>
@@ -160,7 +187,7 @@
             </div>
         </div>
 
-        <div class="stat-card p-6" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <div class="stat-card p-6 dark-stat-pink">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm opacity-90">Active Bots</p>
@@ -172,7 +199,7 @@
             </div>
         </div>
 
-        <div class="stat-card p-6" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <div class="stat-card p-6 dark-stat-blue">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm opacity-90">Conversations</p>
@@ -184,7 +211,7 @@
             </div>
         </div>
 
-        <div class="stat-card p-6" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+        <div class="stat-card p-6 dark-stat-green">
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm opacity-90">Total Messages</p>
@@ -200,7 +227,7 @@
     <!-- Bots Grid -->
     <div class="grid grid-cols-1 gap-6">
         @forelse($bots as $bot)
-        <div class="bot-card {{ $bot->is_active ? 'active' : 'inactive' }} bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="bot-card {{ $bot->is_active ? 'active' : 'inactive' }} bg-white dark:bg-slate-800 rounded-xl shadow-md overflow-hidden border border-gray-100 dark:border-slate-700">
             <div class="p-6">
                 <!-- Bot Header -->
                 <div class="flex items-start justify-between">
@@ -210,7 +237,7 @@
                         </div>
                         <div class="flex-1">
                             <div class="flex items-center gap-3 mb-2">
-                                <h3 class="text-2xl font-bold text-gray-800">{{ $bot->display_name }}</h3>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ $bot->display_name }}</h3>
                                 <span class="status-badge {{ $bot->is_active ? 'active' : 'inactive' }}">
                                     <span class="status-indicator {{ $bot->is_active ? 'online' : 'offline' }}"></span>
                                     {{ $bot->is_active ? 'เปิดใช้งาน' : 'ปิดใช้งาน' }}
@@ -221,11 +248,11 @@
                                 </span>
                                 @endif
                             </div>
-                            <p class="text-sm text-gray-600 mb-1">
-                                <span class="font-mono bg-gray-100 px-2 py-1 rounded">{{ $bot->name }}</span>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                <span class="font-mono bg-gray-100 dark:bg-slate-700 px-2 py-1 rounded">{{ $bot->name }}</span>
                             </p>
                             @if($bot->description)
-                            <p class="text-sm text-gray-600 mt-2">{{ $bot->description }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">{{ $bot->description }}</p>
                             @endif
 
                             <!-- Bot Meta Info -->
@@ -291,31 +318,31 @@
 
                 <!-- Bot Stats -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
-                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4">
-                        <p class="text-xs text-blue-600 font-semibold mb-1">Conversations</p>
-                        <p class="text-2xl font-bold text-blue-800">{{ number_format($bot->conversations()->count()) }}</p>
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 rounded-lg p-4 border border-blue-200 dark:border-blue-700/50">
+                        <p class="text-xs text-blue-600 dark:text-blue-400 font-semibold mb-1">Conversations</p>
+                        <p class="text-2xl font-bold text-blue-800 dark:text-blue-300">{{ number_format($bot->conversations()->count()) }}</p>
                     </div>
-                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4">
-                        <p class="text-xs text-green-600 font-semibold mb-1">Messages</p>
-                        <p class="text-2xl font-bold text-green-800">{{ number_format($bot->conversations()->sum('total_messages')) }}</p>
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/30 dark:to-green-800/30 rounded-lg p-4 border border-green-200 dark:border-green-700/50">
+                        <p class="text-xs text-green-600 dark:text-green-400 font-semibold mb-1">Messages</p>
+                        <p class="text-2xl font-bold text-green-800 dark:text-green-300">{{ number_format($bot->conversations()->sum('total_messages')) }}</p>
                     </div>
-                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4">
-                        <p class="text-xs text-purple-600 font-semibold mb-1">Tokens</p>
-                        <p class="text-2xl font-bold text-purple-800">{{ number_format($bot->usageLogs()->sum('total_tokens')) }}</p>
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-lg p-4 border border-purple-200 dark:border-purple-700/50">
+                        <p class="text-xs text-purple-600 dark:text-purple-400 font-semibold mb-1">Tokens</p>
+                        <p class="text-2xl font-bold text-purple-800 dark:text-purple-300">{{ number_format($bot->usageLogs()->sum('total_tokens')) }}</p>
                     </div>
-                    <div class="bg-gradient-to-br from-pink-50 to-pink-100 rounded-lg p-4">
-                        <p class="text-xs text-pink-600 font-semibold mb-1">Cost</p>
-                        <p class="text-2xl font-bold text-pink-800">${{ number_format($bot->usageLogs()->sum('cost'), 4) }}</p>
+                    <div class="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 rounded-lg p-4 border border-pink-200 dark:border-pink-700/50">
+                        <p class="text-xs text-pink-600 dark:text-pink-400 font-semibold mb-1">Cost</p>
+                        <p class="text-2xl font-bold text-pink-800 dark:text-pink-300">${{ number_format($bot->usageLogs()->sum('cost'), 4) }}</p>
                     </div>
                 </div>
             </div>
         </div>
         @empty
-        <div class="bg-white rounded-xl shadow-md p-12 text-center">
-            <i class="fas fa-robot text-6xl text-gray-300 mb-4"></i>
-            <h3 class="text-xl font-semibold text-gray-600 mb-2">ยังไม่มี Bot</h3>
-            <p class="text-gray-500 mb-4">เริ่มสร้าง AI Bot แรกของคุณ</p>
-            <a href="{{ route('admin.ai-bots.create') }}" class="action-btn bg-gradient-to-r from-purple-500 to-indigo-600 text-white inline-block">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-12 text-center border border-gray-100 dark:border-slate-700">
+            <i class="fas fa-robot text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+            <h3 class="text-xl font-semibold text-gray-600 dark:text-gray-300 mb-2">ยังไม่มี Bot</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-4">เริ่มสร้าง AI Bot แรกของคุณ</p>
+            <a href="{{ route('admin.ai-bots.create') }}" class="action-btn bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white inline-block">
                 <i class="fas fa-plus mr-2"></i>สร้าง Bot ใหม่
             </a>
         </div>

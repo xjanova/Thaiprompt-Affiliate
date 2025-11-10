@@ -13,8 +13,15 @@ use Illuminate\Support\Facades\Crypt;
 
 class CryptoWalletService
 {
+    protected HDWalletService $hdWalletService;
+
+    public function __construct(HDWalletService $hdWalletService)
+    {
+        $this->hdWalletService = $hdWalletService;
+    }
     /**
      * Create a new custodial wallet for user
+     * Now uses HD Wallet system - creates master wallet and first child wallet
      *
      * @param User $user
      * @param string|null $pin
@@ -25,35 +32,23 @@ class CryptoWalletService
     {
         DB::beginTransaction();
         try {
-            // Generate seed phrase (12 words)
-            $seedPhrase = $this->generateSeedPhrase();
-
-            // Create crypto wallet
-            $wallet = CryptoWallet::create([
-                'user_id' => $user->id,
-                'wallet_type' => 'custodial',
-                'name' => $options['name'] ?? 'My Crypto Wallet',
-                'encrypted_seed' => Crypt::encryptString($seedPhrase),
-                'derivation_path' => $options['derivation_path'] ?? "m/44'/60'/0'/0/0",
-                'status' => 'active',
-                'is_default' => !$user->cryptoWallets()->exists(),
+            // Get or create master wallet for user
+            $masterWallet = $this->hdWalletService->getOrCreateMasterWallet($user, [
+                'pin' => $pin,
                 'device_info' => $options['device_info'] ?? null,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent(),
             ]);
 
-            // Set PIN if provided
-            if ($pin) {
-                $wallet->setPin($pin);
-            }
-
-            // Generate addresses for all active currencies
-            $this->generateAddressesForWallet($wallet);
+            // Derive first child wallet from master
+            $wallet = $this->hdWalletService->deriveChildWallet($masterWallet, [
+                'name' => $options['name'] ?? 'My Crypto Wallet',
+                'device_info' => $options['device_info'] ?? null,
+            ]);
 
             DB::commit();
 
-            Log::info('Custodial crypto wallet created', [
+            Log::info('Custodial crypto wallet created (HD Wallet)', [
                 'user_id' => $user->id,
+                'master_wallet_id' => $masterWallet->id,
                 'wallet_id' => $wallet->id,
             ]);
 
@@ -160,14 +155,61 @@ class CryptoWalletService
      */
     public function getOrCreateDefaultWallet(User $user): ?CryptoWallet
     {
-        $wallet = $user->defaultCryptoWallet;
+        // First try to get default wallet
+        $wallet = $user->cryptoWallets()->where('is_default', true)->first();
 
         if (!$wallet) {
-            // Auto-create custodial wallet
+            // Auto-create custodial wallet (HD Wallet system)
             $wallet = $this->createCustodialWallet($user);
         }
 
         return $wallet;
+    }
+
+    /**
+     * Create additional wallet for user (derives from existing master wallet)
+     *
+     * @param User $user
+     * @param array $options
+     * @return CryptoWallet
+     */
+    public function createAdditionalWallet(User $user, array $options = []): CryptoWallet
+    {
+        // Get existing master wallet
+        $masterWallet = $this->hdWalletService->getOrCreateMasterWallet($user);
+
+        // Derive new child wallet
+        return $this->hdWalletService->deriveChildWallet($masterWallet, $options);
+    }
+
+    /**
+     * Get master wallet for user
+     *
+     * @param User $user
+     * @return CryptoWallet|null
+     */
+    public function getMasterWallet(User $user): ?CryptoWallet
+    {
+        return CryptoWallet::where('user_id', $user->id)
+            ->where('is_master_wallet', true)
+            ->first();
+    }
+
+    /**
+     * Get all child wallets for user
+     *
+     * @param User $user
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getAllChildWallets(User $user)
+    {
+        $masterWallet = $this->getMasterWallet($user);
+
+        if (!$masterWallet) {
+            return collect();
+        }
+
+        return $this->hdWalletService->getChildWallets($masterWallet);
     }
 
     /**

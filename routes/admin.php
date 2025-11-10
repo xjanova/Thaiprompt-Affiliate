@@ -16,7 +16,6 @@ use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\LanguageSettingController;
-use App\Http\Controllers\Admin\TranslationMappingController;
 use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\VisualBuilderController;
@@ -48,6 +47,8 @@ use App\Http\Controllers\Admin\Accounting\AccountingDashboardController;
 use App\Http\Controllers\Admin\Accounting\InvoiceController;
 use App\Http\Controllers\Admin\Accounting\ExpenseController;
 use App\Http\Controllers\Admin\Accounting\ContactController;
+use App\Http\Controllers\Admin\HotelOwnerController;
+use App\Http\Controllers\Admin\SuperAdminHotelController;
 use App\Http\Controllers\Admin\Accounting\ProductController;
 use App\Http\Controllers\Admin\Accounting\ReportController;
 use App\Http\Controllers\Admin\Accounting\FlowAccountController;
@@ -61,6 +62,13 @@ use App\Http\Controllers\Admin\AppThemeSettingController;
 use App\Http\Controllers\Admin\AppFeatureController;
 use App\Http\Controllers\Admin\AppBannerController;
 use App\Http\Controllers\Admin\AppMaintenanceController;
+use App\Http\Controllers\Admin\AppControlSectionController;
+use App\Http\Controllers\Admin\ComponentSettingController;
+use App\Http\Controllers\Admin\PageBuilderController;
+use App\Http\Controllers\Admin\PageBuilderSectionController;
+use App\Http\Controllers\Admin\SystemResetController;
+use App\Http\Controllers\Admin\ApiEndpointController;
+use App\Http\Controllers\Admin\ApiKeyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -68,6 +76,9 @@ use Illuminate\Support\Facades\Route;
 | Admin Routes
 |--------------------------------------------------------------------------
 */
+
+// Redirect /admin to /admin/dashboard
+Route::redirect('/', '/admin/dashboard');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -97,6 +108,7 @@ Route::resource('users', UserController::class);
 Route::get('users/{user}/permissions', [UserController::class, 'permissions'])->name('users.permissions');
 Route::put('users/{user}/permissions', [UserController::class, 'updatePermissions'])->name('users.permissions.update');
 Route::get('users/{user}/dashboard', [UserController::class, 'viewDashboard'])->name('users.dashboard');
+Route::post('users/{user}/generate-member-number', [UserController::class, 'generateMemberNumber'])->name('users.generate-member-number');
 
 // Role Management
 Route::resource('roles', RoleController::class);
@@ -116,6 +128,8 @@ Route::resource('commissions', CommissionController::class);
 Route::post('commissions/{commission}/approve', [CommissionController::class, 'approve'])->name('commissions.approve');
 Route::post('commissions/{commission}/reject', [CommissionController::class, 'reject'])->name('commissions.reject');
 Route::post('commissions/{commission}/pay', [CommissionController::class, 'pay'])->name('commissions.pay');
+Route::post('commissions/bulk-approve', [CommissionController::class, 'bulkApprove'])->name('commissions.bulk-approve');
+Route::post('commissions/bulk-reject', [CommissionController::class, 'bulkReject'])->name('commissions.bulk-reject');
 
 // Investment & Staking Management
 Route::prefix('investments')->name('investments.')->group(function () {
@@ -192,16 +206,13 @@ Route::prefix('security')->name('security.')->group(function () {
 Route::resource('pages', PageController::class);
 Route::post('pages/reorder', [PageController::class, 'reorder'])->name('pages.reorder');
 
-// Windows UI Management
+// Windows UI Management (Visual Customization Only - Menus are hard-coded)
 Route::prefix('windows-ui')->name('windows-ui.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\WindowsUiController::class, 'index'])->name('index');
     Route::put('/', [\App\Http\Controllers\Admin\WindowsUiController::class, 'update'])->name('update');
-    Route::get('/start-menu', [\App\Http\Controllers\Admin\WindowsUiController::class, 'startMenu'])->name('start-menu');
-    Route::put('/start-menu', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateStartMenu'])->name('start-menu.update');
-    Route::get('/taskbar-apps', [\App\Http\Controllers\Admin\WindowsUiController::class, 'taskbarApps'])->name('taskbar-apps');
-    Route::put('/taskbar-apps', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateTaskbarApps'])->name('taskbar-apps.update');
-    Route::get('/system-tray', [\App\Http\Controllers\Admin\WindowsUiController::class, 'systemTray'])->name('system-tray');
-    Route::put('/system-tray', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateSystemTray'])->name('system-tray.update');
+    Route::put('/start-button-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateStartButtonSettings'])->name('start-button-settings.update');
+    Route::put('/menu-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateMenuSettings'])->name('menu-settings.update');
+    Route::put('/menu-rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateMenuRgbSettings'])->name('menu-rgb-settings.update');
     Route::get('/rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'rgbSettings'])->name('rgb-settings');
     Route::put('/rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateRgbSettings'])->name('rgb-settings.update');
 });
@@ -291,19 +302,6 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::post('ocr', [SettingsController::class, 'updateOcr'])->name('ocr.update');
     Route::post('ocr/test', [SettingsController::class, 'testOcrConnection'])->name('ocr.test');
     Route::get('ocr/setup-guide', [SettingsController::class, 'setupGuide'])->name('ocr.setup-guide');
-});
-
-// Translation Mapping Management (Custom Translations)
-Route::prefix('translations')->name('translations.')->group(function () {
-    Route::get('/', [TranslationMappingController::class, 'index'])->name('index');
-    Route::get('/create', [TranslationMappingController::class, 'create'])->name('create');
-    Route::post('/', [TranslationMappingController::class, 'store'])->name('store');
-    Route::get('/{mapping}/edit', [TranslationMappingController::class, 'edit'])->name('edit');
-    Route::put('/{mapping}', [TranslationMappingController::class, 'update'])->name('update');
-    Route::delete('/{mapping}', [TranslationMappingController::class, 'destroy'])->name('destroy');
-    Route::post('/{mapping}/toggle', [TranslationMappingController::class, 'toggle'])->name('toggle');
-    Route::post('/import', [TranslationMappingController::class, 'import'])->name('import');
-    Route::get('/export', [TranslationMappingController::class, 'export'])->name('export');
 });
 
 // Notification Management
@@ -1148,6 +1146,16 @@ Route::prefix('updates')->name('updates.')->group(function () {
     Route::post('/notifications/{id}/dismiss', [\App\Http\Controllers\Admin\UpdateController::class, 'dismissNotification'])->name('notifications.dismiss');
 });
 
+// Developer Release Manager (IP-locked, Developer Only)
+Route::prefix('dev/releases')->middleware(\App\Http\Middleware\DevMode::class)->name('dev.releases.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'index'])->name('index');
+    Route::post('/create', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'create'])->name('create');
+    Route::post('/{tag}/publish', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'publish'])->name('publish');
+    Route::delete('/{tag}/delete', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'delete'])->name('delete');
+    Route::get('/refresh', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'refresh'])->name('refresh');
+    Route::get('/realtime', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'realtimeInfo'])->name('realtime');
+});
+
 // Ticket Support System
 Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::get('/', [TicketController::class, 'index'])->name('index');
@@ -1244,6 +1252,29 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
     // System Settings - Direct route for backward compatibility
     Route::get('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateSettings'])->name('settings.update');
+
+    // HD Wallet Management (Hierarchical Deterministic Wallets)
+    Route::prefix('hd-wallets')->name('hd-wallets.')->group(function () {
+        // Overview
+        Route::get('/', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'export'])->name('export');
+
+        // Master Wallets
+        Route::get('/master', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'masterWallets'])->name('master');
+        Route::get('/master/{masterWalletId}/children', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'childWallets'])->name('master.children');
+
+        // User Wallets
+        Route::get('/user/{userId}', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'userWallets'])->name('user');
+
+        // Wallet Details
+        Route::get('/{id}', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'show'])->name('show');
+
+        // Wallet Actions
+        Route::post('/{id}/lock', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'lockWallet'])->name('lock');
+        Route::post('/{id}/unlock', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'unlockWallet'])->name('unlock');
+        Route::post('/{id}/suspend', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'suspendWallet'])->name('suspend');
+        Route::post('/{id}/reactivate', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'reactivateWallet'])->name('reactivate');
+    });
 });
 
 // App Management (Mobile App Configuration)
@@ -1280,6 +1311,8 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::put('/{appBanner}', [AppBannerController::class, 'update'])->name('update');
         Route::delete('/{appBanner}', [AppBannerController::class, 'destroy'])->name('destroy');
         Route::post('/{appBanner}/toggle', [AppBannerController::class, 'toggle'])->name('toggle');
+        Route::post('/{appBanner}/track-view', [AppBannerController::class, 'trackView'])->name('track-view');
+        Route::post('/{appBanner}/track-click', [AppBannerController::class, 'trackClick'])->name('track-click');
     });
 
     // App Maintenance
@@ -1289,6 +1322,31 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::post('/toggle', [AppMaintenanceController::class, 'toggle'])->name('toggle');
         Route::post('/enable', [AppMaintenanceController::class, 'enable'])->name('enable');
         Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
+    });
+
+    // App Control Sections
+    Route::prefix('control-sections')->name('control-sections.')->group(function () {
+        Route::get('/', [AppControlSectionController::class, 'index'])->name('index');
+        Route::get('/create', [AppControlSectionController::class, 'create'])->name('create');
+        Route::post('/', [AppControlSectionController::class, 'store'])->name('store');
+        Route::get('/{appControlSection}/edit', [AppControlSectionController::class, 'edit'])->name('edit');
+        Route::put('/{appControlSection}', [AppControlSectionController::class, 'update'])->name('update');
+        Route::delete('/{appControlSection}', [AppControlSectionController::class, 'destroy'])->name('destroy');
+        Route::post('/{appControlSection}/toggle-visibility', [AppControlSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
+        Route::post('/{appControlSection}/toggle-active', [AppControlSectionController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('/update-order', [AppControlSectionController::class, 'updateOrder'])->name('update-order');
+    });
+
+    // Component Settings
+    Route::prefix('component-settings')->name('component-settings.')->group(function () {
+        Route::get('/', [ComponentSettingController::class, 'index'])->name('index');
+        Route::get('/create', [ComponentSettingController::class, 'create'])->name('create');
+        Route::post('/', [ComponentSettingController::class, 'store'])->name('store');
+        Route::get('/{componentSetting}/edit', [ComponentSettingController::class, 'edit'])->name('edit');
+        Route::put('/{componentSetting}', [ComponentSettingController::class, 'update'])->name('update');
+        Route::delete('/{componentSetting}', [ComponentSettingController::class, 'destroy'])->name('destroy');
+        Route::post('/{componentSetting}/toggle-enabled', [ComponentSettingController::class, 'toggleEnabled'])->name('toggle-enabled');
+        Route::post('/{componentSetting}/duplicate', [ComponentSettingController::class, 'duplicate'])->name('duplicate');
     });
 });
 
@@ -1321,3 +1379,103 @@ Route::prefix('video-rewards')->name('video-rewards.')->group(function () {
     Route::get('/exchange-rates', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'exchangeRates'])->name('exchange-rates.index');
     Route::put('/exchange-rates/{rateId}', [\App\Http\Controllers\Admin\VideoRewardAdminController::class, 'updateExchangeRate'])->name('exchange-rates.update');
 });
+
+// Page Builder (Homepage/Wiki Builder)
+Route::prefix('page-builder')->name('page-builder.')->group(function () {
+    // Page Management
+    Route::get('/', [PageBuilderController::class, 'index'])->name('index');
+    Route::get('/create', [PageBuilderController::class, 'create'])->name('create');
+    Route::post('/', [PageBuilderController::class, 'store'])->name('store');
+    Route::get('/{page}/edit', [PageBuilderController::class, 'edit'])->name('edit');
+    Route::put('/{page}', [PageBuilderController::class, 'update'])->name('update');
+    Route::delete('/{page}', [PageBuilderController::class, 'destroy'])->name('destroy');
+    Route::post('/{page}/duplicate', [PageBuilderController::class, 'duplicate'])->name('duplicate');
+    Route::post('/{page}/toggle-active', [PageBuilderController::class, 'toggleActive'])->name('toggle-active');
+    Route::post('/{page}/reorder-sections', [PageBuilderController::class, 'reorderSections'])->name('reorder-sections');
+    Route::get('/{page}/preview', [PageBuilderController::class, 'preview'])->name('preview');
+
+    // Section Management
+    Route::prefix('{page}/sections')->name('sections.')->group(function () {
+        Route::post('/', [PageBuilderSectionController::class, 'store'])->name('store');
+        Route::post('/from-template/{template}', [PageBuilderSectionController::class, 'createFromTemplate'])->name('from-template');
+    });
+
+    Route::prefix('sections/{section}')->name('sections.')->group(function () {
+        Route::get('/edit', [PageBuilderSectionController::class, 'edit'])->name('edit');
+        Route::put('/', [PageBuilderSectionController::class, 'update'])->name('update');
+        Route::delete('/', [PageBuilderSectionController::class, 'destroy'])->name('destroy');
+        Route::post('/duplicate', [PageBuilderSectionController::class, 'duplicate'])->name('duplicate');
+        Route::post('/move-up', [PageBuilderSectionController::class, 'moveUp'])->name('move-up');
+        Route::post('/move-down', [PageBuilderSectionController::class, 'moveDown'])->name('move-down');
+        Route::post('/toggle-visibility', [PageBuilderSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
+        Route::post('/toggle-active', [PageBuilderSectionController::class, 'toggleActive'])->name('toggle-active');
+    });
+});
+
+// Hotel Owner Management (Super Admin)
+Route::prefix('hotel-owners')->name('hotel-owners.')->group(function () {
+    Route::get('/', [HotelOwnerController::class, 'index'])->name('index');
+    Route::get('/statistics', [HotelOwnerController::class, 'statistics'])->name('statistics');
+    Route::post('/', [HotelOwnerController::class, 'store'])->name('store');
+    Route::get('/{id}', [HotelOwnerController::class, 'show'])->name('show');
+    Route::put('/{id}', [HotelOwnerController::class, 'update'])->name('update');
+    Route::delete('/{id}', [HotelOwnerController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/block', [HotelOwnerController::class, 'block'])->name('block');
+    Route::post('/{id}/unblock', [HotelOwnerController::class, 'unblock'])->name('unblock');
+    Route::post('/{id}/assign-hotel', [HotelOwnerController::class, 'assignHotel'])->name('assign-hotel');
+    Route::delete('/{id}/unassign-hotel', [HotelOwnerController::class, 'unassignHotel'])->name('unassign-hotel');
+});
+
+// Hotel Management API (Super Admin) - Provides additional endpoints for hotel management
+// Note: These routes extend the main hotels routes defined above (line 1069)
+Route::prefix('hotels')->name('hotels.api.')->group(function () {
+    Route::get('/statistics', [SuperAdminHotelController::class, 'statistics'])->name('statistics');
+    Route::get('/cities', [SuperAdminHotelController::class, 'getCities'])->name('cities');
+    Route::get('/available-owners', [SuperAdminHotelController::class, 'getAvailableOwners'])->name('available-owners');
+    Route::patch('/{id}/toggle-active', [SuperAdminHotelController::class, 'toggleActive'])->name('toggle-active');
+    Route::patch('/{id}/toggle-featured', [SuperAdminHotelController::class, 'toggleFeatured'])->name('toggle-featured');
+    Route::delete('/{id}/gallery-image', [SuperAdminHotelController::class, 'removeGalleryImage'])->name('remove-gallery-image');
+});
+
+// System Reset (Super Admin Only)
+Route::prefix('system-reset')->name('system-reset.')->group(function () {
+    Route::get('/', [SystemResetController::class, 'index'])->name('index');
+    Route::post('/reset', [SystemResetController::class, 'reset'])->name('reset');
+    Route::get('/statistics', [SystemResetController::class, 'getStatistics'])->name('statistics');
+    Route::get('/logs', [SystemResetController::class, 'getLogs'])->name('logs');
+    Route::get('/logs/{id}', [SystemResetController::class, 'showLog'])->name('show');
+});
+
+// API Management - จัดการ API endpoints และ API keys
+Route::prefix('api-management')->name('api-management.')->group(function () {
+
+    // API Endpoints Management
+    Route::prefix('endpoints')->name('endpoints.')->group(function () {
+        Route::get('/', [ApiEndpointController::class, 'index'])->name('index');
+        Route::get('/create', [ApiEndpointController::class, 'create'])->name('create');
+        Route::post('/', [ApiEndpointController::class, 'store'])->name('store');
+        Route::get('/{apiEndpoint}', [ApiEndpointController::class, 'show'])->name('show');
+        Route::get('/{apiEndpoint}/edit', [ApiEndpointController::class, 'edit'])->name('edit');
+        Route::put('/{apiEndpoint}', [ApiEndpointController::class, 'update'])->name('update');
+        Route::delete('/{apiEndpoint}', [ApiEndpointController::class, 'destroy'])->name('destroy');
+        Route::post('/{apiEndpoint}/toggle-status', [ApiEndpointController::class, 'toggleStatus'])->name('toggle-status');
+        Route::get('/{apiEndpoint}/analytics', [ApiEndpointController::class, 'analytics'])->name('analytics');
+    });
+
+    // API Keys Management
+    Route::prefix('keys')->name('keys.')->group(function () {
+        Route::get('/', [ApiKeyController::class, 'index'])->name('index');
+        Route::get('/create', [ApiKeyController::class, 'create'])->name('create');
+        Route::post('/', [ApiKeyController::class, 'store'])->name('store');
+        Route::get('/{apiKey}', [ApiKeyController::class, 'show'])->name('show');
+        Route::get('/{apiKey}/edit', [ApiKeyController::class, 'edit'])->name('edit');
+        Route::put('/{apiKey}', [ApiKeyController::class, 'update'])->name('update');
+        Route::delete('/{apiKey}', [ApiKeyController::class, 'destroy'])->name('destroy');
+        Route::post('/{apiKey}/toggle-status', [ApiKeyController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/{apiKey}/reset-usage', [ApiKeyController::class, 'resetUsage'])->name('reset-usage');
+        Route::get('/{apiKey}/analytics', [ApiKeyController::class, 'analytics'])->name('analytics');
+    });
+});
+
+// Bot Automation System Routes
+require __DIR__.'/bot_automation.php';

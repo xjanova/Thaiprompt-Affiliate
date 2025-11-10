@@ -6,6 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Affiliate;
 use App\Models\Commission;
+use App\Models\CryptoExchangeRate;
+use App\Models\CryptoWithdrawalRequest;
+use App\Models\CryptoTransaction;
+use App\Models\TradingMarketData;
+use App\Models\KycVerification;
+use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -79,6 +85,70 @@ class DashboardController extends Controller
             ->whereMonth('created_at', now()->subMonth()->month)->sum('amount');
         $revenueGrowth = $lastMonthRevenue > 0 ? (($thisMonthRevenue - $lastMonthRevenue) / $lastMonthRevenue) * 100 : 0;
 
+        // Crypto data
+        $cryptoRates = [];
+        $cryptoSymbols = ['BTC', 'ETH', 'USDT', 'BNB'];
+        foreach ($cryptoSymbols as $symbol) {
+            $currency = \App\Models\CryptoCurrency::where('symbol', $symbol)->first();
+            if ($currency) {
+                $rate = CryptoExchangeRate::where('crypto_currency_id', $currency->id)
+                    ->latest()
+                    ->first();
+                if ($rate) {
+                    $cryptoRates[$symbol] = [
+                        'price' => $rate->rate_thb,
+                        'change_24h' => $rate->price_change_24h ?? 0,
+                        'volume_24h' => $rate->volume_24h ?? 0,
+                    ];
+                }
+            }
+        }
+
+        // Crypto withdrawal stats
+        $cryptoWithdrawals = [
+            'pending' => CryptoWithdrawalRequest::pending()->count(),
+            'requires_approval' => CryptoWithdrawalRequest::requiresApproval()->count(),
+            'total_pending_amount' => CryptoWithdrawalRequest::pending()->sum('amount'),
+        ];
+
+        // Crypto transactions (last 7 days)
+        $cryptoTransactionsCount = CryptoTransaction::where('created_at', '>=', now()->subDays(7))->count();
+
+        // KYC stats
+        $kycStats = [
+            'pending' => KycVerification::pending()->count(),
+            'verified' => KycVerification::approved()->count(),
+            'rejected' => KycVerification::rejected()->count(),
+        ];
+
+        // Trading stats (if table exists)
+        $tradingStats = [];
+        try {
+            if (DB::getSchemaBuilder()->hasTable('trading_market_data')) {
+                $tradingStats = [
+                    'active_pairs' => TradingMarketData::distinct('symbol')->count('symbol'),
+                    'total_volume_24h' => TradingMarketData::where('created_at', '>=', now()->subDay())
+                        ->sum('volume'),
+                ];
+            }
+        } catch (\Exception $e) {
+            // Table doesn't exist or other error, skip
+        }
+
+        // Ticket stats
+        $ticketStats = [
+            'open' => Ticket::open()->count(),
+            'new_today' => Ticket::whereDate('created_at', today())->count(),
+            'high_priority' => Ticket::open()->whereIn('priority', ['high', 'critical'])->count(),
+            'unassigned' => Ticket::open()->whereNull('assigned_to')->count(),
+        ];
+
+        // Recent tickets
+        $recentTickets = Ticket::with(['user', 'category'])
+            ->latest()
+            ->limit(5)
+            ->get();
+
         return view('admin.dashboard', compact(
             'stats',
             'monthlyRevenue',
@@ -88,7 +158,14 @@ class DashboardController extends Controller
             'recentCommissions',
             'topAffiliates',
             'userGrowth',
-            'revenueGrowth'
+            'revenueGrowth',
+            'cryptoRates',
+            'cryptoWithdrawals',
+            'cryptoTransactionsCount',
+            'kycStats',
+            'tradingStats',
+            'ticketStats',
+            'recentTickets'
         ));
     }
 }

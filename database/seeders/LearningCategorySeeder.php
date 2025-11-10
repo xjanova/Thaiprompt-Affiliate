@@ -10,10 +10,75 @@ class LearningCategorySeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing learning categories only, preserves existing configurations.
+     * User customizations (names, colors, icons, order) are preserved.
      */
     public function run(): void
     {
-        $categories = [
+        $existingCategoriesCount = LearningCategory::count();
+
+        if ($existingCategoriesCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all learning categories
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all learning categories...');
+
+        $categories = $this->getAllCategories();
+
+        foreach ($categories as $category) {
+            LearningCategory::create($category);
+        }
+
+        $this->command->info('✅ Learning categories seeded successfully: ' . count($categories) . ' categories');
+    }
+
+    /**
+     * Update mode - add only missing learning categories
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing learning categories detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing categories only)...');
+
+        $categories = $this->getAllCategories();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($categories as $category) {
+            if (!LearningCategory::where('slug', $category['slug'])->exists()) {
+                LearningCategory::create($category);
+                $this->command->info("   ➕ Added: {$category['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new learning categories.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing categories (preserved).");
+        }
+    }
+
+    /**
+     * Get all default learning categories
+     */
+    private function getAllCategories(): array
+    {
+        return [
             [
                 'name' => 'เริ่มต้นใช้งาน AI',
                 'slug' => 'getting-started-ai',
@@ -53,7 +118,7 @@ class LearningCategorySeeder extends Seeder
             [
                 'name' => 'ธุรกิจออนไลน์',
                 'slug' => 'online-business',
-                'description' => 'การสร้างและบริหารธุรกิจออนไนน์อย่างมืออาชีพ',
+                'description' => 'การสร้างและบริหารธุรกิจออนไลน์อย่างมืออาชีพ',
                 'icon' => '💼',
                 'color' => '#fa709a',
                 'order' => 5,
@@ -69,14 +134,5 @@ class LearningCategorySeeder extends Seeder
                 'is_active' => true,
             ],
         ];
-
-        foreach ($categories as $category) {
-            LearningCategory::updateOrCreate(
-                ['slug' => $category['slug']],
-                $category
-            );
-        }
-
-        $this->command->info('Learning categories seeded successfully!');
     }
 }

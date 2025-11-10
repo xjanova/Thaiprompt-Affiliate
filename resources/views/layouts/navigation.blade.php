@@ -198,6 +198,14 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                             <span class="group-hover:translate-x-0.5 transition-transform duration-300">การเช่าของฉัน</span>
                             <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-emerald-600 to-teal-600 group-hover:w-full transition-all duration-300"></span>
                         </a>
+                        @if(Auth::user()->is_hotel_admin && Auth::user()->managed_hotel_id)
+                            <a href="{{ route('hotel-admin.dashboard') }}"
+                               class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 dark:hover:from-orange-900/30 dark:hover:to-amber-900/30 hover:text-orange-700 dark:hover:text-orange-300 hover:shadow-md">
+                                <span class="text-lg group-hover:scale-110 transition-transform duration-300">🏨</span>
+                                <span class="group-hover:translate-x-0.5 transition-transform duration-300">จัดการโรงแรม</span>
+                                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-orange-600 to-amber-600 group-hover:w-full transition-all duration-300"></span>
+                            </a>
+                        @endif
                         @if(Auth::user()->ownedBots()->where('is_rentable', true)->exists())
                             <a href="{{ route('owner-dashboard.index') }}"
                                class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-amber-50 hover:to-orange-50 dark:hover:from-amber-900/30 dark:hover:to-orange-900/30 hover:text-amber-700 dark:hover:text-amber-300 hover:shadow-md">

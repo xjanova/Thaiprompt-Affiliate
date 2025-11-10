@@ -154,20 +154,13 @@ class DashboardController extends Controller
 
     /**
      * Display seller analytics
+     * Note: This method is deprecated. Use AnalyticsController::index instead.
+     * Redirects to the proper analytics route.
      */
-    public function analytics()
+    public function analytics(Request $request)
     {
-        $user = Auth::user();
-
-        // Analytics data (placeholder)
-        $analyticsData = [
-            'page_views' => 0,
-            'unique_visitors' => 0,
-            'conversion_rate' => 0,
-            'average_order_value' => 0,
-        ];
-
-        return view('seller.analytics', compact('analyticsData', 'user'));
+        // Redirect to the proper analytics controller
+        return redirect()->route('seller.analytics.index', $request->all());
     }
 
     /**
@@ -186,5 +179,86 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         return view('seller.profile', compact('user'));
+    }
+
+    /**
+     * Display seller commissions
+     */
+    public function commissions()
+    {
+        $user = Auth::user();
+        $sellerId = $user->id;
+
+        // Get commissions data (placeholder for now)
+        $commissions = [];
+        $totalCommissions = 0;
+        $pendingCommissions = 0;
+        $paidCommissions = 0;
+
+        return view('seller.commissions', compact(
+            'user',
+            'commissions',
+            'totalCommissions',
+            'pendingCommissions',
+            'paidCommissions'
+        ));
+    }
+
+    /**
+     * Display sales reports
+     */
+    public function salesReport()
+    {
+        $user = Auth::user();
+        $sellerId = $user->id;
+
+        // Get sales report data
+        $salesData = OrderItem::where('seller_id', $sellerId)
+            ->whereHas('order', function ($q) {
+                $q->where('payment_status', 'paid');
+            })
+            ->with('order', 'product')
+            ->latest()
+            ->paginate(20);
+
+        return view('seller.reports.sales', compact('user', 'salesData'));
+    }
+
+    /**
+     * Display seller wallet
+     */
+    public function walletIndex()
+    {
+        $user = Auth::user();
+
+        // Get wallet data (placeholder)
+        $balance = 0;
+        $transactions = [];
+
+        return view('seller.wallet.index', compact('user', 'balance', 'transactions'));
+    }
+
+    /**
+     * Display wallet withdraw page
+     */
+    public function walletWithdraw()
+    {
+        $user = Auth::user();
+
+        // Get wallet balance
+        $balance = 0;
+
+        return view('seller.wallet.withdraw', compact('user', 'balance'));
+    }
+
+    /**
+     * Display seller settings
+     */
+    public function settings()
+    {
+        $user = Auth::user();
+        $store = VendorStore::where('user_id', $user->id)->first();
+
+        return view('seller.settings', compact('user', 'store'));
     }
 }

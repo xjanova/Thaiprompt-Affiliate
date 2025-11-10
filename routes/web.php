@@ -42,10 +42,10 @@ Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,
 Route::prefix('setup')->name('setup.')->group(function () {
     Route::get('/', [SetupController::class, 'index'])->name('index');
     Route::get('/check-requirements', [SetupController::class, 'checkRequirements'])->name('check-requirements');
-    Route::post('/verify-license', [SetupController::class, 'verifyLicense'])->name('verify-license');
+    Route::post('/test-database', [SetupController::class, 'testDatabase'])->name('test-database');
+    Route::post('/install-dependencies', [SetupController::class, 'installDependencies'])->name('install-dependencies');
+    Route::post('/run-migrations', [SetupController::class, 'runMigrations'])->name('run-migrations');
     Route::post('/create-admin', [SetupController::class, 'createAdmin'])->name('create-admin');
-    Route::post('/seed-data', [SetupController::class, 'seedData'])->name('seed-data');
-    Route::post('/finalize', [SetupController::class, 'finalize'])->name('finalize');
     Route::get('/info', [SetupController::class, 'info'])->name('info');
 });
 
@@ -270,6 +270,8 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
     Route::get('/', [\App\Http\Controllers\TarotReadingController::class, 'index'])->name('index');
     Route::get('/category/{slug}', [\App\Http\Controllers\TarotReadingController::class, 'showCategory'])->name('category');
     Route::post('/start', [\App\Http\Controllers\TarotReadingController::class, 'startReading'])->name('start');
+    Route::get('/select-cards/{readingId}', [\App\Http\Controllers\TarotReadingController::class, 'showCardSelection'])->name('select-cards');
+    Route::post('/save-selection', [\App\Http\Controllers\TarotReadingController::class, 'saveCardSelection'])->name('save-selection');
     Route::get('/reading/{id}', [\App\Http\Controllers\TarotReadingController::class, 'showReading'])->name('reading.show');
     Route::get('/card-backs', [\App\Http\Controllers\TarotReadingController::class, 'getCardBackImages'])->name('card-backs');
 

@@ -21,11 +21,26 @@
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
+    <!-- Bootstrap CSS (for hotel management views) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
+    <!-- Prevent Tailwind-Bootstrap conflicts -->
+    <style>
+        /* Ensure Bootstrap components work properly */
+        .bootstrap-wrapper .container,
+        .bootstrap-wrapper .container-fluid,
+        .bootstrap-wrapper .row,
+        .bootstrap-wrapper [class*="col-"] {
+            all: revert;
+        }
+    </style>
+
     <!-- Alpine.js -->
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.3/dist/cdn.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -77,6 +92,10 @@
         @php
             $taskbarPosition = \App\Models\WindowsUiSetting::get('windows_taskbar_position', 'top');
             $taskbarHeight = \App\Models\WindowsUiSetting::get('windows_taskbar_height', 48);
+
+            // Content width settings
+            $contentWidthMode = \App\Models\WindowsUiSetting::get('content_width_mode', 'container');
+            $contentWidthCustom = \App\Models\WindowsUiSetting::get('content_width_custom', 1400);
         @endphp
 
         @if($taskbarPosition === 'top')
@@ -103,7 +122,8 @@
     <div class="min-h-screen">
         <!-- Top Bar -->
         <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
+                 @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
@@ -126,7 +146,8 @@
         </header>
 
         <!-- Page Content -->
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
+              @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
             @yield('content')
         </main>
     </div>
@@ -252,6 +273,12 @@
         });
     </script>
 
+    <!-- jQuery (for Bootstrap and hotel views) -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <!-- Bootstrap JS Bundle (includes Popper) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
     <script>
         // Dark Mode Toggle Function for Windows UI
         function toggleDarkMode() {
@@ -266,6 +293,11 @@
             }
         }
     </script>
+
+    {{-- Emergency Alert System --}}
+    <x-emergency-alert-banner position="global" />
+    <x-emergency-alert-popup position="global" />
+    <x-emergency-alert-marquee position="global" />
 
     @stack('scripts')
 </body>

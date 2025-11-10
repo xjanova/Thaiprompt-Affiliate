@@ -28,6 +28,18 @@
     --wiki-shadow: rgba(0,0,0,0.05);
     --wiki-shadow-hover: rgba(0,0,0,0.1);
 
+    /* Badge colors - Light */
+    --badge-green-bg: #d1fae5;
+    --badge-green-text: #065f46;
+    --badge-blue-bg: #dbeafe;
+    --badge-blue-text: #1e40af;
+    --badge-purple-bg: #e0e7ff;
+    --badge-purple-text: #5b21b6;
+    --badge-red-bg: #fee2e2;
+    --badge-red-text: #991b1b;
+    --badge-orange-bg: #ffedd5;
+    --badge-orange-text: #9a3412;
+
     /* Info box colors - Light */
     --info-box-bg: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
     --info-box-text: #1e40af;
@@ -52,6 +64,18 @@
     --wiki-shadow: rgba(0,0,0,0.3);
     --wiki-shadow-hover: rgba(0,0,0,0.5);
 
+    /* Badge colors - Dark */
+    --badge-green-bg: #064e3b;
+    --badge-green-text: #d1fae5;
+    --badge-blue-bg: #1e3a8a;
+    --badge-blue-text: #dbeafe;
+    --badge-purple-bg: #4c1d95;
+    --badge-purple-text: #e0e7ff;
+    --badge-red-bg: #7f1d1d;
+    --badge-red-text: #fee2e2;
+    --badge-orange-bg: #7c2d12;
+    --badge-orange-text: #ffedd5;
+
     /* Info box colors - Dark */
     --info-box-bg: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
     --info-box-text: #bfdbfe;
@@ -63,14 +87,58 @@
     --info-research-text: #fce7f3;
 }
 
-/* Wikipedia-style Layout */
+/* Reading Progress Bar */
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+    z-index: 9999;
+    transition: width 0.1s ease-out;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.progress-text {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    background: var(--wiki-card-bg);
+    border: 2px solid var(--wiki-border);
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.875rem;
+    color: var(--primary);
+    box-shadow: 0 4px 12px var(--wiki-shadow-hover);
+    z-index: 9998;
+    transition: all 0.3s;
+}
+
+.progress-text:hover {
+    transform: scale(1.1);
+}
+
+/* Wikipedia-style Layout - Full Width */
 .wiki-layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 2rem;
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+    grid-template-columns: 320px 1fr;
+    gap: 3rem;
+    max-width: 100%;
+    margin: 0;
+    padding: 2rem 3rem;
+}
+
+@media (min-width: 1920px) {
+    .wiki-layout {
+        grid-template-columns: 350px 1fr;
+        padding: 2rem 6rem;
+    }
 }
 
 /* Sidebar Navigation */
@@ -78,12 +146,28 @@
     position: sticky;
     top: 2rem;
     height: fit-content;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
     background: var(--wiki-card-bg);
     border: 1px solid var(--wiki-border);
-    border-radius: 12px;
+    border-radius: 16px;
     padding: 1.5rem;
     box-shadow: 0 4px 6px var(--wiki-shadow);
-    transition: background-color 0.3s, border-color 0.3s;
+    transition: all 0.3s;
+}
+
+.wiki-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.wiki-sidebar::-webkit-scrollbar-track {
+    background: var(--wiki-hover-bg);
+    border-radius: 10px;
+}
+
+.wiki-sidebar::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
 }
 
 .wiki-sidebar h3 {
@@ -93,6 +177,76 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin-bottom: 1rem;
+}
+
+/* Mobile Sidebar Toggle */
+.mobile-sidebar-toggle {
+    display: none;
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 1000;
+    background: var(--wiki-card-bg);
+    border: 2px solid var(--wiki-border);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 4px 12px var(--wiki-shadow-hover);
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--wiki-text-primary);
+    transition: all 0.3s;
+}
+
+.mobile-sidebar-toggle:hover {
+    transform: scale(1.05);
+    border-color: var(--primary);
+}
+
+.mobile-sidebar-toggle svg {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.5rem;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+@media (max-width: 1024px) {
+    .wiki-sidebar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 280px;
+        height: 100vh;
+        max-height: 100vh;
+        z-index: 999;
+        border-radius: 0 16px 16px 0;
+        transition: left 0.3s ease-in-out;
+    }
+
+    .wiki-sidebar.active {
+        left: 0;
+    }
+
+    .mobile-sidebar-toggle {
+        display: flex;
+        align-items: center;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 998;
+        display: none;
+        backdrop-filter: blur(4px);
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+    }
 }
 
 .wiki-nav {
@@ -505,8 +659,148 @@
         display: none;
     }
 }
+
+/* Badge Styles */
+.wiki-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.wiki-badge-green {
+    background-color: var(--badge-green-bg);
+    color: var(--badge-green-text);
+}
+
+.wiki-badge-blue {
+    background-color: var(--badge-blue-bg);
+    color: var(--badge-blue-text);
+}
+
+.wiki-badge-purple {
+    background-color: var(--badge-purple-bg);
+    color: var(--badge-purple-text);
+}
+
+.wiki-badge-red {
+    background-color: var(--badge-red-bg);
+    color: var(--badge-red-text);
+}
+
+.wiki-badge-orange {
+    background-color: var(--badge-orange-bg);
+    color: var(--badge-orange-text);
+}
+
+/* Rounded corners for all elements */
+.rounded-xl {
+    border-radius: 16px;
+}
+
+.rounded-2xl {
+    border-radius: 20px;
+}
+
+/* Additional border colors */
+.border-green-500 {
+    border-left-color: #10b981 !important;
+}
+
+.border-blue-500 {
+    border-left-color: #3b82f6 !important;
+}
+
+.border-purple-500 {
+    border-left-color: #8b5cf6 !important;
+}
+
+.border-red-500 {
+    border-left-color: #ef4444 !important;
+}
+
+.border-orange-500 {
+    border-left-color: #f97316 !important;
+}
+
+.border-yellow-500 {
+    border-left-color: #eab308 !important;
+}
+
+.border-pink-500 {
+    border-left-color: #ec4899 !important;
+}
+
+/* SVG Animation */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-rotate {
+    animation: rotate 20s linear infinite;
+}
+
+/* Text Color Utilities for Dark Mode */
+.text-muted {
+    color: var(--wiki-text-muted) !important;
+}
+
+.text-secondary {
+    color: var(--wiki-text-secondary) !important;
+}
+
+.text-primary-color {
+    color: var(--wiki-text-primary) !important;
+}
+
+/* Override Tailwind text-gray classes for dark mode compatibility */
+.text-gray-500, .text-gray-600 {
+    color: var(--wiki-text-muted) !important;
+}
+
+.text-gray-700 {
+    color: var(--wiki-text-secondary) !important;
+}
+
+.text-gray-800, .text-gray-900 {
+    color: var(--wiki-text-primary) !important;
+}
 </style>
 @endpush
+
+<div class="reading-progress" id="readingProgress"></div>
+<div class="progress-text" id="progressText">0%</div>
+
+<!-- Mobile Sidebar Toggle -->
+<button class="mobile-sidebar-toggle" id="mobileSidebarToggle">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+    </svg>
+    สารบัญ
+</button>
+
+<!-- Sidebar Overlay for Mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="wiki-layout">
     <!-- Sidebar Navigation -->
@@ -601,9 +895,9 @@
             <h1 class="wiki-title">Thaiprompt Affiliate Platform</h1>
             <p class="wiki-subtitle">สารานุกรมความรู้ฉบับสมบูรณ์ - แพลตฟอร์ม MLM & E-Commerce แห่งอนาคต</p>
             <div class="flex gap-4 mt-4">
-                <span class="px-4 py-2 bg-green-100 text-green-800 rounded-full text-sm font-semibold">v{{ $stats['version'] ?? '1.159.0' }}</span>
-                <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-semibold">Production Ready</span>
-                <span class="px-4 py-2 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">113+ Models</span>
+                <span class="wiki-badge wiki-badge-green">v{{ $stats['version'] ?? '1.159.0' }}</span>
+                <span class="wiki-badge wiki-badge-blue">Production Ready</span>
+                <span class="wiki-badge wiki-badge-purple">113+ Models</span>
             </div>
         </header>
 
@@ -1181,20 +1475,102 @@
                 ได้ไม่จำกัด โดยไม่มีข้อจำกัดในจำนวน Frontline (คนที่คุณชวนโดยตรง)
             </p>
 
-            <div class="code-block">
-                <pre>
-Level 1:  [คุณ]
-            |
-            |--- Member A
-            |--- Member B
-            |--- Member C
-            |--- Member D (ไม่จำกัด)
+            <div class="feature-card">
+                <h4 class="text-center mb-6">โครงสร้าง Unilevel Tree (7 ระดับ)</h4>
+                <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" class="w-full">
+                    <defs>
+                        <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(59,130,246);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(139,92,246);stop-opacity:1" />
+                        </linearGradient>
+                        <filter id="shadow">
+                            <feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.3"/>
+                        </filter>
+                    </defs>
 
-Level 2:  Member A --> Sub-Member A1, A2, A3...
-          Member B --> Sub-Member B1, B2, B3...
+                    <!-- Level Lines -->
+                    <g stroke="url(#gradient1)" stroke-width="2" opacity="0.6">
+                        <!-- Level 1 to Level 2 -->
+                        <line x1="400" y1="50" x2="250" y2="120" class="animate-pulse-slow"/>
+                        <line x1="400" y1="50" x2="400" y2="120" class="animate-pulse-slow"/>
+                        <line x1="400" y1="50" x2="550" y2="120" class="animate-pulse-slow"/>
 
-Level 3-7: ต่อเนื่องไปเรื่อยๆ ตามที่กำหนด
-                </pre>
+                        <!-- Level 2 to Level 3 -->
+                        <line x1="250" y1="120" x2="150" y2="190" class="animate-pulse-slow"/>
+                        <line x1="250" y1="120" x2="250" y2="190" class="animate-pulse-slow"/>
+                        <line x1="250" y1="120" x2="350" y2="190" class="animate-pulse-slow"/>
+
+                        <line x1="400" y1="120" x2="400" y2="190" class="animate-pulse-slow"/>
+
+                        <line x1="550" y1="120" x2="450" y2="190" class="animate-pulse-slow"/>
+                        <line x1="550" y1="120" x2="550" y2="190" class="animate-pulse-slow"/>
+                        <line x1="550" y1="120" x2="650" y2="190" class="animate-pulse-slow"/>
+                    </g>
+
+                    <!-- Level 1 (You) -->
+                    <g class="animate-float">
+                        <circle cx="400" cy="50" r="30" fill="url(#gradient1)" filter="url(#shadow)"/>
+                        <text x="400" y="55" text-anchor="middle" fill="white" font-size="24" font-weight="bold">👑</text>
+                        <text x="400" y="90" text-anchor="middle" fill="var(--wiki-text-primary)" font-size="12" font-weight="bold">YOU</text>
+                    </g>
+
+                    <!-- Level 2 -->
+                    <g>
+                        <circle cx="250" cy="120" r="20" fill="rgb(59,130,246)" opacity="0.9" filter="url(#shadow)"/>
+                        <text x="250" y="125" text-anchor="middle" fill="white" font-size="18">👤</text>
+                        <text x="250" y="150" text-anchor="middle" fill="var(--wiki-text-secondary)" font-size="10">A</text>
+
+                        <circle cx="400" cy="120" r="20" fill="rgb(59,130,246)" opacity="0.9" filter="url(#shadow)"/>
+                        <text x="400" y="125" text-anchor="middle" fill="white" font-size="18">👤</text>
+                        <text x="400" y="150" text-anchor="middle" fill="var(--wiki-text-secondary)" font-size="10">B</text>
+
+                        <circle cx="550" cy="120" r="20" fill="rgb(59,130,246)" opacity="0.9" filter="url(#shadow)"/>
+                        <text x="550" y="125" text-anchor="middle" fill="white" font-size="18">👤</text>
+                        <text x="550" y="150" text-anchor="middle" fill="var(--wiki-text-secondary)" font-size="10">C</text>
+                    </g>
+
+                    <!-- Level 3 -->
+                    <g opacity="0.8">
+                        <circle cx="150" cy="190" r="15" fill="rgb(99,102,241)" filter="url(#shadow)"/>
+                        <text x="150" y="194" text-anchor="middle" fill="white" font-size="14">👥</text>
+
+                        <circle cx="250" cy="190" r="15" fill="rgb(99,102,241)" filter="url(#shadow)"/>
+                        <text x="250" y="194" text-anchor="middle" fill="white" font-size="14">👥</text>
+
+                        <circle cx="350" cy="190" r="15" fill="rgb(99,102,241)" filter="url(#shadow)"/>
+                        <text x="350" y="194" text-anchor="middle" fill="white" font-size="14">👥</text>
+
+                        <circle cx="400" cy="190" r="15" fill="rgb(99,102,241)" filter="url(#shadow)"/>
+                        <text x="400" y="194" text-anchor="middle" fill="white" font-size="14">👥</text>
+
+                        <circle cx="450" cy="190" r="15" fill="rgb(99,102,241)" filter="url(#shadow)"/>
+                        <text x="450" y="194" text-anchor="middle" fill="white" font-size="14">👥</text>
+
+                        <circle cx="550" cy="190" r="15" fill="rgb(99,102,241)" filter="url(#shadow)"/>
+                        <text x="550" y="194" text-anchor="middle" fill="white" font-size="14">👥</text>
+
+                        <circle cx="650" cy="190" r="15" fill="rgb(99,102,241)" filter="url(#shadow)"/>
+                        <text x="650" y="194" text-anchor="middle" fill="white" font-size="14">👥</text>
+                    </g>
+
+                    <!-- Level Indicators -->
+                    <g fill="var(--wiki-text-muted)" font-size="11" font-weight="600">
+                        <text x="50" y="55">Level 1 (10%)</text>
+                        <text x="50" y="125">Level 2 (5%)</text>
+                        <text x="50" y="195">Level 3 (3%)</text>
+                        <text x="400" y="240" text-anchor="middle" opacity="0.7">... Level 4-7 (2% each) ...</text>
+                    </g>
+
+                    <!-- Stats Box -->
+                    <g>
+                        <rect x="600" y="250" width="180" height="120" rx="12" fill="var(--wiki-card-bg)" stroke="var(--wiki-border)" stroke-width="2"/>
+                        <text x="690" y="275" text-anchor="middle" fill="var(--wiki-text-primary)" font-size="12" font-weight="bold">📊 สถิติ</text>
+                        <text x="610" y="295" fill="var(--wiki-text-secondary)" font-size="10">✓ ไม่จำกัด Frontline</text>
+                        <text x="610" y="315" fill="var(--wiki-text-secondary)" font-size="10">✓ รับค่าคอม 7 ระดับ</text>
+                        <text x="610" y="335" fill="var(--wiki-text-secondary)" font-size="10">✓ รวมสูงสุด 26%</text>
+                        <text x="610" y="355" fill="var(--wiki-text-secondary)" font-size="10">✓ โปร่งใส ตรวจสอบได้</text>
+                    </g>
+                </svg>
             </div>
 
             <h4>💰 การคำนวณค่าคอมมิชชั่น</h4>
@@ -1279,16 +1655,154 @@ Level 3-7: ต่อเนื่องไปเรื่อยๆ ตามท�
                 โดยได้รับค่าคอมมิชชั่นจาก <strong>ยอด PV (Point Value) ที่สมดุลกัน</strong> ระหว่างสองขา
             </p>
 
-            <div class="code-block">
-                <pre>
-                    [คุณ]
-                    /    \
-                [Left]  [Right]
-                /  \      /  \
-              L1  L2    R1  R2
-             /  \
-           L1A L1B
-                </pre>
+            <div class="feature-card">
+                <h4 class="text-center mb-6">โครงสร้าง Binary Tree (Left/Right)</h4>
+                <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" class="w-full">
+                    <defs>
+                        <linearGradient id="gradient-left" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(16,185,129);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(52,211,153);stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="gradient-right" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(239,68,68);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(248,113,113);stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="gradient-you" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(59,130,246);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(147,51,234);stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Connection Lines with Animation -->
+                    <g stroke="var(--wiki-border)" stroke-width="2" fill="none" opacity="0.4">
+                        <!-- Left Side Lines -->
+                        <line x1="400" y1="60" x2="250" y2="120" class="animate-pulse-slow"/>
+                        <line x1="250" y1="140" x2="150" y2="200" class="animate-pulse-slow"/>
+                        <line x1="250" y1="140" x2="350" y2="200" class="animate-pulse-slow"/>
+                        <line x1="150" y1="220" x2="100" y2="280" class="animate-pulse-slow"/>
+                        <line x1="150" y1="220" x2="200" y2="280" class="animate-pulse-slow"/>
+
+                        <!-- Right Side Lines -->
+                        <line x1="400" y1="60" x2="550" y2="120" class="animate-pulse-slow"/>
+                        <line x1="550" y1="140" x2="450" y2="200" class="animate-pulse-slow"/>
+                        <line x1="550" y1="140" x2="650" y2="200" class="animate-pulse-slow"/>
+                        <line x1="650" y1="220" x2="600" y2="280" class="animate-pulse-slow"/>
+                        <line x1="650" y1="220" x2="700" y2="280" class="animate-pulse-slow"/>
+                    </g>
+
+                    <!-- YOU Node (Top) -->
+                    <g class="animate-float">
+                        <circle cx="400" cy="50" r="35" fill="url(#gradient-you)" stroke="var(--wiki-border)" stroke-width="3"/>
+                        <text x="400" y="45" text-anchor="middle" fill="white" font-size="20">👑</text>
+                        <text x="400" y="63" text-anchor="middle" fill="white" font-size="12" font-weight="bold">YOU</text>
+                    </g>
+
+                    <!-- Left Leg Label -->
+                    <g>
+                        <rect x="180" y="90" width="140" height="30" rx="15" fill="url(#gradient-left)" opacity="0.9"/>
+                        <text x="250" y="110" text-anchor="middle" fill="white" font-size="14" font-weight="bold">
+                            ⬅️ Left Leg
+                        </text>
+                    </g>
+
+                    <!-- Right Leg Label -->
+                    <g>
+                        <rect x="480" y="90" width="140" height="30" rx="15" fill="url(#gradient-right)" opacity="0.9"/>
+                        <text x="550" y="110" text-anchor="middle" fill="white" font-size="14" font-weight="bold">
+                            Right Leg ➡️
+                        </text>
+                    </g>
+
+                    <!-- Left Branch Level 1 -->
+                    <g class="animate-float" style="animation-delay: 0.2s">
+                        <circle cx="250" cy="130" r="25" fill="url(#gradient-left)" stroke="var(--wiki-border)" stroke-width="2"/>
+                        <text x="250" y="138" text-anchor="middle" fill="white" font-size="18">👤</text>
+                    </g>
+
+                    <!-- Right Branch Level 1 -->
+                    <g class="animate-float" style="animation-delay: 0.2s">
+                        <circle cx="550" cy="130" r="25" fill="url(#gradient-right)" stroke="var(--wiki-border)" stroke-width="2"/>
+                        <text x="550" y="138" text-anchor="middle" fill="white" font-size="18">👤</text>
+                    </g>
+
+                    <!-- Left Branch Level 2 -->
+                    <g class="animate-float" style="animation-delay: 0.4s">
+                        <circle cx="150" cy="210" r="20" fill="url(#gradient-left)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.8"/>
+                        <text x="150" y="217" text-anchor="middle" fill="white" font-size="14">L1</text>
+                    </g>
+                    <g class="animate-float" style="animation-delay: 0.45s">
+                        <circle cx="350" cy="210" r="20" fill="url(#gradient-left)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.8"/>
+                        <text x="350" y="217" text-anchor="middle" fill="white" font-size="14">L2</text>
+                    </g>
+
+                    <!-- Right Branch Level 2 -->
+                    <g class="animate-float" style="animation-delay: 0.4s">
+                        <circle cx="450" cy="210" r="20" fill="url(#gradient-right)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.8"/>
+                        <text x="450" y="217" text-anchor="middle" fill="white" font-size="14">R1</text>
+                    </g>
+                    <g class="animate-float" style="animation-delay: 0.45s">
+                        <circle cx="650" cy="210" r="20" fill="url(#gradient-right)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.8"/>
+                        <text x="650" y="217" text-anchor="middle" fill="white" font-size="14">R2</text>
+                    </g>
+
+                    <!-- Left Branch Level 3 -->
+                    <g class="animate-float" style="animation-delay: 0.6s">
+                        <circle cx="100" cy="290" r="16" fill="url(#gradient-left)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.6"/>
+                        <text x="100" y="296" text-anchor="middle" fill="white" font-size="11">L1A</text>
+                    </g>
+                    <g class="animate-float" style="animation-delay: 0.65s">
+                        <circle cx="200" cy="290" r="16" fill="url(#gradient-left)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.6"/>
+                        <text x="200" y="296" text-anchor="middle" fill="white" font-size="11">L1B</text>
+                    </g>
+
+                    <!-- Right Branch Level 3 -->
+                    <g class="animate-float" style="animation-delay: 0.6s">
+                        <circle cx="600" cy="290" r="16" fill="url(#gradient-right)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.6"/>
+                        <text x="600" y="296" text-anchor="middle" fill="white" font-size="11">R2A</text>
+                    </g>
+                    <g class="animate-float" style="animation-delay: 0.65s">
+                        <circle cx="700" cy="290" r="16" fill="url(#gradient-right)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.6"/>
+                        <text x="700" y="296" text-anchor="middle" fill="white" font-size="11">R2B</text>
+                    </g>
+
+                    <!-- PV Stats Box (Left) -->
+                    <g>
+                        <rect x="20" y="330" width="180" height="60" rx="8" fill="var(--wiki-card-bg)" stroke="url(#gradient-left)" stroke-width="2"/>
+                        <text x="110" y="350" text-anchor="middle" fill="var(--wiki-text-primary)" font-size="12" font-weight="bold">Left Total PV</text>
+                        <text x="110" y="372" text-anchor="middle" fill="url(#gradient-left)" font-size="20" font-weight="bold" class="animate-pulse">2,500</text>
+                    </g>
+
+                    <!-- PV Stats Box (Right) -->
+                    <g>
+                        <rect x="600" y="330" width="180" height="60" rx="8" fill="var(--wiki-card-bg)" stroke="url(#gradient-right)" stroke-width="2"/>
+                        <text x="690" y="350" text-anchor="middle" fill="var(--wiki-text-primary)" font-size="12" font-weight="bold">Right Total PV</text>
+                        <text x="690" y="372" text-anchor="middle" fill="url(#gradient-right)" font-size="20" font-weight="bold" class="animate-pulse">1,800</text>
+                    </g>
+
+                    <!-- Balance Indicator -->
+                    <g>
+                        <rect x="300" y="340" width="200" height="45" rx="22" fill="var(--wiki-card-bg)" stroke="var(--wiki-border)" stroke-width="2"/>
+                        <text x="400" y="358" text-anchor="middle" fill="var(--wiki-text-primary)" font-size="11">Matched PV</text>
+                        <text x="400" y="376" text-anchor="middle" fill="var(--primary)" font-size="16" font-weight="bold">1,800 PV</text>
+                    </g>
+
+                    <!-- Carryover Indicator -->
+                    <g opacity="0.7">
+                        <text x="110" y="365" text-anchor="middle" fill="var(--wiki-text-muted)" font-size="9">
+                            Carryover: 700
+                        </text>
+                    </g>
+                </svg>
+
+                <div class="mt-4 p-4 rounded-lg" style="background: var(--wiki-card-bg); border: 1px solid var(--wiki-border);">
+                    <p class="text-sm" style="color: var(--wiki-text-secondary);">
+                        <strong style="color: var(--wiki-text-primary);">การคำนวณ:</strong>
+                        Left PV = 2,500 | Right PV = 1,800<br>
+                        → Matched PV = 1,800 (ค่าที่น้อยกว่า)<br>
+                        → Commission = 1,800 × 10% = ฿180<br>
+                        → Carryover Left = 700 (ไปสัปดาห์หน้า)
+                    </p>
+                </div>
             </div>
 
             <p class="mt-4">
@@ -3769,47 +4283,158 @@ Step 9: Payment Settlement
 
             <h3>🏗️ Layered Architecture</h3>
 
-            <div class="code-block">
-<pre>
-┌─────────────────────────────────────┐
-│   Presentation Layer (Frontend)    │
-│   - Blade Templates                 │
-│   - Alpine.js (Reactive)            │
-│   - Tailwind CSS (Styling)          │
-│   - Vite (Build Tool)               │
-└─────────────────────────────────────┘
-            ↓ HTTP/AJAX
-┌─────────────────────────────────────┐
-│    Application Layer (Laravel)     │
-│    - Controllers (91 files)         │
-│    - Middleware (Auth, CORS, etc)   │
-│    - Form Requests (Validation)     │
-│    - Resources (API Transform)      │
-└─────────────────────────────────────┘
-            ↓ Service Calls
-┌─────────────────────────────────────┐
-│      Business Logic Layer           │
-│      - Services (30+ classes)       │
-│      - Repositories (Data Access)   │
-│      - Events & Listeners           │
-│      - Jobs & Queues                │
-└─────────────────────────────────────┘
-            ↓ Eloquent ORM
-┌─────────────────────────────────────┐
-│        Data Layer (Database)        │
-│        - MySQL 8.0 (105 tables)     │
-│        - Redis (Cache & Queue)      │
-│        - Eloquent Models (113+)     │
-└─────────────────────────────────────┘
-            ↓ Integration
-┌─────────────────────────────────────┐
-│      External Services              │
-│      - OpenAI API                   │
-│      - Google Cloud (Vision, Trans) │
-│      - LINE Messaging API           │
-│      - Payment Gateways             │
-└─────────────────────────────────────┘
-</pre>
+            <div class="feature-card">
+                <h4 class="text-center mb-6">5-Layer Architecture Stack</h4>
+                <svg viewBox="0 0 900 700" xmlns="http://www.w3.org/2000/svg" class="w-full">
+                    <defs>
+                        <linearGradient id="grad-layer1" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(59,130,246);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(147,51,234);stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="grad-layer2" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(16,185,129);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(5,150,105);stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="grad-layer3" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(245,158,11);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(217,119,6);stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="grad-layer4" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(239,68,68);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(220,38,38);stop-opacity:1" />
+                        </linearGradient>
+                        <linearGradient id="grad-layer5" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:rgb(107,114,128);stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:rgb(75,85,99);stop-opacity:1" />
+                        </linearGradient>
+
+                        <!-- Arrow Marker -->
+                        <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="5" refY="5" orient="auto">
+                            <polygon points="0 0, 10 5, 0 10" fill="var(--wiki-border)" opacity="0.6"/>
+                        </marker>
+                    </defs>
+
+                    <!-- Layer 1: Presentation -->
+                    <g class="animate-float" style="animation-delay: 0s">
+                        <rect x="100" y="30" width="700" height="100" rx="12"
+                              fill="url(#grad-layer1)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.95"/>
+                        <text x="450" y="55" text-anchor="middle" fill="white" font-size="18" font-weight="bold">
+                            🎨 Presentation Layer (Frontend)
+                        </text>
+                        <text x="180" y="80" fill="white" font-size="13">• Blade Templates</text>
+                        <text x="180" y="100" fill="white" font-size="13">• Alpine.js (Reactive)</text>
+                        <text x="480" y="80" fill="white" font-size="13">• Tailwind CSS (Styling)</text>
+                        <text x="480" y="100" fill="white" font-size="13">• Vite (Build Tool)</text>
+                    </g>
+
+                    <!-- Arrow 1 -->
+                    <g class="animate-pulse-slow">
+                        <line x1="450" y1="130" x2="450" y2="160" stroke="var(--wiki-border)"
+                              stroke-width="3" marker-end="url(#arrowhead)" opacity="0.6"/>
+                        <text x="470" y="148" fill="var(--wiki-text-muted)" font-size="11">HTTP/AJAX</text>
+                    </g>
+
+                    <!-- Layer 2: Application -->
+                    <g class="animate-float" style="animation-delay: 0.2s">
+                        <rect x="100" y="170" width="700" height="100" rx="12"
+                              fill="url(#grad-layer2)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.95"/>
+                        <text x="450" y="195" text-anchor="middle" fill="white" font-size="18" font-weight="bold">
+                            ⚙️ Application Layer (Laravel)
+                        </text>
+                        <text x="180" y="220" fill="white" font-size="13">• Controllers (91 files)</text>
+                        <text x="180" y="240" fill="white" font-size="13">• Middleware (Auth, CORS)</text>
+                        <text x="480" y="220" fill="white" font-size="13">• Form Requests (Validation)</text>
+                        <text x="480" y="240" fill="white" font-size="13">• Resources (API Transform)</text>
+                    </g>
+
+                    <!-- Arrow 2 -->
+                    <g class="animate-pulse-slow" style="animation-delay: 0.5s">
+                        <line x1="450" y1="270" x2="450" y2="300" stroke="var(--wiki-border)"
+                              stroke-width="3" marker-end="url(#arrowhead)" opacity="0.6"/>
+                        <text x="470" y="288" fill="var(--wiki-text-muted)" font-size="11">Service Calls</text>
+                    </g>
+
+                    <!-- Layer 3: Business Logic -->
+                    <g class="animate-float" style="animation-delay: 0.4s">
+                        <rect x="100" y="310" width="700" height="100" rx="12"
+                              fill="url(#grad-layer3)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.95"/>
+                        <text x="450" y="335" text-anchor="middle" fill="white" font-size="18" font-weight="bold">
+                            💼 Business Logic Layer
+                        </text>
+                        <text x="180" y="360" fill="white" font-size="13">• Services (30+ classes)</text>
+                        <text x="180" y="380" fill="white" font-size="13">• Repositories (Data Access)</text>
+                        <text x="480" y="360" fill="white" font-size="13">• Events & Listeners</text>
+                        <text x="480" y="380" fill="white" font-size="13">• Jobs & Queues</text>
+                    </g>
+
+                    <!-- Arrow 3 -->
+                    <g class="animate-pulse-slow" style="animation-delay: 1s">
+                        <line x1="450" y1="410" x2="450" y2="440" stroke="var(--wiki-border)"
+                              stroke-width="3" marker-end="url(#arrowhead)" opacity="0.6"/>
+                        <text x="470" y="428" fill="var(--wiki-text-muted)" font-size="11">Eloquent ORM</text>
+                    </g>
+
+                    <!-- Layer 4: Data -->
+                    <g class="animate-float" style="animation-delay: 0.6s">
+                        <rect x="100" y="450" width="700" height="100" rx="12"
+                              fill="url(#grad-layer4)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.95"/>
+                        <text x="450" y="475" text-anchor="middle" fill="white" font-size="18" font-weight="bold">
+                            🗄️ Data Layer (Database)
+                        </text>
+                        <text x="180" y="500" fill="white" font-size="13">• MySQL 8.0 (105 tables)</text>
+                        <text x="180" y="520" fill="white" font-size="13">• Redis (Cache & Queue)</text>
+                        <text x="480" y="500" fill="white" font-size="13">• Eloquent Models (113+)</text>
+                        <text x="480" y="520" fill="white" font-size="13">• Database Indexing</text>
+                    </g>
+
+                    <!-- Arrow 4 -->
+                    <g class="animate-pulse-slow" style="animation-delay: 1.5s">
+                        <line x1="450" y1="550" x2="450" y2="580" stroke="var(--wiki-border)"
+                              stroke-width="3" marker-end="url(#arrowhead)" opacity="0.6"/>
+                        <text x="470" y="568" fill="var(--wiki-text-muted)" font-size="11">Integration</text>
+                    </g>
+
+                    <!-- Layer 5: External Services -->
+                    <g class="animate-float" style="animation-delay: 0.8s">
+                        <rect x="100" y="590" width="700" height="90" rx="12"
+                              fill="url(#grad-layer5)" stroke="var(--wiki-border)" stroke-width="2" opacity="0.95"/>
+                        <text x="450" y="615" text-anchor="middle" fill="white" font-size="18" font-weight="bold">
+                            🔌 External Services
+                        </text>
+                        <text x="200" y="645" fill="white" font-size="13">• OpenAI API</text>
+                        <text x="350" y="645" fill="white" font-size="13">• Google Cloud</text>
+                        <text x="500" y="645" fill="white" font-size="13">• LINE API</text>
+                        <text x="650" y="645" fill="white" font-size="13">• Payment Gateways</text>
+                    </g>
+
+                    <!-- Side Labels -->
+                    <g opacity="0.7">
+                        <text x="30" y="80" fill="var(--wiki-text-muted)" font-size="12" font-weight="bold">L1</text>
+                        <text x="30" y="220" fill="var(--wiki-text-muted)" font-size="12" font-weight="bold">L2</text>
+                        <text x="30" y="360" fill="var(--wiki-text-muted)" font-size="12" font-weight="bold">L3</text>
+                        <text x="30" y="500" fill="var(--wiki-text-muted)" font-size="12" font-weight="bold">L4</text>
+                        <text x="30" y="635" fill="var(--wiki-text-muted)" font-size="12" font-weight="bold">L5</text>
+                    </g>
+
+                    <!-- Data Flow Indicators -->
+                    <g>
+                        <circle cx="850" cy="80" r="8" fill="url(#grad-layer1)" class="animate-pulse"/>
+                        <circle cx="850" cy="220" r="8" fill="url(#grad-layer2)" class="animate-pulse" style="animation-delay: 0.2s"/>
+                        <circle cx="850" cy="360" r="8" fill="url(#grad-layer3)" class="animate-pulse" style="animation-delay: 0.4s"/>
+                        <circle cx="850" cy="500" r="8" fill="url(#grad-layer4)" class="animate-pulse" style="animation-delay: 0.6s"/>
+                        <circle cx="850" cy="635" r="8" fill="url(#grad-layer5)" class="animate-pulse" style="animation-delay: 0.8s"/>
+                    </g>
+                </svg>
+
+                <div class="mt-4 p-4 rounded-lg" style="background: var(--wiki-card-bg); border: 1px solid var(--wiki-border);">
+                    <p class="text-sm" style="color: var(--wiki-text-secondary);">
+                        <strong style="color: var(--wiki-text-primary);">หลักการออกแบบ:</strong>
+                        แต่ละ Layer มีหน้าที่ชัดเจน แยกส่วนการทำงานออกจากกัน (Separation of Concerns)
+                        ทำให้ระบบง่ายต่อการบำรุงรักษา ขยาย และทดสอบ<br>
+                        <strong style="color: var(--wiki-text-primary);">Data Flow:</strong>
+                        ข้อมูลไหลจากบนลงล่าง (Top-Down) และแต่ละ Layer สื่อสารกันผ่าน Interface ที่กำหนดไว้
+                    </p>
+                </div>
             </div>
 
             <h3>⚡ Performance Optimization</h3>
@@ -4255,6 +4880,21 @@ class Affiliate extends Model {
 
 @push('scripts')
 <script>
+// Mobile Sidebar Toggle
+const mobileSidebarToggle = document.getElementById('mobileSidebarToggle');
+const sidebar = document.querySelector('.wiki-sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+mobileSidebarToggle.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+    sidebarOverlay.classList.toggle('active');
+});
+
+sidebarOverlay.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+    sidebarOverlay.classList.remove('active');
+});
+
 // Smooth scroll
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
@@ -4266,12 +4906,25 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             // Update active nav
             document.querySelectorAll('.wiki-nav a').forEach(a => a.classList.remove('active'));
             this.classList.add('active');
+
+            // Close mobile sidebar after click
+            if (window.innerWidth <= 1024) {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+            }
+
+            // Scroll active link into view in sidebar
+            this.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     });
 });
 
-// Scroll spy
+// Back to Top Button
+const backToTopButton = document.getElementById('backToTop');
+
+// Combined scroll handler for scroll spy, back to top, and reading progress
 window.addEventListener('scroll', () => {
+    // Scroll spy
     const sections = document.querySelectorAll('.wiki-section');
     let current = '';
 
@@ -4282,19 +4935,31 @@ window.addEventListener('scroll', () => {
         }
     });
 
+    let activeLink = null;
     document.querySelectorAll('.wiki-nav a').forEach(a => {
         a.classList.remove('active');
         if (a.getAttribute('href') === `#${current}`) {
             a.classList.add('active');
+            activeLink = a;
         }
     });
-});
 
-// Back to Top Button
-const backToTopButton = document.getElementById('backToTop');
+    // Auto-scroll sidebar to active link
+    if (activeLink && sidebar) {
+        const linkTop = activeLink.offsetTop;
+        const sidebarHeight = sidebar.clientHeight;
+        const linkHeight = activeLink.clientHeight;
 
-// Show/hide button based on scroll position
-window.addEventListener('scroll', () => {
+        // Check if link is out of view
+        if (linkTop < sidebar.scrollTop || linkTop + linkHeight > sidebar.scrollTop + sidebarHeight) {
+            sidebar.scrollTo({
+                top: linkTop - (sidebarHeight / 2) + (linkHeight / 2),
+                behavior: 'smooth'
+            });
+        }
+    }
+
+    // Back to top button visibility
     if (window.scrollY > 300) {
         backToTopButton.style.display = 'block';
         setTimeout(() => {
@@ -4309,6 +4974,24 @@ window.addEventListener('scroll', () => {
                 backToTopButton.style.display = 'none';
             }
         }, 300);
+    }
+
+    // Reading progress indicator
+    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const scrolled = (winScroll / height) * 100;
+
+    // Update progress bar
+    const progressBar = document.getElementById('readingProgress');
+    const progressText = document.getElementById('progressText');
+
+    if (progressBar) {
+        progressBar.style.width = scrolled + '%';
+    }
+
+    // Update progress text
+    if (progressText) {
+        progressText.textContent = Math.round(scrolled) + '%';
     }
 });
 

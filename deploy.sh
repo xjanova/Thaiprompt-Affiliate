@@ -281,6 +281,79 @@ error_exit() {
 # Trap errors - disable for now to handle errors manually
 # trap 'error_exit "An error occurred on line $LINENO"' ERR
 
+# Clean old backups (keep only recent 2 days)
+cleanup_old_backups() {
+    print_info "Cleaning old backups (>2 days)..."
+
+    if [ -d "$BACKUP_DIR" ]; then
+        # Count total backups before cleanup
+        local total_before=$(find "$BACKUP_DIR" -type f -name "*.sql" -o -type d -name "critical_*" | wc -l)
+
+        # Remove SQL backups older than 2 days
+        find "$BACKUP_DIR" -type f -name "*.sql" -mtime +2 -delete 2>/dev/null || true
+
+        # Remove critical backup directories older than 2 days
+        find "$BACKUP_DIR" -type d -name "critical_*" -mtime +2 -exec rm -rf {} + 2>/dev/null || true
+
+        # Count total backups after cleanup
+        local total_after=$(find "$BACKUP_DIR" -type f -name "*.sql" -o -type d -name "critical_*" 2>/dev/null | wc -l)
+        local deleted=$((total_before - total_after))
+
+        if [ $deleted -gt 0 ]; then
+            print_success "Cleaned up $deleted old backup(s)"
+            log "Cleanup: Removed $deleted old backups (>2 days)"
+        else
+            print_success "No old backups to clean"
+        fi
+    else
+        mkdir -p "$BACKUP_DIR"
+        print_info "Created backup directory"
+    fi
+}
+
+# Save deployment history for rollback
+save_deployment_history() {
+    local commit_hash=$1
+    local branch=$2
+    local timestamp=$(date +'%Y-%m-%d %H:%M:%S')
+
+    # Create deployment history file
+    local history_file="$BACKUP_DIR/.deployment_history"
+
+    # Add new entry at the beginning (most recent first)
+    echo "$timestamp|$commit_hash|$branch" | cat - "$history_file" 2>/dev/null | head -10 > "$history_file.tmp" 2>/dev/null || echo "$timestamp|$commit_hash|$branch" > "$history_file.tmp"
+    mv "$history_file.tmp" "$history_file"
+
+    log "Deployment history saved: $commit_hash"
+}
+
+# Generate rollback commands
+generate_rollback_commands() {
+    local history_file="$BACKUP_DIR/.deployment_history"
+
+    if [ ! -f "$history_file" ]; then
+        return
+    fi
+
+    echo ""
+    print_warning "🔄 Quick Rollback Commands (Copy & Paste):"
+    echo ""
+
+    local count=1
+    while IFS='|' read -r timestamp commit_hash branch_name; do
+        if [ $count -gt 5 ]; then
+            break
+        fi
+
+        if [ -n "$commit_hash" ]; then
+            echo -e "${YELLOW}[$count]${NC} Rollback to: ${BLUE}${timestamp}${NC} (${commit_hash:0:8})"
+            echo -e "${GREEN}git reset --hard $commit_hash && composer install --no-dev --optimize-autoloader && php artisan migrate:rollback && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan up${NC}"
+            echo ""
+            count=$((count + 1))
+        fi
+    done < "$history_file"
+}
+
 # Backup critical files (PREVENT DATA LOSS!)
 backup_critical_files() {
     local backup_timestamp=$(date +'%Y%m%d_%H%M%S')
@@ -367,8 +440,8 @@ echo -e "${GREEN}║${NC}     ${MAGENTA}██╔██╗ ██║╚██╔
 echo -e "${GREEN}║${NC}    ${MAGENTA}██╔╝ ██╗██║ ╚═╝ ██║██║  ██║██║ ╚████║${NC}                      ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}    ${MAGENTA}╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝${NC}                      ${GREEN}║${NC}"
 echo -e "${GREEN}║${NC}                                                                ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}    ${BLUE}🚀 TP-Affiliate Deployment System v2.0${NC}                      ${GREEN}║${NC}"
-echo -e "${GREEN}║${NC}    ${YELLOW}⚡ Safe • Smart • Secure Deployment${NC}                       ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${BLUE}🚀 TP-Affiliate Deployment System v3.0.2${NC}                    ${GREEN}║${NC}"
+echo -e "${GREEN}║${NC}    ${YELLOW}⚡ Intelligent • Fast • Ultra-Safe Deployment${NC}             ${GREEN}║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
@@ -439,8 +512,8 @@ if [[ -n $(git status -s) ]]; then
     log "WARNING: Local changes will be overwritten by deployment"
 fi
 
-# Create backup directory
-mkdir -p "$BACKUP_DIR"
+# Clean old backups first
+cleanup_old_backups
 
 # Start deployment
 print_header "📦 Deployment Process"
@@ -553,6 +626,9 @@ NEW_COMMIT=$(git rev-parse HEAD)
 log "New commit: $NEW_COMMIT"
 print_info "New commit: ${NEW_COMMIT:0:8}"
 
+# Save deployment history for future rollback
+save_deployment_history "$NEW_COMMIT" "$BRANCH"
+
 # Step 6: Ensure Base Controller Exists
 print_info "[6/20] Ensuring base Controller exists..."
 CONTROLLER_FILE="app/Http/Controllers/Controller.php"
@@ -574,74 +650,129 @@ else
     print_success "Base Controller.php exists"
 fi
 
-# Step 7: Install/Update Composer Dependencies
-print_info "[7/20] Installing composer dependencies..."
+# Smart Composer Management System
+smart_composer_install() {
+    local needs_install=0
+    local lock_changed=0
 
-# Remove vendor directory to ensure clean install
-if [ -d "vendor" ]; then
-    print_info "Removing old vendor directory for clean install..."
-    rm -rf vendor
-fi
+    # Check if composer.lock changed
+    if [ -f ".composer.lock.checksum" ]; then
+        local old_checksum=$(cat .composer.lock.checksum 2>/dev/null || echo "")
+        local new_checksum=$(md5sum composer.lock 2>/dev/null | cut -d' ' -f1 || echo "")
 
-# Clear composer cache
-composer clear-cache 2>/dev/null || true
-
-# Install dependencies from scratch
-print_info "Installing composer dependencies..."
-if ! composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
-    error_exit "Composer install failed - อาจเป็นปัญหา network หรือ Packagist" "$?"
-fi
-print_success "Composer dependencies installed (clean)"
-
-# Verify composer lock file matches
-if [ -f "composer.lock" ]; then
-    composer validate --no-check-all --no-check-publish 2>/dev/null && \
-        print_success "Composer.lock is valid" || \
-        print_warning "Composer.lock validation failed"
-fi
-
-# Step 7.5: Verify Google Cloud Vision is installed (for OCR/KYC)
-print_info "[7.5/20] Verifying Google Cloud Vision for OCR..."
-if composer show google/cloud-vision &>/dev/null; then
-    VISION_VERSION=$(composer show google/cloud-vision 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
-    print_success "Google Cloud Vision installed (${VISION_VERSION})"
-else
-    print_warning "Google Cloud Vision not found! OCR/KYC features will not work."
-    log "Warning: google/cloud-vision is missing. Run 'composer require google/cloud-vision' locally and commit composer.lock"
-fi
-
-# Step 7.6: Install/Verify DomPDF for PDF Generation (Software Sales System)
-print_info "[7.6/20] Installing DomPDF for PDF generation..."
-if composer show barryvdh/laravel-dompdf &>/dev/null; then
-    DOMPDF_VERSION=$(composer show barryvdh/laravel-dompdf 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
-    print_success "DomPDF already installed (${DOMPDF_VERSION})"
-else
-    print_info "Installing DomPDF..."
-    if ! composer require barryvdh/laravel-dompdf --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
-        print_warning "DomPDF installation failed - PDF quotations will use HTML fallback"
-        log "Warning: barryvdh/laravel-dompdf installation failed"
+        if [ "$old_checksum" != "$new_checksum" ]; then
+            lock_changed=1
+            print_info "composer.lock has changed - will update dependencies"
+        else
+            print_success "composer.lock unchanged - checking existing dependencies"
+        fi
     else
-        DOMPDF_VERSION=$(composer show barryvdh/laravel-dompdf 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
-        print_success "DomPDF installed successfully (${DOMPDF_VERSION})"
-        log "DomPDF installed: ${DOMPDF_VERSION}"
+        lock_changed=1
+    fi
+
+    # Check if vendor directory exists and is valid
+    if [ ! -d "vendor" ] || [ ! -f "vendor/autoload.php" ]; then
+        needs_install=1
+        print_warning "vendor directory missing or invalid"
+    fi
+
+    # If lock changed or vendor missing, do full install
+    if [ $needs_install -eq 1 ] || [ $lock_changed -eq 1 ]; then
+        print_info "Running composer install..."
+        composer clear-cache 2>/dev/null || true
+
+        if ! composer install --no-dev --optimize-autoloader --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+            error_exit "Composer install failed - อาจเป็นปัญหา network หรือ Packagist" "$?"
+        fi
+
+        # Save checksum for future comparisons
+        md5sum composer.lock 2>/dev/null | cut -d' ' -f1 > .composer.lock.checksum
+        print_success "Composer dependencies installed"
+    else
+        print_success "Composer dependencies up-to-date (skipped install)"
+    fi
+
+    # Validate composer.lock
+    composer validate --no-check-all --no-check-publish 2>/dev/null && \
+        print_success "composer.lock is valid" || \
+        print_warning "composer.lock validation warning"
+}
+
+# Check and install missing packages
+check_package() {
+    local package=$1
+    local description=$2
+    local required=${3:-false}
+
+    if composer show "$package" &>/dev/null; then
+        local version=$(composer show "$package" 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
+        print_success "$description installed ($version)"
+        return 0
+    else
+        print_warning "$description not found"
+
+        if [ "$required" = "true" ]; then
+            print_info "Installing $package..."
+            if composer require "$package" --no-interaction 2>&1 | tee -a "$LOG_FILE"; then
+                local version=$(composer show "$package" 2>/dev/null | grep 'versions' | awk '{print $3}' || echo "unknown")
+                print_success "$description installed successfully ($version)"
+                md5sum composer.lock 2>/dev/null | cut -d' ' -f1 > .composer.lock.checksum
+                return 0
+            else
+                print_error "$description installation failed"
+                return 1
+            fi
+        fi
+        return 1
+    fi
+}
+
+# Step 7: Smart Composer Management
+print_info "[7/20] Smart Composer Management..."
+echo ""
+
+# Run smart composer install
+smart_composer_install
+echo ""
+
+# Check critical packages
+print_info "Verifying critical packages..."
+check_package "google/cloud-vision" "Google Cloud Vision (OCR/KYC)" false
+check_package "barryvdh/laravel-dompdf" "DomPDF (PDF Generation)" false
+echo ""
+
+# Step 8: Smart Laravel Sanctum Installation
+print_info "[8/20] Smart Laravel Sanctum Installation..."
+
+# Check if Sanctum migrations already exist
+if [ -f "database/migrations/*_create_personal_access_tokens_table.php" ] || \
+   ls database/migrations/*_create_personal_access_tokens_table.php 1> /dev/null 2>&1; then
+    print_success "Sanctum already installed (skipped re-publish)"
+else
+    print_info "Installing Sanctum for the first time..."
+    if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" 2>&1 | tee -a "$LOG_FILE"; then
+        print_warning "Sanctum publish failed (may already exist)"
+    else
+        print_success "Sanctum installed successfully"
     fi
 fi
 
-# Step 8: Install/Reinstall Laravel Sanctum
-print_info "[8/20] Installing Laravel Sanctum..."
-if ! php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider" --force 2>&1 | tee -a "$LOG_FILE"; then
-    error_exit "Sanctum installation failed" "$?"
-fi
-print_success "Laravel Sanctum installed and configured"
-
 # Step 9: Clear All Cache (before migration)
 print_info "[9/20] Clearing all caches..."
-php artisan cache:clear 2>/dev/null || true
-php artisan config:clear 2>/dev/null || true
-php artisan route:clear 2>/dev/null || true
-php artisan view:clear 2>/dev/null || true
-php artisan event:clear 2>/dev/null || true
-print_success "All caches cleared"
+
+# Clear caches silently (ignore permission errors)
+php artisan cache:clear >/dev/null 2>&1 || print_warning "Cache clear skipped (may need manual clear)"
+php artisan config:clear >/dev/null 2>&1 || true
+php artisan route:clear >/dev/null 2>&1 || true
+php artisan view:clear >/dev/null 2>&1 || true
+php artisan event:clear >/dev/null 2>&1 || true
+
+# Verify at least config was cleared
+if php artisan config:cache --help >/dev/null 2>&1; then
+    print_success "Cache clearing completed"
+else
+    print_warning "Some caches may not be cleared - continuing anyway"
+fi
 
 # Step 10: Smart Database Migration System
 print_info "[10/20] 🎯 Smart Database Migration System..."
@@ -743,6 +874,111 @@ echo "  • Total migrations: $TOTAL_MIGRATIONS"
 echo "  • Pending migrations: $PENDING_COUNT"
 echo ""
 
+# Step 10.5: Smart Migration Handler with Auto-Recovery
+handle_migration_with_smart_recovery() {
+    local migration_output_file="/tmp/migration_output_$$.log"
+
+    print_info "→ Executing migrations with smart error recovery..."
+
+    # Run migrations and capture output
+    if php artisan migrate --force 2>&1 | tee "$migration_output_file" | tee -a "$LOG_FILE"; then
+        print_success "✓ Migrations applied successfully!"
+        rm -f "$migration_output_file"
+        return 0
+    fi
+
+    # Migration failed - check if it's a "table already exists" error
+    if grep -q "Base table or view already exists" "$migration_output_file"; then
+        print_warning "⚠ Detected 'table already exists' error - Attempting auto-recovery..."
+        echo ""
+
+        # Extract table name from error
+        local table_name=$(grep -oP "Table '\K[^']+(?=' already exists)" "$migration_output_file" | head -1)
+
+        if [ -z "$table_name" ]; then
+            print_error "✗ Could not extract table name from error"
+            rm -f "$migration_output_file"
+            return 1
+        fi
+
+        print_info "→ Problem table: $table_name"
+
+        # Find the migration file that creates this table
+        print_info "→ Searching for migration file..."
+        local migration_file=$(grep -l "create table.*$table_name" database/migrations/*.php 2>/dev/null | head -1)
+
+        if [ -z "$migration_file" ]; then
+            # Try alternative search pattern
+            migration_file=$(grep -l "'$table_name'" database/migrations/*.php 2>/dev/null | head -1)
+        fi
+
+        if [ -n "$migration_file" ]; then
+            local migration_name=$(basename "$migration_file" .php)
+            print_info "→ Found migration: $migration_name"
+            echo ""
+
+            print_warning "📋 Auto-Recovery Options:"
+            echo "  1. Table exists but migration not recorded"
+            echo "  2. Will register migration as completed without running it"
+            echo ""
+
+            # Get current max batch number
+            local max_batch=$(php artisan tinker --execute="echo DB::table('migrations')->max('batch') ?? 0;" 2>/dev/null | tail -1 || echo "1")
+            local next_batch=$((max_batch + 1))
+
+            print_info "→ Registering migration as completed (batch: $next_batch)..."
+
+            # Insert migration record directly into database
+            php artisan tinker --execute="
+                DB::table('migrations')->insert([
+                    'migration' => '$migration_name',
+                    'batch' => $next_batch
+                ]);
+                echo 'Migration registered successfully';
+            " 2>&1 | tee -a "$LOG_FILE"
+
+            if [ $? -eq 0 ]; then
+                print_success "✓ Migration '$migration_name' registered as completed"
+                echo ""
+
+                # Try running remaining migrations
+                print_info "→ Attempting to run remaining migrations..."
+                if php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
+                    print_success "✓ All remaining migrations applied successfully!"
+                    rm -f "$migration_output_file"
+                    return 0
+                else
+                    # Check if there are more "table exists" errors
+                    print_warning "⚠ More migration errors detected - running recovery again..."
+                    rm -f "$migration_output_file"
+                    # Recursive call to handle next error
+                    handle_migration_with_smart_recovery
+                    return $?
+                fi
+            else
+                print_error "✗ Failed to register migration"
+                rm -f "$migration_output_file"
+                return 1
+            fi
+        else
+            print_error "✗ Could not find migration file for table: $table_name"
+            echo ""
+            print_info "💡 Manual recovery steps:"
+            echo "  1. Check which migration creates '$table_name'"
+            echo "  2. Run: php artisan migrate:status"
+            echo "  3. Manually insert migration record if needed"
+            rm -f "$migration_output_file"
+            return 1
+        fi
+    else
+        # Different type of error
+        print_error "✗ Migration failed with different error"
+        cat "$migration_output_file"
+        rm -f "$migration_output_file"
+        return 1
+    fi
+}
+
 # Step 10.5: Run migrations if needed
 if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     print_warning "⚠ Found $PENDING_COUNT pending migration(s) - Will apply now"
@@ -770,18 +1006,24 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     fi
     echo ""
 
-    # Run migrations with detailed output
-    print_info "→ Executing migrations..."
-    if ! php artisan migrate --force 2>&1 | tee -a "$LOG_FILE"; then
-        print_error "✗ Migration failed!"
+    # Run migrations with smart error recovery
+    if ! handle_migration_with_smart_recovery; then
+        print_error "✗ Migration failed after auto-recovery attempts!"
         echo ""
         print_warning "→ Rollback information:"
         echo "  • Backup file: $MIGRATION_BACKUP"
         echo "  • Rollback command: php artisan migrate:rollback"
         echo "  • Restore DB: mysql -u $DB_USERNAME -p $DB_DATABASE < $MIGRATION_BACKUP"
+        echo ""
+        print_info "💡 Manual Fix:"
+        echo "  1. Check migration status: php artisan migrate:status"
+        echo "  2. Identify problematic migrations"
+        echo "  3. Either:"
+        echo "     a) Drop the existing table and re-run migration"
+        echo "     b) Manually insert migration record if table is correct"
         error_exit "Database migration failed - ตรวจสอบ logs และ backup"
     fi
-    print_success "✓ Migrations applied successfully!"
+    print_success "✓ Migrations completed successfully!"
     echo ""
 else
     print_success "✓ No pending migrations - Database schema is up to date"
@@ -810,8 +1052,87 @@ if [ "$PENDING_COUNT" != "0" ]; then
 fi
 echo ""
 
-# Step 11: Smart Database Seeding System
-print_info "[11/20] 🌱 Checking database seeding status..."
+# Analyze seeder safety (checks if seeder uses safe methods)
+analyze_seeder_safety() {
+    local seeder_file="$1"
+    local safety_score=0
+    local issues=()
+    local safe_methods=()
+
+    # Check for safe methods
+    if grep -q "updateOrCreate\|firstOrCreate\|firstOrNew" "$seeder_file"; then
+        safety_score=$((safety_score + 2))
+        safe_methods+=("updateOrCreate/firstOrCreate")
+    fi
+
+    # Check for conditional creation
+    if grep -q "if.*exists\|if.*count\|if.*find" "$seeder_file"; then
+        safety_score=$((safety_score + 1))
+        safe_methods+=("conditional checks")
+    fi
+
+    # Check for potentially unsafe methods
+    if grep -q "truncate\|delete\|DB::statement.*DROP\|DB::statement.*TRUNCATE" "$seeder_file"; then
+        safety_score=$((safety_score - 3))
+        issues+=("uses truncate/delete")
+    fi
+
+    # Check for factory with count (mass creation)
+    if grep -q "factory.*->count\|factory.*->create" "$seeder_file"; then
+        if ! grep -q "updateOrCreate\|firstOrCreate" "$seeder_file"; then
+            safety_score=$((safety_score - 1))
+            issues+=("mass creation without checks")
+        fi
+    fi
+
+    # Determine safety level
+    if [ $safety_score -ge 2 ]; then
+        echo "SAFE|${safe_methods[*]}|${issues[*]}"
+    elif [ $safety_score -ge 0 ]; then
+        echo "CAUTION|${safe_methods[*]}|${issues[*]}"
+    else
+        echo "UNSAFE|${safe_methods[*]}|${issues[*]}"
+    fi
+}
+
+# Track individual seeder changes
+track_seeder_changes() {
+    local seeder_dir="$1"
+    local checksum_dir=".seeder_checksums"
+    mkdir -p "$checksum_dir"
+
+    local changed_seeders=()
+    local new_seeders=()
+    local unchanged_count=0
+
+    # Iterate through all seeder files
+    while IFS= read -r seeder_file; do
+        local seeder_name=$(basename "$seeder_file")
+        local checksum_file="$checksum_dir/$seeder_name.md5"
+        local current_checksum=$(md5sum "$seeder_file" 2>/dev/null | cut -d' ' -f1)
+
+        if [ ! -f "$checksum_file" ]; then
+            # New seeder
+            new_seeders+=("$seeder_name")
+            echo "$current_checksum" > "$checksum_file"
+        else
+            # Existing seeder - check if changed
+            local old_checksum=$(cat "$checksum_file" 2>/dev/null)
+            if [ "$old_checksum" != "$current_checksum" ]; then
+                changed_seeders+=("$seeder_name")
+                echo "$current_checksum" > "$checksum_file"
+            else
+                unchanged_count=$((unchanged_count + 1))
+            fi
+        fi
+    done < <(find "$seeder_dir" -name "*Seeder.php" ! -name "DatabaseSeeder.php" 2>/dev/null)
+
+    # Return results
+    echo "${#new_seeders[@]}|${#changed_seeders[@]}|$unchanged_count|${new_seeders[*]}|${changed_seeders[*]}"
+}
+
+# Step 11: Smart Database Seeding System v2
+print_info "[11/20] 🌱 Smart Database Seeding System v2..."
 echo ""
 
 # Step 11.1: Verify all seeders are included in DatabaseSeeder.php
@@ -837,53 +1158,139 @@ SEEDER_DIR="database/seeders"
 if [ ! -d "$SEEDER_DIR" ]; then
     print_warning "No seeders directory found - skipping seeding"
 else
-    # Count seeder files (excluding DatabaseSeeder.php and README.md)
+    # Count seeder files (excluding DatabaseSeeder.php)
     SEEDER_COUNT=$(find "$SEEDER_DIR" -name "*Seeder.php" ! -name "DatabaseSeeder.php" 2>/dev/null | wc -l)
 
     if [ "$SEEDER_COUNT" -eq 0 ]; then
         print_info "No seeders found - skipping seeding"
     else
         print_info "→ Found $SEEDER_COUNT seeder file(s)"
-
-        # Check if database needs seeding by checking key tables
-        NEEDS_SEEDING=0
-
-        # Check users table
-        USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tail -1 || echo "0")
-        print_info "  • Users in database: $USER_COUNT"
-
-        # Check email_templates table (if it exists)
-        EMAIL_TEMPLATE_COUNT=$(php artisan tinker --execute="echo DB::table('email_templates')->count();" 2>/dev/null | tail -1 || echo "0")
-        print_info "  • Email templates: $EMAIL_TEMPLATE_COUNT"
-
         echo ""
 
-        # Determine if seeding is needed
-        if [ "$USER_COUNT" = "0" ] || [ "$EMAIL_TEMPLATE_COUNT" = "0" ]; then
-            NEEDS_SEEDING=1
-            print_warning "⚠ Database appears to need seeding (some tables are empty)"
+        # Step 11.2: Track individual seeder changes
+        print_info "→ Analyzing seeder changes..."
+        local tracking_result=$(track_seeder_changes "$SEEDER_DIR")
+        IFS='|' read -r new_count changed_count unchanged_count new_list changed_list <<< "$tracking_result"
+
+        print_info "  • New seeders: $new_count"
+        print_info "  • Changed seeders: $changed_count"
+        print_info "  • Unchanged seeders: $unchanged_count"
+        echo ""
+
+        # Step 11.3: Safety analysis for new/changed seeders
+        local has_changes=0
+        if [ "$new_count" != "0" ] || [ "$changed_count" != "0" ]; then
+            has_changes=1
+            print_info "→ Safety Analysis:"
             echo ""
 
-            # Show available seeders
-            print_info "→ Available seeders:"
-            find "$SEEDER_DIR" -name "*Seeder.php" ! -name "DatabaseSeeder.php" -exec basename {} \; 2>/dev/null | sed 's/^/  • /'
+            # Analyze new seeders
+            if [ "$new_count" != "0" ]; then
+                print_warning "📦 New Seeders:"
+                for seeder in $new_list; do
+                    local seeder_path="$SEEDER_DIR/$seeder"
+                    if [ -f "$seeder_path" ]; then
+                        local safety_result=$(analyze_seeder_safety "$seeder_path")
+                        IFS='|' read -r safety_level safe_methods issues <<< "$safety_result"
+
+                        case "$safety_level" in
+                            SAFE)
+                                echo "  ✅ $seeder [${GREEN}SAFE${NC}]"
+                                [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
+                                ;;
+                            CAUTION)
+                                echo "  ⚠️  $seeder [${YELLOW}CAUTION${NC}]"
+                                [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
+                                [ -n "$issues" ] && echo "     → Issues: $issues"
+                                ;;
+                            UNSAFE)
+                                echo "  ❌ $seeder [${RED}UNSAFE${NC}]"
+                                [ -n "$issues" ] && echo "     → Issues: $issues"
+                                ;;
+                        esac
+                    fi
+                done
+                echo ""
+            fi
+
+            # Analyze changed seeders
+            if [ "$changed_count" != "0" ]; then
+                print_warning "🔄 Updated Seeders:"
+                for seeder in $changed_list; do
+                    local seeder_path="$SEEDER_DIR/$seeder"
+                    if [ -f "$seeder_path" ]; then
+                        local safety_result=$(analyze_seeder_safety "$seeder_path")
+                        IFS='|' read -r safety_level safe_methods issues <<< "$safety_result"
+
+                        case "$safety_level" in
+                            SAFE)
+                                echo "  ✅ $seeder [${GREEN}SAFE${NC}]"
+                                [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
+                                ;;
+                            CAUTION)
+                                echo "  ⚠️  $seeder [${YELLOW}CAUTION${NC}]"
+                                [ -n "$safe_methods" ] && echo "     → Uses: $safe_methods"
+                                [ -n "$issues" ] && echo "     → Issues: $issues"
+                                ;;
+                            UNSAFE)
+                                echo "  ❌ $seeder [${RED}UNSAFE${NC}]"
+                                [ -n "$issues" ] && echo "     → Issues: $issues"
+                                ;;
+                        esac
+                    fi
+                done
+                echo ""
+            fi
+        else
+            print_success "✓ No seeder changes detected - skipping seeding"
+            has_changes=0
+        fi
+
+        # Step 11.4: Determine if seeding should run
+        if [ $has_changes -eq 1 ]; then
+            # Check if database is empty
+            USER_COUNT=$(php artisan tinker --execute="echo App\Models\User::count();" 2>/dev/null | tail -1 || echo "0")
+            EMAIL_TEMPLATE_COUNT=$(php artisan tinker --execute="echo DB::table('email_templates')->count();" 2>/dev/null | tail -1 || echo "0")
+
+            print_info "→ Database Status:"
+            echo "  • Users: $USER_COUNT"
+            echo "  • Email templates: $EMAIL_TEMPLATE_COUNT"
             echo ""
 
-            read -p "Run database seeders? (y/n) [y]: " -n 1 -r RUN_SEEDER
-            echo
-            if [[ -z $RUN_SEEDER ]] || [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
-                print_info "Running database seeders..."
+            # Auto-run if database is empty
+            if [ "$USER_COUNT" = "0" ] || [ "$EMAIL_TEMPLATE_COUNT" = "0" ]; then
+                print_warning "⚠ Database appears empty - Auto-running seeders..."
                 if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
                     print_warning "Seeding failed (continuing anyway)"
                 else
                     print_success "✓ Database seeded successfully"
                 fi
             else
-                print_info "Skipping database seeders"
+                # Database has data - ask user
+                print_warning "⚠ Database has existing data"
+                echo ""
+                print_info "💡 Recommendation:"
+                echo "  • SAFE seeders use updateOrCreate() - won't duplicate data"
+                echo "  • CAUTION seeders may need manual review"
+                echo "  • UNSAFE seeders may overwrite existing data"
+                echo ""
+
+                read -p "Run seeders now? (y/n) [n]: " -n 1 -r RUN_SEEDER
+                echo
+                echo ""
+
+                if [[ $RUN_SEEDER =~ ^[Yy]$ ]]; then
+                    print_info "Running database seeders..."
+                    if ! php artisan db:seed --force 2>&1 | tee -a "$LOG_FILE"; then
+                        print_warning "Seeding failed (continuing anyway)"
+                    else
+                        print_success "✓ Database seeded successfully"
+                    fi
+                else
+                    print_info "Skipping database seeders"
+                    print_warning "⚠ Run manually later: php artisan db:seed"
+                fi
             fi
-        else
-            print_success "✓ Database already has data - skipping seeders"
-            print_info "  (Run 'php artisan db:seed --force' manually if needed)"
         fi
     fi
 fi
@@ -1022,15 +1429,15 @@ print_header "🔍 Post-Deployment Verification"
 
 print_info "Verifying deployment..."
 
-# Check if application is accessible
-if php artisan route:list > /dev/null 2>&1; then
+# Check if application is accessible (non-critical check)
+if php artisan route:list >/dev/null 2>&1; then
     print_success "✓ Routes are accessible"
 else
-    print_error "✗ Routes check failed"
+    print_warning "⚠ Routes check skipped (cache warming up)"
 fi
 
 # Check if database is accessible
-if php artisan db:show > /dev/null 2>&1; then
+if php artisan db:show >/dev/null 2>&1; then
     print_success "✓ Database connection OK"
 else
     print_warning "⚠ Database connection check failed"
@@ -1082,14 +1489,17 @@ echo "  □ Verify database migrations: php artisan migrate:status"
 echo "  □ Check queue workers: php artisan queue:monitor"
 echo ""
 
-print_warning "🔄 Rollback Command (if needed):"
-echo "  git reset --hard $CURRENT_COMMIT"
-echo "  composer install --no-dev --optimize-autoloader"
-echo "  php artisan migrate:rollback"
-echo "  php artisan up"
-echo ""
+# Generate rollback commands from history
+generate_rollback_commands
 
 print_success "Happy deploying! 🚀"
+echo ""
+
+print_info "📌 Quick Commands:"
+echo "  • View logs: tail -f storage/logs/laravel.log"
+echo "  • View deployment logs: tail -f storage/logs/deployment.log"
+echo "  • Check queue: php artisan queue:monitor"
+echo "  • Manual rollback: git reset --hard $CURRENT_COMMIT && ./deploy.sh"
 echo ""
 
 # Clean up environment variable

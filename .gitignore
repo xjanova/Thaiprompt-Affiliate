@@ -48,3 +48,8 @@ storage/app/public/*
 # Google Cloud Credentials
 storage/app/google-credentials.json
 google-credentials.json
+
+# Deployment
+.composer.lock.checksum
+.seeders.checksum
+/backups

@@ -65,6 +65,11 @@ Route::prefix('v1')->group(function () {
     Route::prefix('app')->group(function () {
         Route::get('/maintenance-status', [AppConfigController::class, 'maintenanceStatus']);
         Route::get('/check-update', [AppConfigController::class, 'checkUpdate']);
+
+        // Emergency Alert Banners (public - anyone can view)
+        Route::get('/banners', [\App\Http\Controllers\Admin\AppBannerController::class, 'apiBanners']);
+        Route::post('/banners/{appBanner}/view', [\App\Http\Controllers\Admin\AppBannerController::class, 'trackView']);
+        Route::post('/banners/{appBanner}/click', [\App\Http\Controllers\Admin\AppBannerController::class, 'trackClick']);
     });
 
     // Protected routes
@@ -126,6 +131,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/config', [AppConfigController::class, 'config']);
             Route::get('/settings', [AppConfigController::class, 'settings']);
             Route::get('/theme', [AppConfigController::class, 'theme']);
+            Route::get('/complete-theme', [AppConfigController::class, 'completeTheme']);
+            Route::get('/control-sections', [AppConfigController::class, 'controlSections']);
+            Route::get('/component-settings', [AppConfigController::class, 'componentSettings']);
             Route::get('/features', [AppConfigController::class, 'features']);
             Route::get('/banners', [AppConfigController::class, 'banners']);
             Route::post('/banners/{bannerId}/view', [AppConfigController::class, 'trackBannerView']);
@@ -168,3 +176,55 @@ Route::prefix('v1')->group(function () {
 
 // Public Crypto Wallet API (no auth required)
 Route::post('/crypto/generate-nonce', [CryptoWalletApiController::class, 'generateNonce']);
+
+/*
+|--------------------------------------------------------------------------
+| Bot Automation API Routes
+|--------------------------------------------------------------------------
+*/
+
+Route::prefix('v1/bot-automation')->middleware('auth:sanctum')->name('api.bot-automation.')->group(function () {
+    // Automations
+    Route::apiResource('automations', \App\Http\Controllers\Api\BotAutomationApiController::class);
+    Route::post('automations/{automation}/execute', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'execute'])->name('automations.execute');
+    Route::get('automations/{automation}/statistics', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'statistics'])->name('automations.statistics');
+    
+    // Marketplace
+    Route::get('marketplace', [\App\Http\Controllers\Api\BotAutomationApiController::class, 'marketplace'])->name('marketplace');
+    Route::get('marketplace/{listing}', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'show'])->name('marketplace.show');
+    Route::post('marketplace/{listing}/subscribe', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'subscribe'])->name('marketplace.subscribe');
+    Route::post('marketplace/{listing}/review', [\App\Http\Controllers\Api\BotMarketplaceApiController::class, 'review'])->name('marketplace.review');
+    
+    // Platform Connections
+    Route::get('platforms', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'index'])->name('platforms.index');
+    Route::get('platforms/available', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'available'])->name('platforms.available');
+    Route::post('platforms/connect', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'connect'])->name('platforms.connect');
+    Route::delete('platforms/{connection}', [\App\Http\Controllers\Api\BotPlatformApiController::class, 'disconnect'])->name('platforms.disconnect');
+    
+    // Templates
+    Route::apiResource('templates', \App\Http\Controllers\Api\BotTemplateApiController::class);
+    Route::post('templates/{template}/duplicate', [\App\Http\Controllers\Api\BotTemplateApiController::class, 'duplicate'])->name('templates.duplicate');
+    
+    // Support
+    Route::get('support/conversations', [\App\Http\Controllers\Api\BotSupportApiController::class, 'conversations'])->name('support.conversations');
+    Route::get('support/conversations/{conversation}', [\App\Http\Controllers\Api\BotSupportApiController::class, 'show'])->name('support.show');
+    Route::post('support/conversations/{conversation}/messages', [\App\Http\Controllers\Api\BotSupportApiController::class, 'sendMessage'])->name('support.send');
+    
+    // Sales
+    Route::get('sales/conversations', [\App\Http\Controllers\Api\BotSalesApiController::class, 'conversations'])->name('sales.conversations');
+    Route::get('sales/conversations/{conversation}', [\App\Http\Controllers\Api\BotSalesApiController::class, 'show'])->name('sales.show');
+    Route::post('sales/conversations/{conversation}/recommend', [\App\Http\Controllers\Api\BotSalesApiController::class, 'recommend'])->name('sales.recommend');
+    
+    // Analytics
+    Route::get('analytics/overview', [\App\Http\Controllers\Api\BotAnalyticsApiController::class, 'overview'])->name('analytics.overview');
+    Route::get('analytics/posts', [\App\Http\Controllers\Api\BotAnalyticsApiController::class, 'posts'])->name('analytics.posts');
+    Route::get('analytics/platforms', [\App\Http\Controllers\Api\BotAnalyticsApiController::class, 'platforms'])->name('analytics.platforms');
+});
+
+// Bot Automation Webhooks (no auth)
+Route::prefix('webhook/bot')->name('api.webhook.bot.')->group(function () {
+    Route::post('facebook', [\App\Http\Controllers\Api\BotWebhookController::class, 'facebook'])->name('facebook');
+    Route::post('instagram', [\App\Http\Controllers\Api\BotWebhookController::class, 'instagram'])->name('instagram');
+    Route::post('twitter', [\App\Http\Controllers\Api\BotWebhookController::class, 'twitter'])->name('twitter');
+    Route::post('tiktok', [\App\Http\Controllers\Api\BotWebhookController::class, 'tiktok'])->name('tiktok');
+});

@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -10,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        then: function () {
+            Route::middleware('web')->group(base_path('routes/hotel-admin.php'));
+        },
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
@@ -20,13 +24,17 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SetLocale::class, // Multi-language support
+            \App\Http\Middleware\TrackVendorStoreVisit::class, // Track vendor store visits
+            \App\Http\Middleware\TrackRequestMetrics::class, // Track request/response metrics
             // \App\Http\Middleware\LoadTheme::class, // Theme System v2 - Disabled
         ]);
 
         $middleware->alias([
             'auth' => \Illuminate\Auth\Middleware\Authenticate::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'super_admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
+            'hotel-admin' => \App\Http\Middleware\HotelAdminMiddleware::class,
             'role' => \App\Http\Middleware\CheckRole::class,
             'check.permission' => \App\Http\Middleware\CheckPermission::class,
             'turnstile' => \App\Http\Middleware\VerifyCloudfareTurnstile::class,
@@ -41,6 +49,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // Crypto wallet middleware
             'crypto.wallet.exists' => \App\Http\Middleware\EnsureCryptoWalletExists::class,
             'crypto.wallet.active' => \App\Http\Middleware\CheckCryptoWalletStatus::class,
+            // API Access Control middleware
+            'api.access' => \App\Http\Middleware\ApiAccessControl::class,
         ]);
 
         // Global middleware for IP blocking

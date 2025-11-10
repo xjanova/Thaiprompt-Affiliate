@@ -13,24 +13,27 @@ class AppManagementSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Preserves existing app management settings, adds missing features/banners only.
      */
     public function run(): void
     {
         $this->command->info('🚀 Seeding App Management data...');
 
-        // 1. Seed App Settings
+        // 1. Seed App Settings (singleton)
         $this->seedAppSettings();
 
-        // 2. Seed App Theme Settings
+        // 2. Seed App Theme Settings (singleton)
         $this->seedAppThemeSettings();
 
-        // 3. Seed App Features
+        // 3. Seed App Features (add missing only)
         $this->seedAppFeatures();
 
-        // 4. Seed App Banners
+        // 4. Seed App Banners (add missing only)
         $this->seedAppBanners();
 
-        // 5. Seed App Maintenance
+        // 5. Seed App Maintenance (singleton)
         $this->seedAppMaintenance();
 
         $this->command->info('✅ App Management data seeded successfully!');
@@ -38,11 +41,16 @@ class AppManagementSeeder extends Seeder
 
     private function seedAppSettings()
     {
-        $this->command->info('📱 Seeding App Settings...');
+        // Check if app settings exist
+        if (AppSetting::find(1)) {
+            $this->command->warn('⚠️  App Settings already exist - skipping to preserve customizations');
+            return;
+        }
 
-        AppSetting::updateOrCreate(
-            ['id' => 1],
-            [
+        $this->command->info('📱 Creating App Settings...');
+
+        AppSetting::create([
+            'id' => 1,
                 'app_name' => 'TP Affiliate',
                 'app_short_name' => 'TP',
                 'app_description' => 'ระบบแอฟฟิลิเอทและ MLM ครบวงจร',
@@ -65,19 +73,23 @@ class AppManagementSeeder extends Seeder
                 'currency' => 'THB',
                 'timezone' => 'Asia/Bangkok',
                 'is_active' => true,
-            ]
-        );
+        ]);
 
         $this->command->info('  ✓ App Settings created');
     }
 
     private function seedAppThemeSettings()
     {
-        $this->command->info('🎨 Seeding App Theme Settings...');
+        // Check if theme settings exist
+        if (AppThemeSetting::find(1)) {
+            $this->command->warn('⚠️  App Theme Settings already exist - skipping to preserve customizations');
+            return;
+        }
 
-        AppThemeSetting::updateOrCreate(
-            ['id' => 1],
-            [
+        $this->command->info('🎨 Creating App Theme Settings...');
+
+        AppThemeSetting::create([
+            'id' => 1,
                 'theme_name' => 'default',
                 'logo_url' => '/images/logo.png',
                 'logo_dark_url' => '/images/logo-dark.png',
@@ -148,8 +160,7 @@ class AppManagementSeeder extends Seeder
                 'dark_mode_enabled' => true,
                 'dark_mode_default' => false,
                 'is_active' => true,
-            ]
-        );
+        ]);
 
         $this->command->info('  ✓ App Theme Settings created');
     }
@@ -158,7 +169,25 @@ class AppManagementSeeder extends Seeder
     {
         $this->command->info('⚡ Seeding App Features...');
 
-        $features = [
+        $features = $this->getAllFeatures();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($features as $feature) {
+            if (!AppFeature::where('feature_key', $feature['feature_key'])->exists()) {
+                AppFeature::create($feature);
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        $this->command->info("  ✓ {$added} features added, {$skipped} existing preserved");
+    }
+
+    private function getAllFeatures(): array
+    {
+        return [
             // General Features
             ['feature_key' => 'dark_mode', 'feature_name' => 'Dark Mode', 'category' => 'general', 'is_enabled' => true, 'sort_order' => 1],
             ['feature_key' => 'push_notifications', 'feature_name' => 'Push Notifications', 'category' => 'general', 'is_enabled' => true, 'sort_order' => 2],
@@ -193,22 +222,35 @@ class AppManagementSeeder extends Seeder
             ['feature_key' => 'video_courses', 'feature_name' => 'Video Courses', 'category' => 'learning', 'is_enabled' => true, 'sort_order' => 2],
             ['feature_key' => 'certificates', 'feature_name' => 'Certificates', 'category' => 'learning', 'is_enabled' => true, 'sort_order' => 3],
         ];
-
-        foreach ($features as $feature) {
-            AppFeature::updateOrCreate(
-                ['feature_key' => $feature['feature_key']],
-                $feature
-            );
-        }
-
-        $this->command->info('  ✓ ' . count($features) . ' App Features created');
     }
 
     private function seedAppBanners()
     {
         $this->command->info('🎯 Seeding App Banners...');
 
-        $banners = [
+        $banners = $this->getAllBanners();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($banners as $banner) {
+            $exists = AppBanner::where('title', $banner['title'])
+                ->where('position', $banner['position'])
+                ->exists();
+
+            if (!$exists) {
+                AppBanner::create($banner);
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        $this->command->info("  ✓ {$added} banners added, {$skipped} existing preserved");
+    }
+
+    private function getAllBanners(): array
+    {
+        return [
             [
                 'title' => 'ยินดีต้อนรับสู่ TP Affiliate',
                 'title_en' => 'Welcome to TP Affiliate',
@@ -232,36 +274,34 @@ class AppManagementSeeder extends Seeder
                 'sort_order' => 2,
             ],
         ];
-
-        foreach ($banners as $banner) {
-            AppBanner::create($banner);
-        }
-
-        $this->command->info('  ✓ ' . count($banners) . ' App Banners created');
     }
 
     private function seedAppMaintenance()
     {
-        $this->command->info('🔧 Seeding App Maintenance...');
+        // Check if maintenance settings exist
+        if (AppMaintenance::find(1)) {
+            $this->command->warn('⚠️  App Maintenance already exists - skipping to preserve customizations');
+            return;
+        }
 
-        AppMaintenance::updateOrCreate(
-            ['id' => 1],
-            [
-                'is_maintenance_mode' => false,
-                'title' => 'ระบบกำลังปรับปรุง',
-                'title_en' => 'Under Maintenance',
-                'message' => 'ขออภัยในความไม่สะดวก ขณะนี้ระบบกำลังอยู่ระหว่างการปรับปรุงเพื่อพัฒนาประสิทธิภาพให้ดียิ่งขึ้น กรุณากลับมาใช้งานอีกครั้งในภายหลัง',
-                'message_en' => 'Sorry for the inconvenience. The system is currently under maintenance to improve performance. Please come back later.',
-                'image_url' => null,
-                'scheduled_start' => null,
-                'scheduled_end' => null,
-                'show_countdown' => true,
-                'allow_admin_access' => true,
-                'allowed_user_ids' => null,
-                'bypass_key' => null,
-                'platform' => 'all',
-            ]
-        );
+        $this->command->info('🔧 Creating App Maintenance settings...');
+
+        AppMaintenance::create([
+            'id' => 1,
+            'is_maintenance_mode' => false,
+            'title' => 'ระบบกำลังปรับปรุง',
+            'title_en' => 'Under Maintenance',
+            'message' => 'ขออภัยในความไม่สะดวก ขณะนี้ระบบกำลังอยู่ระหว่างการปรับปรุงเพื่อพัฒนาประสิทธิภาพให้ดียิ่งขึ้น กรุณากลับมาใช้งานอีกครั้งในภายหลัง',
+            'message_en' => 'Sorry for the inconvenience. The system is currently under maintenance to improve performance. Please come back later.',
+            'image_url' => null,
+            'scheduled_start' => null,
+            'scheduled_end' => null,
+            'show_countdown' => true,
+            'allow_admin_access' => true,
+            'allowed_user_ids' => null,
+            'bypass_key' => null,
+            'platform' => 'all',
+        ]);
 
         $this->command->info('  ✓ App Maintenance settings created');
     }

@@ -14,7 +14,7 @@ return new class extends Migration
     {
         Schema::table('mlm_global_settings', function (Blueprint $table) {
             // Prospect Lock Settings
-            $table->integer('prospect_lock_duration_hours')->default(24)->after('binary_matching_percentage'); // อายุล็อก (ชั่วโมง) - default 1 วัน
+            $table->integer('prospect_lock_duration_hours')->default(24)->after('unit'); // อายุล็อก (ชั่วโมง) - default 1 วัน
             $table->boolean('enable_prospect_lock')->default(true)->after('prospect_lock_duration_hours'); // เปิด/ปิดระบบล็อก
 
             // Auto Add Friend Settings

@@ -9,10 +9,75 @@ class InvestmentPlanSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing investment plans only, preserves existing configurations.
+     * User customizations (ROI rates, terms, features, prices) are preserved.
      */
     public function run(): void
     {
-        $plans = [
+        $existingPlansCount = InvestmentPlan::count();
+
+        if ($existingPlansCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all investment plans
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all investment plans...');
+
+        $plans = $this->getAllPlans();
+
+        foreach ($plans as $plan) {
+            InvestmentPlan::create($plan);
+        }
+
+        $this->command->info('✅ Investment plans seeded successfully: ' . count($plans) . ' plans');
+    }
+
+    /**
+     * Update mode - add only missing investment plans
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing investment plans detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing plans only)...');
+
+        $plans = $this->getAllPlans();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($plans as $plan) {
+            if (!InvestmentPlan::where('name', $plan['name'])->exists()) {
+                InvestmentPlan::create($plan);
+                $this->command->info("   ➕ Added: {$plan['name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new investment plans.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing plans (preserved).");
+        }
+    }
+
+    /**
+     * Get all default investment plans
+     */
+    private function getAllPlans(): array
+    {
+        return [
             [
                 'name' => 'Bronze Plan',
                 'name_th' => 'แผนบรอนซ์',
@@ -177,11 +242,5 @@ class InvestmentPlanSeeder extends Seeder
                 'icon' => 'calendar-week',
             ],
         ];
-
-        foreach ($plans as $plan) {
-            InvestmentPlan::create($plan);
-        }
-
-        $this->command->info('Investment plans seeded successfully!');
     }
 }

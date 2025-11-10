@@ -18,17 +18,42 @@ class AppBanner extends Model
         'image_url',
         'image_url_dark',
         'type',
+        'display_type',
+        'display_position',
+        'icon',
+        'size',
+        'background_color',
+        'text_color',
+        'border_color',
         'position',
         'action_type',
         'action_value',
+        'button_text',
+        'button_text_en',
+        'button_color',
+        'secondary_button_text',
+        'secondary_button_text_en',
+        'secondary_button_action',
         'sort_order',
+        'priority',
         'is_active',
         'is_dismissible',
+        'show_once',
+        'require_action',
+        'fullscreen',
         'start_date',
         'end_date',
         'target_audience',
         'target_user_ids',
         'platform',
+        'scroll_speed',
+        'scroll_direction',
+        'auto_dismiss_seconds',
+        'sound_enabled',
+        'sound_type',
+        'sound_url',
+        'animation_style',
+        'animation_duration',
         'view_count',
         'click_count',
     ];
@@ -36,9 +61,17 @@ class AppBanner extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'is_dismissible' => 'boolean',
+        'show_once' => 'boolean',
+        'require_action' => 'boolean',
+        'fullscreen' => 'boolean',
+        'sound_enabled' => 'boolean',
         'sort_order' => 'integer',
+        'priority' => 'integer',
         'view_count' => 'integer',
         'click_count' => 'integer',
+        'scroll_speed' => 'integer',
+        'auto_dismiss_seconds' => 'integer',
+        'animation_duration' => 'integer',
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'target_user_ids' => 'array',
@@ -127,5 +160,112 @@ class AppBanner extends Model
     public function incrementClicks()
     {
         $this->increment('click_count');
+    }
+
+    /**
+     * Check if banner should display as popup
+     */
+    public function shouldShowPopup()
+    {
+        return in_array($this->display_type, ['popup', 'popup_and_banner', 'popup_and_marquee', 'all']);
+    }
+
+    /**
+     * Check if banner should display as banner
+     */
+    public function shouldShowBanner()
+    {
+        return in_array($this->display_type, ['banner', 'popup_and_banner', 'banner_and_marquee', 'all']);
+    }
+
+    /**
+     * Check if banner should display as marquee
+     */
+    public function shouldShowMarquee()
+    {
+        return in_array($this->display_type, ['marquee', 'popup_and_marquee', 'banner_and_marquee', 'all']);
+    }
+
+    /**
+     * Get banner styles as CSS
+     */
+    public function getStylesAttribute()
+    {
+        $styles = [];
+
+        if ($this->background_color) {
+            $styles[] = "background-color: {$this->background_color}";
+        }
+
+        if ($this->text_color) {
+            $styles[] = "color: {$this->text_color}";
+        }
+
+        if ($this->border_color) {
+            $styles[] = "border-color: {$this->border_color}";
+        }
+
+        return implode('; ', $styles);
+    }
+
+    /**
+     * Get size class for Tailwind
+     */
+    public function getSizeClass()
+    {
+        return match($this->size) {
+            'small' => 'text-sm py-2 px-4',
+            'medium' => 'text-base py-3 px-6',
+            'large' => 'text-lg py-4 px-8',
+            'full' => 'text-xl py-6 px-10 min-h-screen',
+            default => 'text-base py-3 px-6',
+        };
+    }
+
+    /**
+     * Get display position class
+     */
+    public function getPositionClass()
+    {
+        return match($this->display_position) {
+            'top' => 'top-0 left-0 right-0',
+            'bottom' => 'bottom-0 left-0 right-0',
+            'top-right' => 'top-4 right-4',
+            'top-left' => 'top-4 left-4',
+            'bottom-right' => 'bottom-4 right-4',
+            'bottom-left' => 'bottom-4 left-4',
+            'center' => 'top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2',
+            default => 'top-0 left-0 right-0',
+        };
+    }
+
+    /**
+     * Get type color class
+     */
+    public function getTypeColorClass()
+    {
+        return match($this->type) {
+            'info' => 'bg-blue-500 text-white border-blue-600',
+            'warning' => 'bg-yellow-500 text-gray-900 border-yellow-600',
+            'success' => 'bg-green-500 text-white border-green-600',
+            'promotion' => 'bg-purple-500 text-white border-purple-600',
+            'announcement' => 'bg-indigo-500 text-white border-indigo-600',
+            default => 'bg-gray-500 text-white border-gray-600',
+        };
+    }
+
+    /**
+     * Get animation class
+     */
+    public function getAnimationClass()
+    {
+        return match($this->animation_style) {
+            'fade' => 'animate-fade-in',
+            'slide' => 'animate-slide-in',
+            'bounce' => 'animate-bounce-in',
+            'zoom' => 'animate-zoom-in',
+            'shake' => 'animate-shake',
+            default => 'animate-fade-in',
+        };
     }
 }

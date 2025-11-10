@@ -12,6 +12,10 @@ class ProductSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing demo products only, preserves existing product customizations.
+     * Only creates products if categories exist and admin user exists.
      */
     public function run(): void
     {
@@ -19,19 +23,155 @@ class ProductSeeder extends Seeder
         $seller = User::where('role', 'admin')->first() ?? User::first();
 
         if (!$seller) {
-            $this->command->error('No users found. Please seed users first.');
+            $this->command->error('❌ No users found. Please seed users first.');
             return;
         }
 
         $categories = ProductCategory::all();
 
         if ($categories->isEmpty()) {
-            $this->command->error('No categories found. Please seed categories first.');
+            $this->command->error('❌ No categories found. Please seed categories first.');
             return;
         }
 
-        // Products data organized by category name
-        $productsData = [
+        $existingProductsCount = Product::count();
+
+        if ($existingProductsCount > 0) {
+            $this->updateMode($seller, $categories);
+        } else {
+            $this->freshInstallMode($seller, $categories);
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all demo products
+     */
+    private function freshInstallMode($seller, $categories): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all demo products...');
+
+        $productsData = $this->getAllProductsData();
+        $totalProducts = 0;
+
+        foreach ($categories as $category) {
+            if (isset($productsData[$category->name])) {
+                foreach ($productsData[$category->name] as $productData) {
+                    $this->createProduct($seller, $category, $productData);
+                    $totalProducts++;
+                }
+            }
+        }
+
+        $this->command->info("✅ Demo products seeded successfully: {$totalProducts} products across {$categories->count()} categories");
+    }
+
+    /**
+     * Update mode - add only missing products
+     */
+    private function updateMode($seller, $categories): void
+    {
+        $this->command->warn('⚠️  Existing products detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing demo products only)...');
+
+        $productsData = $this->getAllProductsData();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($categories as $category) {
+            if (isset($productsData[$category->name])) {
+                foreach ($productsData[$category->name] as $productData) {
+                    // Check if product exists
+                    $exists = Product::where('name', $productData['name'])
+                        ->where('category_id', $category->id)
+                        ->exists();
+
+                    if (!$exists) {
+                        $this->createProduct($seller, $category, $productData);
+                        $added++;
+                    } else {
+                        $skipped++;
+                    }
+                }
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new demo products.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing products (preserved).");
+        }
+    }
+
+    /**
+     * Create a new product
+     */
+    private function createProduct($seller, $category, $productData): void
+    {
+        Product::create([
+            'seller_id' => $seller->id,
+            'category_id' => $category->id,
+            'store_id' => null,  // Admin products belong to the main platform store
+            'name' => $productData['name'],
+            'slug' => Str::slug($productData['name']) . '-' . strtolower(Str::random(4)),
+            'sku' => 'PRD-' . strtoupper(Str::random(8)),
+            'description' => $this->generateDescription($productData['name'], $category->name),
+            'short_description' => $this->generateShortDescription($productData['name']),
+            'price' => $productData['price'],
+            'compare_at_price' => $productData['compare_at_price'],
+            'cost_price' => $productData['price'] * 0.6,
+            'commission_rate' => rand(10, 30),
+            'brand' => $productData['brand'] ?? null,
+            'stock_quantity' => rand(10, 100),
+            'track_inventory' => true,
+            'low_stock_threshold' => 5,
+            'stock_status' => 'in_stock',
+            'is_active' => true,
+            'is_featured' => $productData['featured'],
+            'published_at' => now(),
+            'weight' => rand(100, 5000) / 100,
+            'dimensions' => rand(10, 50) . 'x' . rand(10, 50) . 'x' . rand(10, 50),
+            'rating_average' => rand(35, 50) / 10,
+            'rating_count' => rand(5, 200),
+            'sales_count' => rand(10, 500),
+            'view_count' => rand(50, 1000),
+            'meta_title' => $productData['name'],
+            'meta_description' => $this->generateShortDescription($productData['name']),
+            'tags' => json_encode([$category->name, $productData['brand'] ?? 'ทั่วไป']),
+        ]);
+    }
+
+    /**
+     * Generate product description
+     */
+    private function generateDescription(string $name, string $category): string
+    {
+        return "🌟 {$name}\n\n" .
+               "✅ สินค้าคุณภาพพรีเมี่ยมจากหมวดหมู่{$category}\n" .
+               "✅ ผลิตจากวัสดุคุณภาพดี ทนทาน\n" .
+               "✅ การันตีความพึงพอใจ\n" .
+               "✅ จัดส่งรวดเร็วทั่วประเทศ\n" .
+               "✅ มีบริการหลังการขายที่เป็นเลิศ\n\n" .
+               "🎁 โปรโมชั่นพิเศษ! สั่งซื้อวันนี้รับส่วนลดทันที\n" .
+               "📦 ส่งฟรีเมื่อซื้อครบ 500 บาท\n" .
+               "🔄 สามารถเปลี่ยนหรือคืนสินค้าได้ภายใน 7 วัน";
+    }
+
+    /**
+     * Generate short description
+     */
+    private function generateShortDescription(string $name): string
+    {
+        return "{$name} คุณภาพพรีเมี่ยม ราคาพิเศษ จัดส่งฟรีทั่วประเทศ มีบริการหลังการขายที่เป็นเลิศ";
+    }
+
+    /**
+     * Get all demo products data organized by category
+     */
+    private function getAllProductsData(): array
+    {
+        return [
             'อิเล็กทรอนิกส์' => [
                 ['name' => 'โน้ตบุ๊ค Gaming ROG Strix G15', 'price' => 45990, 'compare_at_price' => 52990, 'brand' => 'ASUS', 'featured' => true],
                 ['name' => 'แท็บเล็ต iPad Air M2', 'price' => 21900, 'compare_at_price' => 24900, 'brand' => 'Apple', 'featured' => true],
@@ -138,92 +278,5 @@ class ProductSeeder extends Seeder
                 ['name' => 'สายนาฬิกาหนังแท้', 'price' => 890, 'compare_at_price' => 1290, 'brand' => 'Hirsch', 'featured' => false],
             ],
         ];
-
-        $totalProducts = 0;
-
-        foreach ($categories as $category) {
-            if (isset($productsData[$category->name])) {
-                foreach ($productsData[$category->name] as $productData) {
-                    // Check if product exists to keep existing SKU and slug
-                    $existingProduct = Product::where('name', $productData['name'])
-                        ->where('category_id', $category->id)
-                        ->first();
-
-                    // Keep existing SKU and slug if product exists, otherwise let model auto-generate
-                    $productAttributes = [
-                        'seller_id' => $seller->id,
-                        'store_id' => null,  // Admin products belong to the main platform store (null = admin store)
-                        'description' => $this->generateDescription($productData['name'], $category->name),
-                        'short_description' => $this->generateShortDescription($productData['name']),
-                        'price' => $productData['price'],
-                        'compare_at_price' => $productData['compare_at_price'],
-                        'cost_price' => $productData['price'] * 0.6,
-                        'commission_rate' => rand(10, 30),
-                        'brand' => $productData['brand'] ?? null,
-                        'stock_quantity' => rand(10, 100),
-                        'track_inventory' => true,
-                        'low_stock_threshold' => 5,
-                        'stock_status' => 'in_stock',
-                        'is_active' => true,
-                        'is_featured' => $productData['featured'],
-                        'published_at' => now(),  // Publish immediately for admin products
-                        'weight' => rand(100, 5000) / 100,
-                        'dimensions' => rand(10, 50) . 'x' . rand(10, 50) . 'x' . rand(10, 50),
-                        'rating_average' => rand(35, 50) / 10,
-                        'rating_count' => rand(5, 200),
-                        'sales_count' => rand(10, 500),
-                        'view_count' => rand(50, 1000),
-                        'meta_title' => $productData['name'],
-                        'meta_description' => $this->generateShortDescription($productData['name']),
-                        'tags' => json_encode([$category->name, $productData['brand'] ?? 'ทั่วไป']),
-                    ];
-
-                    // Keep existing slug and sku if updating
-                    if ($existingProduct) {
-                        $productAttributes['slug'] = $existingProduct->slug;
-                        $productAttributes['sku'] = $existingProduct->sku;
-                    } else {
-                        // For new products, create unique slug and SKU
-                        $productAttributes['slug'] = Str::slug($productData['name']) . '-' . strtolower(Str::random(4));
-                        $productAttributes['sku'] = 'PRD-' . strtoupper(Str::random(8));
-                    }
-
-                    Product::updateOrCreate(
-                        [
-                            'name' => $productData['name'],
-                            'category_id' => $category->id,
-                        ],
-                        $productAttributes
-                    );
-                    $totalProducts++;
-                }
-            }
-        }
-
-        $this->command->info('✓ Created ' . $totalProducts . ' products across ' . $categories->count() . ' categories!');
-    }
-
-    /**
-     * Generate product description
-     */
-    private function generateDescription(string $name, string $category): string
-    {
-        return "🌟 {$name}\n\n" .
-               "✅ สินค้าคุณภาพพรีเมี่ยมจากหมวดหมู่{$category}\n" .
-               "✅ ผลิตจากวัสดุคุณภาพดี ทนทาน\n" .
-               "✅ การันตีความพึงพอใจ\n" .
-               "✅ จัดส่งรวดเร็วทั่วประเทศ\n" .
-               "✅ มีบริการหลังการขายที่เป็นเลิศ\n\n" .
-               "🎁 โปรโมชั่นพิเศษ! สั่งซื้อวันนี้รับส่วนลดทันที\n" .
-               "📦 ส่งฟรีเมื่อซื้อครบ 500 บาท\n" .
-               "🔄 สามารถเปลี่ยนหรือคืนสินค้าได้ภายใน 7 วัน";
-    }
-
-    /**
-     * Generate short description
-     */
-    private function generateShortDescription(string $name): string
-    {
-        return "{$name} คุณภาพพรีเมี่ยม ราคาพิเศษ จัดส่งฟรีทั่วประเทศ มีบริการหลังการขายที่เป็นเลิศ";
     }
 }

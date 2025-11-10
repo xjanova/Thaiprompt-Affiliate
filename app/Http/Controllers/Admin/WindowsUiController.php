@@ -36,9 +36,20 @@ class WindowsUiController extends Controller
             'windows_taskbar_blur' => ['nullable', 'boolean'],
             'windows_taskbar_transparency' => ['nullable', 'integer', 'min:0', 'max:100'],
 
+            // Taskbar Color Settings
+            'windows_taskbar_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_text_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_hover_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_active_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_border_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_use_gradient' => ['nullable', 'boolean'],
+            'windows_taskbar_gradient_from' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'windows_taskbar_gradient_to' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+
             // Start Button Settings
             'windows_start_button_text' => ['nullable', 'string', 'max:50'],
             'windows_start_button_use_logo' => ['nullable', 'boolean'],
+            'windows_start_button_position' => ['nullable', 'string', 'in:left,center,right'],
 
             // Millennium Taskbar Settings
             'millennium_back_button_enabled' => ['nullable', 'boolean'],
@@ -47,6 +58,24 @@ class WindowsUiController extends Controller
             'millennium_center_section_text' => ['nullable', 'string', 'max:100'],
             'millennium_rgb_enabled' => ['nullable', 'boolean'],
             'millennium_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:10'],
+
+            // Millennium Start Menu Settings (ขนาดและตำแหน่ง - RGB settings อยู่ใน updateMenuSettings)
+            'millennium_menu_position' => ['nullable', 'string', 'in:left,center,right'],
+            'millennium_menu_width' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'millennium_menu_width_unit' => ['nullable', 'string', 'in:px,%'],
+            'millennium_menu_max_height' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
+
+            // Responsive Taskbar Settings
+            'millennium_taskbar_collapse_enabled' => ['nullable', 'boolean'],
+            'millennium_taskbar_collapse_breakpoint' => ['nullable', 'integer', 'min:320', 'max:1920'],
+
+            // Clock Settings
+            'millennium_clock_style' => ['nullable', 'string', 'in:digital,minimal,full,hidden'],
+            'millennium_clock_format' => ['nullable', 'string', 'in:12h,24h'],
+            'millennium_clock_show_seconds' => ['nullable', 'boolean'],
+            'millennium_clock_show_date' => ['nullable', 'boolean'],
+            'millennium_clock_date_format' => ['nullable', 'string', 'in:short,long'],
 
             // RGB Settings
             'windows_rgb_enabled' => ['nullable', 'boolean'],
@@ -64,18 +93,39 @@ class WindowsUiController extends Controller
             // System Tray Info
             'windows_license_text' => ['nullable', 'string', 'max:100'],
             'windows_copyright_text' => ['nullable', 'string', 'max:200'],
+
+            // Content Width Settings
+            'content_width_mode' => ['nullable', 'string', 'in:max,container,custom'],
+            'content_width_custom' => ['nullable', 'integer', 'min:800', 'max:3000'],
+
+            // Back to Top Button Settings
+            'millennium_back_to_top_enabled' => ['nullable', 'boolean'],
+            'millennium_back_to_top_threshold' => ['nullable', 'integer', 'min:0', 'max:100'],
+            'millennium_back_to_top_animation' => ['nullable', 'string', 'in:fade,slide,bounce,scale,zoom'],
+            'millennium_back_to_top_position' => ['nullable', 'string', 'in:bottom-right,bottom-left,bottom-center'],
+
+            // Start Button Display Settings
+            'millennium_start_button_show_icon' => ['nullable', 'boolean'],
+            'millennium_start_button_show_text' => ['nullable', 'boolean'],
         ]);
 
         // Handle checkboxes
         $validated['windows_taskbar_blur'] = $request->has('windows_taskbar_blur');
+        $validated['windows_taskbar_use_gradient'] = $request->has('windows_taskbar_use_gradient');
         $validated['windows_start_button_use_logo'] = $request->has('windows_start_button_use_logo');
         $validated['millennium_back_button_enabled'] = $request->has('millennium_back_button_enabled');
         $validated['millennium_center_section_enabled'] = $request->has('millennium_center_section_enabled');
         $validated['millennium_rgb_enabled'] = $request->has('millennium_rgb_enabled');
+        $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
+        $validated['millennium_clock_show_seconds'] = $request->has('millennium_clock_show_seconds');
+        $validated['millennium_clock_show_date'] = $request->has('millennium_clock_show_date');
         $validated['windows_rgb_enabled'] = $request->has('windows_rgb_enabled');
         $validated['windows_rgb_glow'] = $request->has('windows_rgb_glow');
         $validated['windows_spaceship_theme'] = $request->has('windows_spaceship_theme');
         $validated['windows_spaceship_stars'] = $request->has('windows_spaceship_stars');
+        $validated['millennium_back_to_top_enabled'] = $request->has('millennium_back_to_top_enabled');
+        $validated['millennium_start_button_show_icon'] = $request->has('millennium_start_button_show_icon');
+        $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
 
         // Save each setting
         foreach ($validated as $key => $value) {
@@ -85,110 +135,6 @@ class WindowsUiController extends Controller
 
         return redirect()->route('admin.windows-ui.index')
             ->with('success', 'อัพเดตการตั้งค่า Windows UI สำเร็จ');
-    }
-
-    /**
-     * Manage Start Menu items
-     *
-     * @return \Illuminate\View\View
-     */
-    public function startMenu()
-    {
-        $items = WindowsUiSetting::getStartMenuItems();
-
-        return view('admin.windows-ui.start-menu', compact('items'));
-    }
-
-    /**
-     * Update Start Menu items
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function updateStartMenu(Request $request)
-    {
-        $validated = $request->validate([
-            'items' => ['required', 'array'],
-            'items.*.icon' => ['required', 'string', 'max:10'],
-            'items.*.label' => ['required', 'string', 'max:100'],
-            'items.*.url' => ['required', 'string', 'max:500'],
-            'items.*.order' => ['required', 'integer', 'min:0'],
-        ]);
-
-        WindowsUiSetting::set('windows_start_menu_items', $validated['items']);
-
-        return redirect()->route('admin.windows-ui.start-menu')
-            ->with('success', 'อัพเดตเมนู Start สำเร็จ');
-    }
-
-    /**
-     * Manage Taskbar Apps
-     *
-     * @return \Illuminate\View\View
-     */
-    public function taskbarApps()
-    {
-        $apps = WindowsUiSetting::getTaskbarApps();
-
-        return view('admin.windows-ui.taskbar-apps', compact('apps'));
-    }
-
-    /**
-     * Update Taskbar Apps
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function updateTaskbarApps(Request $request)
-    {
-        $validated = $request->validate([
-            'apps' => ['required', 'array'],
-            'apps.*.icon' => ['required', 'string', 'max:10'],
-            'apps.*.label' => ['required', 'string', 'max:100'],
-            'apps.*.url' => ['required', 'string', 'max:500'],
-            'apps.*.order' => ['required', 'integer', 'min:0'],
-        ]);
-
-        WindowsUiSetting::set('windows_taskbar_apps', $validated['apps']);
-
-        return redirect()->route('admin.windows-ui.taskbar-apps')
-            ->with('success', 'อัพเดต Taskbar Apps สำเร็จ');
-    }
-
-    /**
-     * Manage System Tray Icons
-     *
-     * @return \Illuminate\View\View
-     */
-    public function systemTray()
-    {
-        $icons = WindowsUiSetting::getSystemTrayIcons();
-
-        return view('admin.windows-ui.system-tray', compact('icons'));
-    }
-
-    /**
-     * Update System Tray Icons
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function updateSystemTray(Request $request)
-    {
-        $validated = $request->validate([
-            'icons' => ['required', 'array'],
-            'icons.*.icon' => ['required', 'string', 'max:20'],
-            'icons.*.label' => ['required', 'string', 'max:100'],
-            'icons.*.url' => ['required', 'string', 'max:500'],
-            'icons.*.requires_auth' => ['nullable', 'boolean'],
-            'icons.*.requires_guest' => ['nullable', 'boolean'],
-            'icons.*.order' => ['required', 'integer', 'min:0'],
-        ]);
-
-        WindowsUiSetting::set('windows_system_tray_icons', $validated['icons']);
-
-        return redirect()->route('admin.windows-ui.system-tray')
-            ->with('success', 'อัพเดต System Tray สำเร็จ');
     }
 
     /**
@@ -240,14 +186,28 @@ class WindowsUiController extends Controller
         // Boolean types
         if (in_array($key, [
             'windows_taskbar_blur',
+            'windows_taskbar_use_gradient',
             'windows_start_button_use_logo',
             'millennium_back_button_enabled',
             'millennium_center_section_enabled',
             'millennium_rgb_enabled',
+            'millennium_menu_rgb_enabled',
+            'millennium_menu_item_hover_rgb',
+            'millennium_menu_use_gradient',
+            'millennium_menu_show_logo',
+            'millennium_menu_show_app_name',
+            'millennium_menu_show_subtitle',
+            'millennium_taskbar_collapse_enabled',
+            'millennium_clock_show_seconds',
+            'millennium_clock_show_date',
             'windows_rgb_enabled',
             'windows_rgb_glow',
             'windows_spaceship_theme',
             'windows_spaceship_stars',
+            'millennium_back_to_top_enabled',
+            'millennium_start_button_show_icon',
+            'millennium_start_button_show_text',
+            'millennium_start_button_tooltip_enabled',
         ])) {
             return 'boolean';
         }
@@ -257,17 +217,251 @@ class WindowsUiController extends Controller
             'windows_taskbar_height',
             'windows_taskbar_transparency',
             'millennium_rgb_speed',
+            'millennium_taskbar_collapse_breakpoint',
             'windows_rgb_speed',
+            'content_width_custom',
+            'millennium_back_to_top_threshold',
+            'millennium_menu_width',
+            'millennium_menu_max_height',
+            'millennium_menu_rgb_speed',
+            'millennium_menu_rgb_border_width',
+            'millennium_menu_rgb_glow_size',
+            'millennium_menu_logo_size',
+            'millennium_menu_item_spacing',
+            'millennium_menu_padding',
+            'millennium_menu_item_height',
+            'millennium_menu_subitem_height',
+            'millennium_start_button_width',
+            'millennium_start_button_height',
+            'millennium_start_button_border_radius',
+            'millennium_start_button_icon_size',
+            'millennium_start_button_font_size',
+            'millennium_start_button_tooltip_duration',
         ])) {
             return 'integer';
         }
 
         // Color types
-        if (in_array($key, ['windows_accent_color'])) {
+        if (in_array($key, [
+            'windows_accent_color',
+            'windows_taskbar_bg_color',
+            'windows_taskbar_text_color',
+            'windows_taskbar_hover_bg_color',
+            'windows_taskbar_active_bg_color',
+            'windows_taskbar_border_color',
+            'windows_taskbar_gradient_from',
+            'windows_taskbar_gradient_to',
+            'millennium_menu_bg_color',
+            'millennium_menu_text_color',
+            'millennium_menu_border_color',
+            'millennium_menu_gradient_from',
+            'millennium_menu_gradient_to',
+        ])) {
             return 'color';
         }
 
         // Default to string
         return 'string';
+    }
+
+    /**
+     * Update Start Button Settings (from start-menu page)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateStartButtonSettings(Request $request)
+    {
+        $validated = $request->validate([
+            // Start Button Position
+            'windows_start_button_position' => ['nullable', 'string', 'in:left,center,right'],
+
+            // Start Button Dimensions & Style
+            'millennium_start_button_width' => ['nullable', 'integer', 'min:80', 'max:200'],
+            'millennium_start_button_height' => ['nullable', 'integer', 'min:32', 'max:80'],
+            'millennium_start_button_shape' => ['nullable', 'string', 'in:square,rounded,pill,circle'],
+            'millennium_start_button_border_radius' => ['nullable', 'integer', 'min:0', 'max:50'],
+
+            // Start Button Display Options
+            'millennium_start_button_show_icon' => ['nullable', 'boolean'],
+            'millennium_start_button_show_text' => ['nullable', 'boolean'],
+            'millennium_start_button_text' => ['nullable', 'string', 'max:20'],
+            'millennium_start_button_icon_size' => ['nullable', 'integer', 'min:16', 'max:64'],
+            'millennium_start_button_font_size' => ['nullable', 'integer', 'min:12', 'max:32'],
+
+            // Icon Settings
+            'millennium_start_button_icon_type' => ['nullable', 'string', 'in:default,upload,fontawesome,emoji'],
+            'millennium_start_button_custom_icon' => ['nullable', 'image', 'max:2048'], // 2MB max
+            'millennium_start_button_fontawesome_icon' => ['nullable', 'string', 'max:50'],
+            'millennium_start_button_emoji' => ['nullable', 'string', 'max:4'],
+            'millennium_start_button_icon_position' => ['nullable', 'string', 'in:left,right'],
+
+            // Button Style Settings
+            'millennium_start_button_style' => ['nullable', 'string', 'in:gradient,solid,outline,glass,neon,3d'],
+            'millennium_start_button_color_primary' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_start_button_color_secondary' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_start_button_text_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+
+            // Start Button Tooltip Settings
+            'millennium_start_button_tooltip_enabled' => ['nullable', 'boolean'],
+            'millennium_start_button_tooltip_text' => ['nullable', 'string', 'max:100'],
+            'millennium_start_button_tooltip_duration' => ['nullable', 'integer', 'min:3', 'max:30'],
+            'millennium_start_button_tooltip_position' => ['nullable', 'string', 'in:top,bottom,left,right'],
+            'millennium_start_button_tooltip_animation' => ['nullable', 'string', 'in:bounce,pulse,shake,swing,tada,flash'],
+
+            // Responsive Taskbar Settings
+            'millennium_taskbar_collapse_enabled' => ['nullable', 'boolean'],
+            'millennium_taskbar_collapse_breakpoint' => ['nullable', 'integer', 'min:320', 'max:1920'],
+            'millennium_taskbar_collapse_style' => ['nullable', 'string', 'in:dropdown,slide-up,fullscreen'],
+        ]);
+
+        // Handle checkboxes (only the ones in this form)
+        $validated['millennium_start_button_show_icon'] = $request->has('millennium_start_button_show_icon');
+        $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
+        $validated['millennium_start_button_tooltip_enabled'] = $request->has('millennium_start_button_tooltip_enabled');
+        $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
+
+        // Handle file upload for custom icon
+        if ($request->hasFile('millennium_start_button_custom_icon')) {
+            $file = $request->file('millennium_start_button_custom_icon');
+            $filename = 'start_button_icon_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('icons', $filename, 'public');
+
+            // Save the path
+            WindowsUiSetting::set('millennium_start_button_custom_icon_path', 'storage/' . $path, 'string');
+        }
+
+        // Remove the file field from validated data (it's already handled)
+        unset($validated['millennium_start_button_custom_icon']);
+
+        // Save each setting (only save fields that have actual values)
+        foreach ($validated as $key => $value) {
+            // Skip null values to avoid overwriting existing settings
+            if ($value === null) {
+                continue;
+            }
+
+            $type = $this->getSettingType($key, $value);
+            WindowsUiSetting::set($key, $value, $type);
+        }
+
+        return redirect()->route('admin.windows-ui.index')
+            ->with('success', 'อัพเดตการตั้งค่าปุ่ม Start สำเร็จ');
+    }
+
+    /**
+     * Update Menu RGB Settings (from start-menu page)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateMenuRgbSettings(Request $request)
+    {
+        $validated = $request->validate([
+            // Menu RGB Settings
+            'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
+            'millennium_menu_item_hover_rgb' => ['nullable', 'boolean'],
+            'millennium_menu_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'millennium_menu_rgb_border_width' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'millennium_menu_rgb_glow_size' => ['nullable', 'integer', 'min:0', 'max:50'],
+        ]);
+
+        // Handle checkboxes
+        $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
+        $validated['millennium_menu_item_hover_rgb'] = $request->has('millennium_menu_item_hover_rgb');
+
+        // Save each setting (only save fields that have actual values)
+        foreach ($validated as $key => $value) {
+            // Skip null values to avoid overwriting existing settings
+            if ($value === null) {
+                continue;
+            }
+
+            $type = $this->getSettingType($key, $value);
+            WindowsUiSetting::set($key, $value, $type);
+        }
+
+        return redirect()->route('admin.windows-ui.index')
+            ->with('success', 'อัพเดตการตั้งค่า RGB สำเร็จ');
+    }
+
+    /**
+     * Update Menu Size & Position Settings (from start-menu page)
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateMenuSettings(Request $request)
+    {
+        $validated = $request->validate([
+            // Menu Position & Size
+            'millennium_menu_position' => ['nullable', 'string', 'in:left,center,right'],
+            'millennium_menu_width' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'millennium_menu_width_unit' => ['nullable', 'string', 'in:px,%'],
+            'millennium_menu_max_height' => ['nullable', 'integer', 'min:1', 'max:3000'],
+            'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
+
+            // Menu Logo Upload
+            'millennium_menu_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,svg', 'max:2048'],
+
+            // Menu Logo & Text Visibility
+            'millennium_menu_show_logo' => ['nullable', 'boolean'],
+            'millennium_menu_logo_size' => ['nullable', 'integer', 'min:20', 'max:100'],
+            'millennium_menu_show_app_name' => ['nullable', 'boolean'],
+            'millennium_menu_show_subtitle' => ['nullable', 'boolean'],
+
+            // Menu Text Customization
+            'millennium_menu_app_name' => ['nullable', 'string', 'max:50'],
+            'millennium_menu_subtitle' => ['nullable', 'string', 'max:50'],
+
+            // Menu Appearance
+            'millennium_menu_item_spacing' => ['nullable', 'integer', 'min:0', 'max:32'],
+            'millennium_menu_padding' => ['nullable', 'integer', 'min:4', 'max:32'],
+
+            // Menu Item Heights
+            'millennium_menu_item_height' => ['nullable', 'integer', 'min:30', 'max:100'],
+            'millennium_menu_subitem_height' => ['nullable', 'integer', 'min:20', 'max:80'],
+
+            // Menu Color Settings
+            'millennium_menu_use_gradient' => ['nullable', 'boolean'],
+            'millennium_menu_gradient_from' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_gradient_to' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_text_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_border_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+
+            // Menu RGB (can be set from this form too)
+            'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
+        ]);
+
+        // Handle logo upload
+        if ($request->hasFile('millennium_menu_logo')) {
+            $path = $request->file('millennium_menu_logo')->store('windows-ui/menu-logos', 'public');
+            $validated['millennium_menu_logo'] = $path;
+        } else {
+            // Remove millennium_menu_logo from validated if no file uploaded
+            unset($validated['millennium_menu_logo']);
+        }
+
+        // Handle checkboxes - always set them (true if checked, false if not)
+        $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
+        $validated['millennium_menu_show_logo'] = $request->has('millennium_menu_show_logo');
+        $validated['millennium_menu_show_app_name'] = $request->has('millennium_menu_show_app_name');
+        $validated['millennium_menu_show_subtitle'] = $request->has('millennium_menu_show_subtitle');
+        $validated['millennium_menu_use_gradient'] = $request->has('millennium_menu_use_gradient');
+
+        // Save each setting (only save fields that have actual values)
+        foreach ($validated as $key => $value) {
+            // Skip null values to avoid overwriting existing settings (but allow empty strings for text fields)
+            if ($value === null && !in_array($key, ['millennium_menu_app_name', 'millennium_menu_subtitle'])) {
+                continue;
+            }
+
+            $type = $this->getSettingType($key, $value);
+            WindowsUiSetting::set($key, $value, $type);
+        }
+
+        return redirect()->route('admin.windows-ui.index')
+            ->with('success', 'อัพเดตการตั้งค่าเมนู Start สำเร็จ');
     }
 }

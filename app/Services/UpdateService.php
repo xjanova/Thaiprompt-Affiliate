@@ -16,6 +16,10 @@ use ZipArchive;
 
 class UpdateService
 {
+    public function __construct()
+    {
+    }
+
     /**
      * Check for available updates
      */
@@ -42,6 +46,16 @@ class UpdateService
             $availableUpdates = [];
 
             foreach ($releases as $release) {
+                // Skip draft releases (not approved for release yet)
+                if ($release['draft'] ?? false) {
+                    continue;
+                }
+
+                // Skip pre-releases (beta, alpha, etc.) unless explicitly enabled
+                if (($release['prerelease'] ?? false) && !config('version.update.allow_prerelease', false)) {
+                    continue;
+                }
+
                 $version = ltrim($release['tag_name'], 'v');
 
                 // Skip if older than current version
@@ -123,8 +137,12 @@ class UpdateService
                 'is_auto_update' => $isAutoUpdate,
             ]);
 
+            $totalSteps = 6;
+            $currentStep = 0;
+
             // Step 1: Create backup
-            $log->update(['status' => 'backing_up', 'message' => 'Creating backup...']);
+            $currentStep++;
+            $this->updateProgress($log, 'backing_up', 'Creating backup...', $currentStep, $totalSteps);
             $backupPath = $this->createBackup();
             $log->update([
                 'backup_path' => $backupPath,
@@ -133,23 +151,37 @@ class UpdateService
 
             // Step 2: Download update if needed
             if ($systemUpdate->download_url) {
-                $log->update(['status' => 'downloading', 'message' => 'Downloading update...']);
+                $currentStep++;
+                $this->updateProgress($log, 'downloading', 'Downloading update...', $currentStep, $totalSteps);
                 $downloadPath = $this->downloadUpdate($systemUpdate);
                 $systemUpdate->incrementDownloads();
+            } else {
+                $currentStep++;
             }
 
             // Step 3: Run migrations
             if ($systemUpdate->requires_migration) {
-                $log->update(['status' => 'migrating', 'message' => 'Running database migrations...']);
+                $currentStep++;
+                $this->updateProgress($log, 'migrating', 'Running database migrations...', $currentStep, $totalSteps);
                 $migrationResults = $this->runMigrations();
                 $log->update(['migration_results' => $migrationResults]);
+            } else {
+                $currentStep++;
             }
 
-            // Step 4: Update version
-            $log->update(['status' => 'updating', 'message' => 'Updating system files...']);
+            // Step 4: Run seeders
+            $currentStep++;
+            $this->updateProgress($log, 'seeding', 'Running database seeders...', $currentStep, $totalSteps);
+            $this->runSeeders();
+
+            // Step 5: Update version
+            $currentStep++;
+            $this->updateProgress($log, 'updating', 'Updating system files...', $currentStep, $totalSteps);
             $this->updateVersionFile($systemUpdate->version);
 
-            // Step 5: Clear caches
+            // Step 6: Clear caches
+            $currentStep++;
+            $this->updateProgress($log, 'finalizing', 'Clearing caches...', $currentStep, $totalSteps);
             $this->clearCaches();
 
             // Complete
@@ -179,6 +211,44 @@ class UpdateService
                 'success' => false,
                 'error' => $e->getMessage(),
                 'log' => $log ?? null,
+            ];
+        }
+    }
+
+    /**
+     * Update progress
+     */
+    protected function updateProgress($log, $status, $message, $currentStep, $totalSteps)
+    {
+        $percentage = round(($currentStep / $totalSteps) * 100);
+
+        $log->update([
+            'status' => $status,
+            'message' => $message,
+            'progress' => $percentage,
+        ]);
+
+        // Broadcast progress update via events (if needed)
+        // event(new UpdateProgressEvent($log));
+    }
+
+    /**
+     * Run database seeders
+     */
+    protected function runSeeders()
+    {
+        try {
+            Artisan::call('db:seed', ['--force' => true]);
+
+            return [
+                'success' => true,
+                'output' => Artisan::output(),
+            ];
+        } catch (\Exception $e) {
+            Log::warning('Seeder execution skipped or failed: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
             ];
         }
     }

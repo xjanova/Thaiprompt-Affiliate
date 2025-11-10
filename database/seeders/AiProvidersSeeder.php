@@ -10,37 +10,201 @@ class AiProvidersSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing AI providers and models only, preserves existing configurations.
+     * User customizations (pricing, API endpoints, active status) are preserved.
      */
     public function run(): void
     {
-        // OpenAI Provider
-        $openai = AiProvider::updateOrCreate(
-            ['name' => 'openai'],
-            [
-                'display_name' => 'OpenAI',
-                'provider_type' => 'cloud',
-                'api_endpoint' => 'https://api.openai.com/v1',
-                'api_version' => 'v1',
-                'is_active' => true,
-                'is_available' => true,
-                'config' => [
-                    'api_key_required' => true,
-                    'organization_id_supported' => true,
-                    'logo_url' => 'https://cdn.simpleicons.org/openai/412991',
-                ],
-                'pricing' => [
-                    'currency' => 'USD',
-                ],
-            ]
-        );
+        $existingProvidersCount = AiProvider::count();
 
-        // OpenAI Models
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $openai->id,
-                'model_identifier' => 'gpt-4-turbo',
+        if ($existingProvidersCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all providers and models
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all AI providers and models...');
+
+        $this->seedAllProvidersAndModels();
+
+        $providersCount = AiProvider::count();
+        $modelsCount = AiModel::count();
+
+        $this->command->info("✅ AI Providers seeded successfully: {$providersCount} providers, {$modelsCount} models");
+    }
+
+    /**
+     * Update mode - add only missing providers and models
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing AI providers detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing providers/models only)...');
+
+        $providersAdded = 0;
+        $providersSkipped = 0;
+        $modelsAdded = 0;
+        $modelsSkipped = 0;
+
+        // OpenAI
+        $openai = $this->seedProvider('openai', $this->getOpenAiProviderData(), $providersAdded, $providersSkipped);
+        if ($openai) {
+            $this->seedModels($openai, $this->getOpenAiModels(), $modelsAdded, $modelsSkipped);
+        }
+
+        // Anthropic Claude
+        $claude = $this->seedProvider('anthropic', $this->getAnthropicProviderData(), $providersAdded, $providersSkipped);
+        if ($claude) {
+            $this->seedModels($claude, $this->getAnthropicModels(), $modelsAdded, $modelsSkipped);
+        }
+
+        // DeepSeek
+        $deepseek = $this->seedProvider('deepseek', $this->getDeepSeekProviderData(), $providersAdded, $providersSkipped);
+        if ($deepseek) {
+            $this->seedModels($deepseek, $this->getDeepSeekModels(), $modelsAdded, $modelsSkipped);
+        }
+
+        // Google Gemini
+        $gemini = $this->seedProvider('google', $this->getGeminiProviderData(), $providersAdded, $providersSkipped);
+        if ($gemini) {
+            $this->seedModels($gemini, $this->getGeminiModels(), $modelsAdded, $modelsSkipped);
+        }
+
+        // DeepSeek Local
+        $this->seedProvider('deepseek-local', $this->getDeepSeekLocalProviderData(), $providersAdded, $providersSkipped);
+
+        if ($providersAdded > 0) {
+            $this->command->info("✅ Added {$providersAdded} new AI providers.");
+        }
+
+        if ($providersSkipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$providersSkipped} existing providers (preserved).");
+        }
+
+        if ($modelsAdded > 0) {
+            $this->command->info("✅ Added {$modelsAdded} new AI models.");
+        }
+
+        if ($modelsSkipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$modelsSkipped} existing models (preserved).");
+        }
+    }
+
+    /**
+     * Seed all providers and models (fresh install)
+     */
+    private function seedAllProvidersAndModels(): void
+    {
+        // OpenAI
+        $openai = AiProvider::create($this->getOpenAiProviderData());
+        foreach ($this->getOpenAiModels() as $modelData) {
+            AiModel::create($modelData);
+        }
+
+        // Anthropic Claude
+        $claude = AiProvider::create($this->getAnthropicProviderData());
+        foreach ($this->getAnthropicModels() as $modelData) {
+            AiModel::create($modelData);
+        }
+
+        // DeepSeek
+        $deepseek = AiProvider::create($this->getDeepSeekProviderData());
+        foreach ($this->getDeepSeekModels() as $modelData) {
+            AiModel::create($modelData);
+        }
+
+        // Google Gemini
+        $gemini = AiProvider::create($this->getGeminiProviderData());
+        foreach ($this->getGeminiModels() as $modelData) {
+            AiModel::create($modelData);
+        }
+
+        // DeepSeek Local
+        AiProvider::create($this->getDeepSeekLocalProviderData());
+    }
+
+    /**
+     * Seed a provider if it doesn't exist
+     */
+    private function seedProvider(string $name, array $data, int &$added, int &$skipped): ?AiProvider
+    {
+        $provider = AiProvider::where('name', $name)->first();
+
+        if ($provider) {
+            $skipped++;
+            return $provider;
+        }
+
+        $provider = AiProvider::create($data);
+        $this->command->info("   ➕ Added provider: {$data['display_name']}");
+        $added++;
+
+        return $provider;
+    }
+
+    /**
+     * Seed models for a provider
+     */
+    private function seedModels(AiProvider $provider, array $models, int &$added, int &$skipped): void
+    {
+        foreach ($models as $modelData) {
+            $exists = AiModel::where('provider_id', $provider->id)
+                ->where('model_identifier', $modelData['model_identifier'])
+                ->exists();
+
+            if (!$exists) {
+                AiModel::create($modelData);
+                $this->command->info("      ➕ Added model: {$modelData['display_name']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+    }
+
+    /**
+     * OpenAI Provider Data
+     */
+    private function getOpenAiProviderData(): array
+    {
+        return [
+            'name' => 'openai',
+            'display_name' => 'OpenAI',
+            'provider_type' => 'cloud',
+            'api_endpoint' => 'https://api.openai.com/v1',
+            'api_version' => 'v1',
+            'is_active' => true,
+            'is_available' => true,
+            'config' => [
+                'api_key_required' => true,
+                'organization_id_supported' => true,
+                'logo_url' => 'https://cdn.simpleicons.org/openai/412991',
             ],
+            'pricing' => [
+                'currency' => 'USD',
+            ],
+        ];
+    }
+
+    /**
+     * OpenAI Models Data
+     */
+    private function getOpenAiModels(): array
+    {
+        $providerId = AiProvider::where('name', 'openai')->first()->id;
+
+        return [
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'gpt-4-turbo',
                 'display_name' => 'GPT-4 Turbo',
                 'description' => 'Most capable GPT-4 model, optimized for speed and cost',
                 'context_window' => 128000,
@@ -53,15 +217,10 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.01,   // $0.01 per 1K tokens
                     'output' => 0.03,  // $0.03 per 1K tokens
                 ],
-            ]
-        );
-
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $openai->id,
-                'model_identifier' => 'gpt-4',
             ],
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'gpt-4',
                 'display_name' => 'GPT-4',
                 'description' => 'Original GPT-4 model with high capability',
                 'context_window' => 8192,
@@ -74,15 +233,10 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.03,
                     'output' => 0.06,
                 ],
-            ]
-        );
-
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $openai->id,
-                'model_identifier' => 'gpt-3.5-turbo',
             ],
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'gpt-3.5-turbo',
                 'display_name' => 'GPT-3.5 Turbo',
                 'description' => 'Fast and cost-effective model for most tasks',
                 'context_window' => 16385,
@@ -95,37 +249,45 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.0005,
                     'output' => 0.0015,
                 ],
-            ]
-        );
-
-        // Anthropic Claude Provider
-        $claude = AiProvider::updateOrCreate(
-            ['name' => 'anthropic'],
-            [
-                'display_name' => 'Anthropic Claude',
-                'provider_type' => 'cloud',
-                'api_endpoint' => 'https://api.anthropic.com/v1',
-                'api_version' => 'v1',
-                'is_active' => true,
-                'is_available' => true,
-                'config' => [
-                    'api_key_required' => true,
-                    'anthropic_version' => '2023-06-01',
-                    'logo_url' => 'https://cdn.simpleicons.org/anthropic/191919',
-                ],
-                'pricing' => [
-                    'currency' => 'USD',
-                ],
-            ]
-        );
-
-        // Claude Models
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $claude->id,
-                'model_identifier' => 'claude-3-opus-20240229',
             ],
+        ];
+    }
+
+    /**
+     * Anthropic Provider Data
+     */
+    private function getAnthropicProviderData(): array
+    {
+        return [
+            'name' => 'anthropic',
+            'display_name' => 'Anthropic Claude',
+            'provider_type' => 'cloud',
+            'api_endpoint' => 'https://api.anthropic.com/v1',
+            'api_version' => 'v1',
+            'is_active' => true,
+            'is_available' => true,
+            'config' => [
+                'api_key_required' => true,
+                'anthropic_version' => '2023-06-01',
+                'logo_url' => 'https://cdn.simpleicons.org/anthropic/191919',
+            ],
+            'pricing' => [
+                'currency' => 'USD',
+            ],
+        ];
+    }
+
+    /**
+     * Anthropic Models Data
+     */
+    private function getAnthropicModels(): array
+    {
+        $providerId = AiProvider::where('name', 'anthropic')->first()->id;
+
+        return [
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'claude-3-opus-20240229',
                 'display_name' => 'Claude 3 Opus',
                 'description' => 'Most capable Claude model for complex tasks',
                 'context_window' => 200000,
@@ -138,15 +300,10 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.015,
                     'output' => 0.075,
                 ],
-            ]
-        );
-
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $claude->id,
-                'model_identifier' => 'claude-3-sonnet-20240229',
             ],
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'claude-3-sonnet-20240229',
                 'display_name' => 'Claude 3 Sonnet',
                 'description' => 'Balanced performance and speed',
                 'context_window' => 200000,
@@ -159,15 +316,10 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.003,
                     'output' => 0.015,
                 ],
-            ]
-        );
-
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $claude->id,
-                'model_identifier' => 'claude-3-haiku-20240307',
             ],
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'claude-3-haiku-20240307',
                 'display_name' => 'Claude 3 Haiku',
                 'description' => 'Fastest and most compact Claude model',
                 'context_window' => 200000,
@@ -180,37 +332,45 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.00025,
                     'output' => 0.00125,
                 ],
-            ]
-        );
-
-        // DeepSeek Provider
-        $deepseek = AiProvider::updateOrCreate(
-            ['name' => 'deepseek'],
-            [
-                'display_name' => 'DeepSeek',
-                'provider_type' => 'cloud',
-                'api_endpoint' => 'https://api.deepseek.com/v1',
-                'api_version' => 'v1',
-                'is_active' => true,
-                'is_available' => true,
-                'config' => [
-                    'api_key_required' => true,
-                    'supports_self_hosted' => true,
-                    'logo_url' => 'https://avatars.githubusercontent.com/u/165193168',
-                ],
-                'pricing' => [
-                    'currency' => 'USD',
-                ],
-            ]
-        );
-
-        // DeepSeek Models
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $deepseek->id,
-                'model_identifier' => 'deepseek-chat',
             ],
+        ];
+    }
+
+    /**
+     * DeepSeek Provider Data
+     */
+    private function getDeepSeekProviderData(): array
+    {
+        return [
+            'name' => 'deepseek',
+            'display_name' => 'DeepSeek',
+            'provider_type' => 'cloud',
+            'api_endpoint' => 'https://api.deepseek.com/v1',
+            'api_version' => 'v1',
+            'is_active' => true,
+            'is_available' => true,
+            'config' => [
+                'api_key_required' => true,
+                'supports_self_hosted' => true,
+                'logo_url' => 'https://avatars.githubusercontent.com/u/165193168',
+            ],
+            'pricing' => [
+                'currency' => 'USD',
+            ],
+        ];
+    }
+
+    /**
+     * DeepSeek Models Data
+     */
+    private function getDeepSeekModels(): array
+    {
+        $providerId = AiProvider::where('name', 'deepseek')->first()->id;
+
+        return [
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'deepseek-chat',
                 'display_name' => 'DeepSeek Chat',
                 'description' => 'General purpose chat model',
                 'context_window' => 32768,
@@ -223,15 +383,10 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.00014,
                     'output' => 0.00028,
                 ],
-            ]
-        );
-
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $deepseek->id,
-                'model_identifier' => 'deepseek-coder',
             ],
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'deepseek-coder',
                 'display_name' => 'DeepSeek Coder',
                 'description' => 'Specialized model for coding tasks',
                 'context_window' => 32768,
@@ -244,36 +399,44 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.00014,
                     'output' => 0.00028,
                 ],
-            ]
-        );
-
-        // Google Gemini Provider
-        $gemini = AiProvider::updateOrCreate(
-            ['name' => 'google'],
-            [
-                'display_name' => 'Google Gemini',
-                'provider_type' => 'cloud',
-                'api_endpoint' => 'https://generativelanguage.googleapis.com/v1',
-                'api_version' => 'v1',
-                'is_active' => true,
-                'is_available' => true,
-                'config' => [
-                    'api_key_required' => true,
-                    'logo_url' => 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg',
-                ],
-                'pricing' => [
-                    'currency' => 'USD',
-                ],
-            ]
-        );
-
-        // Gemini Models
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $gemini->id,
-                'model_identifier' => 'gemini-pro',
             ],
+        ];
+    }
+
+    /**
+     * Google Gemini Provider Data
+     */
+    private function getGeminiProviderData(): array
+    {
+        return [
+            'name' => 'google',
+            'display_name' => 'Google Gemini',
+            'provider_type' => 'cloud',
+            'api_endpoint' => 'https://generativelanguage.googleapis.com/v1',
+            'api_version' => 'v1',
+            'is_active' => true,
+            'is_available' => true,
+            'config' => [
+                'api_key_required' => true,
+                'logo_url' => 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg',
+            ],
+            'pricing' => [
+                'currency' => 'USD',
+            ],
+        ];
+    }
+
+    /**
+     * Google Gemini Models Data
+     */
+    private function getGeminiModels(): array
+    {
+        $providerId = AiProvider::where('name', 'google')->first()->id;
+
+        return [
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'gemini-pro',
                 'display_name' => 'Gemini Pro',
                 'description' => 'Best performing model for a wide range of tasks',
                 'context_window' => 32768,
@@ -286,15 +449,10 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.00025,
                     'output' => 0.0005,
                 ],
-            ]
-        );
-
-        AiModel::updateOrCreate(
-            [
-                'provider_id' => $gemini->id,
-                'model_identifier' => 'gemini-pro-vision',
             ],
             [
+                'provider_id' => $providerId,
+                'model_identifier' => 'gemini-pro-vision',
                 'display_name' => 'Gemini Pro Vision',
                 'description' => 'Multimodal model with vision capabilities',
                 'context_window' => 16384,
@@ -307,33 +465,34 @@ class AiProvidersSeeder extends Seeder
                     'input' => 0.00025,
                     'output' => 0.0005,
                 ],
-            ]
-        );
+            ],
+        ];
+    }
 
-        // Self-Hosted DeepSeek Provider (for users who install locally)
-        AiProvider::updateOrCreate(
-            ['name' => 'deepseek-local'],
-            [
-                'display_name' => 'DeepSeek (Self-Hosted)',
-                'provider_type' => 'self-hosted',
-                'api_endpoint' => 'http://localhost:8000/v1',
-                'api_version' => 'v1',
-                'is_active' => false,
-                'is_available' => false,
-                'config' => [
-                    'api_key_required' => false,
-                    'installation_required' => true,
-                    'logo_url' => 'https://cdn.simpleicons.org/ollama/000000',
-                ],
-                'pricing' => [
-                    'currency' => 'USD',
-                    'input' => 0,
-                    'output' => 0,
-                    'note' => 'Free - Self-hosted',
-                ],
-            ]
-        );
-
-        $this->command->info('AI Providers and Models seeded successfully!');
+    /**
+     * DeepSeek Local (Self-Hosted) Provider Data
+     */
+    private function getDeepSeekLocalProviderData(): array
+    {
+        return [
+            'name' => 'deepseek-local',
+            'display_name' => 'DeepSeek (Self-Hosted)',
+            'provider_type' => 'self-hosted',
+            'api_endpoint' => 'http://localhost:8000/v1',
+            'api_version' => 'v1',
+            'is_active' => false,
+            'is_available' => false,
+            'config' => [
+                'api_key_required' => false,
+                'installation_required' => true,
+                'logo_url' => 'https://cdn.simpleicons.org/ollama/000000',
+            ],
+            'pricing' => [
+                'currency' => 'USD',
+                'input' => 0,
+                'output' => 0,
+                'note' => 'Free - Self-hosted',
+            ],
+        ];
     }
 }

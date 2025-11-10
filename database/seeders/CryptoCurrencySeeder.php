@@ -9,10 +9,75 @@ class CryptoCurrencySeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * 📌 Smart Seeding Strategy:
+     * Adds missing cryptocurrencies only, preserves existing configurations.
+     * User customizations (fees, prices, RPC endpoints) are preserved.
      */
     public function run(): void
     {
-        $currencies = [
+        $existingCurrenciesCount = CryptoCurrency::count();
+
+        if ($existingCurrenciesCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all cryptocurrencies
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all cryptocurrencies...');
+
+        $currencies = $this->getAllCurrencies();
+
+        foreach ($currencies as $currency) {
+            CryptoCurrency::create($currency);
+        }
+
+        $this->command->info('✅ Cryptocurrencies seeded successfully: ' . count($currencies) . ' currencies');
+    }
+
+    /**
+     * Update mode - add only missing cryptocurrencies
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing cryptocurrencies detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing currencies only)...');
+
+        $currencies = $this->getAllCurrencies();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($currencies as $currency) {
+            if (!CryptoCurrency::where('code', $currency['code'])->exists()) {
+                CryptoCurrency::create($currency);
+                $this->command->info("   ➕ Added: {$currency['name']} ({$currency['code']})");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new cryptocurrencies.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing currencies (preserved).");
+        }
+    }
+
+    /**
+     * Get all default cryptocurrencies
+     */
+    private function getAllCurrencies(): array
+    {
+        return [
             // Bitcoin
             [
                 'code' => 'BTC',
@@ -335,14 +400,5 @@ class CryptoCurrencySeeder extends Seeder
                 'description' => 'USDT on Polygon Network.',
             ],
         ];
-
-        foreach ($currencies as $currency) {
-            CryptoCurrency::updateOrCreate(
-                ['code' => $currency['code']],
-                $currency
-            );
-        }
-
-        $this->command->info('Crypto currencies seeded successfully!');
     }
 }

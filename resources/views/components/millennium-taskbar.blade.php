@@ -10,16 +10,167 @@
     $taskbarHeight = WindowsUiSetting::get('windows_taskbar_height', 60);
     $taskbarPosition = WindowsUiSetting::get('windows_taskbar_position', 'top');
 
-    // Millennium-specific settings
-    $backButtonEnabled = WindowsUiSetting::get('millennium_back_button_enabled', true);
-    $backButtonText = WindowsUiSetting::get('millennium_back_button_text', 'กลับ');
-    $centerSectionEnabled = WindowsUiSetting::get('millennium_center_section_enabled', true);
-    $centerSectionText = WindowsUiSetting::get('millennium_center_section_text', '');
+    // Millennium Taskbar Customization
+    $taskbarOpacity = WindowsUiSetting::get('windows_taskbar_transparency', 95);
+    $taskbarBlur = WindowsUiSetting::get('windows_taskbar_blur', true);
+    $taskbarBlurAmount = WindowsUiSetting::get('millennium_taskbar_blur_amount', 20);
+
+    // Taskbar Color Settings
+    $taskbarBgColor = WindowsUiSetting::get('windows_taskbar_bg_color', '#1e293b');
+    $taskbarTextColor = WindowsUiSetting::get('windows_taskbar_text_color', '#ffffff');
+    $taskbarHoverBgColor = WindowsUiSetting::get('windows_taskbar_hover_bg_color', '#334155');
+    $taskbarActiveBgColor = WindowsUiSetting::get('windows_taskbar_active_bg_color', '#475569');
+    $taskbarBorderColor = WindowsUiSetting::get('windows_taskbar_border_color', '#475569');
+    $taskbarUseGradient = WindowsUiSetting::get('windows_taskbar_use_gradient', false);
+    $taskbarGradientFrom = WindowsUiSetting::get('windows_taskbar_gradient_from', '#1e293b');
+    $taskbarGradientTo = WindowsUiSetting::get('windows_taskbar_gradient_to', '#0f172a');
+
+    // RGB Settings
     $millenniumRgbEnabled = WindowsUiSetting::get('millennium_rgb_enabled', true);
     $millenniumRgbSpeed = WindowsUiSetting::get('millennium_rgb_speed', 5);
+    $millenniumRgbBlur = WindowsUiSetting::get('millennium_rgb_blur', 2);
+    $millenniumRgbGlowSize = WindowsUiSetting::get('millennium_rgb_glow_size', 15);
+    $millenniumRgbColors = WindowsUiSetting::get('millennium_rgb_colors', ['#FF0080', '#00F0FF', '#7F00FF', '#FFD700']);
+
+    // Start Button Settings
+    $startButtonPosition = WindowsUiSetting::get('windows_start_button_position', 'center');
+    $startButtonWidth = WindowsUiSetting::get('millennium_start_button_width', 120);
+    $startButtonHeight = WindowsUiSetting::get('millennium_start_button_height', 48);
+    $startButtonShape = WindowsUiSetting::get('millennium_start_button_shape', 'rounded');
+    $startButtonBorderRadius = WindowsUiSetting::get('millennium_start_button_border_radius', 16);
+    $startButtonShowIcon = WindowsUiSetting::get('millennium_start_button_show_icon', true);
+    $startButtonShowText = WindowsUiSetting::get('millennium_start_button_show_text', true);
+    $startButtonText = WindowsUiSetting::get('millennium_start_button_text', 'เริ่ม');
+    $startButtonIconSize = WindowsUiSetting::get('millennium_start_button_icon_size', 32);
+    $startButtonFontSize = WindowsUiSetting::get('millennium_start_button_font_size', 20);
+
+    // Fallback: Ensure text is always shown with proper values
+    if ($startButtonShowText === false || $startButtonShowText === 0 || $startButtonShowText === '0' || $startButtonShowText === null) {
+        $startButtonShowText = true; // Force enable if not explicitly set
+    }
+    if (empty($startButtonText) || trim($startButtonText) === '') {
+        $startButtonText = 'เริ่ม'; // Force default text
+    }
+    if (empty($startButtonFontSize) || $startButtonFontSize < 12 || !is_numeric($startButtonFontSize)) {
+        $startButtonFontSize = 20; // Force default size
+    }
+
+    // Start Button Tooltip Settings
+    $tooltipEnabled = WindowsUiSetting::get('millennium_start_button_tooltip_enabled', true);
+    $tooltipText = WindowsUiSetting::get('millennium_start_button_tooltip_text', 'คลิกที่นี่เพื่อเริ่มต้น! 🚀');
+    $tooltipDuration = WindowsUiSetting::get('millennium_start_button_tooltip_duration', 8);
+    $tooltipPosition = WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top');
+    $tooltipAnimation = WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce');
+
+    // Responsive Taskbar Settings
+    $taskbarCollapseEnabled = WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true);
+    $taskbarCollapseBreakpoint = WindowsUiSetting::get('millennium_taskbar_collapse_breakpoint', 768);
+    $taskbarCollapseStyle = WindowsUiSetting::get('millennium_taskbar_collapse_style', 'slide-up'); // dropdown, slide-up, fullscreen
+
+    // Back Button Settings
+    $backButtonEnabled = WindowsUiSetting::get('millennium_back_button_enabled', true);
+    $backButtonText = WindowsUiSetting::get('millennium_back_button_text', 'กลับ');
+    $backButtonShowIcon = WindowsUiSetting::get('millennium_back_button_show_icon', true);
+    $backButtonShowText = WindowsUiSetting::get('millennium_back_button_show_text', true);
+
+    // Clock Settings
+    $clockFormat = WindowsUiSetting::get('millennium_clock_format', '24h');
+    $clockShowSeconds = WindowsUiSetting::get('millennium_clock_show_seconds', false);
+    $clockShowDate = WindowsUiSetting::get('millennium_clock_show_date', false);
+    $clockDateFormat = WindowsUiSetting::get('millennium_clock_date_format', 'short');
+    $clockStyle = WindowsUiSetting::get('millennium_clock_style', 'digital');
+
+    // Back to Top Button Settings
+    $backToTopEnabled = WindowsUiSetting::get('millennium_back_to_top_enabled', true);
+    $backToTopThreshold = WindowsUiSetting::get('millennium_back_to_top_threshold', 20);
+    $backToTopAnimation = WindowsUiSetting::get('millennium_back_to_top_animation', 'fade');
+
+    // Taskbar Icons (read from windows_taskbar_apps which is managed in admin panel)
+    $taskbarIcons = WindowsUiSetting::get('windows_taskbar_apps', [
+        ['icon' => '🛒', 'label' => 'รถเข็น', 'url' => '/cart', 'border' => false, 'opacity' => 10, 'order' => 1],
+        ['icon' => '🔮', 'label' => 'ดูดวง', 'url' => '/tarot', 'border' => false, 'opacity' => 10, 'order' => 2],
+        ['icon' => '🤖', 'label' => 'เช่าบอท', 'url' => '/marketplace', 'border' => false, 'opacity' => 10, 'order' => 3],
+        ['icon' => '💰', 'label' => 'กระเป๋าเงิน', 'url' => '/user/wallet', 'border' => false, 'opacity' => 10, 'order' => 4],
+        ['icon' => '📈', 'label' => 'การลงทุน ROI', 'url' => '/user/investments', 'border' => false, 'opacity' => 10, 'order' => 5],
+        ['icon' => '📚', 'label' => 'Platform Wiki', 'url' => '/platform-wiki', 'border' => false, 'opacity' => 10, 'order' => 6],
+    ]);
+    $taskbarIconSize = WindowsUiSetting::get('millennium_taskbar_icon_size', 48);
+    $taskbarIconBorderRadius = WindowsUiSetting::get('millennium_taskbar_icon_border_radius', 12);
+
+    // Sort taskbar icons by order
+    usort($taskbarIcons, fn($a, $b) => ($a['order'] ?? 0) - ($b['order'] ?? 0));
+
+    // Calculate start button border radius based on shape
+    $startButtonRadius = match($startButtonShape) {
+        'square' => 0,
+        'rounded' => $startButtonBorderRadius,
+        'pill' => 9999,
+        'circle' => 9999,
+        default => $startButtonBorderRadius,
+    };
 
     // Get user info
     $user = auth()->user();
+
+    // Define menu items based on type
+    $menuItems = [];
+
+    if ($type === 'admin') {
+        $menuItems = [
+            ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('admin.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
+            ['icon' => '📈', 'label' => 'วิเคราะห์ระบบ', 'url' => route('admin.analytics.index'), 'color' => 'from-cyan-600 to-blue-600'],
+            ['icon' => '👥', 'label' => 'ผู้ใช้งาน', 'url' => route('admin.users.index'), 'color' => 'from-blue-600 to-cyan-600'],
+            ['icon' => '🏨', 'label' => 'จัดการโรงแรม', 'url' => route('admin.hotels.index'), 'color' => 'from-orange-600 to-amber-600'],
+            ['icon' => '👨‍💼', 'label' => 'ผู้เช่าโรงแรม', 'url' => route('admin.hotel-owners.index'), 'color' => 'from-amber-600 to-yellow-600'],
+            ['icon' => '🛒', 'label' => 'อีคอมเมิร์ซ', 'url' => route('admin.ecommerce.products.index'), 'color' => 'from-green-600 to-emerald-600'],
+            ['icon' => '🏪', 'label' => 'ระบบ POS', 'url' => route('admin.pos.dashboard'), 'color' => 'from-teal-600 to-cyan-600'],
+            ['icon' => '💰', 'label' => 'กระเป๋าเงิน', 'url' => route('admin.wallet.index'), 'color' => 'from-yellow-600 to-orange-600'],
+            ['icon' => '📧', 'label' => 'จัดการอีเมล', 'url' => route('admin.email.templates.index'), 'color' => 'from-blue-600 to-indigo-600'],
+            ['icon' => '📱', 'label' => 'LINE OA & AI', 'url' => route('admin.line-oa.index'), 'color' => 'from-green-500 to-emerald-500'],
+            ['icon' => '🎓', 'label' => 'Academy System', 'url' => route('admin.academy.courses.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '📊', 'label' => 'ระบบการตลาด', 'url' => route('admin.affiliates.index'), 'color' => 'from-pink-600 to-rose-600'],
+            ['icon' => '🔄', 'label' => 'อัพเดทระบบ', 'url' => route('admin.updates.index'), 'color' => 'from-blue-600 to-cyan-600'],
+            ['icon' => '⚙️', 'label' => 'ตั้งค่าระบบ', 'url' => route('admin.settings.index'), 'color' => 'from-gray-600 to-slate-600'],
+        ];
+
+        // Add Developer Release Manager (only visible to whitelisted IPs)
+        if (\App\Http\Middleware\DevMode::isDevMode()) {
+            $menuItems[] = ['icon' => '🛠️', 'label' => 'Dev Release Manager', 'url' => route('admin.dev.releases.index'), 'color' => 'from-red-600 to-orange-600', 'highlight' => true];
+        }
+    } elseif ($type === 'seller') {
+        $menuItems = [
+            ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('seller.dashboard'), 'color' => 'from-cyan-600 to-blue-600'],
+            ['icon' => '📦', 'label' => 'สินค้า', 'url' => route('seller.products.index'), 'color' => 'from-blue-600 to-indigo-600'],
+            ['icon' => '🏪', 'label' => 'ระบบ POS', 'url' => route('seller.pos.terminal'), 'color' => 'from-green-500 to-emerald-600'],
+            ['icon' => '🛒', 'label' => 'ยอดขาย', 'url' => route('seller.orders.index'), 'color' => 'from-orange-600 to-amber-600'],
+            ['icon' => '📈', 'label' => 'วิเคราะห์', 'url' => route('seller.analytics.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('seller.profile'), 'color' => 'from-indigo-600 to-purple-600'],
+        ];
+    } else { // user
+        $menuItems = [
+            ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('user.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
+            ['icon' => '💰', 'label' => 'เส้นทางเศรษฐี', 'url' => route('user.wealth-guide'), 'color' => 'from-yellow-600 via-amber-600 to-orange-600', 'highlight' => true],
+            ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('user.profile'), 'color' => 'from-blue-600 to-cyan-600'],
+            ['icon' => '🪪', 'label' => 'ยืนยันตัวตน (KYC)', 'url' => route('user.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '💵', 'label' => 'คอมมิชชั่น', 'url' => route('user.commissions'), 'color' => 'from-green-600 to-emerald-600'],
+            ['icon' => '🏨', 'label' => 'การจองโรงแรม', 'url' => route('hotels.bookings.index'), 'color' => 'from-orange-600 to-amber-600'],
+            ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('user.tickets.index'), 'color' => 'from-blue-600 to-indigo-600'],
+            ['icon' => '💳', 'label' => 'กระเป๋าเงิน THB', 'url' => route('user.wallet.index'), 'color' => 'from-indigo-600 to-purple-600'],
+            ['icon' => '₿', 'label' => 'กระเป๋าคริปโต', 'url' => route('user.crypto-wallet.index'), 'color' => 'from-amber-600 to-orange-600'],
+            ['icon' => '📈', 'label' => 'การลงทุน ROI', 'url' => route('user.investments.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '👥', 'label' => 'ผู้แนะนำ', 'url' => route('user.referrals'), 'color' => 'from-pink-600 to-rose-600'],
+            ['icon' => '🌳', 'label' => 'ผังสายงาน', 'url' => route('user.organization'), 'color' => 'from-green-600 to-emerald-600'],
+            ['icon' => '💖', 'label' => 'รักษายอด', 'url' => route('user.retention.index'), 'color' => 'from-red-600 to-pink-600'],
+            ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
+        ];
+
+        // Add Hotel Owner menu if user is hotel admin
+        if ($user && $user->is_hotel_admin && $user->managed_hotel_id) {
+            array_splice($menuItems, 6, 0, [
+                ['icon' => '🏨', 'label' => 'จัดการโรงแรม', 'url' => route('hotel-admin.dashboard'), 'color' => 'from-orange-600 to-red-600', 'highlight' => true],
+            ]);
+        }
+    }
 @endphp
 
 <!-- Millennium Taskbar + Start Menu Container -->
@@ -28,11 +179,39 @@
         startMenuOpen: false,
         isDark: localStorage.getItem('darkMode') === 'dark' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches),
         currentTime: '',
+        currentDate: '',
+        clockFormat: '{{ $clockFormat }}',
+        showSeconds: {{ $clockShowSeconds ? 'true' : 'false' }},
+        showDate: {{ $clockShowDate ? 'true' : 'false' }},
+        dateFormat: '{{ $clockDateFormat }}',
+        showBackToTop: false,
+        backToTopThreshold: {{ $backToTopThreshold }},
+        showTooltip: false,
+        tooltipEnabled: {{ $tooltipEnabled ? 'true' : 'false' }},
+        tooltipDuration: {{ $tooltipDuration }},
         updateTime() {
             const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
+            let hours = now.getHours();
             const minutes = String(now.getMinutes()).padStart(2, '0');
-            this.currentTime = hours + ':' + minutes;
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            // Format based on clock format
+            if (this.clockFormat === '12h') {
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                this.currentTime = String(hours).padStart(2, '0') + ':' + minutes + (this.showSeconds ? ':' + seconds : '') + ' ' + ampm;
+            } else {
+                this.currentTime = String(hours).padStart(2, '0') + ':' + minutes + (this.showSeconds ? ':' + seconds : '');
+            }
+
+            // Format date if enabled
+            if (this.showDate) {
+                if (this.dateFormat === 'long') {
+                    this.currentDate = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                } else {
+                    this.currentDate = now.toLocaleDateString('th-TH', { year: '2-digit', month: '2-digit', day: '2-digit' });
+                }
+            }
         },
         toggleDarkMode() {
             this.isDark = !this.isDark;
@@ -43,9 +222,49 @@
                 document.documentElement.classList.remove('dark');
             }
         },
+        scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        },
+        handleScroll() {
+            const scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+            this.showBackToTop = scrollPercentage >= this.backToTopThreshold;
+        },
+        initTooltip() {
+            if (!this.tooltipEnabled) return;
+
+            const hasSeenTooltip = localStorage.getItem('millennium_start_button_tooltip_seen');
+
+            if (!hasSeenTooltip) {
+                // Show tooltip after a short delay
+                setTimeout(() => {
+                    this.showTooltip = true;
+
+                    // Auto hide after duration
+                    setTimeout(() => {
+                        this.showTooltip = false;
+                        localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
+                    }, this.tooltipDuration * 1000);
+                }, 1500); // Wait 1.5s before showing
+            }
+        },
+        hideTooltip() {
+            this.showTooltip = false;
+            localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
+        },
         init() {
             this.updateTime();
-            setInterval(() => this.updateTime(), 60000);
+            const interval = this.showSeconds ? 1000 : 60000;
+            setInterval(() => this.updateTime(), interval);
+
+            // Set up scroll listener for Back to Top button
+            window.addEventListener('scroll', () => this.handleScroll());
+            this.handleScroll();
+
+            // Initialize tooltip
+            this.initTooltip();
         }
     }"
     x-init="init()"
@@ -53,7 +272,12 @@
 
     <!-- Millennium Taskbar -->
     <div class="fixed left-0 right-0 z-50 {{ $taskbarPosition === 'top' ? 'top-0' : 'bottom-0' }} millennium-taskbar"
-         style="height: {{ $taskbarHeight }}px;">
+         style="
+            height: {{ $taskbarHeight }}px;
+            --taskbar-text-color: {{ $taskbarTextColor }};
+            --taskbar-hover-bg: {{ $taskbarHoverBgColor }};
+            --taskbar-active-bg: {{ $taskbarActiveBgColor }};
+         ">
 
         <!-- RGB Border Animation -->
         @if($millenniumRgbEnabled)
@@ -61,128 +285,384 @@
         @endif
 
         <!-- Taskbar Background -->
-        <div class="absolute inset-0 bg-gradient-to-r from-gray-900 via-purple-900/40 to-blue-900/40 backdrop-blur-xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/10 shadow-2xl"></div>
+        <div class="absolute inset-0 border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 shadow-2xl rounded-2xl mx-2 my-1"
+             style="
+                opacity: {{ $taskbarOpacity / 100 }};
+                backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px);
+                border-color: {{ $taskbarBorderColor }};
+                @if($taskbarUseGradient)
+                background: linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }});
+                @else
+                background-color: {{ $taskbarBgColor }};
+                @endif
+                box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);
+             "></div>
 
         <!-- Taskbar Content -->
-        <div class="relative h-full max-w-full mx-auto px-3 flex items-center justify-between gap-3">
+        <div class="relative h-full w-full px-3 flex items-center gap-3">
 
-            <!-- Left Section: Start Button + Back Button -->
-            <div class="flex items-center gap-3">
+            <!-- Left Section: Back Button + Quick Icons + Start Button (if position is 'left') -->
+            <div class="flex items-center gap-2 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }}">
 
-                <!-- Start Button -->
-                <button
-                    @click="startMenuOpen = !startMenuOpen"
-                    :class="{'millennium-start-active': startMenuOpen}"
-                    class="millennium-start-button group flex items-center gap-3 px-5 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-pink-500/50">
+                <!-- Start Button (Left Position) -->
+                @if($startButtonPosition === 'left')
+                    <div class="relative">
+                        <button
+                            @click="startMenuOpen = !startMenuOpen; hideTooltip()"
+                            :class="{'millennium-start-active': startMenuOpen}"
+                            class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                            style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
 
-                    @if($logo)
-                        <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="w-9 h-9 object-contain drop-shadow-lg">
-                    @else
-                        <div class="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center">
-                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
-                            </svg>
-                        </div>
-                    @endif
+                            @if($startButtonShowIcon)
+                                @if($logo)
+                                    <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                @else
+                                    <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                        <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                            <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            @endif
 
-                    <span class="text-white font-bold text-xl hidden md:inline-block drop-shadow-lg">
-                        เริ่ม
-                    </span>
+                            @if($startButtonShowText)
+                                <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                                    {{ $startButtonText }}
+                                </span>
+                            @endif
 
-                    <!-- Glow Effect on Hover -->
-                    <div class="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                         style="background: linear-gradient(45deg, rgba(236, 72, 153, 0.3), rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); filter: blur(10px);"></div>
-                </button>
+                            <!-- Glow Effect on Hover -->
+                            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                 style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                        </button>
+
+                        <!-- Tooltip -->
+                        @if($tooltipEnabled)
+                            <div
+                                x-show="showTooltip"
+                                x-transition:enter="transition ease-out duration-500"
+                                x-transition:enter-start="opacity-0 scale-0"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-300"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-0"
+                                @click="hideTooltip()"
+                                class="millennium-tooltip millennium-tooltip-{{ $tooltipPosition }} millennium-tooltip-{{ $tooltipAnimation }} absolute z-[100] cursor-pointer"
+                                style="display: none;">
+                                <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 text-white px-5 py-3 rounded-2xl shadow-2xl border-2 border-white/30 backdrop-blur-sm max-w-[250px]">
+                                    <p class="text-sm font-bold text-center leading-relaxed">{{ $tooltipText }}</p>
+                                    <button class="absolute -top-2 -right-2 w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-xs font-bold transition-colors">✕</button>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
 
                 <!-- Back Button -->
                 @if($backButtonEnabled)
                     <button
                         onclick="window.history.back()"
-                        class="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg"
+                        class="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-700/80 to-gray-800/80 hover:from-indigo-600 hover:to-purple-600 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-indigo-500/50"
                         title="{{ $backButtonText }}">
-                        <svg class="w-6 h-6 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                        <span class="font-bold text-base hidden lg:inline-block">{{ $backButtonText }}</span>
+                        @if($backButtonShowIcon)
+                            <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+                            </svg>
+                        @endif
+                        @if($backButtonShowText)
+                            <span class="font-bold text-sm hidden lg:inline-block">{{ $backButtonText }}</span>
+                        @endif
                     </button>
                 @endif
 
-            </div>
-
-            <!-- Center Section: Quick Icons -->
-            <div class="flex items-center gap-2 flex-1 justify-center">
-
-                <!-- Shopping Cart -->
-                @if(Route::has('user.shop.cart'))
-                <a href="{{ route('user.shop.cart') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-green-500 hover:to-emerald-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="รถเข็น">
-                    <span class="text-2xl">🛒</span>
-                    @php
-                        $cartCount = 0;
-                        try {
-                            if (auth()->check() && session()->has('cart')) {
-                                $cartCount = count(session('cart', []));
+                <!-- Dynamic Taskbar Icons -->
+                @if($taskbarCollapseEnabled)
+                    <!-- Desktop: Show all icons -->
+                    <div class="hidden items-center gap-2" style="display: none;" x-init="
+                        function checkBreakpoint() {
+                            if (window.innerWidth >= {{ $taskbarCollapseBreakpoint }}) {
+                                $el.style.display = 'flex';
+                            } else {
+                                $el.style.display = 'none';
                             }
-                        } catch (\Exception $e) {}
-                    @endphp
-                    @if($cartCount > 0)
-                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                            {{ $cartCount > 9 ? '9+' : $cartCount }}
-                        </span>
-                    @endif
-                </a>
+                        }
+                        checkBreakpoint();
+                        window.addEventListener('resize', checkBreakpoint);
+                    ">
+                        @foreach($taskbarIcons as $taskbarIcon)
+                            <a href="{{ url($taskbarIcon['url']) }}"
+                               class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ ($taskbarIcon['border'] ?? false) ? 'border-2 border-white/20' : '' }}"
+                               style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
+                               title="{{ $taskbarIcon['label'] }}">
+                                <span style="font-size: {{ ($taskbarIconSize * 0.5) }}px;">{{ $taskbarIcon['icon'] }}</span>
+                            </a>
+                        @endforeach
+                    </div>
+
+                    <!-- Mobile: Hamburger Menu -->
+                    <div class="relative" x-data="{ iconsOpen: false }" style="display: none;" x-init="
+                        function checkBreakpoint() {
+                            if (window.innerWidth < {{ $taskbarCollapseBreakpoint }}) {
+                                $el.style.display = 'block';
+                            } else {
+                                $el.style.display = 'none';
+                            }
+                        }
+                        checkBreakpoint();
+                        window.addEventListener('resize', checkBreakpoint);
+                    ">
+                        <button @click="iconsOpen = !iconsOpen"
+                                class="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 transform hover:scale-110">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+                            </svg>
+                        </button>
+
+                        @if($taskbarCollapseStyle === 'dropdown')
+                            <!-- Dropdown Menu -->
+                            <div x-show="iconsOpen"
+                                 @click.away="iconsOpen = false"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 transform scale-90"
+                                 x-transition:enter-end="opacity-100 transform scale-100"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 transform scale-100"
+                                 x-transition:leave-end="opacity-0 transform scale-90"
+                                 class="absolute {{ $taskbarPosition === 'top' ? 'top-full mt-2' : 'bottom-full mb-2' }} left-0 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 p-3 z-[60] grid grid-cols-3 gap-2 min-w-[250px]"
+                                 style="display: none;">
+                                @foreach($taskbarIcons as $taskbarIcon)
+                                    <a href="{{ url($taskbarIcon['url']) }}"
+                                       class="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-white/10 transition-all duration-200"
+                                       @click="iconsOpen = false">
+                                        <span class="text-3xl mb-1">{{ $taskbarIcon['icon'] }}</span>
+                                        <span class="text-white text-xs text-center">{{ $taskbarIcon['label'] }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+
+                        @elseif($taskbarCollapseStyle === 'slide-up')
+                            <!-- Slide Up Menu (ยืดขึ้นจากด้านล่าง/บน) -->
+                            <div x-show="iconsOpen"
+                                 @click.away="iconsOpen = false"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 {{ $taskbarPosition === 'top' ? 'transform -translate-y-full' : 'transform translate-y-full' }}"
+                                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                                 x-transition:leave="transition ease-in duration-200"
+                                 x-transition:leave-start="opacity-100 transform translate-y-0"
+                                 x-transition:leave-end="opacity-0 {{ $taskbarPosition === 'top' ? 'transform -translate-y-full' : 'transform translate-y-full' }}"
+                                 class="fixed {{ $taskbarPosition === 'top' ? 'top-[60px]' : 'bottom-[60px]' }} left-0 right-0 bg-slate-800/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 p-6 z-[60]"
+                                 style="display: none;">
+                                <div class="max-w-5xl mx-auto">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-xl font-bold text-white">📱 Quick Access</h3>
+                                        <button @click="iconsOpen = false" class="text-white/70 hover:text-white transition-colors">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                        @foreach($taskbarIcons as $taskbarIcon)
+                                            <a href="{{ url($taskbarIcon['url']) }}"
+                                               class="flex flex-col items-center justify-center p-4 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 transition-all duration-200 transform hover:scale-105"
+                                               @click="iconsOpen = false">
+                                                <span class="text-4xl mb-2">{{ $taskbarIcon['icon'] }}</span>
+                                                <span class="text-white text-xs text-center font-medium">{{ $taskbarIcon['label'] }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+
+                        @else
+                            <!-- Fullscreen Overlay Menu (เต็มจอ) -->
+                            <div x-show="iconsOpen"
+                                 x-transition:enter="transition ease-out duration-300"
+                                 x-transition:enter-start="opacity-0"
+                                 x-transition:enter-end="opacity-100"
+                                 x-transition:leave="transition ease-in duration-200"
+                                 x-transition:leave-start="opacity-100"
+                                 x-transition:leave-end="opacity-0"
+                                 class="fixed inset-0 bg-gradient-to-br from-slate-900/98 via-purple-900/98 to-blue-900/98 backdrop-blur-xl z-[70] flex items-center justify-center p-6"
+                                 style="display: none;"
+                                 @click.self="iconsOpen = false">
+                                <div class="max-w-6xl w-full">
+                                    <div class="flex items-center justify-between mb-8">
+                                        <h2 class="text-3xl font-bold text-white">🚀 เมนูหลัก</h2>
+                                        <button @click="iconsOpen = false" class="text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg">
+                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                        @foreach($taskbarIcons as $taskbarIcon)
+                                            <a href="{{ url($taskbarIcon['url']) }}"
+                                               class="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-xl hover:shadow-2xl"
+                                               @click="iconsOpen = false">
+                                                <span class="text-5xl mb-3">{{ $taskbarIcon['icon'] }}</span>
+                                                <span class="text-white text-sm text-center font-semibold">{{ $taskbarIcon['label'] }}</span>
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @else
+                    <!-- No responsive collapse - show all icons normally -->
+                    @foreach($taskbarIcons as $taskbarIcon)
+                        <a href="{{ url($taskbarIcon['url']) }}"
+                           class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ ($taskbarIcon['border'] ?? false) ? 'border-2 border-white/20' : '' }}"
+                           style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
+                           title="{{ $taskbarIcon['label'] }}">
+                            <span style="font-size: {{ ($taskbarIconSize * 0.5) }}px;">{{ $taskbarIcon['icon'] }}</span>
+                        </a>
+                    @endforeach
                 @endif
 
-                <!-- Tarot / ดูดวง -->
-                @if(Route::has('tarot.index'))
-                <a href="{{ route('tarot.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-purple-500 hover:to-pink-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="ดูดวง">
-                    <span class="text-2xl">🔮</span>
-                </a>
-                @endif
-
-                <!-- Bot Marketplace / เช่าบอท -->
-                @if(Route::has('bots.marketplace'))
-                <a href="{{ route('bots.marketplace') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-blue-500 hover:to-cyan-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="เช่าบอท">
-                    <span class="text-2xl">🤖</span>
-                </a>
-                @endif
-
-                <!-- Wallet / กระเป๋าเงิน -->
-                @if(Route::has('user.wallet.index'))
-                <a href="{{ route('user.wallet.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-yellow-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="กระเป๋าเงิน">
+                <!-- Wealth Guide (E-book) -->
+                @if(Route::has('user.wealth-guide'))
+                <a href="{{ route('user.wealth-guide') }}"
+                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-yellow-500 hover:via-amber-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-110 active:scale-95 animate-pulse"
+                   title="เส้นทางเศรษฐี - คู่มือสู่ความร่ำรวย">
                     <span class="text-2xl">💰</span>
-                </a>
-                @endif
-
-                <!-- ROI Investment -->
-                @if(Route::has('user.investments.index'))
-                <a href="{{ route('user.investments.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-pink-500 hover:to-red-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="การลงทุน ROI">
-                    <span class="text-2xl">📈</span>
-                </a>
-                @endif
-
-                <!-- Wiki -->
-                @if(Route::has('wiki.index'))
-                <a href="{{ route('wiki.index') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-indigo-500 hover:to-purple-600 transition-all duration-300 transform hover:scale-110 active:scale-95"
-                   title="Platform Wiki">
-                    <span class="text-2xl">📚</span>
+                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
+                        <span class="text-white text-xs font-bold">📖</span>
+                    </span>
                 </a>
                 @endif
 
             </div>
 
-            <!-- Right Section: System Tray -->
-            <div class="flex items-center gap-3">
+            <!-- Center Section: Start Button (if position is 'center') -->
+            @if($startButtonPosition === 'center')
+                <div class="flex items-center justify-center relative">
+                    <button
+                        @click="startMenuOpen = !startMenuOpen; hideTooltip()"
+                        :class="{'millennium-start-active': startMenuOpen}"
+                        class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                        style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+
+                        @if($startButtonShowIcon)
+                            @if($logo)
+                                <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                            @else
+                                <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                    <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                        <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                    </svg>
+                                </div>
+                            @endif
+                        @endif
+
+                        @if($startButtonShowText)
+                            <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                                {{ $startButtonText }}
+                            </span>
+                        @endif
+
+                        <!-- Glow Effect on Hover -->
+                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                             style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                    </button>
+
+                    <!-- Tooltip -->
+                    @if($tooltipEnabled)
+                        <div
+                            x-show="showTooltip"
+                            x-transition:enter="transition ease-out duration-500"
+                            x-transition:enter-start="opacity-0 scale-0"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-300"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-0"
+                            @click="hideTooltip()"
+                            class="millennium-tooltip millennium-tooltip-{{ $tooltipPosition }} millennium-tooltip-{{ $tooltipAnimation }} absolute z-[100] cursor-pointer"
+                            style="display: none;">
+                            <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 text-white px-5 py-3 rounded-2xl shadow-2xl border-2 border-white/30 backdrop-blur-sm max-w-[250px]">
+                                <p class="text-sm font-bold text-center leading-relaxed">{{ $tooltipText }}</p>
+                                <button class="absolute -top-2 -right-2 w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-xs font-bold transition-colors">✕</button>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
+            <!-- Right Section: System Tray (Always on the right) -->
+            <div class="flex items-center gap-3 {{ $startButtonPosition === 'center' ? 'flex-1' : '' }} justify-end ml-auto">
+
+                <!-- Start Button (Right Position - Before separator) -->
+                @if($startButtonPosition === 'right')
+                    <div class="relative">
+                        <button
+                            @click="startMenuOpen = !startMenuOpen; hideTooltip()"
+                            :class="{'millennium-start-active': startMenuOpen}"
+                            class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                            style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+
+                            @if($startButtonShowIcon)
+                                @if($logo)
+                                    <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                @else
+                                    <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                        <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                            <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                        </svg>
+                                    </div>
+                                @endif
+                            @endif
+
+                            @if($startButtonShowText)
+                                <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                                    {{ $startButtonText }}
+                                </span>
+                            @endif
+
+                            <!-- Glow Effect on Hover -->
+                            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                 style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                        </button>
+
+                        <!-- Tooltip -->
+                        @if($tooltipEnabled)
+                            <div
+                                x-show="showTooltip"
+                                x-transition:enter="transition ease-out duration-500"
+                                x-transition:enter-start="opacity-0 scale-0"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-300"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-0"
+                                @click="hideTooltip()"
+                                class="millennium-tooltip millennium-tooltip-{{ $tooltipPosition }} millennium-tooltip-{{ $tooltipAnimation }} absolute z-[100] cursor-pointer"
+                                style="display: none;">
+                                <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 text-white px-5 py-3 rounded-2xl shadow-2xl border-2 border-white/30 backdrop-blur-sm max-w-[250px]">
+                                    <p class="text-sm font-bold text-center leading-relaxed">{{ $tooltipText }}</p>
+                                    <button class="absolute -top-2 -right-2 w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-xs font-bold transition-colors">✕</button>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
+                <!-- System Tray Separator (Windows-style) -->
+                <div class="h-12 w-0.5 bg-gradient-to-b from-transparent via-white/40 to-transparent mx-2 shadow-lg" style="box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);"></div>
+
+                <!-- Back to Top Button -->
+                @if($backToTopEnabled)
+                    <button
+                        x-show="showBackToTop"
+                        @click="scrollToTop()"
+                        x-transition:enter="millennium-back-to-top-{{ $backToTopAnimation }}-enter"
+                        x-transition:leave="millennium-back-to-top-{{ $backToTopAnimation }}-leave"
+                        class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-lg hover:shadow-purple-500/50"
+                        title="กลับขึ้นด้านบน">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+                        </svg>
+                    </button>
+                @endif
 
                 <!-- Dark Mode Toggle -->
                 <button
@@ -223,31 +703,48 @@
                     </div>
                 @endif
 
-                <!-- Current Time -->
-                <div class="hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
-                    <svg class="w-5 h-5 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
-                    <span class="text-white font-bold text-base" x-text="currentTime"></span>
-                </div>
-
-                <!-- User Avatar -->
-                @auth
-                    <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 hover:bg-white/20 transition-all duration-300 cursor-pointer">
-                        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 flex items-center justify-center text-white font-bold text-sm ring-2 ring-white/30">
-                            {{ substr(auth()->user()->name, 0, 2) }}
+                <!-- Current Time & Date -->
+                @if($clockStyle === 'digital')
+                    <div class="hidden lg:flex flex-col items-end gap-1 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-pink-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-white font-bold text-base" x-text="currentTime"></span>
                         </div>
-                        <span class="text-white font-semibold text-base hidden xl:inline-block">
-                            {{ auth()->user()->name }}
-                        </span>
+                        @if($clockShowDate)
+                            <span class="text-white/70 text-xs" x-text="currentDate"></span>
+                        @endif
                     </div>
-                @endauth
+                @elseif($clockStyle === 'minimal')
+                    <div class="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5">
+                        <span class="text-white font-semibold text-sm" x-text="currentTime"></span>
+                    </div>
+                @elseif($clockStyle === 'full')
+                    <div class="hidden lg:flex flex-col items-end gap-0.5 px-5 py-2.5 rounded-xl bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-md border border-white/20 shadow-lg">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-yellow-300 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-white font-bold text-lg tracking-wider" x-text="currentTime"></span>
+                        </div>
+                        @if($clockShowDate)
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <svg class="w-4 h-4 text-cyan-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span class="text-cyan-100 text-xs font-medium" x-text="currentDate"></span>
+                            </div>
+                        @endif
+                    </div>
+                @endif
+
             </div>
 
         </div>
     </div>
 
-    <!-- Millennium Start Menu (ภายใน scope เดียวกัน) -->
+    <!-- Include Millennium Start Menu Component -->
     <x-millennium-start-menu :type="$type" />
 
 </div>
@@ -257,11 +754,11 @@
     @keyframes millenniumTaskbarRgb {
         0%, 100% {
             background: linear-gradient(90deg,
-                rgba(255, 0, 128, 0.8) 0%,
-                rgba(0, 240, 255, 0.8) 25%,
-                rgba(127, 0, 255, 0.8) 50%,
-                rgba(255, 215, 0, 0.8) 75%,
-                rgba(255, 0, 128, 0.8) 100%
+                {{ $millenniumRgbColors[0] ?? '#FF0080' }}80 0%,
+                {{ $millenniumRgbColors[1] ?? '#00F0FF' }}80 25%,
+                {{ $millenniumRgbColors[2] ?? '#7F00FF' }}80 50%,
+                {{ $millenniumRgbColors[3] ?? '#FFD700' }}80 75%,
+                {{ $millenniumRgbColors[0] ?? '#FF0080' }}80 100%
             );
             background-size: 200% 100%;
             background-position: 0% 50%;
@@ -275,16 +772,16 @@
         height: 3px;
         {{ $taskbarPosition === 'bottom' ? 'top: 0;' : 'bottom: 0;' }}
         background: linear-gradient(90deg,
-            #FF0080 0%,
-            #00F0FF 25%,
-            #7F00FF 50%,
-            #FFD700 75%,
-            #FF0080 100%
+            {{ $millenniumRgbColors[0] ?? '#FF0080' }} 0%,
+            {{ $millenniumRgbColors[1] ?? '#00F0FF' }} 25%,
+            {{ $millenniumRgbColors[2] ?? '#7F00FF' }} 50%,
+            {{ $millenniumRgbColors[3] ?? '#FFD700' }} 75%,
+            {{ $millenniumRgbColors[0] ?? '#FF0080' }} 100%
         );
         background-size: 200% 100%;
         animation: millenniumTaskbarRgb {{ $millenniumRgbSpeed }}s linear infinite;
-        filter: blur(2px);
-        box-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+        filter: blur({{ $millenniumRgbBlur }}px);
+        box-shadow: 0 0 {{ $millenniumRgbGlowSize }}px currentColor, 0 0 {{ $millenniumRgbGlowSize * 2 }}px currentColor;
     }
 
     /* Start Button Glow */
@@ -323,10 +820,328 @@
             0 0 30px rgba(236, 72, 153, 0.8),
             0 0 50px rgba(168, 85, 247, 0.6),
             inset 0 0 20px rgba(255, 255, 255, 0.2) !important;
+        border-radius: {{ $startButtonRadius }}px !important;
     }
 
     /* Taskbar Glass Morphism */
     .millennium-taskbar {
         backdrop-filter: blur(20px) saturate(180%);
+    }
+
+    /* Taskbar Color Customization */
+    .millennium-taskbar .text-white {
+        color: var(--taskbar-text-color, #ffffff);
+    }
+
+    .millennium-taskbar a:hover,
+    .millennium-taskbar button:hover {
+        background-color: var(--taskbar-hover-bg, rgba(255, 255, 255, 0.1));
+    }
+
+    .millennium-taskbar a.active,
+    .millennium-taskbar button.active {
+        background-color: var(--taskbar-active-bg, rgba(255, 255, 255, 0.2));
+    }
+
+    /* Back to Top Button Animations */
+    /* Fade Animation */
+    .millennium-back-to-top-fade-enter {
+        transition: opacity 300ms ease-out;
+        opacity: 0;
+    }
+    .millennium-back-to-top-fade-enter.millennium-back-to-top-fade-enter-active {
+        opacity: 1;
+    }
+    .millennium-back-to-top-fade-leave {
+        transition: opacity 300ms ease-in;
+        opacity: 1;
+    }
+    .millennium-back-to-top-fade-leave.millennium-back-to-top-fade-leave-active {
+        opacity: 0;
+    }
+
+    /* Slide Animation */
+    .millennium-back-to-top-slide-enter {
+        transition: all 300ms ease-out;
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    .millennium-back-to-top-slide-enter.millennium-back-to-top-slide-enter-active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .millennium-back-to-top-slide-leave {
+        transition: all 300ms ease-in;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .millennium-back-to-top-slide-leave.millennium-back-to-top-slide-leave-active {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    /* Bounce Animation */
+    .millennium-back-to-top-bounce-enter {
+        animation: bounceIn 600ms ease-out;
+    }
+    .millennium-back-to-top-bounce-leave {
+        animation: bounceOut 300ms ease-in;
+    }
+    @keyframes bounceIn {
+        0% { opacity: 0; transform: scale(0.3) translateY(20px); }
+        50% { opacity: 1; transform: scale(1.05); }
+        70% { transform: scale(0.9); }
+        100% { transform: scale(1); }
+    }
+    @keyframes bounceOut {
+        0% { transform: scale(1); opacity: 1; }
+        100% { transform: scale(0.3) translateY(20px); opacity: 0; }
+    }
+
+    /* Scale Animation */
+    .millennium-back-to-top-scale-enter {
+        transition: all 300ms ease-out;
+        opacity: 0;
+        transform: scale(0);
+    }
+    .millennium-back-to-top-scale-enter.millennium-back-to-top-scale-enter-active {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .millennium-back-to-top-scale-leave {
+        transition: all 300ms ease-in;
+        opacity: 1;
+        transform: scale(1);
+    }
+    .millennium-back-to-top-scale-leave.millennium-back-to-top-scale-leave-active {
+        opacity: 0;
+        transform: scale(0);
+    }
+
+    /* Zoom Animation */
+    .millennium-back-to-top-zoom-enter {
+        transition: all 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        opacity: 0;
+        transform: scale(0.5);
+    }
+    .millennium-back-to-top-zoom-enter.millennium-back-to-top-zoom-enter-active {
+        opacity: 1;
+        transform: scale(1);
+    }
+    .millennium-back-to-top-zoom-leave {
+        transition: all 200ms ease-in;
+        opacity: 1;
+        transform: scale(1);
+    }
+    .millennium-back-to-top-zoom-leave.millennium-back-to-top-zoom-leave-active {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+
+    /* ========================================
+       Tooltip Positioning
+       ======================================== */
+
+    .millennium-tooltip-top {
+        bottom: calc(100% + 15px);
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .millennium-tooltip-top::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 8px solid transparent;
+        border-top-color: rgba(168, 85, 247, 0.9);
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+    }
+
+    .millennium-tooltip-bottom {
+        top: calc(100% + 15px);
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .millennium-tooltip-bottom::after {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 8px solid transparent;
+        border-bottom-color: rgba(168, 85, 247, 0.9);
+        filter: drop-shadow(0 -4px 6px rgba(0, 0, 0, 0.3));
+    }
+
+    .millennium-tooltip-left {
+        right: calc(100% + 15px);
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .millennium-tooltip-left::after {
+        content: '';
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 8px solid transparent;
+        border-left-color: rgba(168, 85, 247, 0.9);
+        filter: drop-shadow(4px 0 6px rgba(0, 0, 0, 0.3));
+    }
+
+    .millennium-tooltip-right {
+        left: calc(100% + 15px);
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .millennium-tooltip-right::after {
+        content: '';
+        position: absolute;
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 8px solid transparent;
+        border-right-color: rgba(168, 85, 247, 0.9);
+        filter: drop-shadow(-4px 0 6px rgba(0, 0, 0, 0.3));
+    }
+
+    /* ========================================
+       Tooltip Animations
+       ======================================== */
+
+    /* Bounce Animation */
+    @keyframes tooltipBounce {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
+        }
+        40% {
+            transform: translateY(-10px);
+        }
+        60% {
+            transform: translateY(-5px);
+        }
+    }
+
+    .millennium-tooltip-bounce {
+        animation: tooltipBounce 2s ease-in-out infinite;
+    }
+
+    /* Pulse Animation */
+    @keyframes tooltipPulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+        }
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.8);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+        }
+    }
+
+    .millennium-tooltip-pulse {
+        animation: tooltipPulse 2s ease-in-out infinite;
+    }
+
+    /* Shake Animation */
+    @keyframes tooltipShake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-5px);
+        }
+        20%, 40%, 60%, 80% {
+            transform: translateX(5px);
+        }
+    }
+
+    .millennium-tooltip-shake {
+        animation: tooltipShake 3s ease-in-out infinite;
+    }
+
+    /* Swing Animation */
+    @keyframes tooltipSwing {
+        0%, 100% {
+            transform: rotate(0deg);
+            transform-origin: top center;
+        }
+        20% {
+            transform: rotate(15deg);
+        }
+        40% {
+            transform: rotate(-10deg);
+        }
+        60% {
+            transform: rotate(5deg);
+        }
+        80% {
+            transform: rotate(-5deg);
+        }
+    }
+
+    .millennium-tooltip-swing {
+        animation: tooltipSwing 2s ease-in-out infinite;
+    }
+
+    /* Tada Animation */
+    @keyframes tooltipTada {
+        0% {
+            transform: scale(1) rotate(0deg);
+        }
+        10%, 20% {
+            transform: scale(0.9) rotate(-3deg);
+        }
+        30%, 50%, 70%, 90% {
+            transform: scale(1.1) rotate(3deg);
+        }
+        40%, 60%, 80% {
+            transform: scale(1.1) rotate(-3deg);
+        }
+        100% {
+            transform: scale(1) rotate(0deg);
+        }
+    }
+
+    .millennium-tooltip-tada {
+        animation: tooltipTada 2s ease-in-out infinite;
+    }
+
+    /* Flash Animation */
+    @keyframes tooltipFlash {
+        0%, 50%, 100% {
+            opacity: 1;
+        }
+        25%, 75% {
+            opacity: 0.5;
+        }
+    }
+
+    .millennium-tooltip-flash {
+        animation: tooltipFlash 2s ease-in-out infinite;
+    }
+
+    /* Tooltip Glow Effect */
+    .millennium-tooltip > div {
+        position: relative;
+        box-shadow:
+            0 0 20px rgba(168, 85, 247, 0.6),
+            0 0 40px rgba(236, 72, 153, 0.4),
+            0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .millennium-tooltip > div:hover {
+        box-shadow:
+            0 0 30px rgba(168, 85, 247, 0.8),
+            0 0 50px rgba(236, 72, 153, 0.6),
+            0 15px 40px rgba(0, 0, 0, 0.6);
     }
 </style>

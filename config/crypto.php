@@ -115,11 +115,16 @@ return [
     */
 
     'wallet' => [
-        'max_wallets_per_user' => env('CRYPTO_MAX_WALLETS_PER_USER', 5),
+        'max_wallets_per_user' => env('CRYPTO_MAX_WALLETS_PER_USER', 10),
         'custodial_wallet_enabled' => env('CRYPTO_CUSTODIAL_ENABLED', true),
         'external_wallet_enabled' => env('CRYPTO_EXTERNAL_ENABLED', true),
         'pin_length' => 6,
         'pin_max_attempts' => 3,
+
+        // HD Wallet (Hierarchical Deterministic Wallet) settings
+        'hd_wallet_enabled' => env('CRYPTO_HD_WALLET_ENABLED', true),
+        'master_seed_word_count' => env('CRYPTO_MASTER_SEED_WORDS', 24), // 12, 15, 18, 21, or 24
+        'max_child_wallets_per_master' => env('CRYPTO_MAX_CHILD_WALLETS', 100),
     ],
 
     /*

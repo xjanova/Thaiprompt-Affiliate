@@ -12,18 +12,26 @@ class AppNameSettingSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->command->info('Updating app_name setting...');
+        // Check if app_name setting already exists
+        $existingSetting = Setting::where('key', 'app_name')->first();
 
-        // Update app_name from "ร้านค้าชุมชนไทยพร้อม" to "ร้านค้าชุมชนไทยพร๊อม"
-        Setting::updateOrCreate(
-            ['key' => 'app_name'],
-            [
-                'value' => 'ร้านค้าชุมชนไทยพร๊อม',
-                'type' => 'string',
-                'group' => 'general'
-            ]
-        );
+        if ($existingSetting) {
+            $this->command->warn('⚠️  App name setting already exists!');
+            $this->command->info("   Current value: {$existingSetting->value}");
+            $this->command->info('   Skipping to preserve your customization.');
+            return;
+        }
 
-        $this->command->info('✅ App name updated successfully to: ร้านค้าชุมชนไทยพร๊อม');
+        // Fresh install - create app_name setting
+        $this->command->info('🌱 Creating app_name setting...');
+
+        Setting::create([
+            'key' => 'app_name',
+            'value' => 'ร้านค้าชุมชนไทยพร๊อม',
+            'type' => 'string',
+            'group' => 'general'
+        ]);
+
+        $this->command->info('✅ App name created successfully: ร้านค้าชุมชนไทยพร๊อม');
     }
 }

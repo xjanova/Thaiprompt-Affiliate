@@ -4,10 +4,10 @@
     'showQuickView' => true,
 ])
 
-<div class="group relative bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100/50 hover:border-indigo-200">
+<div class="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100/50 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-600">
     <a href="{{ route('shop.show', $product->slug) }}" class="block">
         <!-- Product Image -->
-        <div class="relative bg-gradient-to-br from-gray-50 via-white to-gray-50 aspect-square overflow-hidden">
+        <div class="relative bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-700 dark:via-gray-800 dark:to-gray-700 aspect-square overflow-hidden">
             @if($product->main_image_url)
                 <img src="{{ $product->main_image_url }}"
                      alt="{{ $product->name }}"
@@ -102,20 +102,20 @@
             <!-- Category Badge -->
             @if($product->category)
                 <div class="mb-2">
-                    <span class="inline-block px-2.5 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-600 text-xs font-semibold rounded-lg border border-indigo-100">
+                    <span class="inline-block px-2.5 py-1 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/50 dark:to-purple-900/50 text-indigo-600 dark:text-indigo-400 text-xs font-semibold rounded-lg border border-indigo-100 dark:border-indigo-700">
                         {{ $product->category->name }}
                     </span>
                 </div>
             @endif
 
             <!-- Product Name -->
-            <h3 class="text-base font-bold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-indigo-600 transition-colors leading-tight">
+            <h3 class="text-base font-bold text-gray-900 dark:text-gray-100 mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors leading-tight">
                 {{ $product->name }}
             </h3>
 
             <!-- Brand -->
             @if($product->brand)
-                <p class="text-xs text-gray-500 mb-2">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
                     <span class="font-medium">ยี่ห้อ:</span> {{ $product->brand }}
                 </p>
             @endif
@@ -123,22 +123,22 @@
             <!-- Rating & Sales -->
             <div class="flex items-center gap-2 mb-3 text-xs">
                 @if($product->rating_average > 0)
-                    <div class="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg">
-                        <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                    <div class="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded-lg">
+                        <svg class="w-3.5 h-3.5 text-amber-400 dark:text-amber-500" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                         </svg>
-                        <span class="font-bold text-gray-900">{{ number_format($product->rating_average, 1) }}</span>
+                        <span class="font-bold text-gray-900 dark:text-gray-100">{{ number_format($product->rating_average, 1) }}</span>
                     </div>
                 @endif
 
                 @if($product->rating_count > 0)
-                    <span class="text-gray-500">({{ number_format($product->rating_count) }})</span>
+                    <span class="text-gray-500 dark:text-gray-400">({{ number_format($product->rating_count) }})</span>
                 @endif
 
                 @if($product->sales_count > 0)
-                    <span class="text-gray-400">•</span>
-                    <span class="text-gray-600">
-                        ขายแล้ว <span class="font-semibold text-gray-900">{{ number_format($product->sales_count) }}</span>
+                    <span class="text-gray-400 dark:text-gray-600">•</span>
+                    <span class="text-gray-600 dark:text-gray-400">
+                        ขายแล้ว <span class="font-semibold text-gray-900 dark:text-gray-100">{{ number_format($product->sales_count) }}</span>
                     </span>
                 @endif
             </div>
@@ -172,17 +172,17 @@
                 }
             @endphp
             <div class="mb-3">
-                <div class="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-yellow-50 to-amber-50 px-2.5 py-1.5 rounded-lg border border-yellow-200">
-                    <svg class="w-4 h-4 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
+                <div class="flex items-center gap-1.5 text-xs font-bold bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/30 dark:to-amber-900/30 px-2.5 py-1.5 rounded-lg border border-yellow-200 dark:border-yellow-700">
+                    <svg class="w-4 h-4 text-yellow-600 dark:text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
-                    <span class="text-yellow-800">PV: {{ number_format($totalPv, 2) }}</span>
+                    <span class="text-yellow-800 dark:text-yellow-400">PV: {{ number_format($totalPv, 2) }}</span>
                 </div>
             </div>
 
             <!-- Free Shipping Badge -->
             @if($product->price >= 500)
-                <div class="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold mb-3 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-100">
+                <div class="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold mb-3 bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-700">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"/>
                         <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3zM14 7a1 1 0 00-1 1v6.05A2.5 2.5 0 0115.95 16H17a1 1 0 001-1v-5a1 1 0 00-.293-.707l-2-2A1 1 0 0015 7h-1z"/>
@@ -199,8 +199,8 @@
                 $cashbackInfo = $cashbackService->calculateProductCashback($product, $product->price, 1);
             @endphp
             @if($cashbackInfo && $cashbackInfo['cashback'] > 0)
-                <div class="flex items-center gap-1.5 text-xs text-amber-700 font-bold mb-3 bg-gradient-to-r from-amber-50 to-orange-50 px-2.5 py-1.5 rounded-lg border border-amber-300">
-                    <svg class="w-4 h-4 text-amber-500" fill="currentColor" viewBox="0 0 20 20">
+                <div class="flex items-center gap-1.5 text-xs text-amber-700 dark:text-amber-400 font-bold mb-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/30 px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-700">
+                    <svg class="w-4 h-4 text-amber-500 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
                     </svg>
@@ -215,7 +215,7 @@
         <div class="flex gap-2">
             @if($product->stock_status === 'in_stock')
                 <button onclick="addToCartQuick(event, {{ $product->id }})"
-                        class="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-sm text-center rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
+                        class="flex-1 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-700 dark:to-purple-700 hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 text-white font-bold text-sm text-center rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
                     </svg>
@@ -223,7 +223,7 @@
                 </button>
             @else
                 <button disabled
-                        class="flex-1 px-4 py-2.5 bg-gray-200 text-gray-500 font-bold text-sm text-center rounded-xl cursor-not-allowed">
+                        class="flex-1 px-4 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 font-bold text-sm text-center rounded-xl cursor-not-allowed">
                     สินค้าหมด
                 </button>
             @endif

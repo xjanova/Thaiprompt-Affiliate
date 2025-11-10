@@ -111,6 +111,30 @@
         </div>
     </div>
 
+    <!-- Admin Adjustments Card -->
+    @if(isset($adminStats) && $adminStats['total'] > 0)
+    <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+        <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl shadow-xl p-6 text-white">
+            <div class="flex items-center justify-between mb-4">
+                <div class="text-4xl">⚡</div>
+            </div>
+            <p class="text-white text-opacity-80 text-sm mb-1">เงินที่ได้จากแอดมิน/ระบบ</p>
+            <p class="text-3xl md:text-4xl font-bold">฿{{ number_format($adminStats['total'] ?? 0, 2) }}</p>
+            <p class="text-xs text-white text-opacity-70 mt-2">{{ $adminStats['count'] ?? 0 }} ครั้ง</p>
+            <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-white border-opacity-20">
+                <div>
+                    <p class="text-xs text-white text-opacity-70 mb-1">เดือนนี้</p>
+                    <p class="text-lg font-bold">฿{{ number_format($adminStats['this_month'] ?? 0, 2) }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-white text-opacity-70 mb-1">30 วันล่าสุด</p>
+                    <p class="text-lg font-bold">฿{{ number_format($adminStats['last_30_days'] ?? 0, 2) }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <!-- Cashback Details -->
     @if(isset($cashbackStats) && $cashbackStats['total'] > 0)
     <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl shadow-lg p-6">

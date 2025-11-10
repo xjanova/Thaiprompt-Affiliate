@@ -196,4 +196,58 @@ class CommissionController extends Controller
         return redirect()->route('admin.commissions.index')
             ->with('success', 'Commission deleted successfully.');
     }
+
+    /**
+     * Bulk approve commissions
+     */
+    public function bulkApprove(Request $request)
+    {
+        $validated = $request->validate([
+            'commission_ids' => ['required', 'array'],
+            'commission_ids.*' => ['required', 'exists:commissions,id'],
+        ]);
+
+        $count = 0;
+        foreach ($validated['commission_ids'] as $commissionId) {
+            $commission = Commission::find($commissionId);
+
+            if ($commission && $commission->status === 'pending') {
+                $commission->update([
+                    'status' => 'approved',
+                    'approved_at' => now(),
+                ]);
+                $count++;
+            }
+        }
+
+        return back()->with('success', "Successfully approved {$count} commission(s).");
+    }
+
+    /**
+     * Bulk reject commissions
+     */
+    public function bulkReject(Request $request)
+    {
+        $validated = $request->validate([
+            'commission_ids' => ['required', 'array'],
+            'commission_ids.*' => ['required', 'exists:commissions,id'],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $count = 0;
+        foreach ($validated['commission_ids'] as $commissionId) {
+            $commission = Commission::find($commissionId);
+
+            if ($commission && $commission->status === 'pending') {
+                $commission->update([
+                    'status' => 'rejected',
+                    'rejected_at' => now(),
+                    'notes' => $validated['reason'] ?? $commission->notes,
+                ]);
+                $count++;
+            }
+        }
+
+        return back()->with('success', "Successfully rejected {$count} commission(s).");
+    }
 }

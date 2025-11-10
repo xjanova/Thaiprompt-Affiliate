@@ -93,6 +93,11 @@
     {{-- Cookie Consent Banner --}}
     <x-cookie-consent-banner />
 
+    {{-- Emergency Alert System --}}
+    <x-emergency-alert-banner position="global" />
+    <x-emergency-alert-popup position="global" />
+    <x-emergency-alert-marquee position="global" />
+
     @stack('scripts')
 </body>
 </html>

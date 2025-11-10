@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
             ThemeSeeder::class,                 // ธีมของระบบ
             AppManagementSeeder::class,         // ตั้งค่าแอพ, ธีม, ฟีเจอร์, แบนเนอร์, และ maintenance
             CookieSettingsSeeder::class,        // ตั้งค่า Cookie Consent & PDPA
+            WindowsUiSeeder::class,             // Windows UI Settings (Start Menu, Taskbar, System Tray)
+            AppControlSectionSeeder::class,     // UI Control Sections (Navigation Bar, Tab Bar, Header, FAB)
+            ComponentSettingSeeder::class,      // UI Component Settings (Buttons, Inputs, Cards, Text)
+            ApiEndpointSeeder::class,           // API Endpoints Configuration (Users, Products, Orders, Analytics, etc.)
 
             // 2. User & Demo Data
             DemoUsersSeeder::class,             // สร้างผู้ใช้ทดสอบ
@@ -34,11 +38,12 @@ class DatabaseSeeder extends Seeder
             DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
             SeoMetaSeeder::class,               // สร้าง SEO meta data
             MenuItemSeeder::class,              // สร้างเมนูสำหรับ Header
+            // PageBuilderSeeder::class,           // Page Builder Templates (Homepage, Wiki, About builder) - SKIP: Already exists
+            // HomepageImportSeeder::class,        // Import current homepage to Page Builder - SKIP: Already exists
 
             // 4. Communication Templates
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
             LineOaSettingSeeder::class,         // LINE OA Settings Configuration
-            LineSignupFlowSeeder::class,        // LINE Signup Flow (Conversation Bot)
             LineFlexMessageTemplateSeeder::class, // LINE Flex Message Templates
 
             // 5. AI & Integrations
@@ -50,7 +55,8 @@ class DatabaseSeeder extends Seeder
             CryptoCurrencySeeder::class,        // Cryptocurrency Support (BTC, ETH, USDT, etc.)
 
             // 7. MLM & Affiliate System
-            MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM พรีเมี่ยม
+            MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM ทั่วไป (สร้างข้อมูลเริ่มต้น)
+            MlmGlobalSettingSeeder::class,      // อัปเดต MLM Global Settings สำหรับระบบผู้มุ่งหวัง
             MlmPlanSeeder::class,               // แผนคอมมิชชัน MLM หลัก (แผนเดียวบังคับทั้งระบบ)
             MlmPackageSeeder::class,            // แพคเกจสมาชิก MLM (Bronze, Silver, Gold, Diamond, Premier)
             RankSeeder::class,                  // ระบบยศ/ระดับ (Bronze, Silver, Gold, Platinum, Diamond)
@@ -82,6 +88,7 @@ class DatabaseSeeder extends Seeder
             TarotSystemSeeder::class,           // ระบบดูดวงไพ่ทาโรต์
             HotelSeeder::class,                 // ระบบจองโรงแรม
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
+            TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
         ]);
 
         $this->command->info('');

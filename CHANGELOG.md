@@ -2,723 +2,772 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
-## [v2.91.0] - 2025-11-08
+## [v2.111.0] - 2025-11-10
 
 ### ✨ Features
-- Merge pull request #604 from xjanova/claude/enhance-hero-software-purchase-011CUvnMxEY1ijwcgoE4wnv4 (4a57a02)
-- feat: add LineOaSettingSeeder and resolve naming conflict (90d9139)
+- feat: Add SafeMigration trait for all future migrations (e89b73b9)
+- feat: Add missing seeders to DatabaseSeeder (758e9c2e)
+- Merge pull request #741 from xjanova/claude/crypto-wallet-setup-011CUyoggKjbnTSqyK8hz4HK (fd545862)
+- feat: Implement HD Wallet (Hierarchical Deterministic Wallet) System (52cc358b)
+- Merge pull request #737 from xjanova/claude/api-access-control-system-011CUyjuzdDfMpLeWVKE9DUN (7ec500ee)
+- Merge pull request #739 from xjanova/claude/complete-install-setup-011CUyXvhbuRe6BThWD3EZ2x (642298c4)
+- Merge pull request #736 from xjanova/claude/app-control-section-011CUyk1i9BzjTb9bHiY2wGe (9bb02728)
+- Merge pull request #733 from xjanova/claude/add-selective-reset-system-011CUykahJWFMnd3xo2icToD (a0048a27)
+- feat: เพิ่มระบบควบคุมแอพมือถือแบบครอบคลุม (00deb572)
+- feat: เพิ่มระบบการรีเซ็ต/ล้างข้อมูลแบบเลือกได้ (58081f15)
+- feat: เพิ่มระบบจัดการ API ครบครัน (API Access Control System) (ba00061a)
+- feat: อัพเกรดระบบ License Server WordPress Plugin แบบครบวงจร (fc148f46)
+- Merge pull request #732 from xjanova/claude/complete-install-setup-011CUyXvhbuRe6BThWD3EZ2x (2bff227a)
+- Merge pull request #731 from xjanova/claude/fix-seller-analytics-route-011CUyffiUW1bQ53ag8ms2Ko (4117e05b)
+- feat: เพิ่ม view กระเป๋าเงินสำหรับร้านค้า (3422b29b)
+- feat: เพิ่มระบบตรวจสอบสิทธิ์การติดตั้งและอัพเดทผ่าน License Server (581760c6)
+- Merge pull request #729 from xjanova/claude/complete-install-setup-011CUyXvhbuRe6BThWD3EZ2x (49607691)
+- feat: ปรับปรุง install.sh เป็น environment preparation script (716c6260)
+- Merge pull request #725 from xjanova/claude/improve-admin-users-ui-011CUyUPkjToxaeLjeo4KfDg (41eaadc1)
+- Merge pull request #724 from xjanova/claude/modernize-admin-commissions-011CUybZq8UAvJTPBd1k6m9n (df389cf2)
+- Merge pull request #723 from xjanova/claude/improve-hotel-rental-admin-011CUyU6oGngQvuKBvy6ni4j (8e74526e)
+- feat: เพิ่มระบบป้องกันไฟล์ dev และแสดงรายการไฟล์ที่อัพเดท (ad18383d)
+- feat: add hotel management menu for Hotel Owners and Super Admin (1a8e6a73)
+- Merge pull request #721 from xjanova/claude/fix-seller-analytics-route-011CUyWb7xT6d5Egtv24uNh4 (c9d128f0)
+- feat: add one-time member number generation button (5ee04c77)
+- feat: modernize admin commissions page with enhanced UI and functionality (5c4dd64d)
+- feat: add cache clearing script for production deployment (e7fdf7ee)
+- feat: เพิ่มระบบ Developer Release Manager แบบ IP-locked (84f10929)
+- feat: add release management system with Thai-only changelog (0657a280)
+- Merge pull request #720 from xjanova/claude/user-wallet-section-011CUyWjXCQjMF6YVY3MFfAw (e84a018e)
+- Merge pull request #719 from xjanova/claude/complete-install-setup-011CUyXvhbuRe6BThWD3EZ2x (0a9a5c8b)
+- feat: complete web-based installation wizard and update system (f716397d)
+- feat: add admin adjustments/refunds card to user wallet dashboard (d270c2b7)
+- Merge pull request #716 from xjanova/claude/win-section-update-011CUyQ3aqsXbj5MYqTYJ4D2 (dfdb0d82)
+- feat: add advanced Start button customization - Part 1 (Admin + Controller) (d82ff008)
+- Merge pull request #714 from xjanova/claude/improve-admin-users-ui-011CUyUPkjToxaeLjeo4KfDg (675fc448)
+- Merge pull request #713 from xjanova/claude/improve-hotel-rental-admin-011CUyU6oGngQvuKBvy6ni4j (aebc27ad)
+- feat: improve admin users UI and add member number system (bc74b374)
+- feat: implement comprehensive hotel rental management system for Hotel Owners and Super Admin (68ccdf84)
+- Merge pull request #711 from xjanova/claude/improve-admin-dashboard-011CUyPu81brRj8K3GJPvYh2 (986a0b00)
+- feat: add support ticket tracking to admin dashboard (82c79989)
+- Merge pull request #708 from xjanova/claude/emergency-alert-banner-011CUyQZqUH1J26Fpz5zTUtu (5b47d5ba)
+- feat: implement comprehensive Emergency Alert Banner system (8d6299cb)
+- Merge pull request #706 from xjanova/claude/win-section-update-011CUyQ3aqsXbj5MYqTYJ4D2 (b06e0dbd)
+- feat: add customizable welcome tooltip for Start button (92304f5a)
+- Merge pull request #701 from xjanova/claude/win-section-update-011CUyQ3aqsXbj5MYqTYJ4D2 (e3ea93c6)
+- Merge pull request #700 from xjanova/claude/improve-admin-dashboard-011CUyPu81brRj8K3GJPvYh2 (4dcf6ed0)
+- Merge pull request #699 from xjanova/claude/analytics-011CUxh7svN9v8vCn4zwgaN3 (3c1d7425)
+- feat: improve admin dashboard with comprehensive stats and modern UI (338cd8a0)
+- feat: add enterprise-level performance optimization and real-time system monitoring (1c4db767)
+- feat: add customizable text for Start button in Windows UI (4f849c86)
+- feat: add hotel admin dashboard system with Google Maps integration (41009fb5)
+- feat: redesign user retention dashboard with modern UI (2508ae7d)
+- Merge pull request #691 from xjanova/claude/hotel-settings-fix-011CUxh2Gr5th1qhMcvcWwei (ed622a87)
+- feat: add missing hotel management controllers (0c7701f3)
+- feat: Upgrade to Smart Seeding System v2 (deploy v3.0.2) (6958257d)
+- feat: Add Smart Migration Error Recovery System to deploy.sh (a3a943bc)
+- Merge pull request #688 from xjanova/claude/tarot-card-animation-011CUxnooLEe9TqxnQoqErse (a85f2051)
+- Merge pull request #687 from xjanova/claude/create-trading-bot-011CUvsjrh6xXEKYzxqoWf4X (61225a5f)
+- feat: Add interactive tarot card selection with GSAP animations (3731502c)
+- Merge pull request #686 from xjanova/claude/redesign-start-menu-ui-011CUxjJqpAJtEpiki2XEEm3 (a1b6eabb)
+- feat: add RGB hover effect for Start Menu items with toggle option (1b1dd754)
+- Merge pull request #681 from xjanova/claude/improve-deploy-script-011CUxjrt2kXkrE14GG1W6s9 (47aaba68)
+- feat: upgrade deploy.sh to v3.0 with ultra-intelligent features (3543a758)
+- Merge pull request #679 from xjanova/claude/improve-deploy-script-011CUxjrt2kXkrE14GG1W6s9 (cfcafee5)
+- feat: improve deploy.sh with smart composer management (091e98c3)
+- feat: redesign start menu UI with improved organization and clarity (356dc658)
+- Merge pull request #678 from xjanova/claude/analytics-011CUxh7svN9v8vCn4zwgaN3 (e7dee501)
+- Merge pull request #677 from xjanova/claude/wallet-system-review-011CUxiK9DoAerr9GhT8rr96 (22b03ad3)
+- feat: add missing admin crypto wallet views (1a011f49)
+- feat: add enterprise-level AI analytics with ML-powered insights (31e153a0)
+- Merge pull request #676 from xjanova/claude/analytics-011CUxh7svN9v8vCn4zwgaN3 (b5ef4b1a)
+- feat: add advanced analytics features with filters, settings, and data cleanup (8404f6c5)
+- Merge pull request #675 from xjanova/claude/ai-ui-dark-mode-011CUxhDuDvFiihaVdAjPhw3 (e410e1d3)
+- Merge pull request #674 from xjanova/claude/web3-wallet-settings-011CUxhgzC4jXsKZeMuiMVxP (c26677f0)
+- feat: consolidate all crypto/web3 features into Crypto Wallet menu (18aea325)
+- feat: add comprehensive dark mode support for all AI UI components (e7091785)
+- Merge pull request #673 from xjanova/claude/analytics-011CUxh7svN9v8vCn4zwgaN3 (4357acf9)
+- Merge pull request #672 from xjanova/claude/hotel-settings-fix-011CUxh2Gr5th1qhMcvcWwei (cab5e8f0)
+- feat: implement comprehensive vendor analytics system with real-time tracking (dab002cb)
+- feat: replace all checkboxes with toggle switches (89909847)
+- feat: redesign hotel settings UI with modern tabbed interface (5ea64505)
+- feat: implement Windows-style Start Button positioning with flexbox order (b9f72c11)
+- Merge pull request #668 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (d7f3ba83)
+- feat: add responsive menu style options with 3 display modes (d3fb0907)
+- feat: implement Windows UI improvements and fixes (beb46748)
+- feat: add sticky save button and back-to-top settings (d4991e37)
+- feat: implement Smart Seeding for 13 core seeders (14fa37bd)
+- feat: implement Smart Seeding & fix menu size input confusion (afeb3bac)
+- feat: add emoji picker system & prevent seeder from overwriting custom settings (4ed422b8)
+- feat: add transparency slider, clock customization & fix menu ordering (7f9f0c69)
+- feat: implement role-based Start Menu UI and controller logic (d16be4be)
+- feat: add role-based Start Menu management with seed data (aad0e8eb)
+- feat: add Start Button position & Responsive Taskbar settings (464a9b44)
+- feat: add slider controls for percentage-based menu sizing (393e90d9)
+- feat: Implement comprehensive AI-powered trading bot system (a6c505de)
 ### 🐛 Bug Fixes
-
+- Merge pull request #777 from xjanova/claude/check-flow-logic-011CUzXefQzoixumULAVCvad (8d0764f7)
+- fix: restore automatic versioning for claude branches (a62c80c8)
+- Merge pull request #753 from xjanova/claude/fix-missing-safe-migration-trait-011CUyshAAG2s7ipWpG193c5 (bab43473)
+- fix: Use updateOrCreate in AppControlSectionSeeder to prevent duplicates (925ed87e)
+- Merge pull request #752 from xjanova/claude/fix-missing-safe-migration-trait-011CUyshAAG2s7ipWpG193c5 (f737d028)
+- fix: Replace fixed_height/fixed_width with min/max columns in seeder (b29a8720)
+- Merge pull request #751 from xjanova/claude/fix-missing-safe-migration-trait-011CUyshAAG2s7ipWpG193c5 (405d3c32)
+- fix: Add migration to convert existing VARCHAR columns to TEXT (5e49ab7b)
+- Merge pull request #749 from xjanova/claude/fix-missing-safe-migration-trait-011CUyshAAG2s7ipWpG193c5 (f5e6c691)
+- fix: Convert VARCHAR to TEXT columns to solve MySQL row size limit (8e3c270c)
+- Merge pull request #748 from xjanova/claude/fix-missing-safe-migration-trait-011CUyshAAG2s7ipWpG193c5 (1a5702c7)
+- fix: Optimize column sizes in theme settings migration to fix row size limit (ad8ff9a4)
+- Merge pull request #747 from xjanova/claude/fix-missing-safe-migration-trait-011CUyshAAG2s7ipWpG193c5 (56afe139)
+- fix: Add SafeMigration trait to composer autoload (cf924e24)
+- fix: Add column existence checks to theme settings migration (76bd2fda)
+- Merge pull request #738 from xjanova/claude/fix-seller-analytics-route-011CUyffiUW1bQ53ag8ms2Ko (b2b08ced)
+- Merge pull request #734 from xjanova/claude/fix-admin-analytics-011CUyke2sZZeVXLij9BtmbU (ea572f7b)
+- fix: เพิ่มเมนู 'วิเคราะห์ระบบ' ใน admin taskbar (a174a233)
+- fix: สร้าง view ที่หายไปทั้งหมดของระบบร้านค้า (d632c070)
+- Merge pull request #730 from xjanova/claude/fix-missing-hotel-owners-route-011CUyhodSMVuTuqNXAzR3Qf (ebfdb072)
+- fix: อัปเดตการจัดการเส้นทาง (routes) ของโรงแรมและเจ้าของโรงแรม (c17fa10b)
+- Merge pull request #728 from xjanova/claude/fix-seller-analytics-route-011CUyffiUW1bQ53ag8ms2Ko (6c461335)
+- fix: อัปเดตการอ้างอิง route seller.analytics ให้ใช้ seller.analytics.index (5f275f3a)
+- Merge pull request #727 from xjanova/claude/fix-seller-analytics-route-011CUyffiUW1bQ53ag8ms2Ko (f534bbcc)
+- Merge pull request #726 from xjanova/claude/win-section-update-011CUyQ3aqsXbj5MYqTYJ4D2 (7c974db6)
+- fix: ensure Start button text is always displayed with proper fallback values (a3015d4f)
+- fix: เพิ่มชื่อ route seller.analytics.index ให้ตรงกับการเรียกใช้ (15a49dee)
+- Merge pull request #718 from xjanova/claude/improve-hotel-rental-admin-011CUyU6oGngQvuKBvy6ni4j (3744f0c4)
+- fix: resolve critical bugs in hotel rental management system (71e0e67e)
+- Merge pull request #715 from xjanova/claude/fix-seller-analytics-route-011CUyWb7xT6d5Egtv24uNh4 (335ed55d)
+- fix: resolve seller.analytics route conflict (3b99490f)
+- Merge pull request #709 from xjanova/claude/improve-admin-dashboard-011CUyPu81brRj8K3GJPvYh2 (f7b42ee6)
+- fix: set fixed height containers for charts to prevent infinite stretching (a6370053)
+- Merge pull request #705 from xjanova/claude/fix-missing-view-error-011CUyP9ANkp2g6hXkmmvCJf (124f6b7d)
+- Merge pull request #704 from xjanova/claude/improve-admin-dashboard-011CUyPu81brRj8K3GJPvYh2 (e7bd8ac5)
+- fix: correct KYC status column name to use model scopes (01982160)
+- fix: correct PaymentService namespace import in HotelBookingController (419818dd)
+- Merge pull request #703 from xjanova/claude/fix-seller-analytics-route-011CUxry7sRGF8CA4VXYzdbf (ce6c0562)
+- Merge pull request #698 from xjanova/claude/fix-missing-view-error-011CUyP9ANkp2g6hXkmmvCJf (69186b6d)
+- fix: add missing software-products views (index and show) (5a1416f1)
+- fix: prevent duplicate trading_market_data table creation (385a3abf)
+- Merge pull request #696 from xjanova/claude/fix-seller-analytics-route-011CUxry7sRGF8CA4VXYzdbf (d95c76bb)
+- fix: add missing seller.analytics route (af6684d0)
+- Merge pull request #695 from xjanova/claude/fix-missing-app-settings-view-011CUxrHyb1Td9vDWAgHhUN8 (848768a2)
+- Merge pull request #694 from xjanova/claude/fix-migration-constraint-name-011CUxrXEvccttMK6PkA24Lu (06d00753)
+- fix: shorten trading_market_data unique constraint name to fit MySQL 64-char limit (8a1f9ca1)
+- fix: Add missing app-settings index view (38a92e1f)
+- Merge pull request #692 from xjanova/claude/fix-trading-signals-migration-011CUxq1StEf3znGLgeYT9KT (0a5d64e4)
+- fix: Add table existence check to trading_signals migration (45b34e77)
+- Merge pull request #690 from xjanova/claude/add-missing-seeder-011CUxokK69MXjvwuf46Xw76 (fd394e9c)
+- fix: Add missing TradingBotSystemSeeder to DatabaseSeeder (65c3d6c1)
+- Merge pull request #689 from xjanova/claude/redesign-start-menu-ui-011CUxjJqpAJtEpiki2XEEm3 (066ca4fe)
+- fix: prevent settings from resetting when saving from start-menu page (739c6d78)
+- fix: System Tray stays fixed to right edge - changed mx-auto to w-full (8d6ea345)
+- fix: Windows UI settings validation and type handling (e76d1c14)
+- Merge pull request #684 from xjanova/claude/improve-deploy-script-011CUxjrt2kXkrE14GG1W6s9 (8cbfcb13)
+- Merge pull request #683 from xjanova/claude/analytics-011CUxh7svN9v8vCn4zwgaN3 (508d70b8)
+- fix: improve error handling in v3.0.1 (ed24c719)
+- fix: taskbar layout - system tray always stays right aligned (6739afbc)
+- Merge pull request #680 from xjanova/claude/hotel-settings-fix-011CUxh2Gr5th1qhMcvcWwei (4a5f3cab)
+- fix: add missing dependencies for hotel settings to work properly (81163b88)
+- fix: update seller menu with AI analytics submenu links (dcdc6704)
+- Merge pull request #670 from xjanova/claude/fix-json-constant-error-011CUxhbAPZpPsKRTgThAUVK (2f23aa0b)
+- fix: replace Blade component with HTML file input in JavaScript to resolve JSON constant error (4758d5ff)
+- fix: add separate route for menu size & position settings (415367f7)
+- Merge pull request #669 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (dfa738a3)
+- fix: correct taskbar icon URLs to use absolute paths (b91d76bc)
+- Merge pull request #667 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (1a232198)
+- fix: prevent checkbox settings from being reset when saving from different pages (b7b894d9)
+- Merge pull request #665 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (0016d9ad)
+- fix: undefined array key border in taskbar icons (f806f841)
+- Merge pull request #664 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (cc7c7996)
+- fix: taskbar height slider, icons sync, and system tray separator (eec1e75a)
+- fix: remove hardcoded opacity from taskbar transparency (726ebf19)
+- fix: add missing Windows UI settings and fix value persistence (3cfdaa0e)
+- fix: correct taskbar transparency setting key (e130aceb)
+- Merge pull request #655 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (57a55a9d)
+- fix: resolve Blade array syntax issue in rgb-settings (3257666b)
+- fix: resolve Blade syntax error in rgb-settings template (bc81f197)
+- Merge pull request #653 from xjanova/claude/investigate-frequent-conflicts-011CUxD3hwxyf4YmgvRicB1E (daf5c705)
+- fix: disable auto-versioning for feature branches to prevent conflicts (4fbf46e1)
 ### 🔧 Other Changes
-
-
-## [v2.90.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #603 from xjanova/claude/enhance-hero-software-purchase-011CUvnMxEY1ijwcgoE4wnv4 (0eb9a49)
-- feat: enhance hero section with logo, software purchase card, and improved UI (403bd12)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.89.1] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #602 from xjanova/claude/fix-seeder-duplicate-constraints-011CUvmdaPDps2Lvc9XsSV8S (b4b5f09)
-- fix: prevent duplicate constraints in SoftwareProductSeeder (502b040)
-### 🔧 Other Changes
-
-
-## [v2.89.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #601 from xjanova/claude/line-chatbot-mlm-signup-011CUvm6H8GwvA2dibnRvzHk (e9f0d4b)
-- feat: implement intelligent LINE chatbot MLM signup system (12e357a)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.88.3] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #600 from xjanova/claude/fix-seeder-duplicate-constraints-011CUvmdaPDps2Lvc9XsSV8S (9e5166e)
-- fix: prevent duplicate constraint violations in seeders (a77dd2a)
-### 🔧 Other Changes
-
-
-## [v2.88.2] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #599 from xjanova/claude/crypto-wallet-validation-alerts-011CUvkPm1SMQPK4sqJ8Qiad (26396bc)
-- fix: correct all broken routes in start menu (37d3a73)
-### 🔧 Other Changes
-
-
-## [v2.88.1] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #598 from xjanova/claude/crypto-wallet-validation-alerts-011CUvkPm1SMQPK4sqJ8Qiad (cd7a0a6)
-- fix: correct crypto wallet routes in start menu (524eace)
-### 🔧 Other Changes
-
-
-## [v2.88.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #597 from xjanova/claude/crypto-wallet-validation-alerts-011CUvkPm1SMQPK4sqJ8Qiad (e291bf7)
-- feat: add comprehensive validation and alerts for crypto wallet system (6d8c2b2)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.87.1] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #596 from xjanova/claude/add-missing-seeder-011CUvkVGenWi6uwzJKpTmu3 (a0232e4)
-- fix: add missing AppManagementSeeder to DatabaseSeeder (2136356)
-### 🔧 Other Changes
-
-
-## [v2.87.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #595 from xjanova/claude/improve-presentation-slides-011CUvhoAWLqfBcS7rkvV5fh (bcebd4e)
-- feat: add MLM Plans presentation slides with topic selector (23b312d)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.86.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #591 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (d54bc59)
-- feat: Remove sidebars, add submenu support, and optimize dashboard (6215c13)
-### 🐛 Bug Fixes
-- fix: Resolve merge conflicts with main branch, keep Millennium UI (03405f5)
-### 🔧 Other Changes
-
-
-## [v2.85.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #594 from xjanova/claude/improve-presentation-slides-011CUvhoAWLqfBcS7rkvV5fh (7841580)
-- feat: redesign presentation slides with glassmorphism and wiki-aligned content (b84a8a4)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.84.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #593 from xjanova/claude/menu-analysis-system-011CUvi281e5DzQwBVjsMhob (b4fd4a8)
-- feat: add System Analytics menu to admin sidebar (aef674c)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.83.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #592 from xjanova/claude/add-admin-management-011CUvfABX6bhVYdHisZFiJf (d99d525)
-- feat: Add comprehensive app management system for mobile app (1db5e81)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.82.4] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #590 from xjanova/claude/fix-windows-ui-manager-011CUvf5qGaDFhFaHijnBXtU (8b9e52f)
-- fix: integrate Millennium taskbar controls into Windows UI manager (c5e5b18)
-### 🔧 Other Changes
-- Merge branch 'claude/Main' into claude/fix-windows-ui-manager-011CUvf5qGaDFhFaHijnBXtU (344f6e4)
-
-## [v2.82.3] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #589 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (07729ba)
-- fix: Fix Start Menu not opening and enhance Taskbar with comprehensive icons (f6b2a9b)
-### 🔧 Other Changes
-
-
-## [v2.82.2] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #588 from xjanova/claude/fix-crypto-transactions-view-011CUvdT5aQ6Z5jsr4rGdqgH (7b380f5)
-- fix: Create missing admin.crypto.withdrawals view (9ad2f3e)
-### 🔧 Other Changes
-
-
-## [v2.82.1] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #587 from xjanova/claude/update-about-us-page-011CUvceE7YxiXAy2U2gbMJt (3d93481)
-- fix: Update about-us page to use real-time version from package.json (e1e0416)
-### 🔧 Other Changes
-
-
-## [v2.82.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #586 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (11b5acd)
-- feat: Add cryptocurrency icons to index, transactions, and exchange history pages (729e340)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.81.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #585 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (144cce2)
-- feat: Add cryptocurrency icons to admin crypto dashboard (88a4292)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.80.1] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #584 from xjanova/claude/fix-crypto-transactions-view-011CUvdT5aQ6Z5jsr4rGdqgH (3cc5cf8)
-- fix: Create missing admin.crypto.transactions view (1a686ac)
-### 🔧 Other Changes
-
-
-## [v2.80.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #583 from xjanova/claude/update-about-us-page-011CUvceE7YxiXAy2U2gbMJt (a1190fb)
-- feat: Modernize about-us page with comprehensive content and interactive mindmap (314b920)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.79.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #582 from xjanova/claude/update-wiki-dark-mode-011CUvbQvf6S3Uqar4A6vgWW (b8492c8)
-- feat: Add comprehensive Cryptocurrency section to platform-wiki (8723ffa)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.78.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #581 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (64dbe5f)
-- feat: Apply Millennium UI to all layouts (User, App, Windows) (65ae6b5)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.77.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #580 from xjanova/claude/update-wiki-dark-mode-011CUvbQvf6S3Uqar4A6vgWW (142b2a8)
-- feat: Update platform-wiki with dark mode support and comprehensive feature documentation (959d7b3)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.76.5] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- fix: Fix CryptoExchangeService dependency injection order (2db8380)
-- fix: Fix crypto menu dropdown functionality in admin layout (2c6f8b4)
-### 🔧 Other Changes
-- Merge pull request #579 from xjanova/claude/fix-crypto-menu-issues-011CUvbBERnmsAEZtVDfMDcT (86e4311)
-
-## [v2.76.4] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #578 from xjanova/claude/fix-missing-email-templates-route-011CUva7pVvG91so7chuYNpk (8766927)
-- fix: Update all references to use admin.email.templates.index route (997d43a)
-### 🔧 Other Changes
-
-
-## [v2.76.3] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #577 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (3a6c8c5)
-- fix: Correct dependency injection order in CryptoExchangeService (04af4d4)
-### 🔧 Other Changes
-
-
-## [v2.76.2] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #576 from xjanova/claude/fix-missing-email-templates-route-011CUva7pVvG91so7chuYNpk (b80270b)
-- fix: Add missing admin.academy.courses.index route (c1501d2)
-### 🔧 Other Changes
-
-
-## [v2.76.1] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #575 from xjanova/claude/fix-missing-email-templates-route-011CUva7pVvG91so7chuYNpk (0722d70)
-- fix: Update email templates route name to follow Laravel conventions (e47d0f8)
-### 🔧 Other Changes
-
-
-## [v2.76.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #574 from xjanova/claude/add-cryptocurrency-icons-011CUvYs18713ekhi927WHt3 (a17f700)
-- feat: Update all crypto views to use real cryptocurrency icons (db8da09)
-- feat: Add 222+ cryptocurrency icons for trading dashboard (2d67130)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.75.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #573 from xjanova/claude/redesign-menu-start-button-011CUvWPLgaPr7SmBQAryAoK (3576f28)
-- feat: Redesign menu with Millennium Start Button and RGB effects (3f2113d)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.74.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #572 from xjanova/claude/fix-crypto-dashboard-view-011CUvVwwdnYSRumuLaMvAQ2 (0c48428)
-- feat: add missing crypto dashboard view (31d08ba)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.73.2] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-- Merge pull request #571 from xjanova/claude/fix-unrelated-changelog-entries-011CUvRWMZ27vcYScuDCCjaT (c571eff)
-- chore: remove PR template to prevent template text in automated PRs (c239482)
-
-## [v2.73.1] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #570 from xjanova/claude/fix-duplicate-tag-push-011CUvVHmCRKJhMVe4zqs2rR (8bc8da5)
-- fix: prevent duplicate tag push attempts in release workflow (0c3bf71)
-### 🔧 Other Changes
-
-
-## [v2.73.0] - 2025-11-08
-
-### ✨ Features
-- feat: move user menu to button in header (e078aac)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-- Merge pull request #569 from xjanova/claude/resolve-user-layout-conflicts-011CUvUmgUqAfyCw484zzD9v (c689d57)
-- Resolve merge conflict in user layout (30bf027)
-
-## [v2.72.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #568 from xjanova/claude/rgb-pulse-start-button-011CUvSTGUiUh6SPbjjRsSrV (fcc40b2)
-- feat: Add RGB pulse animation to Windows UI start button (c13c34b)
-### 🐛 Bug Fixes
-
-### 🔧 Other Changes
-
-
-## [v2.71.3] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #567 from xjanova/claude/fix-missing-investment-view-011CUvSv9va7up6rCih7BmnH (dfbb846)
-- fix: add missing admin.investments.index view (12d5176)
-### 🔧 Other Changes
-
-
-## [v2.71.2] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- Merge pull request #566 from xjanova/claude/fix-crypto-transactions-relation-011CUvU6CaCxusg9A68fdkn1 (6bcc9e1)
-- fix: add transactions() relationship alias to CryptoCurrency model (f70419c)
-### 🔧 Other Changes
-
-
-## [v2.71.1] - 2025-11-08
-
-### ✨ Features
-
-### 🐛 Bug Fixes
-- fix: properly detect existing git tags in release workflow (f6207f2)
-- fix: add automatic git tag creation to release workflow (cc89071)
-### 🔧 Other Changes
-- Merge pull request #565 from xjanova/claude/fix-unrelated-changelog-entries-011CUvRWMZ27vcYScuDCCjaT (c3c9de8)
-
-## [v2.71.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #561 from xjanova/claude/windows-ui-frontend-011CUvJoqHHp8cojBwXKwiVK (78d4c58)
-- feat: Remove all floating tools and implement comprehensive logo size settings (e7993eb)
-- feat: Remove floating tools and add configurable logo sizes (5abd2f7)
-- Merge pull request #557 from xjanova/claude/mobile-app-setup-011CUvN2xCyvEuKk5jUfTZZ9 (3086f21)
-- feat: Add comprehensive mobile app development setup for Visual Studio (79bd270)
-- Merge pull request #552 from xjanova/claude/fix-invoice-create-view-011CUu4d9yzVnNmGUVT3BQZj (7063aa8)
-- Merge pull request #551 from xjanova/claude/add-stacking-roi-system-011CUuXqmJWD5se33bC4XMj4 (fc9eead)
-- Merge pull request #548 from xjanova/claude/windows-ui-frontend-011CUvJoqHHp8cojBwXKwiVK (9f5af36)
-- feat: Implement Windows UI across all frontend layouts (96605a0)
-- feat: add client-side signing, connection testing, and price charts (87701f5)
-- feat: enhance user ticket creation UI with beautiful category icons (001b86c)
-- feat: add production improvements for cryptocurrency payment gateway (06f8098)
-- feat: Add hotel booking system menus to all navigation (9d2c60f)
-- feat: add investment management menu to admin panel (50336c9)
-- feat: add complete POS menu system with dropdown and quick access (63b0713)
-- feat: implement Phase 6 - Admin Panel & Automation System (112de35)
-- feat: Add comprehensive admin views for hotel management system (e7e3f21)
-- feat: add cart system and flexible quota management for tarot readings (5cfed90)
-- feat: implement Phase 5 - Real Blockchain Integration & Transaction Processing (041d6dd)
-- Merge pull request #542 from xjanova/claude/add-marketplace-affiliate-system-011CUuwhJUmiSmZHzpTDVzjC (36118a6)
-### 🐛 Bug Fixes
-- Merge pull request #564 from xjanova/claude/fix-unrelated-changelog-entries-011CUvRWMZ27vcYScuDCCjaT (3401aef)
-- fix: clean up CHANGELOG and PR template (65ee844)
-- Merge pull request #562 from xjanova/claude/fix-duplicate-crypto-key-011CUvPJjK9xSmiz55kGnq4C (884148f)
-- Merge pull request #560 from xjanova/claude/fix-missing-crypto-routes-011CUvR1U3PfzFsZipUfA2p9 (e7ea802)
-- fix: add missing crypto management routes (2f591cd)
-- fix: resolve duplicate unique key error in crypto_currencies migration (91799ce)
-- Merge pull request #558 from xjanova/claude/fix-positions-create-view-011CUvNTA24RddoLWqbRvrxq (65e6563)
-- fix: add missing positions views (create, edit, show) (c6e19ab)
-- Merge pull request #550 from xjanova/claude/ecommerce-system-011CUvJHQTiKDxKJxrgRyp5g (802e481)
-- fix: Resolve critical image system bugs in admin shop (5027d1a)
-- Merge pull request #546 from xjanova/claude/redesign-homepage-windows-theme-011CUurEygcsg5LWC5yfNhZ5 (5ab1539)
-- fix: Add dark mode toggle function and improve dark mode support (ee52251)
-- Merge pull request #545 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (5937e5a)
-- fix: Make RankSeeder idempotent by using updateOrCreate (70f6508)
-- Merge pull request #544 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (ed8fcbd)
-- fix: Make vendor_packages max_images_per_product column nullable (f6e1653)
-- Merge pull request #543 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (6e473a0)
-- fix: Increase crypto_currencies code column length from 10 to 30 characters (3e55c79)
-- Merge pull request #541 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (3c9ecf5)
-- fix: Change payment_gateways credentials columns from JSON to LONGTEXT (352471e)
-### 🔧 Other Changes
-- chore: bump version to 2.70.0 [skip ci] (08bf16f)
-- chore: bump version to 2.69.0 [skip ci] (3ed8774)
-- chore: bump version to 2.68.0 [skip ci] (fdbf42b)
-- chore: bump version to 2.67.0 [skip ci] (8ee2622)
-- Merge pull request #559 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (a0dd549)
-- chore: bump version to 2.66.0 [skip ci] (f0d4796)
-- chore: bump version to 2.65.0 [skip ci] (ed2ffb8)
-- Merge pull request #547 from xjanova/claude/create-t-system-011CUu6X3WskxZbXiAwv8wn4 (1169984)
-- chore: bump version to 2.64.0 [skip ci] (dac7605)
-- Merge remote-tracking branch 'origin/claude/Main' into claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (845ca36)
-- Merge branch 'claude/crypto-payment-gateway-011CUuZ2E2VQEF3BgPEds3wR' (691228c)
-- chore: bump version to 2.63.0 [skip ci] (dbe5652)
-- Merge pull request #556 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (c6f0698)
-- Merge branch 'claude/hotel-booking-system-011CUu6b9oX4aZGu2sBDwesn' (8e29139)
-- chore: bump version to 2.62.0 [skip ci] (5cb62c3)
-- Merge pull request #553 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (703608a)
-- chore: bump version to 2.61.0 [skip ci] (079e355)
-- Merge branch 'claude/create-t-system-011CUu6X3WskxZbXiAwv8wn4' (8d3efe8)
-- chore: bump version to 2.60.0 [skip ci] (11a83cd)
-- chore: bump version to 2.59.0 [skip ci] (e1efabc)
-
-## [v2.70.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #561 from xjanova/claude/windows-ui-frontend-011CUvJoqHHp8cojBwXKwiVK (78d4c58)
-- feat: Remove all floating tools and implement comprehensive logo size settings (e7993eb)
-- feat: Remove floating tools and add configurable logo sizes (5abd2f7)
-- Merge pull request #557 from xjanova/claude/mobile-app-setup-011CUvN2xCyvEuKk5jUfTZZ9 (3086f21)
-- feat: Add comprehensive mobile app development setup for Visual Studio (79bd270)
-- Merge pull request #552 from xjanova/claude/fix-invoice-create-view-011CUu4d9yzVnNmGUVT3BQZj (7063aa8)
-- Merge pull request #551 from xjanova/claude/add-stacking-roi-system-011CUuXqmJWD5se33bC4XMj4 (fc9eead)
-- Merge pull request #548 from xjanova/claude/windows-ui-frontend-011CUvJoqHHp8cojBwXKwiVK (9f5af36)
-- feat: Implement Windows UI across all frontend layouts (96605a0)
-- feat: add client-side signing, connection testing, and price charts (87701f5)
-- feat: enhance user ticket creation UI with beautiful category icons (001b86c)
-- feat: add production improvements for cryptocurrency payment gateway (06f8098)
-- feat: Add hotel booking system menus to all navigation (9d2c60f)
-- feat: add investment management menu to admin panel (50336c9)
-- feat: add complete POS menu system with dropdown and quick access (63b0713)
-- feat: implement Phase 6 - Admin Panel & Automation System (112de35)
-- feat: Add comprehensive admin views for hotel management system (e7e3f21)
-- feat: add cart system and flexible quota management for tarot readings (5cfed90)
-- feat: implement Phase 5 - Real Blockchain Integration & Transaction Processing (041d6dd)
-- Merge pull request #542 from xjanova/claude/add-marketplace-affiliate-system-011CUuwhJUmiSmZHzpTDVzjC (36118a6)
-### 🐛 Bug Fixes
-- Merge pull request #562 from xjanova/claude/fix-duplicate-crypto-key-011CUvPJjK9xSmiz55kGnq4C (884148f)
-- Merge pull request #560 from xjanova/claude/fix-missing-crypto-routes-011CUvR1U3PfzFsZipUfA2p9 (e7ea802)
-- fix: add missing crypto management routes (2f591cd)
-- fix: resolve duplicate unique key error in crypto_currencies migration (91799ce)
-- Merge pull request #558 from xjanova/claude/fix-positions-create-view-011CUvNTA24RddoLWqbRvrxq (65e6563)
-- fix: add missing positions views (create, edit, show) (c6e19ab)
-- Merge pull request #550 from xjanova/claude/ecommerce-system-011CUvJHQTiKDxKJxrgRyp5g (802e481)
-- fix: Resolve critical image system bugs in admin shop (5027d1a)
-- Merge pull request #546 from xjanova/claude/redesign-homepage-windows-theme-011CUurEygcsg5LWC5yfNhZ5 (5ab1539)
-- fix: Add dark mode toggle function and improve dark mode support (ee52251)
-- Merge pull request #545 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (5937e5a)
-- fix: Make RankSeeder idempotent by using updateOrCreate (70f6508)
-- Merge pull request #544 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (ed8fcbd)
-- fix: Make vendor_packages max_images_per_product column nullable (f6e1653)
-- Merge pull request #543 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (6e473a0)
-- fix: Increase crypto_currencies code column length from 10 to 30 characters (3e55c79)
-- Merge pull request #541 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (3c9ecf5)
-- fix: Change payment_gateways credentials columns from JSON to LONGTEXT (352471e)
-- Merge pull request #538 from xjanova/claude/fix-marketplace-foreign-key-011CUvC17NB1cYQ9yK9Fg38E (944685b)
-- fix: shorten index names to fit MySQL 64-char limit (6d17fc5)
-### 🔧 Other Changes
-- chore: bump version to 2.69.0 [skip ci] (3ed8774)
-- chore: bump version to 2.68.0 [skip ci] (fdbf42b)
-- chore: bump version to 2.67.0 [skip ci] (8ee2622)
-- Merge pull request #559 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (a0dd549)
-- chore: bump version to 2.66.0 [skip ci] (f0d4796)
-- chore: bump version to 2.65.0 [skip ci] (ed2ffb8)
-- Merge pull request #547 from xjanova/claude/create-t-system-011CUu6X3WskxZbXiAwv8wn4 (1169984)
-- chore: bump version to 2.64.0 [skip ci] (dac7605)
-- Merge remote-tracking branch 'origin/claude/Main' into claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (845ca36)
-- Merge branch 'claude/crypto-payment-gateway-011CUuZ2E2VQEF3BgPEds3wR' (691228c)
-- chore: bump version to 2.63.0 [skip ci] (dbe5652)
-- Merge pull request #556 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (c6f0698)
-- Merge branch 'claude/hotel-booking-system-011CUu6b9oX4aZGu2sBDwesn' (8e29139)
-- chore: bump version to 2.62.0 [skip ci] (5cb62c3)
-- Merge pull request #553 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (703608a)
-- chore: bump version to 2.61.0 [skip ci] (079e355)
-- Merge branch 'claude/create-t-system-011CUu6X3WskxZbXiAwv8wn4' (8d3efe8)
-- chore: bump version to 2.60.0 [skip ci] (11a83cd)
-- chore: bump version to 2.59.0 [skip ci] (e1efabc)
-- chore: bump version to 2.58.0 [skip ci] (e1071ed)
-
-## [v2.69.0] - 2025-11-08
-
-### ✨ Features
-- Merge pull request #561 from xjanova/claude/windows-ui-frontend-011CUvJoqHHp8cojBwXKwiVK (78d4c58)
-- feat: Remove all floating tools and implement comprehensive logo size settings (e7993eb)
-- feat: Remove floating tools and add configurable logo sizes (5abd2f7)
-- Merge pull request #557 from xjanova/claude/mobile-app-setup-011CUvN2xCyvEuKk5jUfTZZ9 (3086f21)
-- feat: Add comprehensive mobile app development setup for Visual Studio (79bd270)
-- Merge pull request #552 from xjanova/claude/fix-invoice-create-view-011CUu4d9yzVnNmGUVT3BQZj (7063aa8)
-- Merge pull request #551 from xjanova/claude/add-stacking-roi-system-011CUuXqmJWD5se33bC4XMj4 (fc9eead)
-- Merge pull request #548 from xjanova/claude/windows-ui-frontend-011CUvJoqHHp8cojBwXKwiVK (9f5af36)
-- feat: Implement Windows UI across all frontend layouts (96605a0)
-- feat: add client-side signing, connection testing, and price charts (87701f5)
-- feat: enhance user ticket creation UI with beautiful category icons (001b86c)
-- feat: add production improvements for cryptocurrency payment gateway (06f8098)
-- feat: Add hotel booking system menus to all navigation (9d2c60f)
-- feat: add investment management menu to admin panel (50336c9)
-- feat: add complete POS menu system with dropdown and quick access (63b0713)
-- feat: implement Phase 6 - Admin Panel & Automation System (112de35)
-- feat: Add comprehensive admin views for hotel management system (e7e3f21)
-- feat: add cart system and flexible quota management for tarot readings (5cfed90)
-- feat: implement Phase 5 - Real Blockchain Integration & Transaction Processing (041d6dd)
-- Merge pull request #542 from xjanova/claude/add-marketplace-affiliate-system-011CUuwhJUmiSmZHzpTDVzjC (36118a6)
-### 🐛 Bug Fixes
-- Merge pull request #560 from xjanova/claude/fix-missing-crypto-routes-011CUvR1U3PfzFsZipUfA2p9 (e7ea802)
-- fix: add missing crypto management routes (2f591cd)
-- Merge pull request #558 from xjanova/claude/fix-positions-create-view-011CUvNTA24RddoLWqbRvrxq (65e6563)
-- fix: add missing positions views (create, edit, show) (c6e19ab)
-- Merge pull request #550 from xjanova/claude/ecommerce-system-011CUvJHQTiKDxKJxrgRyp5g (802e481)
-- fix: Resolve critical image system bugs in admin shop (5027d1a)
-- Merge pull request #546 from xjanova/claude/redesign-homepage-windows-theme-011CUurEygcsg5LWC5yfNhZ5 (5ab1539)
-- fix: Add dark mode toggle function and improve dark mode support (ee52251)
-- Merge pull request #545 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (5937e5a)
-- fix: Make RankSeeder idempotent by using updateOrCreate (70f6508)
-- Merge pull request #544 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (ed8fcbd)
-- fix: Make vendor_packages max_images_per_product column nullable (f6e1653)
-- Merge pull request #543 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (6e473a0)
-- fix: Increase crypto_currencies code column length from 10 to 30 characters (3e55c79)
-- Merge pull request #541 from xjanova/claude/fix-payment-gateway-constraint-011CUvETPsK1zmwq6ym4853t (3c9ecf5)
-- fix: Change payment_gateways credentials columns from JSON to LONGTEXT (352471e)
-- Merge pull request #538 from xjanova/claude/fix-marketplace-foreign-key-011CUvC17NB1cYQ9yK9Fg38E (944685b)
-- fix: shorten index names to fit MySQL 64-char limit (6d17fc5)
-- Merge pull request #537 from xjanova/claude/fix-marketplace-foreign-key-011CUvC17NB1cYQ9yK9Fg38E (b7726f4)
-- fix: shorten foreign key constraint names to fit MySQL 64-char limit (ccc0243)
-### 🔧 Other Changes
-- chore: bump version to 2.68.0 [skip ci] (fdbf42b)
-- chore: bump version to 2.67.0 [skip ci] (8ee2622)
-- Merge pull request #559 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (a0dd549)
-- chore: bump version to 2.66.0 [skip ci] (f0d4796)
-- chore: bump version to 2.65.0 [skip ci] (ed2ffb8)
-- Merge pull request #547 from xjanova/claude/create-t-system-011CUu6X3WskxZbXiAwv8wn4 (1169984)
-- chore: bump version to 2.64.0 [skip ci] (dac7605)
-- Merge remote-tracking branch 'origin/claude/Main' into claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (845ca36)
-- Merge branch 'claude/crypto-payment-gateway-011CUuZ2E2VQEF3BgPEds3wR' (691228c)
-- chore: bump version to 2.63.0 [skip ci] (dbe5652)
-- Merge pull request #556 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (c6f0698)
-- Merge branch 'claude/hotel-booking-system-011CUu6b9oX4aZGu2sBDwesn' (8e29139)
-- chore: bump version to 2.62.0 [skip ci] (5cb62c3)
-- Merge pull request #553 from xjanova/claude/resolve-merge-conflicts-011CUvHHshCmLRB6Hyi6ZvA3 (703608a)
-- chore: bump version to 2.61.0 [skip ci] (079e355)
-- Merge branch 'claude/create-t-system-011CUu6X3WskxZbXiAwv8wn4' (8d3efe8)
-- chore: bump version to 2.60.0 [skip ci] (11a83cd)
-- chore: bump version to 2.59.0 [skip ci] (e1efabc)
-- chore: bump version to 2.58.0 [skip ci] (e1071ed)
-- Merge pull request #549 from xjanova/claude/tarot-reading-system-011CUu6TaY51LWbLHCMLJ3FN (4f0abc3)
-
-## [v2.68.0] - 2025-11-08
-
-### 🐛 Bug Fixes
-- fix: add missing crypto management routes (2f591cd)
-
-## [v2.67.0] - 2025-11-08
-
-### ✨ Features
-- feat: Add comprehensive mobile app development setup for Visual Studio (79bd270)
-
-### 🐛 Bug Fixes
-- fix: add missing positions views (create, edit, show) (c6e19ab)
-
-## [v2.66.0] - 2025-11-08
-
-### ✨ Features
-- feat: Implement Windows UI across all frontend layouts (96605a0)
-
-## [v2.65.0] - 2025-11-08
-
-### ✨ Features
-- feat: add client-side signing, connection testing, and price charts (87701f5)
-- feat: enhance user ticket creation UI with beautiful category icons (001b86c)
-- feat: add production improvements for cryptocurrency payment gateway (06f8098)
-
-### 🐛 Bug Fixes
-- fix: Resolve critical image system bugs in admin shop (5027d1a)
-
-## [v2.64.0] - 2025-11-08
-
-### ✨ Features
-- feat: Add hotel booking system menus to all navigation (9d2c60f)
-- feat: add investment management menu to admin panel (50336c9)
-- feat: add complete POS menu system with dropdown and quick access (63b0713)
-
-### 🐛 Bug Fixes
-- fix: Add dark mode toggle function and improve dark mode support (ee52251)
-
-## [v2.63.0] - 2025-11-08
-
-### ✨ Features
-- feat: implement Phase 6 - Admin Panel & Automation System (112de35)
-- feat: Add comprehensive admin views for hotel management system (e7e3f21)
-- feat: add cart system and flexible quota management for tarot readings (5cfed90)
-
-### 🐛 Bug Fixes
-- fix: Make RankSeeder idempotent by using updateOrCreate (70f6508)
-
-### 📚 Documentation
-- docs: add comprehensive cart and quota system documentation (f5e89b7)
-
-## [v2.62.0] - 2025-11-08
-
-### ✨ Features
-- feat: implement Phase 5 - Real Blockchain Integration & Transaction Processing (041d6dd)
-
-### 🐛 Bug Fixes
-- fix: Make vendor_packages max_images_per_product column nullable (f6e1653)
-
-### 📚 Documentation
-- docs: add deployment automation and comprehensive documentation (8e2a5de)
-
-## [v2.61.0] - 2025-11-08
-
-### 🐛 Bug Fixes
-- fix: Increase crypto_currencies code column length from 10 to 30 characters (3e55c79)
-
-## [v2.60.0] - 2025-11-08
-
-### ✨ Features
-- feat: add marketplace API integration services (21a6118)
-
-### 🐛 Bug Fixes
-- fix: Change payment_gateways credentials columns from JSON to LONGTEXT (352471e)
-
-## [v2.59.0] - 2025-11-08
-
-### ✨ Features
-- feat: Add automatic DomPDF installation to deployment script (d0175c0)
-
-### 🐛 Bug Fixes
-- fix: shorten index names to fit MySQL 64-char limit (6d17fc5)
-
-## [v2.58.0] - 2025-11-08
-
-### 🐛 Bug Fixes
-- fix: shorten foreign key constraint names to fit MySQL 64-char limit (ccc0243)
-
-## [v2.57.0] - 2025-11-08
-
-### 🐛 Bug Fixes
-- fix: resolve marketplace migrations foreign key constraint error (a957195)
-
-## [v2.56.0] - 2025-11-08
-
-### ✨ Features
-- feat: Add complete Controllers and PDF system for software sales (0d0ae3e)
-- feat: Add complete customizable software sales system with MLM example (b312924)
-
-### 🐛 Bug Fixes
-- fix: add table existence checks to all 2025_11_08 migrations (9ce5b69)
-
-## [v2.55.0] - 2025-11-08
-
-### ✨ Features
-- feat: add cookie tracking and consent management tables (70a3160)
-
-### 🐛 Bug Fixes
-- fix: resolve constraint name too long error in e-commerce migrations (fe03f8c)
-
-## Older Versions
-
-สำหรับ versions เก่ากว่านี้ สามารถดูได้จาก git history:
-```bash
-git log --oneline --no-merges
-```
+- Merge pull request #776 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (14265b16)
+- Merge pull request #775 from xjanova/claude/review-membership-system-011CUzMn5CG1QFgqkS2XpdnQ (e65e7c6d)
+- Add: เพิ่มหน้าจัดการ LINE Signup Flow Management (index view) (7ca640ce)
+- Fix: เพิ่ม RGB effect ให้ submenu + ลบการตั้งค่าซ้ำ (b45bfd59)
+- Merge pull request #774 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (5502af06)
+- Fix: แก้ไข RGB hover effect ให้เหมือนกรอบใหญ่จริงๆ (91cbca00)
+- Merge pull request #773 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (24eb0e80)
+- Docs: อัพเดต MENU_RULES.md v3.1.0 - เพิ่ม RGB border + logo customization (507a6b01)
+- Merge pull request #772 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (1825caf9)
+- Fix: สร้าง RGB border effect ที่วิ่งรอบกรอบจริงๆ (4f9799ac)
+- Merge pull request #771 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (39ea09c4)
+- Fix: แก้ไข RGB hover effect + เพิ่มการตั้งค่าขนาดโลโก้ (5712262b)
+- Merge pull request #770 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (0e16e663)
+- Fix: ปรับปรุง RGB hover effect ให้ทำงานได้แน่นอน (109f3e2c)
+- Feature: เพิ่มการควบคุมโลโก้และข้อความในเมนู + แก้ไขโลโก้ไม่แสดง (e6079d7c)
+- Merge pull request #769 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (87428cfb)
+- Feature: เพิ่มการตั้งค่าเมนูเพิ่มเติม + แก้ไข /admin 404 (a9644608)
+- Merge pull request #768 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (29666964)
+- Fix: เพิ่ม RGB Hover Effect settings ที่หายไป (501cba20)
+- Merge pull request #767 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (da4eb8b1)
+- Add: Restore Start Menu & Button settings forms to Windows UI page (8ade0159)
+- Fix: ลบลิงก์ไปยัง start-menu, taskbar-apps, system-tray จาก Windows UI index (53463093)
+- Merge pull request #766 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (72b45d20)
+- Fix: ใช้ hybrid approach - โหลดจาก database ก่อน ถ้าไม่มีค่อย fallback เป็น hard-coded (bf73beb1)
+- Fix: แก้ไข route error โดยเพิ่ม safeRoute() helper สำหรับ route ที่ไม่มี (6372a915)
+- Merge pull request #765 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (ca0d72de)
+- Refactor: เปลี่ยนระบบเมนูเป็น Hard-Coded แทน Database-Driven (0116f465)
+- Merge pull request #764 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (07749599)
+- Fix: แก้ไข WindowsUiController ให้บันทึกค่าสี Taskbar ได้ (b6551160)
+- Merge pull request #763 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (12b42df1)
+- Add: เพิ่มหน้า UI สำหรับจัดการสี Taskbar (d47aef57)
+- Merge pull request #762 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (9d40b076)
+- Add: เพิ่มการตั้งค่าสี Taskbar ให้ปรับแต่งได้ (4cd7b7c3)
+- Merge pull request #761 from xjanova/claude/fix-total-price-column-011CUzFLNa7sdKVeic2ATAKT (0390add3)
+- Fix: แก้ไขชื่อคอลัมน์ใน order_items table (b950e941)
+- Merge pull request #760 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (e8eb05de)
+- Fix: แก้ไข WindowsUiSeeder ให้ใช้ URLs จริงแทน route names (97b7088e)
+- Merge pull request #759 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (4f275453)
+- Add: เพิ่มสคริปต์ปรับใช้การเปลี่ยนแปลงระบบเมนู (2adb6cac)
+- Refactor: เปลี่ยนจาก 'route' เป็น 'url' ทั้งระบบเมนู (062593eb)
+- Merge pull request #758 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (9156b0c1)
+- Fix: แก้ไขการบันทึกและเรียกคืนข้อมูลเมนูให้ตรงกับ WindowsUiSeeder (a8f85bb2)
+- Add: เครื่องมือช่วยแก้ไขและคืนค่าข้อมูลเมนู (e4451251)
+- Merge pull request #757 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (6318e90a)
+- Fix: แก้ไขให้ใช้ field 'route' แทน 'url' ในระบบการจัดการเมนู (6b5496c7)
+- Add: เอกสารและสคริปต์วิเคราะห์ปัญหาเมนู (d27c7164)
+- Merge pull request #756 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (720ea494)
+- Add: คู่มือแก้ปัญหาเมนูไม่มีลิงก์ที่ถูกต้อง (a531f901)
+- Add: เพิ่ม Debug Logging และ Warning UI สำหรับตรวจสอบข้อมูลเมนู (4f81dfd6)
+- Merge pull request #755 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (2b4050cc)
+- Fix: แก้ปัญหา ComponentSettingSeeder ใช้ Smart Seeding Strategy (9cc78db9)
+- Merge pull request #754 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (02b62547)
+- Fix: แก้ปัญหาเมนูกดแล้วไม่ทำงาน (คลิกแล้วไม่ไปไหน) (e1671a98)
+- Revert: ลบไฟล์ที่สร้างผิด (placeholder routes และเอกสารที่ไม่จำเป็น) (d1075add)
+- Add: เอกสารสรุป routes ที่มีจริงในระบบ (7f1f3889)
+- Add: Placeholder Routes & Coming Soon Page สำหรับแก้ปัญหาเมนูกดแล้วไม่ไปไหน (bd206321)
+- Merge pull request #750 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (56827fe5)
+- Fix: Remove incorrect WindowsUiSetting::set() calls from getAllSettings() (fd200d00)
+- Merge pull request #746 from xjanova/claude/add-missing-seeders-011CUyqcvRgLqYeuRN66JNvt (6b3283da)
+- refactor: Cleanup documentation - remove duplicates (Plan A) (187aa853)
+- Merge pull request #745 from xjanova/claude/add-missing-seeders-011CUyqcvRgLqYeuRN66JNvt (61859e0d)
+- Merge pull request #744 from xjanova/claude/add-missing-seeders-011CUyqcvRgLqYeuRN66JNvt (341d09f0)
+- refactor: Remove duplicate guidelines section from instructions.md (8eaa0ef5)
+- Merge pull request #743 from xjanova/claude/fix-duplicate-migration-columns-011CUyqbgcSkFcG54H4Nkpmw (66e1e30e)
+- docs: Add MANDATORY reading requirement for all guidelines (9be3ea23)
+- Merge pull request #742 from xjanova/claude/add-missing-seeders-011CUyqcvRgLqYeuRN66JNvt (24e4952a)
+- docs: Add CRITICAL RULE for DatabaseSeeder.php synchronization (c0cb0b40)
+- Merge pull request #740 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (43a9d3ad)
+- Refactor: ลบ Hard-Coded Defaults ทั้งหมด + Smart Seeding (735b61a9)
+- Refactor: แก้ไขระบบเมนูให้อิงจาก Windows UI แทน Hard-Coded (67d0d12d)
+- merge: แก้ไข conflict ใน routes/admin.php (4023294e)
+- Merge pull request #735 from xjanova/claude/clean-translation-system-011CUyk6mbBz4XXhD7Ligur4 (0441e8c9)
+- refactor: ล้างระบบการแปลภาษาให้ใช้ Google Translate เพียงอย่างเดียว (06f23d50)
+- Merge pull request #722 from xjanova/claude/complete-install-setup-011CUyXvhbuRe6BThWD3EZ2x (08b1b0e1)
+- Merge pull request #717 from xjanova/claude/fix-hotel-admin-migration-011CUyQyjtM12azRnmPr2Qzj (de411e18)
+- Fix app settings route names to match route definitions (8c2015bb)
+- Merge pull request #712 from xjanova/claude/fix-hotel-admin-migration-011CUyQyjtM12azRnmPr2Qzj (4aa60338)
+- Add column existence checks to performance indexes migration (4d9c12b4)
+- Merge pull request #710 from xjanova/claude/fix-hotel-admin-migration-011CUyQyjtM12azRnmPr2Qzj (be847399)
+- Fix performance indexes migration for Laravel 10+ (3af400fa)
+- Merge pull request #707 from xjanova/claude/fix-hotel-admin-migration-011CUyQyjtM12azRnmPr2Qzj (763adba8)
+- Fix hotel admin migration: reference correct column (f3995718)
+- Merge pull request #702 from xjanova/claude/mobile-live-streaming-system-011CUyNtM623Fg5e8jMqGFqc (060197c1)
+- Merge pull request #697 from xjanova/claude/user-retention-feature-011CUxs7hZw6UCDUFyBubPx1 (501e838f)
+- docs: add comprehensive tech stack and architecture overview (49e71ad6)
+- Merge pull request #693 from xjanova/claude/add-missing-seeder-011CUxokK69MXjvwuf46Xw76 (e0d7403e)
+- Merge pull request #685 from xjanova/claude/redesign-start-menu-ui-011CUxjJqpAJtEpiki2XEEm3 (140b0108)
+- Merge pull request #682 from xjanova/claude/redesign-start-menu-ui-011CUxjJqpAJtEpiki2XEEm3 (6224001f)
+- Merge pull request #671 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (a2c4c361)
+- Merge pull request #666 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (4f65f1da)
+- refactor: remove Millennium Start Menu Settings from index (5b8d9953)
+- Merge pull request #663 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (8f61ee00)
+- refactor: remove duplicate settings and add sticky save buttons (b156bf1f)
+- Merge pull request #662 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (99392035)
+- Merge pull request #661 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (cbd8bc38)
+- refactor: apply Smart Seeding to learning category seeder (Batch 5/5) (a3aaeb6a)
+- refactor: apply Smart Seeding to system config & vendor seeders (Batch 4/5) (350111d8)
+- Merge pull request #660 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (74dfd0ee)
+- refactor: apply Smart Seeding to product & marketplace seeders (Batch 3/5) (24900888)
+- refactor: apply Smart Seeding to menu & permission seeders (Batch 2/5) (c2f3ee1d)
+- Merge pull request #659 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (53743703)
+- Merge pull request #658 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (6013348a)
+- Merge pull request #657 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (f068d1e2)
+- Merge pull request #656 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (7d660f6f)
+- Merge pull request #654 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (750339e4)
+- chore: skip PageBuilderSeeder and HomepageImportSeeder to prevent duplicates (4da1c463)
 
 ---
 
-**หมายเหตุ**: CHANGELOG นี้ถูกสร้างใหม่เพื่อลบ entries ที่ซ้ำซ้อนออก
-Backup ของ CHANGELOG เดิมอยู่ที่: `CHANGELOG.md.backup`
+## 📝 คำแนะนำสำหรับการสร้าง Release
+
+**สำหรับ Product Releases (ที่จะให้ผู้ใช้อัพเดท):**
+
+ใช้คำสั่ง:
+```bash
+php artisan release:create v1.2.0 --changelog="สรุปการเปลี่ยนแปลงที่สำคัญ" --push
+```
+
+**หลักการเขียน Changelog สำหรับ Release:**
+- ✅ **เน้นสิ่งที่ผู้ใช้จะได้รับ** ไม่ใช่รายละเอียดทางเทคนิค
+- ✅ **ใช้ภาษาที่เข้าใจง่าย** หลีกเลี่ยงศัพท์เทคนิค
+- ✅ **สรุปเฉพาะฟีเจอร์สำคัญ** ไม่ต้องระบุการแก้บัคทั้งหมด
+- ❌ **ไม่ต้องระบุ git commits, PRs, bug fixes** เว้นแต่เป็น security fix
+
+**ประเภท Release:**
+- `--type=major` - การเปลี่ยนแปลงใหญ่ (Breaking Changes)
+- `--type=minor` - ฟีเจอร์ใหม่ (ค่า default)
+- `--type=patch` - ปรับปรุงเล็กน้อย/แก้บัค
+
+**ตัวอย่างการเขียน Changelog ที่ดี (ภาษาไทยเท่านั้น):**
+
+```
+✅ ดี:
+"เพิ่มระบบติดตามผลแบบเรียลไทม์ และปรับปรุงหน้าแดชบอร์ดให้แสดงข้อมูลได้ละเอียดขึ้น รองรับหลายสกุลเงิน และมีกราฟแสดงสถิติแบบโต้ตอบ"
+
+❌ ไม่ดี:
+"Fixed bug in tracking system, Added real-time feature"
+"แก้บัค issue #123, #124, #125"
+```
+
+**ตัวอย่างคำสั่ง:**
+```bash
+# Minor Release (ฟีเจอร์ใหม่)
+php artisan release:create v2.1.0 --type=minor \
+  --changelog="เพิ่มระบบติดตามผลแบบเรียลไทม์ พร้อมกราฟสถิติแบบโต้ตอบและรองรับหลายสกุลเงิน" \
+  --push
+
+# Patch Release (ปรับปรุง/แก้บัค)
+php artisan release:create v2.0.1 --type=patch \
+  --changelog="ปรับปรุงประสิทธิภาพการทำงานและเพิ่มความเสถียรของระบบ" \
+  --push
+
+# Draft Release (ยังไม่พร้อมให้อัพเดท - ใช้ทดสอบก่อน)
+php artisan release:create v3.0.0 --type=major \
+  --changelog="ระบบวิเคราะห์ข้อมูลด้วย AI และรายงานแบบอัตโนมัติ" \
+  --draft --push
+```
+
+**สำคัญ:**
+- การสร้าง Release จะสร้าง Git tag และ push ไปยัง GitHub
+- เฉพาะ **Official Releases** (ไม่ใช่ draft) เท่านั้นที่จะปรากฏในระบบอัพเดท
+- ผู้ใช้จะเห็น changelog นี้เมื่อกดอัพเดทในระบบ
+
+---
+
+## 🔄 Development Changelog (สำหรับ Developer)
+
+## [v2.110.1] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #652 from xjanova/claude/investigate-frequent-conflicts-011CUxD3hwxyf4YmgvRicB1E (58715bd)
+- docs: add comprehensive merge conflict analysis and solutions (c709746)
+
+## [v2.110.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #651 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (771717e)
+- feat: add Windows UI Configuration System with seeder and enhanced menu controls (ff07d7f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- chore: merge claude/Main and resolve CHANGELOG.md conflict (e0e376c)
+
+## [v2.110.0] - 2025-11-09
+
+### ✨ Features - Windows UI Configuration System
+- **WindowsUiSeeder**: Created comprehensive seeder for Windows UI settings
+  - Start Menu Items with current grouped menu structure (14 main categories with submenus)
+  - Taskbar Apps quick access configuration (7 default apps)
+  - System Tray Icons with visibility controls (9 default icons)
+  - All settings seeded from actual millennium-start-menu.blade.php structure
+
+- **Start Menu Size & Position Controls**: Fixed and enhanced settings
+  - Position control (left, center, right) now works correctly
+  - Width and height settings now save and apply properly
+  - Added percentage support for responsive sizing
+  - Unit selector for width (px, %)
+  - Unit selector for height (px, %, vh)
+  - Settings are properly loaded and displayed
+  - Real-time application of size and position changes
+
+### 🎨 Improvements
+- Enhanced Start Menu management UI with unit selectors
+- Added helpful hints for recommended sizes
+- Improved form validation for menu settings
+- Better default values in WindowsUiSeeder
+
+### 🔧 Technical Details
+- Updated WindowsUiController validation rules for new menu settings
+- Modified millennium-start-menu component to support flexible units
+- Added millennium_menu_width_unit and millennium_menu_max_height_unit settings
+- Registered WindowsUiSeeder in DatabaseSeeder
+- All settings now persist correctly to database
+
+### 📚 Files Changed
+- New: `database/seeders/WindowsUiSeeder.php` (~370 lines)
+- Modified: `database/seeders/DatabaseSeeder.php` (added WindowsUiSeeder)
+- Modified: `app/Http/Controllers/Admin/WindowsUiController.php` (added menu setting validation)
+- Modified: `resources/views/admin/windows-ui/start-menu.blade.php` (enhanced UI with units)
+- Modified: `resources/views/components/millennium-start-menu.blade.php` (support flexible units)
+
+### 🚀 System Status
+Windows UI Configuration is now **complete** with:
+✅ Start Menu with 14 grouped categories and working submenus
+✅ Taskbar Apps quick access configuration
+✅ System Tray Icons with visibility controls
+✅ Working size and position controls with percentage support
+✅ Comprehensive seeder with current menu structure
+✅ All settings persist and apply correctly
+
+## [v2.109.1] - 2025-11-09
+
+### 🐛 Bug Fixes
+- Merge pull request #650 from xjanova/claude/fix-blade-syntax-error-011CUxCCkvwCTEoeML9dyM8L (208fd35)
+- fix: resolve Blade syntax error in rgb-settings template (34ce41b)
+
+## [v2.109.0] - 2025-11-09
+
+### ✨ Features - Page Builder Completion
+- **Section Templates**: Created 11 missing section templates bringing total to 19
+  - hero-gradient: Hero section with animated gradient backgrounds
+  - hero-video: Hero with video background (MP4, YouTube, Vimeo support)
+  - features-list: Detailed features list with icons and images
+  - testimonials: Testimonial cards with ratings and verified badges
+  - image-text: Image and text combination sections
+  - gallery: Image gallery with lightbox support
+  - pricing: Professional pricing tables with plan comparison
+  - team: Team member showcase with social links
+  - faq: FAQ accordion with multiple layout options
+  - contact-form: Advanced contact form with validation
+  - custom-html: Custom HTML/CSS/JS section
+
+- **Edit Section Modal**: Full-featured section editor
+  - JSON-based content and settings editor
+  - Real-time validation
+  - Visual feedback and error handling
+  - API endpoint for fetching section data
+
+- **Auto-Save System**: Automatic data persistence
+  - Auto-save every 30 seconds
+  - Save on window blur (tab switch)
+  - Visual notifications
+  - Smart detection to prevent unnecessary saves
+
+- **Visual Template Gallery**: Beautiful template picker modal
+  - Grid layout with icons
+  - Category-based icons for each section type
+  - Hover effects and visual feedback
+  - Quick add functionality
+
+- **Configuration System**: Centralized config file
+  - Cache settings
+  - Section types and page types definitions
+  - Default settings for all section types
+  - Validation rules
+  - Permission configuration
+  - SEO and storage settings
+  - Development/debug options
+
+- **Validation Service**: Content structure validation
+  - Type-specific validation rules
+  - Required fields checking
+  - Settings validation
+  - Strict mode option
+
+- **Permission Policy**: Role-based access control
+  - PageBuilderPolicy with granular permissions
+  - View, create, edit, delete, publish permissions
+  - Homepage protection
+  - Admin override
+
+- **Enhanced Seeder**: Updated PageBuilderSeeder with 22 templates
+  - Sample data for all 11 new section types
+  - Complete default content and settings
+  - Ready-to-use template examples
+
+### 🎨 Improvements
+- Enhanced UI/UX for Page Builder editor
+- Improved section card design
+- Better modal transitions and animations
+- Comprehensive documentation in config file
+
+### 📚 Technical Details
+- Total section templates: 19
+- New files: 16 (11 templates + config + service + policy + seeder updates)
+- Updated files: 5 (controller, view, routes, seeder, changelog)
+- Lines of code added: ~3,300+
+- All PHP files syntax validated
+
+### 🚀 System Status
+Page Builder is now **production-ready** with:
+✅ Visual drag & drop editor
+✅ Real-time responsive preview
+✅ Complete section library (19 types)
+✅ Advanced edit capabilities
+✅ Auto-save functionality
+✅ Permission system
+✅ Content validation
+✅ Configuration management
+✅ 22 ready-to-use templates in seeder
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+## [v2.108.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #648 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (2893ce3)
+- feat: complete Page Builder system with missing features (6ef5882)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.107.2] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #647 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (b238bbe)
+- fix: PageBuilderController update method return JSON for AJAX (4f6616d)
+### 🔧 Other Changes
+
+
+## [v2.107.1] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: improve Page Builder edit page functionality (a55b0e3)
+- fix: replace Vite with CDN assets in Page Builder preview (c6676a8)
+### 🔧 Other Changes
+- Merge pull request #646 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (781fd97)
+
+## [v2.107.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #645 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (d28bbe7)
+- feat: consolidate Windows UI management into comprehensive pages (e59bdb4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.106.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #644 from xjanova/claude/fix-seller-pos-sales-route-011CUwi3TfcDHpAED5oJyUZq (cd4c825)
+- feat: expand admin settings menu with submenu items (d759e87)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.105.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #643 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (def826b)
+- feat: integrate Homepage with Page Builder system (429500b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.104.0] - 2025-11-09
+
+### ✨ Features
+- feat: add Page Builder to Theme & UI menu (62a2fde)
+### 🐛 Bug Fixes
+- fix: add missing content_width settings validation in WindowsUiController (fbdd5b2)
+### 🔧 Other Changes
+- Merge pull request #642 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (0dc66ad)
+- chore: resolve merge conflict in millennium-start-menu.blade.php (0ff9e6b)
+
+## [v2.103.1] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #641 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (3e1ad36)
+- chore: register PageBuilderSeeder in DatabaseSeeder (949abda)
+
+## [v2.103.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #640 from xjanova/claude/admin-homepage-builder-011CUwjFGcYcikh9prH1zfKj (dcae7f5)
+- feat: add comprehensive Page Builder system with drag & drop (52bda84)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.102.1] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #639 from xjanova/claude/fix-seller-pos-sales-route-011CUwi3TfcDHpAED5oJyUZq (baf3a73)
+- fix: remove admin.users.permissions from menu (requires user parameter) (1435136)
+### 🔧 Other Changes
+
+
+## [v2.102.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #638 from xjanova/claude/fix-seller-pos-sales-route-011CUwi3TfcDHpAED5oJyUZq (7268553)
+- feat: restore 40 missing menu items in admin and seller panels (ced356b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.101.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #637 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (e6340f5)
+- feat: add comprehensive Millennium UI customization system (45d8897)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.100.1] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #636 from xjanova/claude/fix-seller-pos-sales-route-011CUwi3TfcDHpAED5oJyUZq (0e8fadb)
+- fix: add missing seller routes for POS, wallet, reports, and settings (a67cfd5)
+### 🔧 Other Changes
+
+
+## [v2.100.0] - 2025-11-09
+
+### ✨ Features
+- Merge pull request #635 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (9d43f26)
+- feat: improve menu with clear main/submenu distinction (37a16a7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.99.0] - 2025-11-09
+
+### ✨ Features
+- feat: rebuild menu with working submenu system and animations (8ad797f)
+### 🐛 Bug Fixes
+- fix: remove admin.users.permissions (requires user parameter) (df0ef9c)
+### 🔧 Other Changes
+- Merge pull request #634 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (6e55462)
+
+## [v2.98.6] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #633 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (329a9ff)
+- fix: remove learning-center.index from user menu (admin-only route) (c131112)
+### 🔧 Other Changes
+
+
+## [v2.98.5] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #632 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (25191bc)
+- fix: remove undefined routes from menu (d4689ef)
+### 🔧 Other Changes
+
+
+## [v2.98.4] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #631 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (bd5b8e0)
+- refactor: use millennium-start-menu component in taskbar (3992123)
+
+## [v2.98.3] - 2025-11-09
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: make millenniumMenu function global for Alpine.js access (e4a08ec)
+### 🔧 Other Changes
+- Merge pull request #630 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (eedcce9)
+- refactor: redesign menu with simple 3D design (d13809b)
+
+## [v2.98.2] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #629 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (d300932)
+- refactor: rebuild entire menu system with working submenu functionality (894d655)
+
+## [v2.98.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #628 from xjanova/claude/fix-cart-syntax-errors-011CUw269SAcXGAztBniFZFq (6b89cc2)
+- fix: correct syntax error in cart quantity increment button (df96616)
+### 🔧 Other Changes
+
+
+## [v2.98.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #627 from xjanova/claude/update-wiki-dark-mode-011CUvbQvf6S3Uqar4A6vgWW (8962427)
+- feat: Complete platform-wiki enhancements with animated SVG diagrams and improved UX (405bc36)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.97.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #626 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (4f86e54)
+- feat: expand user & seller menus and reduce menu size (b02a98e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.96.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #625 from xjanova/claude/restore-submenu-system-011CUvztH3NScP3Bxk5PJBVk (f0c6c90)
+- feat: add complete admin menu system with all modules (0c1652f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.95.1] - 2025-11-08
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: add comprehensive dark mode support to shop cart page (bc7c3c8)
+- fix: add dark mode support to main shop pages (b73b5c6)
+### 🔧 Other Changes
+- Merge pull request #624 from xjanova/claude/fix-dark-mode-shop-011CUvzdfHQUaKjJzgo9gfYo (a4dfc10)
+
+## [v2.95.0] - 2025-11-08
+
+### ✨ Features
+- Merge pull request #623 from xjanova/claude/create-ebook-wealth-guide-011CUvyvLWuQTdS6o6HrZWp5 (4d55a22)
+- feat: add comprehensive Wealth Guide E-book (เส้นทางเศรษฐี) (13b3db8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+

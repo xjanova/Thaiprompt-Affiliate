@@ -12,7 +12,73 @@ class CookieSettingsSeeder extends Seeder
      */
     public function run(): void
     {
-        $settings = [
+        // Check if cookie settings already exist
+        $existingSettingsCount = CookieSetting::whereIn('key', [
+            'cookie_banner_enabled',
+            'cookie_banner_title',
+            'cookie_banner_description'
+        ])->count();
+
+        if ($existingSettingsCount > 0) {
+            $this->updateMode();
+        } else {
+            $this->freshInstallMode();
+        }
+    }
+
+    /**
+     * Fresh install mode - seed all settings
+     */
+    private function freshInstallMode(): void
+    {
+        $this->command->info('🌱 Fresh install: Seeding all cookie settings...');
+
+        $settings = $this->getAllSettings();
+
+        foreach ($settings as $setting) {
+            CookieSetting::create($setting);
+        }
+
+        $this->command->info('✅ Cookie settings seeded successfully: ' . count($settings) . ' settings');
+    }
+
+    /**
+     * Update mode - add only missing settings
+     */
+    private function updateMode(): void
+    {
+        $this->command->warn('⚠️  Existing cookie settings detected!');
+        $this->command->info('   Running in UPDATE mode (adding missing settings only)...');
+
+        $settings = $this->getAllSettings();
+        $added = 0;
+        $skipped = 0;
+
+        foreach ($settings as $setting) {
+            if (!CookieSetting::where('key', $setting['key'])->exists()) {
+                CookieSetting::create($setting);
+                $this->command->info("   ➕ Added: {$setting['key']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✅ Added {$added} new cookie settings.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing settings (preserved).");
+        }
+    }
+
+    /**
+     * Get all default cookie settings
+     */
+    private function getAllSettings(): array
+    {
+        return [
             [
                 'key' => 'cookie_banner_enabled',
                 'value' => '1',
@@ -50,14 +116,5 @@ class CookieSettingsSeeder extends Seeder
                 'description' => 'จำนวนวันที่คุกกี้จะหมดอายุ',
             ],
         ];
-
-        foreach ($settings as $setting) {
-            CookieSetting::updateOrCreate(
-                ['key' => $setting['key']],
-                $setting
-            );
-        }
-
-        $this->command->info('Cookie settings seeded successfully!');
     }
 }

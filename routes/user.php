@@ -7,7 +7,6 @@ use App\Http\Controllers\User\CryptoExchangeController;
 use App\Http\Controllers\User\RankController;
 use App\Http\Controllers\User\MembershipRetentionController;
 use App\Http\Controllers\User\KycController;
-use App\Http\Controllers\User\ShopController;
 use App\Http\Controllers\User\TwoFactorController;
 use App\Http\Controllers\User\TicketController;
 use App\Http\Controllers\User\InvestmentController;
@@ -217,11 +216,17 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     })->name('dividend-simulator');
 });
 
+// Wealth Guide E-book - Complete guide from beginner to expert
+Route::get('/wealth-guide', function () {
+    return view('user.wealth-guide');
+})->name('wealth-guide');
+
 // Investment & Staking System (User)
 Route::prefix('investments')->name('investments.')->group(function () {
     Route::get('/', [InvestmentController::class, 'index'])->name('index');
     Route::get('/plans', [InvestmentController::class, 'plans'])->name('plans');
     Route::get('/plans/{plan}', [InvestmentController::class, 'showPlan'])->name('plans.show');
+    Route::get('/history', [InvestmentController::class, 'history'])->name('history');
     Route::post('/invest', [InvestmentController::class, 'store'])->name('store');
     Route::post('/calculate-roi', [InvestmentController::class, 'calculateROI'])->name('calculate-roi');
 
@@ -245,10 +250,12 @@ Route::prefix('two-factor')->name('two-factor.')->group(function () {
     Route::delete('/trusted-devices', [TwoFactorController::class, 'removeAllTrustedDevices'])->name('remove-all-trusted-devices');
 });
 
-// Shop (Main Store - System Products)
-Route::prefix('shop')->name('shop.')->group(function () {
-    Route::get('/', [ShopController::class, 'index'])->name('index');
-    Route::get('/{slug}', [ShopController::class, 'show'])->name('show');
+// Redirect old user shop to main frontend shop
+Route::get('shop', function () {
+    return redirect('/shop');
+});
+Route::get('shop/{slug}', function ($slug) {
+    return redirect('/shop/' . $slug);
 });
 
 // Theme Management (User)

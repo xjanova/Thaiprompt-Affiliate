@@ -6,6 +6,8 @@ use App\Http\Controllers\Seller\OrderManagementController;
 use App\Http\Controllers\Seller\PackageController;
 use App\Http\Controllers\Seller\StoreController;
 use App\Http\Controllers\Seller\SellerPosController;
+use App\Http\Controllers\Seller\AnalyticsController;
+use App\Http\Controllers\Seller\SystemMonitoringController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,9 +18,52 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-Route::get('/analytics', [DashboardController::class, 'analytics'])->name('analytics');
 Route::get('/marketing', [DashboardController::class, 'marketing'])->name('marketing');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
+Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
+Route::get('/settings', [DashboardController::class, 'settings'])->name('settings');
+
+// ========================================
+// ANALYTICS
+// ========================================
+Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+Route::prefix('analytics')->name('analytics.')->group(function () {
+    // Basic Analytics - Note: root route is defined above as 'seller.analytics.index'
+    Route::get('/export', [AnalyticsController::class, 'export'])->name('export');
+    Route::get('/settings', [AnalyticsController::class, 'settings'])->name('settings');
+    Route::put('/settings', [AnalyticsController::class, 'updateSettings'])->name('settings.update');
+    Route::post('/cleanup', [AnalyticsController::class, 'cleanup'])->name('cleanup');
+
+    // AI-Powered Analytics
+    Route::get('/ai-insights', [AnalyticsController::class, 'aiInsights'])->name('ai-insights');
+    Route::get('/segmentation', [AnalyticsController::class, 'customerSegmentation'])->name('segmentation');
+    Route::get('/cohort', [AnalyticsController::class, 'cohortAnalysis'])->name('cohort');
+    Route::get('/products', [AnalyticsController::class, 'productPerformance'])->name('products');
+
+    // API Endpoints
+    Route::get('/api/prediction', [AnalyticsController::class, 'apiRevenuePrediction'])->name('api.prediction');
+    Route::get('/api/insights', [AnalyticsController::class, 'apiInsights'])->name('api.insights');
+
+    // System Monitoring (Real-time)
+    Route::get('/system-monitoring', [SystemMonitoringController::class, 'index'])->name('system-monitoring');
+    Route::get('/system-monitoring/api-metrics', [SystemMonitoringController::class, 'apiMetrics'])->name('system-monitoring.api-metrics');
+    Route::get('/system-monitoring/api-info', [SystemMonitoringController::class, 'apiApplicationInfo'])->name('system-monitoring.api-info');
+});
+
+// ========================================
+// WALLET MANAGEMENT
+// ========================================
+Route::prefix('wallet')->name('wallet.')->group(function () {
+    Route::get('/', [DashboardController::class, 'walletIndex'])->name('index');
+    Route::get('/withdraw', [DashboardController::class, 'walletWithdraw'])->name('withdraw');
+});
+
+// ========================================
+// REPORTS
+// ========================================
+Route::prefix('reports')->name('reports.')->group(function () {
+    Route::get('/sales', [DashboardController::class, 'salesReport'])->name('sales');
+});
 
 // ========================================
 // VENDOR PACKAGES & SUBSCRIPTIONS
