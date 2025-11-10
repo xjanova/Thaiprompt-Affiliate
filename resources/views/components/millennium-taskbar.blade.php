@@ -99,6 +99,7 @@
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('admin.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
             ['icon' => '👥', 'label' => 'ผู้ใช้งาน', 'url' => route('admin.users.index'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '🏨', 'label' => 'จัดการโรงแรม', 'url' => route('admin.hotels.index'), 'color' => 'from-orange-600 to-amber-600'],
+            ['icon' => '👨‍💼', 'label' => 'ผู้เช่าโรงแรม', 'url' => route('admin.hotel-owners.index'), 'color' => 'from-amber-600 to-yellow-600'],
             ['icon' => '🛒', 'label' => 'อีคอมเมิร์ซ', 'url' => route('admin.ecommerce.products.index'), 'color' => 'from-green-600 to-emerald-600'],
             ['icon' => '🏪', 'label' => 'ระบบ POS', 'url' => route('admin.pos.dashboard'), 'color' => 'from-teal-600 to-cyan-600'],
             ['icon' => '💰', 'label' => 'กระเป๋าเงิน', 'url' => route('admin.wallet.index'), 'color' => 'from-yellow-600 to-orange-600'],
@@ -134,6 +135,13 @@
             ['icon' => '💖', 'label' => 'รักษายอด', 'url' => route('user.retention.index'), 'color' => 'from-red-600 to-pink-600'],
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
         ];
+
+        // Add Hotel Owner menu if user is hotel admin
+        if ($user && $user->is_hotel_admin && $user->managed_hotel_id) {
+            array_splice($menuItems, 6, 0, [
+                ['icon' => '🏨', 'label' => 'จัดการโรงแรม', 'url' => route('hotel-admin.dashboard'), 'color' => 'from-orange-600 to-red-600', 'highlight' => true],
+            ]);
+        }
     }
 @endphp
 
