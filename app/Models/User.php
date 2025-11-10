@@ -28,6 +28,7 @@ class User extends Authenticatable
         'is_admin',
         'is_hotel_admin',
         'managed_hotel_id',
+        'blocked_at',
         'affiliate_id',
         'current_rank_id',
         'rank_points',
@@ -111,6 +112,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'blocked_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
             'is_admin' => 'boolean',
