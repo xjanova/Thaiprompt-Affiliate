@@ -1,327 +1,496 @@
 #!/bin/bash
 
+################################################################################
 # TP-Affiliate Installation Script
-# Production Server Installation for Laravel 11
+# ระบบติดตั้งอัตโนมัติสำหรับ Thaiprompt Affiliate Platform
+#
+# การใช้งาน:
+#   chmod +x install.sh
+#   ./install.sh
+#
+# หมายเหตุ:
+#   - สคริปต์นี้จะเตรียมสภาพแวดล้อมให้พร้อมสำหรับการติดตั้ง
+#   - หลังจากนี้ต้องติดตั้งต่อผ่าน Web Wizard ที่ /setup
+################################################################################
 
-set -e
-
-echo ""
-echo "╔══════════════════════════════════════════════════╗"
-echo "║   🚀 TP-Affiliate Installation Wizard            ║"
-echo "║   Thai Prompt Affiliate Marketing Platform      ║"
-echo "║   Production Server Setup                        ║"
-echo "╚══════════════════════════════════════════════════╝"
-echo ""
-
-# Colors
+# สี ANSI สำหรับ output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+MAGENTA='\033[0;35m'
+CYAN='\033[0;36m'
+BOLD='\033[1m'
 NC='\033[0m' # No Color
 
-# Functions
+# ตัวแปรสำหรับนับความสำเร็จ/ล้มเหลว
+ERRORS=0
+WARNINGS=0
+
+################################################################################
+# ฟังก์ชันสำหรับแสดงข้อความ
+################################################################################
+
+print_header() {
+    echo ""
+    echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════════════════════${NC}"
+    echo -e "${BOLD}${CYAN}  $1${NC}"
+    echo -e "${BOLD}${CYAN}═══════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+}
+
 print_success() {
     echo -e "${GREEN}✓${NC} $1"
 }
 
 print_error() {
     echo -e "${RED}✗${NC} $1"
+    ((ERRORS++))
+}
+
+print_warning() {
+    echo -e "${YELLOW}⚠${NC} $1"
+    ((WARNINGS++))
 }
 
 print_info() {
     echo -e "${BLUE}ℹ${NC} $1"
 }
 
-print_warning() {
-    echo -e "${YELLOW}⚠${NC} $1"
-}
-
-print_header() {
+print_step() {
     echo ""
-    echo -e "${BLUE}════════════════════════════════════════${NC}"
-    echo -e "${BLUE}  $1${NC}"
-    echo -e "${BLUE}════════════════════════════════════════${NC}"
+    echo -e "${BOLD}${MAGENTA}▸ $1${NC}"
     echo ""
 }
 
-# Check if running as root
-if [[ $EUID -eq 0 ]]; then
-   print_warning "คำเตือน: ไม่แนะนำให้รันด้วย root"
-   echo ""
-fi
+################################################################################
+# ฟังก์ชันตรวจสอบความต้องการของระบบ
+################################################################################
 
-print_info "กำลังตรวจสอบระบบ..."
-echo ""
+check_php_version() {
+    print_step "ตรวจสอบ PHP Version"
 
-# Check for required tools
-command -v php >/dev/null 2>&1 && HAS_PHP=true || HAS_PHP=false
-command -v composer >/dev/null 2>&1 && HAS_COMPOSER=true || HAS_COMPOSER=false
+    if ! command -v php &> /dev/null; then
+        print_error "ไม่พบ PHP ในระบบ กรุณาติดตั้ง PHP 8.1 หรือสูงกว่า"
+        return 1
+    fi
 
-if [ "$HAS_PHP" = false ]; then
-    print_error "ไม่พบ PHP"
-    exit 1
-fi
+    PHP_VERSION=$(php -r "echo PHP_VERSION;")
+    print_info "PHP Version: $PHP_VERSION"
 
-if [ "$HAS_COMPOSER" = false ]; then
-    print_error "ไม่พบ Composer"
-    exit 1
-fi
-
-# Display PHP version (info only, don't fail)
-PHP_VERSION=$(php -r 'echo PHP_VERSION;' 2>/dev/null || echo "unknown")
-print_success "PHP $PHP_VERSION"
-print_success "Composer $(composer --version 2>/dev/null | cut -d' ' -f3 || echo '')"
-
-echo ""
-
-# Installation
-print_header "🔧 Laravel Installation"
-
-print_info "[1/8] Preparing Laravel directories..."
-mkdir -p bootstrap/cache
-mkdir -p storage/{app,framework,logs}
-mkdir -p storage/framework/{cache,sessions,views}
-mkdir -p database
-print_success "Directories created"
-
-print_info "[2/8] Ensuring base Controller exists..."
-CONTROLLER_FILE="app/Http/Controllers/Controller.php"
-if [ ! -f "$CONTROLLER_FILE" ]; then
-    print_warning "Base Controller.php not found, creating..."
-    mkdir -p app/Http/Controllers
-    cat > "$CONTROLLER_FILE" << 'CONTROLLER_EOF'
-<?php
-
-namespace App\Http\Controllers;
-
-abstract class Controller
-{
-    //
-}
-CONTROLLER_EOF
-    print_success "Base Controller.php created"
-else
-    print_success "Base Controller.php exists"
-fi
-
-print_info "[3/8] Installing Composer dependencies..."
-composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader
-print_success "Dependencies installed"
-
-print_info "[4/8] Setting up environment file..."
-if [ ! -f .env ]; then
-    cp .env.example .env
-    print_success "Environment file created"
-else
-    print_warning ".env already exists, skipping..."
-fi
-
-print_info "[5/8] Generating application key..."
-php artisan key:generate --force --no-interaction
-print_success "Application key generated"
-
-print_info "[5.5/8] Creating storage symlink..."
-php artisan storage:link --force --no-interaction
-print_success "Storage symlink created (public/storage → storage/app/public)"
-
-# MySQL Configuration
-print_header "📊 MySQL Database Configuration"
-
-print_info "กรุณากรอกข้อมูล MySQL ที่เตรียมไว้:"
-echo ""
-
-read -p "  DB Host [127.0.0.1]: " DB_HOST
-DB_HOST=${DB_HOST:-127.0.0.1}
-
-read -p "  DB Port [3306]: " DB_PORT
-DB_PORT=${DB_PORT:-3306}
-
-read -p "  Database Name [thaiprompt_affiliate]: " DB_DATABASE
-DB_DATABASE=${DB_DATABASE:-thaiprompt_affiliate}
-
-read -p "  DB Username: " DB_USERNAME
-if [ -z "$DB_USERNAME" ]; then
-    print_error "Username จำเป็นต้องระบุ"
-    exit 1
-fi
-
-read -sp "  DB Password: " DB_PASSWORD
-echo ""
-echo ""
-
-print_info "[6/8] Configuring database connection..."
-
-# Escape special characters for sed
-DB_HOST_ESC=$(echo "$DB_HOST" | sed 's/[\/&]/\\&/g')
-DB_PORT_ESC=$(echo "$DB_PORT" | sed 's/[\/&]/\\&/g')
-DB_DATABASE_ESC=$(echo "$DB_DATABASE" | sed 's/[\/&]/\\&/g')
-DB_USERNAME_ESC=$(echo "$DB_USERNAME" | sed 's/[\/&]/\\&/g')
-DB_PASSWORD_ESC=$(echo "$DB_PASSWORD" | sed 's/[\/&]/\\&/g')
-
-# Update .env file with MySQL settings
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    # macOS
-    sed -i '' "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
-    sed -i '' "s/^DB_HOST=.*/DB_HOST=$DB_HOST_ESC/" .env
-    sed -i '' "s/^DB_PORT=.*/DB_PORT=$DB_PORT_ESC/" .env
-    sed -i '' "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE_ESC/" .env
-    sed -i '' "s/^DB_USERNAME=.*/DB_USERNAME=$DB_USERNAME_ESC/" .env
-    sed -i '' "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD_ESC/" .env
-else
-    # Linux
-    sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" .env
-    sed -i "s/^DB_HOST=.*/DB_HOST=$DB_HOST_ESC/" .env
-    sed -i "s/^DB_PORT=.*/DB_PORT=$DB_PORT_ESC/" .env
-    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$DB_DATABASE_ESC/" .env
-    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=$DB_USERNAME_ESC/" .env
-    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DB_PASSWORD_ESC/" .env
-fi
-
-print_success "Database configuration updated"
-
-# Verify .env was updated correctly
-print_info "ตรวจสอบการตั้งค่า..."
-if grep -q "^DB_CONNECTION=mysql" .env && grep -q "^DB_DATABASE=$DB_DATABASE" .env; then
-    print_success "Database settings verified"
-else
-    print_error "Failed to update .env file"
-    print_info "กรุณาแก้ไข .env ด้วยตนเอง:"
-    print_info "  DB_CONNECTION=mysql"
-    print_info "  DB_HOST=$DB_HOST"
-    print_info "  DB_PORT=$DB_PORT"
-    print_info "  DB_DATABASE=$DB_DATABASE"
-    print_info "  DB_USERNAME=$DB_USERNAME"
-    print_info "  DB_PASSWORD=your_password"
-    exit 1
-fi
-
-# Test MySQL connection (optional, don't fail if can't test)
-print_info "ทดสอบการเชื่อมต่อ MySQL..."
-if command -v mysql >/dev/null 2>&1; then
-    if mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" -e "USE $DB_DATABASE;" 2>/dev/null; then
-        print_success "MySQL connection successful"
+    REQUIRED_VERSION="8.1.0"
+    if php -r "exit(version_compare(PHP_VERSION, '$REQUIRED_VERSION', '>=') ? 0 : 1);"; then
+        print_success "PHP Version ผ่านข้อกำหนด (ต้องการ >= $REQUIRED_VERSION)"
     else
-        print_warning "ไม่สามารถเชื่อมต่อ MySQL ได้"
-        print_info "กรุณาตรวจสอบ:"
-        print_info "  - MySQL Server รันอยู่"
-        print_info "  - Username/Password ถูกต้อง"
-        print_info "  - Database '$DB_DATABASE' ถูกสร้างแล้ว"
+        print_error "PHP Version ต่ำเกินไป (ต้องการ >= $REQUIRED_VERSION แต่พบ $PHP_VERSION)"
+        return 1
+    fi
+
+    return 0
+}
+
+check_php_extensions() {
+    print_step "ตรวจสอบ PHP Extensions ที่จำเป็น"
+
+    REQUIRED_EXTENSIONS=(
+        "bcmath"
+        "ctype"
+        "curl"
+        "fileinfo"
+        "json"
+        "mbstring"
+        "openssl"
+        "pdo"
+        "pdo_mysql"
+        "tokenizer"
+        "xml"
+        "gd"
+        "zip"
+    )
+
+    MISSING_EXTENSIONS=()
+
+    for ext in "${REQUIRED_EXTENSIONS[@]}"; do
+        if php -m | grep -qi "^$ext$"; then
+            print_success "Extension: $ext"
+        else
+            print_error "Extension ขาดหายไป: $ext"
+            MISSING_EXTENSIONS+=("$ext")
+        fi
+    done
+
+    if [ ${#MISSING_EXTENSIONS[@]} -gt 0 ]; then
         echo ""
-        read -p "ต้องการดำเนินการต่อหรือไม่? (y/n) [y]: " CONTINUE
-        CONTINUE=${CONTINUE:-y}
-        if [ "$CONTINUE" != "y" ] && [ "$CONTINUE" != "Y" ]; then
-            print_error "ยกเลิกการติดตั้ง"
-            exit 1
+        print_error "กรุณาติดตั้ง PHP Extensions ที่ขาดหายไป:"
+        for ext in "${MISSING_EXTENSIONS[@]}"; do
+            echo "  - php-$ext"
+        done
+        echo ""
+        echo -e "${YELLOW}สำหรับ Ubuntu/Debian:${NC}"
+        echo "  sudo apt-get install ${MISSING_EXTENSIONS[@]/#/php-}"
+        echo ""
+        return 1
+    fi
+
+    return 0
+}
+
+check_composer() {
+    print_step "ตรวจสอบ Composer"
+
+    if ! command -v composer &> /dev/null; then
+        print_error "ไม่พบ Composer กรุณาติดตั้ง Composer"
+        echo ""
+        echo -e "${YELLOW}วิธีติดตั้ง Composer:${NC}"
+        echo "  curl -sS https://getcomposer.org/installer | php"
+        echo "  sudo mv composer.phar /usr/local/bin/composer"
+        echo ""
+        return 1
+    fi
+
+    COMPOSER_VERSION=$(composer --version --no-ansi 2>&1 | grep -oP 'Composer version \K[0-9.]+')
+    print_success "Composer Version: $COMPOSER_VERSION"
+
+    return 0
+}
+
+check_permissions() {
+    print_step "ตรวจสอบ File Permissions"
+
+    DIRS_TO_CHECK=(
+        "storage"
+        "storage/app"
+        "storage/framework"
+        "storage/framework/cache"
+        "storage/framework/sessions"
+        "storage/framework/views"
+        "storage/logs"
+        "bootstrap/cache"
+    )
+
+    for dir in "${DIRS_TO_CHECK[@]}"; do
+        if [ ! -d "$dir" ]; then
+            print_warning "สร้าง directory: $dir"
+            mkdir -p "$dir"
+        fi
+
+        if [ -w "$dir" ]; then
+            print_success "Writable: $dir"
+        else
+            print_warning "ไม่สามารถเขียนได้: $dir (กำลังแก้ไข...)"
+            chmod -R 775 "$dir" 2>/dev/null
+            if [ -w "$dir" ]; then
+                print_success "แก้ไข permissions สำเร็จ: $dir"
+            else
+                print_error "ไม่สามารถแก้ไข permissions: $dir"
+            fi
+        fi
+    done
+
+    return 0
+}
+
+################################################################################
+# ฟังก์ชันสำหรับติดตั้ง
+################################################################################
+
+setup_env_file() {
+    print_step "ตั้งค่าไฟล์ Environment (.env)"
+
+    if [ -f ".env" ]; then
+        print_info "ไฟล์ .env มีอยู่แล้ว"
+        read -p "ต้องการสร้างใหม่หรือไม่? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_info "ข้ามการสร้างไฟล์ .env ใหม่"
+            return 0
+        fi
+
+        # Backup existing .env
+        BACKUP_FILE=".env.backup.$(date +%Y%m%d_%H%M%S)"
+        cp .env "$BACKUP_FILE"
+        print_info "สำรองไฟล์ .env เดิมไปที่: $BACKUP_FILE"
+    fi
+
+    if [ ! -f ".env.example" ]; then
+        print_error "ไม่พบไฟล์ .env.example"
+        return 1
+    fi
+
+    cp .env.example .env
+    print_success "คัดลอก .env.example เป็น .env สำเร็จ"
+
+    return 0
+}
+
+generate_app_key() {
+    print_step "สร้าง Application Key"
+
+    if grep -q "APP_KEY=base64:" .env 2>/dev/null; then
+        print_info "APP_KEY มีค่าอยู่แล้ว"
+        read -p "ต้องการสร้างใหม่หรือไม่? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_info "ข้ามการสร้าง APP_KEY ใหม่"
+            return 0
         fi
     fi
-else
-    print_warning "ไม่พบ mysql client (ข้ามการทดสอบ)"
-fi
 
-echo ""
-print_info "[7/8] Running database migrations..."
+    php artisan key:generate --ansi
 
-# Clear any cached config to ensure new database settings are used
-php artisan config:clear --no-interaction 2>/dev/null || true
-
-# Run migrations
-php artisan migrate --force --no-interaction
-print_success "Database migrated successfully"
-
-print_info "[8/8] Setting permissions..."
-
-# Detect web server user
-WEB_USER=""
-if id -u www-data >/dev/null 2>&1; then
-    WEB_USER="www-data"
-elif id -u nginx >/dev/null 2>&1; then
-    WEB_USER="nginx"
-elif id -u apache >/dev/null 2>&1; then
-    WEB_USER="apache"
-elif id -u admin >/dev/null 2>&1; then
-    WEB_USER="admin"
-fi
-
-# Set proper permissions for web server
-chmod -R 775 storage bootstrap/cache
-find storage -type f -exec chmod 664 {} \;
-find bootstrap/cache -type f -exec chmod 664 {} \;
-
-# Set ownership if web server user is detected
-if [ -n "$WEB_USER" ]; then
-    CURRENT_USER=$(whoami)
-    print_info "Setting ownership for web server user: $WEB_USER"
-
-    # Try to set ownership (may need sudo)
-    if chown -R "$CURRENT_USER:$WEB_USER" storage bootstrap/cache 2>/dev/null; then
-        print_success "Ownership set to $CURRENT_USER:$WEB_USER"
+    if [ $? -eq 0 ]; then
+        print_success "สร้าง Application Key สำเร็จ"
     else
-        print_warning "Cannot set ownership (may need sudo)"
-        print_info "Please run manually:"
-        echo "  sudo chown -R $CURRENT_USER:$WEB_USER storage bootstrap/cache"
-        echo "  sudo chmod -R 775 storage bootstrap/cache"
+        print_error "เกิดข้อผิดพลาดในการสร้าง Application Key"
+        return 1
     fi
 
-    # Try to use ACL if available (more flexible for multiple users)
-    if command -v setfacl >/dev/null 2>&1; then
-        if setfacl -R -m u:"$WEB_USER":rwX storage bootstrap/cache 2>/dev/null; then
-            setfacl -R -d -m u:"$WEB_USER":rwX storage bootstrap/cache 2>/dev/null || true
-            print_success "ACL permissions set for $WEB_USER"
+    return 0
+}
+
+install_dependencies() {
+    print_step "ติดตั้ง Composer Dependencies"
+
+    if [ -d "vendor" ] && [ -f "vendor/autoload.php" ]; then
+        print_info "Dependencies มีอยู่แล้ว"
+        read -p "ต้องการติดตั้งใหม่หรือไม่? (y/N): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            print_info "ข้ามการติดตั้ง dependencies ใหม่"
+            return 0
         fi
     fi
-else
-    print_warning "Web server user not detected"
-    print_info "Please set ownership manually:"
-    echo "  sudo chown -R your-user:web-server-group storage bootstrap/cache"
-    echo "  sudo chmod -R 775 storage bootstrap/cache"
-fi
 
-print_success "Permissions configured"
+    print_info "กำลังติดตั้ง Composer dependencies... (อาจใช้เวลา 2-5 นาที)"
 
-# Optimize for production
-print_header "⚡ Optimizing for Production"
+    composer install --no-dev --optimize-autoloader --no-interaction
 
-print_info "Caching configuration..."
-php artisan config:cache --no-interaction 2>/dev/null || print_warning "Config cache skipped"
+    if [ $? -eq 0 ]; then
+        print_success "ติดตั้ง Composer dependencies สำเร็จ"
+    else
+        print_error "เกิดข้อผิดพลาดในการติดตั้ง Composer dependencies"
+        return 1
+    fi
 
-print_info "Caching routes..."
-php artisan route:cache --no-interaction 2>/dev/null || print_warning "Route cache skipped"
+    return 0
+}
 
-print_info "Caching views..."
-php artisan view:cache --no-interaction 2>/dev/null || print_warning "View cache skipped"
+create_storage_link() {
+    print_step "สร้าง Storage Symbolic Link"
 
-print_success "Optimization complete"
+    # Check if public directory exists
+    if [ ! -d "public" ]; then
+        print_warning "ไม่พบ directory: public"
+        mkdir -p public
+        print_success "สร้าง directory: public"
+    fi
 
-print_header "✅ Installation Complete!"
+    # Create storage link
+    php artisan storage:link --force &>/dev/null
 
-print_success "ติดตั้ง TP-Affiliate สำเร็จ!"
-echo ""
-print_info "ขั้นตอนถัดไป:"
-echo ""
-echo "  1. ตั้งค่า Web Server (Nginx/Apache) ให้ชี้ไปที่ public/"
-echo "  2. ตั้งค่า DocumentRoot: $(pwd)/public"
-echo "  3. เปิด browser ไปที่ domain ของคุณ"
-echo "  4. ระบบจะพาไปหน้า Setup Wizard เพื่อสร้าง Super Admin"
-echo ""
-print_info "สำหรับ Development (ถ้าต้องการทดสอบ):"
-echo ""
-echo "  ${BLUE}php artisan serve${NC}"
-echo "  ${BLUE}http://localhost:8000${NC}"
-echo ""
-print_info "ข้อมูลเพิ่มเติม:"
-echo ""
-echo "  📖 Documentation: README.md"
-echo "  🚀 Deployment Guide: DEPLOYMENT.md"
-echo "  🔐 .env file: ตั้งค่า APP_ENV=production สำหรับ production"
-echo ""
-print_warning "คำแนะนำความปลอดภัย:"
-echo ""
-echo "  - เปลี่ยน APP_ENV=production ใน .env"
-echo "  - ตั้ง APP_DEBUG=false ใน .env"
-echo "  - ตรวจสอบ file permissions (storage และ bootstrap/cache)"
-echo "  - ตั้งค่า SSL certificate"
-echo "  - Backup database เป็นประจำ"
-echo ""
-print_success "Installation Complete! 🎉"
-echo ""
+    if [ $? -eq 0 ]; then
+        print_success "สร้าง symbolic link: public/storage → storage/app/public"
+    else
+        print_warning "ไม่สามารถสร้าง storage link ได้ (อาจต้องทำด้วยตนเอง)"
+    fi
+
+    return 0
+}
+
+set_permissions() {
+    print_step "ตั้งค่า File Permissions"
+
+    # Set ownership (if running as root)
+    if [ "$EUID" -eq 0 ]; then
+        print_info "กำลังตั้งค่า ownership..."
+        WEB_USER=${WEB_USER:-www-data}
+
+        if id "$WEB_USER" &>/dev/null; then
+            chown -R $WEB_USER:$WEB_USER storage bootstrap/cache
+            print_success "ตั้งค่า ownership เป็น $WEB_USER"
+        else
+            print_warning "ไม่พบ user: $WEB_USER"
+        fi
+    fi
+
+    # Set permissions
+    chmod -R 775 storage bootstrap/cache
+    find storage -type f -exec chmod 664 {} \; 2>/dev/null
+    find bootstrap/cache -type f -exec chmod 664 {} \; 2>/dev/null
+    print_success "ตั้งค่า permissions สำเร็จ"
+
+    # Try to use ACL if available (better for shared access)
+    WEB_USER=""
+    if id -u www-data &>/dev/null; then
+        WEB_USER="www-data"
+    elif id -u nginx &>/dev/null; then
+        WEB_USER="nginx"
+    elif id -u apache &>/dev/null; then
+        WEB_USER="apache"
+    fi
+
+    if [ -n "$WEB_USER" ] && command -v setfacl &>/dev/null; then
+        print_info "ตั้งค่า ACL permissions สำหรับ web server..."
+        setfacl -R -m u:"$WEB_USER":rwX storage bootstrap/cache 2>/dev/null
+        setfacl -R -d -m u:"$WEB_USER":rwX storage bootstrap/cache 2>/dev/null
+        print_success "ตั้งค่า ACL สำหรับ $WEB_USER"
+    fi
+
+    return 0
+}
+
+clear_cache() {
+    print_step "ล้าง Cache"
+
+    php artisan config:clear &>/dev/null
+    php artisan cache:clear &>/dev/null
+    php artisan view:clear &>/dev/null
+    php artisan route:clear &>/dev/null
+
+    print_success "ล้าง cache ทั้งหมดสำเร็จ"
+
+    return 0
+}
+
+################################################################################
+# ฟังก์ชันแสดงข้อมูลสรุป
+################################################################################
+
+show_summary() {
+    echo ""
+    echo ""
+    print_header "สรุปผลการเตรียมระบบ"
+
+    if [ $ERRORS -eq 0 ]; then
+        echo -e "${GREEN}${BOLD}✓ การเตรียมระบบเสร็จสมบูรณ์!${NC}"
+    else
+        echo -e "${RED}${BOLD}✗ พบข้อผิดพลาด: $ERRORS รายการ${NC}"
+    fi
+
+    if [ $WARNINGS -gt 0 ]; then
+        echo -e "${YELLOW}⚠ คำเตือน: $WARNINGS รายการ${NC}"
+    fi
+
+    echo ""
+    echo -e "${BOLD}ขั้นตอนถัดไป:${NC}"
+    echo ""
+
+    if [ $ERRORS -eq 0 ]; then
+        echo -e "${GREEN}${BOLD}1. เปิด Web Server${NC}"
+        echo "   ถ้าใช้ Development:"
+        echo -e "   ${CYAN}php artisan serve${NC}"
+        echo ""
+        echo "   ถ้าใช้ Production ให้ตั้งค่า Web Server (Nginx/Apache) ให้ชี้ไปที่:"
+        echo -e "   ${CYAN}DocumentRoot: $(pwd)/public${NC}"
+        echo ""
+        echo -e "${GREEN}${BOLD}2. เปิด Browser และไปที่:${NC}"
+        echo -e "   ${CYAN}${BOLD}http://your-domain.com/setup${NC}"
+        echo "   หรือ"
+        echo -e "   ${CYAN}${BOLD}http://localhost:8000/setup${NC} ${YELLOW}(ถ้าใช้ php artisan serve)${NC}"
+        echo ""
+        echo -e "${GREEN}${BOLD}3. ทำตามขั้นตอนใน Setup Wizard:${NC}"
+        echo "   ${MAGENTA}⚡${NC} ตรวจสอบความพร้อมของระบบ"
+        echo "   ${MAGENTA}🗄${NC}  ตั้งค่า Database Connection"
+        echo "   ${MAGENTA}📦${NC} ติดตั้ง Dependencies (ถ้ายังไม่ได้ติดตั้ง)"
+        echo "   ${MAGENTA}🔨${NC} Run Database Migrations"
+        echo "   ${MAGENTA}👤${NC} สร้างบัญชี Super Admin"
+        echo ""
+        echo -e "${YELLOW}${BOLD}📝 ข้อมูลที่ต้องเตรียม:${NC}"
+        echo "   • MySQL Database Host (เช่น 127.0.0.1)"
+        echo "   • MySQL Port (เช่น 3306)"
+        echo "   • Database Name (เช่น thaiprompt_affiliate)"
+        echo "   • Database Username"
+        echo "   • Database Password"
+        echo ""
+        echo -e "${CYAN}${BOLD}⏱ เวลาโดยประมาณ:${NC} 5-10 นาที"
+        echo ""
+        echo -e "${GREEN}${BOLD}4. เข้าสู่ระบบและเริ่มใช้งาน!${NC}"
+        echo ""
+        echo -e "${YELLOW}${BOLD}⚠ หมายเหตุสำหรับ Production:${NC}"
+        echo "   • ตั้งค่า APP_ENV=production ใน .env"
+        echo "   • ตั้งค่า APP_DEBUG=false ใน .env"
+        echo "   • ติดตั้ง SSL Certificate"
+        echo "   • ตั้งค่า Firewall และ Security"
+        echo "   • ตรวจสอบ File Permissions"
+        echo "   • ตั้งค่า Backup อัตโนมัติ"
+    else
+        echo -e "${RED}กรุณาแก้ไขข้อผิดพลาดที่พบก่อนดำเนินการต่อ${NC}"
+        echo ""
+        echo "หากต้องการความช่วยเหลือ กรุณาดูเอกสารที่:"
+        echo "  • README.md"
+        echo "  • INSTALLATION.md"
+        echo "  • DEPLOYMENT.md"
+    fi
+
+    echo ""
+    echo -e "${CYAN}═══════════════════════════════════════════════════════════════════${NC}"
+    echo ""
+}
+
+################################################################################
+# Main Installation Flow
+################################################################################
+
+main() {
+    # Show welcome banner
+    clear
+    echo ""
+    echo -e "${BOLD}${CYAN}"
+    echo "╔═══════════════════════════════════════════════════════════════════╗"
+    echo "║                                                                   ║"
+    echo "║           TP-AFFILIATE INSTALLATION SCRIPT                        ║"
+    echo "║           Thaiprompt Affiliate Marketing Platform                ║"
+    echo "║                                                                   ║"
+    echo "║           Version: 1.0                                            ║"
+    echo "║           Stage: Environment Preparation                          ║"
+    echo "║                                                                   ║"
+    echo "╚═══════════════════════════════════════════════════════════════════╝"
+    echo -e "${NC}"
+    echo ""
+    echo -e "${YELLOW}สคริปต์นี้จะเตรียมสภาพแวดล้อมให้พร้อมสำหรับการติดตั้ง${NC}"
+    echo -e "${YELLOW}หลังจากนี้คุณจะต้องติดตั้งต่อผ่าน Web Wizard ที่ /setup${NC}"
+    echo ""
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    read -p "กด Enter เพื่อเริ่มต้น... " -r
+
+    # Check system requirements
+    print_header "ตรวจสอบความต้องการของระบบ"
+
+    check_php_version || exit 1
+    check_php_extensions || exit 1
+    check_composer || exit 1
+    check_permissions
+
+    # Setup environment
+    print_header "เตรียมสภาพแวดล้อม"
+
+    setup_env_file || exit 1
+    generate_app_key || exit 1
+
+    # Install dependencies
+    print_header "ติดตั้ง Dependencies"
+
+    install_dependencies || exit 1
+
+    # Set permissions and clear cache
+    print_header "ตั้งค่าระบบ"
+
+    create_storage_link
+    set_permissions
+    clear_cache
+
+    # Show summary
+    show_summary
+
+    # Exit with appropriate code
+    if [ $ERRORS -eq 0 ]; then
+        exit 0
+    else
+        exit 1
+    fi
+}
+
+# Run main function
+main
