@@ -93,15 +93,32 @@ if ($type === 'admin') {
 - สีพื้นหลัง taskbar
 - ขนาดเมนู
 - ตำแหน่งเมนู
-- RGB effects
+- RGB effects (RGB border ที่วิ่งรอบกรอบ)
 - Animation settings
 - ความโปร่งใส, blur effects
+- ขนาดโลโก้ในเมนู
+- การแสดง/ซ่อนโลโก้และข้อความ
+- ระยะห่างและ padding ของเมนู
 
 ```php
 // ✅ ยังคงใช้ WindowsUiSetting สำหรับ visual settings
 $menuWidth = WindowsUiSetting::get('millennium_menu_width', '400');
 $menuPosition = WindowsUiSetting::get('millennium_menu_position', 'center');
 $rgbEnabled = WindowsUiSetting::get('millennium_menu_rgb_enabled', true);
+
+// Logo & Text Settings
+$logoSize = WindowsUiSetting::get('millennium_menu_logo_size', 40);
+$showLogo = WindowsUiSetting::get('millennium_menu_show_logo', true);
+$showAppName = WindowsUiSetting::get('millennium_menu_show_app_name', true);
+
+// Menu Appearance
+$menuItemSpacing = WindowsUiSetting::get('millennium_menu_item_spacing', 8);
+$menuPadding = WindowsUiSetting::get('millennium_menu_padding', 12);
+
+// RGB Hover Effect Settings
+$menuItemHoverRgb = WindowsUiSetting::get('millennium_menu_item_hover_rgb', true);
+$menuRgbSpeed = WindowsUiSetting::get('millennium_menu_rgb_speed', 5);
+$menuRgbBorderWidth = WindowsUiSetting::get('millennium_menu_rgb_border_width', 2);
 ```
 
 ---
@@ -294,6 +311,94 @@ $settings['windows_start_menu_items_admin'] = ['value' => $menuItems, 'type' => 
 
 ---
 
+## 🎨 ฟีเจอร์ Visual Customization ล่าสุด
+
+### 1. RGB Border Effect (สีวิ่งรอบกรอบเมนู) 🌈
+
+**เทคโนโลยี:**
+- ใช้ `conic-gradient` สร้าง gradient แบบวงกลม 4 สี
+- ใช้ CSS `::before` pseudo-element วางเป็น border layer
+- ใช้ `mask-composite: exclude` ตัดให้เหลือเฉพาะขอบ
+- Animation `rgbRotate` หมุน 360° รอบกรอบ
+
+**การทำงาน:**
+```css
+/* สร้างกรอบ RGB ที่วิ่งรอบ */
+.millennium-menu-item-hover-rgb::before {
+    content: '';
+    position: absolute;
+    background: conic-gradient(
+        from 0deg,
+        #FF0080 0deg,    /* Pink */
+        #00F0FF 90deg,   /* Cyan */
+        #7F00FF 180deg,  /* Purple */
+        #FFD700 270deg,  /* Gold */
+        #FF0080 360deg
+    );
+    animation: rgbRotate 5s linear infinite;
+}
+```
+
+**Settings ที่ปรับได้:**
+- `millennium_menu_item_hover_rgb` - เปิด/ปิด RGB hover effect
+- `millennium_menu_rgb_speed` - ความเร็วหมุน (1-20 วินาที)
+- `millennium_menu_rgb_border_width` - ความหนาขอบ (1-10px)
+- `millennium_menu_rgb_glow_size` - ขนาด glow effect (0-50px)
+
+### 2. Logo Customization (ปรับแต่งโลโก้) 🖼️
+
+**ฟีเจอร์:**
+- อัพโหลดโลโก้ custom สำหรับเมนู
+- ถ้าไม่อัพโหลดจะใช้โลโก้หลักของระบบ
+- ถ้าไม่มีโลโก้เลยจะแสดง gradient div กับตัวอักษรแรก
+- ปรับขนาดโลโก้ได้ 20-100px
+
+**Settings:**
+- `millennium_menu_logo` - path ของโลโก้ custom (nullable)
+- `millennium_menu_logo_size` - ขนาดโลโก้ในหน่วย px (20-100)
+- `millennium_menu_show_logo` - แสดง/ซ่อนโลโก้
+
+**โค้ด:**
+```php
+@if($showLogo)
+    @if($menuLogo)
+        <img src="{{ asset('storage/' . $menuLogo) }}" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px;">
+    @elseif($mainLogo)
+        <img src="{{ Storage::url($mainLogo) }}" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px;">
+    @else
+        <div style="width: {{ $logoSize }}px; height: {{ $logoSize }}px; font-size: {{ $logoSize * 0.5 }}px;">
+            {{ substr($appName, 0, 1) }}
+        </div>
+    @endif
+@endif
+```
+
+### 3. Text Customization (ปรับแต่งข้อความ) ✏️
+
+**ฟีเจอร์:**
+- ปรับแต่งชื่อแอปที่แสดงในเมนู
+- ปรับแต่งข้อความ subtitle
+- แสดง/ซ่อนชื่อแอปและ subtitle แยกกันได้
+
+**Settings:**
+- `millennium_menu_show_app_name` - แสดง/ซ่อนชื่อแอป
+- `millennium_menu_show_subtitle` - แสดง/ซ่อน subtitle
+- `millennium_menu_app_name` - ชื่อแอป custom (nullable, ถ้าไม่มีใช้ชื่อระบบ)
+- `millennium_menu_subtitle` - subtitle custom (nullable, ถ้าไม่มีใช้ "{role} Dashboard")
+
+### 4. Menu Spacing & Padding (ระยะห่างและขนาด) 📐
+
+**Settings:**
+- `millennium_menu_item_spacing` - ระยะห่างระหว่างเมนู (0-32px)
+- `millennium_menu_padding` - padding ภายในเมนู (4-32px)
+
+**การใช้งาน:**
+```php
+<div style="gap: {{ $menuItemSpacing }}px; padding: {{ $menuPadding }}px;">
+```
+
+---
+
 ## 🚀 การทดสอบ
 
 ### 1. ทดสอบการแสดงเมนู
@@ -365,6 +470,25 @@ App\Models\WindowsUiSetting::get('millennium_menu_position');
 ---
 
 **จัดทำโดย:** Claude AI
-**วันที่:** 2025-01-10
-**เวอร์ชั่น:** 3.0.0 - Hard-Coded Menu System
+**วันที่สร้าง:** 2025-01-10
+**อัพเดทล่าสุด:** 2025-11-10 (เพิ่ม RGB border effect + logo customization)
+**เวอร์ชั่น:** 3.1.0 - Hard-Coded Menu System with Advanced Visual Customization
 **โปรเจกต์:** TP-Affiliate Platform
+
+---
+
+## 📝 Change Log
+
+### v3.1.0 (2025-11-10)
+- ✅ เพิ่ม RGB border effect ที่วิ่งรอบกรอบเมนูจริงๆ (ใช้ conic-gradient)
+- ✅ เพิ่มการตั้งค่าขนาดโลโก้ (20-100px)
+- ✅ เพิ่มการอัพโหลดโลโก้ custom สำหรับเมนู
+- ✅ เพิ่มการแสดง/ซ่อนโลโก้และข้อความ
+- ✅ เพิ่มการปรับแต่งชื่อแอปและ subtitle
+- ✅ เพิ่มการตั้งค่าระยะห่างและ padding ของเมนู
+
+### v3.0.0 (2025-01-10)
+- ✅ เปลี่ยนจาก Database-Driven เป็น Hard-Coded Menu System
+- ✅ ลบหน้า Admin UI สำหรับจัดการเมนู
+- ✅ เก็บเฉพาะ Visual Settings ใน database
+- ✅ Hard-code เมนูทั้งหมดใน component
