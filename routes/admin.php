@@ -1446,3 +1446,6 @@ Route::prefix('api-management')->name('api-management.')->group(function () {
         Route::get('/{apiKey}/analytics', [ApiKeyController::class, 'analytics'])->name('analytics');
     });
 });
+
+// Bot Automation System Routes
+require __DIR__.'/bot_automation.php';
