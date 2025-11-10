@@ -497,6 +497,62 @@
                         </div>
 
                         <div class="space-y-4">
+                            <!-- Start Button Tooltip Settings -->
+                            <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border-2 border-purple-200 dark:border-purple-800">
+                                <h4 class="font-semibold text-purple-900 dark:text-purple-300 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-comment-dots"></i> กล่องคำพูดต้อนรับ (Tooltip)
+                                </h4>
+
+                                <label class="flex items-center justify-between p-3 bg-white dark:bg-slate-800 rounded-lg cursor-pointer mb-3">
+                                    <div>
+                                        <span class="font-medium text-gray-900 dark:text-white">เปิดใช้กล่องคำพูด</span>
+                                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงกล่องคำพูดเมื่อเข้ามาครั้งแรก</p>
+                                    </div>
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" name="millennium_start_button_tooltip_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_enabled', true) ? 'checked' : '' }}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                </label>
+
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ข้อความในกล่องคำพูด</label>
+                                        <textarea name="millennium_start_button_tooltip_text" rows="2" maxlength="100" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-purple-500" placeholder="คลิกที่นี่เพื่อเริ่มต้น! 🚀">{{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_text', 'คลิกที่นี่เพื่อเริ่มต้น! 🚀') }}</textarea>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ข้อความที่จะแสดงในกล่องคำพูด (สูงสุด 100 ตัวอักษร)</p>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ระยะเวลาแสดง (วินาที)</label>
+                                            <input type="number" name="millennium_start_button_tooltip_duration" min="3" max="30" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_duration', 8) }}" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-purple-500">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">3-30 วินาที</p>
+                                        </div>
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่ง</label>
+                                            <select name="millennium_start_button_tooltip_position" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-purple-500">
+                                                <option value="top" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top') === 'top' ? 'selected' : '' }}>ด้านบน</option>
+                                                <option value="bottom" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top') === 'bottom' ? 'selected' : '' }}>ด้านล่าง</option>
+                                                <option value="left" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top') === 'left' ? 'selected' : '' }}>ซ้าย</option>
+                                                <option value="right" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top') === 'right' ? 'selected' : '' }}>ขวา</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">แอนิเมชั่น</label>
+                                        <select name="millennium_start_button_tooltip_animation" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-purple-500">
+                                            <option value="bounce" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'bounce' ? 'selected' : '' }}>🎪 Bounce (เด้ง)</option>
+                                            <option value="pulse" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'pulse' ? 'selected' : '' }}>💓 Pulse (เต้น)</option>
+                                            <option value="shake" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'shake' ? 'selected' : '' }}>🔔 Shake (สั่น)</option>
+                                            <option value="swing" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'swing' ? 'selected' : '' }}>🎭 Swing (แกว่ง)</option>
+                                            <option value="tada" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'tada' ? 'selected' : '' }}>🎉 Tada (ปรบมือ)</option>
+                                            <option value="flash" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce') === 'flash' ? 'selected' : '' }}>⚡ Flash (กระพริบ)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-4 border-2 border-indigo-200 dark:border-indigo-800">
                                 <h4 class="font-semibold text-indigo-900 dark:text-indigo-300 mb-3 flex items-center gap-2">
                                     <i class="fas fa-mobile-alt"></i> Responsive Mode

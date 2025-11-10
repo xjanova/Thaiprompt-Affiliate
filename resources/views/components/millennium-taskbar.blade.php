@@ -34,6 +34,13 @@
     $startButtonIconSize = WindowsUiSetting::get('millennium_start_button_icon_size', 32);
     $startButtonFontSize = WindowsUiSetting::get('millennium_start_button_font_size', 20);
 
+    // Start Button Tooltip Settings
+    $tooltipEnabled = WindowsUiSetting::get('millennium_start_button_tooltip_enabled', true);
+    $tooltipText = WindowsUiSetting::get('millennium_start_button_tooltip_text', 'คลิกที่นี่เพื่อเริ่มต้น! 🚀');
+    $tooltipDuration = WindowsUiSetting::get('millennium_start_button_tooltip_duration', 8);
+    $tooltipPosition = WindowsUiSetting::get('millennium_start_button_tooltip_position', 'top');
+    $tooltipAnimation = WindowsUiSetting::get('millennium_start_button_tooltip_animation', 'bounce');
+
     // Responsive Taskbar Settings
     $taskbarCollapseEnabled = WindowsUiSetting::get('millennium_taskbar_collapse_enabled', true);
     $taskbarCollapseBreakpoint = WindowsUiSetting::get('millennium_taskbar_collapse_breakpoint', 768);
@@ -143,6 +150,9 @@
         dateFormat: '{{ $clockDateFormat }}',
         showBackToTop: false,
         backToTopThreshold: {{ $backToTopThreshold }},
+        showTooltip: false,
+        tooltipEnabled: {{ $tooltipEnabled ? 'true' : 'false' }},
+        tooltipDuration: {{ $tooltipDuration }},
         updateTime() {
             const now = new Date();
             let hours = now.getHours();
@@ -186,6 +196,28 @@
             const scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
             this.showBackToTop = scrollPercentage >= this.backToTopThreshold;
         },
+        initTooltip() {
+            if (!this.tooltipEnabled) return;
+
+            const hasSeenTooltip = localStorage.getItem('millennium_start_button_tooltip_seen');
+
+            if (!hasSeenTooltip) {
+                // Show tooltip after a short delay
+                setTimeout(() => {
+                    this.showTooltip = true;
+
+                    // Auto hide after duration
+                    setTimeout(() => {
+                        this.showTooltip = false;
+                        localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
+                    }, this.tooltipDuration * 1000);
+                }, 1500); // Wait 1.5s before showing
+            }
+        },
+        hideTooltip() {
+            this.showTooltip = false;
+            localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
+        },
         init() {
             this.updateTime();
             const interval = this.showSeconds ? 1000 : 60000;
@@ -194,6 +226,9 @@
             // Set up scroll listener for Back to Top button
             window.addEventListener('scroll', () => this.handleScroll());
             this.handleScroll();
+
+            // Initialize tooltip
+            this.initTooltip();
         }
     }"
     x-init="init()"
@@ -220,34 +255,56 @@
 
                 <!-- Start Button (Left Position) -->
                 @if($startButtonPosition === 'left')
-                    <button
-                        @click="startMenuOpen = !startMenuOpen"
-                        :class="{'millennium-start-active': startMenuOpen}"
-                        class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
-                        style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+                    <div class="relative">
+                        <button
+                            @click="startMenuOpen = !startMenuOpen; hideTooltip()"
+                            :class="{'millennium-start-active': startMenuOpen}"
+                            class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                            style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
 
-                        @if($startButtonShowIcon)
-                            @if($logo)
-                                <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
-                            @else
-                                <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
-                                    <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
-                                        <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
-                                    </svg>
-                                </div>
+                            @if($startButtonShowIcon)
+                                @if($logo)
+                                    <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                @else
+                                    <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                        <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                            <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                        </svg>
+                                    </div>
+                                @endif
                             @endif
-                        @endif
 
-                        @if($startButtonShowText)
-                            <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
-                                {{ $startButtonText }}
-                            </span>
-                        @endif
+                            @if($startButtonShowText)
+                                <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                                    {{ $startButtonText }}
+                                </span>
+                            @endif
 
-                        <!-- Glow Effect on Hover -->
-                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                             style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
-                    </button>
+                            <!-- Glow Effect on Hover -->
+                            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                 style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                        </button>
+
+                        <!-- Tooltip -->
+                        @if($tooltipEnabled)
+                            <div
+                                x-show="showTooltip"
+                                x-transition:enter="transition ease-out duration-500"
+                                x-transition:enter-start="opacity-0 scale-0"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-300"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-0"
+                                @click="hideTooltip()"
+                                class="millennium-tooltip millennium-tooltip-{{ $tooltipPosition }} millennium-tooltip-{{ $tooltipAnimation }} absolute z-[100] cursor-pointer"
+                                style="display: none;">
+                                <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 text-white px-5 py-3 rounded-2xl shadow-2xl border-2 border-white/30 backdrop-blur-sm max-w-[250px]">
+                                    <p class="text-sm font-bold text-center leading-relaxed">{{ $tooltipText }}</p>
+                                    <button class="absolute -top-2 -right-2 w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-xs font-bold transition-colors">✕</button>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                 @endif
 
                 <!-- Back Button -->
@@ -429,9 +486,9 @@
 
             <!-- Center Section: Start Button (if position is 'center') -->
             @if($startButtonPosition === 'center')
-                <div class="flex items-center justify-center">
+                <div class="flex items-center justify-center relative">
                     <button
-                        @click="startMenuOpen = !startMenuOpen"
+                        @click="startMenuOpen = !startMenuOpen; hideTooltip()"
                         :class="{'millennium-start-active': startMenuOpen}"
                         class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
                         style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
@@ -458,6 +515,26 @@
                         <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
                              style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
                     </button>
+
+                    <!-- Tooltip -->
+                    @if($tooltipEnabled)
+                        <div
+                            x-show="showTooltip"
+                            x-transition:enter="transition ease-out duration-500"
+                            x-transition:enter-start="opacity-0 scale-0"
+                            x-transition:enter-end="opacity-100 scale-100"
+                            x-transition:leave="transition ease-in duration-300"
+                            x-transition:leave-start="opacity-100 scale-100"
+                            x-transition:leave-end="opacity-0 scale-0"
+                            @click="hideTooltip()"
+                            class="millennium-tooltip millennium-tooltip-{{ $tooltipPosition }} millennium-tooltip-{{ $tooltipAnimation }} absolute z-[100] cursor-pointer"
+                            style="display: none;">
+                            <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 text-white px-5 py-3 rounded-2xl shadow-2xl border-2 border-white/30 backdrop-blur-sm max-w-[250px]">
+                                <p class="text-sm font-bold text-center leading-relaxed">{{ $tooltipText }}</p>
+                                <button class="absolute -top-2 -right-2 w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-xs font-bold transition-colors">✕</button>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             @endif
 
@@ -466,34 +543,56 @@
 
                 <!-- Start Button (Right Position - Before separator) -->
                 @if($startButtonPosition === 'right')
-                    <button
-                        @click="startMenuOpen = !startMenuOpen"
-                        :class="{'millennium-start-active': startMenuOpen}"
-                        class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
-                        style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+                    <div class="relative">
+                        <button
+                            @click="startMenuOpen = !startMenuOpen; hideTooltip()"
+                            :class="{'millennium-start-active': startMenuOpen}"
+                            class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
+                            style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
 
-                        @if($startButtonShowIcon)
-                            @if($logo)
-                                <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
-                            @else
-                                <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
-                                    <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
-                                        <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
-                                    </svg>
-                                </div>
+                            @if($startButtonShowIcon)
+                                @if($logo)
+                                    <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                @else
+                                    <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                        <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
+                                            <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
+                                        </svg>
+                                    </div>
+                                @endif
                             @endif
-                        @endif
 
-                        @if($startButtonShowText)
-                            <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
-                                {{ $startButtonText }}
-                            </span>
-                        @endif
+                            @if($startButtonShowText)
+                                <span class="text-white font-bold drop-shadow-2xl" style="font-size: {{ $startButtonFontSize }}px;">
+                                    {{ $startButtonText }}
+                                </span>
+                            @endif
 
-                        <!-- Glow Effect on Hover -->
-                        <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                             style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
-                    </button>
+                            <!-- Glow Effect on Hover -->
+                            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                                 style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                        </button>
+
+                        <!-- Tooltip -->
+                        @if($tooltipEnabled)
+                            <div
+                                x-show="showTooltip"
+                                x-transition:enter="transition ease-out duration-500"
+                                x-transition:enter-start="opacity-0 scale-0"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-300"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-0"
+                                @click="hideTooltip()"
+                                class="millennium-tooltip millennium-tooltip-{{ $tooltipPosition }} millennium-tooltip-{{ $tooltipAnimation }} absolute z-[100] cursor-pointer"
+                                style="display: none;">
+                                <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 text-white px-5 py-3 rounded-2xl shadow-2xl border-2 border-white/30 backdrop-blur-sm max-w-[250px]">
+                                    <p class="text-sm font-bold text-center leading-relaxed">{{ $tooltipText }}</p>
+                                    <button class="absolute -top-2 -right-2 w-6 h-6 bg-white/20 hover:bg-white/30 rounded-full flex items-center justify-center text-white text-xs font-bold transition-colors">✕</button>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
                 @endif
 
                 <!-- System Tray Separator (Windows-style) -->
@@ -771,5 +870,212 @@
     .millennium-back-to-top-zoom-leave.millennium-back-to-top-zoom-leave-active {
         opacity: 0;
         transform: scale(0.5);
+    }
+
+    /* ========================================
+       Tooltip Positioning
+       ======================================== */
+
+    .millennium-tooltip-top {
+        bottom: calc(100% + 15px);
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .millennium-tooltip-top::after {
+        content: '';
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 8px solid transparent;
+        border-top-color: rgba(168, 85, 247, 0.9);
+        filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+    }
+
+    .millennium-tooltip-bottom {
+        top: calc(100% + 15px);
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .millennium-tooltip-bottom::after {
+        content: '';
+        position: absolute;
+        bottom: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 8px solid transparent;
+        border-bottom-color: rgba(168, 85, 247, 0.9);
+        filter: drop-shadow(0 -4px 6px rgba(0, 0, 0, 0.3));
+    }
+
+    .millennium-tooltip-left {
+        right: calc(100% + 15px);
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .millennium-tooltip-left::after {
+        content: '';
+        position: absolute;
+        left: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 8px solid transparent;
+        border-left-color: rgba(168, 85, 247, 0.9);
+        filter: drop-shadow(4px 0 6px rgba(0, 0, 0, 0.3));
+    }
+
+    .millennium-tooltip-right {
+        left: calc(100% + 15px);
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .millennium-tooltip-right::after {
+        content: '';
+        position: absolute;
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        border: 8px solid transparent;
+        border-right-color: rgba(168, 85, 247, 0.9);
+        filter: drop-shadow(-4px 0 6px rgba(0, 0, 0, 0.3));
+    }
+
+    /* ========================================
+       Tooltip Animations
+       ======================================== */
+
+    /* Bounce Animation */
+    @keyframes tooltipBounce {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
+        }
+        40% {
+            transform: translateY(-10px);
+        }
+        60% {
+            transform: translateY(-5px);
+        }
+    }
+
+    .millennium-tooltip-bounce {
+        animation: tooltipBounce 2s ease-in-out infinite;
+    }
+
+    /* Pulse Animation */
+    @keyframes tooltipPulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+        }
+        50% {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(236, 72, 153, 0.8);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+        }
+    }
+
+    .millennium-tooltip-pulse {
+        animation: tooltipPulse 2s ease-in-out infinite;
+    }
+
+    /* Shake Animation */
+    @keyframes tooltipShake {
+        0%, 100% {
+            transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+            transform: translateX(-5px);
+        }
+        20%, 40%, 60%, 80% {
+            transform: translateX(5px);
+        }
+    }
+
+    .millennium-tooltip-shake {
+        animation: tooltipShake 3s ease-in-out infinite;
+    }
+
+    /* Swing Animation */
+    @keyframes tooltipSwing {
+        0%, 100% {
+            transform: rotate(0deg);
+            transform-origin: top center;
+        }
+        20% {
+            transform: rotate(15deg);
+        }
+        40% {
+            transform: rotate(-10deg);
+        }
+        60% {
+            transform: rotate(5deg);
+        }
+        80% {
+            transform: rotate(-5deg);
+        }
+    }
+
+    .millennium-tooltip-swing {
+        animation: tooltipSwing 2s ease-in-out infinite;
+    }
+
+    /* Tada Animation */
+    @keyframes tooltipTada {
+        0% {
+            transform: scale(1) rotate(0deg);
+        }
+        10%, 20% {
+            transform: scale(0.9) rotate(-3deg);
+        }
+        30%, 50%, 70%, 90% {
+            transform: scale(1.1) rotate(3deg);
+        }
+        40%, 60%, 80% {
+            transform: scale(1.1) rotate(-3deg);
+        }
+        100% {
+            transform: scale(1) rotate(0deg);
+        }
+    }
+
+    .millennium-tooltip-tada {
+        animation: tooltipTada 2s ease-in-out infinite;
+    }
+
+    /* Flash Animation */
+    @keyframes tooltipFlash {
+        0%, 50%, 100% {
+            opacity: 1;
+        }
+        25%, 75% {
+            opacity: 0.5;
+        }
+    }
+
+    .millennium-tooltip-flash {
+        animation: tooltipFlash 2s ease-in-out infinite;
+    }
+
+    /* Tooltip Glow Effect */
+    .millennium-tooltip > div {
+        position: relative;
+        box-shadow:
+            0 0 20px rgba(168, 85, 247, 0.6),
+            0 0 40px rgba(236, 72, 153, 0.4),
+            0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .millennium-tooltip > div:hover {
+        box-shadow:
+            0 0 30px rgba(168, 85, 247, 0.8),
+            0 0 50px rgba(236, 72, 153, 0.6),
+            0 15px 40px rgba(0, 0, 0, 0.6);
     }
 </style>
