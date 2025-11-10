@@ -248,6 +248,7 @@
                                     @foreach($item['submenu'] as $subitem)
                                         <a
                                             href="{{ $subitem['url'] }}"
+                                            @click.stop
                                             class="flex items-center gap-2.5 bg-white/5 hover:bg-blue-500/20 border border-white/10 hover:border-blue-400/40 transition-all duration-200 transform hover:translate-x-1 group"
                                             style="padding: {{ $subPaddingY }}px {{ $subPaddingX }}px; border-radius: {{ $subBorderRadius }}px;">
 
@@ -270,6 +271,7 @@
                                 <!-- Regular Menu Item without Submenu - MAIN STYLE -->
                                 <a
                                     href="{{ $item['url'] }}"
+                                    @click.stop
                                     class="group flex items-center gap-3 bg-gradient-to-r hover:opacity-80 transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-xl {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : '' }}"
                                     style="padding: {{ $mainPaddingY }}px {{ $mainPaddingX }}px; border-radius: {{ $mainBorderRadius }}px; border-width: {{ $mainBorderWidth }}px; background: linear-gradient(90deg, {{ $mainGradientFrom }}66 0%, {{ $mainGradientTo }}66 100%); border-color: {{ $mainGradientFrom }}66;">
 
