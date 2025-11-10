@@ -1,11 +1,98 @@
 # คำแนะนำสำหรับ Claude - Thaiprompt Affiliate System
 
+## 🚨 MANDATORY - READ ALL GUIDELINES BEFORE STARTING ANY TASK
+
+> **⚠️ บังคับให้อ่านเอกสารทั้งหมดก่อนเริ่มทำงาน ⚠️**
+
+**EVERY TIME** you start working on ANY task (create, update, refactor, debug), you **MUST** read these guideline documents first:
+
+### 📋 Required Reading Checklist (อ่านก่อนทำงานเสมอ)
+
+ก่อนลงมือทำงานใดๆ ต้องอ่านเอกสารเหล่านี้ก่อน:
+
+- [ ] **[seeder-guidelines.md](./.claude/seeder-guidelines.md)** - กฎสำหรับ Seeders และ DatabaseSeeder.php synchronization
+  - ⚠️ **CRITICAL**: ทุกครั้งที่สร้าง/ลบ/แก้ไข Seeder ต้องอัพเดท DatabaseSeeder.php
+  - Smart seeding strategies (check before seeding, protect user data)
+  - รัน `php scripts/verify-seeders.php` ก่อน commit เสมอ
+
+- [ ] **[DATABASE_GUIDELINES.md](./.claude/DATABASE_GUIDELINES.md)** - กฎสำหรับ Database, Migrations และ Schema
+  - Table existence checks (Schema::hasTable, Schema::hasColumn)
+  - Foreign keys และ indexes
+  - Migration best practices และ rollback
+
+- [ ] **[UI_DESIGN_SYSTEM.md](./.claude/UI_DESIGN_SYSTEM.md)** - มาตรฐาน UI/UX และ Design System
+  - Dark/Light mode (บังคับ)
+  - Responsive design (บังคับ)
+  - Component standards และ styling
+
+- [ ] **[MENU_RULES.md](./.claude/MENU_RULES.md)** - กฎสำหรับระบบเมนูและ Navigation
+  - Windows UI menu system
+  - Dynamic menu management
+  - Menu seeding และ configuration
+
+### ⚠️ Why This Is Critical
+
+**ถ้าไม่อ่านเอกสาร จะเกิดปัญหาเหล่านี้:**
+- ❌ สร้าง Seeder แล้วลืมเพิ่มใน DatabaseSeeder.php → Deployment fails
+- ❌ สร้าง Migration โดยไม่ check table exists → Production errors
+- ❌ UI ไม่รองรับ dark mode → User experience ไม่ดี
+- ❌ ไม่ทำ responsive → ใช้งานบน mobile ไม่ได้
+- ❌ ไม่ตรวจสอบ foreign keys → Database integrity issues
+
+**ถ้าอ่านเอกสารและปฏิบัติตาม:**
+- ✅ Code มีคุณภาพสูง ไม่มี bugs
+- ✅ ทำงานถูกต้องตามมาตรฐาน
+- ✅ Deployment สำเร็จทุกครั้ง
+- ✅ ไม่ทำผิดพลาดที่เคยเกิดขึ้นแล้ว
+- ✅ Code maintainable และ scalable
+
+### 🔄 When to Re-read Guidelines
+
+อ่านเอกสารใหม่เมื่อ:
+1. **เริ่มแชทใหม่** - อ่านก่อนทำงานอะไรก็ตาม
+2. **ก่อนสร้าง Seeder** - อ่าน seeder-guidelines.md
+3. **ก่อนสร้าง Migration** - อ่าน DATABASE_GUIDELINES.md
+4. **ก่อนสร้าง UI Component** - อ่าน UI_DESIGN_SYSTEM.md
+5. **ก่อนแก้ไข Menu** - อ่าน MENU_RULES.md
+6. **เมื่อไม่แน่ใจ** - อ่านเอกสารที่เกี่ยวข้อง
+
+### ✅ How to Confirm You've Read
+
+เมื่ออ่านเอกสารแล้ว ให้ตอบผู้ใช้ว่า:
+```
+✅ อ่านเอกสารแนวทางแล้ว:
+- seeder-guidelines.md: [สรุปสั้นๆ ว่าเข้าใจอะไร]
+- DATABASE_GUIDELINES.md: [สรุปสั้นๆ]
+- [เอกสารอื่นๆ ที่เกี่ยวข้อง]: [สรุปสั้นๆ]
+
+พร้อมเริ่มทำงานตามมาตรฐานที่กำหนด
+```
+
+---
+
 ## 📚 คู่มือเพิ่มเติม (Additional Guidelines)
+
+เอกสารเหล่านี้มีรายละเอียดเพิ่มเติม (อ่านเมื่อจำเป็น):
 
 - **[DATABASE_GUIDELINES.md](./DATABASE_GUIDELINES.md)** - คู่มือการจัดการ Database, Migrations และ Seeders
   - กฎสำคัญสำหรับ migrations (Table existence checks)
   - Best practices สำหรับ seeders
   - Common issues และวิธีแก้ไข
+
+- **[seeder-guidelines.md](./seeder-guidelines.md)** - Laravel Seeder Guidelines
+  - 🚨 CRITICAL RULE #1: DatabaseSeeder.php Synchronization
+  - Smart seeding strategies
+  - Incremental seeding patterns
+
+- **[UI_DESIGN_SYSTEM.md](./UI_DESIGN_SYSTEM.md)** - UI Design System และ Component Library
+  - Dark/Light mode standards
+  - Responsive breakpoints
+  - Component styling และ animations
+
+- **[MENU_RULES.md](./MENU_RULES.md)** - Windows UI Menu System Rules
+  - Menu management และ seeding
+  - Dynamic vs Static menus
+  - Menu configuration
 
 ---
 
