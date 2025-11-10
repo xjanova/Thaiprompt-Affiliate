@@ -69,10 +69,10 @@ class VendorAnalyticsService
 
         $analytics->orders_count = (clone $orders)->count();
         $analytics->total_sales = (clone $orders)->sum('seller_earning');
-        $analytics->gross_revenue = (clone $orders)->sum('total_price');
+        $analytics->gross_revenue = (clone $orders)->sum('total');
 
         // Commission
-        $analytics->commission_paid = (clone $orders)->sum('platform_commission');
+        $analytics->commission_paid = (clone $orders)->sum('commission_amount');
         $analytics->net_revenue = $analytics->gross_revenue - $analytics->commission_paid;
 
         // Average order value
