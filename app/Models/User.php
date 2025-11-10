@@ -20,6 +20,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'member_number',
         'profile_picture',
         'role',
         'role_id',
@@ -753,5 +754,53 @@ class User extends Authenticatable
     public function scopeVerified($query)
     {
         return $query->whereNotNull('email_verified_at');
+    }
+
+    /**
+     * Generate a unique member number
+     */
+    public static function generateMemberNumber(): string
+    {
+        $prefix = config('member.prefix', 'MEM');
+        $startingNumber = config('member.starting_number', 1);
+        $padding = config('member.padding', 5);
+
+        // Get the last member number
+        $lastUser = static::whereNotNull('member_number')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        if ($lastUser && $lastUser->member_number) {
+            // Extract number from last member number
+            $lastNumber = (int) preg_replace('/\D/', '', $lastUser->member_number);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = $startingNumber;
+        }
+
+        // Generate member number with padding
+        $memberNumber = $prefix . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
+
+        // Ensure uniqueness
+        while (static::where('member_number', $memberNumber)->exists()) {
+            $nextNumber++;
+            $memberNumber = $prefix . str_pad($nextNumber, $padding, '0', STR_PAD_LEFT);
+        }
+
+        return $memberNumber;
+    }
+
+    /**
+     * Boot method to auto-generate member number
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($user) {
+            if (config('member.auto_generate', true) && empty($user->member_number)) {
+                $user->member_number = static::generateMemberNumber();
+            }
+        });
     }
 }
