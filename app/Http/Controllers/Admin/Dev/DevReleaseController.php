@@ -77,6 +77,9 @@ class DevReleaseController extends Controller
             }
 
             return collect($response->json())->map(function ($release) {
+                // Get file changes for this release
+                $fileChanges = $this->getFileChangesForRelease($release['tag_name']);
+
                 return [
                     'tag_name' => $release['tag_name'],
                     'name' => $release['name'] ?? $release['tag_name'],
@@ -87,11 +90,164 @@ class DevReleaseController extends Controller
                     'html_url' => $release['html_url'],
                     'zipball_url' => $release['zipball_url'],
                     'author' => $release['author']['login'] ?? 'Unknown',
+                    'file_changes' => $fileChanges,
                 ];
             });
         } catch (\Exception $e) {
             return collect([]);
         }
+    }
+
+    /**
+     * Get file changes for a specific release tag
+     * Compares the tag with the previous tag to see what files changed
+     */
+    protected function getFileChangesForRelease($tag)
+    {
+        try {
+            // Get the previous tag
+            $previousTag = trim(Process::run("git describe --tags --abbrev=0 {$tag}^")->output());
+
+            if (empty($previousTag)) {
+                // If no previous tag, compare with first commit
+                $result = Process::run("git diff --name-status $(git rev-list --max-parents=0 HEAD) {$tag}");
+            } else {
+                // Compare with previous tag
+                $result = Process::run("git diff --name-status {$previousTag}..{$tag}");
+            }
+
+            $files = [];
+            $lines = explode("\n", trim($result->output()));
+
+            foreach ($lines as $line) {
+                if (empty($line)) continue;
+
+                $parts = preg_split('/\s+/', $line, 2);
+                if (count($parts) < 2) continue;
+
+                $status = $parts[0];
+                $filePath = $parts[1];
+
+                // Check if file should be blocked (sensitive or dev-only)
+                $isBlocked = $this->isBlockedFile($filePath);
+                $isSensitive = $this->isSensitiveFile($filePath);
+
+                $files[] = [
+                    'path' => $filePath,
+                    'status' => $this->getFileStatusLabel($status),
+                    'status_code' => $status,
+                    'is_blocked' => $isBlocked,
+                    'is_sensitive' => $isSensitive,
+                    'category' => $this->getFileCategory($filePath),
+                ];
+            }
+
+            return [
+                'files' => $files,
+                'total' => count($files),
+                'blocked_count' => count(array_filter($files, fn($f) => $f['is_blocked'])),
+                'sensitive_count' => count(array_filter($files, fn($f) => $f['is_sensitive'])),
+                'previous_tag' => $previousTag ?: 'Initial release',
+            ];
+
+        } catch (\Exception $e) {
+            return [
+                'files' => [],
+                'total' => 0,
+                'blocked_count' => 0,
+                'sensitive_count' => 0,
+                'previous_tag' => 'Unknown',
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Check if file is blocked (should NOT be in production)
+     * Based on .gitattributes export-ignore rules
+     */
+    protected function isBlockedFile($filePath)
+    {
+        $blockedPaths = [
+            'app/Http/Controllers/Admin/Dev/',
+            'app/Http/Middleware/DevMode.php',
+            'resources/views/admin/dev/',
+            '.git',
+            '.github/',
+            '.env',
+            'tests/',
+            'phpunit.xml',
+            'node_modules/',
+            '.gitignore',
+            '.gitattributes',
+        ];
+
+        foreach ($blockedPaths as $blocked) {
+            if (str_starts_with($filePath, $blocked)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if file is sensitive (warning, but may be needed)
+     */
+    protected function isSensitiveFile($filePath)
+    {
+        $sensitivePaths = [
+            'config/',
+            'database/migrations/',
+            'routes/',
+            '.env.example',
+            'composer.json',
+            'composer.lock',
+        ];
+
+        foreach ($sensitivePaths as $sensitive) {
+            if (str_starts_with($filePath, $sensitive)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get file category for grouping
+     */
+    protected function getFileCategory($filePath)
+    {
+        if (str_starts_with($filePath, 'app/')) return 'Backend Code';
+        if (str_starts_with($filePath, 'resources/views/')) return 'Views';
+        if (str_starts_with($filePath, 'resources/js/')) return 'JavaScript';
+        if (str_starts_with($filePath, 'resources/css/')) return 'CSS';
+        if (str_starts_with($filePath, 'public/')) return 'Public Assets';
+        if (str_starts_with($filePath, 'database/')) return 'Database';
+        if (str_starts_with($filePath, 'routes/')) return 'Routes';
+        if (str_starts_with($filePath, 'config/')) return 'Configuration';
+        if (str_starts_with($filePath, 'storage/')) return 'Storage';
+        if (str_starts_with($filePath, 'tests/')) return 'Tests (Dev Only)';
+        if (str_ends_with($filePath, '.md')) return 'Documentation';
+
+        return 'Other';
+    }
+
+    /**
+     * Get human-readable status label
+     */
+    protected function getFileStatusLabel($statusCode)
+    {
+        return match($statusCode) {
+            'A' => 'Added',
+            'M' => 'Modified',
+            'D' => 'Deleted',
+            'R' => 'Renamed',
+            'C' => 'Copied',
+            'T' => 'Type Changed',
+            default => $statusCode,
+        };
     }
 
     /**
