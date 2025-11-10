@@ -9,6 +9,11 @@ class ComponentSettingSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * Smart Seeding Strategy (NEVER DELETES USER DATA):
+     * - Check each component individually by component_id
+     * - If exists: SKIP (preserve user customization)
+     * - If missing: ADD (insert default settings)
      */
     public function run(): void
     {
@@ -193,8 +198,33 @@ class ComponentSettingSeeder extends Seeder
             ],
         ];
 
+        $this->command->info('🔄 Running Smart Seeding for Component Settings...');
+        $this->command->info('   Strategy: Add missing components only (never delete/overwrite)');
+
+        $added = 0;
+        $skipped = 0;
+
         foreach ($components as $component) {
-            ComponentSetting::create($component);
+            // Check if component already exists
+            if (!ComponentSetting::where('component_id', $component['component_id'])->exists()) {
+                ComponentSetting::create($component);
+                $this->command->info("   ✅ Added: {$component['component_id']}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✨ Added {$added} new components.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing components (preserved user customizations).");
+        }
+
+        if ($added === 0 && $skipped > 0) {
+            $this->command->info('✅ All components are up to date. No changes needed.');
         }
     }
 }
