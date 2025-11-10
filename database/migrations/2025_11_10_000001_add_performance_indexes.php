@@ -290,14 +290,22 @@ return new class extends Migration
     }
 
     /**
-     * Check if index exists
+     * Check if index exists (Laravel 10+ compatible)
      */
     protected function hasIndex(string $table, string $indexName): bool
     {
-        $indexes = Schema::getConnection()
-            ->getDoctrineSchemaManager()
-            ->listTableIndexes($table);
+        $connection = Schema::getConnection();
+        $databaseName = $connection->getDatabaseName();
 
-        return isset($indexes[$indexName]);
+        $result = $connection->select(
+            "SELECT COUNT(*) as count
+             FROM information_schema.statistics
+             WHERE table_schema = ?
+             AND table_name = ?
+             AND index_name = ?",
+            [$databaseName, $table, $indexName]
+        );
+
+        return $result[0]->count > 0;
     }
 };
