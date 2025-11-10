@@ -8,6 +8,8 @@ use App\Models\AppThemeSetting;
 use App\Models\AppFeature;
 use App\Models\AppBanner;
 use App\Models\AppMaintenance;
+use App\Models\AppControlSection;
+use App\Models\ComponentSetting;
 use Illuminate\Http\Request;
 
 class AppConfigController extends Controller
@@ -331,5 +333,91 @@ class AppConfigController extends Controller
         return $user->is_super_admin ||
                $user->role === 'super_admin' ||
                $user->role === 'admin';
+    }
+
+    /**
+     * Get control sections for mobile app
+     */
+    public function controlSections(Request $request)
+    {
+        $platform = $request->platform ?? 'all';
+
+        $sections = AppControlSection::active()
+            ->visible()
+            ->forPlatform($platform)
+            ->ordered()
+            ->get()
+            ->map(function ($section) {
+                return $section->toApiResponse();
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $sections,
+        ]);
+    }
+
+    /**
+     * Get component settings for mobile app
+     */
+    public function componentSettings(Request $request)
+    {
+        $platform = $request->platform ?? 'all';
+        $componentType = $request->component_type ?? null;
+
+        $query = ComponentSetting::enabled()
+            ->forPlatform($platform);
+
+        if ($componentType) {
+            $query->ofType($componentType);
+        }
+
+        $components = $query->get()
+            ->map(function ($component) {
+                return $component->toApiResponse();
+            })
+            ->groupBy('component_type');
+
+        return response()->json([
+            'success' => true,
+            'data' => $components,
+        ]);
+    }
+
+    /**
+     * Get complete theme configuration including extended fields
+     */
+    public function completeTheme(Request $request)
+    {
+        $themeSettings = AppThemeSetting::getInstance();
+        $platform = $request->platform ?? 'all';
+
+        // Get control sections
+        $sections = AppControlSection::active()
+            ->visible()
+            ->forPlatform($platform)
+            ->ordered()
+            ->get()
+            ->map(function ($section) {
+                return $section->toApiResponse();
+            });
+
+        // Get component settings
+        $components = ComponentSetting::enabled()
+            ->forPlatform($platform)
+            ->get()
+            ->map(function ($component) {
+                return $component->toApiResponse();
+            })
+            ->groupBy('component_type');
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'theme' => $themeSettings,
+                'sections' => $sections,
+                'components' => $components,
+            ],
+        ]);
     }
 }

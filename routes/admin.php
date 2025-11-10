@@ -63,6 +63,8 @@ use App\Http\Controllers\Admin\AppThemeSettingController;
 use App\Http\Controllers\Admin\AppFeatureController;
 use App\Http\Controllers\Admin\AppBannerController;
 use App\Http\Controllers\Admin\AppMaintenanceController;
+use App\Http\Controllers\Admin\AppControlSectionController;
+use App\Http\Controllers\Admin\ComponentSettingController;
 use App\Http\Controllers\Admin\PageBuilderController;
 use App\Http\Controllers\Admin\PageBuilderSectionController;
 use Illuminate\Support\Facades\Route;
@@ -1311,6 +1313,31 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::post('/toggle', [AppMaintenanceController::class, 'toggle'])->name('toggle');
         Route::post('/enable', [AppMaintenanceController::class, 'enable'])->name('enable');
         Route::post('/disable', [AppMaintenanceController::class, 'disable'])->name('disable');
+    });
+
+    // App Control Sections
+    Route::prefix('control-sections')->name('control-sections.')->group(function () {
+        Route::get('/', [AppControlSectionController::class, 'index'])->name('index');
+        Route::get('/create', [AppControlSectionController::class, 'create'])->name('create');
+        Route::post('/', [AppControlSectionController::class, 'store'])->name('store');
+        Route::get('/{appControlSection}/edit', [AppControlSectionController::class, 'edit'])->name('edit');
+        Route::put('/{appControlSection}', [AppControlSectionController::class, 'update'])->name('update');
+        Route::delete('/{appControlSection}', [AppControlSectionController::class, 'destroy'])->name('destroy');
+        Route::post('/{appControlSection}/toggle-visibility', [AppControlSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
+        Route::post('/{appControlSection}/toggle-active', [AppControlSectionController::class, 'toggleActive'])->name('toggle-active');
+        Route::post('/update-order', [AppControlSectionController::class, 'updateOrder'])->name('update-order');
+    });
+
+    // Component Settings
+    Route::prefix('component-settings')->name('component-settings.')->group(function () {
+        Route::get('/', [ComponentSettingController::class, 'index'])->name('index');
+        Route::get('/create', [ComponentSettingController::class, 'create'])->name('create');
+        Route::post('/', [ComponentSettingController::class, 'store'])->name('store');
+        Route::get('/{componentSetting}/edit', [ComponentSettingController::class, 'edit'])->name('edit');
+        Route::put('/{componentSetting}', [ComponentSettingController::class, 'update'])->name('update');
+        Route::delete('/{componentSetting}', [ComponentSettingController::class, 'destroy'])->name('destroy');
+        Route::post('/{componentSetting}/toggle-enabled', [ComponentSettingController::class, 'toggleEnabled'])->name('toggle-enabled');
+        Route::post('/{componentSetting}/duplicate', [ComponentSettingController::class, 'duplicate'])->name('duplicate');
     });
 });
 
