@@ -94,6 +94,13 @@
     // All menus are now controlled via Windows UI Settings - no hard-coded menus!
     $menuItemsRaw = WindowsUiSetting::get("windows_start_menu_items_{$type}", []);
 
+    // DEBUG: Log to check if data exists
+    if (empty($menuItemsRaw)) {
+        \Log::warning("⚠️  No menu data found for type: {$type}. Run: php artisan db:seed --class=WindowsUiSeeder");
+    } else {
+        \Log::info("✅ Found " . count($menuItemsRaw) . " menu items for type: {$type}");
+    }
+
     // Transform menu items: convert 'route' to 'url'
     $menuItems = collect($menuItemsRaw)->map(function($item) {
         // Convert route name to URL
@@ -102,6 +109,7 @@
                 $item['url'] = route($item['route']);
             } catch (\Exception $e) {
                 // If route doesn't exist, use # as fallback
+                \Log::warning("⚠️  Route not found: {$item['route']} for menu: {$item['label']}");
                 $item['url'] = '#';
             }
         } else {
@@ -202,6 +210,19 @@
 
             <!-- Menu Items Section -->
             <div class="flex-1 overflow-y-auto millennium-scrollbar" style="padding: {{ $menuPadding }}px;">
+                @if(empty($menuItems))
+                    <!-- No Menu Data Warning -->
+                    <div class="p-6 bg-yellow-500/20 border-2 border-yellow-400/50 rounded-xl">
+                        <div class="text-center">
+                            <div class="text-5xl mb-4">⚠️</div>
+                            <h3 class="text-white font-bold text-lg mb-2">ไม่พบข้อมูลเมนู</h3>
+                            <p class="text-white/80 text-sm mb-4">กรุณารันคำสั่งนี้:</p>
+                            <code class="block bg-black/30 text-green-300 p-3 rounded text-xs font-mono">
+                                php artisan db:seed --class=WindowsUiSeeder
+                            </code>
+                        </div>
+                    </div>
+                @else
                 <div style="display: flex; flex-direction: column; gap: {{ $menuItemSpacing }}px;">
                     @foreach($menuItems as $index => $item)
                         <div>
@@ -294,6 +315,7 @@
                         </div>
                     @endforeach
                 </div>
+                @endif
             </div>
 
             <!-- Footer Section with 3D Effect -->
