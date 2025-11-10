@@ -392,6 +392,15 @@ class WindowsUiController extends Controller
             // Menu Logo Upload
             'millennium_menu_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,svg', 'max:2048'],
 
+            // Menu Logo & Text Visibility
+            'millennium_menu_show_logo' => ['nullable', 'boolean'],
+            'millennium_menu_show_app_name' => ['nullable', 'boolean'],
+            'millennium_menu_show_subtitle' => ['nullable', 'boolean'],
+
+            // Menu Text Customization
+            'millennium_menu_app_name' => ['nullable', 'string', 'max:50'],
+            'millennium_menu_subtitle' => ['nullable', 'string', 'max:50'],
+
             // Menu Appearance
             'millennium_menu_item_spacing' => ['nullable', 'integer', 'min:0', 'max:32'],
             'millennium_menu_padding' => ['nullable', 'integer', 'min:4', 'max:32'],
@@ -409,13 +418,16 @@ class WindowsUiController extends Controller
             unset($validated['millennium_menu_logo']);
         }
 
-        // Handle checkbox - always set it (true if checked, false if not)
+        // Handle checkboxes - always set them (true if checked, false if not)
         $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
+        $validated['millennium_menu_show_logo'] = $request->has('millennium_menu_show_logo');
+        $validated['millennium_menu_show_app_name'] = $request->has('millennium_menu_show_app_name');
+        $validated['millennium_menu_show_subtitle'] = $request->has('millennium_menu_show_subtitle');
 
         // Save each setting (only save fields that have actual values)
         foreach ($validated as $key => $value) {
-            // Skip null values to avoid overwriting existing settings
-            if ($value === null) {
+            // Skip null values to avoid overwriting existing settings (but allow empty strings for text fields)
+            if ($value === null && !in_array($key, ['millennium_menu_app_name', 'millennium_menu_subtitle'])) {
                 continue;
             }
 

@@ -6,9 +6,21 @@
 
     // Get user and role info
     $user = auth()->user();
-    $menuLogo = WindowsUiSetting::get('millennium_menu_logo'); // Custom menu logo
-    $logo = $menuLogo ? 'storage/' . $menuLogo : \App\Models\Setting::get('logo'); // Fallback to main logo if no custom menu logo
-    $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+
+    // Menu Logo Settings
+    $menuLogo = WindowsUiSetting::get('millennium_menu_logo'); // Custom menu logo path
+    $mainLogo = \App\Models\Setting::get('logo'); // Main logo
+    $showLogo = WindowsUiSetting::get('millennium_menu_show_logo', true); // Show/hide logo
+
+    // Menu Text Settings
+    $showAppName = WindowsUiSetting::get('millennium_menu_show_app_name', true); // Show/hide app name
+    $showSubtitle = WindowsUiSetting::get('millennium_menu_show_subtitle', true); // Show/hide subtitle
+    $customAppName = WindowsUiSetting::get('millennium_menu_app_name'); // Custom app name
+    $customSubtitle = WindowsUiSetting::get('millennium_menu_subtitle'); // Custom subtitle
+
+    // Use custom text if set, otherwise use defaults
+    $appName = $customAppName ?: \App\Models\Setting::get('app_name', 'TP-Affiliate');
+    $subtitle = $customSubtitle ?: ucfirst($type) . ' Dashboard';
 
     // Safe route helper - returns URL if route doesn't exist
     function safeRoute($routeName, $default = '#') {
@@ -618,17 +630,30 @@
             <div class="flex-shrink-0 mb-6">
                 <!-- Logo & App Name -->
                 <div class="flex items-center gap-3 mb-4">
-                    @if($logo)
-                        <img src="{{ Storage::url($logo) }}" alt="{{ $appName }}" class="h-10 w-10 rounded-lg object-cover">
-                    @else
-                        <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold">
-                            {{ substr($appName, 0, 1) }}
+                    @if($showLogo)
+                        @if($menuLogo)
+                            <!-- Custom menu logo -->
+                            <img src="{{ asset('storage/' . $menuLogo) }}" alt="{{ $appName }}" class="h-10 w-10 rounded-lg object-cover">
+                        @elseif($mainLogo)
+                            <!-- Main system logo -->
+                            <img src="{{ Storage::url($mainLogo) }}" alt="{{ $appName }}" class="h-10 w-10 rounded-lg object-cover">
+                        @else
+                            <!-- Default gradient logo with first letter -->
+                            <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-xl font-bold">
+                                {{ substr($appName, 0, 1) }}
+                            </div>
+                        @endif
+                    @endif
+                    @if($showAppName || $showSubtitle)
+                        <div>
+                            @if($showAppName)
+                                <div class="text-white font-bold text-lg">{{ $appName }}</div>
+                            @endif
+                            @if($showSubtitle)
+                                <div class="text-white/60 text-xs">{{ $subtitle }}</div>
+                            @endif
                         </div>
                     @endif
-                    <div>
-                        <div class="text-white font-bold text-lg">{{ $appName }}</div>
-                        <div class="text-white/60 text-xs">{{ ucfirst($type) }} Dashboard</div>
-                    </div>
                 </div>
 
                 <!-- Search Bar -->

@@ -835,9 +835,52 @@
                         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
                             <i class="fas fa-paint-brush text-blue-600"></i> รูปลักษณ์เมนู
                         </h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                        <!-- Logo & Text Toggles -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <label class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl cursor-pointer border-2 border-gray-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-600 transition-all">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-image text-blue-600"></i> แสดงโลโก้
+                                    </span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงโลโก้ในเมนู Start</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="millennium_menu_show_logo" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_show_logo', true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </label>
+
+                            <label class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl cursor-pointer border-2 border-gray-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-600 transition-all">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-heading text-blue-600"></i> แสดงชื่อแอป
+                                    </span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงชื่อแอปพลิเคชัน</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="millennium_menu_show_app_name" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_show_app_name', true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </label>
+
+                            <label class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl cursor-pointer border-2 border-gray-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-600 transition-all">
+                                <div>
+                                    <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <i class="fas fa-text-height text-blue-600"></i> แสดงข้อความรอง
+                                    </span>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงข้อความ subtitle</p>
+                                </div>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" name="millennium_menu_show_subtitle" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_show_subtitle', true) ? 'checked' : '' }}>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Menu Logo Upload -->
-                            <div class="md:col-span-3">
+                            <div class="md:col-span-2">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                     <i class="fas fa-image mr-2 text-blue-600"></i>โลโก้ในเมนู
                                 </label>
@@ -849,6 +892,24 @@
                                     </div>
                                 @endif
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">อัพโหลดโลโก้สำหรับแสดงในเมนู Start (ถ้าไม่อัพโหลดจะใช้โลโก้หลักของระบบ)</p>
+                            </div>
+
+                            <!-- Custom App Name -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-edit mr-2 text-blue-600"></i>ชื่อแอปที่กำหนดเอง
+                                </label>
+                                <input type="text" name="millennium_menu_app_name" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_app_name') }}" maxlength="50" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" placeholder="เว้นว่างเพื่อใช้ชื่อเริ่มต้น">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ชื่อแอปที่แสดงในเมนู (เว้นว่างใช้ชื่อระบบหลัก)</p>
+                            </div>
+
+                            <!-- Custom Subtitle -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-edit mr-2 text-blue-600"></i>ข้อความรองที่กำหนดเอง
+                                </label>
+                                <input type="text" name="millennium_menu_subtitle" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_subtitle') }}" maxlength="50" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all" placeholder="เว้นว่างเพื่อใช้ '{Role} Dashboard'">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ข้อความรองในเมนู (เว้นว่างใช้ค่าเริ่มต้น)</p>
                             </div>
 
                             <!-- Menu Item Spacing -->
