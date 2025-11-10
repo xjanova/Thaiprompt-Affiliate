@@ -127,6 +127,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/config', [AppConfigController::class, 'config']);
             Route::get('/settings', [AppConfigController::class, 'settings']);
             Route::get('/theme', [AppConfigController::class, 'theme']);
+            Route::get('/complete-theme', [AppConfigController::class, 'completeTheme']);
+            Route::get('/control-sections', [AppConfigController::class, 'controlSections']);
+            Route::get('/component-settings', [AppConfigController::class, 'componentSettings']);
             Route::get('/features', [AppConfigController::class, 'features']);
             Route::get('/banners', [AppConfigController::class, 'banners']);
             Route::post('/banners/{bannerId}/view', [AppConfigController::class, 'trackBannerView']);
