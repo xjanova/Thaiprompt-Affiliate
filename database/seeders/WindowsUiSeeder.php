@@ -110,6 +110,10 @@ class WindowsUiSeeder extends Seeder
             'millennium_menu_max_height' => ['value' => '600', 'type' => 'string'],
             'millennium_menu_max_height_unit' => ['value' => 'px', 'type' => 'string'],
             'millennium_menu_rgb_enabled' => ['value' => true, 'type' => 'boolean'],
+            'millennium_menu_item_hover_rgb' => ['value' => true, 'type' => 'boolean'],
+            'millennium_menu_rgb_speed' => ['value' => 5, 'type' => 'integer'],
+            'millennium_menu_rgb_border_width' => ['value' => 2, 'type' => 'integer'],
+            'millennium_menu_rgb_glow_size' => ['value' => 15, 'type' => 'integer'],
 
             // Responsive Taskbar Settings
             'millennium_taskbar_collapse_enabled' => ['value' => true, 'type' => 'boolean'],
