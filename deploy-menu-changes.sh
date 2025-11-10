@@ -21,14 +21,20 @@ php artisan migrate --force
 echo "✅ Migrations complete"
 echo ""
 
-# Step 3: Run the updated seeder
-echo "🌱 Step 3: Running WindowsUiSeeder with new 'url' field structure..."
+# Step 3: Convert existing route names to URLs
+echo "🔄 Step 3: Converting existing route names to URLs in database..."
+php convert-routes-to-urls.php
+echo "✅ Conversion complete"
+echo ""
+
+# Step 4: Run the updated seeder (for any missing items)
+echo "🌱 Step 4: Running WindowsUiSeeder with new 'url' field structure..."
 php artisan db:seed --class=WindowsUiSeeder --force
 echo "✅ Seeder complete"
 echo ""
 
-# Step 4: Clear caches again (to ensure fresh data)
-echo "🧹 Step 4: Clearing caches again to ensure fresh data..."
+# Step 5: Clear caches again (to ensure fresh data)
+echo "🧹 Step 5: Clearing caches again to ensure fresh data..."
 php artisan config:clear
 php artisan cache:clear
 echo "✅ Final cache clear complete"
