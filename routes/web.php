@@ -41,6 +41,7 @@ Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,
 // Setup Wizard (First time installation)
 Route::prefix('setup')->name('setup.')->group(function () {
     Route::get('/', [SetupController::class, 'index'])->name('index');
+    Route::post('/check-auth', [SetupController::class, 'checkAuth'])->name('check-auth');
     Route::get('/check-requirements', [SetupController::class, 'checkRequirements'])->name('check-requirements');
     Route::post('/test-database', [SetupController::class, 'testDatabase'])->name('test-database');
     Route::post('/install-dependencies', [SetupController::class, 'installDependencies'])->name('install-dependencies');

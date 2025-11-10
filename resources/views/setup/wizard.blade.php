@@ -33,8 +33,53 @@
 
     <!-- Main Content Area -->
     <div class="bg-white rounded-lg shadow-lg p-8">
-        <!-- Step 0: Welcome -->
+        <!-- Step 0: License Verification -->
         <div x-show="currentStep === 0" x-transition>
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">ยืนยัน License Key</h2>
+                <p class="text-lg text-gray-600 mb-6">กรุณากรอก License Key เพื่อยืนยันสิทธิ์การติดตั้ง</p>
+            </div>
+
+            <form @submit.prevent="checkLicense" id="license-form" class="mb-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">License Key <span class="text-red-500">*</span></label>
+                        <input
+                            type="text"
+                            x-model="licenseKey"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"
+                            placeholder="XXXX-XXXX-XXXX-XXXX"
+                            required
+                        >
+                        <p class="mt-2 text-sm text-gray-500">กรุณากรอก License Key ที่ได้รับจากการซื้อ</p>
+                    </div>
+
+                    <div id="license-check-result"></div>
+
+                    <button
+                        type="submit"
+                        class="w-full bg-indigo-600 text-white py-4 rounded-lg font-bold text-lg hover:bg-indigo-700 transition duration-300 shadow-lg"
+                        :disabled="checkingLicense"
+                    >
+                        <span x-show="!checkingLicense">ตรวจสอบ License และเริ่มติดตั้ง</span>
+                        <span x-show="checkingLicense">กำลังตรวจสอบ...</span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                <div class="flex">
+                    <div class="text-2xl mr-3">💡</div>
+                    <div>
+                        <h4 class="font-bold text-blue-800 mb-1">สำหรับนักพัฒนา (Developer Mode)</h4>
+                        <p class="text-sm text-blue-700">หาก IP ของคุณอยู่ใน Dev Whitelist จะข้ามการตรวจสอบ License อัตโนมัติ</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 1: Welcome -->
+        <div x-show="currentStep === 1" x-transition>
             <div class="text-center mb-8">
                 <h2 class="text-3xl font-bold text-gray-800 mb-4">ยินดีต้อนรับสู่ TP-Affiliate</h2>
                 <p class="text-lg text-gray-600 mb-6">ระบบจะพาคุณผ่านขั้นตอนการติดตั้งอัตโนมัติ ใช้เวลาประมาณ 5-10 นาที</p>
@@ -82,8 +127,8 @@
             </button>
         </div>
 
-        <!-- Step 1: Requirements Check -->
-        <div x-show="currentStep === 1" x-transition>
+        <!-- Step 2: Requirements Check -->
+        <div x-show="currentStep === 2" x-transition>
             <h2 class="text-2xl font-bold text-gray-800 mb-6">ตรวจสอบความพร้อมของระบบ</h2>
 
             <div id="requirements-container">
@@ -103,8 +148,8 @@
             </div>
         </div>
 
-        <!-- Step 2: Database Configuration -->
-        <div x-show="currentStep === 2" x-transition>
+        <!-- Step 3: Database Configuration -->
+        <div x-show="currentStep === 3" x-transition>
             <h2 class="text-2xl font-bold text-gray-800 mb-6">ตั้งค่า Database</h2>
 
             <form @submit.prevent="testDatabaseConnection" id="database-form">
@@ -153,8 +198,8 @@
             </div>
         </div>
 
-        <!-- Step 3: Install Dependencies -->
-        <div x-show="currentStep === 3" x-transition>
+        <!-- Step 4: Install Dependencies -->
+        <div x-show="currentStep === 4" x-transition>
             <h2 class="text-2xl font-bold text-gray-800 mb-6">ติดตั้ง Dependencies</h2>
 
             <div id="dependencies-container">
@@ -174,8 +219,8 @@
             </div>
         </div>
 
-        <!-- Step 4: Database Migration -->
-        <div x-show="currentStep === 4" x-transition>
+        <!-- Step 5: Database Migration -->
+        <div x-show="currentStep === 5" x-transition>
             <h2 class="text-2xl font-bold text-gray-800 mb-6">สร้าง Database Tables</h2>
 
             <div id="migration-container">
@@ -195,8 +240,8 @@
             </div>
         </div>
 
-        <!-- Step 5: Create Admin -->
-        <div x-show="currentStep === 5" x-transition>
+        <!-- Step 6: Create Admin -->
+        <div x-show="currentStep === 6" x-transition>
             <h2 class="text-2xl font-bold text-gray-800 mb-6">สร้างบัญชี Super Admin</h2>
 
             <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
@@ -281,6 +326,7 @@ function setupWizard() {
     return {
         currentStep: 0,
         steps: [
+            { name: 'License', key: 'license' },
             { name: 'ยินดีต้อนรับ', key: 'welcome' },
             { name: 'ตรวจสอบระบบ', key: 'requirements' },
             { name: 'Database', key: 'database' },
@@ -288,6 +334,9 @@ function setupWizard() {
             { name: 'Migration', key: 'migration' },
             { name: 'Admin', key: 'admin' }
         ],
+        licenseKey: '',
+        licenseVerified: false,
+        checkingLicense: false,
         requirementsChecked: false,
         requirementsPassed: false,
         dbConfigured: false,
@@ -313,12 +362,58 @@ function setupWizard() {
         },
 
         init() {
-            // Auto-check requirements when reaching step 1
+            // Auto-check requirements when reaching step 2
             this.$watch('currentStep', (value) => {
-                if (value === 1 && !this.requirementsChecked) {
+                if (value === 2 && !this.requirementsChecked) {
                     this.checkRequirements();
                 }
             });
+        },
+
+        async checkLicense() {
+            this.checkingLicense = true;
+            const resultDiv = document.getElementById('license-check-result');
+            resultDiv.innerHTML = '<div class="text-center py-2"><div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div></div>';
+
+            try {
+                const response = await fetch('{{ route('setup.check-auth') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        license_key: this.licenseKey
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.authorized) {
+                    this.licenseVerified = true;
+
+                    let message = '✓ License ยืนยันสำเร็จ!';
+                    if (data.bypass) {
+                        message += ' (Developer Mode - ข้ามการตรวจสอบ)';
+                    }
+
+                    resultDiv.innerHTML = `<div class="bg-green-50 border-l-4 border-green-400 p-4 mt-4"><p class="text-green-700">${message}</p></div>`;
+
+                    // Auto-proceed to next step
+                    setTimeout(() => this.nextStep(), 1000);
+                } else {
+                    resultDiv.innerHTML = `<div class="bg-red-50 border-l-4 border-red-400 p-4 mt-4">
+                        <p class="text-red-700 font-semibold">✗ ไม่สามารถยืนยัน License ได้</p>
+                        <p class="text-red-600 text-sm mt-2">${data.message || 'กรุณาตรวจสอบ License Key'}</p>
+                    </div>`;
+                    this.licenseVerified = false;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="bg-red-50 border-l-4 border-red-400 p-4 mt-4"><p class="text-red-700">เกิดข้อผิดพลาดในการตรวจสอบ License</p></div>';
+                this.licenseVerified = false;
+            }
+
+            this.checkingLicense = false;
         },
 
         nextStep() {
