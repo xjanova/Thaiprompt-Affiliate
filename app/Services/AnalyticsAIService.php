@@ -130,7 +130,7 @@ class AnalyticsAIService
             $lastOrderDate = $orders->max(fn($o) => $o->order->created_at);
             $recency = now()->diffInDays($lastOrderDate);
             $frequency = $orders->count();
-            $monetary = $orders->sum('total_price');
+            $monetary = $orders->sum('total');
 
             $rfmData[] = [
                 'user_id' => $userId,
@@ -374,8 +374,8 @@ class AnalyticsAIService
                 'product_id',
                 DB::raw('COUNT(*) as order_count'),
                 DB::raw('SUM(quantity) as total_quantity'),
-                DB::raw('SUM(total_price) as total_revenue'),
-                DB::raw('AVG(total_price) as avg_price')
+                DB::raw('SUM(total) as total_revenue'),
+                DB::raw('AVG(total) as avg_price')
             )
             ->groupBy('product_id')
             ->with('product')
