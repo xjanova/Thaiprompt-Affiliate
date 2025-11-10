@@ -4,289 +4,371 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Welcome Header with Gradient -->
-    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
-        <div class="relative z-10">
-            <h1 class="text-3xl font-bold mb-2">👋 สวัสดี, {{ Auth::user()->name }}</h1>
-            <p class="text-indigo-100">ยินดีต้อนรับกลับสู่แดชบอร์ด Admin - {{ now()->format('d/m/Y') }}</p>
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-xl shadow-lg p-6 text-white">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold mb-1">สวัสดี, {{ Auth::user()->name }}</h1>
+                <p class="text-indigo-100 text-sm">ภาพรวมระบบ - {{ now()->format('d/m/Y H:i') }}</p>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-indigo-200">ออนไลน์</div>
+                <div class="text-2xl font-bold">{{ $stats['active_affiliates'] }}</div>
+            </div>
         </div>
     </div>
 
-    <!-- Stats Cards with Growth Indicators -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Main Stats Grid (4 columns) -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Total Users -->
-        <a href="{{ route('admin.users.index') }}" class="relative overflow-hidden bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
-            </div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="text-5xl">👥</div>
+        <a href="{{ route('admin.users.index') }}" class="block group">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-5 text-white hover:shadow-xl hover:scale-105 transition duration-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-3xl">👥</div>
                     @if($userGrowth != 0)
-                        <span class="px-2 py-1 bg-white bg-opacity-20 rounded-lg text-xs font-semibold">
+                        <span class="px-2 py-1 bg-white bg-opacity-20 rounded-md text-xs font-semibold">
                             {{ $userGrowth > 0 ? '↑' : '↓' }} {{ number_format(abs($userGrowth), 1) }}%
                         </span>
                     @endif
                 </div>
-                <p class="text-white text-opacity-80 text-sm mb-1">ผู้ใช้ทั้งหมด</p>
-                <p class="text-4xl font-bold">{{ number_format($stats['total_users']) }}</p>
-                <p class="text-xs text-white text-opacity-70 mt-2">คลิกเพื่อดูรายละเอียด</p>
+                <p class="text-white text-opacity-80 text-xs mb-1">ผู้ใช้ทั้งหมด</p>
+                <p class="text-3xl font-bold">{{ number_format($stats['total_users']) }}</p>
             </div>
         </a>
 
         <!-- Total Affiliates -->
-        <a href="{{ route('admin.affiliates.index') }}" class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
-            </div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="text-5xl">🌐</div>
-                    <span class="px-2 py-1 bg-white bg-opacity-20 rounded-lg text-xs font-semibold">
+        <a href="{{ route('admin.affiliates.index') }}" class="block group">
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-5 text-white hover:shadow-xl hover:scale-105 transition duration-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-3xl">🌐</div>
+                    <span class="px-2 py-1 bg-white bg-opacity-20 rounded-md text-xs font-semibold">
                         {{ $stats['active_affiliates'] }} ใช้งาน
                     </span>
                 </div>
-                <p class="text-white text-opacity-80 text-sm mb-1">Affiliates ทั้งหมด</p>
-                <p class="text-4xl font-bold">{{ number_format($stats['total_affiliates']) }}</p>
-                <p class="text-xs text-white text-opacity-70 mt-2">คลิกเพื่อดูรายละเอียด</p>
+                <p class="text-white text-opacity-80 text-xs mb-1">Affiliates</p>
+                <p class="text-3xl font-bold">{{ number_format($stats['total_affiliates']) }}</p>
             </div>
         </a>
 
         <!-- Total Revenue -->
-        <a href="{{ route('admin.commissions.index', ['status' => 'paid']) }}" class="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
-            </div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="text-5xl">💰</div>
+        <a href="{{ route('admin.commissions.index', ['status' => 'paid']) }}" class="block group">
+            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-5 text-white hover:shadow-xl hover:scale-105 transition duration-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-3xl">💰</div>
                     @if($revenueGrowth != 0)
-                        <span class="px-2 py-1 bg-white bg-opacity-20 rounded-lg text-xs font-semibold">
+                        <span class="px-2 py-1 bg-white bg-opacity-20 rounded-md text-xs font-semibold">
                             {{ $revenueGrowth > 0 ? '↑' : '↓' }} {{ number_format(abs($revenueGrowth), 1) }}%
                         </span>
                     @endif
                 </div>
-                <p class="text-white text-opacity-80 text-sm mb-1">รายได้ทั้งหมด</p>
-                <p class="text-4xl font-bold">฿{{ number_format($stats['paid_commissions'], 0) }}</p>
-                <p class="text-xs text-white text-opacity-70 mt-2">คลิกเพื่อดูรายละเอียด</p>
+                <p class="text-white text-opacity-80 text-xs mb-1">รายได้ทั้งหมด</p>
+                <p class="text-3xl font-bold">฿{{ number_format($stats['paid_commissions'], 0) }}</p>
             </div>
         </a>
 
         <!-- Pending Commissions -->
-        <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="relative overflow-hidden bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4">
-                <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
-            </div>
-            <div class="relative z-10">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="text-5xl">⏳</div>
-                    <span class="px-2 py-1 bg-white bg-opacity-20 rounded-lg text-xs font-semibold">
+        <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="block group">
+            <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl shadow-lg p-5 text-white hover:shadow-xl hover:scale-105 transition duration-200">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="text-3xl">⏳</div>
+                    <span class="px-2 py-1 bg-white bg-opacity-20 rounded-md text-xs font-semibold">
                         {{ $stats['approved_commissions'] }} อนุมัติ
                     </span>
                 </div>
-                <p class="text-white text-opacity-80 text-sm mb-1">รอดำเนินการ</p>
-                <p class="text-4xl font-bold">{{ number_format($stats['pending_commissions']) }}</p>
-                <p class="text-xs text-white text-opacity-70 mt-2">คลิกเพื่อดูรายละเอียด</p>
+                <p class="text-white text-opacity-80 text-xs mb-1">รอดำเนินการ</p>
+                <p class="text-3xl font-bold">{{ number_format($stats['pending_commissions']) }}</p>
             </div>
         </a>
     </div>
 
-    <!-- Charts Row -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Revenue Area Chart -->
-        <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">รายได้รายเดือน</h3>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">12 เดือนย้อนหลัง</p>
-                </div>
-                <div class="flex gap-2">
-                    <span class="px-3 py-1 bg-green-100 text-green-800 rounded-lg text-xs font-semibold">
-                        ฿{{ number_format($monthlyRevenue->sum('total'), 0) }}
-                    </span>
-                </div>
-            </div>
-            <canvas id="revenueChart" height="80"></canvas>
+    <!-- Crypto Rates Section -->
+    @if(!empty($cryptoRates))
+    <div>
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-3 flex items-center">
+            <span class="text-2xl mr-2">₿</span> ราคาคริปโตปัจจุบัน
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            @foreach($cryptoRates as $symbol => $rate)
+                <a href="{{ route('admin.crypto.currencies') }}" class="block group">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4 hover:shadow-lg hover:scale-105 transition duration-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="font-bold text-gray-900 dark:text-white">{{ $symbol }}</span>
+                            <span class="text-xs px-2 py-1 rounded-full font-semibold
+                                {{ $rate['change_24h'] >= 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
+                                {{ $rate['change_24h'] >= 0 ? '+' : '' }}{{ number_format($rate['change_24h'], 2) }}%
+                            </span>
+                        </div>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">
+                            ฿{{ number_format($rate['price'], 2) }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Volume: ฿{{ number_format($rate['volume_24h'], 0) }}
+                        </p>
+                    </div>
+                </a>
+            @endforeach
         </div>
+    </div>
+    @endif
 
-        <!-- Commission Status Donut Chart -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">สถานะคอมมิชชั่น</h3>
-            <canvas id="statusChart"></canvas>
-            <div class="mt-6 space-y-3">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+    <!-- Quick Stats Grid (3 sections) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Crypto Withdrawals -->
+        <a href="{{ route('admin.crypto.withdrawals') }}" class="block group">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-5 hover:shadow-lg transition">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white flex items-center">
+                        <span class="text-xl mr-2">💸</span> การถอนเงิน
+                    </h3>
+                    @if($cryptoWithdrawals['pending'] > 0)
+                        <span class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-xs font-bold">
+                            {{ $cryptoWithdrawals['pending'] }}
+                        </span>
+                    @endif
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600 dark:text-gray-400">รอดำเนินการ</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">{{ $cryptoWithdrawals['pending'] }}</span>
                     </div>
-                    <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['pending'] }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600 dark:text-gray-400">อนุมัติแล้ว</span>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">ต้องอนุมัติ</span>
+                        <span class="font-semibold text-orange-600 dark:text-orange-400">{{ $cryptoWithdrawals['requires_approval'] }}</span>
                     </div>
-                    <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['approved'] }}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span class="text-sm text-gray-600 dark:text-gray-400">จ่ายแล้ว</span>
+                    <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                        <div class="text-xs text-gray-500 dark:text-gray-400">ยอดรอถอน</div>
+                        <div class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($cryptoWithdrawals['total_pending_amount'], 2) }}</div>
                     </div>
-                    <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['paid'] }}</span>
                 </div>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+            </div>
+        </a>
+
+        <!-- KYC Verifications -->
+        <a href="{{ route('admin.kyc.index') }}" class="block group">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-5 hover:shadow-lg transition">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white flex items-center">
+                        <span class="text-xl mr-2">🆔</span> KYC
+                    </h3>
+                    @if($kycStats['pending'] > 0)
+                        <span class="px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full text-xs font-bold">
+                            {{ $kycStats['pending'] }}
+                        </span>
+                    @endif
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">รอตรวจสอบ</span>
+                        <span class="font-semibold text-yellow-600 dark:text-yellow-400">{{ $kycStats['pending'] }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">ยืนยันแล้ว</span>
+                        <span class="font-semibold text-green-600 dark:text-green-400">{{ $kycStats['verified'] }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600 dark:text-gray-400">ปฏิเสธ</span>
+                        <span class="font-semibold text-red-600 dark:text-red-400">{{ $kycStats['rejected'] }}</span>
                     </div>
-                    <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['rejected'] }}</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Crypto Transactions -->
+        <a href="{{ route('admin.crypto.transactions') }}" class="block group">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-5 hover:shadow-lg transition">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-gray-900 dark:text-white flex items-center">
+                        <span class="text-xl mr-2">🔄</span> Transactions
+                    </h3>
+                </div>
+                <div class="space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">7 วันล่าสุด</span>
+                        <span class="font-semibold text-gray-900 dark:text-white">{{ number_format($cryptoTransactionsCount) }}</span>
+                    </div>
+                    @if(!empty($tradingStats))
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Trading Pairs</span>
+                            <span class="font-semibold text-gray-900 dark:text-white">{{ $tradingStats['active_pairs'] ?? 0 }}</span>
+                        </div>
+                        <div class="pt-2 border-t border-gray-200 dark:border-gray-700">
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Volume 24h</div>
+                            <div class="text-xl font-bold text-gray-900 dark:text-white">{{ number_format($tradingStats['total_volume_24h'] ?? 0, 2) }}</div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <!-- Charts Row (Compact) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Revenue Trend (Compact) -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white">รายได้รายเดือน</h3>
+                <span class="text-xs px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-md font-semibold">
+                    ฿{{ number_format($monthlyRevenue->sum('total'), 0) }}
+                </span>
+            </div>
+            <canvas id="revenueChart" height="150"></canvas>
+        </div>
+
+        <!-- Commission Status (Compact) -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+            <h3 class="text-base font-bold text-gray-900 dark:text-white mb-3">สถานะคอมมิชชั่น</h3>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="text-center">
+                    <canvas id="statusChart" height="120"></canvas>
+                </div>
+                <div class="space-y-2 text-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                            <span class="text-gray-600 dark:text-gray-400">รอ</span>
+                        </div>
+                        <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['pending'] }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                            <span class="text-gray-600 dark:text-gray-400">อนุมัติ</span>
+                        </div>
+                        <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['approved'] }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            <span class="text-gray-600 dark:text-gray-400">จ่าย</span>
+                        </div>
+                        <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['paid'] }}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                            <span class="text-gray-600 dark:text-gray-400">ปฏิเสธ</span>
+                        </div>
+                        <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['rejected'] }}</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Commission Types & Daily Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Commission Types Bar Chart -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">ประเภทคอมมิชชั่น</h3>
-            <canvas id="typesChart"></canvas>
-        </div>
-
-        <!-- Daily Activity Line Chart -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6">กิจกรรมรายวัน (30 วัน)</h3>
-            <canvas id="dailyChart"></canvas>
-        </div>
-    </div>
-
-    <!-- Bottom Section: Top Affiliates & Recent Activity -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Top Affiliates Leaderboard -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">🏆 Top Affiliates</h3>
-                <a href="{{ route('admin.affiliates.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
+    <!-- Bottom Section: Top Affiliates & Recent Activity (Compact) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Top Affiliates -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white">🏆 Top Affiliates</h3>
+                <a href="{{ route('admin.affiliates.index') }}" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
                     ดูทั้งหมด →
                 </a>
             </div>
-            <div class="space-y-4">
-                @forelse($topAffiliates as $index => $affiliate)
-                    <div class="flex items-center gap-4 p-4 bg-gradient-to-r from-gray-50 to-white dark:from-slate-700 dark:to-slate-800 rounded-xl hover:shadow-md transition border border-gray-100 dark:border-slate-600">
+            <div class="space-y-2">
+                @forelse($topAffiliates->take(5) as $index => $affiliate)
+                    <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-slate-700 rounded-lg hover:shadow-sm transition">
                         <div class="flex-shrink-0">
                             @if($index === 0)
-                                <div class="w-12 h-12 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                <div class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-sm">
                                     🥇
                                 </div>
                             @elseif($index === 1)
-                                <div class="w-12 h-12 bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                <div class="w-8 h-8 bg-gradient-to-br from-gray-300 to-gray-500 rounded-full flex items-center justify-center text-sm">
                                     🥈
                                 </div>
                             @elseif($index === 2)
-                                <div class="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                                <div class="w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-sm">
                                     🥉
                                 </div>
                             @else
-                                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                                     {{ $index + 1 }}
                                 </div>
                             @endif
                         </div>
                         <div class="flex-1 min-w-0">
-                            <p class="font-semibold text-gray-900 dark:text-white truncate">{{ $affiliate->user->name }}</p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ $affiliate->user->email }}</p>
+                            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">{{ $affiliate->user->name }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $affiliate->total_referrals }} refs</p>
                         </div>
                         <div class="text-right">
-                            <p class="font-bold text-lg text-green-600 dark:text-green-400">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $affiliate->total_referrals }} refs</p>
+                            <p class="text-sm font-bold text-green-600 dark:text-green-400">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
                         </div>
                     </div>
                 @empty
-                    <div class="text-center text-gray-500 py-8">
-                        <span class="text-4xl mb-2 block">📊</span>
-                        <p>ยังไม่มีข้อมูล</p>
+                    <div class="text-center text-gray-500 py-4 text-sm">
+                        ยังไม่มีข้อมูล
                     </div>
                 @endforelse
             </div>
         </div>
 
-        <!-- Recent Commissions Activity Feed -->
-        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-6" x-data="activityFeed()">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">🔔 กิจกรรมล่าสุด</h3>
-                <a href="{{ route('admin.commissions.index') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
+        <!-- Recent Activity -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-bold text-gray-900 dark:text-white">🔔 กิจกรรมล่าสุด</h3>
+                <a href="{{ route('admin.commissions.index') }}" class="text-xs text-indigo-600 hover:text-indigo-700 font-semibold">
                     ดูทั้งหมด →
                 </a>
             </div>
-            <div class="space-y-4 max-h-96 overflow-y-auto"
-                 x-ref="scrollContainer"
-                 @scroll="handleScroll()">
-                @forelse($recentCommissions as $index => $commission)
-                    <div class="flex items-start gap-3 p-3 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition"
-                         x-show="$index < visibleCount"
-                         x-transition:enter="transition ease-out duration-300"
-                         x-transition:enter-start="opacity-0 transform translate-y-4"
-                         x-transition:enter-end="opacity-100 transform translate-y-0">
+            <div class="space-y-2 max-h-80 overflow-y-auto">
+                @forelse($recentCommissions->take(8) as $commission)
+                    <div class="flex items-start gap-2 p-2 hover:bg-gray-50 dark:hover:bg-slate-700 rounded-lg transition">
                         <img src="{{ $commission->affiliate->user->profile_picture_url }}"
                              alt="{{ $commission->affiliate->user->name }}"
-                             class="w-10 h-10 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-200">
+                             class="w-8 h-8 rounded-full object-cover flex-shrink-0 ring-2 ring-gray-200 dark:ring-gray-700">
                         <div class="flex-1 min-w-0">
-                            <p class="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                            <p class="text-xs font-semibold text-gray-900 dark:text-white truncate">
                                 {{ $commission->affiliate->user->name }}
                             </p>
                             <p class="text-xs text-gray-500 dark:text-gray-400">
-                                ได้รับ <span class="font-semibold text-green-600 dark:text-green-400">฿{{ number_format($commission->amount, 2) }}</span>
-                            </p>
-                            <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                                {{ $commission->created_at->diffForHumans() }}
+                                <span class="font-semibold text-green-600 dark:text-green-400">฿{{ number_format($commission->amount, 2) }}</span>
                             </p>
                         </div>
-                        <span class="px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0
-                            {{ $commission->status === 'pending' ? 'bg-yellow-100 text-yellow-800' : '' }}
-                            {{ $commission->status === 'approved' ? 'bg-green-100 text-green-800' : '' }}
-                            {{ $commission->status === 'paid' ? 'bg-blue-100 text-blue-800' : '' }}
-                            {{ $commission->status === 'rejected' ? 'bg-red-100 text-red-800' : '' }}">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0
+                            {{ $commission->status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : '' }}
+                            {{ $commission->status === 'approved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : '' }}
+                            {{ $commission->status === 'paid' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : '' }}
+                            {{ $commission->status === 'rejected' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : '' }}">
                             {{ ucfirst($commission->status) }}
                         </span>
                     </div>
                 @empty
-                    <div class="text-center text-gray-500 py-8">
-                        <span class="text-4xl mb-2 block">📭</span>
-                        <p>ยังไม่มีกิจกรรม</p>
+                    <div class="text-center text-gray-500 py-4 text-sm">
+                        ยังไม่มีกิจกรรม
                     </div>
                 @endforelse
-
-                <!-- Loading indicator -->
-                <div x-show="loading" class="text-center py-4">
-                    <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
-                    <p class="text-xs text-gray-500 mt-2">กำลังโหลด...</p>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
-        <h3 class="text-xl font-bold mb-4">⚡ การกระทำด่วน</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="{{ route('admin.users.create') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-center transition">
-                <div class="text-3xl mb-2">➕</div>
-                <p class="text-sm font-semibold">เพิ่มผู้ใช้</p>
+    <!-- Quick Actions (Compact) -->
+    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-4">
+        <h3 class="text-base font-bold mb-3 text-white">⚡ การกระทำด่วน</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <a href="{{ route('admin.users.create') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white">
+                <div class="text-2xl mb-1">➕</div>
+                <p class="text-xs font-semibold">เพิ่มผู้ใช้</p>
             </a>
-            <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-center transition">
-                <div class="text-3xl mb-2">✅</div>
-                <p class="text-sm font-semibold">อนุมัติคอมมิชชั่น</p>
+            <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white">
+                <div class="text-2xl mb-1">✅</div>
+                <p class="text-xs font-semibold">อนุมัติคอมมิชชั่น</p>
             </a>
-            <a href="{{ route('admin.affiliates.tree') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-center transition">
-                <div class="text-3xl mb-2">🌳</div>
-                <p class="text-sm font-semibold">ดู Affiliate Tree</p>
+            <a href="{{ route('admin.crypto.withdrawals') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white">
+                <div class="text-2xl mb-1">💸</div>
+                <p class="text-xs font-semibold">การถอนเงิน</p>
             </a>
-            <a href="{{ route('admin.settings.index') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-center transition">
-                <div class="text-3xl mb-2">⚙️</div>
-                <p class="text-sm font-semibold">ตั้งค่าระบบ</p>
+            <a href="{{ route('admin.kyc.index') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white">
+                <div class="text-2xl mb-1">🆔</div>
+                <p class="text-xs font-semibold">ตรวจสอบ KYC</p>
+            </a>
+            <a href="{{ route('admin.affiliates.tree') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white">
+                <div class="text-2xl mb-1">🌳</div>
+                <p class="text-xs font-semibold">Affiliate Tree</p>
+            </a>
+            <a href="{{ route('admin.settings.index') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg p-3 text-center transition text-white">
+                <div class="text-2xl mb-1">⚙️</div>
+                <p class="text-xs font-semibold">ตั้งค่าระบบ</p>
             </a>
         </div>
     </div>
@@ -295,36 +377,7 @@
 
 @push('scripts')
 <script>
-// Alpine.js Activity Feed Component with Infinite Scroll
-function activityFeed() {
-    return {
-        visibleCount: 8,
-        loading: false,
-        totalItems: {{ $recentCommissions->count() }},
-
-        handleScroll() {
-            const container = this.$refs.scrollContainer;
-            const scrollPercentage = (container.scrollTop + container.clientHeight) / container.scrollHeight;
-
-            // Load more when scrolled to 80% of the container
-            if (scrollPercentage > 0.8 && !this.loading && this.visibleCount < this.totalItems) {
-                this.loadMore();
-            }
-        },
-
-        loadMore() {
-            this.loading = true;
-
-            // Simulate loading delay for smooth UX
-            setTimeout(() => {
-                this.visibleCount = Math.min(this.visibleCount + 5, this.totalItems);
-                this.loading = false;
-            }, 300);
-        }
-    }
-}
-
-// Revenue Area Chart
+// Revenue Chart (Compact)
 const revenueCtx = document.getElementById('revenueChart');
 if (revenueCtx) {
     const colors = window.getChartColors();
@@ -339,24 +392,24 @@ if (revenueCtx) {
                 backgroundColor: 'rgba(99, 102, 241, 0.1)',
                 fill: true,
                 tension: 0.4,
-                borderWidth: 3,
-                pointRadius: 4,
+                borderWidth: 2,
+                pointRadius: 3,
                 pointBackgroundColor: 'rgb(99, 102, 241)',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointHoverRadius: 6
+                pointHoverRadius: 5
             }]
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
                 },
                 tooltip: {
                     backgroundColor: colors.tooltipBg,
-                    padding: 12,
+                    padding: 8,
                     titleColor: '#fff',
                     bodyColor: '#fff',
                     borderColor: 'rgba(99, 102, 241, 0.5)',
@@ -381,7 +434,8 @@ if (revenueCtx) {
                         display: false
                     },
                     ticks: {
-                        color: colors.textColor
+                        color: colors.textColor,
+                        maxTicksLimit: 6
                     }
                 }
             }
@@ -389,7 +443,7 @@ if (revenueCtx) {
     });
 }
 
-// Status Donut Chart
+// Status Donut Chart (Compact)
 const statusCtx = document.getElementById('statusChart');
 if (statusCtx) {
     const colors = window.getChartColors();
@@ -397,7 +451,7 @@ if (statusCtx) {
     new Chart(statusCtx, {
         type: 'doughnut',
         data: {
-            labels: ['รอดำเนินการ', 'อนุมัติแล้ว', 'จ่ายแล้ว', 'ปฏิเสธ'],
+            labels: ['รอ', 'อนุมัติ', 'จ่าย', 'ปฏิเสธ'],
             datasets: [{
                 data: [
                     {{ $commissionStatus['pending'] }},
@@ -417,131 +471,19 @@ if (statusCtx) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: false
                 },
                 tooltip: {
                     backgroundColor: colors.tooltipBg,
-                    padding: 12,
+                    padding: 8,
                     titleColor: '#fff',
                     bodyColor: '#fff'
                 }
             },
-            cutout: '70%'
-        }
-    });
-}
-
-// Commission Types Bar Chart
-const typesCtx = document.getElementById('typesChart');
-if (typesCtx) {
-    const colors = window.getChartColors();
-    new Chart(typesCtx, {
-        type: 'bar',
-        data: {
-            labels: {!! json_encode($commissionTypes->pluck('type')) !!},
-            datasets: [{
-                label: 'จำนวนเงิน (฿)',
-                data: {!! json_encode($commissionTypes->pluck('total')) !!},
-                backgroundColor: [
-                    'rgba(99, 102, 241, 0.8)',
-                    'rgba(168, 85, 247, 0.8)',
-                    'rgba(236, 72, 153, 0.8)'
-                ],
-                borderRadius: 8,
-                borderSkipped: false
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: colors.tooltipBg,
-                    titleColor: '#fff',
-                    bodyColor: '#fff'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: colors.gridColor
-                    },
-                    ticks: {
-                        color: colors.textColor
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: colors.textColor
-                    }
-                }
-            }
-        }
-    });
-}
-
-// Daily Activity Chart
-const dailyCtx = document.getElementById('dailyChart');
-if (dailyCtx) {
-    const colors = window.getChartColors();
-    new Chart(dailyCtx, {
-        type: 'line',
-        data: {
-            labels: {!! json_encode($dailyCommissions->pluck('date')) !!},
-            datasets: [{
-                label: 'จำนวนคอมมิชชั่น',
-                data: {!! json_encode($dailyCommissions->pluck('count')) !!},
-                borderColor: 'rgb(168, 85, 247)',
-                backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                fill: true,
-                tension: 0.4,
-                borderWidth: 2,
-                pointRadius: 3
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: colors.tooltipBg,
-                    titleColor: '#fff',
-                    bodyColor: '#fff'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: colors.gridColor
-                    },
-                    ticks: {
-                        color: colors.textColor
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    },
-                    ticks: {
-                        color: colors.textColor,
-                        maxTicksLimit: 10
-                    }
-                }
-            }
+            cutout: '65%'
         }
     });
 }
