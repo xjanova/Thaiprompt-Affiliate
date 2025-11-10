@@ -1,0 +1,231 @@
+@extends('layouts.app')
+
+@section('title', 'Software Products')
+
+@section('content')
+<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <!-- Hero Section -->
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 shadow-2xl">
+        <div class="absolute inset-0 opacity-20">
+            <div class="absolute inset-0" style="background-image: url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');"></div>
+        </div>
+        <div class="container mx-auto px-4 py-16 md:py-24 relative">
+            <div class="max-w-4xl mx-auto text-center text-white">
+                <div class="inline-flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-white/20 backdrop-blur-lg rounded-3xl shadow-2xl mb-6 border-4 border-white/30">
+                    <span class="text-5xl md:text-6xl">💻</span>
+                </div>
+                <h1 class="text-4xl md:text-6xl font-black mb-4 tracking-tight drop-shadow-lg">
+                    Software Products
+                </h1>
+                <p class="text-xl md:text-2xl text-blue-100 mb-8 font-medium">
+                    Professional software solutions for your business
+                </p>
+                <div class="flex flex-wrap gap-4 justify-center text-sm md:text-base">
+                    <div class="flex items-center gap-2 bg-white/20 backdrop-blur-lg px-6 py-3 rounded-full border border-white/30">
+                        <span class="text-2xl">⚡</span>
+                        <span class="font-semibold">Ready to Use</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-white/20 backdrop-blur-lg px-6 py-3 rounded-full border border-white/30">
+                        <span class="text-2xl">💎</span>
+                        <span class="font-semibold">High Quality</span>
+                    </div>
+                    <div class="flex items-center gap-2 bg-white/20 backdrop-blur-lg px-6 py-3 rounded-full border border-white/30">
+                        <span class="text-2xl">🔧</span>
+                        <span class="font-semibold">Customizable</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-slate-50 to-transparent"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 -mt-10 relative z-10">
+        <!-- Search & Filters Card -->
+        <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8 mb-8 border border-gray-100">
+            <form method="GET" action="{{ route('software.products.index') }}">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <!-- Search -->
+                    <div class="lg:col-span-2">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">🔍 Search Products</label>
+                        <input type="text"
+                               name="search"
+                               class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all"
+                               placeholder="Search by name or description..."
+                               value="{{ request('search') }}">
+                    </div>
+
+                    <!-- Category -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">📁 Category</label>
+                        <select name="category" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-purple-500 focus:ring-4 focus:ring-purple-100 transition-all">
+                            <option value="">All Categories</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Featured Filter -->
+                    <div class="flex items-end">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox"
+                                   name="featured"
+                                   value="1"
+                                   class="w-5 h-5 rounded border-2 border-gray-200 text-purple-600 focus:ring-4 focus:ring-purple-100"
+                                   {{ request('featured') ? 'checked' : '' }}>
+                            <span class="text-sm font-semibold text-gray-700">⭐ Featured Only</span>
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                            Filter
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Header -->
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center text-white font-bold shadow-lg">
+                    {{ $products->total() }}
+                </div>
+                <div>
+                    <p class="text-lg font-bold text-gray-800">{{ $products->total() }} Products Found</p>
+                    <p class="text-sm text-gray-500">Available for your business</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        @if($products->count() > 0)
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+                @foreach($products as $product)
+                    <div class="group bg-white rounded-2xl shadow-lg hover:shadow-2xl transform hover:-translate-y-2 transition-all duration-300 overflow-hidden border border-gray-100">
+                        <!-- Product Image -->
+                        <div class="relative bg-gradient-to-br from-blue-50 to-purple-50 p-8">
+                            <div class="absolute top-4 right-4 flex gap-2">
+                                @if($product->is_featured)
+                                    <span class="px-3 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full shadow-lg">
+                                        ⭐ Featured
+                                    </span>
+                                @endif
+                                @if($product->is_customizable)
+                                    <span class="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full shadow-lg">
+                                        🔧 Customizable
+                                    </span>
+                                @endif
+                            </div>
+
+                            <div class="flex justify-center">
+                                @if($product->main_image_url)
+                                    <img src="{{ $product->main_image_url }}"
+                                         alt="{{ $product->name }}"
+                                         class="w-full h-48 object-cover rounded-xl shadow-xl transform group-hover:scale-105 transition-transform duration-300">
+                                @else
+                                    <div class="w-full h-48 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-6xl shadow-xl transform group-hover:scale-105 transition-transform duration-300">
+                                        💻
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <!-- Product Info -->
+                        <div class="p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-2 truncate group-hover:text-purple-600 transition-colors">
+                                {{ $product->name }}
+                            </h3>
+
+                            <!-- Category -->
+                            @if($product->category)
+                                <div class="mb-3">
+                                    <span class="inline-block px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">
+                                        {{ $product->category->name }}
+                                    </span>
+                                </div>
+                            @endif
+
+                            <!-- Description -->
+                            <p class="text-sm text-gray-600 mb-4 line-clamp-2 h-10">
+                                {{ Str::limit($product->short_description, 80) }}
+                            </p>
+
+                            <!-- Pricing -->
+                            <div class="mb-4">
+                                <div class="flex items-baseline justify-between bg-purple-50 px-4 py-3 rounded-xl">
+                                    @if($product->price_label)
+                                        <span class="text-sm text-purple-600 font-semibold">{{ $product->price_label }}</span>
+                                    @endif
+                                    <div>
+                                        <span class="text-2xl font-black text-purple-700">{{ $product->currency }} {{ number_format($product->base_price, 2) }}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Stats -->
+                            <div class="flex items-center justify-between text-xs text-gray-500 mb-4">
+                                <div class="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                                    <span>👁️</span>
+                                    <span class="font-semibold">{{ $product->view_count ?? 0 }}</span>
+                                </div>
+                                @if($product->estimated_delivery_days)
+                                    <div class="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-lg">
+                                        <span>📦</span>
+                                        <span class="font-semibold">{{ $product->estimated_delivery_days }} days</span>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <!-- Action Button -->
+                            <a href="{{ route('software.products.show', $product->slug) }}"
+                               class="block w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-center rounded-xl shadow-lg hover:shadow-xl transform group-hover:scale-105 transition-all duration-200">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            <!-- Empty State -->
+            <div class="bg-white rounded-3xl shadow-2xl p-12 text-center">
+                <div class="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full mb-6">
+                    <span class="text-5xl">🔍</span>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">No Products Found</h3>
+                <p class="text-gray-600 mb-6">Try adjusting your filters or search with different keywords</p>
+                <a href="{{ route('software.products.index') }}" class="inline-block px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                    View All Products
+                </a>
+            </div>
+        @endif
+
+        <!-- Pagination -->
+        @if($products->hasPages())
+            <div class="flex justify-center">
+                <div class="bg-white rounded-2xl shadow-lg p-4">
+                    {{ $products->links() }}
+                </div>
+            </div>
+        @endif
+    </div>
+</div>
+
+<style>
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+.line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+</style>
+@endsection
