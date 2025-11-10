@@ -34,6 +34,17 @@
     $startButtonIconSize = WindowsUiSetting::get('millennium_start_button_icon_size', 32);
     $startButtonFontSize = WindowsUiSetting::get('millennium_start_button_font_size', 20);
 
+    // Fallback: Ensure text is always shown with proper values
+    if ($startButtonShowText === false || $startButtonShowText === 0 || $startButtonShowText === '0' || $startButtonShowText === null) {
+        $startButtonShowText = true; // Force enable if not explicitly set
+    }
+    if (empty($startButtonText) || trim($startButtonText) === '') {
+        $startButtonText = 'เริ่ม'; // Force default text
+    }
+    if (empty($startButtonFontSize) || $startButtonFontSize < 12 || !is_numeric($startButtonFontSize)) {
+        $startButtonFontSize = 20; // Force default size
+    }
+
     // Start Button Tooltip Settings
     $tooltipEnabled = WindowsUiSetting::get('millennium_start_button_tooltip_enabled', true);
     $tooltipText = WindowsUiSetting::get('millennium_start_button_tooltip_text', 'คลิกที่นี่เพื่อเริ่มต้น! 🚀');
