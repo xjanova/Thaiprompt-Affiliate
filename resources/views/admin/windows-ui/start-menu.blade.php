@@ -463,6 +463,14 @@
                                 </select>
                             </div>
 
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-font mr-2 text-indigo-600"></i>ข้อความปุ่ม Start
+                                </label>
+                                <input type="text" name="millennium_start_button_text" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_text', 'เริ่ม') }}" maxlength="20" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all" placeholder="เริ่ม">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ข้อความที่จะแสดงบนปุ่ม Start (สูงสุด 20 ตัวอักษร)</p>
+                            </div>
+
                             <div class="space-y-3">
                                 <label class="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-xl cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-600 transition-all border-2 border-transparent hover:border-indigo-300 dark:hover:border-indigo-700">
                                     <div>
