@@ -15,9 +15,14 @@ class CryptoWallet extends Model
     protected $fillable = [
         'user_id',
         'wallet_type',
+        'is_master_wallet',
+        'master_wallet_id',
         'name',
         'encrypted_seed',
+        'master_seed_encrypted',
         'derivation_path',
+        'derivation_index',
+        'total_derived_wallets',
         'pin_hash',
         'two_factor_enabled',
         'two_factor_secret',
@@ -37,6 +42,7 @@ class CryptoWallet extends Model
     ];
 
     protected $casts = [
+        'is_master_wallet' => 'boolean',
         'two_factor_enabled' => 'boolean',
         'is_default' => 'boolean',
         'is_verified' => 'boolean',
@@ -45,11 +51,14 @@ class CryptoWallet extends Model
         'last_activity_at' => 'datetime',
         'failed_attempts' => 'integer',
         'total_transactions' => 'integer',
+        'derivation_index' => 'integer',
+        'total_derived_wallets' => 'integer',
         'metadata' => 'array',
     ];
 
     protected $hidden = [
         'encrypted_seed',
+        'master_seed_encrypted',
         'pin_hash',
         'two_factor_secret',
     ];
@@ -60,6 +69,22 @@ class CryptoWallet extends Model
     public function isCustodial(): bool
     {
         return $this->wallet_type === 'custodial';
+    }
+
+    /**
+     * Check if wallet is a master wallet
+     */
+    public function isMasterWallet(): bool
+    {
+        return $this->is_master_wallet === true;
+    }
+
+    /**
+     * Check if wallet is a child wallet (derived from master)
+     */
+    public function isChildWallet(): bool
+    {
+        return !$this->is_master_wallet && $this->master_wallet_id !== null;
     }
 
     /**
@@ -257,6 +282,23 @@ class CryptoWallet extends Model
     }
 
     /**
+     * Master wallet (for child wallets)
+     */
+    public function masterWallet()
+    {
+        return $this->belongsTo(CryptoWallet::class, 'master_wallet_id');
+    }
+
+    /**
+     * Child wallets (for master wallets)
+     */
+    public function childWallets()
+    {
+        return $this->hasMany(CryptoWallet::class, 'master_wallet_id')
+            ->orderBy('derivation_index');
+    }
+
+    /**
      * Crypto addresses for this wallet
      */
     public function cryptoAddresses()
@@ -336,5 +378,22 @@ class CryptoWallet extends Model
     public function scopeVerified($query)
     {
         return $query->where('is_verified', true);
+    }
+
+    /**
+     * Only master wallets
+     */
+    public function scopeMasterWallets($query)
+    {
+        return $query->where('is_master_wallet', true);
+    }
+
+    /**
+     * Only child wallets
+     */
+    public function scopeChildWallets($query)
+    {
+        return $query->where('is_master_wallet', false)
+            ->whereNotNull('master_wallet_id');
     }
 }
