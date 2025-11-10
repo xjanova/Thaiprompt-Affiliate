@@ -1344,33 +1344,29 @@ Route::prefix('page-builder')->name('page-builder.')->group(function () {
         Route::post('/toggle-visibility', [PageBuilderSectionController::class, 'toggleVisibility'])->name('toggle-visibility');
         Route::post('/toggle-active', [PageBuilderSectionController::class, 'toggleActive'])->name('toggle-active');
     });
+});
 
-    // Hotel Owner Management (Super Admin)
-    Route::prefix('hotel-owners')->name('hotel-owners.')->group(function () {
-        Route::get('/', [HotelOwnerController::class, 'index'])->name('index');
-        Route::get('/statistics', [HotelOwnerController::class, 'statistics'])->name('statistics');
-        Route::post('/', [HotelOwnerController::class, 'store'])->name('store');
-        Route::get('/{id}', [HotelOwnerController::class, 'show'])->name('show');
-        Route::put('/{id}', [HotelOwnerController::class, 'update'])->name('update');
-        Route::delete('/{id}', [HotelOwnerController::class, 'destroy'])->name('destroy');
-        Route::post('/{id}/block', [HotelOwnerController::class, 'block'])->name('block');
-        Route::post('/{id}/unblock', [HotelOwnerController::class, 'unblock'])->name('unblock');
-        Route::post('/{id}/assign-hotel', [HotelOwnerController::class, 'assignHotel'])->name('assign-hotel');
-        Route::delete('/{id}/unassign-hotel', [HotelOwnerController::class, 'unassignHotel'])->name('unassign-hotel');
-    });
+// Hotel Owner Management (Super Admin)
+Route::prefix('hotel-owners')->name('hotel-owners.')->group(function () {
+    Route::get('/', [HotelOwnerController::class, 'index'])->name('index');
+    Route::get('/statistics', [HotelOwnerController::class, 'statistics'])->name('statistics');
+    Route::post('/', [HotelOwnerController::class, 'store'])->name('store');
+    Route::get('/{id}', [HotelOwnerController::class, 'show'])->name('show');
+    Route::put('/{id}', [HotelOwnerController::class, 'update'])->name('update');
+    Route::delete('/{id}', [HotelOwnerController::class, 'destroy'])->name('destroy');
+    Route::post('/{id}/block', [HotelOwnerController::class, 'block'])->name('block');
+    Route::post('/{id}/unblock', [HotelOwnerController::class, 'unblock'])->name('unblock');
+    Route::post('/{id}/assign-hotel', [HotelOwnerController::class, 'assignHotel'])->name('assign-hotel');
+    Route::delete('/{id}/unassign-hotel', [HotelOwnerController::class, 'unassignHotel'])->name('unassign-hotel');
+});
 
-    // Hotel Management (Super Admin)
-    Route::prefix('hotels')->name('hotels.')->group(function () {
-        Route::get('/', [SuperAdminHotelController::class, 'index'])->name('index');
-        Route::get('/statistics', [SuperAdminHotelController::class, 'statistics'])->name('statistics');
-        Route::get('/cities', [SuperAdminHotelController::class, 'getCities'])->name('cities');
-        Route::get('/available-owners', [SuperAdminHotelController::class, 'getAvailableOwners'])->name('available-owners');
-        Route::post('/', [SuperAdminHotelController::class, 'store'])->name('store');
-        Route::get('/{id}', [SuperAdminHotelController::class, 'show'])->name('show');
-        Route::put('/{id}', [SuperAdminHotelController::class, 'update'])->name('update');
-        Route::delete('/{id}', [SuperAdminHotelController::class, 'destroy'])->name('destroy');
-        Route::patch('/{id}/toggle-active', [SuperAdminHotelController::class, 'toggleActive'])->name('toggle-active');
-        Route::patch('/{id}/toggle-featured', [SuperAdminHotelController::class, 'toggleFeatured'])->name('toggle-featured');
-        Route::delete('/{id}/gallery-image', [SuperAdminHotelController::class, 'removeGalleryImage'])->name('remove-gallery-image');
-    });
+// Hotel Management API (Super Admin) - Provides additional endpoints for hotel management
+// Note: These routes extend the main hotels routes defined above (line 1069)
+Route::prefix('hotels')->name('hotels.api.')->group(function () {
+    Route::get('/statistics', [SuperAdminHotelController::class, 'statistics'])->name('statistics');
+    Route::get('/cities', [SuperAdminHotelController::class, 'getCities'])->name('cities');
+    Route::get('/available-owners', [SuperAdminHotelController::class, 'getAvailableOwners'])->name('available-owners');
+    Route::patch('/{id}/toggle-active', [SuperAdminHotelController::class, 'toggleActive'])->name('toggle-active');
+    Route::patch('/{id}/toggle-featured', [SuperAdminHotelController::class, 'toggleFeatured'])->name('toggle-featured');
+    Route::delete('/{id}/gallery-image', [SuperAdminHotelController::class, 'removeGalleryImage'])->name('remove-gallery-image');
 });
