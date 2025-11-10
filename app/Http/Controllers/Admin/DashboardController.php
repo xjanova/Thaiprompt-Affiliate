@@ -11,6 +11,7 @@ use App\Models\CryptoWithdrawalRequest;
 use App\Models\CryptoTransaction;
 use App\Models\TradingMarketData;
 use App\Models\KycVerification;
+use App\Models\Ticket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -134,6 +135,20 @@ class DashboardController extends Controller
             // Table doesn't exist or other error, skip
         }
 
+        // Ticket stats
+        $ticketStats = [
+            'open' => Ticket::open()->count(),
+            'new_today' => Ticket::whereDate('created_at', today())->count(),
+            'high_priority' => Ticket::open()->whereIn('priority', ['high', 'critical'])->count(),
+            'unassigned' => Ticket::open()->whereNull('assigned_to')->count(),
+        ];
+
+        // Recent tickets
+        $recentTickets = Ticket::with(['user', 'category'])
+            ->latest()
+            ->limit(5)
+            ->get();
+
         return view('admin.dashboard', compact(
             'stats',
             'monthlyRevenue',
@@ -148,7 +163,9 @@ class DashboardController extends Controller
             'cryptoWithdrawals',
             'cryptoTransactionsCount',
             'kycStats',
-            'tradingStats'
+            'tradingStats',
+            'ticketStats',
+            'recentTickets'
         ));
     }
 }
