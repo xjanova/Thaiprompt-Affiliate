@@ -376,6 +376,19 @@ class WindowsUiController extends Controller
             'millennium_start_button_icon_size' => ['nullable', 'integer', 'min:16', 'max:64'],
             'millennium_start_button_font_size' => ['nullable', 'integer', 'min:12', 'max:32'],
 
+            // Icon Settings
+            'millennium_start_button_icon_type' => ['nullable', 'string', 'in:default,upload,fontawesome,emoji'],
+            'millennium_start_button_custom_icon' => ['nullable', 'image', 'max:2048'], // 2MB max
+            'millennium_start_button_fontawesome_icon' => ['nullable', 'string', 'max:50'],
+            'millennium_start_button_emoji' => ['nullable', 'string', 'max:4'],
+            'millennium_start_button_icon_position' => ['nullable', 'string', 'in:left,right'],
+
+            // Button Style Settings
+            'millennium_start_button_style' => ['nullable', 'string', 'in:gradient,solid,outline,glass,neon,3d'],
+            'millennium_start_button_color_primary' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_start_button_color_secondary' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_start_button_text_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+
             // Start Button Tooltip Settings
             'millennium_start_button_tooltip_enabled' => ['nullable', 'boolean'],
             'millennium_start_button_tooltip_text' => ['nullable', 'string', 'max:100'],
@@ -394,6 +407,19 @@ class WindowsUiController extends Controller
         $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
         $validated['millennium_start_button_tooltip_enabled'] = $request->has('millennium_start_button_tooltip_enabled');
         $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
+
+        // Handle file upload for custom icon
+        if ($request->hasFile('millennium_start_button_custom_icon')) {
+            $file = $request->file('millennium_start_button_custom_icon');
+            $filename = 'start_button_icon_' . time() . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('icons', $filename, 'public');
+
+            // Save the path
+            WindowsUiSetting::set('millennium_start_button_custom_icon_path', 'storage/' . $path, 'string');
+        }
+
+        // Remove the file field from validated data (it's already handled)
+        unset($validated['millennium_start_button_custom_icon']);
 
         // Save each setting (only save fields that have actual values)
         foreach ($validated as $key => $value) {

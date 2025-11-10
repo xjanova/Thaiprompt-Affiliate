@@ -446,7 +446,7 @@
 
             <!-- Taskbar & Start Button Tab -->
             <div x-show="activeTab === 'taskbar'">
-                <form method="POST" action="{{ route('admin.windows-ui.start-button-settings.update') }}">
+                <form method="POST" action="{{ route('admin.windows-ui.start-button-settings.update') }}" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -493,6 +493,92 @@
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </label>
+                            </div>
+
+                            <!-- Icon Settings -->
+                            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
+                                <h4 class="font-semibold text-blue-900 dark:text-blue-300 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-icons"></i> การตั้งค่าไอคอน
+                                </h4>
+
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ประเภทไอคอน</label>
+                                        <select name="millennium_start_button_icon_type" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
+                                            <option value="default" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_type', 'default') === 'default' ? 'selected' : '' }}>โลโก้เริ่มต้น</option>
+                                            <option value="upload" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_type', 'default') === 'upload' ? 'selected' : '' }}>อัพโหลดรูปภาพ</option>
+                                            <option value="fontawesome" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_type', 'default') === 'fontawesome' ? 'selected' : '' }}>Font Awesome Icon</option>
+                                            <option value="emoji" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_type', 'default') === 'emoji' ? 'selected' : '' }}>Emoji</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">อัพโหลดไอคอน</label>
+                                        <input type="file" name="millennium_start_button_custom_icon" accept="image/*" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
+                                        @if(\App\Models\WindowsUiSetting::get('millennium_start_button_custom_icon_path'))
+                                            <div class="mt-2 p-2 bg-white dark:bg-slate-800 rounded border">
+                                                <img src="{{ asset(\App\Models\WindowsUiSetting::get('millennium_start_button_custom_icon_path')) }}" alt="Current Icon" class="h-12 w-12 object-contain">
+                                                <p class="text-xs text-gray-500 mt-1">ไอคอนปัจจุบัน</p>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Font Awesome Icon Class</label>
+                                        <input type="text" name="millennium_start_button_fontawesome_icon" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_fontawesome_icon', 'fa-solid fa-rocket') }}" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500" placeholder="fa-solid fa-rocket">
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ตัวอย่าง: fa-solid fa-rocket, fa-brands fa-windows</p>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Emoji</label>
+                                        <input type="text" name="millennium_start_button_emoji" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_emoji', '🚀') }}" maxlength="4" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500 text-2xl" placeholder="🚀">
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ตำแหน่งไอคอน</label>
+                                        <select name="millennium_start_button_icon_position" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
+                                            <option value="left" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_position', 'left') === 'left' ? 'selected' : '' }}>ซ้าย (ก่อนข้อความ)</option>
+                                            <option value="right" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_icon_position', 'left') === 'right' ? 'selected' : '' }}>ขวา (หลังข้อความ)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Button Style Settings -->
+                            <div class="bg-gradient-to-br from-pink-50 to-rose-50 dark:from-pink-900/20 dark:to-rose-900/20 rounded-xl p-4 border-2 border-pink-200 dark:border-pink-800">
+                                <h4 class="font-semibold text-pink-900 dark:text-pink-300 mb-3 flex items-center gap-2">
+                                    <i class="fas fa-palette"></i> ลักษณะปุ่ม
+                                </h4>
+
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สไตล์ปุ่ม</label>
+                                        <select name="millennium_start_button_style" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-pink-500">
+                                            <option value="gradient" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'gradient' ? 'selected' : '' }}>🌈 Gradient (ไล่สี)</option>
+                                            <option value="solid" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'solid' ? 'selected' : '' }}>🎨 Solid (สีเดียว)</option>
+                                            <option value="outline" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'outline' ? 'selected' : '' }}>⭕ Outline (เส้นขอบ)</option>
+                                            <option value="glass" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'glass' ? 'selected' : '' }}>💎 Glass Morphism</option>
+                                            <option value="neon" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'neon' ? 'selected' : '' }}>⚡ Neon (เรืองแสง)</option>
+                                            <option value="3d" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === '3d' ? 'selected' : '' }}>🎭 3D Effect</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีหลัก</label>
+                                            <input type="color" name="millennium_start_button_color_primary" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_color_primary', '#ec4899') }}" class="w-full h-10 border-2 border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีรอง</label>
+                                            <input type="color" name="millennium_start_button_color_secondary" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_color_secondary', '#3b82f6') }}" class="w-full h-10 border-2 border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer">
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สีข้อความ</label>
+                                        <input type="color" name="millennium_start_button_text_color" value="{{ \App\Models\WindowsUiSetting::get('millennium_start_button_text_color', '#ffffff') }}" class="w-full h-10 border-2 border-gray-300 dark:border-slate-600 rounded-lg cursor-pointer">
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
