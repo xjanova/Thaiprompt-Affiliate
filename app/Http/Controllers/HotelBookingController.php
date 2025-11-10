@@ -6,7 +6,7 @@ use App\Models\HotelBooking;
 use App\Models\RoomType;
 use App\Services\HotelBookingService;
 use App\Services\HotelPricingService;
-use App\Services\PaymentService;
+use App\Services\Payment\PaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
