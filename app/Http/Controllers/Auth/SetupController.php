@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Affiliate;
 use App\Models\Setting;
+use App\Services\InstallationAuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Auth;
@@ -17,6 +18,13 @@ use Illuminate\Validation\Rules\Password;
 
 class SetupController extends Controller
 {
+    protected InstallationAuthService $authService;
+
+    public function __construct(InstallationAuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
     /**
      * Show the setup wizard
      */
@@ -29,6 +37,19 @@ class SetupController extends Controller
         }
 
         return view('setup.wizard');
+    }
+
+    /**
+     * Check installation authorization
+     */
+    public function checkAuth(Request $request)
+    {
+        $licenseKey = $request->input('license_key');
+
+        // ตรวจสอบสิทธิ์การติดตั้ง
+        $authResult = $this->authService->checkInstallationAuth($licenseKey);
+
+        return response()->json($authResult);
     }
 
     /**

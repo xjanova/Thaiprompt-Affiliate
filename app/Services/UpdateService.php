@@ -16,6 +16,13 @@ use ZipArchive;
 
 class UpdateService
 {
+    protected InstallationAuthService $authService;
+
+    public function __construct(InstallationAuthService $authService)
+    {
+        $this->authService = $authService;
+    }
+
     /**
      * Check for available updates
      */
@@ -115,6 +122,13 @@ class UpdateService
                 $systemUpdate = SystemUpdate::findOrFail($versionOrId);
             } else {
                 $systemUpdate = SystemUpdate::where('version', $versionOrId)->firstOrFail();
+            }
+
+            // ตรวจสอบสิทธิ์การอัพเดท
+            $authResult = $this->authService->checkUpdateAuth($systemUpdate->version);
+
+            if (!($authResult['authorized'] ?? false)) {
+                throw new \Exception($authResult['message'] ?? 'Update not authorized');
             }
 
             // Check requirements
