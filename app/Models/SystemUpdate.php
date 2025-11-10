@@ -110,4 +110,114 @@ class SystemUpdate extends Model
 
         return true;
     }
+
+    /**
+     * Parse changelog from markdown to structured array
+     */
+    public function getParsedChangelogAttribute()
+    {
+        if (!$this->changelog) {
+            return [];
+        }
+
+        $sections = [];
+        $currentSection = null;
+        $lines = explode("\n", $this->changelog);
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            // Skip empty lines
+            if (empty($line)) {
+                continue;
+            }
+
+            // Check for section headers (## New Features, ## Bug Fixes, etc.)
+            if (preg_match('/^##\s+(.+)$/i', $line, $matches)) {
+                $sectionName = trim($matches[1]);
+                $currentSection = $this->normalizeSectionName($sectionName);
+                $sections[$currentSection] = [];
+                continue;
+            }
+
+            // Check for list items (- item or * item)
+            if (preg_match('/^[\-\*]\s+(.+)$/i', $line, $matches)) {
+                $item = trim($matches[1]);
+                if ($currentSection) {
+                    $sections[$currentSection][] = $item;
+                } else {
+                    // If no section defined, add to 'changes'
+                    if (!isset($sections['changes'])) {
+                        $sections['changes'] = [];
+                    }
+                    $sections['changes'][] = $item;
+                }
+            }
+        }
+
+        return $sections;
+    }
+
+    /**
+     * Normalize section name
+     */
+    protected function normalizeSectionName($name)
+    {
+        $normalized = strtolower($name);
+
+        $mappings = [
+            'new features' => 'features',
+            'features' => 'features',
+            'additions' => 'features',
+            'bug fixes' => 'fixes',
+            'fixes' => 'fixes',
+            'bugfixes' => 'fixes',
+            'improvements' => 'improvements',
+            'enhancements' => 'improvements',
+            'changes' => 'changes',
+            'breaking changes' => 'breaking',
+            'security' => 'security',
+            'deprecated' => 'deprecated',
+            'removed' => 'removed',
+        ];
+
+        return $mappings[$normalized] ?? 'other';
+    }
+
+    /**
+     * Get formatted changelog for display
+     */
+    public function getFormattedChangelogAttribute()
+    {
+        $parsed = $this->parsed_changelog;
+
+        if (empty($parsed)) {
+            return $this->changelog;
+        }
+
+        $formatted = '';
+
+        $sectionTitles = [
+            'features' => '🎉 New Features',
+            'fixes' => '🐛 Bug Fixes',
+            'improvements' => '✨ Improvements',
+            'security' => '🔒 Security',
+            'breaking' => '⚠️ Breaking Changes',
+            'deprecated' => '⚠️ Deprecated',
+            'removed' => '🗑️ Removed',
+            'changes' => '📝 Changes',
+            'other' => '📌 Other',
+        ];
+
+        foreach ($parsed as $section => $items) {
+            $title = $sectionTitles[$section] ?? ucfirst($section);
+            $formatted .= "**{$title}**\n";
+            foreach ($items as $item) {
+                $formatted .= "- {$item}\n";
+            }
+            $formatted .= "\n";
+        }
+
+        return $formatted;
+    }
 }

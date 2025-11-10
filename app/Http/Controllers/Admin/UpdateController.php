@@ -140,6 +140,13 @@ class UpdateController extends Controller
     {
         $log = UpdateLog::with(['systemUpdate', 'initiator'])->findOrFail($id);
 
+        // If AJAX request, return JSON
+        if (request()->expectsJson()) {
+            return response()->json([
+                'log' => $log
+            ]);
+        }
+
         return view('admin.updates.log-detail', compact('log'));
     }
 
