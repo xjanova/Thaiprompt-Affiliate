@@ -19,6 +19,11 @@ class HotelAdminMiddleware
 
         $user = auth()->user();
 
+        // Check if user is blocked
+        if ($user->blocked_at) {
+            abort(403, 'Your account has been blocked. Please contact administrator.');
+        }
+
         // Super admin can access everything
         if ($user->is_admin) {
             return $next($request);

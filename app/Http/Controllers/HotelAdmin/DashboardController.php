@@ -77,13 +77,13 @@ class DashboardController extends Controller
             'completed_bookings' => $allBookings->where('status', 'completed')->count(),
             'cancelled_bookings' => $allBookings->where('status', 'cancelled')->count(),
 
-            'total_revenue' => $allBookings->whereIn('status', ['confirmed', 'checked_in', 'completed'])->sum('total_price'),
+            'total_revenue' => $allBookings->whereIn('status', ['confirmed', 'checked_in', 'completed'])->sum('total_amount'),
             'revenue_today' => $allBookings->where('created_at', '>=', $today)
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price'),
+                ->sum('total_amount'),
             'revenue_this_month' => $allBookings->where('created_at', '>=', $thisMonth)
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price'),
+                ->sum('total_amount'),
 
             'total_reviews' => $allReviews->count(),
             'pending_reviews' => $allReviews->where('is_approved', false)->count(),
@@ -137,7 +137,7 @@ class DashboardController extends Controller
             $revenue = HotelBooking::whereIn('hotel_id', $hotels->pluck('id'))
                 ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price');
+                ->sum('total_amount');
 
             $trends[] = [
                 'month' => $date->format('M Y'),
@@ -165,32 +165,32 @@ class DashboardController extends Controller
             'today' => HotelBooking::whereIn('hotel_id', $hotels->pluck('id'))
                 ->where('created_at', '>=', $today)
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price'),
+                ->sum('total_amount'),
 
             'yesterday' => HotelBooking::whereIn('hotel_id', $hotels->pluck('id'))
                 ->whereBetween('created_at', [$yesterday, $today])
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price'),
+                ->sum('total_amount'),
 
             'this_week' => HotelBooking::whereIn('hotel_id', $hotels->pluck('id'))
                 ->where('created_at', '>=', $thisWeek)
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price'),
+                ->sum('total_amount'),
 
             'last_week' => HotelBooking::whereIn('hotel_id', $hotels->pluck('id'))
                 ->whereBetween('created_at', [$lastWeek, $thisWeek])
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price'),
+                ->sum('total_amount'),
 
             'this_month' => HotelBooking::whereIn('hotel_id', $hotels->pluck('id'))
                 ->where('created_at', '>=', $thisMonth)
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price'),
+                ->sum('total_amount'),
 
             'last_month' => HotelBooking::whereIn('hotel_id', $hotels->pluck('id'))
                 ->whereBetween('created_at', [$lastMonth, $thisMonth])
                 ->whereIn('status', ['confirmed', 'checked_in', 'completed'])
-                ->sum('total_price'),
+                ->sum('total_amount'),
         ];
     }
 

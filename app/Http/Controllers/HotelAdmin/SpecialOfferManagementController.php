@@ -67,9 +67,9 @@ class SpecialOfferManagementController extends Controller
             ],
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'type' => ['required', Rule::in(['percentage', 'fixed', 'free_night'])],
-            'discount_value' => 'required_if:type,percentage,fixed|nullable|numeric|min:0',
-            'free_nights' => 'required_if:type,free_night|nullable|integer|min:1',
+            'discount_type' => ['required', Rule::in(['percentage', 'fixed', 'free_night'])],
+            'discount_value' => 'required_if:discount_type,percentage,fixed|nullable|numeric|min:0',
+            'free_nights' => 'required_if:discount_type,free_night|nullable|integer|min:1',
             'valid_from' => 'required|date',
             'valid_until' => 'required|date|after:valid_from',
             'applicable_days' => 'nullable|array',
@@ -92,7 +92,7 @@ class SpecialOfferManagementController extends Controller
         }
 
         // Validate percentage
-        if ($validated['type'] === 'percentage' && $validated['discount_value'] > 100) {
+        if ($validated['discount_type'] === 'percentage' && $validated['discount_value'] > 100) {
             return response()->json([
                 'success' => false,
                 'message' => 'Percentage discount cannot exceed 100%',
@@ -153,9 +153,9 @@ class SpecialOfferManagementController extends Controller
             ],
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'type' => ['required', Rule::in(['percentage', 'fixed', 'free_night'])],
-            'discount_value' => 'required_if:type,percentage,fixed|nullable|numeric|min:0',
-            'free_nights' => 'required_if:type,free_night|nullable|integer|min:1',
+            'discount_type' => ['required', Rule::in(['percentage', 'fixed', 'free_night'])],
+            'discount_value' => 'required_if:discount_type,percentage,fixed|nullable|numeric|min:0',
+            'free_nights' => 'required_if:discount_type,free_night|nullable|integer|min:1',
             'valid_from' => 'required|date',
             'valid_until' => 'required|date|after:valid_from',
             'applicable_days' => 'nullable|array',
@@ -176,7 +176,7 @@ class SpecialOfferManagementController extends Controller
         }
 
         // Validate percentage
-        if ($validated['type'] === 'percentage' && $validated['discount_value'] > 100) {
+        if ($validated['discount_type'] === 'percentage' && $validated['discount_value'] > 100) {
             return response()->json([
                 'success' => false,
                 'message' => 'Percentage discount cannot exceed 100%',
