@@ -1,5 +1,29 @@
 # Seeder Management Guide
 
+## 🚨 CRITICAL RULE - READ THIS FIRST
+
+> **⚠️ MANDATORY: DatabaseSeeder.php MUST ALWAYS BE IN SYNC ⚠️**
+
+**EVERY TIME** you perform ANY seeder operation, you **MUST** update `DatabaseSeeder.php`:
+
+| Operation | Required Action |
+|-----------|-----------------|
+| ✨ Create new seeder | ✅ Add `NewSeeder::class` to DatabaseSeeder.php with description |
+| 🗑️ Delete seeder | ✅ Remove from DatabaseSeeder.php |
+| 📝 Rename seeder | ✅ Update class name in DatabaseSeeder.php |
+| 🔄 Update seeder logic | ✅ Verify it's still in DatabaseSeeder.php |
+
+### Verification Command (Run BEFORE committing!)
+
+```bash
+php scripts/verify-seeders.php
+```
+
+**❌ If verification fails → STOP and fix before committing!**
+**✅ If verification passes → Safe to commit**
+
+---
+
 ## Overview
 
 This document describes the automated seeder management system that ensures all database seeders are properly included in the deployment process.
@@ -147,7 +171,9 @@ fi
    }
    ```
 
-3. **Add to DatabaseSeeder.php:**
+3. **⚠️ CRITICAL STEP: Add to DatabaseSeeder.php**
+
+   > ⛔ **DO NOT SKIP THIS STEP!** Skipping will cause deployment failures.
 
    Open `database/seeders/DatabaseSeeder.php` and add your seeder in the appropriate category:
 
@@ -158,21 +184,80 @@ fi
    ]);
    ```
 
-4. **Verify inclusion:**
+4. **Verify inclusion (MANDATORY):**
    ```bash
    php scripts/verify-seeders.php
    ```
+
+   ⚠️ **If this fails, fix it BEFORE proceeding!**
 
 5. **Run tests:**
    ```bash
    php artisan test --filter SeederVerificationTest
    ```
 
-6. **Commit both files:**
+6. **Commit both files (NOT just the seeder!):**
    ```bash
    git add database/seeders/MyNewSeeder.php
    git add database/seeders/DatabaseSeeder.php
-   git commit -m "Add MyNewSeeder for X feature"
+   git commit -m "feat: Add MyNewSeeder for X feature"
+   ```
+
+### Deleting a Seeder
+
+1. **Remove the seeder file:**
+   ```bash
+   rm database/seeders/OldSeeder.php
+   ```
+
+2. **⚠️ CRITICAL: Remove from DatabaseSeeder.php**
+
+   Open `database/seeders/DatabaseSeeder.php` and remove the line:
+   ```php
+   OldSeeder::class,  // Remove this entire line
+   ```
+
+3. **Verify (MANDATORY):**
+   ```bash
+   php scripts/verify-seeders.php
+   ```
+
+4. **Commit both changes:**
+   ```bash
+   git add database/seeders/OldSeeder.php  # Records deletion
+   git add database/seeders/DatabaseSeeder.php
+   git commit -m "refactor: Remove obsolete OldSeeder"
+   ```
+
+### Renaming a Seeder
+
+1. **Rename the file and class:**
+   ```bash
+   mv database/seeders/OldName.php database/seeders/NewName.php
+   # Update class name inside the file
+   ```
+
+2. **⚠️ CRITICAL: Update DatabaseSeeder.php**
+
+   Change from:
+   ```php
+   OldName::class,
+   ```
+
+   To:
+   ```php
+   NewName::class,
+   ```
+
+3. **Verify (MANDATORY):**
+   ```bash
+   php scripts/verify-seeders.php
+   ```
+
+4. **Commit:**
+   ```bash
+   git add database/seeders/
+   git commit -m "refactor: Rename OldName to NewName seeder"
    ```
 
 ### Seeder Ordering Guidelines
