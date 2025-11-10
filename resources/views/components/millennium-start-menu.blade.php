@@ -823,18 +823,28 @@
     /* RGB Hover Effect for Menu Items */
     @keyframes menuItemRgbHover {
         0%, 100% {
-            box-shadow: 0 0 20px rgba(255, 0, 128, 0.5), inset 0 0 20px rgba(255, 0, 128, 0.1);
+            box-shadow: 0 0 25px rgba(255, 0, 128, 0.8),
+                        0 0 50px rgba(255, 0, 128, 0.4),
+                        inset 0 0 25px rgba(255, 0, 128, 0.2) !important;
+            border-color: rgba(255, 0, 128, 0.8) !important;
         }
         33% {
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.5), inset 0 0 20px rgba(0, 240, 255, 0.1);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.8),
+                        0 0 50px rgba(0, 240, 255, 0.4),
+                        inset 0 0 25px rgba(0, 240, 255, 0.2) !important;
+            border-color: rgba(0, 240, 255, 0.8) !important;
         }
         66% {
-            box-shadow: 0 0 20px rgba(127, 0, 255, 0.5), inset 0 0 20px rgba(127, 0, 255, 0.1);
+            box-shadow: 0 0 25px rgba(127, 0, 255, 0.8),
+                        0 0 50px rgba(127, 0, 255, 0.4),
+                        inset 0 0 25px rgba(127, 0, 255, 0.2) !important;
+            border-color: rgba(127, 0, 255, 0.8) !important;
         }
     }
 
     .millennium-menu-item-hover-rgb:hover {
-        animation: menuItemRgbHover 2s ease-in-out infinite;
+        animation: menuItemRgbHover 2s ease-in-out infinite !important;
+        transform: scale(1.02) !important;
     }
 
     /* Grid Background Animation */
