@@ -211,15 +211,17 @@
                     ฿{{ number_format($monthlyRevenue->sum('total'), 0) }}
                 </span>
             </div>
-            <canvas id="revenueChart" height="150"></canvas>
+            <div style="height: 200px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
         </div>
 
         <!-- Commission Status (Compact) -->
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-4">
             <h3 class="text-base font-bold text-gray-900 dark:text-white mb-3">สถานะคอมมิชชั่น</h3>
             <div class="grid grid-cols-2 gap-3">
-                <div class="text-center">
-                    <canvas id="statusChart" height="120"></canvas>
+                <div class="flex items-center justify-center" style="height: 200px;">
+                    <canvas id="statusChart"></canvas>
                 </div>
                 <div class="space-y-2 text-sm">
                     <div class="flex items-center justify-between">
