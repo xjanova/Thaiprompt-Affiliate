@@ -8,6 +8,7 @@ use App\Services\Crypto\ClientSideTransactionService;
 use App\Services\Crypto\CryptoExchangeService;
 use App\Services\Crypto\CryptoPriceService;
 use App\Services\Crypto\CryptoWalletService;
+use App\Services\Crypto\HDWalletService;
 use App\Services\Crypto\DepositDetectionService;
 use App\Services\Crypto\Web3Service;
 use App\Services\Crypto\WithdrawalProcessingService;
@@ -31,9 +32,16 @@ class CryptoServiceProvider extends ServiceProvider
             return new BlockchainIndexerService();
         });
 
+        // Register HDWalletService as singleton
+        $this->app->singleton(HDWalletService::class, function ($app) {
+            return new HDWalletService();
+        });
+
         // Register CryptoWalletService as singleton
         $this->app->singleton(CryptoWalletService::class, function ($app) {
-            return new CryptoWalletService();
+            return new CryptoWalletService(
+                $app->make(HDWalletService::class)
+            );
         });
 
         // Register CryptoPriceService as singleton

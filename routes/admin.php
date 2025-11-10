@@ -1255,6 +1255,29 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
     // System Settings - Direct route for backward compatibility
     Route::get('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateSettings'])->name('settings.update');
+
+    // HD Wallet Management (Hierarchical Deterministic Wallets)
+    Route::prefix('hd-wallets')->name('hd-wallets.')->group(function () {
+        // Overview
+        Route::get('/', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'export'])->name('export');
+
+        // Master Wallets
+        Route::get('/master', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'masterWallets'])->name('master');
+        Route::get('/master/{masterWalletId}/children', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'childWallets'])->name('master.children');
+
+        // User Wallets
+        Route::get('/user/{userId}', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'userWallets'])->name('user');
+
+        // Wallet Details
+        Route::get('/{id}', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'show'])->name('show');
+
+        // Wallet Actions
+        Route::post('/{id}/lock', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'lockWallet'])->name('lock');
+        Route::post('/{id}/unlock', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'unlockWallet'])->name('unlock');
+        Route::post('/{id}/suspend', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'suspendWallet'])->name('suspend');
+        Route::post('/{id}/reactivate', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'reactivateWallet'])->name('reactivate');
+    });
 });
 
 // App Management (Mobile App Configuration)
