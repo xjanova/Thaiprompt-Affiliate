@@ -82,7 +82,7 @@
 
     <!-- Settings Form -->
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden">
-        <form method="POST" action="{{ route('admin.app-settings.update') }}" class="p-6 dark:bg-slate-800">
+        <form method="POST" action="{{ route('admin.app-management.settings.update') }}" class="p-6 dark:bg-slate-800">
             @csrf
             @method('PUT')
 
