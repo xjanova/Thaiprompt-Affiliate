@@ -162,7 +162,7 @@
                         <span class="font-semibold text-yellow-600 dark:text-yellow-400">{{ $kycStats['pending'] }}</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-600 dark:text-gray-400">ยืนยันแล้ว</span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">อนุมัติแล้ว</span>
                         <span class="font-semibold text-green-600 dark:text-green-400">{{ $kycStats['verified'] }}</span>
                     </div>
                     <div class="flex justify-between items-center">
