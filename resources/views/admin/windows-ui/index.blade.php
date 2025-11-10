@@ -745,7 +745,7 @@
         <div class="p-6">
             <!-- Menu Position & Size Tab -->
             <div x-show="activeTab === 'menu'">
-                <form method="POST" action="{{ route('admin.windows-ui.menu-settings.update') }}">
+                <form method="POST" action="{{ route('admin.windows-ui.menu-settings.update') }}" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -826,6 +826,55 @@
                                         <span class="toggle-slider"></span>
                                     </label>
                                 </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Menu Appearance Settings -->
+                    <div class="mt-6 p-6 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-paint-brush text-blue-600"></i> รูปลักษณ์เมนู
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Menu Logo Upload -->
+                            <div class="md:col-span-3">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-image mr-2 text-blue-600"></i>โลโก้ในเมนู
+                                </label>
+                                <input type="file" name="millennium_menu_logo" accept="image/*" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
+                                @if(\App\Models\WindowsUiSetting::get('millennium_menu_logo'))
+                                    <div class="mt-2 p-2 bg-white dark:bg-slate-800 rounded border inline-block">
+                                        <img src="{{ asset('storage/' . \App\Models\WindowsUiSetting::get('millennium_menu_logo')) }}" alt="Menu Logo" class="h-12 w-12 object-contain">
+                                        <p class="text-xs text-gray-500 mt-1">โลโก้ปัจจุบัน</p>
+                                    </div>
+                                @endif
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">อัพโหลดโลโก้สำหรับแสดงในเมนู Start (ถ้าไม่อัพโหลดจะใช้โลโก้หลักของระบบ)</p>
+                            </div>
+
+                            <!-- Menu Item Spacing -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-arrows-alt-v mr-2 text-blue-600"></i>ระยะห่างแต่ละเมนู (px)
+                                </label>
+                                <input type="number" name="millennium_menu_item_spacing" min="0" max="32" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_item_spacing', 8) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ระยะห่างระหว่างรายการเมนู (แนะนำ: 4-12px)</p>
+                            </div>
+
+                            <!-- Menu Item Padding -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-expand-alt mr-2 text-blue-600"></i>ขนาดภายในเมนู (px)
+                                </label>
+                                <input type="number" name="millennium_menu_padding" min="4" max="32" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_padding', 12) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ขนาด padding ภายในแต่ละรายการ (แนะนำ: 8-16px)</p>
+                            </div>
+
+                            <!-- Visual Preview -->
+                            <div class="flex items-center justify-center p-4 bg-white dark:bg-slate-800 rounded-lg border-2 border-gray-200 dark:border-slate-600">
+                                <div class="text-center">
+                                    <div class="text-3xl mb-2">📐</div>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">ตัวอย่างจะแสดง<br>หลังบันทึก</p>
+                                </div>
                             </div>
                         </div>
                     </div>

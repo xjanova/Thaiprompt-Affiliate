@@ -109,6 +109,9 @@ class WindowsUiSeeder extends Seeder
             'millennium_menu_width_unit' => ['value' => 'px', 'type' => 'string'],
             'millennium_menu_max_height' => ['value' => '600', 'type' => 'string'],
             'millennium_menu_max_height_unit' => ['value' => 'px', 'type' => 'string'],
+            'millennium_menu_logo' => ['value' => null, 'type' => 'string'], // Custom logo path (falls back to main logo if null)
+            'millennium_menu_item_spacing' => ['value' => 8, 'type' => 'integer'], // Gap between menu items in px
+            'millennium_menu_padding' => ['value' => 12, 'type' => 'integer'], // Padding inside each menu item in px
             'millennium_menu_rgb_enabled' => ['value' => true, 'type' => 'boolean'],
             'millennium_menu_item_hover_rgb' => ['value' => true, 'type' => 'boolean'],
             'millennium_menu_rgb_speed' => ['value' => 5, 'type' => 'integer'],

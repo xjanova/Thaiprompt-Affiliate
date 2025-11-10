@@ -389,9 +389,25 @@ class WindowsUiController extends Controller
             'millennium_menu_max_height' => ['nullable', 'integer', 'min:1', 'max:3000'],
             'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
 
+            // Menu Logo Upload
+            'millennium_menu_logo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif,svg', 'max:2048'],
+
+            // Menu Appearance
+            'millennium_menu_item_spacing' => ['nullable', 'integer', 'min:0', 'max:32'],
+            'millennium_menu_padding' => ['nullable', 'integer', 'min:4', 'max:32'],
+
             // Menu RGB (can be set from this form too)
             'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
         ]);
+
+        // Handle logo upload
+        if ($request->hasFile('millennium_menu_logo')) {
+            $path = $request->file('millennium_menu_logo')->store('windows-ui/menu-logos', 'public');
+            $validated['millennium_menu_logo'] = $path;
+        } else {
+            // Remove millennium_menu_logo from validated if no file uploaded
+            unset($validated['millennium_menu_logo']);
+        }
 
         // Handle checkbox - always set it (true if checked, false if not)
         $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
