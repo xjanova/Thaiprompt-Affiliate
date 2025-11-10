@@ -6,7 +6,8 @@
 
     // Get user and role info
     $user = auth()->user();
-    $logo = \App\Models\Setting::get('logo');
+    $menuLogo = WindowsUiSetting::get('millennium_menu_logo'); // Custom menu logo
+    $logo = $menuLogo ? 'storage/' . $menuLogo : \App\Models\Setting::get('logo'); // Fallback to main logo if no custom menu logo
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 
     // Safe route helper - returns URL if route doesn't exist
@@ -30,8 +31,8 @@
     $menuWidthUnit = WindowsUiSetting::get('millennium_menu_width_unit', 'px');
     $menuMaxHeight = WindowsUiSetting::get('millennium_menu_max_height', '600');
     $menuMaxHeightUnit = WindowsUiSetting::get('millennium_menu_max_height_unit', 'px');
-    $menuPadding = WindowsUiSetting::get('millennium_menu_padding', 16);
-    $menuItemSpacing = WindowsUiSetting::get('millennium_menu_item_spacing', 8);
+    $menuPadding = WindowsUiSetting::get('millennium_menu_padding', 12); // Padding around menu content
+    $menuItemSpacing = WindowsUiSetting::get('millennium_menu_item_spacing', 8); // Gap between menu items
     $menuPosition = WindowsUiSetting::get('millennium_menu_position', 'center');
     $menuOffsetX = WindowsUiSetting::get('millennium_menu_offset_x', 0);
     $menuOffsetY = WindowsUiSetting::get('millennium_menu_offset_y', 10);
