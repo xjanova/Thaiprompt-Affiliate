@@ -70,32 +70,6 @@
 
 ---
 
-## 📚 คู่มือเพิ่มเติม (Additional Guidelines)
-
-เอกสารเหล่านี้มีรายละเอียดเพิ่มเติม (อ่านเมื่อจำเป็น):
-
-- **[DATABASE_GUIDELINES.md](./DATABASE_GUIDELINES.md)** - คู่มือการจัดการ Database, Migrations และ Seeders
-  - กฎสำคัญสำหรับ migrations (Table existence checks)
-  - Best practices สำหรับ seeders
-  - Common issues และวิธีแก้ไข
-
-- **[seeder-guidelines.md](./seeder-guidelines.md)** - Laravel Seeder Guidelines
-  - 🚨 CRITICAL RULE #1: DatabaseSeeder.php Synchronization
-  - Smart seeding strategies
-  - Incremental seeding patterns
-
-- **[UI_DESIGN_SYSTEM.md](./UI_DESIGN_SYSTEM.md)** - UI Design System และ Component Library
-  - Dark/Light mode standards
-  - Responsive breakpoints
-  - Component styling และ animations
-
-- **[MENU_RULES.md](./MENU_RULES.md)** - Windows UI Menu System Rules
-  - Menu management และ seeding
-  - Dynamic vs Static menus
-  - Menu configuration
-
----
-
 ## หลักการออกแบบและพัฒนาโค้ด
 
 ### 🌓 การรองรับโหมดมืด-สว่าง (Dark/Light Mode)
