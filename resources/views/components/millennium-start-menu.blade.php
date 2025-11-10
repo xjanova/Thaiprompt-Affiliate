@@ -375,11 +375,12 @@
                 'icon' => '📈',
                 'label' => 'วิเคราะห์',
                 'submenu' => [
-                    ['label' => 'Dashboard', 'url' => route('seller.analytics.index')],
+                    ['label' => '📊 Dashboard', 'url' => route('seller.analytics.index')],
                     ['label' => '🤖 AI Insights', 'url' => route('seller.analytics.ai-insights')],
                     ['label' => '👥 Customer Segments', 'url' => route('seller.analytics.segmentation')],
-                    ['label' => '📊 Cohort Analysis', 'url' => route('seller.analytics.cohort')],
+                    ['label' => '📈 Cohort Analysis', 'url' => route('seller.analytics.cohort')],
                     ['label' => '🏆 Products Ranking', 'url' => route('seller.analytics.products')],
+                    ['label' => '🖥️ System Monitoring', 'url' => route('seller.analytics.system-monitoring')],
                     ['label' => '⚙️ Settings', 'url' => route('seller.analytics.settings')],
                 ]
             ],

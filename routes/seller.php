@@ -7,6 +7,7 @@ use App\Http\Controllers\Seller\PackageController;
 use App\Http\Controllers\Seller\StoreController;
 use App\Http\Controllers\Seller\SellerPosController;
 use App\Http\Controllers\Seller\AnalyticsController;
+use App\Http\Controllers\Seller\SystemMonitoringController;
 use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -43,6 +44,11 @@ Route::prefix('analytics')->name('analytics.')->group(function () {
     // API Endpoints
     Route::get('/api/prediction', [AnalyticsController::class, 'apiRevenuePrediction'])->name('api.prediction');
     Route::get('/api/insights', [AnalyticsController::class, 'apiInsights'])->name('api.insights');
+
+    // System Monitoring (Real-time)
+    Route::get('/system-monitoring', [SystemMonitoringController::class, 'index'])->name('system-monitoring');
+    Route::get('/system-monitoring/api-metrics', [SystemMonitoringController::class, 'apiMetrics'])->name('system-monitoring.api-metrics');
+    Route::get('/system-monitoring/api-info', [SystemMonitoringController::class, 'apiApplicationInfo'])->name('system-monitoring.api-info');
 });
 
 // ========================================
