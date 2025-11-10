@@ -3,31 +3,57 @@
 ## 🚨 กฎสำคัญ - CRITICAL RULES
 
 ### ❌ ห้ามทำ (NEVER DO THIS):
-1. **ห้าม hard-code เมนูในไฟล์ Blade Component โดยเด็ดขาด**
+
+#### 1. **ห้าม Hard-Code ทุกอย่างที่ต้องการให้ตั้งค่าได้**
+   - ❌ ห้ามเขียนเมนูแบบ hard-code ใน Blade Components
+   - ❌ ห้ามเขียน default values ใน Migration Files
+   - ❌ ห้าม hard-code settings, configs, หรือ options ที่ต้องการให้ผู้ใช้ปรับแต่งได้
+   - ❌ ห้าม hard-code ข้อมูลใดๆ ที่ควรเก็บใน database
+
+#### 2. **ห้าม Hard-Code เมนูในไฟล์ Component โดยเด็ดขาด**
    - ❌ ห้ามเขียนเมนูแบบ hard-code ใน `millennium-start-menu.blade.php`
    - ❌ ห้ามเขียนเมนูแบบ hard-code ใน `windows-taskbar.blade.php`
    - ❌ ห้ามเขียนเมนูแบบ hard-code ใน `windows-system-tray.blade.php`
 
-2. **ห้าม hard-code เมนูใน Migration Files**
+#### 3. **ห้าม Hard-Code ค่า Default ใน Migration Files**
    - ❌ ห้ามใส่ default menu items ใน migration
-   - ❌ Migration ใช้สำหรับสร้างโครงสร้าง table เท่านั้น
+   - ❌ ห้ามใส่ default settings ใน migration
+   - ❌ Migration ใช้สำหรับสร้าง **โครงสร้าง table เท่านั้น** (Structure Only!)
+   - ✅ ใช้ Seeder สำหรับ **ข้อมูลเริ่มต้นทั้งหมด** (Data in Seeders!)
 
-3. **ห้ามสร้างเมนูใหม่โดยไม่อิงจาก Windows UI Settings**
+#### 4. **ห้ามสร้างเมนูหรือ Settings ใหม่โดยไม่อิงจาก Database**
    - ❌ ห้ามสร้าง array ของเมนูในไฟล์ .blade.php
    - ❌ ห้ามใช้ route() helper โดยตรงในลูป foreach ของเมนู hard-coded
+   - ❌ ห้ามสร้าง settings ใหม่โดยไม่ใส่ใน Seeder
 
 ### ✅ ต้องทำ (ALWAYS DO THIS):
-1. **ใช้ Windows UI Settings เท่านั้น**
+
+#### 1. **ใช้ Database-Driven Approach เสมอ**
    - ✅ อ่านเมนูจาก `WindowsUiSetting::get()` เสมอ
    - ✅ เก็บเมนูทั้งหมดใน `windows_ui_settings` table
+   - ✅ ทุกอย่างที่ต้องการให้ตั้งค่าได้ = ต้องเก็บใน database
 
-2. **ใช้ Seeder สำหรับข้อมูลเริ่มต้น**
+#### 2. **ใช้ Seeder สำหรับข้อมูลเริ่มต้นทั้งหมด**
    - ✅ ใส่เมนูทั้งหมดใน `WindowsUiSeeder.php`
-   - ✅ รัน seeder เมื่อต้องการอัพเดทเมนู
+   - ✅ ใส่ settings ทั้งหมดใน Seeder ที่เหมาะสม
+   - ✅ รัน seeder เมื่อต้องการอัพเดทข้อมูลเริ่มต้น
+   - ✅ ใช้ Smart Seeding (ไม่ลบ/แก้ไขข้อมูลที่ผู้ใช้ตั้งค่าไว้)
 
-3. **ให้ผู้ใช้จัดการเมนูผ่าน UI**
+#### 3. **ให้ผู้ใช้จัดการผ่าน UI**
    - ✅ ใช้หน้า Admin Panel: `/admin/windows-ui/start-menu`
    - ✅ ให้ผู้ดูแลระบบเปลี่ยนแปลงเมนูผ่าน UI
+   - ✅ ทุกการเปลี่ยนแปลงต้องบันทึกลง database
+
+#### 4. **Migration = Structure, Seeder = Data**
+   - ✅ Migration: สร้างเฉพาะโครงสร้าง table (columns, indexes, etc.)
+   - ✅ Seeder: จัดการข้อมูลเริ่มต้นทั้งหมด (default values, menus, settings)
+   - ✅ แยก Concerns ให้ชัดเจน
+
+#### 5. **Smart Seeding Strategy**
+   - ✅ ตรวจสอบว่ามี key อยู่แล้วหรือไม่ก่อน
+   - ✅ ถ้ามีแล้ว = SKIP (รักษาการปรับแต่งของผู้ใช้)
+   - ✅ ถ้ายังไม่มี = INSERT (เพิ่มค่าเริ่มต้น)
+   - ❌ **ห้ามลบหรือแก้ไขค่าที่ผู้ใช้ตั้งไว้เด็ดขาด**
 
 ---
 
@@ -278,6 +304,102 @@ php artisan db:seed --class=WindowsUiSeeder
 ### สถานการณ์ที่ 3: ลบเมนู
 1. ผู้ใช้สามารถลบผ่าน Admin UI
 2. หรือสร้าง migration script ใหม่เพื่อลบเมนูที่ไม่ต้องการ
+
+---
+
+## 🚀 การพัฒนาฟีเจอร์ใหม่ที่ต้องการให้ตั้งค่าได้
+
+### กฎทอง: "ถ้าต้องการให้ตั้งค่าได้ = ต้องใส่ใน Seeder"
+
+เมื่อพัฒนาฟีเจอร์ใหม่ที่มี settings, menus, configs หรือ options ที่ต้องการให้ผู้ใช้ปรับแต่งได้:
+
+#### ✅ ขั้นตอนที่ถูกต้อง:
+
+1. **สร้าง Migration สำหรับโครงสร้าง**
+   ```php
+   // ❌ ห้ามทำ - Migration with default data
+   DB::table('settings')->insert([
+       'key' => 'new_feature_enabled',
+       'value' => 'true'
+   ]);
+
+   // ✅ ถูกต้อง - Migration เฉพาะโครงสร้าง
+   Schema::create('settings', function (Blueprint $table) {
+       $table->id();
+       $table->string('key')->unique();
+       $table->text('value')->nullable();
+   });
+   ```
+
+2. **สร้าง Seeder สำหรับข้อมูลเริ่มต้น**
+   ```php
+   // ✅ ถูกต้อง - ใส่ใน Seeder
+   class FeatureSeeder extends Seeder
+   {
+       public function run()
+       {
+           // ใช้ Smart Seeding
+           if (!Setting::where('key', 'new_feature_enabled')->exists()) {
+               Setting::create([
+                   'key' => 'new_feature_enabled',
+                   'value' => true
+               ]);
+           }
+       }
+   }
+   ```
+
+3. **อ่านค่าจาก Database เสมอ**
+   ```php
+   // ❌ ห้ามทำ - Hard-coded value
+   $isEnabled = true;
+
+   // ✅ ถูกต้อง - อ่านจาก database
+   $isEnabled = Setting::get('new_feature_enabled', true);
+   ```
+
+#### ตัวอย่างกรณีใช้งานจริง:
+
+**เมื่อสร้างฟีเจอร์ใหม่ เช่น "Dark Mode":**
+
+```php
+// ❌ ผิด - Hard-code ใน Component
+@php
+    $darkModeEnabled = true; // Hard-coded!
+@endphp
+
+// ✅ ถูกต้อง - อ่านจาก Settings
+@php
+    $darkModeEnabled = WindowsUiSetting::get('dark_mode_enabled', false);
+@endphp
+```
+
+**เมื่อสร้างเมนูใหม่:**
+
+```php
+// ❌ ผิด - Hard-code array ใน Blade
+$newMenu = [
+    ['label' => 'New Feature', 'url' => '/new-feature']
+];
+
+// ✅ ถูกต้อง - ใส่ใน WindowsUiSeeder
+// database/seeders/WindowsUiSeeder.php
+$adminMenuItems[] = [
+    'icon' => '🆕',
+    'label' => 'New Feature',
+    'route' => 'admin.new-feature.index',
+    'order' => 26
+];
+```
+
+#### สรุป: ลำดับขั้นตอนที่ถูกต้อง
+
+1. 📝 **วางแผน**: กำหนดว่า settings/menus อะไรบ้างที่ต้องการให้ตั้งค่าได้
+2. 🗄️ **Migration**: สร้างโครงสร้าง table (ถ้ายังไม่มี)
+3. 🌱 **Seeder**: ใส่ข้อมูลเริ่มต้นทั้งหมด (ใช้ Smart Seeding)
+4. 💻 **Code**: อ่านค่าจาก database เสมอ (ไม่ hard-code)
+5. 🎨 **UI**: สร้างหน้าจัดการใน Admin Panel (ถ้าจำเป็น)
+6. ✅ **Test**: รัน seeder และทดสอบการเปลี่ยนค่า
 
 ---
 

@@ -10,34 +10,61 @@ class WindowsUiSeeder extends Seeder
     /**
      * Run the database seeds.
      *
-     * Smart Seeding Strategy:
-     * - Fresh Install: Seeds all default settings
-     * - Update Mode: Adds only missing settings (preserves customizations)
+     * Smart Seeding Strategy (NEVER DELETES USER DATA):
+     * - Check each setting individually
+     * - If exists: SKIP (preserve user customization)
+     * - If missing: ADD (insert default value)
+     *
+     * CRITICAL RULES:
+     * 1. ❌ NEVER delete existing settings
+     * 2. ❌ NEVER overwrite existing settings
+     * 3. ✅ ALWAYS add only missing settings
+     * 4. ✅ ALWAYS preserve user customizations
      *
      * This follows the Smart Seeding Guidelines in .claude/seeder-guidelines.md
      */
     public function run(): void
     {
-        // Check if core settings exist (indicates previous seeding)
-        $coreSettingsExist = WindowsUiSetting::whereIn('key', [
-            'windows_taskbar_position',
-            'windows_taskbar_height',
-            'windows_start_button_position',
-        ])->count() > 0;
+        $this->command->info('🔄 Running Smart Seeding for Windows UI Settings...');
+        $this->command->info('   Strategy: Add missing settings only (never delete/overwrite)');
 
-        if ($coreSettingsExist) {
-            $this->updateMode();
-        } else {
-            $this->freshInstallMode();
+        $added = 0;
+        $skipped = 0;
+
+        // Seed all settings using Smart Seeding
+        $allSettings = $this->getAllSettings();
+
+        foreach ($allSettings as $key => $config) {
+            if (!WindowsUiSetting::where('key', $key)->exists()) {
+                WindowsUiSetting::set($key, $config['value'], $config['type']);
+                $this->command->info("   ✅ Added: {$key}");
+                $added++;
+            } else {
+                $skipped++;
+            }
+        }
+
+        if ($added > 0) {
+            $this->command->info("✨ Added {$added} new settings.");
+        }
+
+        if ($skipped > 0) {
+            $this->command->info("   ⏭️  Skipped {$skipped} existing settings (preserved user customizations).");
+        }
+
+        if ($added === 0 && $skipped > 0) {
+            $this->command->info('✅ All settings are up to date. No changes needed.');
         }
     }
 
     /**
-     * Fresh Install Mode: Seed all default settings
+     * Get all default settings
+     * Returns all settings that should exist in the system
      */
-    private function freshInstallMode(): void
+    private function getAllSettings(): array
     {
-        $this->command->info('🌱 Fresh install: Seeding all Windows UI settings...');
+        // Combine all settings: menus + scalar settings
+        $settings = [];
         // Start Menu Items - Admin Menu Structure
         // Extracted from millennium-start-menu.blade.php (complete menu structure)
         $adminMenuItems = [
@@ -492,7 +519,10 @@ class WindowsUiSeeder extends Seeder
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'route' => 'user.themes.index', 'order' => 14],
         ];
 
-        WindowsUiSetting::set('windows_start_menu_items_user', $userMenuItems, 'json');
+        // Add menu items to settings array
+        $settings['windows_start_menu_items_admin'] = ['value' => $adminMenuItems, 'type' => 'json'];
+        $settings['windows_start_menu_items_seller'] = ['value' => $sellerMenuItems, 'type' => 'json'];
+        $settings['windows_start_menu_items_user'] = ['value' => $userMenuItems, 'type' => 'json'];
 
         // Taskbar Apps - Common Quick Access Apps
         $taskbarApps = [
@@ -540,7 +570,8 @@ class WindowsUiSeeder extends Seeder
             ],
         ];
 
-        WindowsUiSetting::set('windows_taskbar_apps', $taskbarApps, 'json');
+        // Add taskbar apps to settings array
+        $settings['windows_taskbar_apps'] = ['value' => $taskbarApps, 'type' => 'json'];
 
         // System Tray Icons - System Status & Quick Actions
         $systemTrayIcons = [
@@ -618,117 +649,11 @@ class WindowsUiSeeder extends Seeder
             ],
         ];
 
-        WindowsUiSetting::set('windows_system_tray_icons', $systemTrayIcons, 'json');
+        // Add system tray to settings array
+        $settings['windows_system_tray_icons'] = ['value' => $systemTrayIcons, 'type' => 'json'];
 
-        // Additional Windows UI Settings
-        WindowsUiSetting::set('windows_taskbar_position', 'top', 'string');
-        WindowsUiSetting::set('windows_taskbar_height', 48, 'integer');
-        WindowsUiSetting::set('windows_taskbar_blur', true, 'boolean');
-        WindowsUiSetting::set('windows_taskbar_transparency', 95, 'integer');
-
-        WindowsUiSetting::set('windows_start_button_text', 'START', 'string');
-        WindowsUiSetting::set('windows_start_button_use_logo', false, 'boolean');
-        WindowsUiSetting::set('windows_start_button_position', 'center', 'string');
-
-        WindowsUiSetting::set('millennium_back_button_enabled', true, 'boolean');
-        WindowsUiSetting::set('millennium_back_button_text', '← Back', 'string');
-        WindowsUiSetting::set('millennium_center_section_enabled', true, 'boolean');
-        WindowsUiSetting::set('millennium_center_section_text', 'Thai Prompt Affiliate', 'string');
-        WindowsUiSetting::set('millennium_rgb_enabled', true, 'boolean');
-        WindowsUiSetting::set('millennium_rgb_speed', 3, 'integer');
-
-        // Millennium Start Menu Size & Position Settings
-        WindowsUiSetting::set('millennium_menu_position', 'center', 'string');
-        WindowsUiSetting::set('millennium_menu_width', '400', 'string');
-        WindowsUiSetting::set('millennium_menu_width_unit', 'px', 'string');
-        WindowsUiSetting::set('millennium_menu_max_height', '600', 'string');
-        WindowsUiSetting::set('millennium_menu_max_height_unit', 'px', 'string');
-        WindowsUiSetting::set('millennium_menu_rgb_enabled', true, 'boolean');
-
-        // Responsive Taskbar Settings
-        WindowsUiSetting::set('millennium_taskbar_collapse_enabled', true, 'boolean');
-        WindowsUiSetting::set('millennium_taskbar_collapse_breakpoint', 768, 'integer');
-
-        // Clock Settings
-        WindowsUiSetting::set('millennium_clock_style', 'digital', 'string');
-        WindowsUiSetting::set('millennium_clock_format', '24h', 'string');
-        WindowsUiSetting::set('millennium_clock_show_seconds', false, 'boolean');
-        WindowsUiSetting::set('millennium_clock_show_date', false, 'boolean');
-        WindowsUiSetting::set('millennium_clock_date_format', 'short', 'string');
-
-        WindowsUiSetting::set('windows_rgb_enabled', true, 'boolean');
-        WindowsUiSetting::set('windows_rgb_speed', 3, 'integer');
-        WindowsUiSetting::set('windows_rgb_glow', true, 'boolean');
-        WindowsUiSetting::set('windows_rgb_colors', ['#FF0080', '#00F0FF', '#7F00FF', '#FF3D00'], 'json');
-
-        WindowsUiSetting::set('windows_theme_mode', 'auto', 'string');
-        WindowsUiSetting::set('windows_accent_color', '#667eea', 'color');
-
-        WindowsUiSetting::set('windows_spaceship_theme', true, 'boolean');
-        WindowsUiSetting::set('windows_spaceship_stars', true, 'boolean');
-
-        WindowsUiSetting::set('windows_license_text', 'Licensed to Thai Prompt', 'string');
-        WindowsUiSetting::set('windows_copyright_text', '© 2025 TP-Affiliate Platform', 'string');
-
-        WindowsUiSetting::set('content_width_mode', 'max', 'string');
-        WindowsUiSetting::set('content_width_custom', 1400, 'integer');
-
-        $this->command->info('✅ Windows UI settings seeded successfully!');
-        $this->command->info('   - Start Menu (Admin): ' . count($startMenuItems) . ' items with submenus');
-        $this->command->info('   - Start Menu (Seller): ' . count($sellerMenuItems) . ' items with submenus');
-        $this->command->info('   - Start Menu (User): ' . count($userMenuItems) . ' items with submenus');
-        $this->command->info('   - Taskbar Apps: ' . count($taskbarApps) . ' apps');
-        $this->command->info('   - System Tray: ' . count($systemTrayIcons) . ' icons');
-    }
-
-    /**
-     * Update Mode: Add only missing settings (preserves user customizations)
-     */
-    private function updateMode(): void
-    {
-        $this->command->warn('⚠️  Existing settings detected!');
-        $this->command->info('   Running in UPDATE mode (adding missing settings only)...');
-
-        $added = 0;
-        $skipped = 0;
-
-        // Define all possible settings with their default values
-        $allSettings = $this->getAllDefaultSettings();
-
-        // Check and add only missing settings
-        foreach ($allSettings as $key => $config) {
-            if (!WindowsUiSetting::where('key', $key)->exists()) {
-                WindowsUiSetting::set($key, $config['value'], $config['type']);
-                $this->command->info("   ➕ Added: {$key}");
-                $added++;
-            } else {
-                $skipped++;
-            }
-        }
-
-        if ($added > 0) {
-            $this->command->info("✅ Added {$added} new settings.");
-        }
-
-        if ($skipped > 0) {
-            $this->command->info("   ⏭️  Skipped {$skipped} existing settings (preserved).");
-        }
-
-        if ($added === 0) {
-            $this->command->info('✅ All settings are up to date. No changes needed.');
-        }
-    }
-
-    /**
-     * Get all default settings
-     *
-     * @return array
-     */
-    private function getAllDefaultSettings(): array
-    {
-        // Note: Menu items are handled separately as they're complex structures
-        // This method only tracks scalar settings
-        return [
+        // Additional Windows UI Settings (Scalar Values)
+        $settings += [
             // Taskbar Settings
             'windows_taskbar_position' => ['value' => 'top', 'type' => 'string'],
             'windows_taskbar_height' => ['value' => 60, 'type' => 'integer'],
@@ -793,5 +718,7 @@ class WindowsUiSeeder extends Seeder
             'content_width_mode' => ['value' => 'max', 'type' => 'string'],
             'content_width_custom' => ['value' => 1400, 'type' => 'integer'],
         ];
+
+        return $settings;
     }
 }
