@@ -245,9 +245,9 @@
                                             <input type="text" x-model="item.label" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all" placeholder="หน้าแรก" required>
                                         </div>
                                         <div class="md:col-span-2">
-                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Route Name</label>
-                                            <input type="text" x-model="item.route" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all" placeholder="admin.dashboard" :required="!item.has_submenu">
-                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ใส่ route name (เช่น admin.dashboard) หรือเว้นว่างสำหรับเมนูที่มี submenu</p>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URL</label>
+                                            <input type="text" x-model="item.url" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all" placeholder="/admin/dashboard" required>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ใส่ URL (เช่น /admin/dashboard) หรือใช้ # สำหรับเมนูที่มี submenu</p>
                                         </div>
                                         <div class="md:col-span-2">
                                             <label class="flex items-center cursor-pointer p-3 bg-white dark:bg-slate-700 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors">
@@ -268,7 +268,7 @@
                                                 <template x-for="(subitem, subindex) in item.submenu" :key="subindex">
                                                     <div class="flex gap-2">
                                                         <input type="text" x-model="subitem.label" class="flex-1 px-3 py-2 text-sm border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500" placeholder="ชื่อ Submenu" required>
-                                                        <input type="text" x-model="subitem.route" class="flex-1 px-3 py-2 text-sm border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500" placeholder="admin.users.index" required>
+                                                        <input type="text" x-model="subitem.url" class="flex-1 px-3 py-2 text-sm border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500" placeholder="/admin/users" required>
                                                         <button type="button" @click="removeSubmenuItem(index, subindex)" class="px-3 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all">
                                                             <i class="fas fa-trash"></i>
                                                         </button>
@@ -305,7 +305,7 @@
                         <div>
                             <input type="hidden" :name="`items[${index}][icon]`" x-model="item.icon">
                             <input type="hidden" :name="`items[${index}][label]`" x-model="item.label">
-                            <input type="hidden" :name="`items[${index}][route]`" x-model="item.route">
+                            <input type="hidden" :name="`items[${index}][url]`" x-model="item.url">
                             <input type="hidden" :name="`items[${index}][order]`" x-model="item.order">
 
                             <!-- Hidden inputs for submenu items (ถ้ามี) -->
@@ -314,7 +314,7 @@
                                     <template x-for="(subitem, subindex) in item.submenu" :key="subindex">
                                         <div>
                                             <input type="hidden" :name="`items[${index}][submenu][${subindex}][label]`" x-model="subitem.label">
-                                            <input type="hidden" :name="`items[${index}][submenu][${subindex}][route]`" x-model="subitem.route">
+                                            <input type="hidden" :name="`items[${index}][submenu][${subindex}][url]`" x-model="subitem.url">
                                         </div>
                                     </template>
                                 </div>
@@ -820,7 +820,7 @@ function startMenuManager() {
             this.menuItems.push({
                 icon: '📄',
                 label: 'รายการใหม่',
-                route: 'admin.dashboard',
+                url: '#',
                 has_submenu: false,
                 submenu: [],
                 order: this.menuItems.length
@@ -840,7 +840,7 @@ function startMenuManager() {
             }
             this.menuItems[parentIndex].submenu.push({
                 label: 'Submenu ใหม่',
-                route: 'admin.dashboard'
+                url: '#'
             });
         },
 
