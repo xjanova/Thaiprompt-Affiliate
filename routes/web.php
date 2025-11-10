@@ -42,10 +42,10 @@ Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,
 Route::prefix('setup')->name('setup.')->group(function () {
     Route::get('/', [SetupController::class, 'index'])->name('index');
     Route::get('/check-requirements', [SetupController::class, 'checkRequirements'])->name('check-requirements');
-    Route::post('/verify-license', [SetupController::class, 'verifyLicense'])->name('verify-license');
+    Route::post('/test-database', [SetupController::class, 'testDatabase'])->name('test-database');
+    Route::post('/install-dependencies', [SetupController::class, 'installDependencies'])->name('install-dependencies');
+    Route::post('/run-migrations', [SetupController::class, 'runMigrations'])->name('run-migrations');
     Route::post('/create-admin', [SetupController::class, 'createAdmin'])->name('create-admin');
-    Route::post('/seed-data', [SetupController::class, 'seedData'])->name('seed-data');
-    Route::post('/finalize', [SetupController::class, 'finalize'])->name('finalize');
     Route::get('/info', [SetupController::class, 'info'])->name('info');
 });
 

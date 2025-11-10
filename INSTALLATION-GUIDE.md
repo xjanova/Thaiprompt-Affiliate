@@ -9,13 +9,12 @@
 ## 📋 Table of Contents
 
 1. [ความต้องการของระบบ](#ความต้องการของระบบ)
-2. [การเตรียมความพร้อม](#การเตรียมความพร้อม)
-3. [Step 1: Clone Repository](#step-1-clone-repository)
-4. [Step 2: รัน Installation Script](#step-2-รัน-installation-script)
-5. [Step 3: ตรวจสอบการติดตั้ง](#step-3-ตรวจสอบการติดตั้ง)
-6. [Step 4: เข้าใช้งานครั้งแรก](#step-4-เข้าใช้งานครั้งแรก)
-7. [Troubleshooting](#troubleshooting)
-8. [FAQ](#faq)
+2. [วิธีการติดตั้ง](#วิธีการติดตั้ง)
+   - [วิธีที่ 1: Web-based Installation Wizard (แนะนำ)](#วิธีที่-1-web-based-installation-wizard-แนะนำ)
+   - [วิธีที่ 2: Command Line Installation](#วิธีที่-2-command-line-installation)
+3. [การอัพเดทระบบ](#การอัพเดทระบบ)
+4. [Troubleshooting](#troubleshooting)
+5. [FAQ](#faq)
 
 ---
 
@@ -135,6 +134,95 @@ sudo apt install git
 ```
 
 ---
+
+## วิธีการติดตั้ง
+
+TP-Affiliate รองรับ 2 วิธีการติดตั้ง:
+
+### วิธีที่ 1: Web-based Installation Wizard (แนะนำ) ⭐
+
+**ข้อดี:**
+- ✅ ติดตั้งง่าย ผ่าน Web Interface
+- ✅ ตรวจสอบ requirements อัตโนมัติ
+- ✅ แสดง progress และ error แบบละเอียด
+- ✅ ไม่ต้องใช้ Command Line
+- ✅ เหมาะสำหรับ Shared Hosting
+
+**ขั้นตอน:**
+
+1. **อัพโหลดไฟล์ไปยัง Server**
+   - ดาวน์โหลด source code จาก [GitHub Releases](https://github.com/xjanova/Thaiprompt-Affiliate/releases)
+   - แตก zip file
+   - อัพโหลดทั้งหมดไปยัง web server (ผ่าน FTP/SFTP)
+
+2. **ตั้งค่า Web Server**
+   - ตั้ง Document Root ให้ชี้ไปที่ `public/` folder
+   - ตรวจสอบ PHP version 8.1+
+
+3. **เปิด Browser**
+   - ไปที่ `https://yourdomain.com`
+   - ระบบจะ redirect ไป `/setup` อัตโนมัติ
+
+4. **ทำตาม Installation Wizard**
+
+   **Step 1: ยินดีต้อนรับ**
+   - อ่านข้อมูลและคลิก "เริ่มการติดตั้ง"
+
+   **Step 2: ตรวจสอบความพร้อม**
+   - ระบบจะตรวจสอบ:
+     - PHP version และ extensions
+     - File permissions
+     - Composer availability
+   - หากมีปัญหา ระบบจะแจ้งให้แก้ไข
+
+   **Step 3: ตั้งค่า Database**
+   - กรอกข้อมูล MySQL:
+     - Host (เช่น 127.0.0.1)
+     - Port (เช่น 3306)
+     - Database Name
+     - Username
+     - Password
+   - คลิก "ทดสอบการเชื่อมต่อ"
+   - หากสำเร็จ คลิก "ดำเนินการต่อ"
+
+   **Step 4: ติดตั้ง Dependencies**
+   - คลิก "เริ่มติดตั้ง Dependencies"
+   - รอประมาณ 2-3 นาที (ขึ้นอยู่กับความเร็วของ server)
+
+   **Step 5: สร้าง Database Tables**
+   - คลิก "เริ่มสร้าง Tables"
+   - ระบบจะรัน migrations อัตโนมัติ
+
+   **Step 6: สร้างบัญชี Super Admin**
+   - กรอกข้อมูล:
+     - ชื่อ-นามสกุล
+     - อีเมล
+     - รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)
+   - คลิก "สร้างบัญชี Super Admin"
+
+5. **เสร็จสิ้น! 🎉**
+   - คลิก "เข้าสู่ระบบ"
+   - เข้าสู่ระบบด้วยบัญชีที่สร้างไว้
+
+**หมายเหตุสำคัญ:**
+- ✅ หลังติดตั้งเสร็จ ระบบจะไม่สามารถเข้า `/setup` ได้อีก (เพื่อความปลอดภัย)
+- ✅ ข้อมูล database จะถูกเก็บใน `.env` อัตโนมัติ
+- ✅ App Key จะถูกสร้างอัตโนมัติ
+
+---
+
+### วิธีที่ 2: Command Line Installation
+
+**ข้อดี:**
+- ✅ เหมาะสำหรับ VPS/Dedicated Server
+- ✅ ควบคุมได้มากกว่า
+- ✅ รวดเร็วกว่า
+
+**ข้อเสีย:**
+- ❌ ต้องใช้ Command Line
+- ❌ ต้องมี SSH access
+
+**ขั้นตอน:**
 
 ## Step 1: Clone Repository
 
@@ -920,6 +1008,200 @@ composer config -g repos.packagist composer https://packagist.org
 # หรือยกเลิก timeout
 composer install --no-interaction --timeout=0
 ```
+
+---
+
+## การอัพเดทระบบ
+
+TP-Affiliate มีระบบอัพเดทที่สะดวกและปลอดภัย รองรับ 2 วิธี:
+
+### วิธีที่ 1: อัพเดทผ่าน Admin Panel (แนะนำ) ⭐
+
+**ข้อดี:**
+- ✅ อัพเดทง่าย ผ่าน Web Interface
+- ✅ ตรวจสอบ compatibility อัตโนมัติ
+- ✅ Backup อัตโนมัติก่อนอัพเดท
+- ✅ แสดง changelog และ breaking changes
+- ✅ Rollback ได้หากเกิดปัญหา
+
+**ขั้นตอน:**
+
+1. **เข้าสู่ Admin Panel**
+   ```
+   https://yourdomain.com/admin/updates
+   ```
+
+2. **ตรวจสอบอัพเดทใหม่**
+   - คลิกปุ่ม "🔍 ตรวจสอบอัพเดท"
+   - ระบบจะเช็คจาก GitHub Releases อัตโนมัติ
+
+3. **ดูรายละเอียดอัพเดท**
+   - คลิก "ดูรายละเอียด" ที่อัพเดทที่ต้องการ
+   - อ่าน:
+     - **Changelog**: สิ่งที่เปลี่ยนแปลง
+     - **Breaking Changes**: สิ่งที่อาจทำให้ระบบเดิมเสีย
+     - **Requirements**: ความต้องการของระบบ
+
+4. **ติดตั้งอัพเดท**
+   - คลิกปุ่ม "ติดตั้ง"
+   - ยืนยันการอัพเดท
+   - ระบบจะ:
+     - ✓ สร้าง backup อัตโนมัติ
+     - ✓ ดาวน์โหลด update
+     - ✓ รัน database migrations
+     - ✓ อัพเดท version
+     - ✓ Clear caches
+
+5. **ตรวจสอบผลลัพธ์**
+   - ดูใน "ประวัติการอัพเดท"
+   - ตรวจสอบว่าอัพเดทสำเร็จหรือไม่
+
+**หมายเหตุ:**
+- ⚠️ ควร backup database ด้วยตนเองก่อนอัพเดท major version
+- ✅ ระบบจะ backup อัตโนมัติทุกครั้ง
+- ✅ สามารถ rollback ได้หากเกิดปัญหา
+
+---
+
+### วิธีที่ 2: อัพเดทผ่าน Command Line
+
+**สำหรับผู้ที่มี SSH access:**
+
+```bash
+# เข้าสู่โฟลเดอร์โปรเจค
+cd /path/to/Thaiprompt-Affiliate
+
+# เช็ค version ปัจจุบัน
+php artisan --version
+
+# รันคำสั่งอัพเดท (ไปเวอร์ชันล่าสุด)
+php artisan app:update
+
+# หรืออัพเดทไปเวอร์ชันเฉพาะ
+php artisan app:update v2.0.0
+
+# พร้อม options
+php artisan app:update --force           # ข้าม confirmation
+php artisan app:update --no-backup       # ไม่ต้อง backup
+php artisan app:update --skip-deps       # ข้ามการติดตั้ง dependencies
+```
+
+**คำสั่งที่เป็นประโยชน์:**
+
+```bash
+# เช็คว่ามีอัพเดทใหม่หรือไม่
+php artisan app:check-update
+
+# ดู changelog
+php artisan app:changelog
+
+# ดูประวัติการอัพเดท
+php artisan app:update-history
+
+# Rollback (ถ้าเกิดปัญหา)
+php artisan app:rollback
+```
+
+---
+
+### การอัพเดทแบบ Manual (Git)
+
+**สำหรับ Developer:**
+
+```bash
+# Backup database ก่อน
+mysqldump -u root -p thaiprompt_affiliate > backup.sql
+
+# หรือ SQLite
+cp database/database.sqlite database/backup.sqlite
+
+# Enable maintenance mode
+php artisan down
+
+# Stash local changes (ถ้ามี)
+git stash
+
+# Fetch และ pull เวอร์ชันใหม่
+git fetch origin --tags
+git checkout main  # หรือ branch ที่ต้องการ
+git pull origin main
+
+# หรือ checkout specific version
+git checkout v2.0.0
+
+# Update dependencies
+composer install --no-dev --optimize-autoloader
+
+# Run migrations
+php artisan migrate --force
+
+# Clear และ cache
+php artisan optimize
+
+# Disable maintenance mode
+php artisan up
+
+# ตรวจสอบว่าทำงานได้
+php artisan --version
+```
+
+---
+
+### Rollback หากเกิดปัญหา
+
+**ผ่าน Admin Panel:**
+1. ไปที่ `/admin/updates/logs`
+2. คลิกที่การอัพเดทที่ต้องการ rollback
+3. คลิกปุ่ม "Rollback"
+
+**ผ่าน Command Line:**
+```bash
+# แสดง update logs
+php artisan app:update-history
+
+# Rollback โดยระบุ log ID
+php artisan app:rollback {log_id}
+
+# หรือ restore จาก backup manual
+php artisan down
+git checkout v1.0.0  # version เดิม
+composer install --no-dev --optimize-autoloader
+mysql -u root -p thaiprompt_affiliate < backup.sql
+php artisan optimize
+php artisan up
+```
+
+---
+
+### Best Practices สำหรับการอัพเดท
+
+1. **Backup ทุกครั้ง**
+   ```bash
+   # Database
+   mysqldump -u root -p thaiprompt_affiliate > backup-$(date +%Y%m%d).sql
+
+   # Files
+   tar -czf backup-files-$(date +%Y%m%d).tar.gz .
+   ```
+
+2. **ทดสอบบน Staging ก่อน**
+   - อัพเดทบน staging environment ก่อน
+   - ทดสอบฟีเจอร์ทั้งหมด
+   - แล้วค่อยอัพเดทบน production
+
+3. **อ่าน Changelog ทุกครั้ง**
+   - ดู breaking changes
+   - ดู new features
+   - ดู bug fixes
+
+4. **เช็ค Requirements**
+   - PHP version
+   - PHP extensions
+   - Database version
+
+5. **Maintenance Mode**
+   - เปิด maintenance mode ขณะอัพเดท
+   - แจ้งผู้ใช้ล่วงหน้า
 
 ---
 
