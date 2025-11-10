@@ -105,58 +105,24 @@
         </div>
     @endif
 
-    <!-- Quick Navigation Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <a href="{{ route('admin.windows-ui.start-menu') }}" class="block group">
-            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 border border-gray-100 dark:border-slate-700">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl">
-                        🚀
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Start Menu</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">จัดการรายการเมนู Start</p>
-                    </div>
-                    <svg class="w-5 h-5 text-gray-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
+    <!-- Info Banner -->
+    <div class="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-slate-800 dark:to-slate-700 border border-blue-200 dark:border-cyan-700 rounded-xl p-6 mb-8">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white text-2xl">
+                    ℹ️
                 </div>
             </div>
-        </a>
-
-        <a href="{{ route('admin.windows-ui.taskbar-apps') }}" class="block group">
-            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 border border-gray-100 dark:border-slate-700">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white text-2xl">
-                        📱
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors">Taskbar Apps</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">จัดการแอปใน Taskbar</p>
-                    </div>
-                    <svg class="w-5 h-5 text-gray-400 group-hover:text-cyan-600 dark:group-hover:text-cyan-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
+            <div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">📝 Hard-Coded Menu System</h3>
+                <p class="text-gray-700 dark:text-gray-300 mb-2">
+                    ระบบเมนูได้เปลี่ยนเป็น <strong>Hard-Coded</strong> แล้ว - เมนูทั้งหมดถูก hard-code ใน component เพื่อความเรียบง่าย
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    💡 หน้านี้ใช้สำหรับปรับแต่ง <strong>รูปลักษณ์</strong> เท่านั้น (สี, ขนาด, animation) ไม่ใช่จัดการเมนู
+                </p>
             </div>
-        </a>
-
-        <a href="{{ route('admin.windows-ui.system-tray') }}" class="block group">
-            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 p-6 border border-gray-100 dark:border-slate-700">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white text-2xl">
-                        ⚙️
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-lg font-bold text-gray-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">System Tray</h3>
-                        <p class="text-sm text-gray-600 dark:text-gray-400">จัดการไอคอน System Tray</p>
-                    </div>
-                    <svg class="w-5 h-5 text-gray-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-            </div>
-        </a>
+        </div>
     </div>
 
     <!-- Settings Form -->
