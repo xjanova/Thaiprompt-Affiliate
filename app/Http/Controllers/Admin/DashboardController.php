@@ -115,9 +115,9 @@ class DashboardController extends Controller
 
         // KYC stats
         $kycStats = [
-            'pending' => KycVerification::where('verification_status', 'pending')->count(),
-            'verified' => KycVerification::where('verification_status', 'verified')->count(),
-            'rejected' => KycVerification::where('verification_status', 'rejected')->count(),
+            'pending' => KycVerification::pending()->count(),
+            'verified' => KycVerification::approved()->count(),
+            'rejected' => KycVerification::rejected()->count(),
         ];
 
         // Trading stats (if table exists)
