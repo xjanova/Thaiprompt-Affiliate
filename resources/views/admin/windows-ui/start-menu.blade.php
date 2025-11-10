@@ -307,10 +307,9 @@
                             <input type="hidden" :name="`items[${index}][label]`" x-model="item.label">
                             <input type="hidden" :name="`items[${index}][route]`" x-model="item.route">
                             <input type="hidden" :name="`items[${index}][order]`" x-model="item.order">
-                            <input type="hidden" :name="`items[${index}][has_submenu]`" x-model="item.has_submenu">
 
-                            <!-- Hidden inputs for submenu items -->
-                            <template x-if="item.has_submenu && item.submenu && item.submenu.length > 0">
+                            <!-- Hidden inputs for submenu items (ถ้ามี) -->
+                            <template x-if="item.submenu && item.submenu.length > 0">
                                 <div>
                                     <template x-for="(subitem, subindex) in item.submenu" :key="subindex">
                                         <div>
@@ -791,6 +790,18 @@ function startMenuManager() {
         heightUnit: '{{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') }}',
 
         init() {
+            // ตั้งค่า has_submenu จากข้อมูลที่โหลดมาจากฐานข้อมูล
+            // เพื่อให้ UI checkbox แสดงถูกต้อง
+            this.menuItems = this.menuItems.map(item => {
+                // ถ้ามี submenu array และมีข้อมูล = มี submenu
+                item.has_submenu = Array.isArray(item.submenu) && item.submenu.length > 0;
+                // ถ้าไม่มี submenu ให้ initialize เป็น array ว่าง
+                if (!item.submenu) {
+                    item.submenu = [];
+                }
+                return item;
+            });
+
             // Initialize Sortable.js
             const el = document.getElementById('menu-items-list');
             if (el) {

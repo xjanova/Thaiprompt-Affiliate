@@ -169,13 +169,12 @@ class WindowsUiController extends Controller
             'items.*.label' => ['required', 'string', 'max:100'],
             'items.*.route' => ['nullable', 'string', 'max:500'],
             'items.*.order' => ['required', 'integer', 'min:0'],
-            'items.*.has_submenu' => ['nullable', 'boolean'],
             'items.*.submenu' => ['nullable', 'array'],
             'items.*.submenu.*.label' => ['required_with:items.*.submenu', 'string', 'max:100'],
             'items.*.submenu.*.route' => ['required_with:items.*.submenu', 'string', 'max:500'],
         ]);
 
-        // Process menu items to clean up structure
+        // Process menu items - บันทึกให้ตรงกับโครงสร้างของ WindowsUiSeeder
         $menuItems = collect($validated['items'])->map(function($item) {
             $processedItem = [
                 'icon' => $item['icon'],
@@ -184,8 +183,8 @@ class WindowsUiController extends Controller
                 'order' => $item['order'],
             ];
 
-            // Add submenu if exists
-            if (!empty($item['has_submenu']) && !empty($item['submenu'])) {
+            // เพิ่ม submenu ถ้ามี (ตรงกับ seeder)
+            if (!empty($item['submenu']) && is_array($item['submenu']) && count($item['submenu']) > 0) {
                 $processedItem['submenu'] = $item['submenu'];
             }
 
