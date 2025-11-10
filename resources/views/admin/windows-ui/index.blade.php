@@ -224,6 +224,190 @@
                                 </label>
                             </div>
                         </div>
+
+                        <!-- Taskbar Color Customization -->
+                        <div class="mt-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+                            <h4 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                <span class="text-2xl">🎨</span> การตั้งค่าสี Taskbar
+                            </h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">ปรับแต่งสีของ Taskbar ให้ตรงกับธีมของคุณ</p>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                <!-- Background Color -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        🎨 สีพื้นหลัง
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color"
+                                               name="windows_taskbar_bg_color"
+                                               value="{{ $settings['windows_taskbar_bg_color'] ?? '#1e293b' }}"
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                        <input type="text"
+                                               value="{{ $settings['windows_taskbar_bg_color'] ?? '#1e293b' }}"
+                                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                               readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Text Color -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        📝 สีข้อความ
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color"
+                                               name="windows_taskbar_text_color"
+                                               value="{{ $settings['windows_taskbar_text_color'] ?? '#ffffff' }}"
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                        <input type="text"
+                                               value="{{ $settings['windows_taskbar_text_color'] ?? '#ffffff' }}"
+                                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                               readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Hover Background Color -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        👆 สีเมื่อ Hover
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color"
+                                               name="windows_taskbar_hover_bg_color"
+                                               value="{{ $settings['windows_taskbar_hover_bg_color'] ?? '#334155' }}"
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                        <input type="text"
+                                               value="{{ $settings['windows_taskbar_hover_bg_color'] ?? '#334155' }}"
+                                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                               readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Active Background Color -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        ⚡ สีเมื่อ Active
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color"
+                                               name="windows_taskbar_active_bg_color"
+                                               value="{{ $settings['windows_taskbar_active_bg_color'] ?? '#475569' }}"
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                        <input type="text"
+                                               value="{{ $settings['windows_taskbar_active_bg_color'] ?? '#475569' }}"
+                                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                               readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Border Color -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        🔲 สีขอบ
+                                    </label>
+                                    <div class="flex items-center gap-3">
+                                        <input type="color"
+                                               name="windows_taskbar_border_color"
+                                               value="{{ $settings['windows_taskbar_border_color'] ?? '#475569' }}"
+                                               class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                        <input type="text"
+                                               value="{{ $settings['windows_taskbar_border_color'] ?? '#475569' }}"
+                                               class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                               readonly>
+                                    </div>
+                                </div>
+
+                                <!-- Use Gradient Toggle -->
+                                <div class="flex items-center">
+                                    <label class="flex items-center cursor-pointer">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox"
+                                                   name="windows_taskbar_use_gradient"
+                                                   value="1"
+                                                   {{ ($settings['windows_taskbar_use_gradient'] ?? false) ? 'checked' : '' }}>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้ Gradient</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Gradient Settings -->
+                            <div class="mt-6 p-4 bg-white/50 dark:bg-slate-800/50 rounded-lg border border-blue-200 dark:border-blue-700">
+                                <h5 class="text-sm font-semibold text-gray-900 dark:text-white mb-4">การตั้งค่า Gradient (ใช้เมื่อเปิด "ใช้ Gradient")</h5>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Gradient From -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            🌈 สีเริ่มต้น Gradient
+                                        </label>
+                                        <div class="flex items-center gap-3">
+                                            <input type="color"
+                                                   name="windows_taskbar_gradient_from"
+                                                   value="{{ $settings['windows_taskbar_gradient_from'] ?? '#1e293b' }}"
+                                                   class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                            <input type="text"
+                                                   value="{{ $settings['windows_taskbar_gradient_from'] ?? '#1e293b' }}"
+                                                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                                   readonly>
+                                        </div>
+                                    </div>
+
+                                    <!-- Gradient To -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            🌈 สีสิ้นสุด Gradient
+                                        </label>
+                                        <div class="flex items-center gap-3">
+                                            <input type="color"
+                                                   name="windows_taskbar_gradient_to"
+                                                   value="{{ $settings['windows_taskbar_gradient_to'] ?? '#0f172a' }}"
+                                                   class="w-16 h-10 rounded-lg border-2 border-gray-300 dark:border-slate-600 cursor-pointer">
+                                            <input type="text"
+                                                   value="{{ $settings['windows_taskbar_gradient_to'] ?? '#0f172a' }}"
+                                                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg text-sm font-mono"
+                                                   readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Color Presets -->
+                            <div class="mt-6">
+                                <h5 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">🎨 ธีมสีแนะนำ</h5>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                    <button type="button"
+                                            class="px-4 py-2 bg-gradient-to-r from-slate-700 to-slate-900 text-white rounded-lg text-xs hover:shadow-lg transition-all"
+                                            onclick="applyColorPreset('#1e293b', '#ffffff', '#334155', '#475569', '#475569', false)">
+                                        Dark Slate
+                                    </button>
+                                    <button type="button"
+                                            class="px-4 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg text-xs hover:shadow-lg transition-all"
+                                            onclick="applyColorPreset('#ec4899', '#ffffff', '#f472b6', '#be185d', '#be185d', true, '#ec4899', '#8b5cf6')">
+                                        Purple Dream
+                                    </button>
+                                    <button type="button"
+                                            class="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg text-xs hover:shadow-lg transition-all"
+                                            onclick="applyColorPreset('#0891b2', '#ffffff', '#06b6d4', '#0e7490', '#0e7490', true, '#0891b2', '#0e7490')">
+                                        Ocean Blue
+                                    </button>
+                                    <button type="button"
+                                            class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-lg text-xs hover:shadow-lg transition-all"
+                                            onclick="applyColorPreset('#065f46', '#ffffff', '#047857', '#059669', '#059669', false)">
+                                        Forest Green
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Info -->
+                            <div class="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg border border-blue-300 dark:border-blue-700">
+                                <p class="text-xs text-blue-800 dark:text-blue-300">
+                                    💡 <strong>หมายเหตุ:</strong> หลังจากบันทึก ให้กด Ctrl+F5 (หรือ Cmd+Shift+R) เพื่อรีเฟรชหน้าและดูผลลัพธ์
+                                </p>
+                            </div>
+                        </div>
+
                         </div>
                     </div>
 
@@ -568,6 +752,66 @@
         } else {
             customWidthWrapper.style.display = 'none';
         }
+    });
+
+    // Apply color preset function for Taskbar colors
+    function applyColorPreset(bgColor, textColor, hoverColor, activeColor, borderColor, useGradient, gradientFrom, gradientTo) {
+        // Set background color
+        document.querySelector('input[name="windows_taskbar_bg_color"]').value = bgColor;
+        document.querySelector('input[name="windows_taskbar_bg_color"]').nextElementSibling.value = bgColor;
+
+        // Set text color
+        document.querySelector('input[name="windows_taskbar_text_color"]').value = textColor;
+        document.querySelector('input[name="windows_taskbar_text_color"]').nextElementSibling.value = textColor;
+
+        // Set hover color
+        document.querySelector('input[name="windows_taskbar_hover_bg_color"]').value = hoverColor;
+        document.querySelector('input[name="windows_taskbar_hover_bg_color"]').nextElementSibling.value = hoverColor;
+
+        // Set active color
+        document.querySelector('input[name="windows_taskbar_active_bg_color"]').value = activeColor;
+        document.querySelector('input[name="windows_taskbar_active_bg_color"]').nextElementSibling.value = activeColor;
+
+        // Set border color
+        document.querySelector('input[name="windows_taskbar_border_color"]').value = borderColor;
+        document.querySelector('input[name="windows_taskbar_border_color"]').nextElementSibling.value = borderColor;
+
+        // Set gradient toggle
+        const gradientToggle = document.querySelector('input[name="windows_taskbar_use_gradient"]');
+        gradientToggle.checked = useGradient;
+
+        // Set gradient colors if provided
+        if (useGradient && gradientFrom && gradientTo) {
+            document.querySelector('input[name="windows_taskbar_gradient_from"]').value = gradientFrom;
+            document.querySelector('input[name="windows_taskbar_gradient_from"]').nextElementSibling.value = gradientFrom;
+
+            document.querySelector('input[name="windows_taskbar_gradient_to"]').value = gradientTo;
+            document.querySelector('input[name="windows_taskbar_gradient_to"]').nextElementSibling.value = gradientTo;
+        }
+
+        // Show success message
+        const notification = document.createElement('div');
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all';
+        notification.textContent = '✅ ธีมสีถูกใช้แล้ว! อย่าลืมกดบันทึกการตั้งค่า';
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
+    // Update color text inputs when color picker changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const colorInputs = document.querySelectorAll('input[type="color"]');
+        colorInputs.forEach(input => {
+            input.addEventListener('input', function() {
+                const textInput = this.nextElementSibling;
+                if (textInput && textInput.type === 'text') {
+                    textInput.value = this.value;
+                }
+            });
+        });
     });
 </script>
 @endpush
