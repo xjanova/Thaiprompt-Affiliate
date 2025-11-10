@@ -1155,6 +1155,16 @@ Route::prefix('updates')->name('updates.')->group(function () {
     Route::post('/notifications/{id}/dismiss', [\App\Http\Controllers\Admin\UpdateController::class, 'dismissNotification'])->name('notifications.dismiss');
 });
 
+// Developer Release Manager (IP-locked, Developer Only)
+Route::prefix('dev/releases')->middleware(\App\Http\Middleware\DevMode::class)->name('dev.releases.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'index'])->name('index');
+    Route::post('/create', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'create'])->name('create');
+    Route::post('/{tag}/publish', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'publish'])->name('publish');
+    Route::delete('/{tag}/delete', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'delete'])->name('delete');
+    Route::get('/refresh', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'refresh'])->name('refresh');
+    Route::get('/realtime', [\App\Http\Controllers\Admin\Dev\DevReleaseController::class, 'realtimeInfo'])->name('realtime');
+});
+
 // Ticket Support System
 Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::get('/', [TicketController::class, 'index'])->name('index');
