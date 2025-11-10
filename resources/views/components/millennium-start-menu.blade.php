@@ -90,380 +90,42 @@
         default => 'left-1/2 -translate-x-1/2',
     };
 
-    // Define menu items with working submenu support
-    $menuItems = [];
+    // Load menu items from Windows UI Settings (database-driven)
+    // All menus are now controlled via Windows UI Settings - no hard-coded menus!
+    $menuItemsRaw = WindowsUiSetting::get("windows_start_menu_items_{$type}", []);
 
-    if ($type === 'admin') {
-        $menuItems = [
-            ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('admin.dashboard')],
-            [
-                'icon' => '👥',
-                'label' => 'ผู้ใช้งาน',
-                'submenu' => [
-                    ['label' => 'รายชื่อผู้ใช้', 'url' => route('admin.users.index')],
-                    ['label' => 'บทบาท (Roles)', 'url' => route('admin.roles.index')],
-                ]
-            ],
-            ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('admin.kyc.index')],
-            ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('admin.tickets.index')],
-            [
-                'icon' => '🤖',
-                'label' => 'AI Bots & ผู้ช่วย',
-                'submenu' => [
-                    ['label' => 'จัดการ AI Bots', 'url' => route('admin.ai-bots.index')],
-                    ['label' => 'AI Providers', 'url' => route('admin.ai-providers.index')],
-                    ['label' => 'ติดตั้ง AI', 'url' => route('admin.ai-installation.index')],
-                ]
-            ],
-            [
-                'icon' => '🏨',
-                'label' => 'จัดการโรงแรม',
-                'submenu' => [
-                    ['label' => 'โรงแรมทั้งหมด', 'url' => route('admin.hotels.index')],
-                    ['label' => 'การจองทั้งหมด', 'url' => route('admin.hotels.bookings.index')],
-                    ['label' => 'สถิติการจอง', 'url' => route('admin.hotels.bookings.analytics')],
-                    ['label' => 'จัดการรีวิว', 'url' => route('admin.hotels.reviews.index')],
-                    ['label' => 'สิ่งอำนวยความสะดวก', 'url' => route('admin.hotels.facilities.index')],
-                    ['label' => 'โปรโมชั่นพิเศษ', 'url' => route('admin.hotels.special-offers.index')],
-                ]
-            ],
-            [
-                'icon' => '🛒',
-                'label' => 'อีคอมเมิร์ซ',
-                'submenu' => [
-                    ['label' => 'แดชบอร์ด', 'url' => route('admin.ecommerce.dashboard')],
-                    ['label' => 'สินค้าทั้งหมด', 'url' => route('admin.ecommerce.products.index')],
-                    ['label' => 'คำสั่งซื้อ', 'url' => route('admin.ecommerce.orders.index')],
-                    ['label' => 'หมวดหมู่', 'url' => route('admin.ecommerce.categories.index')],
-                    ['label' => 'รีวิวสินค้า', 'url' => route('admin.ecommerce.reviews.index')],
-                ]
-            ],
-            [
-                'icon' => '🏪',
-                'label' => 'ระบบ POS',
-                'submenu' => [
-                    ['label' => 'แดชบอร์ด', 'url' => route('admin.pos.dashboard')],
-                    ['label' => 'อุปกรณ์ POS', 'url' => route('admin.pos.devices.index')],
-                    ['label' => 'ธุรกรรม', 'url' => route('admin.pos.transactions.index')],
-                    ['label' => 'วิเคราะห์ข้อมูล', 'url' => route('admin.pos.analytics')],
-                ]
-            ],
-            [
-                'icon' => '💰',
-                'label' => 'กระเป๋าเงิน THB',
-                'submenu' => [
-                    ['label' => 'กระเป๋าเงินทั้งหมด', 'url' => route('admin.wallet.index')],
-                    ['label' => 'ประวัติธุรกรรม', 'url' => route('admin.wallet.transactions')],
-                    ['label' => 'คำขอถอนเงิน', 'url' => route('admin.withdrawals.pending')],
-                    ['label' => 'ประวัติการถอน', 'url' => route('admin.withdrawals.index')],
-                    ['label' => 'ตั้งค่า Payment', 'url' => route('admin.payment-gateways.index')],
-                ]
-            ],
-            [
-                'icon' => '₿',
-                'label' => 'กระเป๋าคริปโต',
-                'submenu' => [
-                    ['label' => 'แดชบอร์ด', 'url' => route('admin.crypto.dashboard')],
-                    ['label' => 'จัดการ Wallets', 'url' => route('admin.crypto.wallets')],
-                    ['label' => 'ธุรกรรม', 'url' => route('admin.crypto.transactions')],
-                    ['label' => 'คำขอถอน', 'url' => route('admin.crypto.withdrawals')],
-                    ['label' => 'จัดการเหรียญ/สกุลเงิน', 'url' => route('admin.crypto.currencies')],
-                    ['label' => 'ตั้งค่ากระเป๋าเงิน', 'url' => route('admin.wallet-settings.index')],
-                    ['label' => 'ตั้งค่าคริปโต', 'url' => route('admin.crypto.settings')],
-                ]
-            ],
-            [
-                'icon' => '💵',
-                'label' => 'คอมมิชชั่น',
-                'submenu' => [
-                    ['label' => 'รายการทั้งหมด', 'url' => route('admin.commissions.index')],
-                    ['label' => 'รายงานคอมมิชชั่น', 'url' => route('admin.mlm.commissions.index')],
-                ]
-            ],
-            [
-                'icon' => '📧',
-                'label' => 'จัดการอีเมล',
-                'submenu' => [
-                    ['label' => 'เทมเพลต', 'url' => route('admin.email.templates.index')],
-                    ['label' => 'ผู้ให้บริการ', 'url' => route('admin.email.providers')],
-                    ['label' => 'ประวัติการส่ง', 'url' => route('admin.email.logs')],
-                ]
-            ],
-            [
-                'icon' => '📱',
-                'label' => 'LINE OA & AI',
-                'submenu' => [
-                    ['label' => 'ตั้งค่า LINE OA', 'url' => route('admin.line-oa.index')],
-                    ['label' => 'AI Chat Bot', 'url' => route('admin.line-bot.ai.index')],
-                    ['label' => 'Broadcast', 'url' => route('admin.line-bot.broadcast.index')],
-                    ['label' => 'Avatar', 'url' => route('admin.line-bot.avatars.index')],
-                    ['label' => 'Chat Widget', 'url' => route('admin.line-bot.chat-widget.index')],
-                ]
-            ],
-            [
-                'icon' => '🎓',
-                'label' => 'Academy System',
-                'submenu' => [
-                    ['label' => 'คอร์สเรียน', 'url' => route('admin.academy.courses.index')],
-                    ['label' => 'ใบประกาศ', 'url' => route('admin.academy.certificates.index')],
-                    ['label' => 'ตั้งค่า', 'url' => route('admin.academy.settings.index')],
-                ]
-            ],
-            [
-                'icon' => '📚',
-                'label' => 'Learning Center',
-                'submenu' => [
-                    ['label' => 'บทความ', 'url' => route('admin.articles.index')],
-                    ['label' => 'หมวดหมู่', 'url' => route('admin.categories.index')],
-                    ['label' => 'ศูนย์เรียนรู้', 'url' => route('admin.learning-center.index')],
-                ]
-            ],
-            [
-                'icon' => '💎',
-                'label' => 'MLM System',
-                'submenu' => [
-                    ['label' => 'สมาชิก MLM', 'url' => route('admin.mlm.members.index')],
-                    ['label' => 'แผน MLM', 'url' => route('admin.mlm.plans.index')],
-                    ['label' => 'ผังสายงาน', 'url' => route('admin.mlm.genealogy.index')],
-                    ['label' => 'คอมมิชชั่น', 'url' => route('admin.mlm.commissions.index')],
-                    ['label' => 'Product PV', 'url' => route('admin.mlm.product-pv.index')],
-                    ['label' => 'รายงาน', 'url' => route('admin.mlm.reports.dashboard')],
-                    ['label' => 'ตั้งค่า MLM', 'url' => route('admin.mlm.settings.index')],
-                ]
-            ],
-            [
-                'icon' => '📈',
-                'label' => 'ระบบการตลาด',
-                'submenu' => [
-                    ['label' => 'Affiliates', 'url' => route('admin.affiliates.index')],
-                    ['label' => 'โครงสร้างทีม', 'url' => route('admin.affiliates.tree')],
-                    ['label' => 'ระบบรักษายอด', 'url' => route('admin.retention.index')],
-                    ['label' => 'จัดการระดับ Rank', 'url' => route('admin.ranks.index')],
-                    ['label' => 'การเลื่อนระดับ', 'url' => route('admin.ranks.promotions.index')],
-                    ['label' => 'Cashback', 'url' => route('admin.cashback.index')],
-                ]
-            ],
-            [
-                'icon' => '👨‍💼',
-                'label' => 'HRM (HR)',
-                'submenu' => [
-                    ['label' => 'แดชบอร์ด', 'url' => route('admin.hrm.dashboard')],
-                    ['label' => 'พนักงาน', 'url' => route('admin.hrm.employees.index')],
-                    ['label' => 'แผนก', 'url' => route('admin.hrm.departments.index')],
-                    ['label' => 'ตำแหน่ง', 'url' => route('admin.hrm.positions.index')],
-                    ['label' => 'การลา', 'url' => route('admin.hrm.leave.index')],
-                    ['label' => 'เงินเดือน', 'url' => route('admin.hrm.payroll.index')],
-                ]
-            ],
-            [
-                'icon' => '📊',
-                'label' => 'บัญชี (Accounting)',
-                'submenu' => [
-                    ['label' => 'แดชบอร์ด', 'url' => route('admin.accounting.dashboard')],
-                    ['label' => 'ใบแจ้งหนี้', 'url' => route('admin.accounting.invoices.index')],
-                    ['label' => 'ค่าใช้จ่าย', 'url' => route('admin.accounting.expenses.index')],
-                    ['label' => 'ผู้ติดต่อ', 'url' => route('admin.accounting.contacts.index')],
-                    ['label' => 'สินค้า', 'url' => route('admin.accounting.products.index')],
-                    ['label' => 'รายงาน', 'url' => route('admin.accounting.reports.index')],
-                    ['label' => 'FlowAccount', 'url' => route('admin.accounting.flowaccount.index')],
-                ]
-            ],
-            [
-                'icon' => '🔔',
-                'label' => 'การแจ้งเตือน',
-                'submenu' => [
-                    ['label' => 'ส่งการแจ้งเตือน', 'url' => route('admin.notifications.create')],
-                    ['label' => 'ประวัติ', 'url' => route('admin.notifications.index')],
-                    ['label' => 'เทมเพลต', 'url' => route('admin.notification-templates.index')],
-                    ['label' => 'สถิติ', 'url' => route('admin.notifications.statistics')],
-                ]
-            ],
-            [
-                'icon' => '🔒',
-                'label' => 'ความปลอดภัย',
-                'submenu' => [
-                    ['label' => 'ภาพรวม', 'url' => route('admin.security.index')],
-                    ['label' => 'Threat Intelligence', 'url' => route('admin.security.threat-intelligence')],
-                    ['label' => 'Analytics', 'url' => route('admin.security.analytics')],
-                    ['label' => 'OTP Settings', 'url' => route('admin.otp.settings')],
-                ]
-            ],
-            [
-                'icon' => '📄',
-                'label' => 'เพจ & SEO',
-                'submenu' => [
-                    ['label' => 'จัดการเพจ', 'url' => route('admin.pages.index')],
-                    ['label' => 'SEO Settings', 'url' => route('admin.seo.index')],
-                ]
-            ],
-            [
-                'icon' => '📊',
-                'label' => 'Analytics',
-                'submenu' => [
-                    ['label' => 'ภาพรวม', 'url' => route('admin.analytics.index')],
-                ]
-            ],
-            [
-                'icon' => '🎨',
-                'label' => 'ธีม & UI',
-                'submenu' => [
-                    ['label' => 'Theme Builder', 'url' => route('admin.themes.builder')],
-                    ['label' => 'Page Builder', 'url' => route('admin.page-builder.index')],
-                    ['label' => 'Windows UI', 'url' => route('admin.windows-ui.index')],
-                    ['label' => 'Icons', 'url' => route('admin.icons.index')],
-                    ['label' => 'Floating Tools', 'url' => route('admin.floating-tools.index')],
-                ]
-            ],
-            [
-                'icon' => '🌐',
-                'label' => 'ภาษา & แปล',
-                'submenu' => [
-                    ['label' => 'การแปล', 'url' => route('admin.translations.index')],
-                    ['label' => 'ตั้งค่าภาษา', 'url' => route('admin.settings.languages')],
-                ]
-            ],
-            [
-                'icon' => '⚙️',
-                'label' => 'ตั้งค่าระบบ',
-                'submenu' => [
-                    ['label' => 'ตั้งค่าทั่วไป', 'url' => route('admin.settings.index')],
-                    ['label' => 'ตั้งค่า Mobile App', 'url' => route('admin.app-management.settings.index')],
-                    ['label' => 'ตั้งค่า OCR', 'url' => route('admin.settings.ocr')],
-                    ['label' => 'ตั้งค่า 2FA', 'url' => route('admin.two-factor.settings')],
-                ]
-            ],
-        ];
-    } elseif ($type === 'seller') {
-        $menuItems = [
-            ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('seller.dashboard')],
-            [
-                'icon' => '📦',
-                'label' => 'สินค้า',
-                'submenu' => [
-                    ['label' => 'รายการสินค้า', 'url' => route('seller.products.index')],
-                    ['label' => 'เพิ่มสินค้า', 'url' => route('seller.products.create')],
-                ]
-            ],
-            [
-                'icon' => '🏪',
-                'label' => 'ระบบ POS',
-                'submenu' => [
-                    ['label' => 'ขายสินค้า', 'url' => route('seller.pos.terminal')],
-                    ['label' => 'รายการขาย', 'url' => route('seller.pos.transactions')],
-                    ['label' => 'Session', 'url' => route('seller.pos.sessions')],
-                    ['label' => 'ตั้งค่า POS', 'url' => route('seller.pos.settings')],
-                ]
-            ],
-            [
-                'icon' => '🛒',
-                'label' => 'ยอดขาย',
-                'submenu' => [
-                    ['label' => 'คำสั่งซื้อ', 'url' => route('seller.orders.index')],
-                    ['label' => 'รายงานยอดขาย', 'url' => route('seller.reports.sales')],
-                ]
-            ],
-            [
-                'icon' => '💰',
-                'label' => 'กระเป๋าเงิน',
-                'submenu' => [
-                    ['label' => 'กระเป๋าของฉัน', 'url' => route('seller.wallet.index')],
-                    ['label' => 'ถอนเงิน', 'url' => route('seller.wallet.withdraw')],
-                ]
-            ],
-            ['icon' => '💵', 'label' => 'คอมมิชชั่น', 'url' => route('seller.commissions')],
-            [
-                'icon' => '📈',
-                'label' => 'วิเคราะห์',
-                'submenu' => [
-                    ['label' => '📊 Dashboard', 'url' => route('seller.analytics.index')],
-                    ['label' => '🤖 AI Insights', 'url' => route('seller.analytics.ai-insights')],
-                    ['label' => '👥 Customer Segments', 'url' => route('seller.analytics.segmentation')],
-                    ['label' => '📈 Cohort Analysis', 'url' => route('seller.analytics.cohort')],
-                    ['label' => '🏆 Products Ranking', 'url' => route('seller.analytics.products')],
-                    ['label' => '🖥️ System Monitoring', 'url' => route('seller.analytics.system-monitoring')],
-                    ['label' => '⚙️ Settings', 'url' => route('seller.analytics.settings')],
-                ]
-            ],
-            ['icon' => '⚙️', 'label' => 'ตั้งค่าร้าน', 'url' => route('seller.settings')],
-            ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('seller.profile')],
-        ];
-    } else { // user
-        $menuItems = [
-            ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('user.dashboard')],
-            ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('user.profile')],
-            ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => route('user.kyc.index')],
-            ['icon' => '💰', 'label' => 'คอมมิชชั่น', 'url' => route('user.commissions')],
-            [
-                'icon' => '🛒',
-                'label' => 'ช๊อปปิ้ง',
-                'submenu' => [
-                    ['label' => 'ช๊อปสินค้า', 'url' => route('shop.index')],
-                ]
-            ],
-            [
-                'icon' => '🏨',
-                'label' => 'โรงแรม',
-                'submenu' => [
-                    ['label' => 'จองโรงแรม', 'url' => route('hotels.index')],
-                    ['label' => 'การจองของฉัน', 'url' => route('hotels.bookings.index')],
-                ]
-            ],
-            ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('user.tickets.index')],
-            [
-                'icon' => '💳',
-                'label' => 'กระเป๋าเงิน THB',
-                'submenu' => [
-                    ['label' => 'กระเป๋าของฉัน', 'url' => route('user.wallet.index')],
-                    ['label' => 'ถอนเงิน', 'url' => route('user.wallet.withdraw')],
-                ]
-            ],
-            [
-                'icon' => '₿',
-                'label' => 'กระเป๋าคริปโต',
-                'submenu' => [
-                    ['label' => 'กระเป๋าคริปโต', 'url' => route('user.crypto-wallet.index')],
-                ]
-            ],
-            [
-                'icon' => '📈',
-                'label' => 'การลงทุน ROI',
-                'submenu' => [
-                    ['label' => 'แดชบอร์ด', 'url' => route('user.investments.index')],
-                    ['label' => 'แผนการลงทุน', 'url' => route('user.investments.plans')],
-                ]
-            ],
-            [
-                'icon' => '🤖',
-                'label' => 'AI Bots',
-                'submenu' => [
-                    ['label' => 'ตลาดบอท', 'url' => route('marketplace.index')],
-                ]
-            ],
-            [
-                'icon' => '👥',
-                'label' => 'ทีมงาน',
-                'submenu' => [
-                    ['label' => 'ผู้แนะนำ', 'url' => route('user.referrals')],
-                    ['label' => 'ผังสายงาน', 'url' => route('user.organization')],
-                ]
-            ],
-            [
-                'icon' => '💖',
-                'label' => 'รักษายอด',
-                'submenu' => [
-                    ['label' => 'สถานะพลังชีวิต', 'url' => route('user.retention.index')],
-                ]
-            ],
-            [
-                'icon' => '🎯',
-                'label' => 'เครื่องมือการตลาด',
-                'submenu' => [
-                    ['label' => 'จำลองรายได้', 'url' => route('user.mlm.income-simulator')],
-                ]
-            ],
-            ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index')],
-        ];
-    }
+    // Transform menu items: convert 'route' to 'url'
+    $menuItems = collect($menuItemsRaw)->map(function($item) {
+        // Convert route name to URL
+        if (isset($item['route']) && $item['route']) {
+            try {
+                $item['url'] = route($item['route']);
+            } catch (\Exception $e) {
+                // If route doesn't exist, use # as fallback
+                $item['url'] = '#';
+            }
+        } else {
+            $item['url'] = '#';
+        }
+
+        // Process submenu items
+        if (isset($item['submenu']) && is_array($item['submenu'])) {
+            $item['submenu'] = collect($item['submenu'])->map(function($subitem) {
+                if (isset($subitem['route']) && $subitem['route']) {
+                    try {
+                        $subitem['url'] = route($subitem['route']);
+                    } catch (\Exception $e) {
+                        $subitem['url'] = '#';
+                    }
+                } else {
+                    $subitem['url'] = '#';
+                }
+                return $subitem;
+            })->toArray();
+        }
+
+        return $item;
+    })->sortBy('order')->values()->toArray();
 @endphp
 
 <!-- Millennium Start Menu Overlay -->
