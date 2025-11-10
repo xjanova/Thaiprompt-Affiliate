@@ -1285,6 +1285,8 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
         Route::put('/{appBanner}', [AppBannerController::class, 'update'])->name('update');
         Route::delete('/{appBanner}', [AppBannerController::class, 'destroy'])->name('destroy');
         Route::post('/{appBanner}/toggle', [AppBannerController::class, 'toggle'])->name('toggle');
+        Route::post('/{appBanner}/track-view', [AppBannerController::class, 'trackView'])->name('track-view');
+        Route::post('/{appBanner}/track-click', [AppBannerController::class, 'trackClick'])->name('track-click');
     });
 
     // App Maintenance
