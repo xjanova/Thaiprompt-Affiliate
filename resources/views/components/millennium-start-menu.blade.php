@@ -108,11 +108,20 @@
     };
 
     // ========================================
-    // HARD-CODED MENU ITEMS - ไม่ใช้ Database
+    // HYBRID APPROACH: Try database first, fallback to hard-coded
     // ========================================
 
-    if ($type === 'admin') {
-        $menuItems = [
+    // Try to load from database first (for backward compatibility)
+    $menuItemsRaw = WindowsUiSetting::get("windows_start_menu_items_{$type}", null);
+
+    // If database has menu items, use them; otherwise use hard-coded fallback
+    if (!empty($menuItemsRaw) && is_array($menuItemsRaw)) {
+        // Use database menu items (preserves user customizations)
+        $menuItems = collect($menuItemsRaw)->sortBy('order')->values()->toArray();
+    } else {
+        // Fallback to hard-coded menus
+        if ($type === 'admin') {
+            $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => safeRoute('admin.dashboard'), 'order' => 0],
             [
                 'icon' => '👥',
@@ -554,7 +563,8 @@
                 ]
             ],
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => safeRoute('user.themes.index'), 'order' => 14],
-        ];
+            ];
+        }
     }
 @endphp
 
