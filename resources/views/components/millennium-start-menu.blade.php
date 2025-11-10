@@ -101,39 +101,8 @@
         \Log::info("✅ Found " . count($menuItemsRaw) . " menu items for type: {$type}");
     }
 
-    // Transform menu items: convert 'route' to 'url'
-    $menuItems = collect($menuItemsRaw)->map(function($item) {
-        // Convert route name to URL
-        if (isset($item['route']) && $item['route']) {
-            try {
-                $item['url'] = route($item['route']);
-            } catch (\Exception $e) {
-                // If route doesn't exist, use # as fallback
-                \Log::warning("⚠️  Route not found: {$item['route']} for menu: {$item['label']}");
-                $item['url'] = '#';
-            }
-        } else {
-            $item['url'] = '#';
-        }
-
-        // Process submenu items
-        if (isset($item['submenu']) && is_array($item['submenu'])) {
-            $item['submenu'] = collect($item['submenu'])->map(function($subitem) {
-                if (isset($subitem['route']) && $subitem['route']) {
-                    try {
-                        $subitem['url'] = route($subitem['route']);
-                    } catch (\Exception $e) {
-                        $subitem['url'] = '#';
-                    }
-                } else {
-                    $subitem['url'] = '#';
-                }
-                return $subitem;
-            })->toArray();
-        }
-
-        return $item;
-    })->sortBy('order')->values()->toArray();
+    // Menu items มี 'url' อยู่แล้ว ไม่ต้องแปลง - ใช้ตามที่มี
+    $menuItems = collect($menuItemsRaw)->sortBy('order')->values()->toArray();
 @endphp
 
 <!-- Millennium Start Menu Overlay -->

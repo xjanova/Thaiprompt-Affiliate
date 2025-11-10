@@ -167,11 +167,11 @@ class WindowsUiController extends Controller
             'items' => ['required', 'array'],
             'items.*.icon' => ['required', 'string', 'max:10'],
             'items.*.label' => ['required', 'string', 'max:100'],
-            'items.*.route' => ['nullable', 'string', 'max:500'],
+            'items.*.url' => ['required', 'string', 'max:500'],
             'items.*.order' => ['required', 'integer', 'min:0'],
             'items.*.submenu' => ['nullable', 'array'],
             'items.*.submenu.*.label' => ['required_with:items.*.submenu', 'string', 'max:100'],
-            'items.*.submenu.*.route' => ['required_with:items.*.submenu', 'string', 'max:500'],
+            'items.*.submenu.*.url' => ['required_with:items.*.submenu', 'string', 'max:500'],
         ]);
 
         // Process menu items - บันทึกให้ตรงกับโครงสร้างของ WindowsUiSeeder
@@ -179,7 +179,7 @@ class WindowsUiController extends Controller
             $processedItem = [
                 'icon' => $item['icon'],
                 'label' => $item['label'],
-                'route' => $item['route'] ?? null,
+                'url' => $item['url'],
                 'order' => $item['order'],
             ];
 

@@ -87,22 +87,22 @@
   {
     "icon": "📊",
     "label": "แดชบอร์ด",
-    "route": "admin.dashboard",
+    "url": "/admin/dashboard",
     "order": 0
   },
   {
     "icon": "👥",
     "label": "ผู้ใช้งาน",
-    "route": null,
+    "url": "#",
     "order": 1,
     "submenu": [
       {
         "label": "รายชื่อผู้ใช้",
-        "route": "admin.users.index"
+        "url": "/admin/users"
       },
       {
         "label": "บทบาท (Roles)",
-        "route": "admin.roles.index"
+        "url": "/admin/roles"
       }
     ]
   }
@@ -110,9 +110,9 @@
 ```
 
 **สำคัญ:**
-- ใช้ `route` (ชื่อ route) แทน `url` (URL จริง)
-- Component จะแปลง route เป็น URL โดยอัตโนมัติ
-- ถ้ามี submenu ให้ตั้ง `route: null`
+- ใช้ `url` (URL จริง) โดยตรง
+- ไม่ต้องแปลง route อีกต่อไป
+- ถ้ามี submenu ให้ตั้ง `url: "#"`
 
 #### Taskbar Apps
 ```json
@@ -120,7 +120,7 @@
   {
     "icon": "📊",
     "label": "Dashboard",
-    "route": "admin.dashboard",
+    "url": "/admin/dashboard",
     "order": 0
   }
 ]
@@ -132,7 +132,7 @@
   {
     "icon": "🔔",
     "label": "Notifications",
-    "route": "notifications.index",
+    "url": "/notifications",
     "requires_auth": true,
     "requires_guest": false,
     "order": 0
@@ -155,11 +155,11 @@ $adminMenuItems = [
     [
         'icon' => '🆕',
         'label' => 'ฟีเจอร์ใหม่',
-        'route' => 'admin.new-feature.index',
+        'url' => '/admin/new-feature',
         'order' => 26,  // ใส่ order ถัดจากเมนูสุดท้าย
         'submenu' => [
-            ['label' => 'หน้าย่อย 1', 'route' => 'admin.new-feature.sub1'],
-            ['label' => 'หน้าย่อย 2', 'route' => 'admin.new-feature.sub2'],
+            ['label' => 'หน้าย่อย 1', 'url' => '/admin/new-feature/sub1'],
+            ['label' => 'หน้าย่อย 2', 'url' => '/admin/new-feature/sub2'],
         ]
     ],
 ];
@@ -191,25 +191,15 @@ php artisan db:seed --class=WindowsUiSeeder
     // โหลดเมนูจาก Windows UI Settings
     $menuItemsRaw = WindowsUiSetting::get("windows_start_menu_items_{$type}", []);
 
-    // แปลง route เป็น URL
-    $menuItems = collect($menuItemsRaw)->map(function($item) {
-        if (isset($item['route']) && $item['route']) {
-            try {
-                $item['url'] = route($item['route']);
-            } catch (\Exception $e) {
-                $item['url'] = '#';
-            }
-        }
-
-        // Process submenu...
-
-        return $item;
-    })->sortBy('order')->values()->toArray();
+    // เรียงลำดับตาม order
+    $menuItems = collect($menuItemsRaw)->sortBy('order')->values()->toArray();
 @endphp
 
 <!-- แสดงเมนู -->
 @foreach($menuItems as $index => $item)
-    <!-- ... render menu ... -->
+    <a href="{{ $item['url'] }}">
+        {{ $item['icon'] }} {{ $item['label'] }}
+    </a>
 @endforeach
 ```
 
@@ -219,8 +209,8 @@ php artisan db:seed --class=WindowsUiSeeder
 @php
     // ❌ ห้ามทำแบบนี้!
     $menuItems = [
-        ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('admin.dashboard')],
-        ['icon' => '👥', 'label' => 'ผู้ใช้งาน', 'url' => route('admin.users.index')],
+        ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => '/admin/dashboard'],
+        ['icon' => '👥', 'label' => 'ผู้ใช้งาน', 'url' => '/admin/users'],
         // ...
     ];
 @endphp
@@ -230,18 +220,18 @@ php artisan db:seed --class=WindowsUiSeeder
 
 ## 🎯 Best Practices
 
-### 1. การตั้งชื่อ Route
+### 1. การตั้ง URL
 ```php
 // ✅ ดี - ชัดเจน สอดคล้องกัน
-'admin.users.index'
-'admin.users.create'
-'seller.products.index'
-'user.wallet.index'
+'/admin/users'
+'/admin/users/create'
+'/seller/products'
+'/user/wallet'
 
 // ❌ ไม่ดี - ไม่สอดคล้อง
-'users'
-'admin-users'
-'AdminUsersIndex'
+'/Users'
+'/admin-users'
+'/AdminUsers'
 ```
 
 ### 2. การเรียงลำดับเมนู
@@ -271,11 +261,11 @@ php artisan db:seed --class=WindowsUiSeeder
 [
     'icon' => '👥',
     'label' => 'ผู้ใช้งาน',
-    'route' => null,  // ← ต้องเป็น null
+    'url' => '#',  // ← ใช้ # สำหรับเมนูที่มี submenu
     'order' => 1,
     'submenu' => [
-        ['label' => 'รายชื่อผู้ใช้', 'route' => 'admin.users.index'],
-        ['label' => 'บทบาท', 'route' => 'admin.roles.index'],
+        ['label' => 'รายชื่อผู้ใช้', 'url' => '/admin/users'],
+        ['label' => 'บทบาท', 'url' => '/admin/roles'],
     ]
 ]
 
@@ -283,7 +273,7 @@ php artisan db:seed --class=WindowsUiSeeder
 [
     'icon' => '📊',
     'label' => 'แดชบอร์ด',
-    'route' => 'admin.dashboard',  // ← ใส่ route ตรงนี้
+    'url' => '/admin/dashboard',  // ← ใส่ URL ตรงนี้
     'order' => 0
 ]
 ```
@@ -387,7 +377,7 @@ $newMenu = [
 $adminMenuItems[] = [
     'icon' => '🆕',
     'label' => 'New Feature',
-    'route' => 'admin.new-feature.index',
+    'url' => '/admin/new-feature',
     'order' => 26
 ];
 ```
@@ -485,11 +475,11 @@ foreach ($types as $type) {
 2. เช็คในฐานข้อมูล: `select * from windows_ui_settings where key like '%menu%';`
 3. Clear cache: `php artisan cache:clear`
 
-### ปัญหา: Route ไม่ทำงาน
+### ปัญหา: URL ไม่ทำงาน
 **วิธีแก้:**
-1. ตรวจสอบว่า route มีอยู่จริง: `php artisan route:list | grep "admin.users"`
-2. ตรวจสอบชื่อ route ใน seeder ให้ตรงกับใน routes file
-3. Run route cache: `php artisan route:cache`
+1. ตรวจสอบว่า URL ถูกต้อง: ลองเปิดใน browser โดยตรง
+2. ตรวจสอบ URL ใน seeder ให้ถูกต้อง (เริ่มต้นด้วย `/`)
+3. ตรวจสอบว่า route สำหรับ URL นั้นมีอยู่: `php artisan route:list`
 
 ### ปัญหา: Seeder ไม่อัพเดท
 **วิธีแก้:**
@@ -505,12 +495,12 @@ foreach ($types as $type) {
 2. ❌ ห้าม hard-code เมนูใน component
 3. ✅ ใช้ Seeder สำหรับข้อมูลเริ่มต้น
 4. ✅ ให้ผู้ใช้จัดการผ่าน Admin UI
-5. ✅ ใช้ `route` แทน `url` ใน JSON
+5. ✅ ใช้ `url` (URL โดยตรง) แทน `route` (route name)
 
 **ติดต่อ:**
 - เอกสารนี้สร้างขึ้นเพื่อให้ Claude และทีมพัฒนาใช้เป็นแนวทางในการทำงานกับระบบเมนู
 - อัพเดทล่าสุด: 2025-01-10
-- Version: 1.0.0
+- Version: 2.0.0 (เปลี่ยนจาก route เป็น url)
 
 ---
 
