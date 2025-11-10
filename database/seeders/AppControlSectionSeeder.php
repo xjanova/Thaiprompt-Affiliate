@@ -125,7 +125,10 @@ class AppControlSectionSeeder extends Seeder
         ];
 
         foreach ($sections as $section) {
-            AppControlSection::create($section);
+            AppControlSection::updateOrCreate(
+                ['section_id' => $section['section_id']],
+                $section
+            );
         }
     }
 }
