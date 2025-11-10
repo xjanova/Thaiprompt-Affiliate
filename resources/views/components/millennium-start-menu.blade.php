@@ -712,13 +712,13 @@
                                     x-transition:leave="transition ease-in duration-150"
                                     x-transition:leave-start="opacity-100 translate-y-0"
                                     x-transition:leave-end="opacity-0 -translate-y-2"
-                                    style="margin-top: {{ $menuItemSpacing }}px; margin-left: {{ $subIndent }}px; display: flex; flex-direction: column; gap: {{ $menuItemSpacing / 2 }}px; padding-bottom: {{ $menuItemSpacing }}px; display: none;">
+                                    style="margin-top: {{ $menuItemSpacing }}px; margin-left: {{ $subIndent }}px; display: flex; flex-direction: column; gap: {{ $menuItemSpacing / 2 }}px; padding-bottom: {{ $menuItemSpacing }}px;">
                                     @foreach($item['submenu'] as $subitem)
                                         <a
                                             href="{{ $subitem['url'] }}"
                                             @click.stop
-                                            class="flex items-center gap-2.5 bg-white/5 hover:bg-blue-500/20 border border-white/10 hover:border-blue-400/40 transition-all duration-200 transform hover:translate-x-1 group"
-                                            style="padding: {{ $subPaddingY }}px {{ $subPaddingX }}px; border-radius: {{ $subBorderRadius }}px;">
+                                            class="flex items-center gap-2.5 bg-white/5 border border-white/10 transition-all duration-200 group {{ $menuItemHoverRgb ? 'millennium-menu-item-hover-rgb' : 'hover:bg-blue-500/20 hover:border-blue-400/40 transform hover:translate-x-1' }}"
+                                            style="padding: {{ $subPaddingY }}px {{ $subPaddingX }}px; border-radius: {{ $subBorderRadius }}px; border-width: 1px;">
 
                                             <!-- Bullet Point -->
                                             <span class="rounded-full bg-blue-400/60 group-hover:bg-blue-300 group-hover:scale-125 transition-all duration-200" style="width: {{ $subBulletSize }}px; height: {{ $subBulletSize }}px;"></span>

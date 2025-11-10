@@ -59,13 +59,12 @@ class WindowsUiController extends Controller
             'millennium_rgb_enabled' => ['nullable', 'boolean'],
             'millennium_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:10'],
 
-            // Millennium Start Menu Settings
+            // Millennium Start Menu Settings (ขนาดและตำแหน่ง - RGB settings อยู่ใน updateMenuSettings)
             'millennium_menu_position' => ['nullable', 'string', 'in:left,center,right'],
             'millennium_menu_width' => ['nullable', 'integer', 'min:1', 'max:3000'],
             'millennium_menu_width_unit' => ['nullable', 'string', 'in:px,%'],
             'millennium_menu_max_height' => ['nullable', 'integer', 'min:1', 'max:3000'],
             'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
-            'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
 
             // Responsive Taskbar Settings
             'millennium_taskbar_collapse_enabled' => ['nullable', 'boolean'],
@@ -117,7 +116,6 @@ class WindowsUiController extends Controller
         $validated['millennium_back_button_enabled'] = $request->has('millennium_back_button_enabled');
         $validated['millennium_center_section_enabled'] = $request->has('millennium_center_section_enabled');
         $validated['millennium_rgb_enabled'] = $request->has('millennium_rgb_enabled');
-        $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
         $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
         $validated['millennium_clock_show_seconds'] = $request->has('millennium_clock_show_seconds');
         $validated['millennium_clock_show_date'] = $request->has('millennium_clock_show_date');
