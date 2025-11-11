@@ -139,7 +139,7 @@
 
     <!-- Settings Form - Unified -->
     <div x-data="unifiedSettingsManager()">
-        <form method="POST" action="{{ route('admin.windows-ui.update') }}" id="main-settings-form">
+        <form method="POST" action="{{ route('admin.windows-ui.update') }}" id="main-settings-form" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
