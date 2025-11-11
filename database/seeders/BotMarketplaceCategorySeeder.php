@@ -118,7 +118,13 @@ class BotMarketplaceCategorySeeder extends Seeder
             ],
         ];
 
-        DB::table('bot_marketplace_categories')->insert($categories);
+        // Use updateOrInsert to make this seeder idempotent
+        foreach ($categories as $category) {
+            DB::table('bot_marketplace_categories')->updateOrInsert(
+                ['slug' => $category['slug']], // unique key
+                $category
+            );
+        }
 
         $this->command->info('Bot marketplace categories seeded successfully!');
     }
