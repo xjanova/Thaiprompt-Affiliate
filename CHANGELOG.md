@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.120.0] - 2025-11-11
+
+### ✨ Features
+- feat: Improve Windows UI menu logo and settings controls (5a645db5)
+### 🐛 Bug Fixes
+- fix: Prevent route loading when routes are cached to avoid memory exhaustion (ce02d88e)
+### 🔧 Other Changes
+- Merge pull request #805 from xjanova/claude/fix-route-loading-condition-011CV1cchXmt9zdXcsmDf4Xv (13444bdc)
+
 ## [v2.119.5] - 2025-11-11
 
 ### ✨ Features
