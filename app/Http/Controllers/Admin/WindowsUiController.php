@@ -175,13 +175,42 @@ class WindowsUiController extends Controller
         $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
         $validated['millennium_menu_item_hover_rgb'] = $request->has('millennium_menu_item_hover_rgb');
 
+        // Handle image deletion
+        if ($request->has('delete_millennium_menu_logo')) {
+            $oldPath = WindowsUiSetting::get('millennium_menu_logo');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+            WindowsUiSetting::set('millennium_menu_logo', null, 'string');
+        }
+
+        if ($request->has('delete_millennium_start_button_custom_icon')) {
+            $oldPath = WindowsUiSetting::get('millennium_start_button_custom_icon_path');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+            WindowsUiSetting::set('millennium_start_button_custom_icon_path', null, 'string');
+        }
+
         // Handle file uploads
         if ($request->hasFile('millennium_menu_logo')) {
+            // Delete old logo if exists
+            $oldPath = WindowsUiSetting::get('millennium_menu_logo');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+
             $path = $request->file('millennium_menu_logo')->store('windows-ui/menu', 'public');
             $validated['millennium_menu_logo'] = $path;
         }
 
         if ($request->hasFile('millennium_start_button_custom_icon')) {
+            // Delete old icon if exists
+            $oldPath = WindowsUiSetting::get('millennium_start_button_custom_icon_path');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+
             $path = $request->file('millennium_start_button_custom_icon')->store('windows-ui/start-button', 'public');
             $validated['millennium_start_button_custom_icon_path'] = $path;
         }

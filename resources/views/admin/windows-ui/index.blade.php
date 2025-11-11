@@ -779,17 +779,56 @@
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <!-- Menu Logo Upload -->
                                         <div class="md:col-span-2">
-                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
                                                 <i class="fas fa-image mr-2 text-blue-600"></i>โลโก้ในเมนู
                                             </label>
-                                            <input type="file" name="millennium_menu_logo" accept="image/*" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
-                                            @if(\App\Models\WindowsUiSetting::get('millennium_menu_logo'))
-                                                <div class="mt-2 p-2 bg-white dark:bg-slate-800 rounded border inline-block">
-                                                    <img src="{{ asset('storage/' . \App\Models\WindowsUiSetting::get('millennium_menu_logo')) }}" alt="Menu Logo" class="h-12 w-12 object-contain">
-                                                    <p class="text-xs text-gray-500 mt-1">โลโก้ปัจจุบัน</p>
+
+                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <!-- Current Logo -->
+                                                @if(\App\Models\WindowsUiSetting::get('millennium_menu_logo'))
+                                                <div class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-4 rounded-xl border-2 border-blue-200 dark:border-blue-700">
+                                                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">โลโก้ปัจจุบัน:</p>
+                                                    <div class="flex items-center justify-center bg-white dark:bg-slate-800 p-4 rounded-lg mb-2">
+                                                        <img src="{{ asset('storage/' . \App\Models\WindowsUiSetting::get('millennium_menu_logo')) }}"
+                                                             alt="Menu Logo"
+                                                             class="max-h-24 max-w-full object-contain"
+                                                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Crect fill=\'%23ddd\' width=\'100\' height=\'100\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                                                    </div>
+                                                    <label class="flex items-center justify-center cursor-pointer">
+                                                        <input type="checkbox" name="delete_millennium_menu_logo" value="1" class="mr-2">
+                                                        <span class="text-xs text-red-600 dark:text-red-400">ลบโลโก้นี้</span>
+                                                    </label>
                                                 </div>
-                                            @endif
-                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">อัพโหลดโลโก้สำหรับแสดงในเมนู Start (ถ้าไม่อัพโหลดจะใช้โลโก้หลักของระบบ)</p>
+                                                @endif
+
+                                                <!-- Upload New Logo -->
+                                                <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-xl border-2 border-purple-200 dark:border-purple-700">
+                                                    <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">อัพโหลดโลโก้ใหม่:</p>
+                                                    <div id="menuLogoPreview" class="hidden mb-3">
+                                                        <div class="flex items-center justify-center bg-white dark:bg-slate-800 p-4 rounded-lg">
+                                                            <img id="menuLogoPreviewImg" src="" alt="Preview" class="max-h-24 max-w-full object-contain">
+                                                        </div>
+                                                        <p class="text-xs text-center text-green-600 dark:text-green-400 mt-2">✓ พร้อมบันทึก</p>
+                                                    </div>
+                                                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-lg cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all">
+                                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                                            <i class="fas fa-cloud-upload-alt text-3xl text-purple-500 dark:text-purple-400 mb-2"></i>
+                                                            <p class="text-xs text-gray-600 dark:text-gray-400"><span class="font-semibold">คลิกเพื่ออัพโหลด</span></p>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-500">PNG, JPG, GIF (สูงสุด 2MB)</p>
+                                                        </div>
+                                                        <input type="file"
+                                                               name="millennium_menu_logo"
+                                                               id="menuLogoInput"
+                                                               accept="image/*"
+                                                               class="hidden"
+                                                               onchange="previewImage(this, 'menuLogoPreview', 'menuLogoPreviewImg')">
+                                                    </label>
+                                                </div>
+                                            </div>
+
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                                <i class="fas fa-info-circle mr-1"></i>อัพโหลดโลโก้สำหรับแสดงในเมนู Start (ถ้าไม่อัพโหลดจะใช้โลโก้หลักของระบบ)
+                                            </p>
                                         </div>
                                         <!-- Logo Size -->
                                         <div x-data="{ logoSize: {{ \App\Models\WindowsUiSetting::get('millennium_menu_logo_size', 40) }} }">
@@ -1047,14 +1086,50 @@
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">อัพโหลดไอคอน</label>
-                                                    <input type="file" name="millennium_start_button_custom_icon" accept="image/*" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
-                                                    @if(\App\Models\WindowsUiSetting::get('millennium_start_button_custom_icon_path'))
-                                                        <div class="mt-2 p-2 bg-white dark:bg-slate-800 rounded border">
-                                                            <img src="{{ asset(\App\Models\WindowsUiSetting::get('millennium_start_button_custom_icon_path')) }}" alt="Current Icon" class="h-12 w-12 object-contain">
-                                                            <p class="text-xs text-gray-500 mt-1">ไอคอนปัจจุบัน</p>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                        <i class="fas fa-image mr-1"></i>อัพโหลดไอคอน
+                                                    </label>
+
+                                                    <div class="grid grid-cols-2 gap-3">
+                                                        <!-- Current Icon -->
+                                                        @if(\App\Models\WindowsUiSetting::get('millennium_start_button_custom_icon_path'))
+                                                        <div class="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-700">
+                                                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ไอคอนปัจจุบัน:</p>
+                                                            <div class="flex items-center justify-center bg-white dark:bg-slate-800 p-2 rounded mb-1">
+                                                                <img src="{{ asset('storage/' . \App\Models\WindowsUiSetting::get('millennium_start_button_custom_icon_path')) }}"
+                                                                     alt="Current Icon"
+                                                                     class="h-12 w-12 object-contain"
+                                                                     onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'48\' height=\'48\'%3E%3Crect fill=\'%23ddd\' width=\'48\' height=\'48\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\' font-size=\'10\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                                                            </div>
+                                                            <label class="flex items-center justify-center cursor-pointer text-xs text-red-600 dark:text-red-400">
+                                                                <input type="checkbox" name="delete_millennium_start_button_custom_icon" value="1" class="mr-1 scale-75">
+                                                                ลบ
+                                                            </label>
                                                         </div>
-                                                    @endif
+                                                        @endif
+
+                                                        <!-- Upload New Icon -->
+                                                        <div class="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200 dark:border-purple-700">
+                                                            <p class="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">อัพโหลดใหม่:</p>
+                                                            <div id="startButtonIconPreview" class="hidden mb-2">
+                                                                <div class="flex items-center justify-center bg-white dark:bg-slate-800 p-2 rounded">
+                                                                    <img id="startButtonIconPreviewImg" src="" alt="Preview" class="h-12 w-12 object-contain">
+                                                                </div>
+                                                                <p class="text-xs text-center text-green-600 dark:text-green-400">✓ พร้อมบันทึก</p>
+                                                            </div>
+                                                            <label class="flex flex-col items-center justify-center h-20 border border-dashed border-purple-300 dark:border-purple-600 rounded cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all">
+                                                                <i class="fas fa-upload text-lg text-purple-500 dark:text-purple-400 mb-1"></i>
+                                                                <p class="text-xs text-gray-500">คลิกเพื่ออัพโหลด</p>
+                                                                <input type="file"
+                                                                       name="millennium_start_button_custom_icon"
+                                                                       id="startButtonIconInput"
+                                                                       accept="image/*"
+                                                                       class="hidden"
+                                                                       onchange="previewImage(this, 'startButtonIconPreview', 'startButtonIconPreviewImg')">
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG, SVG (สูงสุด 2MB)</p>
                                                 </div>
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Font Awesome Icon Class</label>
@@ -1407,6 +1482,42 @@
             heightValue: {{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height', '600') }},
             heightUnit: '{{ \App\Models\WindowsUiSetting::get('millennium_menu_max_height_unit', 'px') }}'
         };
+    }
+
+    // Image preview function
+    function previewImage(input, previewContainerId, previewImgId) {
+        const file = input.files[0];
+        const previewContainer = document.getElementById(previewContainerId);
+        const previewImg = document.getElementById(previewImgId);
+
+        if (file) {
+            // Check file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert('ไฟล์ใหญ่เกินไป! กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 2MB');
+                input.value = '';
+                previewContainer.classList.add('hidden');
+                return;
+            }
+
+            // Check file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('ประเภทไฟล์ไม่ถูกต้อง! กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, GIF, SVG, WEBP)');
+                input.value = '';
+                previewContainer.classList.add('hidden');
+                return;
+            }
+
+            // Preview the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewContainer.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            previewContainer.classList.add('hidden');
+        }
     }
 
     // Toggle custom width input visibility
