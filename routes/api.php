@@ -218,6 +218,27 @@ Route::prefix('v1')->group(function () {
             // Analytics
             Route::get('/analytics', [TrendApiController::class, 'analytics']);
         });
+
+        // LINE OA Signup Analytics API
+        Route::prefix('line-analytics')->name('api.line-analytics.')->group(function () {
+            // Real-time Analytics Data
+            Route::get('/dashboard', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'getDashboardData'])->name('dashboard');
+            Route::get('/stats', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'getOverallStats'])->name('stats');
+            Route::get('/funnel', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'getConversionFunnel'])->name('funnel');
+            Route::get('/dropout', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'getDropoutAnalysis'])->name('dropout');
+            Route::get('/trends', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'getSignupTrends'])->name('trends');
+            Route::get('/leaderboard', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'getLeaderboard'])->name('leaderboard');
+            Route::get('/active', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'getActiveConversations'])->name('active');
+            Route::get('/export', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'export'])->name('export');
+
+            // Sponsor-specific Analytics (self or admin)
+            Route::get('/sponsor/{sponsorId}', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'getSponsorAnalytics'])->name('sponsor');
+
+            // Cache Management (admin only)
+            Route::post('/clear-cache', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'clearCache'])
+                ->middleware('can:manage-analytics')
+                ->name('clear-cache');
+        });
     });
 });
 

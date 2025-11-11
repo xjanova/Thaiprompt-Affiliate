@@ -404,6 +404,9 @@ Route::prefix('line-oa')->name('line-oa.')->group(function () {
     Route::post('/test-connection', [LineOaController::class, 'testConnection'])->name('test-connection');
     Route::get('/line-users', [LineOaController::class, 'getLineUsers'])->name('line-users');
     Route::get('/logs', [LineOaController::class, 'logs'])->name('logs');
+
+    // Analytics Dashboard
+    Route::get('/analytics', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'index'])->name('analytics');
 });
 
 // LINE Bot AI Management
