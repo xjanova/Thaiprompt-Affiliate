@@ -19,7 +19,10 @@ class LineSignupService
         private MlmProspectService $prospectService,
         private ConversationTimeoutService $timeoutService,
         private ValidationService $validationService,
-        private DuplicateDetectionService $duplicateService
+        private DuplicateDetectionService $duplicateService,
+        private AiConversationService $aiService,
+        private ConversationContextService $contextService,
+        private SmartResponseService $smartResponseService
     ) {}
 
     /**
@@ -56,7 +59,7 @@ class LineSignupService
     }
 
     /**
-     * Handle user message in conversation
+     * Handle user message in conversation (AI-Powered)
      */
     public function handleConversationMessage(MlmProspect $prospect, string $message): void
     {
@@ -66,8 +69,38 @@ class LineSignupService
             return;
         }
 
+        // Add user message to history
+        $this->contextService->addMessageToHistory($prospect, 'user', $message);
+
         // Update conversation activity
         $this->timeoutService->updateActivity($prospect);
+
+        // Check if user is asking for help or confused
+        if ($this->aiService->isUserConfused($message)) {
+            $response = $this->smartResponseService->generateResponse(
+                $prospect,
+                $message,
+                $prospect->conversation_step
+            );
+
+            $this->lineService->sendPushMessage($prospect->line_user_id, $response['message']);
+            $this->contextService->addMessageToHistory($prospect, 'assistant', $response['message']);
+            return;
+        }
+
+        // Check for special actions (restart, cancel)
+        $action = $this->aiService->detectUserAction($message);
+        if ($action['action'] !== 'continue') {
+            $response = $this->smartResponseService->generateResponse(
+                $prospect,
+                $message,
+                $prospect->conversation_step
+            );
+
+            $this->lineService->sendPushMessage($prospect->line_user_id, $response['message']);
+            $this->contextService->addMessageToHistory($prospect, 'assistant', $response['message']);
+            return;
+        }
 
         // Get current step
         $currentStep = LineSignupFlow::getByStepKey($prospect->conversation_step);
