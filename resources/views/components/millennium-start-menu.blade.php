@@ -445,6 +445,24 @@
                 ]
             ],
             [
+                'icon' => '🎨',
+                'label' => 'AI Gen System',
+                'url' => '#',
+                'order' => 24.7,
+                'badge' => 'NEW',
+                'badge_color' => 'bg-gradient-to-r from-purple-500 to-pink-500',
+                'submenu' => [
+                    ['label' => '📊 Dashboard', 'url' => safeRoute('admin.ai-gen.dashboard')],
+                    ['label' => '🤖 AI Providers', 'url' => safeRoute('admin.ai-gen.providers')],
+                    ['label' => '📦 Packages', 'url' => safeRoute('admin.ai-gen.packages')],
+                    ['label' => '🎁 Free Quotas', 'url' => safeRoute('admin.ai-gen.quotas')],
+                    ['label' => '👥 Subscriptions', 'url' => safeRoute('admin.ai-gen.subscriptions')],
+                    ['label' => '📋 Usage Logs', 'url' => safeRoute('admin.ai-gen.usage-logs')],
+                    ['label' => '🖼️ All Generations', 'url' => safeRoute('admin.ai-gen.generations')],
+                    ['label' => '⚙️ Settings', 'url' => safeRoute('admin.ai-gen.settings')],
+                ]
+            ],
+            [
                 'icon' => '⚙️',
                 'label' => 'ตั้งค่าระบบ',
                 'url' => '#',
