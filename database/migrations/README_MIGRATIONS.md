@@ -664,6 +664,74 @@ return new class extends Migration
 };
 ```
 
+## 🚀 Smart Migration System
+
+ระบบนี้จะช่วยจัดการกรณีที่ตารางมีอยู่แล้วแต่โครงสร้างไม่ตรงกับ migration
+
+### การทำงาน
+
+1. ✅ **ตรวจสอบ** - เช็คว่าตารางมีอยู่หรือยัง
+2. 🔍 **เปรียบเทียบ** - เปรียบเทียบ schema ของตารางกับ migration
+3. ➕ **เพิ่มคอลัมน์** - เพิ่มคอลัมน์ที่ยังไม่มีอัตโนมัติ
+4. ⏭️ **ข้าม** - ข้ามถ้า schema ตรงกันแล้ว
+
+### การใช้งาน
+
+```bash
+# รัน Smart Migration
+php artisan migrate:smart --force
+
+# ระบบจะแสดงผลการทำงาน:
+# ✓ Tables created: X
+# ✓ Tables updated: Y
+# ✓ Columns added: Z
+```
+
+### ตัวอย่างการทำงาน
+
+**กรณีที่ 1: ตารางยังไม่มี**
+```
+→ Processing: 2025_01_08_000003_create_trend_keywords_table
+  → Creating new table 'trend_keywords'...
+  ✓ Table created successfully
+```
+
+**กรณีที่ 2: ตารางมีแล้วแต่ขาดบางคอลัมน์**
+```
+→ Processing: 2025_01_08_000003_create_trend_keywords_table
+  → Table 'trend_keywords' exists, checking schema...
+  → Adding 2 missing column(s)...
+    ✓ Added: last_seen_at
+    ✓ Added: metadata
+```
+
+**กรณีที่ 3: Schema ตรงกันแล้ว**
+```
+→ Processing: 2025_01_08_000003_create_trend_keywords_table
+  → Table 'trend_keywords' exists, checking schema...
+  ✓ Schema up to date (skipped)
+```
+
+### ความสามารถ
+
+Smart Migration สามารถจัดการ:
+
+- ✅ เพิ่มคอลัมน์ใหม่ที่ยังไม่มี
+- ✅ สร้างตารางใหม่ถ้ายังไม่มี
+- ✅ ตรวจสอบและข้ามถ้า schema ตรงกันแล้ว
+- ✅ รองรับ data types ทั่วไป (string, text, integer, decimal, boolean, json, timestamp, date)
+- ✅ รองรับ foreign keys
+- ✅ รองรับ timestamps(), softDeletes(), id()
+
+### ข้อจำกัด
+
+- ⚠️ ไม่สามารถแก้ไข data type ของคอลัมน์ที่มีอยู่แล้ว
+- ⚠️ ไม่สามารถลบคอลัมน์
+- ⚠️ ไม่สามารถเปลี่ยนชื่อคอลัมน์
+- ⚠️ Indexes และ foreign keys อาจต้องสร้างด้วยตนเอง
+
+สำหรับกรณีข้างต้น ให้ใช้ migration ปกติ หรือ alter table ด้วยตนเอง
+
 ## คำสั่ง Artisan ที่เป็นประโยชน์
 
 ```bash
@@ -673,7 +741,10 @@ php artisan make:migration create_example_table
 # ตรวจสอบสถานะ migrations
 php artisan migrate:status
 
-# รัน migrations ที่ยังไม่ได้รัน
+# รัน Smart Migration (แนะนำ)
+php artisan migrate:smart --force
+
+# รัน migrations แบบปกติ
 php artisan migrate
 
 # Rollback batch ล่าสุด
