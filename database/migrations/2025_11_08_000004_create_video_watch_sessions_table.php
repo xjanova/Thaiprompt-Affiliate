@@ -23,7 +23,7 @@ return new class extends Migration
             $table->text('user_agent')->nullable();
             $table->boolean('is_valid')->default(true); // Session นี้ valid หรือไม่ (ตรวจจับการโกง)
             $table->json('heartbeats')->nullable(); // เก็บ heartbeat เพื่อตรวจสอบการดูจริง
-            $table->timestamp('started_at');
+            $table->timestamp('started_at')->useCurrent();
             $table->timestamp('ended_at')->nullable();
             $table->timestamps();
 
