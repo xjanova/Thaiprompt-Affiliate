@@ -249,13 +249,31 @@ class UpdateController extends Controller
      */
     public function getSettings()
     {
+        // Get encrypted token from database
+        $encryptedToken = Setting::get('update_github_token');
+        $hasToken = !empty($encryptedToken);
+        $maskedToken = null;
+
+        // Decrypt and mask token if exists
+        if ($hasToken) {
+            try {
+                $decryptedToken = Crypt::decryptString($encryptedToken);
+                // Show first 7 chars and mask the rest
+                $maskedToken = substr($decryptedToken, 0, 7) . '***' . substr($decryptedToken, -4);
+            } catch (\Exception $e) {
+                // If decryption fails, just show generic masked
+                $maskedToken = '***';
+                \Log::warning('Failed to decrypt GitHub token for display', ['error' => $e->getMessage()]);
+            }
+        }
+
         $settings = [
             'auto_check' => Setting::get('update_auto_check', false),
             'auto_update' => Setting::get('update_auto_update', false),
             'backup_before_update' => Setting::get('update_backup_before_update', true),
             'notification_email' => Setting::get('update_notification_email'),
-            'github_token' => Setting::get('update_github_token') ? '***' . substr(Setting::get('update_github_token'), -4) : null,
-            'has_github_token' => !empty(Setting::get('update_github_token')),
+            'github_token' => $maskedToken,
+            'has_github_token' => $hasToken,
         ];
 
         // If AJAX request, return JSON
