@@ -4,111 +4,189 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Header with Breadcrumb -->
-    <div class="flex items-center justify-between">
-        <div>
-            <a href="{{ route('admin.affiliates.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 flex items-center gap-2 mb-2">
-                ← กลับไปรายการ Affiliates
+    <!-- Enhanced Header with Breadcrumb and Actions -->
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <div class="space-y-2">
+            <a href="{{ route('admin.affiliates.index') }}" class="group inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-all duration-200 font-medium">
+                <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                กลับไปรายการ Affiliates
             </a>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">รายละเอียด Affiliate</h1>
+            <h1 class="text-4xl font-black text-gray-900 dark:text-white flex items-center gap-3">
+                <div class="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                รายละเอียด Affiliate
+            </h1>
         </div>
-        <div class="flex gap-3">
+        <div class="flex flex-wrap gap-3">
             <a href="{{ route('admin.affiliates.tree', $affiliate) }}"
-               class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition shadow-md">
-                <span class="text-xl">🌳</span>
-                <span>ดู Tree</span>
+               class="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-bold">
+                <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                ดู Tree
             </a>
             <a href="{{ route('admin.affiliates.edit', $affiliate) }}"
-               class="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-md">
-                <span class="text-xl">✏️</span>
-                <span>แก้ไข</span>
+               class="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-bold">
+                <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                แก้ไข
             </a>
         </div>
     </div>
 
-    <!-- Profile Header Card -->
-    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
-        <div class="flex items-center gap-6">
-            <!-- Avatar -->
-            <div class="w-24 h-24 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-4xl font-bold border-4 border-white/30 shadow-xl">
-                {{ strtoupper(substr($affiliate->user->name, 0, 2)) }}
+    <!-- Enhanced Profile Header Card with Glassmorphism -->
+    <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl shadow-2xl p-8 text-white">
+        <!-- Animated Background Pattern -->
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-80 h-80 bg-pink-300 rounded-full blur-3xl animate-pulse delay-1000"></div>
+            <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-300 rounded-full blur-3xl animate-pulse delay-500"></div>
+        </div>
+
+        <div class="relative z-10 flex flex-col lg:flex-row items-center lg:items-start gap-6">
+            <!-- Enhanced Avatar with Ring Animation -->
+            <div class="relative group">
+                <div class="absolute inset-0 bg-gradient-to-r from-pink-500 to-yellow-500 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+                <div class="relative w-32 h-32 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center text-5xl font-black border-4 border-white/40 shadow-2xl group-hover:scale-110 transition-transform duration-300">
+                    {{ strtoupper(substr($affiliate->user->name, 0, 2)) }}
+                </div>
+                <!-- Status Indicator Dot -->
+                @if($affiliate->status === 'active')
+                    <div class="absolute bottom-2 right-2 w-6 h-6 bg-green-400 rounded-full border-4 border-white shadow-lg animate-pulse"></div>
+                @endif
             </div>
 
-            <!-- User Info -->
-            <div class="flex-1">
-                <h2 class="text-3xl font-bold mb-1">{{ $affiliate->user->name }}</h2>
-                <p class="text-indigo-100 mb-2">{{ $affiliate->user->email }}</p>
-                <div class="flex items-center gap-3">
-                    <span class="px-3 py-1 bg-white/20 backdrop-blur rounded-full text-sm font-medium">
+            <!-- User Info Section -->
+            <div class="flex-1 text-center lg:text-left space-y-4">
+                <div>
+                    <h2 class="text-4xl font-black mb-2 tracking-tight">{{ $affiliate->user->name }}</h2>
+                    <p class="text-xl text-indigo-100 font-medium flex items-center gap-2 justify-center lg:justify-start">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        {{ $affiliate->user->email }}
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 justify-center lg:justify-start">
+                    <span class="px-4 py-2 bg-white/20 backdrop-blur-xl rounded-xl text-base font-bold border border-white/30 shadow-lg flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
                         Level {{ $affiliate->level }}
                     </span>
-                    <span class="px-3 py-1 rounded-full text-sm font-medium
-                        @if($affiliate->status === 'active') bg-green-400/30 border border-green-300
-                        @elseif($affiliate->status === 'inactive') bg-gray-400/30 border border-gray-300
-                        @else bg-red-400/30 border border-red-300
+                    <span class="px-4 py-2 rounded-xl text-base font-bold border-2 shadow-lg flex items-center gap-2
+                        @if($affiliate->status === 'active') bg-green-400/30 border-green-300 backdrop-blur-xl
+                        @elseif($affiliate->status === 'inactive') bg-gray-400/30 border-gray-300 backdrop-blur-xl
+                        @else bg-red-400/30 border-red-300 backdrop-blur-xl
                         @endif">
+                        @if($affiliate->status === 'active')
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        @endif
                         {{ ucfirst($affiliate->status) }}
                     </span>
-                    <span class="px-3 py-1 bg-white/20 backdrop-blur rounded-full text-sm font-medium">
+                    <span class="px-4 py-2 bg-white/20 backdrop-blur-xl rounded-xl text-base font-bold border border-white/30 shadow-lg uppercase">
                         {{ $affiliate->user->role ?? 'user' }}
                     </span>
                 </div>
             </div>
 
-            <!-- Referral Code Card -->
-            <div class="bg-white/10 backdrop-blur rounded-xl p-4 border border-white/20">
-                <p class="text-sm text-indigo-100 mb-2">รหัสแนะนำ</p>
-                <div class="flex items-center gap-2">
-                    <code class="text-2xl font-mono font-bold" id="referral-code">{{ $affiliate->referral_code }}</code>
+            <!-- Enhanced Referral Code Card -->
+            <div class="bg-white/15 backdrop-blur-xl rounded-2xl p-6 border-2 border-white/30 shadow-2xl hover:scale-105 transition-transform duration-300">
+                <div class="flex items-center gap-2 text-indigo-100 mb-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <span class="text-sm font-bold uppercase tracking-wide">รหัสแนะนำ</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <code class="text-3xl font-mono font-black bg-white/10 px-4 py-2 rounded-xl" id="referral-code">{{ $affiliate->referral_code }}</code>
                     <button onclick="copyToClipboard('{{ $affiliate->referral_code }}')"
-                            class="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-lg transition text-sm">
-                        📋 Copy
+                            class="group px-4 py-3 bg-white/20 hover:bg-white/30 rounded-xl transition-all duration-200 text-sm font-bold border border-white/30 hover:scale-110 shadow-lg">
+                        <svg class="w-5 h-5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
                     </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Enhanced Animated Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Referrals -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-l-4 border-blue-500 hover:shadow-lg transition">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Referrals</h3>
-                <div class="text-3xl">👥</div>
+        <!-- Total Referrals Card -->
+        <div class="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl shadow-lg border-2 border-blue-200 dark:border-blue-800 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-300"></div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Network</span>
+                </div>
+                <p class="text-4xl font-black text-blue-600 dark:text-blue-400 mb-2">{{ number_format($affiliate->total_referrals) }}</p>
+                <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Total Referrals<br>เครือข่ายทั้งหมด</p>
             </div>
-            <p class="text-3xl font-bold text-blue-600">{{ number_format($affiliate->total_referrals) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">เครือข่ายทั้งหมด</p>
         </div>
 
-        <!-- Direct Referrals -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-l-4 border-purple-500 hover:shadow-lg transition">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Direct Referrals</h3>
-                <div class="text-3xl">🎯</div>
+        <!-- Direct Referrals Card -->
+        <div class="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl shadow-lg border-2 border-purple-200 dark:border-purple-800 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-300"></div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Direct</span>
+                </div>
+                <p class="text-4xl font-black text-purple-600 dark:text-purple-400 mb-2">{{ $affiliate->children->count() }}</p>
+                <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Direct Referrals<br>ผู้ใช้ที่แนะนำโดยตรง</p>
             </div>
-            <p class="text-3xl font-bold text-purple-600">{{ $affiliate->children->count() }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ผู้ใช้ที่แนะนำโดยตรง</p>
         </div>
 
-        <!-- Total Earnings -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-l-4 border-green-500 hover:shadow-lg transition">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</h3>
-                <div class="text-3xl">💰</div>
+        <!-- Total Earnings Card -->
+        <div class="group relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl shadow-lg border-2 border-green-200 dark:border-green-800 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all duration-300"></div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">Earnings</span>
+                </div>
+                <p class="text-4xl font-black text-green-600 dark:text-green-400 mb-2">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
+                <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Total Earnings<br>รายได้ทั้งหมด</p>
             </div>
-            <p class="text-3xl font-bold text-green-600">฿{{ number_format($affiliate->total_earnings, 2) }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">รายได้ทั้งหมด</p>
         </div>
 
-        <!-- Commissions Count -->
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-md p-6 border-l-4 border-orange-500 hover:shadow-lg transition">
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Commissions</h3>
-                <div class="text-3xl">📊</div>
+        <!-- Commissions Count Card -->
+        <div class="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl shadow-lg border-2 border-orange-200 dark:border-orange-800 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl group-hover:bg-orange-500/20 transition-all duration-300"></div>
+            <div class="relative z-10">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </div>
+                    <span class="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Transactions</span>
+                </div>
+                <p class="text-4xl font-black text-orange-600 dark:text-orange-400 mb-2">{{ $affiliate->commissions->count() }}</p>
+                <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Commissions<br>จำนวนคอมมิชชั่น</p>
             </div>
-            <p class="text-3xl font-bold text-orange-600">{{ $affiliate->commissions->count() }}</p>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">จำนวนคอมมิชชั่น</p>
         </div>
     </div>
 
