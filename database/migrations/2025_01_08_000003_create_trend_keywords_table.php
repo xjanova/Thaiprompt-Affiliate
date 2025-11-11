@@ -17,8 +17,8 @@ return new class extends Migration
             $table->integer('frequency')->default(1);
             $table->decimal('trend_score', 10, 2)->default(0);
             $table->decimal('growth_rate', 10, 2)->default(0); // percentage
-            $table->timestamp('first_seen_at');
-            $table->timestamp('last_seen_at');
+            $table->timestamp('first_seen_at')->useCurrent();
+            $table->timestamp('last_seen_at')->useCurrent();
             $table->string('category')->nullable();
             $table->json('related_keywords')->nullable();
             $table->json('metadata')->nullable();

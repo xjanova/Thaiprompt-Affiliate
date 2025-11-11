@@ -22,7 +22,7 @@ return new class extends Migration
             $table->decimal('velocity', 10, 2)->default(0); // mentions per hour
             $table->string('status')->default('rising'); // rising, peaked, declining, stable
             $table->timestamp('peak_at')->nullable();
-            $table->timestamp('started_at');
+            $table->timestamp('started_at')->useCurrent();
             $table->json('sources')->nullable(); // array of source IDs
             $table->json('analytics')->nullable(); // detailed analytics data
             $table->json('generated_content')->nullable(); // AI generated content

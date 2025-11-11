@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('trend_analytics', function (Blueprint $table) {
             $table->id();
             $table->foreignId('viral_trend_id')->constrained()->onDelete('cascade');
-            $table->timestamp('snapshot_at');
+            $table->timestamp('snapshot_at')->useCurrent();
             $table->integer('mention_count')->default(0);
             $table->integer('engagement_count')->default(0);
             $table->decimal('sentiment_score', 5, 2)->default(0); // -1 to 1
