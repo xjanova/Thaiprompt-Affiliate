@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #822 from xjanova/claude/fix-menu-seeder-column-011CV26TkMwzfLe67shTsSsu (ee931493)
+- fix: Make AiGenMenuSeeder intelligent with auto-column detection and update support (7674122c)
+### 🔧 Other Changes
+
+
 ## [v2.127.1] - 2025-11-11
 
 ### ✨ Features
