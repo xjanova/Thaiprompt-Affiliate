@@ -21,41 +21,41 @@
     <!-- Statistics Cards -->
     @if(isset($statistics))
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl shadow-md p-4">
+        <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">💰</div>
                 <div>
-                    <p class="text-xs text-gray-500">ถอนทั้งหมด</p>
-                    <p class="text-xl font-bold text-gray-800">฿{{ number_format($statistics['total_amount'] ?? 0, 2) }}</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">ถอนทั้งหมด</p>
+                    <p class="text-xl font-bold text-gray-900 dark:text-gray-100">฿{{ number_format($statistics['total_amount'] ?? 0, 2) }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-4">
+        <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">⏳</div>
                 <div>
-                    <p class="text-xs text-gray-500">รอดำเนินการ</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">รอดำเนินการ</p>
                     <p class="text-xl font-bold text-yellow-600">{{ $statistics['pending_count'] ?? 0 }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-4">
+        <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">✅</div>
                 <div>
-                    <p class="text-xs text-gray-500">สำเร็จ</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">สำเร็จ</p>
                     <p class="text-xl font-bold text-green-600">{{ $statistics['completed_count'] ?? 0 }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white rounded-xl shadow-md p-4">
+        <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">❌</div>
                 <div>
-                    <p class="text-xs text-gray-500">ปฏิเสธ</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">ปฏิเสธ</p>
                     <p class="text-xl font-bold text-red-600">{{ $statistics['rejected_count'] ?? 0 }}</p>
                 </div>
             </div>
@@ -78,34 +78,34 @@
     </div>
 
     <!-- Withdrawal Requests Table -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">รายการคำขอถอนเงิน</h2>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">รายการคำขอถอนเงิน</h2>
 
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="border-b border-gray-200">
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">รหัสคำขอ</th>
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">จำนวนเงิน</th>
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">ช่องทางรับเงิน</th>
-                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">สถานะ</th>
-                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">วันที่สร้าง</th>
-                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">การจัดการ</th>
+                    <tr class="border-b-2 border-gray-300 dark:border-gray-600">
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">รหัสคำขอ</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">จำนวนเงิน</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">ช่องทางรับเงิน</th>
+                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">สถานะ</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">วันที่สร้าง</th>
+                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">การจัดการ</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($withdrawals as $withdrawal)
-                        <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <tr class="border-b border-gray-100 hover:bg-indigo-50 dark:hover:bg-gray-700 transition">
                             <td class="py-4 px-4">
-                                <p class="text-sm font-semibold text-gray-800">{{ $withdrawal->request_id }}</p>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $withdrawal->request_id }}</p>
                                 @if($withdrawal->user_note)
                                     <p class="text-xs text-gray-500 mt-1">{{ Str::limit($withdrawal->user_note, 30) }}</p>
                                 @endif
                             </td>
                             <td class="py-4 px-4">
-                                <p class="text-sm font-bold text-gray-900">฿{{ number_format($withdrawal->amount, 2) }}</p>
+                                <p class="text-sm font-bold text-gray-900 dark:text-gray-100">฿{{ number_format($withdrawal->amount, 2) }}</p>
                                 @if($withdrawal->fee > 0)
-                                    <p class="text-xs text-gray-500">ค่าธรรมเนียม: ฿{{ number_format($withdrawal->fee, 2) }}</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">ค่าธรรมเนียม: ฿{{ number_format($withdrawal->fee, 2) }}</p>
                                 @endif
                                 @if($withdrawal->net_amount != $withdrawal->amount)
                                     <p class="text-xs text-green-600 font-semibold">รับสุทธิ: ฿{{ number_format($withdrawal->net_amount, 2) }}</p>
@@ -113,7 +113,7 @@
                             </td>
                             <td class="py-4 px-4">
                                 @if($withdrawal->paymentMethod)
-                                    <p class="text-sm text-gray-800">
+                                    <p class="text-sm text-gray-900 dark:text-gray-100">
                                         @if($withdrawal->payment_type === 'bank_transfer')
                                             🏦 {{ $withdrawal->paymentMethod->bank_name }}
                                         @elseif($withdrawal->payment_type === 'promptpay')
@@ -124,9 +124,9 @@
                                             {{ $withdrawal->payment_type_label }}
                                         @endif
                                     </p>
-                                    <p class="text-xs text-gray-500">{{ $withdrawal->paymentMethod->name }}</p>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400">{{ $withdrawal->paymentMethod->name }}</p>
                                 @else
-                                    <p class="text-sm text-gray-500">-</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">-</p>
                                 @endif
                             </td>
                             <td class="py-4 px-4 text-center">
@@ -138,8 +138,8 @@
                                 @endif
                             </td>
                             <td class="py-4 px-4 text-right">
-                                <p class="text-sm text-gray-800">{{ $withdrawal->created_at->format('d/m/Y') }}</p>
-                                <p class="text-xs text-gray-500">{{ $withdrawal->created_at->format('H:i') }}</p>
+                                <p class="text-sm text-gray-900 dark:text-gray-100">{{ $withdrawal->created_at->format('d/m/Y') }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ $withdrawal->created_at->format('H:i') }}</p>
                                 @if($withdrawal->completed_at)
                                     <p class="text-xs text-green-600 mt-1">
                                         เสร็จ: {{ $withdrawal->completed_at->format('d/m/Y') }}

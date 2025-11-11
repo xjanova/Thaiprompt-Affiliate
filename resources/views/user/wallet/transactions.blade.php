@@ -25,14 +25,14 @@
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-4">🔍 ตัวกรอง</h2>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-4">🔍 ตัวกรอง</h2>
 
         <form method="GET" action="{{ route('user.wallet.transactions') }}" class="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-2">ประเภทธุรกรรม</label>
                 <select name="type"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">ทั้งหมด</option>
                     <option value="deposit" {{ request('type') === 'deposit' ? 'selected' : '' }}>ฝากเงิน</option>
                     <option value="withdrawal" {{ request('type') === 'withdrawal' ? 'selected' : '' }}>ถอนเงิน</option>
@@ -50,7 +50,7 @@
                 <input type="date"
                        name="date_from"
                        value="{{ request('date_from') }}"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                       class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             </div>
 
             <div>
@@ -58,7 +58,7 @@
                 <input type="date"
                        name="date_to"
                        value="{{ request('date_to') }}"
-                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                       class="w-full px-4 py-2 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             </div>
 
             <div class="flex items-end gap-2">
@@ -75,10 +75,10 @@
     </div>
 
     <!-- Transactions Table -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h2 class="text-xl font-bold text-gray-900">รายการธุรกรรม</h2>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">รายการธุรกรรม</h2>
                 <p class="text-sm text-gray-500 mt-1">ทั้งหมด {{ $transactions->total() }} รายการ</p>
             </div>
 
@@ -91,30 +91,30 @@
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="border-b border-gray-200">
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">รหัสธุรกรรม</th>
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">ประเภท</th>
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">รายละเอียด</th>
-                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">จำนวนเงิน</th>
-                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">ยอดคงเหลือ</th>
-                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">สถานะ</th>
-                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">วันที่</th>
+                    <tr class="border-b-2 border-gray-300 dark:border-gray-600">
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">รหัสธุรกรรม</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">ประเภท</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">รายละเอียด</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">จำนวนเงิน</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">ยอดคงเหลือ</th>
+                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">สถานะ</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600 dark:text-gray-400">วันที่</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($transactions as $transaction)
-                        <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <tr class="border-b border-gray-100 hover:bg-indigo-50 dark:hover:bg-gray-700 transition">
                             <td class="py-4 px-4">
-                                <p class="text-xs font-mono text-gray-600">{{ $transaction->transaction_id }}</p>
+                                <p class="text-xs font-mono text-gray-600 dark:text-gray-400">{{ $transaction->transaction_id }}</p>
                             </td>
                             <td class="py-4 px-4">
                                 <div class="flex items-center gap-2">
                                     <span class="text-2xl">{{ $transaction->type_icon }}</span>
-                                    <span class="text-sm font-medium text-gray-800">{{ $transaction->type_label }}</span>
+                                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $transaction->type_label }}</span>
                                 </div>
                             </td>
                             <td class="py-4 px-4">
-                                <p class="text-sm text-gray-800">{{ $transaction->description }}</p>
+                                <p class="text-sm text-gray-900 dark:text-gray-100">{{ $transaction->description }}</p>
                                 @if($transaction->relatedWallet)
                                     <p class="text-xs text-gray-500 mt-1">
                                         @if($transaction->type === 'transfer_in')
@@ -132,8 +132,8 @@
                                 </span>
                             </td>
                             <td class="py-4 px-4 text-right">
-                                <p class="text-sm text-gray-800">฿{{ number_format($transaction->balance_after, 2) }}</p>
-                                <p class="text-xs text-gray-500">
+                                <p class="text-sm text-gray-900 dark:text-gray-100">฿{{ number_format($transaction->balance_after, 2) }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">
                                     จาก ฿{{ number_format($transaction->balance_before, 2) }}
                                 </p>
                             </td>
@@ -143,8 +143,8 @@
                                 </span>
                             </td>
                             <td class="py-4 px-4 text-right">
-                                <p class="text-sm text-gray-800">{{ $transaction->created_at->format('d/m/Y') }}</p>
-                                <p class="text-xs text-gray-500">{{ $transaction->created_at->format('H:i:s') }}</p>
+                                <p class="text-sm text-gray-900 dark:text-gray-100">{{ $transaction->created_at->format('d/m/Y') }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ $transaction->created_at->format('H:i:s') }}</p>
                             </td>
                         </tr>
                     @empty

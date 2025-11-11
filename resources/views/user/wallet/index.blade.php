@@ -47,28 +47,28 @@
 
     <!-- Quick Actions -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <a href="{{ route('user.wallet.deposit') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.deposit') }}" class="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900 dark:to-emerald-900 border border-green-200 dark:border-green-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
             <div class="text-4xl mb-3">💵</div>
-            <p class="text-gray-800 font-semibold">ฝากเงิน</p>
-            <p class="text-xs text-gray-500 mt-1">Deposit</p>
+            <p class="text-green-800 dark:text-green-100 font-semibold">ฝากเงิน</p>
+            <p class="text-xs text-green-600 dark:text-green-300 mt-1">Deposit</p>
         </a>
 
-        <a href="{{ route('user.wallet.withdraw') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.withdraw') }}" class="bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900 dark:to-rose-900 border border-red-200 dark:border-red-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
             <div class="text-4xl mb-3">💸</div>
-            <p class="text-gray-800 font-semibold">ถอนเงิน</p>
-            <p class="text-xs text-gray-500 mt-1">Withdraw</p>
+            <p class="text-red-800 dark:text-red-100 font-semibold">ถอนเงิน</p>
+            <p class="text-xs text-red-600 dark:text-red-300 mt-1">Withdraw</p>
         </a>
 
-        <a href="{{ route('user.wallet.transfer') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.transfer') }}" class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900 dark:to-cyan-900 border border-blue-200 dark:border-blue-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
             <div class="text-4xl mb-3">📤</div>
-            <p class="text-gray-800 font-semibold">โอนเงิน</p>
-            <p class="text-xs text-gray-500 mt-1">Transfer</p>
+            <p class="text-blue-800 dark:text-blue-100 font-semibold">โอนเงิน</p>
+            <p class="text-xs text-blue-600 dark:text-blue-300 mt-1">Transfer</p>
         </a>
 
-        <a href="{{ route('user.wallet.transactions') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.transactions') }}" class="bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900 dark:to-indigo-900 border border-purple-200 dark:border-purple-700 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
             <div class="text-4xl mb-3">📝</div>
-            <p class="text-gray-800 font-semibold">ประวัติ</p>
-            <p class="text-xs text-gray-500 mt-1">History</p>
+            <p class="text-purple-800 dark:text-purple-100 font-semibold">ประวัติ</p>
+            <p class="text-xs text-purple-600 dark:text-purple-300 mt-1">History</p>
         </a>
     </div>
 
@@ -173,12 +173,12 @@
     @if(isset($statistics) && !empty($statistics))
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         @foreach($statistics as $key => $stat)
-            <div class="bg-white rounded-xl shadow-md p-4">
+            <div class="bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-md p-4">
                 <div class="flex items-center gap-3">
                     <div class="text-3xl">{{ $stat['icon'] ?? '📊' }}</div>
                     <div>
-                        <p class="text-xs text-gray-500">{{ $stat['label'] ?? ucfirst($key) }}</p>
-                        <p class="text-xl font-bold text-gray-800">{{ $stat['value'] ?? '0' }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $stat['label'] ?? ucfirst($key) }}</p>
+                        <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $stat['value'] ?? '0' }}</p>
                     </div>
                 </div>
             </div>
@@ -187,13 +187,13 @@
     @endif
 
     <!-- Recent Transactions -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h3 class="text-xl font-bold text-gray-900">📊 รายการธุรกรรมล่าสุด</h3>
-                <p class="text-sm text-gray-500">10 รายการล่าสุด</p>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">📊 รายการธุรกรรมล่าสุด</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">10 รายการล่าสุด</p>
             </div>
-            <a href="{{ route('user.wallet.transactions') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
+            <a href="{{ route('user.wallet.transactions') }}" class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold">
                 ดูทั้งหมด →
             </a>
         </div>
@@ -201,51 +201,51 @@
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead>
-                    <tr class="border-b border-gray-200">
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">ประเภท</th>
-                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-600">รายละเอียด</th>
-                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">จำนวนเงิน</th>
-                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-600">สถานะ</th>
-                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-600">วันที่</th>
+                    <tr class="border-b-2 border-gray-300 dark:border-gray-600">
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">ประเภท</th>
+                        <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">รายละเอียด</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">จำนวนเงิน</th>
+                        <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">สถานะ</th>
+                        <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">วันที่</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($recentTransactions as $transaction)
-                        <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                        <tr class="border-b border-gray-200 dark:border-gray-700 hover:bg-indigo-50 dark:hover:bg-gray-700 transition">
                             <td class="py-4 px-4">
                                 <div class="flex items-center gap-2">
                                     <span class="text-2xl">{{ $transaction->type_icon }}</span>
-                                    <span class="text-sm font-medium text-gray-800">{{ $transaction->type_label }}</span>
+                                    <span class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $transaction->type_label }}</span>
                                 </div>
                             </td>
                             <td class="py-4 px-4">
-                                <p class="text-sm text-gray-800">{{ $transaction->description }}</p>
+                                <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $transaction->description }}</p>
                                 @if($transaction->relatedWallet)
-                                    <p class="text-xs text-gray-500 mt-1">
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                         {{ $transaction->type === 'transfer_in' ? 'จาก' : 'ถึง' }}: {{ $transaction->relatedWallet->user->name }}
                                     </p>
                                 @endif
-                                <p class="text-xs text-gray-400 mt-1">ID: {{ $transaction->transaction_id }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 mt-1">ID: {{ $transaction->transaction_id }}</p>
                             </td>
                             <td class="py-4 px-4 text-right">
-                                <span class="text-sm font-bold {{ in_array($transaction->type, ['deposit', 'transfer_in', 'commission', 'refund', 'bonus']) ? 'text-green-600' : 'text-red-600' }}">
+                                <span class="text-sm font-bold {{ in_array($transaction->type, ['deposit', 'transfer_in', 'commission', 'refund', 'bonus']) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
                                     {{ $transaction->formatted_amount }}
                                 </span>
                             </td>
                             <td class="py-4 px-4 text-center">
-                                <span class="px-2 py-1 rounded-full text-xs font-semibold bg-{{ $transaction->status_color }}-100 text-{{ $transaction->status_color }}-800">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold bg-{{ $transaction->status_color }}-100 text-{{ $transaction->status_color }}-800 dark:bg-{{ $transaction->status_color }}-900 dark:text-{{ $transaction->status_color }}-200">
                                     {{ $transaction->status_label }}
                                 </span>
                             </td>
                             <td class="py-4 px-4 text-right">
-                                <p class="text-sm text-gray-800">{{ $transaction->created_at->format('d/m/Y') }}</p>
-                                <p class="text-xs text-gray-500">{{ $transaction->created_at->format('H:i') }}</p>
+                                <p class="text-sm text-gray-900 dark:text-gray-100">{{ $transaction->created_at->format('d/m/Y') }}</p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">{{ $transaction->created_at->format('H:i') }}</p>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="5" class="py-8 text-center">
-                                <div class="text-gray-400">
+                                <div class="text-gray-400 dark:text-gray-500">
                                     <span class="text-4xl block mb-2">📭</span>
                                     <p class="text-sm">ยังไม่มีรายการธุรกรรม</p>
                                 </div>
@@ -259,20 +259,20 @@
 
     <!-- Payment Methods -->
     @if($paymentMethods->isNotEmpty())
-    <div class="bg-white rounded-2xl shadow-xl p-6">
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
         <div class="flex items-center justify-between mb-6">
             <div>
-                <h3 class="text-xl font-bold text-gray-900">🏦 ช่องทางรับเงิน</h3>
-                <p class="text-sm text-gray-500">บัญชีสำหรับถอนเงิน</p>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100">🏦 ช่องทางรับเงิน</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">บัญชีสำหรับถอนเงิน</p>
             </div>
-            <a href="{{ route('user.wallet.payment-methods') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
+            <a href="{{ route('user.wallet.payment-methods') }}" class="text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold">
                 จัดการ →
             </a>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($paymentMethods as $method)
-                <div class="border border-gray-200 rounded-xl p-4 hover:shadow-md transition">
+                <div class="border-2 border-gray-200 dark:border-gray-600 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl p-4 hover:shadow-md hover:border-indigo-300 dark:hover:border-indigo-600 transition">
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex items-center gap-2">
                             <span class="text-2xl">
@@ -282,24 +282,24 @@
                                 @else 💵
                                 @endif
                             </span>
-                            <span class="text-sm font-semibold text-gray-800">{{ $method->name }}</span>
+                            <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $method->name }}</span>
                         </div>
                         @if($method->is_default)
-                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
+                            <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-xs font-semibold">
                                 ค่าเริ่มต้น
                             </span>
                         @endif
                     </div>
 
                     @if($method->type === 'bank_transfer')
-                        <p class="text-xs text-gray-600">{{ $method->bank_name }}</p>
-                        <p class="text-sm text-gray-800 font-medium">{{ $method->account_name }}</p>
-                        <p class="text-xs text-gray-500">{{ $method->account_number }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $method->bank_name }}</p>
+                        <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $method->account_name }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
                     @elseif($method->type === 'promptpay')
-                        <p class="text-sm text-gray-800 font-medium">{{ $method->account_name }}</p>
-                        <p class="text-xs text-gray-500">{{ $method->account_number }}</p>
+                        <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $method->account_name }}</p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
                     @elseif($method->type === 'paypal')
-                        <p class="text-sm text-gray-800 font-medium">{{ $method->paypal_email }}</p>
+                        <p class="text-sm text-gray-900 dark:text-gray-100 font-medium">{{ $method->paypal_email }}</p>
                     @endif
                 </div>
             @endforeach
