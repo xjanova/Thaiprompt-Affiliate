@@ -1006,25 +1006,35 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     fi
     echo ""
 
-    # Run migrations with smart error recovery
-    if ! handle_migration_with_smart_recovery; then
-        print_error "✗ Migration failed after auto-recovery attempts!"
+    # Try Smart Migration first (handles existing tables)
+    print_info "→ Running Smart Migration System..."
+    if php artisan migrate:smart --force 2>&1 | tee -a "$LOG_FILE"; then
+        print_success "✓ Smart Migration completed successfully!"
         echo ""
-        print_warning "→ Rollback information:"
-        echo "  • Backup file: $MIGRATION_BACKUP"
-        echo "  • Rollback command: php artisan migrate:rollback"
-        echo "  • Restore DB: mysql -u $DB_USERNAME -p $DB_DATABASE < $MIGRATION_BACKUP"
+    else
+        print_warning "⚠ Smart Migration failed, falling back to standard migration..."
         echo ""
-        print_info "💡 Manual Fix:"
-        echo "  1. Check migration status: php artisan migrate:status"
-        echo "  2. Identify problematic migrations"
-        echo "  3. Either:"
-        echo "     a) Drop the existing table and re-run migration"
-        echo "     b) Manually insert migration record if table is correct"
-        error_exit "Database migration failed - ตรวจสอบ logs และ backup"
+
+        # Fallback to migrations with smart error recovery
+        if ! handle_migration_with_smart_recovery; then
+            print_error "✗ Migration failed after auto-recovery attempts!"
+            echo ""
+            print_warning "→ Rollback information:"
+            echo "  • Backup file: $MIGRATION_BACKUP"
+            echo "  • Rollback command: php artisan migrate:rollback"
+            echo "  • Restore DB: mysql -u $DB_USERNAME -p $DB_DATABASE < $MIGRATION_BACKUP"
+            echo ""
+            print_info "💡 Manual Fix:"
+            echo "  1. Check migration status: php artisan migrate:status"
+            echo "  2. Identify problematic migrations"
+            echo "  3. Either:"
+            echo "     a) Drop the existing table and re-run migration"
+            echo "     b) Manually insert migration record if table is correct"
+            error_exit "Database migration failed - ตรวจสอบ logs และ backup"
+        fi
+        print_success "✓ Migrations completed successfully!"
+        echo ""
     fi
-    print_success "✓ Migrations completed successfully!"
-    echo ""
 else
     print_success "✓ No pending migrations - Database schema is up to date"
     # Still run migrate to ensure everything is in sync
