@@ -1,0 +1,151 @@
+<?php
+
+namespace App\Http\Controllers\Admin\BotAutomation;
+
+use App\Http\Controllers\Controller;
+use App\Models\BotAutomation\BotContentTemplate;
+use Illuminate\Http\Request;
+
+class BotTemplateController extends Controller
+{
+    /**
+     * Display a listing of templates
+     */
+    public function index(Request $request)
+    {
+        $templates = BotContentTemplate::query()
+            ->when($request->category, function ($query, $category) {
+                $query->where('category', $category);
+            })
+            ->when($request->search, function ($query, $search) {
+                $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('content', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->paginate(20);
+
+        $categories = BotContentTemplate::distinct()->pluck('category')->filter();
+
+        return view('admin.bot-automation.templates.index', compact('templates', 'categories'));
+    }
+
+    /**
+     * Show the form for creating a new template
+     */
+    public function create()
+    {
+        return view('admin.bot-automation.templates.create');
+    }
+
+    /**
+     * Store a newly created template
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'category' => 'required|in:marketing,customer_service,sales,engagement,announcement',
+            'content' => 'required|string',
+            'media_url' => 'nullable|url',
+            'media_type' => 'nullable|in:image,video,document',
+            'platform_specific' => 'nullable|json',
+            'variables' => 'nullable|json',
+            'is_active' => 'boolean',
+        ]);
+
+        $validated['user_id'] = auth()->id();
+
+        $template = BotContentTemplate::create($validated);
+
+        return redirect()
+            ->route('admin.bot-automation.templates.show', $template)
+            ->with('success', 'Template created successfully');
+    }
+
+    /**
+     * Display the specified template
+     */
+    public function show(BotContentTemplate $template)
+    {
+        return view('admin.bot-automation.templates.show', compact('template'));
+    }
+
+    /**
+     * Show the form for editing the specified template
+     */
+    public function edit(BotContentTemplate $template)
+    {
+        return view('admin.bot-automation.templates.edit', compact('template'));
+    }
+
+    /**
+     * Update the specified template
+     */
+    public function update(Request $request, BotContentTemplate $template)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'category' => 'required|in:marketing,customer_service,sales,engagement,announcement',
+            'content' => 'required|string',
+            'media_url' => 'nullable|url',
+            'media_type' => 'nullable|in:image,video,document',
+            'platform_specific' => 'nullable|json',
+            'variables' => 'nullable|json',
+            'is_active' => 'boolean',
+        ]);
+
+        $template->update($validated);
+
+        return redirect()
+            ->route('admin.bot-automation.templates.show', $template)
+            ->with('success', 'Template updated successfully');
+    }
+
+    /**
+     * Remove the specified template
+     */
+    public function destroy(BotContentTemplate $template)
+    {
+        $template->delete();
+
+        return redirect()
+            ->route('admin.bot-automation.templates.index')
+            ->with('success', 'Template deleted successfully');
+    }
+
+    /**
+     * Duplicate the specified template
+     */
+    public function duplicate(BotContentTemplate $template)
+    {
+        $newTemplate = $template->replicate();
+        $newTemplate->name = $template->name . ' (Copy)';
+        $newTemplate->save();
+
+        return redirect()
+            ->route('admin.bot-automation.templates.edit', $newTemplate)
+            ->with('success', 'Template duplicated successfully');
+    }
+
+    /**
+     * Preview the template
+     */
+    public function preview(Request $request, BotContentTemplate $template)
+    {
+        // Replace variables with sample data
+        $content = $template->content;
+        $variables = json_decode($template->variables ?? '[]', true);
+
+        foreach ($variables as $variable) {
+            $content = str_replace("{{" . $variable . "}}", "[SAMPLE DATA]", $content);
+        }
+
+        return response()->json([
+            'content' => $content,
+            'media_url' => $template->media_url,
+            'media_type' => $template->media_type,
+        ]);
+    }
+}
