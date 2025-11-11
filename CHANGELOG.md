@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.123.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #814 from xjanova/claude/create-missing-views-011CV1nu3USd7fzV7169FKyV (45c70144)
+- feat: สร้าง views สำหรับ 2FA และ Email Preferences พร้อมเพิ่มเมนู Security กลับ (9f1cafd5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.122.4] - 2025-11-11
 
 ### ✨ Features
