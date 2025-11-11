@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.124.1] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #816 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (ce2929e7)
+- feat(admin): เพิ่มระบบอัพโหลดรูปภาพพร้อม preview และแก้ไขการแสดงรูป (d6133e53)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.124.0] - 2025-11-11
 
 ### ✨ Features
