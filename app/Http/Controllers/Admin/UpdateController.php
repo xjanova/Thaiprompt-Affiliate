@@ -245,7 +245,7 @@ class UpdateController extends Controller
     }
 
     /**
-     * Get current settings
+     * Show settings page or get current settings (API)
      */
     public function getSettings()
     {
@@ -258,10 +258,16 @@ class UpdateController extends Controller
             'has_github_token' => !empty(Setting::get('update_github_token')),
         ];
 
-        return response()->json([
-            'success' => true,
-            'settings' => $settings,
-        ]);
+        // If AJAX request, return JSON
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'settings' => $settings,
+            ]);
+        }
+
+        // Otherwise, return the settings view
+        return view('admin.updates.settings');
     }
 
     /**
