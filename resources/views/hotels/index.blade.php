@@ -209,7 +209,7 @@
 </div>
 
 <!-- Popular Destinations -->
-@if($popularDestinations && $popularDestinations->count() > 0)
+@if(isset($popularDestinations) && $popularDestinations->count() > 0)
     <div class="bg-gray-100 py-12">
         <div class="container mx-auto px-4">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">จุดหมายยอดนิยม</h2>

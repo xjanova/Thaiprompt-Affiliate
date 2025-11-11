@@ -113,8 +113,10 @@ class HotelController extends Controller
     public function byCity($city)
     {
         $hotels = $this->searchService->search(['city' => $city]);
+        $facilities = HotelFacility::active()->ordered()->get();
+        $popularDestinations = $this->searchService->getPopularDestinations();
 
-        return view('hotels.index', compact('hotels', 'city'));
+        return view('hotels.index', compact('hotels', 'facilities', 'popularDestinations', 'city'));
     }
 
     /**
