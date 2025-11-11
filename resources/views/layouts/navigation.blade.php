@@ -210,8 +210,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                                   0 -1px 2px rgba(0, 0, 0, 0.1) inset,
                                   0 2px 8px rgba(0, 0, 0, 0.15),
                                   0 4px 16px rgba(0, 0, 0, 0.1);"
-                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.backgroundColor='{{ $taskbarHoverBgColor }}';"
-                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; @if($taskbarUseGradient) this.style.background='linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})'; @else this.style.backgroundColor='{{ $taskbarBgColor }}'; @endif">
+                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.background='{{ $taskbarHoverBgColor }}';"
+                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='@if($taskbarUseGradient)linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})@else{{ $taskbarBgColor }}@endif';"
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">🏠</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">หน้าแรก</span>
                         @if($millenniumRgbEnabled)
@@ -233,8 +233,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                                   0 -1px 2px rgba(0, 0, 0, 0.1) inset,
                                   0 2px 8px rgba(0, 0, 0, 0.15),
                                   0 4px 16px rgba(0, 0, 0, 0.1);"
-                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.backgroundColor='{{ $taskbarHoverBgColor }}';"
-                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; @if($taskbarUseGradient) this.style.background='linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})'; @else this.style.backgroundColor='{{ $taskbarBgColor }}'; @endif">
+                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.background='{{ $taskbarHoverBgColor }}';"
+                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='@if($taskbarUseGradient)linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})@else{{ $taskbarBgColor }}@endif';"
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">🤖</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">ตลาดบอท</span>
                         @if($millenniumRgbEnabled)
@@ -256,8 +256,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                                   0 -1px 2px rgba(0, 0, 0, 0.1) inset,
                                   0 2px 8px rgba(0, 0, 0, 0.15),
                                   0 4px 16px rgba(0, 0, 0, 0.1);"
-                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.backgroundColor='{{ $taskbarHoverBgColor }}';"
-                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; @if($taskbarUseGradient) this.style.background='linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})'; @else this.style.backgroundColor='{{ $taskbarBgColor }}'; @endif">
+                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.background='{{ $taskbarHoverBgColor }}';"
+                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='@if($taskbarUseGradient)linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})@else{{ $taskbarBgColor }}@endif';"
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">🛍️</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">ช๊อปปิ้ง</span>
                         @if($millenniumRgbEnabled)
@@ -279,8 +279,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                                   0 -1px 2px rgba(0, 0, 0, 0.1) inset,
                                   0 2px 8px rgba(0, 0, 0, 0.15),
                                   0 4px 16px rgba(0, 0, 0, 0.1);"
-                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.backgroundColor='{{ $taskbarHoverBgColor }}';"
-                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; @if($taskbarUseGradient) this.style.background='linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})'; @else this.style.backgroundColor='{{ $taskbarBgColor }}'; @endif">
+                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.background='{{ $taskbarHoverBgColor }}';"
+                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='@if($taskbarUseGradient)linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})@else{{ $taskbarBgColor }}@endif';"
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">🏨</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">จองโรงแรม</span>
                         @if($millenniumRgbEnabled)
@@ -377,8 +377,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                                   0 -1px 2px rgba(0, 0, 0, 0.1) inset,
                                   0 2px 8px rgba(0, 0, 0, 0.15),
                                   0 4px 16px rgba(0, 0, 0, 0.1);"
-                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.backgroundColor='{{ $taskbarHoverBgColor }}';"
-                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; @if($taskbarUseGradient) this.style.background='linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})'; @else this.style.backgroundColor='{{ $taskbarBgColor }}'; @endif">
+                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.background='{{ $taskbarHoverBgColor }}';"
+                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='@if($taskbarUseGradient)linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})@else{{ $taskbarBgColor }}@endif';"
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">ℹ️</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">เกี่ยวกับเรา</span>
                         @if($millenniumRgbEnabled)
@@ -413,8 +413,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                                   0 -1px 2px rgba(0, 0, 0, 0.1) inset,
                                   0 2px 8px rgba(0, 0, 0, 0.15),
                                   0 4px 16px rgba(0, 0, 0, 0.1);"
-                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.backgroundColor='{{ $taskbarHoverBgColor }}';"
-                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; @if($taskbarUseGradient) this.style.background='linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})'; @else this.style.backgroundColor='{{ $taskbarBgColor }}'; @endif">
+                       onmouseover="this.style.borderColor='rgba(255, 255, 255, 0.3)'; this.style.background='{{ $taskbarHoverBgColor }}';"
+                       onmouseout="this.style.borderColor='rgba(255, 255, 255, 0.1)'; this.style.background='@if($taskbarUseGradient)linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }})@else{{ $taskbarBgColor }}@endif';"
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">✉️</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">ติดต่อเรา</span>
                         @if($millenniumRgbEnabled)
@@ -695,28 +695,7 @@ function navigationMenu() {
 <style>
 /* Navigation Taskbar-Style Buttons */
 .nav-link-taskbar {
-    color: {{ $taskbarTextColor }} !important;
-    @if($taskbarUseGradient)
-    background: linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }}) !important;
-    @else
-    background-color: {{ $taskbarBgColor }} !important;
-    @endif
-    border-color: rgba(255, 255, 255, 0.1) !important;
-    box-shadow:
-        0 1px 2px rgba(255, 255, 255, 0.1) inset,
-        0 -1px 2px rgba(0, 0, 0, 0.1) inset,
-        0 2px 8px rgba(0, 0, 0, 0.15),
-        0 4px 16px rgba(0, 0, 0, 0.1) !important;
-}
-
-.nav-link-taskbar:hover {
-    background-color: {{ $taskbarHoverBgColor }} !important;
-    border-color: rgba(255, 255, 255, 0.3) !important;
-    box-shadow:
-        0 1px 2px rgba(255, 255, 255, 0.15) inset,
-        0 -1px 2px rgba(0, 0, 0, 0.15) inset,
-        0 4px 12px rgba(0, 0, 0, 0.2),
-        0 8px 24px rgba(0, 0, 0, 0.15) !important;
+    /* Inline styles will override these base styles */
 }
 
 /* RGB Border Animation for Navigation Links */
@@ -755,27 +734,27 @@ function navigationMenu() {
 
 /* Special Buttons - Taskbar Style with Enhanced Effects */
 .nav-link-special {
-    color: {{ $taskbarTextColor }} !important;
+    color: {{ $taskbarTextColor }};
     @if($taskbarUseGradient)
-    background: linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }}) !important;
+    background: linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }});
     @else
-    background-color: {{ $taskbarBgColor }} !important;
+    background-color: {{ $taskbarBgColor }};
     @endif
-    border: 2px solid rgba(255, 255, 255, 0.2) !important;
+    border: 2px solid rgba(255, 255, 255, 0.2);
     box-shadow:
         0 1px 3px rgba(255, 255, 255, 0.2) inset,
         0 -1px 2px rgba(0, 0, 0, 0.2) inset,
         0 8px 24px rgba(0, 0, 0, 0.3),
-        0 16px 48px rgba(0, 0, 0, 0.2) !important;
+        0 16px 48px rgba(0, 0, 0, 0.2);
 }
 
 .nav-link-special:hover {
-    background-color: {{ $taskbarHoverBgColor }} !important;
-    border-color: rgba(255, 255, 255, 0.4) !important;
+    background-color: {{ $taskbarHoverBgColor }};
+    border-color: rgba(255, 255, 255, 0.4);
     box-shadow:
         0 1px 4px rgba(255, 255, 255, 0.3) inset,
         0 -1px 3px rgba(0, 0, 0, 0.3) inset,
         0 12px 32px rgba(0, 0, 0, 0.4),
-        0 24px 64px rgba(0, 0, 0, 0.3) !important;
+        0 24px 64px rgba(0, 0, 0, 0.3);
 }
 </style>
