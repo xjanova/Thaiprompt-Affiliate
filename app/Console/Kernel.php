@@ -114,6 +114,32 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('Crypto withdrawal processing failed');
             });
+
+        // LINE Token Security & Maintenance
+        // Clean up expired LINE tokens daily at 03:30 AM
+        $schedule->command('line:cleanup-tokens --force')
+            ->dailyAt('03:30')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('LINE token cleanup completed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('LINE token cleanup failed');
+            });
+
+        // LINE Conversation Management
+        // Check and cleanup expired conversations every 5 minutes
+        $schedule->command('line:cleanup-conversations')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('LINE conversation cleanup completed');
+            })
+            ->onFailure(function () {
+                \Log::error('LINE conversation cleanup failed');
+            });
     }
 
     /**

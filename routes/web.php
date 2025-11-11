@@ -81,8 +81,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/auth/line/unlink', [LineLoginController::class, 'unlink'])->name('line.unlink');
 });
 
-// LINE Signup via Invitation Link (Public Routes)
-Route::prefix('line/signup')->name('line.signup.')->group(function () {
+// LINE Signup via Invitation Link (Public Routes with Rate Limiting)
+Route::prefix('line/signup')->name('line.signup.')->middleware(['line.signup.throttle'])->group(function () {
     Route::get('/invitation/{token}', [\App\Http\Controllers\LineSignupController::class, 'handleInvitation'])->name('invitation');
     Route::get('/callback', [\App\Http\Controllers\LineSignupController::class, 'handleCallback'])->name('callback');
 });

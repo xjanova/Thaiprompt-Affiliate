@@ -34,6 +34,16 @@ class MlmProspect extends Model
         'user_agent',
         'utm_params',
         'notes',
+        // Conversation tracking
+        'conversation_started_at',
+        'conversation_updated_at',
+        'conversation_timeout_at',
+        'conversation_expired',
+        'conversation_message_count',
+        'conversation_retry_count',
+        'conversation_progress_percent',
+        'conversation_total_steps',
+        'conversation_completed_steps',
     ];
 
     protected function casts(): array
@@ -46,6 +56,16 @@ class MlmProspect extends Model
             'is_locked' => 'boolean',
             'conversation_data' => 'array',
             'utm_params' => 'array',
+            // Conversation tracking
+            'conversation_started_at' => 'datetime',
+            'conversation_updated_at' => 'datetime',
+            'conversation_timeout_at' => 'datetime',
+            'conversation_expired' => 'boolean',
+            'conversation_message_count' => 'integer',
+            'conversation_retry_count' => 'integer',
+            'conversation_progress_percent' => 'integer',
+            'conversation_total_steps' => 'integer',
+            'conversation_completed_steps' => 'integer',
         ];
     }
 

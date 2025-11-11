@@ -9,6 +9,7 @@ use App\Models\LineLoginLog;
 use App\Models\LineOaSetting;
 use App\Models\Setting;
 use App\Services\LineService;
+use App\Services\LineTokenService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -85,11 +86,10 @@ class RegisterController extends Controller
         ];
 
         if ($lineProfile) {
-            // LINE profile data
+            // LINE profile data (without token - will be stored encrypted separately)
             $userData['line_user_id'] = $lineProfile['line_user_id'];
             $userData['line_display_name'] = $lineProfile['line_display_name'];
             $userData['line_picture_url'] = $lineProfile['line_picture_url'];
-            $userData['line_access_token'] = $lineProfile['line_access_token'];
             $userData['line_linked_at'] = now();
             $userData['line_verified'] = true;
 
@@ -100,6 +100,12 @@ class RegisterController extends Controller
         }
 
         $user = User::create($userData);
+
+        // Store encrypted LINE access token if available
+        if ($lineProfile && !empty($lineProfile['line_access_token'])) {
+            $tokenService = app(LineTokenService::class);
+            $tokenService->storeAccessToken($user, $lineProfile['line_access_token']);
+        }
 
         // Create affiliate account
         $parentAffiliate = null;

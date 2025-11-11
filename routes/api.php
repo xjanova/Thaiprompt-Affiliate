@@ -25,7 +25,10 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Webhooks (no CSRF, no auth)
-Route::post('/webhook/line', [LineWebhookController::class, 'handle'])->name('api.line.webhook');
+// LINE Webhook with rate limiting and signature verification
+Route::post('/webhook/line', [LineWebhookController::class, 'handle'])
+    ->middleware(['line.webhook.throttle'])
+    ->name('api.line.webhook');
 
 // Cookie Consent API (no auth required)
 Route::post('/cookie-consent', [\App\Http\Controllers\CookieConsentController::class, 'store']);
