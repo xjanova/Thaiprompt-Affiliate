@@ -95,7 +95,7 @@ return [
 
     'update' => [
         'enabled' => env('VERSION_CHECK_ENABLED', true),
-        'cache_ttl' => env('VERSION_CHECK_CACHE_TTL', 300), // 5 minutes (was 3600 = 1 hour)
+        'cache_ttl' => env('VERSION_CHECK_CACHE_TTL', 60), // 1 minute for immediate feedback
         'auto_check' => env('VERSION_AUTO_CHECK', true),
         'allow_prerelease' => env('VERSION_ALLOW_PRERELEASE', false),
     ],
