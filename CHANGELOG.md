@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.13] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #833 from xjanova/claude/fix-popular-destinations-undefined-011CV2QYEvsURSbNYDTww6qW (73734449)
+- fix: resolve undefined $popularDestinations variable error in hotels.index view (329a9ffe)
+### 🔧 Other Changes
+
+
 ## [v2.127.12] - 2025-11-11
 
 ### ✨ Features
