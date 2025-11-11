@@ -44,6 +44,13 @@
     $startButtonIconSize = WindowsUiSetting::get('millennium_start_button_icon_size', 32);
     $startButtonFontSize = WindowsUiSetting::get('millennium_start_button_font_size', 20);
 
+    // Start Button Icon Settings
+    $startButtonIconType = WindowsUiSetting::get('millennium_start_button_icon_type', 'default');
+    $startButtonCustomIconPath = WindowsUiSetting::get('millennium_start_button_custom_icon_path');
+    $startButtonFontAwesomeIcon = WindowsUiSetting::get('millennium_start_button_fontawesome_icon', 'fa-rocket');
+    $startButtonEmoji = WindowsUiSetting::get('millennium_start_button_emoji', '🚀');
+    $startButtonIconPosition = WindowsUiSetting::get('millennium_start_button_icon_position', 'left');
+
     // Fallback: Ensure text is always shown with proper values
     if ($startButtonShowText === false || $startButtonShowText === 0 || $startButtonShowText === '0' || $startButtonShowText === null) {
         $startButtonShowText = true; // Force enable if not explicitly set
@@ -314,9 +321,20 @@
                             style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
 
                             @if($startButtonShowIcon)
-                                @if($logo)
+                                @if($startButtonIconType === 'upload' && $startButtonCustomIconPath)
+                                    <!-- Custom Uploaded Icon -->
+                                    <img src="{{ asset('storage/' . $startButtonCustomIconPath) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                @elseif($startButtonIconType === 'fontawesome')
+                                    <!-- FontAwesome Icon -->
+                                    <i class="{{ $startButtonFontAwesomeIcon }} text-white drop-shadow-2xl" style="font-size: {{ $startButtonIconSize }}px;"></i>
+                                @elseif($startButtonIconType === 'emoji')
+                                    <!-- Emoji Icon -->
+                                    <span class="drop-shadow-2xl" style="font-size: {{ $startButtonIconSize }}px;">{{ $startButtonEmoji }}</span>
+                                @elseif($logo)
+                                    <!-- Default: System Logo -->
                                     <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
                                 @else
+                                    <!-- Fallback: Windows Logo SVG -->
                                     <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
                                         <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
                                             <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
@@ -602,9 +620,20 @@
                             style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
 
                             @if($startButtonShowIcon)
-                                @if($logo)
+                                @if($startButtonIconType === 'upload' && $startButtonCustomIconPath)
+                                    <!-- Custom Uploaded Icon -->
+                                    <img src="{{ asset('storage/' . $startButtonCustomIconPath) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
+                                @elseif($startButtonIconType === 'fontawesome')
+                                    <!-- FontAwesome Icon -->
+                                    <i class="{{ $startButtonFontAwesomeIcon }} text-white drop-shadow-2xl" style="font-size: {{ $startButtonIconSize }}px;"></i>
+                                @elseif($startButtonIconType === 'emoji')
+                                    <!-- Emoji Icon -->
+                                    <span class="drop-shadow-2xl" style="font-size: {{ $startButtonIconSize }}px;">{{ $startButtonEmoji }}</span>
+                                @elseif($logo)
+                                    <!-- Default: System Logo -->
                                     <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="object-contain drop-shadow-2xl" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
                                 @else
+                                    <!-- Fallback: Windows Logo SVG -->
                                     <div class="bg-white/20 rounded-xl flex items-center justify-center" style="width: {{ $startButtonIconSize }}px; height: {{ $startButtonIconSize }}px;">
                                         <svg class="text-white" fill="currentColor" viewBox="0 0 24 24" style="width: {{ $startButtonIconSize * 0.7 }}px; height: {{ $startButtonIconSize * 0.7 }}px;">
                                             <path d="M0 0h11v11H0V0zm13 0h11v11H13V0zM0 13h11v11H0V13zm13 0h11v11H13V13z"/>
