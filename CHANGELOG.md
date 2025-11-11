@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.115.0] - 2025-11-11
+
+### ✨ Features
+- feat: add Bot Automation seeders to DatabaseSeeder (08f09a14)
+- feat: add admin menu and views for video reward system (f88b3d88)
+- feat: add comprehensive video reward system (089bc0bc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #789 from xjanova/claude/add-video-reward-system-011CUzh3zn26t8ARnKkrGLqR (ee227ca7)
+- Merge branch 'claude/Main' - resolve DatabaseSeeder conflict (2bfb6b7d)
+- Merge branch 'claude/Main' - resolve conflicts (816cf06b)
+- docs: add comprehensive Video Reward System documentation (ea0fda63)
+
 ## [v2.114.0] - 2025-11-11
 
 ### ✨ Features
