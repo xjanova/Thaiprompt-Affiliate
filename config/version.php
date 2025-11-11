@@ -82,21 +82,9 @@ return [
         'name' => 'Thaiprompt-Affiliate',
         'branch' => 'main',
         'api_url' => 'https://api.github.com/repos/xjanova/Thaiprompt-Affiliate',
-        'token' => (function() {
-            // Try to get from database settings first (encrypted)
-            try {
-                $encryptedToken = \App\Models\Setting::get('update_github_token');
-                if ($encryptedToken) {
-                    return \Illuminate\Support\Facades\Crypt::decryptString($encryptedToken);
-                }
-            } catch (\Exception $e) {
-                // If decrypt fails or setting doesn't exist, fall back to env
-                \Log::debug('Could not decrypt GitHub token from database: ' . $e->getMessage());
-            }
-
-            // Fallback to .env
-            return env('GITHUB_TOKEN');
-        })(),
+        // Token will be loaded dynamically from database or .env when needed
+        // See VersionService and UpdateService for token loading logic
+        'token' => env('GITHUB_TOKEN'), // Fallback only
     ],
 
     /*

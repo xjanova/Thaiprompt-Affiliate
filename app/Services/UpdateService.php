@@ -27,6 +27,26 @@ class UpdateService
     }
 
     /**
+     * Get GitHub token from database or .env
+     */
+    protected function getGitHubToken(): ?string
+    {
+        try {
+            // Try to get from database settings first (encrypted)
+            $encryptedToken = \App\Models\Setting::get('update_github_token');
+            if ($encryptedToken) {
+                return \Illuminate\Support\Facades\Crypt::decryptString($encryptedToken);
+            }
+        } catch (\Exception $e) {
+            // If decrypt fails or database not available, fall back to env
+            Log::debug('Could not get GitHub token from database: ' . $e->getMessage());
+        }
+
+        // Fallback to .env
+        return config('version.repository.token', env('GITHUB_TOKEN'));
+    }
+
+    /**
      * Check for available updates
      */
     public function checkForUpdates($force = false)
@@ -49,7 +69,7 @@ class UpdateService
 
             // Fetch from GitHub API
             $apiUrl = $repositoryConfig['api_url'] . '/releases';
-            $token = config('version.repository.token', env('GITHUB_TOKEN'));
+            $token = $this->getGitHubToken();
 
             $headers = [];
             if ($token) {
