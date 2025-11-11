@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.11] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #831 from xjanova/claude/fix-commission-controller-create-011CV2L5W5ECjWdufQjSuF6k (a99ba923)
+- fix: Add missing create and store methods to CommissionController (14348d5e)
+### 🔧 Other Changes
+
+
 ## [v2.127.10] - 2025-11-11
 
 ### ✨ Features
