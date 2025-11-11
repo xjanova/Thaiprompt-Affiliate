@@ -1,0 +1,766 @@
+=================================================================
+COMPREHENSIVE MISSING BLADE VIEWS REPORT
+=================================================================
+
+Scanned: /home/user/Thaiprompt-Affiliate/app/Http/Controllers
+Date: 2025-11-11 16:30:00
+
+Found 136 missing view(s):
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/ApiEndpointController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: create()
+    Missing View: admin.api-endpoints.create
+    Expected File: resources/views/admin/api-endpoints/create.blade.php
+
+  • Method: show()
+    Missing View: admin.api-endpoints.show
+    Expected File: resources/views/admin/api-endpoints/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.api-endpoints.edit
+    Expected File: resources/views/admin/api-endpoints/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/ApiKeyController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: show()
+    Missing View: admin.api-keys.show
+    Expected File: resources/views/admin/api-keys/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.api-keys.edit
+    Expected File: resources/views/admin/api-keys/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/AppControlSectionController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.app-control-sections.index
+    Expected File: resources/views/admin/app-control-sections/index.blade.php
+
+  • Method: create()
+    Missing View: admin.app-control-sections.create
+    Expected File: resources/views/admin/app-control-sections/create.blade.php
+
+  • Method: edit()
+    Missing View: admin.app-control-sections.edit
+    Expected File: resources/views/admin/app-control-sections/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/AppFeatureController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.app-features.index
+    Expected File: resources/views/admin/app-features/index.blade.php
+
+  • Method: create()
+    Missing View: admin.app-features.create
+    Expected File: resources/views/admin/app-features/create.blade.php
+
+  • Method: edit()
+    Missing View: admin.app-features.edit
+    Expected File: resources/views/admin/app-features/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/AppMaintenanceController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.app-maintenance.index
+    Expected File: resources/views/admin/app-maintenance/index.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/AppThemeSettingController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.app-theme.index
+    Expected File: resources/views/admin/app-theme/index.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/AttendanceController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: employeeReport()
+    Missing View: admin.hrm.attendance.employee-report
+    Expected File: resources/views/admin/hrm/attendance/employee-report.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/BotAutomation/BotAutomationController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.bot-automation.index
+    Expected File: resources/views/admin/bot-automation/index.blade.php
+
+  • Method: create()
+    Missing View: admin.bot-automation.create
+    Expected File: resources/views/admin/bot-automation/create.blade.php
+
+  • Method: show()
+    Missing View: admin.bot-automation.show
+    Expected File: resources/views/admin/bot-automation/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.bot-automation.edit
+    Expected File: resources/views/admin/bot-automation/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/ComponentSettingController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.component-settings.index
+    Expected File: resources/views/admin/component-settings/index.blade.php
+
+  • Method: create()
+    Missing View: admin.component-settings.create
+    Expected File: resources/views/admin/component-settings/create.blade.php
+
+  • Method: edit()
+    Missing View: admin.component-settings.edit
+    Expected File: resources/views/admin/component-settings/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/CookieAnalyticsController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: visitors()
+    Missing View: admin.cookie-analytics.visitors
+    Expected File: resources/views/admin/cookie-analytics/visitors.blade.php
+
+  • Method: visitorDetail()
+    Missing View: admin.cookie-analytics.visitor-detail
+    Expected File: resources/views/admin/cookie-analytics/visitor-detail.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/EmailController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: showLog()
+    Missing View: admin.email.log-detail
+    Expected File: resources/views/admin/email/log-detail.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/HDWalletManagementController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.crypto.hd-wallets.index
+    Expected File: resources/views/admin/crypto/hd-wallets/index.blade.php
+
+  • Method: show()
+    Missing View: admin.crypto.hd-wallets.show
+    Expected File: resources/views/admin/crypto/hd-wallets/show.blade.php
+
+  • Method: masterWallets()
+    Missing View: admin.crypto.hd-wallets.master-wallets
+    Expected File: resources/views/admin/crypto/hd-wallets/master-wallets.blade.php
+
+  • Method: childWallets()
+    Missing View: admin.crypto.hd-wallets.child-wallets
+    Expected File: resources/views/admin/crypto/hd-wallets/child-wallets.blade.php
+
+  • Method: userWallets()
+    Missing View: admin.crypto.hd-wallets.user-wallets
+    Expected File: resources/views/admin/crypto/hd-wallets/user-wallets.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/HotelSpecialOfferController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: create()
+    Missing View: admin.hotels.special-offers.create
+    Expected File: resources/views/admin/hotels/special-offers/create.blade.php
+
+  • Method: show()
+    Missing View: admin.hotels.special-offers.show
+    Expected File: resources/views/admin/hotels/special-offers/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.hotels.special-offers.edit
+    Expected File: resources/views/admin/hotels/special-offers/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/InstallmentPlanController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.installment-plans.index
+    Expected File: resources/views/admin/installment-plans/index.blade.php
+
+  • Method: show()
+    Missing View: admin.installment-plans.show
+    Expected File: resources/views/admin/installment-plans/show.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/InstructorDashboardController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: courseAnalytics()
+    Missing View: admin.instructor.course-analytics
+    Expected File: resources/views/admin/instructor/course-analytics.blade.php
+
+  • Method: earnings()
+    Missing View: admin.instructor.earnings
+    Expected File: resources/views/admin/instructor/earnings.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/InvestmentController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: plans()
+    Missing View: admin.investments.plans.index
+    Expected File: resources/views/admin/investments/plans/index.blade.php
+
+  • Method: createPlan()
+    Missing View: admin.investments.plans.create
+    Expected File: resources/views/admin/investments/plans/create.blade.php
+
+  • Method: editPlan()
+    Missing View: admin.investments.plans.edit
+    Expected File: resources/views/admin/investments/plans/edit.blade.php
+
+  • Method: positions()
+    Missing View: admin.investments.positions.index
+    Expected File: resources/views/admin/investments/positions/index.blade.php
+
+  • Method: showPosition()
+    Missing View: admin.investments.positions.show
+    Expected File: resources/views/admin/investments/positions/show.blade.php
+
+  • Method: distributions()
+    Missing View: admin.investments.distributions.index
+    Expected File: resources/views/admin/investments/distributions/index.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/JobApplicationController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.hrm.recruitment.applications.index
+    Expected File: resources/views/admin/hrm/recruitment/applications/index.blade.php
+
+  • Method: create()
+    Missing View: admin.hrm.recruitment.applications.create
+    Expected File: resources/views/admin/hrm/recruitment/applications/create.blade.php
+
+  • Method: show()
+    Missing View: admin.hrm.recruitment.applications.show
+    Expected File: resources/views/admin/hrm/recruitment/applications/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.hrm.recruitment.applications.edit
+    Expected File: resources/views/admin/hrm/recruitment/applications/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/JobPostingController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.hrm.recruitment.jobs.index
+    Expected File: resources/views/admin/hrm/recruitment/jobs/index.blade.php
+
+  • Method: create()
+    Missing View: admin.hrm.recruitment.jobs.create
+    Expected File: resources/views/admin/hrm/recruitment/jobs/create.blade.php
+
+  • Method: show()
+    Missing View: admin.hrm.recruitment.jobs.show
+    Expected File: resources/views/admin/hrm/recruitment/jobs/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.hrm.recruitment.jobs.edit
+    Expected File: resources/views/admin/hrm/recruitment/jobs/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/LeaveController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: show()
+    Missing View: admin.hrm.leave.show
+    Expected File: resources/views/admin/hrm/leave/show.blade.php
+
+  • Method: calendar()
+    Missing View: admin.hrm.leave.calendar
+    Expected File: resources/views/admin/hrm/leave/calendar.blade.php
+
+  • Method: leaveTypes()
+    Missing View: admin.hrm.leave.types.index
+    Expected File: resources/views/admin/hrm/leave/types/index.blade.php
+
+  • Method: createLeaveType()
+    Missing View: admin.hrm.leave.types.create
+    Expected File: resources/views/admin/hrm/leave/types/create.blade.php
+
+  • Method: editLeaveType()
+    Missing View: admin.hrm.leave.types.edit
+    Expected File: resources/views/admin/hrm/leave/types/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/LineAvatarController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: create()
+    Missing View: admin.line-bot.avatar.create
+    Expected File: resources/views/admin/line-bot/avatar/create.blade.php
+
+  • Method: edit()
+    Missing View: admin.line-bot.avatar.edit
+    Expected File: resources/views/admin/line-bot/avatar/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/LineBotAiController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: knowledgeCreate()
+    Missing View: admin.line-bot.ai.knowledge.create
+    Expected File: resources/views/admin/line-bot/ai/knowledge/create.blade.php
+
+  • Method: conversationDetail()
+    Missing View: admin.line-bot.ai.conversation-detail
+    Expected File: resources/views/admin/line-bot/ai/conversation-detail.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/MlmCommissionController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: show()
+    Missing View: admin.mlm.commissions.show
+    Expected File: resources/views/admin/mlm/commissions/show.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/MlmProductPvController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: edit()
+    Missing View: admin.mlm.product-pv.edit
+    Expected File: resources/views/admin/mlm/product-pv/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/MlmReportController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.mlm.reports.index
+    Expected File: resources/views/admin/mlm/reports/index.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/PayrollController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: show()
+    Missing View: admin.hrm.payroll.show
+    Expected File: resources/views/admin/hrm/payroll/show.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/PerformanceGoalController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.hrm.performance.goals.index
+    Expected File: resources/views/admin/hrm/performance/goals/index.blade.php
+
+  • Method: create()
+    Missing View: admin.hrm.performance.goals.create
+    Expected File: resources/views/admin/hrm/performance/goals/create.blade.php
+
+  • Method: show()
+    Missing View: admin.hrm.performance.goals.show
+    Expected File: resources/views/admin/hrm/performance/goals/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.hrm.performance.goals.edit
+    Expected File: resources/views/admin/hrm/performance/goals/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/PerformanceReviewController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.hrm.performance.reviews.index
+    Expected File: resources/views/admin/hrm/performance/reviews/index.blade.php
+
+  • Method: create()
+    Missing View: admin.hrm.performance.reviews.create
+    Expected File: resources/views/admin/hrm/performance/reviews/create.blade.php
+
+  • Method: show()
+    Missing View: admin.hrm.performance.reviews.show
+    Expected File: resources/views/admin/hrm/performance/reviews/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.hrm.performance.reviews.edit
+    Expected File: resources/views/admin/hrm/performance/reviews/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/PerformanceTemplateController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.hrm.performance.templates.index
+    Expected File: resources/views/admin/hrm/performance/templates/index.blade.php
+
+  • Method: create()
+    Missing View: admin.hrm.performance.templates.create
+    Expected File: resources/views/admin/hrm/performance/templates/create.blade.php
+
+  • Method: show()
+    Missing View: admin.hrm.performance.templates.show
+    Expected File: resources/views/admin/hrm/performance/templates/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.hrm.performance.templates.edit
+    Expected File: resources/views/admin/hrm/performance/templates/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/PosAdvertisementController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.pos.advertisements.index
+    Expected File: resources/views/admin/pos/advertisements/index.blade.php
+
+  • Method: create()
+    Missing View: admin.pos.advertisements.create
+    Expected File: resources/views/admin/pos/advertisements/create.blade.php
+
+  • Method: show()
+    Missing View: admin.pos.advertisements.show
+    Expected File: resources/views/admin/pos/advertisements/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.pos.advertisements.edit
+    Expected File: resources/views/admin/pos/advertisements/edit.blade.php
+
+  • Method: preview()
+    Missing View: admin.pos.advertisements.preview
+    Expected File: resources/views/admin/pos/advertisements/preview.blade.php
+
+  • Method: analytics()
+    Missing View: admin.pos.advertisements.analytics
+    Expected File: resources/views/admin/pos/advertisements/analytics.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/PosTransactionController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: receipt()
+    Missing View: admin.pos.transactions.receipt
+    Expected File: resources/views/admin/pos/transactions/receipt.blade.php
+
+  • Method: printReceipt()
+    Missing View: admin.pos.transactions.print-receipt
+    Expected File: resources/views/admin/pos/transactions/print-receipt.blade.php
+
+  • Method: analytics()
+    Missing View: admin.pos.transactions.analytics
+    Expected File: resources/views/admin/pos/transactions/analytics.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/QuizController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.quiz.index
+    Expected File: resources/views/admin/quiz/index.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/QuizManagementController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.quiz-management.index
+    Expected File: resources/views/admin/quiz-management/index.blade.php
+
+  • Method: create()
+    Missing View: admin.quiz-management.create
+    Expected File: resources/views/admin/quiz-management/create.blade.php
+
+  • Method: show()
+    Missing View: admin.quiz-management.show
+    Expected File: resources/views/admin/quiz-management/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.quiz-management.edit
+    Expected File: resources/views/admin/quiz-management/edit.blade.php
+
+  • Method: attempts()
+    Missing View: admin.quiz-management.attempts
+    Expected File: resources/views/admin/quiz-management/attempts.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/SmartSliderController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: edit()
+    Missing View: admin.smart-sliders.edit
+    Expected File: resources/views/admin/smart-sliders/edit.blade.php
+
+  • Method: analytics()
+    Missing View: admin.smart-sliders.analytics
+    Expected File: resources/views/admin/smart-sliders/analytics.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/SoftwareProductManagementController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.software-products.index
+    Expected File: resources/views/admin/software-products/index.blade.php
+
+  • Method: create()
+    Missing View: admin.software-products.create
+    Expected File: resources/views/admin/software-products/create.blade.php
+
+  • Method: show()
+    Missing View: admin.software-products.show
+    Expected File: resources/views/admin/software-products/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.software-products.edit
+    Expected File: resources/views/admin/software-products/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/TicketController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: categories()
+    Missing View: admin.tickets.categories
+    Expected File: resources/views/admin/tickets/categories.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/TrainingCourseController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.hrm.training.courses.index
+    Expected File: resources/views/admin/hrm/training/courses/index.blade.php
+
+  • Method: create()
+    Missing View: admin.hrm.training.courses.create
+    Expected File: resources/views/admin/hrm/training/courses/create.blade.php
+
+  • Method: show()
+    Missing View: admin.hrm.training.courses.show
+    Expected File: resources/views/admin/hrm/training/courses/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.hrm.training.courses.edit
+    Expected File: resources/views/admin/hrm/training/courses/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/TrainingEnrollmentController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.hrm.training.enrollments.index
+    Expected File: resources/views/admin/hrm/training/enrollments/index.blade.php
+
+  • Method: create()
+    Missing View: admin.hrm.training.enrollments.create
+    Expected File: resources/views/admin/hrm/training/enrollments/create.blade.php
+
+  • Method: show()
+    Missing View: admin.hrm.training.enrollments.show
+    Expected File: resources/views/admin/hrm/training/enrollments/show.blade.php
+
+  • Method: edit()
+    Missing View: admin.hrm.training.enrollments.edit
+    Expected File: resources/views/admin/hrm/training/enrollments/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/TrendManagementController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: createSource()
+    Missing View: admin.trends.create-source
+    Expected File: resources/views/admin/trends/create-source.blade.php
+
+  • Method: editSource()
+    Missing View: admin.trends.edit-source
+    Expected File: resources/views/admin/trends/edit-source.blade.php
+
+  • Method: keywords()
+    Missing View: admin.trends.keywords
+    Expected File: resources/views/admin/trends/keywords.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/TwoFactorSettingsController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: admin.two-factor.settings
+    Expected File: resources/views/admin/two-factor/settings.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Admin/UpdateController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: logs()
+    Missing View: admin.updates.logs
+    Expected File: resources/views/admin/updates/logs.blade.php
+
+  • Method: showLog()
+    Missing View: admin.updates.log-detail
+    Expected File: resources/views/admin/updates/log-detail.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Frontend/SliderController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: show()
+    Missing View: frontend.slider.show
+    Expected File: resources/views/frontend/slider/show.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: HotelBookingController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: edit()
+    Missing View: hotels.bookings.edit
+    Expected File: resources/views/hotels/bookings/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: HotelController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: featured()
+    Missing View: hotels.featured
+    Expected File: resources/views/hotels/featured.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: HotelReviewController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: hotels.reviews.index
+    Expected File: resources/views/hotels/reviews/index.blade.php
+
+  • Method: show()
+    Missing View: hotels.reviews.show
+    Expected File: resources/views/hotels/reviews/show.blade.php
+
+  • Method: edit()
+    Missing View: hotels.reviews.edit
+    Expected File: resources/views/hotels/reviews/edit.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: InstallmentController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: installments.index
+    Expected File: resources/views/installments/index.blade.php
+
+  • Method: show()
+    Missing View: installments.show
+    Expected File: resources/views/installments/show.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: OrderController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: shop.orders.index
+    Expected File: resources/views/shop/orders/index.blade.php
+
+  • Method: show()
+    Missing View: shop.orders.show
+    Expected File: resources/views/shop/orders/show.blade.php
+
+  • Method: showReviewForm()
+    Missing View: shop.orders.review
+    Expected File: resources/views/shop/orders/review.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: Pos/PosCashierController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: pos.cashier.index
+    Expected File: resources/views/pos/cashier/index.blade.php
+
+  • Method: openSession()
+    Missing View: pos.cashier.open-session
+    Expected File: resources/views/pos/cashier/open-session.blade.php
+
+  • Method: closeSession()
+    Missing View: pos.cashier.close-session
+    Expected File: resources/views/pos/cashier/close-session.blade.php
+
+  • Method: sessionReport()
+    Missing View: pos.cashier.session-report
+    Expected File: resources/views/pos/cashier/session-report.blade.php
+
+  • Method: customerDisplay()
+    Missing View: pos.customer-display
+    Expected File: resources/views/pos/customer-display.blade.php
+
+  • Method: receipt()
+    Missing View: pos.cashier.receipt
+    Expected File: resources/views/pos/cashier/receipt.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: QuotationController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: quotations.index
+    Expected File: resources/views/quotations/index.blade.php
+
+  • Method: show()
+    Missing View: quotations.show
+    Expected File: resources/views/quotations/show.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: User/AiGenController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: packages()
+    Missing View: user.ai-gen.packages
+    Expected File: resources/views/user/ai-gen/packages.blade.php
+
+  • Method: myCreations()
+    Missing View: user.ai-gen.my-creations
+    Expected File: resources/views/user/ai-gen/my-creations.blade.php
+
+  • Method: explore()
+    Missing View: user.ai-gen.explore
+    Expected File: resources/views/user/ai-gen/explore.blade.php
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Controller: WalletTopupController.php
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  • Method: index()
+    Missing View: wallet.topup
+    Expected File: resources/views/wallet/topup.blade.php
+
+  • Method: payment()
+    Missing View: wallet.topup-payment
+    Expected File: resources/views/wallet/topup-payment.blade.php
+
+  • Method: success()
+    Missing View: wallet.topup-success
+    Expected File: resources/views/wallet/topup-success.blade.php
+
+=================================================================
+SUMMARY BY DIRECTORY
+=================================================================
+
+resources/views/admin/api-endpoints                          [ 3 missing]
+resources/views/admin/api-keys                               [ 2 missing]
+resources/views/admin/app-control-sections                   [ 3 missing]
+resources/views/admin/app-features                           [ 3 missing]
+resources/views/admin/app-maintenance                        [ 1 missing]
+resources/views/admin/app-theme                              [ 1 missing]
+resources/views/admin/bot-automation                         [ 4 missing]
+resources/views/admin/component-settings                     [ 3 missing]
+resources/views/admin/cookie-analytics                       [ 2 missing]
+resources/views/admin/crypto/hd-wallets                      [ 5 missing]
+resources/views/admin/email                                  [ 1 missing]
+resources/views/admin/hotels/special-offers                  [ 3 missing]
+resources/views/admin/hrm/attendance                         [ 1 missing]
+resources/views/admin/hrm/leave                              [ 2 missing]
+resources/views/admin/hrm/leave/types                        [ 3 missing]
+resources/views/admin/hrm/payroll                            [ 1 missing]
+resources/views/admin/hrm/performance/goals                  [ 4 missing]
+resources/views/admin/hrm/performance/reviews                [ 4 missing]
+resources/views/admin/hrm/performance/templates              [ 4 missing]
+resources/views/admin/hrm/recruitment/applications           [ 4 missing]
+resources/views/admin/hrm/recruitment/jobs                   [ 4 missing]
+resources/views/admin/hrm/training/courses                   [ 4 missing]
+resources/views/admin/hrm/training/enrollments               [ 4 missing]
+resources/views/admin/installment-plans                      [ 2 missing]
+resources/views/admin/instructor                             [ 2 missing]
+resources/views/admin/investments/distributions              [ 1 missing]
+resources/views/admin/investments/plans                      [ 3 missing]
+resources/views/admin/investments/positions                  [ 2 missing]
+resources/views/admin/line-bot/ai                            [ 1 missing]
+resources/views/admin/line-bot/ai/knowledge                  [ 1 missing]
+resources/views/admin/line-bot/avatar                        [ 2 missing]
+resources/views/admin/mlm/commissions                        [ 1 missing]
+resources/views/admin/mlm/product-pv                         [ 1 missing]
+resources/views/admin/mlm/reports                            [ 1 missing]
+resources/views/admin/pos/advertisements                     [ 6 missing]
+resources/views/admin/pos/transactions                       [ 3 missing]
+resources/views/admin/quiz                                   [ 1 missing]
+resources/views/admin/quiz-management                        [ 5 missing]
+resources/views/admin/smart-sliders                          [ 2 missing]
+resources/views/admin/software-products                      [ 4 missing]
+resources/views/admin/tickets                                [ 1 missing]
+resources/views/admin/trends                                 [ 3 missing]
+resources/views/admin/two-factor                             [ 1 missing]
+resources/views/admin/updates                                [ 2 missing]
+resources/views/frontend/slider                              [ 1 missing]
+resources/views/hotels                                       [ 1 missing]
+resources/views/hotels/bookings                              [ 1 missing]
+resources/views/hotels/reviews                               [ 3 missing]
+resources/views/installments                                 [ 2 missing]
+resources/views/pos                                          [ 1 missing]
+resources/views/pos/cashier                                  [ 5 missing]
+resources/views/quotations                                   [ 2 missing]
+resources/views/shop/orders                                  [ 3 missing]
+resources/views/user/ai-gen                                  [ 3 missing]
+resources/views/wallet                                       [ 3 missing]
+
+=================================================================
+Scan complete.
+=================================================================
