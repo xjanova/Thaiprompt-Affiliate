@@ -341,23 +341,52 @@ function settingsManager() {
                 const response = await fetch('{{ route('admin.updates.test-connection') }}');
                 const data = await response.json();
 
+                console.log('Test connection response:', data);
+
                 this.testSuccess = data.success;
 
+                // Build results HTML
+                let html = '';
+
+                // Show passed checks
                 if (data.results && data.results.checks) {
-                    let html = '<ul class="space-y-1">';
+                    html += '<ul class="space-y-1">';
                     data.results.checks.forEach(check => {
                         const icon = check.status === 'passed' ? '✅' : '❌';
                         const color = check.status === 'passed' ? 'text-green-700' : 'text-red-700';
                         html += `<li class="${color}">${icon} <strong>${check.check}:</strong> ${check.message || check.version || 'OK'}</li>`;
                     });
                     html += '</ul>';
-                    this.testResults = html;
-                } else {
-                    this.testResults = data.message || 'ไม่สามารถทดสอบการเชื่อมต่อได้';
                 }
+
+                // Show errors
+                if (data.results && data.results.errors && data.results.errors.length > 0) {
+                    html += '<div class="mt-3"><strong class="text-red-700">❌ ข้อผิดพลาด:</strong><ul class="space-y-1 mt-1">';
+                    data.results.errors.forEach(error => {
+                        html += `<li class="text-red-700">• <strong>${error.check}:</strong> ${error.message}</li>`;
+                    });
+                    html += '</ul></div>';
+                }
+
+                // Show debug info if available
+                if (data.results && data.results.debug_info) {
+                    html += '<div class="mt-3 text-xs text-gray-600"><strong>Debug Info:</strong><br>';
+                    html += `API URL: ${data.results.debug_info.api_url || 'N/A'}<br>`;
+                    html += `Has Token: ${data.results.debug_info.has_token ? 'Yes' : 'No'}<br>`;
+                    html += `PHP Version: ${data.results.debug_info.php_version || 'N/A'}`;
+                    html += '</div>';
+                }
+
+                this.testResults = html || data.message || 'ไม่มีข้อมูลผลการทดสอบ';
+
             } catch (error) {
+                console.error('Test connection error:', error);
                 this.testSuccess = false;
-                this.testResults = 'เกิดข้อผิดพลาดในการทดสอบการเชื่อมต่อ';
+                this.testResults = `<div class="text-red-700">
+                    <strong>❌ เกิดข้อผิดพลาดในการทดสอบการเชื่อมต่อ</strong><br>
+                    <span class="text-sm">${error.message || 'Unknown error'}</span><br>
+                    <span class="text-xs">กรุณาเปิด Console (F12) เพื่อดูรายละเอียดเพิ่มเติม</span>
+                </div>`;
             }
 
             this.testing = false;
