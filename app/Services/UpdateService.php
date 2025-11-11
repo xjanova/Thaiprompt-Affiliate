@@ -41,14 +41,42 @@ class UpdateService
             $currentVersion = config('version.current');
             $repositoryConfig = config('version.repository');
 
+            Log::info('Checking for updates', [
+                'current_version' => $currentVersion,
+                'api_url' => $repositoryConfig['api_url'] ?? 'not configured',
+                'force' => $force,
+            ]);
+
             // Fetch from GitHub API
-            $response = Http::get($repositoryConfig['api_url'] . '/releases');
+            $apiUrl = $repositoryConfig['api_url'] . '/releases';
+            $response = Http::timeout(30)->get($apiUrl);
 
             if (!$response->successful()) {
-                throw new \Exception('Failed to fetch updates from repository');
+                $errorMessage = "Failed to fetch updates from GitHub API (HTTP {$response->status()})";
+                $errorDetails = [
+                    'status' => $response->status(),
+                    'url' => $apiUrl,
+                    'body' => $response->body(),
+                    'headers' => $response->headers(),
+                ];
+
+                Log::error($errorMessage, $errorDetails);
+
+                throw new \Exception($errorMessage . "\nURL: {$apiUrl}\nStatus: {$response->status()}\nResponse: " . substr($response->body(), 0, 200));
             }
 
             $releases = $response->json();
+
+            if (!is_array($releases)) {
+                Log::error('Invalid response format from GitHub API', [
+                    'response_type' => gettype($releases),
+                    'response' => $releases,
+                ]);
+                throw new \Exception('Invalid response format from GitHub API (expected array, got ' . gettype($releases) . ')');
+            }
+
+            Log::info('Fetched releases from GitHub', ['count' => count($releases)]);
+
             $availableUpdates = [];
 
             foreach ($releases as $release) {
@@ -88,13 +116,27 @@ class UpdateService
                 $availableUpdates[] = $systemUpdate;
             }
 
+            Log::info('Available updates found', ['count' => count($availableUpdates)]);
+
             // Cache for 1 hour
             Cache::put($cacheKey, $availableUpdates, 3600);
 
             return $availableUpdates;
         } catch (\Exception $e) {
-            Log::error('Failed to check for updates: ' . $e->getMessage());
-            return [];
+            Log::error('Failed to check for updates', [
+                'error' => $e->getMessage(),
+                'type' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            // Re-throw with more context
+            throw new \Exception(
+                "การตรวจสอบอัพเดทล้มเหลว: {$e->getMessage()}\n\n" .
+                "ไฟล์: {$e->getFile()}:{$e->getLine()}\n" .
+                "เปิด APP_DEBUG=true ใน .env เพื่อดู stack trace"
+            );
         }
     }
 
@@ -449,38 +491,105 @@ class UpdateService
     protected function extractAndApplyUpdate($zipPath, $log)
     {
         if (!File::exists($zipPath)) {
-            throw new \Exception("Update file not found: {$zipPath}");
+            $error = "Update file not found: {$zipPath}";
+            Log::error($error, [
+                'expected_path' => $zipPath,
+                'storage_path' => storage_path('updates'),
+                'files_in_dir' => File::exists(storage_path('updates')) ? File::files(storage_path('updates')) : [],
+            ]);
+            throw new \Exception($error);
         }
+
+        $fileSize = File::size($zipPath);
+        Log::info('Starting file extraction', [
+            'zip_path' => $zipPath,
+            'file_size' => $fileSize,
+            'file_size_mb' => round($fileSize / 1024 / 1024, 2) . ' MB',
+        ]);
 
         // Create temporary extraction directory
         $tempDir = storage_path('updates/temp_' . time());
         if (!File::exists($tempDir)) {
             File::makeDirectory($tempDir, 0755, true);
+            Log::info('Created temporary directory', ['path' => $tempDir]);
         }
 
         try {
             // Extract ZIP file
             $zip = new ZipArchive();
-            if ($zip->open($zipPath) !== TRUE) {
-                throw new \Exception('Failed to open update ZIP file');
+            $openResult = $zip->open($zipPath);
+
+            if ($openResult !== TRUE) {
+                $errorCodes = [
+                    ZipArchive::ER_EXISTS => 'File already exists',
+                    ZipArchive::ER_INCONS => 'Zip archive inconsistent',
+                    ZipArchive::ER_INVAL => 'Invalid argument',
+                    ZipArchive::ER_MEMORY => 'Malloc failure',
+                    ZipArchive::ER_NOENT => 'No such file',
+                    ZipArchive::ER_NOZIP => 'Not a zip archive',
+                    ZipArchive::ER_OPEN => 'Can\'t open file',
+                    ZipArchive::ER_READ => 'Read error',
+                    ZipArchive::ER_SEEK => 'Seek error',
+                ];
+
+                $errorMsg = $errorCodes[$openResult] ?? "Unknown error code: {$openResult}";
+
+                Log::error('Failed to open ZIP file', [
+                    'file' => $zipPath,
+                    'error_code' => $openResult,
+                    'error_message' => $errorMsg,
+                    'file_exists' => File::exists($zipPath),
+                    'file_readable' => is_readable($zipPath),
+                    'file_size' => $fileSize,
+                ]);
+
+                throw new \Exception("Failed to open update ZIP file: {$errorMsg}");
             }
 
-            Log::info('Extracting update ZIP', ['path' => $zipPath, 'temp' => $tempDir]);
-            $zip->extractTo($tempDir);
+            Log::info('Extracting update ZIP', [
+                'path' => $zipPath,
+                'temp' => $tempDir,
+                'num_files' => $zip->numFiles,
+            ]);
+
+            $extractResult = $zip->extractTo($tempDir);
             $zip->close();
+
+            if (!$extractResult) {
+                throw new \Exception('ZIP extraction failed - extractTo() returned false');
+            }
+
+            Log::info('ZIP extraction completed successfully');
 
             // Find the root directory (GitHub ZIPs have a folder like "repo-name-hash/")
             $extractedContents = File::directories($tempDir);
 
+            Log::info('Checking extracted contents', [
+                'temp_dir' => $tempDir,
+                'directories_found' => count($extractedContents),
+                'directories' => $extractedContents,
+            ]);
+
             if (empty($extractedContents)) {
                 // If no subdirectory, use temp dir directly
                 $sourceDir = $tempDir;
+                Log::info('Using temp directory as source (no subdirectories found)');
             } else {
                 // Use the first directory (should be the only one for GitHub ZIPs)
                 $sourceDir = $extractedContents[0];
+                Log::info('Using first subdirectory as source', ['source' => $sourceDir]);
             }
 
-            Log::info('Source directory identified', ['source' => $sourceDir]);
+            // Verify source directory has files
+            $sourceFiles = File::allFiles($sourceDir);
+            if (empty($sourceFiles)) {
+                throw new \Exception("Source directory is empty: {$sourceDir}");
+            }
+
+            Log::info('Source directory verified', [
+                'source' => $sourceDir,
+                'total_files' => count($sourceFiles),
+            ]);
 
             // Files and directories to exclude from update
             $excludePaths = [
@@ -496,47 +605,91 @@ class UpdateService
                 'vendor', // Will be updated by composer
             ];
 
+            Log::info('Starting file copy process', [
+                'source' => $sourceDir,
+                'destination' => base_path(),
+                'excluded_paths' => $excludePaths,
+            ]);
+
             // Copy files from source to application root
-            $this->copyUpdateFiles($sourceDir, base_path(), $excludePaths, $log);
+            $copiedCount = $this->copyUpdateFiles($sourceDir, base_path(), $excludePaths, $log);
+
+            Log::info('File copy completed', ['files_copied' => $copiedCount]);
 
             // Run composer install to update dependencies
             Log::info('Running composer install...');
             $this->updateProgress($log, 'extracting', 'Installing dependencies...', null, null);
 
             try {
+                $composerPath = 'composer';
+                $basePath = base_path();
+
+                // Check if composer is available
+                exec('which composer 2>&1', $whichOutput, $whichCode);
+                if ($whichCode !== 0) {
+                    Log::warning('Composer command not found in PATH', ['which_output' => $whichOutput]);
+                    // Try common paths
+                    if (file_exists('/usr/local/bin/composer')) {
+                        $composerPath = '/usr/local/bin/composer';
+                    } elseif (file_exists('/usr/bin/composer')) {
+                        $composerPath = '/usr/bin/composer';
+                    }
+                }
+
+                Log::info('Executing composer install', [
+                    'composer_path' => $composerPath,
+                    'working_dir' => $basePath,
+                ]);
+
                 // Try composer install with optimizations
-                exec('cd ' . base_path() . ' && composer install --no-dev --optimize-autoloader 2>&1', $composerOutput, $composerCode);
+                exec("cd {$basePath} && {$composerPath} install --no-dev --optimize-autoloader 2>&1", $composerOutput, $composerCode);
 
                 if ($composerCode !== 0) {
                     Log::warning('Composer install completed with warnings', [
                         'code' => $composerCode,
-                        'output' => implode("\n", $composerOutput)
+                        'output' => implode("\n", $composerOutput),
+                        'composer_path' => $composerPath,
                     ]);
                 } else {
-                    Log::info('Composer dependencies installed successfully');
+                    Log::info('Composer dependencies installed successfully', [
+                        'output' => implode("\n", array_slice($composerOutput, -10)), // Last 10 lines
+                    ]);
                 }
             } catch (\Exception $e) {
-                Log::warning('Composer install failed: ' . $e->getMessage());
+                Log::warning('Composer install exception', [
+                    'error' => $e->getMessage(),
+                    'type' => get_class($e),
+                ]);
                 // Continue even if composer fails - not critical
             }
 
             // Clean up temporary directory
             File::deleteDirectory($tempDir);
-            Log::info('Temporary extraction directory cleaned up');
+            Log::info('Temporary extraction directory cleaned up', ['path' => $tempDir]);
 
             return true;
         } catch (\Exception $e) {
             // Clean up on failure
             if (File::exists($tempDir)) {
                 File::deleteDirectory($tempDir);
+                Log::info('Cleaned up temporary directory after failure', ['path' => $tempDir]);
             }
 
             Log::error('Update extraction failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'type' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'zip_path' => $zipPath ?? 'unknown',
+                'temp_dir' => $tempDir ?? 'unknown',
             ]);
 
-            throw new \Exception('Failed to extract and apply update: ' . $e->getMessage());
+            throw new \Exception(
+                "Failed to extract and apply update: {$e->getMessage()}\n\n" .
+                "Error in: {$e->getFile()}:{$e->getLine()}\n" .
+                "Check storage/logs/laravel.log for details"
+            );
         }
     }
 

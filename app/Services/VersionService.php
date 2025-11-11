@@ -387,6 +387,7 @@ class VersionService
             'success' => true,
             'checks' => [],
             'errors' => [],
+            'debug_info' => [],
         ];
 
         try {
@@ -394,30 +395,73 @@ class VersionService
             $apiUrl = config('version.repository.api_url');
             $token = config('version.repository.token', env('GITHUB_TOKEN'));
 
+            $results['debug_info']['api_url'] = $apiUrl;
+            $results['debug_info']['has_token'] = !empty($token);
+            $results['debug_info']['php_version'] = PHP_VERSION;
+            $results['debug_info']['curl_enabled'] = function_exists('curl_version');
+            $results['debug_info']['openssl_enabled'] = extension_loaded('openssl');
+
+            Log::info('Testing GitHub connection', $results['debug_info']);
+
             $headers = [];
             if ($token) {
                 $headers['Authorization'] = "Bearer {$token}";
             }
 
             $startTime = microtime(true);
-            $response = Http::withHeaders($headers)->timeout(10)->get($apiUrl);
-            $responseTime = round((microtime(true) - $startTime) * 1000, 2);
 
-            if ($response->successful()) {
-                $results['checks'][] = [
-                    'check' => 'GitHub API Reachability',
-                    'status' => 'passed',
-                    'message' => "Repository accessible (response time: {$responseTime}ms)",
+            try {
+                $response = Http::withHeaders($headers)->timeout(10)->get($apiUrl);
+                $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+
+                Log::info('GitHub API response received', [
+                    'status' => $response->status(),
                     'response_time' => $responseTime,
-                ];
-            } else {
+                    'url' => $apiUrl,
+                ]);
+
+                if ($response->successful()) {
+                    $results['checks'][] = [
+                        'check' => 'GitHub API Reachability',
+                        'status' => 'passed',
+                        'message' => "Repository accessible (response time: {$responseTime}ms)",
+                        'response_time' => $responseTime,
+                    ];
+                } else {
+                    $results['success'] = false;
+                    $errorBody = substr($response->body(), 0, 500);
+                    $results['errors'][] = [
+                        'check' => 'GitHub API Reachability',
+                        'status' => 'failed',
+                        'message' => "HTTP {$response->status()}: {$errorBody}",
+                        'response_time' => $responseTime,
+                        'url' => $apiUrl,
+                        'full_error' => $response->body(),
+                    ];
+
+                    Log::error('GitHub API not reachable', [
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                        'url' => $apiUrl,
+                    ]);
+                }
+            } catch (\Exception $connectionError) {
+                $responseTime = round((microtime(true) - $startTime) * 1000, 2);
                 $results['success'] = false;
                 $results['errors'][] = [
                     'check' => 'GitHub API Reachability',
                     'status' => 'failed',
-                    'message' => "HTTP {$response->status()}: {$response->body()}",
+                    'message' => "Connection failed: {$connectionError->getMessage()}",
                     'response_time' => $responseTime,
+                    'url' => $apiUrl,
+                    'error_type' => get_class($connectionError),
                 ];
+
+                Log::error('GitHub API connection failed', [
+                    'error' => $connectionError->getMessage(),
+                    'type' => get_class($connectionError),
+                    'url' => $apiUrl,
+                ]);
             }
 
             // Test 2: Fetch latest release

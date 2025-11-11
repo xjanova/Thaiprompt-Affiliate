@@ -76,9 +76,23 @@ class UpdateController extends Controller
                     : 'ระบบอัพเดทเป็นเวอร์ชันล่าสุดแล้ว'
             ]);
         } catch (\Exception $e) {
+            \Log::error('Update check failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'error_details' => [
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable APP_DEBUG to see stack trace',
+                ],
             ], 500);
         }
     }
@@ -116,18 +130,40 @@ class UpdateController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'อัพเดทสำเร็จ!',
-                    'log' => $result['log']
+                    'log' => $result['log'],
+                    'verification' => $result['verification'] ?? null,
                 ]);
             } else {
+                // Return detailed error information
                 return response()->json([
                     'success' => false,
-                    'message' => $result['error'] ?? 'เกิดข้อผิดพลาดในการอัพเดท'
+                    'message' => $result['error'] ?? 'เกิดข้อผิดพลาดในการอัพเดท',
+                    'error_type' => $result['error_type'] ?? 'unknown',
+                    'error_solution' => $result['error_solution'] ?? null,
+                    'retryable' => $result['retryable'] ?? false,
+                    'log' => $result['log'] ?? null,
                 ], 500);
             }
         } catch (\Exception $e) {
+            \Log::error('Update installation failed', [
+                'update_id' => $id,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'error_details' => [
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable APP_DEBUG to see stack trace',
+                ],
             ], 500);
         }
     }
@@ -246,12 +282,32 @@ class UpdateController extends Controller
                 'results' => $results,
                 'message' => $results['success']
                     ? 'การเชื่อมต่อ GitHub ทำงานปกติ'
-                    : 'พบปัญหาในการเชื่อมต่อ GitHub'
+                    : 'พบปัญหาในการเชื่อมต่อ GitHub',
+                'debug_info' => [
+                    'api_url' => config('version.repository.api_url'),
+                    'has_token' => !empty(config('version.repository.token', env('GITHUB_TOKEN'))),
+                    'php_version' => PHP_VERSION,
+                    'curl_enabled' => function_exists('curl_version'),
+                ],
             ]);
         } catch (\Exception $e) {
+            \Log::error('GitHub connection test failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'error_details' => [
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable APP_DEBUG to see stack trace',
+                ],
             ], 500);
         }
     }
