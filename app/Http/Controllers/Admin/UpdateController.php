@@ -400,12 +400,6 @@ class UpdateController extends Controller
                 'message' => $results['success']
                     ? 'การเชื่อมต่อ GitHub ทำงานปกติ'
                     : 'พบปัญหาในการเชื่อมต่อ GitHub',
-                'debug_info' => [
-                    'api_url' => config('version.repository.api_url'),
-                    'has_token' => !empty(config('version.repository.token', env('GITHUB_TOKEN'))),
-                    'php_version' => PHP_VERSION,
-                    'curl_enabled' => function_exists('curl_version'),
-                ],
             ]);
         } catch (\Exception $e) {
             \Log::error('GitHub connection test failed', [
@@ -418,12 +412,21 @@ class UpdateController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
-                'error_details' => [
-                    'message' => $e->getMessage(),
-                    'type' => get_class($e),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable APP_DEBUG to see stack trace',
+                'results' => [
+                    'success' => false,
+                    'checks' => [],
+                    'errors' => [
+                        [
+                            'check' => 'System Error',
+                            'status' => 'failed',
+                            'message' => $e->getMessage(),
+                        ]
+                    ],
+                    'debug_info' => [
+                        'type' => get_class($e),
+                        'file' => $e->getFile() . ':' . $e->getLine(),
+                        'trace' => config('app.debug') ? explode("\n", $e->getTraceAsString()) : ['Enable APP_DEBUG to see stack trace'],
+                    ],
                 ],
             ], 500);
         }
