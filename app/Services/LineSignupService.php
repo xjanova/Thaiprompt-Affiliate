@@ -17,7 +17,9 @@ class LineSignupService
     public function __construct(
         private LineService $lineService,
         private MlmProspectService $prospectService,
-        private ConversationTimeoutService $timeoutService
+        private ConversationTimeoutService $timeoutService,
+        private ValidationService $validationService,
+        private DuplicateDetectionService $duplicateService
     ) {}
 
     /**
@@ -79,13 +81,19 @@ class LineSignupService
             return;
         }
 
-        // Validate input
+        // Validate input with enhanced validation
         if ($currentStep->input_type !== 'none') {
-            $validation = $currentStep->validateInput($message);
+            // Use enhanced validation service
+            $validation = $this->validateInputWithService($currentStep->input_type, $message);
 
             if (!$validation['valid']) {
-                // Send validation error
+                // Send validation error with suggestions if available
                 $errorMessage = implode("\n", $validation['errors']);
+
+                if (!empty($validation['suggestion'])) {
+                    $errorMessage .= "\n\n💡 คุณหมายถึง: {$validation['suggestion']} ใช่ไหม?";
+                }
+
                 $this->lineService->sendPushMessage(
                     $prospect->line_user_id,
                     "❌ {$errorMessage}\n\nกรุณาลองใหม่อีกครั้ง"
@@ -93,10 +101,22 @@ class LineSignupService
                 return;
             }
 
-            // Save input data
+            // Check for duplicates
             $dataKey = $this->getDataKeyFromInputType($currentStep->input_type);
+            $duplicateCheck = $this->checkDuplicates($dataKey, $validation['formatted'] ?? $message);
+
+            if ($duplicateCheck['has_duplicates']) {
+                $errorMessage = implode("\n", $duplicateCheck['messages']);
+                $this->lineService->sendPushMessage(
+                    $prospect->line_user_id,
+                    "⚠️ {$errorMessage}\n\nหากคุณเป็นเจ้าของบัญชี กรุณาเข้าสู่ระบบแทนการสมัครใหม่"
+                );
+                return;
+            }
+
+            // Save validated and formatted input data
             $prospect->updateConversationStep($currentStep->step_key, [
-                $dataKey => $message,
+                $dataKey => $validation['formatted'] ?? $message,
             ]);
         }
 
@@ -480,5 +500,38 @@ class LineSignupService
             $prospect->line_user_id,
             "🔄 รีเซ็ตการสนทนาเรียบร้อย\n\nพิมพ์ 'เริ่ม' เพื่อเริ่มสมัครสมาชิกใหม่"
         );
+    }
+
+    /**
+     * Validate input using enhanced validation service
+     *
+     * @param string $inputType
+     * @param string $value
+     * @return array
+     */
+    private function validateInputWithService(string $inputType, string $value): array
+    {
+        return match($inputType) {
+            'phone' => $this->validationService->validateThaiPhone($value),
+            'email' => $this->validationService->validateEmail($value, true),
+            'name' => $this->validationService->validateThaiName($value),
+            'id_card' => $this->validationService->validateThaiIdCard($value),
+            'address' => $this->validationService->validateThaiAddress($value),
+            'postal_code' => $this->validationService->validateThaiPostalCode($value),
+            default => ['valid' => true, 'formatted' => $value, 'errors' => []],
+        };
+    }
+
+    /**
+     * Check for duplicate data
+     *
+     * @param string $field
+     * @param string $value
+     * @return array
+     */
+    private function checkDuplicates(string $field, string $value): array
+    {
+        $data = [$field => $value];
+        return $this->duplicateService->checkAllDuplicates($data);
     }
 }
