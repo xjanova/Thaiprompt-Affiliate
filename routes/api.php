@@ -30,6 +30,10 @@ Route::post('/webhook/line', [LineWebhookController::class, 'handle'])
     ->middleware(['line.webhook.throttle'])
     ->name('api.line.webhook');
 
+// GitHub Release Webhook (auto-clear version cache)
+Route::post('/webhooks/github/release', [\App\Http\Controllers\Api\WebhookController::class, 'handleGitHubRelease'])
+    ->name('api.webhook.github.release');
+
 // Cookie Consent API (no auth required)
 Route::post('/cookie-consent', [\App\Http\Controllers\CookieConsentController::class, 'store']);
 Route::get('/cookie-consent', [\App\Http\Controllers\CookieConsentController::class, 'getConsent']);
