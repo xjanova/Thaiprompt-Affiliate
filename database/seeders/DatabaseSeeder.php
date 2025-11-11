@@ -48,6 +48,7 @@ class DatabaseSeeder extends Seeder
 
             // 5. AI & Integrations
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
+            AiGenSeeder::class,                 // AI Generation System (Image & Video Generation)
 
             // 6. Payment Systems
             PaymentGatewaySeeder::class,        // Payment Gateways (PromptPay, Bank, TrueMoney, Omise, Stripe, PayPal, etc.)
@@ -89,10 +90,15 @@ class DatabaseSeeder extends Seeder
             HotelSeeder::class,                 // ระบบจองโรงแรม
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
             TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
+            VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
+            VideoRewardMenuSeeder::class,       // เมนูระบบ Video Rewards
 
             // 13. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
+
+            // 14. Database Updates & Maintenance
+            UpdateDatabaseSeeder::class,        // Database schema and data updates
         ]);
 
         $this->command->info('');
