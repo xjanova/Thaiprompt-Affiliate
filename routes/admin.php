@@ -1368,7 +1368,6 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
             Route::post('/{source}/test-scrape', [TrendManagementController::class, 'testScrape'])->name('test-scrape');
         });
     });
-    });
 });
 
 // Video Reward System Admin
