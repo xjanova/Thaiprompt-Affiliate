@@ -1477,5 +1477,50 @@ Route::prefix('api-management')->name('api-management.')->group(function () {
     });
 });
 
+// ========================================
+// SMART SLIDER PRO SYSTEM
+// ========================================
+use App\Http\Controllers\Admin\SmartSliderController;
+use App\Http\Controllers\Admin\SmartSlideController;
+use App\Http\Controllers\Admin\SmartSlideLayerController;
+
+Route::prefix('smart-sliders')->name('smart-sliders.')->group(function () {
+    // Main slider management
+    Route::get('/', [SmartSliderController::class, 'index'])->name('index');
+    Route::get('/create', [SmartSliderController::class, 'create'])->name('create');
+    Route::post('/', [SmartSliderController::class, 'store'])->name('store');
+    Route::get('/{smartSlider}/edit', [SmartSliderController::class, 'edit'])->name('edit');
+    Route::put('/{smartSlider}', [SmartSliderController::class, 'update'])->name('update');
+    Route::delete('/{smartSlider}', [SmartSliderController::class, 'destroy'])->name('destroy');
+
+    // Slider operations
+    Route::post('/{smartSlider}/duplicate', [SmartSliderController::class, 'duplicate'])->name('duplicate');
+    Route::post('/{smartSlider}/toggle-publish', [SmartSliderController::class, 'togglePublish'])->name('toggle-publish');
+    Route::get('/{smartSlider}/export', [SmartSliderController::class, 'export'])->name('export');
+    Route::post('/import', [SmartSliderController::class, 'import'])->name('import');
+    Route::get('/{smartSlider}/analytics', [SmartSliderController::class, 'analytics'])->name('analytics');
+
+    // Slide management
+    Route::post('/{slider}/slides', [SmartSlideController::class, 'store'])->name('slides.store');
+    Route::put('/slides/{slide}', [SmartSlideController::class, 'update'])->name('slides.update');
+    Route::delete('/slides/{slide}', [SmartSlideController::class, 'destroy'])->name('slides.destroy');
+    Route::post('/slides/{slide}/duplicate', [SmartSlideController::class, 'duplicate'])->name('slides.duplicate');
+    Route::post('/{slider}/slides/reorder', [SmartSlideController::class, 'reorder'])->name('slides.reorder');
+
+    // Media uploads
+    Route::post('/slides/upload-background', [SmartSlideController::class, 'uploadBackground'])->name('slides.upload-background');
+    Route::post('/slides/upload-video', [SmartSlideController::class, 'uploadVideo'])->name('slides.upload-video');
+
+    // Layer management
+    Route::post('/slides/{slide}/layers', [SmartSlideLayerController::class, 'store'])->name('layers.store');
+    Route::put('/layers/{layer}', [SmartSlideLayerController::class, 'update'])->name('layers.update');
+    Route::delete('/layers/{layer}', [SmartSlideLayerController::class, 'destroy'])->name('layers.destroy');
+    Route::post('/layers/{layer}/duplicate', [SmartSlideLayerController::class, 'duplicate'])->name('layers.duplicate');
+    Route::post('/slides/{slide}/layers/reorder', [SmartSlideLayerController::class, 'reorder'])->name('layers.reorder');
+    Route::post('/layers/upload-image', [SmartSlideLayerController::class, 'uploadImage'])->name('layers.upload-image');
+    Route::put('/layers/{layer}/position', [SmartSlideLayerController::class, 'updatePosition'])->name('layers.update-position');
+    Route::put('/slides/{slide}/layers/batch', [SmartSlideLayerController::class, 'batchUpdate'])->name('layers.batch-update');
+});
+
 // Bot Automation System Routes
 require __DIR__.'/bot_automation.php';
