@@ -459,6 +459,7 @@
                     ['label' => 'จัดการ API', 'url' => safeRoute('admin.api-management.endpoints.index')],
                     ['label' => 'API Keys', 'url' => safeRoute('admin.api-management.keys.index')],
                     ['label' => 'อัพเดทระบบ', 'url' => safeRoute('admin.updates.index')],
+                    ['label' => 'ตั้งค่าอัพเดท', 'url' => safeRoute('admin.updates.settings')],
                     ['label' => 'รีเซ็ตระบบ', 'url' => safeRoute('admin.system-reset.index')],
                 ]
             ],
