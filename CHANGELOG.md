@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.130.2] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #845 from xjanova/claude/lineoa-member-signup-011CV1tqWaBrAC9LLxH3ds8U (9298f96e)
+- feat(line): Add comprehensive input validation & duplicate detection for LINE signup (36b1db5c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.130.1] - 2025-11-11
 
 ### ✨ Features
