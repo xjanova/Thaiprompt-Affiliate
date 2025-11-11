@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.9] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #829 from xjanova/claude/fix-memory-exhaustion-laravel-011CV2HCx51vMXkaSmgfmSro (daa05dcc)
+- fix(memory): Fix memory exhaustion during route loading (2f5be2e3)
+### 🔧 Other Changes
+
+
 ## [v2.127.8] - 2025-11-11
 
 ### ✨ Features
