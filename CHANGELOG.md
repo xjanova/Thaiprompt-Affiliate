@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.122.2] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #811 from xjanova/claude/user-tickets-create-011CV1jqwU6x46hc1nftq19n (00b15ed4)
+- feat(tickets): ปรับปรุงไอคอน Font Awesome ให้สวยงามขึ้น (06fa6f09)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.122.1] - 2025-11-11
 
 ### ✨ Features
