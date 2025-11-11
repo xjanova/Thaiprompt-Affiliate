@@ -274,3 +274,11 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
     Route::post('/{ticket}/close', [TicketController::class, 'close'])->name('close');
 });
+
+// AI Gen System (User)
+Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\AiGenController::class, 'index'])->name('index');
+    Route::get('/packages', [\App\Http\Controllers\User\AiGenController::class, 'packages'])->name('packages');
+    Route::get('/my-creations', [\App\Http\Controllers\User\AiGenController::class, 'myCreations'])->name('my-creations');
+    Route::get('/explore', [\App\Http\Controllers\User\AiGenController::class, 'explore'])->name('explore');
+});
