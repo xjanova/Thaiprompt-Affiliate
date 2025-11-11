@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.122.4] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #813 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (ef2e01c8)
+- fix(admin): เพิ่ม validation rules สำหรับ Menu Appearance และ Settings ทั้งหมด (e6f3914c)
+### 🔧 Other Changes
+
+
 ## [v2.122.3] - 2025-11-11
 
 ### ✨ Features
