@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.1] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #821 from xjanova/claude/fix-wallet-light-mode-011CV26G5Yn4LMEJ9ZVLYdpq (8627b3fe)
+- feat(wallet): Improve light mode styling for all wallet pages (74ce2598)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.127.0] - 2025-11-11
 
 ### ✨ Features
