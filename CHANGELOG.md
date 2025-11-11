@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.134.3] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #859 from xjanova/claude/lineoa-member-signup-011CV1tqWaBrAC9LLxH3ds8U (d26e9213)
+- feat(line): Add Analytics Dashboard view and admin menu item (861851e5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.134.2] - 2025-11-11
 
 ### ✨ Features
