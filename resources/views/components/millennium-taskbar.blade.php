@@ -92,20 +92,9 @@
     $backToTopThreshold = WindowsUiSetting::get('millennium_back_to_top_threshold', 20);
     $backToTopAnimation = WindowsUiSetting::get('millennium_back_to_top_animation', 'fade');
 
-    // Taskbar Icons (read from windows_taskbar_apps which is managed in admin panel)
-    $taskbarIcons = WindowsUiSetting::get('windows_taskbar_apps', [
-        ['icon' => '🛒', 'label' => 'รถเข็น', 'url' => '/cart', 'border' => false, 'opacity' => 10, 'order' => 1],
-        ['icon' => '🔮', 'label' => 'ดูดวง', 'url' => '/tarot', 'border' => false, 'opacity' => 10, 'order' => 2],
-        ['icon' => '🤖', 'label' => 'เช่าบอท', 'url' => '/marketplace', 'border' => false, 'opacity' => 10, 'order' => 3],
-        ['icon' => '💰', 'label' => 'กระเป๋าเงิน', 'url' => '/user/wallet', 'border' => false, 'opacity' => 10, 'order' => 4],
-        ['icon' => '📈', 'label' => 'การลงทุน ROI', 'url' => '/user/investments', 'border' => false, 'opacity' => 10, 'order' => 5],
-        ['icon' => '📚', 'label' => 'Platform Wiki', 'url' => '/platform-wiki', 'border' => false, 'opacity' => 10, 'order' => 6],
-    ]);
+    // Get user's taskbar shortcuts
     $taskbarIconSize = WindowsUiSetting::get('millennium_taskbar_icon_size', 48);
     $taskbarIconBorderRadius = WindowsUiSetting::get('millennium_taskbar_icon_border_radius', 12);
-
-    // Sort taskbar icons by order
-    usort($taskbarIcons, fn($a, $b) => ($a['order'] ?? 0) - ($b['order'] ?? 0));
 
     // Calculate start button border radius based on shape
     $startButtonRadius = match($startButtonShape) {
@@ -196,6 +185,8 @@
         showTooltip: false,
         tooltipEnabled: {{ $tooltipEnabled ? 'true' : 'false' }},
         tooltipDuration: {{ $tooltipDuration }},
+        taskbarShortcuts: [],
+        loadingShortcuts: false,
         updateTime() {
             const now = new Date();
             let hours = now.getHours();
@@ -261,6 +252,49 @@
             this.showTooltip = false;
             localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
         },
+        async loadTaskbarShortcuts() {
+            this.loadingShortcuts = true;
+            try {
+                const response = await fetch('/api/v1/taskbar-shortcuts', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    this.taskbarShortcuts = data.shortcuts || [];
+                }
+            } catch (error) {
+                console.error('Error loading taskbar shortcuts:', error);
+            } finally {
+                this.loadingShortcuts = false;
+            }
+        },
+        async removeShortcut(shortcutId) {
+            if (!confirm('ต้องการลบไอค่อนทางลัดนี้ใช่หรือไม่?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/v1/taskbar-shortcuts/${shortcutId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
+                    }
+                });
+
+                if (response.ok) {
+                    await this.loadTaskbarShortcuts();
+                    alert('ลบไอค่อนทางลัดสำเร็จ');
+                }
+            } catch (error) {
+                console.error('Error removing shortcut:', error);
+                alert('เกิดข้อผิดพลาดในการลบไอค่อนทางลัด');
+            }
+        },
         init() {
             this.updateTime();
             const interval = this.showSeconds ? 1000 : 60000;
@@ -272,6 +306,14 @@
 
             // Initialize tooltip
             this.initTooltip();
+
+            // Load taskbar shortcuts
+            this.loadTaskbarShortcuts();
+
+            // Listen for shortcut added event
+            window.addEventListener('taskbar-shortcut-added', () => {
+                this.loadTaskbarShortcuts();
+            });
         }
     }"
     x-init="init()"
@@ -406,163 +448,24 @@
                     </button>
                 @endif
 
-                <!-- Dynamic Taskbar Icons -->
-                @if($taskbarCollapseEnabled)
-                    <!-- Desktop: Show all icons -->
-                    <div class="hidden items-center gap-2" style="display: none;" x-init="
-                        function checkBreakpoint() {
-                            if (window.innerWidth >= {{ $taskbarCollapseBreakpoint }}) {
-                                $el.style.display = 'flex';
-                            } else {
-                                $el.style.display = 'none';
-                            }
-                        }
-                        checkBreakpoint();
-                        window.addEventListener('resize', checkBreakpoint);
-                    ">
-                        @foreach($taskbarIcons as $taskbarIcon)
-                            <a href="{{ url($taskbarIcon['url']) }}"
-                               class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 border-2 border-white/20 hover:border-white/40"
-                               style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); box-shadow: 0 1px 2px rgba(255, 255, 255, 0.1) inset, 0 -1px 2px rgba(0, 0, 0, 0.2) inset, 0 4px 12px rgba(168, 85, 247, 0.3), 0 8px 24px rgba(59, 130, 246, 0.2);"
-                               title="{{ $taskbarIcon['label'] }}">
-                                <span style="font-size: {{ ($taskbarIconSize * 0.5) }}px;">{{ $taskbarIcon['icon'] }}</span>
-                            </a>
-                        @endforeach
-                    </div>
-
-                    <!-- Mobile: Hamburger Menu -->
-                    <div class="relative" x-data="{ iconsOpen: false }" style="display: none;" x-init="
-                        function checkBreakpoint() {
-                            if (window.innerWidth < {{ $taskbarCollapseBreakpoint }}) {
-                                $el.style.display = 'block';
-                            } else {
-                                $el.style.display = 'none';
-                            }
-                        }
-                        checkBreakpoint();
-                        window.addEventListener('resize', checkBreakpoint);
-                    ">
-                        <button @click="iconsOpen = !iconsOpen"
-                                class="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 transform hover:scale-110">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
-                            </svg>
-                        </button>
-
-                        @if($taskbarCollapseStyle === 'dropdown')
-                            <!-- Dropdown Menu -->
-                            <div x-show="iconsOpen"
-                                 @click.away="iconsOpen = false"
-                                 x-transition:enter="transition ease-out duration-200"
-                                 x-transition:enter-start="opacity-0 transform scale-90"
-                                 x-transition:enter-end="opacity-100 transform scale-100"
-                                 x-transition:leave="transition ease-in duration-150"
-                                 x-transition:leave-start="opacity-100 transform scale-100"
-                                 x-transition:leave-end="opacity-0 transform scale-90"
-                                 class="absolute {{ $taskbarPosition === 'top' ? 'top-full mt-2' : 'bottom-full mb-2' }} left-0 bg-slate-800/95 dark:bg-slate-900/95 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 p-3 z-[60] grid grid-cols-3 gap-2 min-w-[250px]"
-                                 style="display: none;">
-                                @foreach($taskbarIcons as $taskbarIcon)
-                                    <a href="{{ url($taskbarIcon['url']) }}"
-                                       class="flex flex-col items-center justify-center p-3 rounded-lg hover:bg-white/10 transition-all duration-200"
-                                       @click="iconsOpen = false">
-                                        <span class="text-3xl mb-1">{{ $taskbarIcon['icon'] }}</span>
-                                        <span class="text-white text-xs text-center">{{ $taskbarIcon['label'] }}</span>
-                                    </a>
-                                @endforeach
-                            </div>
-
-                        @elseif($taskbarCollapseStyle === 'slide-up')
-                            <!-- Slide Up Menu (ยืดขึ้นจากด้านล่าง/บน) -->
-                            <div x-show="iconsOpen"
-                                 @click.away="iconsOpen = false"
-                                 x-transition:enter="transition ease-out duration-300"
-                                 x-transition:enter-start="opacity-0 {{ $taskbarPosition === 'top' ? 'transform -translate-y-full' : 'transform translate-y-full' }}"
-                                 x-transition:enter-end="opacity-100 transform translate-y-0"
-                                 x-transition:leave="transition ease-in duration-200"
-                                 x-transition:leave-start="opacity-100 transform translate-y-0"
-                                 x-transition:leave-end="opacity-0 {{ $taskbarPosition === 'top' ? 'transform -translate-y-full' : 'transform translate-y-full' }}"
-                                 class="fixed {{ $taskbarPosition === 'top' ? 'top-[60px]' : 'bottom-[60px]' }} left-0 right-0 bg-slate-800/98 dark:bg-slate-900/98 backdrop-blur-xl shadow-2xl border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 border-white/20 p-6 z-[60]"
-                                 style="display: none;">
-                                <div class="max-w-5xl mx-auto">
-                                    <div class="flex items-center justify-between mb-4">
-                                        <h3 class="text-xl font-bold text-white">📱 Quick Access</h3>
-                                        <button @click="iconsOpen = false" class="text-white/70 hover:text-white transition-colors">
-                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                        @foreach($taskbarIcons as $taskbarIcon)
-                                            <a href="{{ url($taskbarIcon['url']) }}"
-                                               class="flex flex-col items-center justify-center p-4 rounded-xl bg-white/5 hover:bg-white/15 border border-white/10 hover:border-white/30 transition-all duration-200 transform hover:scale-105"
-                                               @click="iconsOpen = false">
-                                                <span class="text-4xl mb-2">{{ $taskbarIcon['icon'] }}</span>
-                                                <span class="text-white text-xs text-center font-medium">{{ $taskbarIcon['label'] }}</span>
-                                            </a>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-
-                        @else
-                            <!-- Fullscreen Overlay Menu (เต็มจอ) -->
-                            <div x-show="iconsOpen"
-                                 x-transition:enter="transition ease-out duration-300"
-                                 x-transition:enter-start="opacity-0"
-                                 x-transition:enter-end="opacity-100"
-                                 x-transition:leave="transition ease-in duration-200"
-                                 x-transition:leave-start="opacity-100"
-                                 x-transition:leave-end="opacity-0"
-                                 class="fixed inset-0 bg-gradient-to-br from-slate-900/98 via-purple-900/98 to-blue-900/98 backdrop-blur-xl z-[70] flex items-center justify-center p-6"
-                                 style="display: none;"
-                                 @click.self="iconsOpen = false">
-                                <div class="max-w-6xl w-full">
-                                    <div class="flex items-center justify-between mb-8">
-                                        <h2 class="text-3xl font-bold text-white">🚀 เมนูหลัก</h2>
-                                        <button @click="iconsOpen = false" class="text-white/70 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-lg">
-                                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                                        @foreach($taskbarIcons as $taskbarIcon)
-                                            <a href="{{ url($taskbarIcon['url']) }}"
-                                               class="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/10 hover:bg-white/20 border-2 border-white/20 hover:border-white/40 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-xl hover:shadow-2xl"
-                                               @click="iconsOpen = false">
-                                                <span class="text-5xl mb-3">{{ $taskbarIcon['icon'] }}</span>
-                                                <span class="text-white text-sm text-center font-semibold">{{ $taskbarIcon['label'] }}</span>
-                                            </a>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                @else
-                    <!-- No responsive collapse - show all icons normally -->
-                    @foreach($taskbarIcons as $taskbarIcon)
-                        <a href="{{ url($taskbarIcon['url']) }}"
-                           class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ ($taskbarIcon['border'] ?? false) ? 'border-2 border-white/20' : '' }}"
-                           style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
-                           title="{{ $taskbarIcon['label'] }}">
-                            <span style="font-size: {{ ($taskbarIconSize * 0.5) }}px;">{{ $taskbarIcon['icon'] }}</span>
+                <!-- User Customizable Taskbar Shortcuts -->
+                <template x-for="shortcut in taskbarShortcuts" :key="shortcut.id">
+                    <div class="group relative">
+                        <a :href="shortcut.url"
+                           class="flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 border-2 border-white/20 hover:border-white/40"
+                           style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, 0.1); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); box-shadow: 0 1px 2px rgba(255, 255, 255, 0.1) inset, 0 -1px 2px rgba(0, 0, 0, 0.2) inset, 0 4px 12px rgba(168, 85, 247, 0.3), 0 8px 24px rgba(59, 130, 246, 0.2);"
+                           :title="shortcut.label">
+                            <span :style="'font-size: ' + ({{ $taskbarIconSize }} * 0.5) + 'px;'" x-text="shortcut.icon"></span>
                         </a>
-                    @endforeach
-                @endif
-
-                <!-- Wealth Guide (E-book) -->
-                @if(Route::has('user.wealth-guide'))
-                <a href="{{ route('user.wealth-guide') }}"
-                   class="group relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-gradient-to-br hover:from-yellow-500 hover:via-amber-500 hover:to-orange-600 transition-all duration-300 transform hover:scale-110 active:scale-95 animate-pulse"
-                   title="เส้นทางเศรษฐี - คู่มือสู่ความร่ำรวย">
-                    <span class="text-2xl">💰</span>
-                    <span class="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
-                        <span class="text-white text-xs font-bold">📖</span>
-                    </span>
-                </a>
-                @endif
+                        <!-- Remove Button (hover to show) -->
+                        <button
+                            @click.prevent="removeShortcut(shortcut.id)"
+                            class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-bold shadow-lg"
+                            title="ลบไอค่อนทางลัด">
+                            ✕
+                        </button>
+                    </div>
+                </template>
 
             </div>
 
