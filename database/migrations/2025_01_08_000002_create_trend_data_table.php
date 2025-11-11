@@ -26,7 +26,7 @@ return new class extends Migration
             $table->json('raw_data')->nullable(); // original scraped data
             $table->json('extracted_keywords')->nullable();
             $table->timestamp('published_at')->nullable();
-            $table->timestamp('scraped_at');
+            $table->timestamp('scraped_at')->useCurrent();
             $table->timestamps();
 
             $table->index(['trend_source_id', 'scraped_at']);
