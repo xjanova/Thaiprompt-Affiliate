@@ -1139,12 +1139,13 @@ Route::prefix('updates')->name('updates.')->group(function () {
     Route::get('/check', [\App\Http\Controllers\Admin\UpdateController::class, 'check'])->name('check');
     Route::get('/test-connection', [\App\Http\Controllers\Admin\UpdateController::class, 'testConnection'])->name('test-connection');
     Route::post('/clear-cache', [\App\Http\Controllers\Api\WebhookController::class, 'clearVersionCacheManual'])->name('clear-cache');
+    Route::get('/settings', [\App\Http\Controllers\Admin\UpdateController::class, 'getSettings'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\Admin\UpdateController::class, 'updateSettings'])->name('settings.update');
     Route::get('/{id}', [\App\Http\Controllers\Admin\UpdateController::class, 'show'])->name('show');
     Route::post('/{id}/install', [\App\Http\Controllers\Admin\UpdateController::class, 'install'])->name('install');
     Route::get('/logs', [\App\Http\Controllers\Admin\UpdateController::class, 'logs'])->name('logs');
     Route::get('/logs/{id}', [\App\Http\Controllers\Admin\UpdateController::class, 'showLog'])->name('logs.show');
     Route::post('/logs/{id}/rollback', [\App\Http\Controllers\Admin\UpdateController::class, 'rollback'])->name('rollback');
-    Route::post('/settings', [\App\Http\Controllers\Admin\UpdateController::class, 'updateSettings'])->name('settings.update');
     Route::get('/notifications', [\App\Http\Controllers\Admin\UpdateController::class, 'notifications'])->name('notifications');
     Route::post('/notifications/{id}/dismiss', [\App\Http\Controllers\Admin\UpdateController::class, 'dismissNotification'])->name('notifications.dismiss');
 });

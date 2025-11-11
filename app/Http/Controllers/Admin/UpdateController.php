@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Models\SystemUpdate;
 use App\Models\UpdateLog;
 use App\Models\UpdateNotification;
@@ -10,6 +11,8 @@ use App\Services\UpdateService;
 use App\Services\VersionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 class UpdateController extends Controller
 {
@@ -242,25 +245,91 @@ class UpdateController extends Controller
     }
 
     /**
+     * Get current settings
+     */
+    public function getSettings()
+    {
+        $settings = [
+            'auto_check' => Setting::get('update_auto_check', false),
+            'auto_update' => Setting::get('update_auto_update', false),
+            'backup_before_update' => Setting::get('update_backup_before_update', true),
+            'notification_email' => Setting::get('update_notification_email'),
+            'github_token' => Setting::get('update_github_token') ? '***' . substr(Setting::get('update_github_token'), -4) : null,
+            'has_github_token' => !empty(Setting::get('update_github_token')),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'settings' => $settings,
+        ]);
+    }
+
+    /**
      * Update settings
      */
     public function updateSettings(Request $request)
     {
         $validated = $request->validate([
-            'auto_check' => 'boolean',
-            'auto_update' => 'boolean',
-            'backup_before_update' => 'boolean',
+            'auto_check' => 'nullable|boolean',
+            'auto_update' => 'nullable|boolean',
+            'backup_before_update' => 'nullable|boolean',
             'notification_email' => 'nullable|email',
+            'github_token' => 'nullable|string',
         ]);
 
-        foreach ($validated as $key => $value) {
-            Setting::set('update_' . $key, $value);
+        try {
+            foreach ($validated as $key => $value) {
+                // Skip null values
+                if ($value === null && $key !== 'notification_email') {
+                    continue;
+                }
+
+                // Encrypt GitHub token before storing
+                if ($key === 'github_token') {
+                    if (!empty($value)) {
+                        // Validate token format (GitHub tokens start with ghp_, gho_, ghs_, or ghu_)
+                        if (!preg_match('/^(ghp|gho|ghs|ghu)_[a-zA-Z0-9]{36,}$/', $value)) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'รูปแบบ GitHub Token ไม่ถูกต้อง (ต้องขึ้นต้นด้วย ghp_, gho_, ghs_, หรือ ghu_)',
+                            ], 422);
+                        }
+
+                        // Encrypt token before storing
+                        $encryptedToken = Crypt::encryptString($value);
+                        Setting::set('update_github_token', $encryptedToken, 'string', 'update');
+
+                        \Log::info('GitHub token updated', ['masked_token' => substr($value, 0, 7) . '***']);
+                    } else {
+                        // Remove token if empty
+                        Setting::where('key', 'update_github_token')->delete();
+                        \Log::info('GitHub token removed');
+                    }
+                } else {
+                    $type = is_bool($value) ? 'boolean' : 'string';
+                    Setting::set('update_' . $key, $value, $type, 'update');
+                }
+            }
+
+            // Clear version caches to use new token immediately
+            $this->versionService->clearCache();
+            Cache::forget('available_updates');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกการตั้งค่าสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update settings', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'บันทึกการตั้งค่าสำเร็จ'
-        ]);
     }
 
     /**
