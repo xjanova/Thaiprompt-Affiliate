@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.114.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #788 from xjanova/claude/smart-slider-research-011CV1HYVpFkQw6mvC4zeU89 (2fcac61a)
+- feat: Add Smart Slider frontend components and documentation (e395dc4d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.113.0] - 2025-11-11
 
 ### ✨ Features
