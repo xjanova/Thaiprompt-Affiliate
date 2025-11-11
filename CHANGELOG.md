@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.3] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #823 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (ce8796d4)
+- feat(windows-ui): แยกเก็บไฟล์และใช้ WebP สำหรับรูปภาพโลโก้และไอคอน (4e6732b4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.127.2] - 2025-11-11
 
 ### ✨ Features
