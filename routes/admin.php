@@ -1522,5 +1522,36 @@ Route::prefix('smart-sliders')->name('smart-sliders.')->group(function () {
     Route::put('/slides/{slide}/layers/batch', [SmartSlideLayerController::class, 'batchUpdate'])->name('layers.batch-update');
 });
 
+// ========================================
+// AI GEN - IMAGE & VIDEO GENERATION SYSTEM
+// ========================================
+use App\Http\Controllers\Admin\AiGenAdminController;
+
+Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [AiGenAdminController::class, 'dashboard'])->name('dashboard');
+
+    // Providers Management
+    Route::get('/providers', [AiGenAdminController::class, 'providers'])->name('providers.index');
+    Route::post('/providers', [AiGenAdminController::class, 'createProvider'])->name('providers.store');
+    Route::put('/providers/{providerId}', [AiGenAdminController::class, 'updateProvider'])->name('providers.update');
+    Route::post('/providers/{providerId}/config', [AiGenAdminController::class, 'updateProviderConfig'])->name('providers.config');
+    Route::post('/providers/{providerId}/test', [AiGenAdminController::class, 'testProvider'])->name('providers.test');
+
+    // Packages Management
+    Route::get('/packages', [AiGenAdminController::class, 'packages'])->name('packages.index');
+    Route::post('/packages', [AiGenAdminController::class, 'createPackage'])->name('packages.store');
+    Route::put('/packages/{packageId}', [AiGenAdminController::class, 'updatePackage'])->name('packages.update');
+    Route::delete('/packages/{packageId}', [AiGenAdminController::class, 'deletePackage'])->name('packages.destroy');
+
+    // Quotas Management
+    Route::get('/quotas', [AiGenAdminController::class, 'quotas'])->name('quotas.index');
+    Route::post('/quotas', [AiGenAdminController::class, 'saveQuota'])->name('quotas.store');
+    Route::put('/quotas/{quotaId}', [AiGenAdminController::class, 'saveQuota'])->name('quotas.update');
+
+    // Usage Logs & Analytics
+    Route::get('/usage-logs', [AiGenAdminController::class, 'usageLogs'])->name('usage-logs');
+});
+
 // Bot Automation System Routes
 require __DIR__.'/bot_automation.php';
