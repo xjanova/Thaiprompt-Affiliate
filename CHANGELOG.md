@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.118.5] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add default CURRENT_TIMESTAMP to all timestamp columns in migrations (87793345)
+- fix: Explicitly specify table names in foreign key constraints (72474d12)
+### 🔧 Other Changes
+- Merge pull request #797 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (108c2a6f)
+
 ## [v2.118.4] - 2025-11-11
 
 ### ✨ Features
