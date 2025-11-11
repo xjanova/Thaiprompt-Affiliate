@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.119.3] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #802 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (21463568)
+- fix: Make BotPlatformSeeder idempotent with updateOrInsert (6b6d232a)
+### 🔧 Other Changes
+
+
 ## [v2.119.2] - 2025-11-11
 
 ### ✨ Features
