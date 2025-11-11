@@ -23,7 +23,7 @@ class DatabaseSeeder extends Seeder
             ThemeSeeder::class,                 // ธีมของระบบ
             AppManagementSeeder::class,         // ตั้งค่าแอพ, ธีม, ฟีเจอร์, แบนเนอร์, และ maintenance
             CookieSettingsSeeder::class,        // ตั้งค่า Cookie Consent & PDPA
-            WindowsUiSeeder::class,             // Windows UI Settings (Start Menu, Taskbar, System Tray)
+            WindowsUiSeeder::class,             // Windows UI Settings (Colors, Themes, RGB - NO menu items)
             AppControlSectionSeeder::class,     // UI Control Sections (Navigation Bar, Tab Bar, Header, FAB)
             ComponentSettingSeeder::class,      // UI Component Settings (Buttons, Inputs, Cards, Text)
             ApiEndpointSeeder::class,           // API Endpoints Configuration (Users, Products, Orders, Analytics, etc.)

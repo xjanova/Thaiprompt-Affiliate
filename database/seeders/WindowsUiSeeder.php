@@ -10,6 +10,9 @@ class WindowsUiSeeder extends Seeder
     /**
      * Run the database seeds.
      *
+     * ⚠️  IMPORTANT NOTICE (Updated 2025-01-11):
+     * This seeder NO LONGER creates menu items. All menus are now hard-coded.
+     *
      * Smart Seeding Strategy (NEVER DELETES USER DATA):
      * - Check each setting individually
      * - If exists: SKIP (preserve user customization)
@@ -20,6 +23,11 @@ class WindowsUiSeeder extends Seeder
      * 2. ❌ NEVER overwrite existing settings
      * 3. ✅ ALWAYS add only missing settings
      * 4. ✅ ALWAYS preserve user customizations
+     * 5. ❌ NEVER seed menu items (they are hard-coded now)
+     *
+     * SCOPE:
+     * - ✅ Seeds: UI customization settings (colors, sizes, themes)
+     * - ❌ Does NOT seed: Menu items, taskbar apps, system tray icons
      *
      * This follows the Smart Seeding Guidelines in .claude/seeder-guidelines.md
      */
@@ -64,9 +72,31 @@ class WindowsUiSeeder extends Seeder
     private function getAllSettings(): array
     {
         // ========================================
-        // HARD-CODED MENUS ONLY
-        // Menu items, taskbar apps, and system tray are now hard-coded in components
-        // This seeder only contains visual customization settings
+        // ⚠️  IMPORTANT: MENUS ARE NOW HARD-CODED
+        // ========================================
+        //
+        // As of 2025-01-11, all menu items are hard-coded in:
+        // - /resources/views/components/millennium-start-menu.blade.php
+        //
+        // ❌ DO NOT SEED:
+        // - windows_start_menu_items_admin
+        // - windows_start_menu_items_user
+        // - windows_start_menu_items_seller
+        // - windows_taskbar_apps
+        // - windows_system_tray_icons
+        //
+        // ✅ ONLY SEED:
+        // - Visual customization settings (colors, sizes, positions)
+        // - Theme settings
+        // - RGB effects
+        // - UI preferences
+        //
+        // 📝 Reason: Changed from hybrid approach to hard-coded menus for:
+        // - Consistency across all environments
+        // - Easier maintenance and updates
+        // - No database sync issues
+        // - All 53 new menu items are now available by default
+        //
         // ========================================
 
         $settings = [
