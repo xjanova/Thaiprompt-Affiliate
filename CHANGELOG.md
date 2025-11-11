@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.121.0] - 2025-11-11
+
+### ✨ Features
+- feat: เพิ่ม migration สำหรับลบข้อมูลเมนูเก่าที่ไม่ได้ใช้ (2ffe01f6)
+### 🐛 Bug Fixes
+- fix: เพิ่ม redirect routes สำหรับ /user และ /seller ไป dashboard (93801959)
+### 🔧 Other Changes
+- Merge pull request #808 from xjanova/claude/fix-404-routing-errors-011CV1d8PsypjPLu1s7fEb6a (2bfbb51e)
+- docs: อัพเดท seeders และเพิ่มเอกสารสำหรับการเปลี่ยนแปลงระบบเมนู (47767330)
+
 ## [v2.120.2] - 2025-11-11
 
 ### ✨ Features
