@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.122.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #810 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (ceba62b8)
+- fix(admin): แก้ไข Windows UI - ลบ tags หลุด และรวม RGB settings (e7d163a1)
+### 🔧 Other Changes
+
+
 ## [v2.122.0] - 2025-11-11
 
 ### ✨ Features
