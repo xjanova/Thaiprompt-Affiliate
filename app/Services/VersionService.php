@@ -377,4 +377,151 @@ class VersionService
 
         return null;
     }
+
+    /**
+     * Test GitHub connection and API access
+     */
+    public function testGitHubConnection(): array
+    {
+        $results = [
+            'success' => true,
+            'checks' => [],
+            'errors' => [],
+        ];
+
+        try {
+            // Test 1: GitHub API reachability
+            $apiUrl = config('version.repository.api_url');
+            $token = config('version.repository.token', env('GITHUB_TOKEN'));
+
+            $headers = [];
+            if ($token) {
+                $headers['Authorization'] = "Bearer {$token}";
+            }
+
+            $startTime = microtime(true);
+            $response = Http::withHeaders($headers)->timeout(10)->get($apiUrl);
+            $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            if ($response->successful()) {
+                $results['checks'][] = [
+                    'check' => 'GitHub API Reachability',
+                    'status' => 'passed',
+                    'message' => "Repository accessible (response time: {$responseTime}ms)",
+                    'response_time' => $responseTime,
+                ];
+            } else {
+                $results['success'] = false;
+                $results['errors'][] = [
+                    'check' => 'GitHub API Reachability',
+                    'status' => 'failed',
+                    'message' => "HTTP {$response->status()}: {$response->body()}",
+                    'response_time' => $responseTime,
+                ];
+            }
+
+            // Test 2: Fetch latest release
+            if ($response->successful()) {
+                $releaseResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
+
+                if ($releaseResponse->successful()) {
+                    $data = $releaseResponse->json();
+                    $version = ltrim($data['tag_name'] ?? 'unknown', 'v');
+
+                    $results['checks'][] = [
+                        'check' => 'Latest Release',
+                        'status' => 'passed',
+                        'message' => "Latest version available: {$version}",
+                        'version' => $version,
+                    ];
+                } else {
+                    $results['errors'][] = [
+                        'check' => 'Latest Release',
+                        'status' => 'warning',
+                        'message' => "Could not fetch latest release (HTTP {$releaseResponse->status()})",
+                    ];
+                }
+
+                // Test 3: Fetch all releases
+                $releasesResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases");
+
+                if ($releasesResponse->successful()) {
+                    $releases = $releasesResponse->json();
+                    $count = count($releases);
+
+                    $results['checks'][] = [
+                        'check' => 'Releases List',
+                        'status' => 'passed',
+                        'message' => "Found {$count} releases",
+                        'count' => $count,
+                    ];
+                } else {
+                    $results['errors'][] = [
+                        'check' => 'Releases List',
+                        'status' => 'warning',
+                        'message' => "Could not fetch releases list (HTTP {$releasesResponse->status()})",
+                    ];
+                }
+            }
+
+            // Test 4: Check download URL accessibility
+            if ($response->successful()) {
+                $releaseResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
+
+                if ($releaseResponse->successful()) {
+                    $data = $releaseResponse->json();
+                    $downloadUrl = $data['zipball_url'] ?? null;
+
+                    if ($downloadUrl) {
+                        // Just check if the URL is valid, don't download
+                        $headResponse = Http::timeout(5)->head($downloadUrl);
+
+                        if ($headResponse->successful()) {
+                            $results['checks'][] = [
+                                'check' => 'Download URL',
+                                'status' => 'passed',
+                                'message' => 'Download URL is accessible',
+                                'url' => $downloadUrl,
+                            ];
+                        } else {
+                            $results['errors'][] = [
+                                'check' => 'Download URL',
+                                'status' => 'warning',
+                                'message' => "Download URL returned HTTP {$headResponse->status()}",
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Test 5: Test git command availability
+            $gitAvailable = shell_exec('git --version 2>&1');
+            if ($gitAvailable) {
+                $results['checks'][] = [
+                    'check' => 'Git Command',
+                    'status' => 'passed',
+                    'message' => trim($gitAvailable),
+                ];
+            } else {
+                $results['errors'][] = [
+                    'check' => 'Git Command',
+                    'status' => 'warning',
+                    'message' => 'Git command not available (fallback to API only)',
+                ];
+            }
+
+            // Set overall success status
+            $results['success'] = empty($results['errors']) || !empty(array_filter($results['errors'], fn($e) => $e['status'] === 'failed'));
+
+        } catch (\Exception $e) {
+            $results['success'] = false;
+            $results['errors'][] = [
+                'check' => 'Connection Test',
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        return $results;
+    }
 }

@@ -150,7 +150,7 @@ class UpdateService
                 'is_auto_update' => $isAutoUpdate,
             ]);
 
-            $totalSteps = 7; // Increased to include verification step
+            $totalSteps = 8; // Includes: backup, download, extract, migrate, seed, update version, clear cache, verify
             $currentStep = 0;
 
             // Step 1: Create backup
@@ -171,12 +171,19 @@ class UpdateService
                     $downloadPath = $this->downloadUpdate($systemUpdate);
                     $systemUpdate->incrementDownloads();
                     Log::info('Update downloaded successfully', ['path' => $downloadPath]);
+
+                    // Step 2.5: Extract and apply the downloaded files
+                    $currentStep++;
+                    $this->updateProgress($log, 'extracting', 'Extracting and applying update files...', $currentStep, $totalSteps);
+                    $this->extractAndApplyUpdate($downloadPath, $log);
+                    Log::info('Update files extracted and applied successfully');
+
                 } catch (\Exception $e) {
-                    Log::error('Download failed after retries: ' . $e->getMessage());
+                    Log::error('Download or extraction failed: ' . $e->getMessage());
                     throw $e;
                 }
             } else {
-                $currentStep++;
+                $currentStep += 2; // Skip both download and extraction steps
             }
 
             // Step 3: Run migrations
@@ -434,6 +441,155 @@ class UpdateService
         }
 
         throw new \Exception('Failed to download update after multiple attempts');
+    }
+
+    /**
+     * Extract and apply the downloaded update
+     */
+    protected function extractAndApplyUpdate($zipPath, $log)
+    {
+        if (!File::exists($zipPath)) {
+            throw new \Exception("Update file not found: {$zipPath}");
+        }
+
+        // Create temporary extraction directory
+        $tempDir = storage_path('updates/temp_' . time());
+        if (!File::exists($tempDir)) {
+            File::makeDirectory($tempDir, 0755, true);
+        }
+
+        try {
+            // Extract ZIP file
+            $zip = new ZipArchive();
+            if ($zip->open($zipPath) !== TRUE) {
+                throw new \Exception('Failed to open update ZIP file');
+            }
+
+            Log::info('Extracting update ZIP', ['path' => $zipPath, 'temp' => $tempDir]);
+            $zip->extractTo($tempDir);
+            $zip->close();
+
+            // Find the root directory (GitHub ZIPs have a folder like "repo-name-hash/")
+            $extractedContents = File::directories($tempDir);
+
+            if (empty($extractedContents)) {
+                // If no subdirectory, use temp dir directly
+                $sourceDir = $tempDir;
+            } else {
+                // Use the first directory (should be the only one for GitHub ZIPs)
+                $sourceDir = $extractedContents[0];
+            }
+
+            Log::info('Source directory identified', ['source' => $sourceDir]);
+
+            // Files and directories to exclude from update
+            $excludePaths = [
+                '.env',
+                '.env.example', // Keep existing, don't overwrite
+                'storage/app/public/uploads', // User uploads
+                'storage/app/private', // Private files
+                'storage/logs', // Keep logs
+                'storage/framework/sessions', // Active sessions
+                'storage/backups', // Existing backups
+                '.git',
+                'node_modules',
+                'vendor', // Will be updated by composer
+            ];
+
+            // Copy files from source to application root
+            $this->copyUpdateFiles($sourceDir, base_path(), $excludePaths, $log);
+
+            // Run composer install to update dependencies
+            Log::info('Running composer install...');
+            $this->updateProgress($log, 'extracting', 'Installing dependencies...', null, null);
+
+            try {
+                // Try composer install with optimizations
+                exec('cd ' . base_path() . ' && composer install --no-dev --optimize-autoloader 2>&1', $composerOutput, $composerCode);
+
+                if ($composerCode !== 0) {
+                    Log::warning('Composer install completed with warnings', [
+                        'code' => $composerCode,
+                        'output' => implode("\n", $composerOutput)
+                    ]);
+                } else {
+                    Log::info('Composer dependencies installed successfully');
+                }
+            } catch (\Exception $e) {
+                Log::warning('Composer install failed: ' . $e->getMessage());
+                // Continue even if composer fails - not critical
+            }
+
+            // Clean up temporary directory
+            File::deleteDirectory($tempDir);
+            Log::info('Temporary extraction directory cleaned up');
+
+            return true;
+        } catch (\Exception $e) {
+            // Clean up on failure
+            if (File::exists($tempDir)) {
+                File::deleteDirectory($tempDir);
+            }
+
+            Log::error('Update extraction failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw new \Exception('Failed to extract and apply update: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Copy files from source to destination, excluding specified paths
+     */
+    protected function copyUpdateFiles($source, $destination, $excludePaths, $log)
+    {
+        $filesCount = 0;
+
+        // Get all files and directories from source
+        $items = File::allFiles($source);
+
+        foreach ($items as $item) {
+            $relativePath = str_replace($source . DIRECTORY_SEPARATOR, '', $item->getRealPath());
+            $destinationPath = $destination . DIRECTORY_SEPARATOR . $relativePath;
+
+            // Check if this path should be excluded
+            $shouldExclude = false;
+            foreach ($excludePaths as $excludePath) {
+                if (str_starts_with($relativePath, $excludePath)) {
+                    $shouldExclude = true;
+                    break;
+                }
+            }
+
+            if ($shouldExclude) {
+                Log::debug("Skipping excluded file: {$relativePath}");
+                continue;
+            }
+
+            // Create destination directory if it doesn't exist
+            $destinationDir = dirname($destinationPath);
+            if (!File::exists($destinationDir)) {
+                File::makeDirectory($destinationDir, 0755, true);
+            }
+
+            // Copy file
+            try {
+                File::copy($item->getRealPath(), $destinationPath);
+                $filesCount++;
+
+                if ($filesCount % 100 === 0) {
+                    Log::info("Copied {$filesCount} files...");
+                }
+            } catch (\Exception $e) {
+                Log::warning("Failed to copy file: {$relativePath}", ['error' => $e->getMessage()]);
+                // Continue with other files
+            }
+        }
+
+        Log::info("Total files copied: {$filesCount}");
+        return $filesCount;
     }
 
     /**

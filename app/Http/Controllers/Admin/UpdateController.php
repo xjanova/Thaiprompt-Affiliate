@@ -7,16 +7,19 @@ use App\Models\SystemUpdate;
 use App\Models\UpdateLog;
 use App\Models\UpdateNotification;
 use App\Services\UpdateService;
+use App\Services\VersionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class UpdateController extends Controller
 {
     protected UpdateService $updateService;
+    protected VersionService $versionService;
 
-    public function __construct(UpdateService $updateService)
+    public function __construct(UpdateService $updateService, VersionService $versionService)
     {
         $this->updateService = $updateService;
+        $this->versionService = $versionService;
     }
 
     /**
@@ -54,12 +57,20 @@ class UpdateController extends Controller
     public function check()
     {
         try {
+            // Clear version caches first to get fresh data
+            $this->versionService->clearCache();
+
+            // Force check for updates (bypasses UpdateService cache)
             $updates = $this->updateService->checkForUpdates(true);
+
+            // Get fresh version comparison info
+            $versionInfo = $this->versionService->checkForUpdates();
 
             return response()->json([
                 'success' => true,
                 'updates' => $updates,
                 'count' => count($updates),
+                'version_info' => $versionInfo,
                 'message' => count($updates) > 0
                     ? 'พบอัพเดทใหม่ ' . count($updates) . ' รายการ'
                     : 'ระบบอัพเดทเป็นเวอร์ชันล่าสุดแล้ว'
@@ -220,5 +231,28 @@ class UpdateController extends Controller
             'success' => true,
             'message' => 'ทำเครื่องหมายว่าอ่านแล้ว'
         ]);
+    }
+
+    /**
+     * Test GitHub connection
+     */
+    public function testConnection()
+    {
+        try {
+            $results = $this->versionService->testGitHubConnection();
+
+            return response()->json([
+                'success' => $results['success'],
+                'results' => $results,
+                'message' => $results['success']
+                    ? 'การเชื่อมต่อ GitHub ทำงานปกติ'
+                    : 'พบปัญหาในการเชื่อมต่อ GitHub'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
