@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.120.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #806 from xjanova/claude/fix-404-routing-errors-011CV1d8PsypjPLu1s7fEb6a (c6b5db73)
+- refactor: เปลี่ยนจาก hybrid approach เป็น hard-coded menus อย่างเดียว (3bcac68e)
+
 ## [v2.120.0] - 2025-11-11
 
 ### ✨ Features
