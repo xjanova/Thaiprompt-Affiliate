@@ -222,6 +222,14 @@ Route::prefix('v1')->group(function () {
             // Analytics
             Route::get('/analytics', [TrendApiController::class, 'analytics']);
         });
+
+        // Taskbar Shortcuts API
+        Route::prefix('taskbar-shortcuts')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\TaskbarShortcutController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\TaskbarShortcutController::class, 'store']);
+            Route::delete('/{id}', [\App\Http\Controllers\Api\TaskbarShortcutController::class, 'destroy']);
+            Route::post('/reorder', [\App\Http\Controllers\Api\TaskbarShortcutController::class, 'reorder']);
+        });
     });
 });
 

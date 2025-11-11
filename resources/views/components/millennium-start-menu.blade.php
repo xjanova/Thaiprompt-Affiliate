@@ -942,3 +942,155 @@
         animation: millenniumGrid 20s linear infinite;
     }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let longPressTimer = null;
+    let longPressTriggered = false;
+    const LONG_PRESS_DURATION = 800; // ms
+
+    // Helper function to get CSRF token
+    function getCsrfToken() {
+        return document.querySelector('meta[name="csrf-token"]')?.content || '';
+    }
+
+    // Helper function to add shortcut to taskbar
+    async function addToTaskbar(icon, label, url) {
+        try {
+            const response = await fetch('/api/v1/taskbar-shortcuts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                },
+                credentials: 'include',
+                body: JSON.stringify({ icon, label, url })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                alert('✅ ' + (data.message || 'เพิ่มไอค่อนทางลัดสำเร็จ'));
+                // Dispatch event to refresh taskbar
+                window.dispatchEvent(new CustomEvent('taskbar-shortcut-added'));
+                return true;
+            } else {
+                alert('❌ เกิดข้อผิดพลาด: ' + (data.message || 'ไม่สามารถเพิ่มไอค่อนทางลัดได้'));
+                return false;
+            }
+        } catch (error) {
+            console.error('Error adding shortcut:', error);
+            alert('❌ เกิดข้อผิดพลาดในการเพิ่มไอค่อนทางลัด');
+            return false;
+        }
+    }
+
+    // Handle long press start
+    function startLongPress(event, icon, label, url) {
+        longPressTriggered = false;
+
+        longPressTimer = setTimeout(() => {
+            longPressTriggered = true;
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Visual feedback
+            event.currentTarget.style.transform = 'scale(1.05)';
+            event.currentTarget.style.opacity = '0.7';
+
+            // Show confirmation dialog
+            if (confirm(`📌 ต้องการเพิ่ม "${label}" ไปที่ทาร์กบาร์ทางลัดหรือไม่?`)) {
+                addToTaskbar(icon, label, url);
+            }
+
+            // Reset visual feedback
+            setTimeout(() => {
+                event.currentTarget.style.transform = '';
+                event.currentTarget.style.opacity = '';
+            }, 300);
+        }, LONG_PRESS_DURATION);
+    }
+
+    // Handle long press end
+    function endLongPress(event) {
+        if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        }
+
+        // Prevent click if long press was triggered
+        if (longPressTriggered) {
+            event.preventDefault();
+            event.stopPropagation();
+            longPressTriggered = false;
+            return false;
+        }
+    }
+
+    // Add long press handlers to menu items
+    function initLongPress() {
+        // Select all menu items (both main and submenu)
+        const menuItems = document.querySelectorAll('.millennium-menu-container a, .millennium-menu-container button');
+
+        menuItems.forEach(item => {
+            // Skip if already initialized
+            if (item.dataset.longPressInit) return;
+            item.dataset.longPressInit = 'true';
+
+            // Extract menu item data
+            const iconEl = item.querySelector('span:first-child');
+            const labelEl = item.querySelector('span:not(:first-child)');
+            const url = item.getAttribute('href') || item.dataset.url || '#';
+
+            // Skip if no icon or label
+            if (!iconEl || !labelEl) return;
+
+            const icon = iconEl.textContent.trim();
+            const label = labelEl.textContent.trim();
+
+            // Skip items without valid URLs
+            if (url === '#' || url === '') return;
+
+            // Mouse events
+            item.addEventListener('mousedown', (e) => {
+                startLongPress(e, icon, label, url);
+            });
+
+            item.addEventListener('mouseup', endLongPress);
+            item.addEventListener('mouseleave', endLongPress);
+
+            // Touch events
+            item.addEventListener('touchstart', (e) => {
+                startLongPress(e, icon, label, url);
+            }, { passive: false });
+
+            item.addEventListener('touchend', endLongPress);
+            item.addEventListener('touchcancel', endLongPress);
+
+            // Prevent context menu on long press
+            item.addEventListener('contextmenu', (e) => {
+                if (longPressTriggered) {
+                    e.preventDefault();
+                }
+            });
+        });
+    }
+
+    // Initialize on load
+    initLongPress();
+
+    // Re-initialize when menu items are dynamically updated
+    const observer = new MutationObserver(() => {
+        initLongPress();
+    });
+
+    const menuContainer = document.querySelector('.millennium-menu-container');
+    if (menuContainer) {
+        observer.observe(menuContainer, {
+            childList: true,
+            subtree: true
+        });
+    }
+});
+</script>
