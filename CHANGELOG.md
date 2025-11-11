@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.118.3] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #795 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (8ad270b4)
+- fix: Add default CURRENT_TIMESTAMP to trend_keywords timestamp columns (91139a65)
+### 🔧 Other Changes
+
+
 ## [v2.118.2] - 2025-11-11
 
 ### ✨ Features
