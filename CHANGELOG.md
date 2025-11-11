@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.124.0] - 2025-11-11
+
+### ✨ Features
+- feat: สร้าง Admin views ที่ขาดหายไป 62 ไฟล์ - แก้ปัญหา 404 errors (84d1bcfa)
+- feat: สร้าง User views ที่ขาดหายไป 11 ไฟล์ (44a4c978)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #815 from xjanova/claude/create-missing-views-011CV1nu3USd7fzV7169FKyV (bf7693b2)
+
 ## [v2.123.0] - 2025-11-11
 
 ### ✨ Features
