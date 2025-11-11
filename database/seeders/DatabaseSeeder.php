@@ -93,6 +93,10 @@ class DatabaseSeeder extends Seeder
             // 13. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
+
+            // 14. AI Gen System (Image & Video Generation)
+            AiGenSeeder::class,                 // AI Gen Providers, Packages, and Quotas
+            AiGenMenuSeeder::class,             // AI Gen System Menu Items for Admin Panel
         ]);
 
         $this->command->info('');
