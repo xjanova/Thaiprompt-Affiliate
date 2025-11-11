@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.133.1] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #854 from xjanova/claude/lineoa-member-signup-011CV1tqWaBrAC9LLxH3ds8U (7d2e97be)
+- feat(line): Add real-time analytics dashboard & alerts for LINE OA signup (f31ad783)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' - Resolve conflicts in routes/api.php (f7576134)
+
 ## [v2.133.0] - 2025-11-11
 
 ### ✨ Features
