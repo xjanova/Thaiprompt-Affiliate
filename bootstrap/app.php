@@ -12,9 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function () {
-            if (! app()->routesAreCached()) {
-                Route::middleware('web')->group(base_path('routes/hotel-admin.php'));
-            }
+            Route::middleware('web')->group(base_path('routes/hotel-admin.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
