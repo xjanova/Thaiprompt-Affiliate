@@ -89,8 +89,10 @@ class DatabaseSeeder extends Seeder
             HotelSeeder::class,                 // ระบบจองโรงแรม
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
             TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
-            BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories
-            BotPlatformSeeder::class,           // Bot Platforms Configuration
+
+            // 13. Bot Automation System
+            BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
+            BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
         ]);
 
         $this->command->info('');
