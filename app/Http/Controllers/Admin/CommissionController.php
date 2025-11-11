@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Commission;
+use App\Models\Affiliate;
+use App\Models\User;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
 use Exception;
@@ -48,6 +50,51 @@ class CommissionController extends Controller
         $commissions = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('admin.commissions.index', compact('commissions'));
+    }
+
+    /**
+     * Show the form for creating a new commission
+     */
+    public function create()
+    {
+        // Get all active affiliates with their users
+        $affiliates = Affiliate::with('user')
+            ->where('status', 'active')
+            ->get();
+
+        // Get all users for the user_id field
+        $users = User::select('id', 'name', 'email')
+            ->orderBy('name')
+            ->get();
+
+        return view('admin.commissions.create', compact('affiliates', 'users'));
+    }
+
+    /**
+     * Store a newly created commission in storage
+     */
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'affiliate_id' => ['required', 'exists:affiliates,id'],
+            'user_id' => ['nullable', 'exists:users,id'],
+            'order_id' => ['nullable', 'exists:orders,id'],
+            'amount' => ['required', 'numeric', 'min:0'],
+            'percentage' => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'type' => ['required', 'string', 'in:referral,direct_sales,team_sales,bonus'],
+            'status' => ['nullable', 'in:pending,approved,rejected,paid'],
+            'notes' => ['nullable', 'string'],
+        ]);
+
+        // Set default status if not provided
+        if (!isset($validated['status'])) {
+            $validated['status'] = 'pending';
+        }
+
+        $commission = Commission::create($validated);
+
+        return redirect()->route('admin.commissions.index')
+            ->with('success', 'Commission created successfully.');
     }
 
     /**
