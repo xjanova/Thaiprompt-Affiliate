@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.4] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #824 from xjanova/claude/smart-slider-research-011CV1HYVpFkQw6mvC4zeU89 (f25d4916)
+- fix: Add missing selectedTemplate variable in create method (d316a922)
+### 🔧 Other Changes
+
+
 ## [v2.127.3] - 2025-11-11
 
 ### ✨ Features
