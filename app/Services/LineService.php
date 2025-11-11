@@ -150,6 +150,48 @@ class LineService
     }
 
     /**
+     * Send Flex Message
+     */
+    public function sendFlexMessage(string $lineUserId, array $flexMessage, ?array $quickReply = null): bool
+    {
+        if (!$this->settings || !$this->settings->enable_line_messaging) {
+            Log::warning('LINE messaging is disabled');
+            return false;
+        }
+
+        if (empty($this->settings->channel_access_token)) {
+            Log::error('LINE channel access token not configured');
+            return false;
+        }
+
+        $message = $flexMessage;
+
+        // Add quick reply if provided
+        if ($quickReply) {
+            $message['quickReply'] = $quickReply;
+        }
+
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $this->settings->channel_access_token,
+            'Content-Type' => 'application/json',
+        ])->post('https://api.line.me/v2/bot/message/push', [
+            'to' => $lineUserId,
+            'messages' => [$message],
+        ]);
+
+        if (!$response->successful()) {
+            Log::error('LINE Flex message failed', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'line_user_id' => $lineUserId,
+            ]);
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Send welcome message to new user
      */
     public function sendWelcomeMessage(User $user): bool

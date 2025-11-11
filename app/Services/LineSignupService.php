@@ -22,11 +22,13 @@ class LineSignupService
         private DuplicateDetectionService $duplicateService,
         private AiConversationService $aiService,
         private ConversationContextService $contextService,
-        private SmartResponseService $smartResponseService
+        private SmartResponseService $smartResponseService,
+        private LineFlexMessageService $flexMessageService,
+        private LineProgressService $progressService
     ) {}
 
     /**
-     * Start signup conversation
+     * Start signup conversation with Flex Messages
      */
     public function startConversation(MlmProspect $prospect): void
     {
@@ -54,8 +56,15 @@ class LineSignupService
         // Start conversation tracking
         $this->timeoutService->startTracking($prospect);
 
-        // Send first message
-        $this->sendFlowMessage($prospect, $firstStep);
+        // Initialize progress tracking
+        $this->progressService->updateProgress($prospect, 'welcome');
+
+        // Send welcome Flex Message
+        $welcomeMessage = $this->flexMessageService->createWelcomeMessage($prospect);
+        $this->lineService->sendFlexMessage($prospect->line_user_id, $welcomeMessage);
+
+        // Add to conversation history
+        $this->contextService->addMessageToHistory($prospect, 'assistant', 'Welcome message sent');
     }
 
     /**
