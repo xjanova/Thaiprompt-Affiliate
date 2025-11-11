@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.116.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #790 from xjanova/claude/ai-rental-system-api-011CV1MmXuLRa4UyfxJPtdta (5ee24f93)
+- feat: Add AI Gen rental system for image and video generation (0af7e80d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' - resolve routes/api.php conflict (ebbf813d)
+
 ## [v2.115.0] - 2025-11-11
 
 ### ✨ Features
