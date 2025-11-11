@@ -25,8 +25,8 @@
     </div>
 
     <!-- Transfer Form -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">แบบฟอร์มโอนเงิน</h2>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">แบบฟอร์มโอนเงิน</h2>
 
         <form method="POST" action="{{ route('user.wallet.transfer.submit') }}" class="space-y-6">
             @csrf
@@ -36,7 +36,7 @@
                 <input type="text"
                        name="wallet_address"
                        required
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                        placeholder="ระบุ Wallet Address ของผู้รับ (เช่น TPW...)">
                 <p class="text-xs text-gray-500 mt-1">Wallet Address เริ่มต้นด้วย TPW ตามด้วยอักขระ 16 ตัว</p>
             </div>
@@ -49,7 +49,7 @@
                        min="1"
                        max="{{ $wallet->balance }}"
                        required
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                        placeholder="ระบุจำนวนเงินที่ต้องการโอน">
                 <p class="text-xs text-gray-500 mt-1">ยอดเงินสูงสุดที่โอนได้: ฿{{ number_format($wallet->balance, 2) }}</p>
             </div>
@@ -61,7 +61,7 @@
                        maxlength="6"
                        pattern="[0-9]{6}"
                        required
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                        placeholder="ระบุ PIN 6 หลัก">
                 <p class="text-xs text-gray-500 mt-1">กรอก PIN เพื่อยืนยันการโอนเงิน</p>
             </div>
@@ -71,13 +71,13 @@
                 <textarea name="description"
                           rows="3"
                           maxlength="255"
-                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                           placeholder="รายละเอียดการโอนเงิน (ไม่เกิน 255 ตัวอักษร)"></textarea>
             </div>
 
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
                 <h4 class="font-semibold text-blue-900 mb-2">⚠️ ข้อควรระวัง</h4>
-                <ul class="space-y-1 text-sm text-blue-800">
+                <ul class="space-y-1 text-sm text-blue-900 dark:text-blue-100">
                     <li>• ตรวจสอบ Wallet Address ของผู้รับให้ถูกต้อง</li>
                     <li>• การโอนเงินจะเกิดขึ้นทันทีและไม่สามารถยกเลิกได้</li>
                     <li>• ไม่สามารถโอนเงินให้ตัวเองได้</li>
@@ -87,7 +87,7 @@
 
             <div class="flex gap-3">
                 <a href="{{ route('user.wallet.index') }}"
-                   class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
+                   class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
                     ยกเลิก
                 </a>
                 <button type="submit"
@@ -99,17 +99,17 @@
     </div>
 
     <!-- How to Find Wallet Address -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">❓ จะหา Wallet Address ของผู้รับได้อย่างไร?</h3>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">❓ จะหา Wallet Address ของผู้รับได้อย่างไร?</h3>
 
-        <div class="space-y-4 text-sm text-gray-700">
+        <div class="space-y-4 text-sm text-gray-700 dark:text-gray-300">
             <div class="flex items-start gap-3">
                 <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
                     1
                 </div>
                 <div>
                     <p class="font-semibold mb-1">ขอจากผู้รับโดยตรง</p>
-                    <p class="text-gray-600">ผู้รับสามารถดู Wallet Address ได้ที่หน้ากระเป๋าเงินของตน</p>
+                    <p class="text-gray-600 dark:text-gray-400">ผู้รับสามารถดู Wallet Address ได้ที่หน้ากระเป๋าเงินของตน</p>
                 </div>
             </div>
 
@@ -119,7 +119,7 @@
                 </div>
                 <div>
                     <p class="font-semibold mb-1">ตรวจสอบความถูกต้อง</p>
-                    <p class="text-gray-600">Wallet Address จะเริ่มต้นด้วย "TPW" และมีความยาวทั้งหมด 19 ตัวอักษร</p>
+                    <p class="text-gray-600 dark:text-gray-400">Wallet Address จะเริ่มต้นด้วย "TPW" และมีความยาวทั้งหมด 19 ตัวอักษร</p>
                 </div>
             </div>
 
@@ -137,9 +137,9 @@
     </div>
 
     <!-- Recent Transfers -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900">📊 การโอนเงินล่าสุด</h3>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">📊 การโอนเงินล่าสุด</h3>
             <a href="{{ route('user.wallet.transactions') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                 ดูทั้งหมด →
             </a>

@@ -25,21 +25,21 @@
     </div>
 
     <!-- Payment Methods -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">เลือกช่องทางการชำระเงิน</h2>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">เลือกช่องทางการชำระเงิน</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach($availableGateways as $key => $gateway)
                 @if($gateway['enabled'])
-                    <div class="border-2 border-gray-200 hover:border-indigo-500 rounded-xl p-6 cursor-pointer transition group"
+                    <div class="border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 cursor-pointer transition group"
                          onclick="selectPaymentMethod('{{ $key }}')">
                         <div class="flex items-start gap-4">
                             <div class="text-5xl">{{ $gateway['icon'] }}</div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-bold text-gray-900 group-hover:text-indigo-600 transition">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
                                     {{ $gateway['name'] }}
                                 </h3>
-                                <p class="text-sm text-gray-600 mt-1">{{ $gateway['description'] }}</p>
+                                <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">{{ $gateway['description'] }}</p>
 
                                 @if($key === 'promptpay')
                                     <div class="mt-3">
@@ -63,24 +63,24 @@
     </div>
 
     <!-- PromptPay Payment Form -->
-    <div id="promptpay-form" class="bg-white rounded-2xl shadow-xl p-6 hidden">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">💳 ชำระเงินผ่าน พร้อมเพย์</h3>
+    <div id="promptpay-form" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 hidden">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💳 ชำระเงินผ่าน พร้อมเพย์</h3>
 
         <form method="POST" action="{{ route('user.wallet.deposit.promptpay') }}" class="space-y-4">
             @csrf
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">จำนวนเงิน (บาท)</label>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (บาท)</label>
                 <input type="number"
                        name="amount"
                        step="0.01"
                        min="1"
                        required
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                        placeholder="ระบุจำนวนเงิน">
             </div>
 
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p class="text-sm text-blue-800">
+            <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
+                <p class="text-sm text-blue-900 dark:text-blue-100 font-medium">
                     <strong>หมายเหตุ:</strong> หลังจากกดยืนยัน คุณจะได้รับ QR Code สำหรับชำระเงิน
                 </p>
             </div>
@@ -88,7 +88,7 @@
             <div class="flex gap-3">
                 <button type="button"
                         onclick="hideAllForms()"
-                        class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition">
+                        class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
                     ยกเลิก
                 </button>
                 <button type="submit"
@@ -100,41 +100,41 @@
     </div>
 
     <!-- Bank Transfer Form -->
-    <div id="bank_transfer-form" class="bg-white rounded-2xl shadow-xl p-6 hidden">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">🏦 โอนผ่านธนาคาร</h3>
+    <div id="bank_transfer-form" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 hidden">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">🏦 โอนผ่านธนาคาร</h3>
 
         <form method="POST" action="{{ route('user.wallet.deposit.bank-transfer') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">จำนวนเงิน (บาท)</label>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (บาท)</label>
                 <input type="number"
                        name="amount"
                        step="0.01"
                        min="1"
                        required
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                        placeholder="ระบุจำนวนเงิน">
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">อัพโหลดสลิปการโอนเงิน</label>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">อัพโหลดสลิปการโอนเงิน</label>
                 <input type="file"
                        name="slip"
                        accept="image/*"
                        required
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">หมายเหตุ (ถ้าม)</label>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">หมายเหตุ (ถ้ามี)</label>
                 <textarea name="note"
                           rows="3"
-                          class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                          class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                           placeholder="หมายเหตุเพิ่มเติม"></textarea>
             </div>
 
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p class="text-sm text-yellow-800">
+            <div class="bg-yellow-100 dark:bg-yellow-900 border-2 border-yellow-300 dark:border-yellow-700 rounded-lg p-4">
+                <p class="text-sm text-yellow-900 dark:text-yellow-100 font-medium">
                     <strong>หมายเหตุ:</strong> หลังจากส่งคำขอ แอดมินจะตรวจสอบและอนุมัติภายใน 24 ชั่วโมง
                 </p>
             </div>
@@ -142,7 +142,7 @@
             <div class="flex gap-3">
                 <button type="button"
                         onclick="hideAllForms()"
-                        class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition">
+                        class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
                     ยกเลิก
                 </button>
                 <button type="submit"
@@ -154,35 +154,35 @@
     </div>
 
     <!-- Stripe Form -->
-    <div id="stripe-form" class="bg-white rounded-2xl shadow-xl p-6 hidden">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">💰 ชำระเงินด้วย Stripe</h3>
+    <div id="stripe-form" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 hidden">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💰 ชำระเงินด้วย Stripe</h3>
 
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p class="text-sm text-blue-800">
+        <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
+            <p class="text-sm text-blue-900 dark:text-blue-100 font-medium">
                 <strong>ข้อมูล:</strong> ระบบ Stripe กำลังอยู่ในระหว่างการพัฒนา กรุณาเลือกช่องทางอื่น
             </p>
         </div>
 
         <button type="button"
                 onclick="hideAllForms()"
-                class="w-full mt-4 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition">
+                class="w-full mt-4 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
             กลับ
         </button>
     </div>
 
     <!-- PayPal Form -->
-    <div id="paypal-form" class="bg-white rounded-2xl shadow-xl p-6 hidden">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">💵 ชำระเงินด้วย PayPal</h3>
+    <div id="paypal-form" class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6 hidden">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">💵 ชำระเงินด้วย PayPal</h3>
 
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p class="text-sm text-blue-800">
+        <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
+            <p class="text-sm text-blue-900 dark:text-blue-100 font-medium">
                 <strong>ข้อมูล:</strong> ระบบ PayPal กำลังอยู่ในระหว่างการพัฒนา กรุณาเลือกช่องทางอื่น
             </p>
         </div>
 
         <button type="button"
                 onclick="hideAllForms()"
-                class="w-full mt-4 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition">
+                class="w-full mt-4 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-400 dark:hover:bg-gray-500 transition">
             กลับ
         </button>
     </div>

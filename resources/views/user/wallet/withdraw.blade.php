@@ -31,13 +31,13 @@
     </div>
 
     <!-- Withdrawal Form -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">แบบฟอร์มถอนเงิน</h2>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">แบบฟอร์มถอนเงิน</h2>
 
         @if($paymentMethods->isEmpty())
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
                 <span class="text-5xl block mb-3">🏦</span>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">ยังไม่มีช่องทางรับเงิน</h3>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">ยังไม่มีช่องทางรับเงิน</h3>
                 <p class="text-gray-600 mb-4">กรุณาเพิ่มช่องทางรับเงินก่อนทำการถอน</p>
                 <a href="{{ route('user.wallet.payment-methods') }}"
                    class="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
@@ -52,7 +52,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">เลือกช่องทางรับเงิน</label>
                     <select name="payment_method_id"
                             required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="">-- เลือกช่องทางรับเงิน --</option>
                         @foreach($paymentMethods as $method)
                             <option value="{{ $method->id }}">
@@ -79,7 +79,7 @@
                            min="1"
                            max="{{ $wallet->balance }}"
                            required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                            placeholder="ระบุจำนวนเงินที่ต้องการถอน">
                     <p class="text-xs text-gray-500 mt-1">ยอดเงินสูงสุดที่ถอนได้: ฿{{ number_format($wallet->balance, 2) }}</p>
                 </div>
@@ -91,7 +91,7 @@
                            maxlength="6"
                            pattern="[0-9]{6}"
                            required
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                            placeholder="ระบุ PIN 6 หลัก">
                     <p class="text-xs text-gray-500 mt-1">กรอก PIN เพื่อยืนยันการถอนเงิน</p>
                 </div>
@@ -101,13 +101,13 @@
                     <textarea name="user_note"
                               rows="3"
                               maxlength="500"
-                              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                               placeholder="หมายเหตุเพิ่มเติม (ไม่เกิน 500 ตัวอักษร)"></textarea>
                 </div>
 
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div class="bg-blue-100 dark:bg-blue-900 border-2 border-blue-300 dark:border-blue-700 rounded-lg p-4">
                     <h4 class="font-semibold text-blue-900 mb-2">📋 เงื่อนไขการถอนเงิน</h4>
-                    <ul class="space-y-1 text-sm text-blue-800">
+                    <ul class="space-y-1 text-sm text-blue-900 dark:text-blue-100">
                         <li>• จำนวนเงินขั้นต่ำในการถอนคือ 100 บาท</li>
                         <li>• ระบบจะตรวจสอบและดำเนินการภายใน 1-3 วันทำการ</li>
                         <li>• กรุณาตรวจสอบข้อมูลบัญชีให้ถูกต้อง</li>
@@ -127,7 +127,7 @@
 
                 <div class="flex gap-3">
                     <a href="{{ route('user.wallet.index') }}"
-                       class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
+                       class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-300 transition text-center">
                         ยกเลิก
                     </a>
                     <button type="submit"
@@ -140,9 +140,9 @@
     </div>
 
     <!-- Recent Withdrawals -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-900">📋 คำขอถอนเงินล่าสุด</h3>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">📋 คำขอถอนเงินล่าสุด</h3>
             <a href="{{ route('user.wallet.withdrawals') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                 ดูทั้งหมด →
             </a>
