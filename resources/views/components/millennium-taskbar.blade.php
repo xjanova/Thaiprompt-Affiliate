@@ -292,17 +292,25 @@
         @endif
 
         <!-- Taskbar Background -->
-        <div class="absolute inset-0 border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2 shadow-2xl rounded-2xl mx-2 my-1"
+        <div class="absolute inset-0 border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-4 shadow-2xl rounded-2xl mx-2 my-1"
              style="
                 opacity: {{ $taskbarOpacity / 100 }};
-                backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px);
+                backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px) saturate(180%);
+                -webkit-backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px) saturate(180%);
+                border-image: linear-gradient(135deg, rgba(168, 85, 247, 0.6), rgba(236, 72, 153, 0.6), rgba(59, 130, 246, 0.6)) 1;
                 border-color: {{ $taskbarBorderColor }};
                 @if($taskbarUseGradient)
                 background: linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }});
                 @else
                 background-color: {{ $taskbarBgColor }};
                 @endif
-                box-shadow: 0 0 30px rgba(168, 85, 247, 0.3), 0 0 60px rgba(59, 130, 246, 0.2);
+                box-shadow:
+                    0 0 2px rgba(255, 255, 255, 0.2) inset,
+                    0 1px 3px rgba(255, 255, 255, 0.15) inset,
+                    0 -1px 2px rgba(0, 0, 0, 0.2) inset,
+                    0 8px 24px rgba(168, 85, 247, 0.4),
+                    0 16px 48px rgba(59, 130, 246, 0.3),
+                    0 24px 80px rgba(236, 72, 153, 0.2);
              "></div>
 
         <!-- Taskbar Content -->
@@ -317,8 +325,8 @@
                         <button
                             @click="startMenuOpen = !startMenuOpen; hideTooltip()"
                             :class="{'millennium-start-active': startMenuOpen}"
-                            class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
-                            style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+                            class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 shadow-2xl hover:shadow-pink-500/70 border-2 border-white/20"
+                            style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}; box-shadow: 0 0 2px rgba(255, 255, 255, 0.4) inset, 0 2px 4px rgba(255, 255, 255, 0.2) inset, 0 -2px 4px rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(236, 72, 153, 0.6), 0 16px 48px rgba(168, 85, 247, 0.5), 0 24px 72px rgba(59, 130, 246, 0.4);">
 
                             @if($startButtonShowIcon)
                                 @if($startButtonIconType === 'upload' && $startButtonCustomIconPath)
@@ -351,7 +359,10 @@
 
                             <!-- Glow Effect on Hover -->
                             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                                 style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                                 style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.6), rgba(168, 85, 247, 0.6), rgba(59, 130, 246, 0.6)); filter: blur(20px);"></div>
+                            <!-- Inner Highlight -->
+                            <div class="absolute inset-x-0 top-0 h-1/2 opacity-30 pointer-events-none"
+                                 style="border-radius: {{ $startButtonRadius }}px {{ $startButtonRadius }}px 0 0; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent);"></div>
                         </button>
 
                         <!-- Tooltip -->
@@ -380,7 +391,8 @@
                 @if($backButtonEnabled)
                     <button
                         onclick="window.history.back()"
-                        class="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-700/80 to-gray-800/80 hover:from-indigo-600 hover:to-purple-600 text-white transition-all duration-300 transform hover:scale-105 active:scale-95 shadow-lg hover:shadow-indigo-500/50"
+                        class="group flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-gray-700/80 to-gray-800/80 hover:from-indigo-600 hover:to-purple-600 text-white transition-all duration-300 transform hover:scale-105 hover:-translate-y-1 active:scale-95 active:translate-y-0 shadow-lg hover:shadow-indigo-500/50 border-2 border-white/10 hover:border-white/30"
+                        style="box-shadow: 0 1px 2px rgba(255, 255, 255, 0.1) inset, 0 -1px 2px rgba(0, 0, 0, 0.2) inset, 0 4px 12px rgba(79, 70, 229, 0.3), 0 8px 24px rgba(139, 92, 246, 0.2);"
                         title="{{ $backButtonText }}">
                         @if($backButtonShowIcon)
                             <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
@@ -409,8 +421,8 @@
                     ">
                         @foreach($taskbarIcons as $taskbarIcon)
                             <a href="{{ url($taskbarIcon['url']) }}"
-                               class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 active:scale-95 {{ ($taskbarIcon['border'] ?? false) ? 'border-2 border-white/20' : '' }}"
-                               style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3));"
+                               class="group relative flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 border-2 border-white/20 hover:border-white/40"
+                               style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, {{ ($taskbarIcon['opacity'] ?? 10) / 100 }}); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); box-shadow: 0 1px 2px rgba(255, 255, 255, 0.1) inset, 0 -1px 2px rgba(0, 0, 0, 0.2) inset, 0 4px 12px rgba(168, 85, 247, 0.3), 0 8px 24px rgba(59, 130, 246, 0.2);"
                                title="{{ $taskbarIcon['label'] }}">
                                 <span style="font-size: {{ ($taskbarIconSize * 0.5) }}px;">{{ $taskbarIcon['icon'] }}</span>
                             </a>
@@ -559,8 +571,8 @@
                     <button
                         @click="startMenuOpen = !startMenuOpen; hideTooltip()"
                         :class="{'millennium-start-active': startMenuOpen}"
-                        class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
-                        style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+                        class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 shadow-2xl hover:shadow-pink-500/70 border-2 border-white/20"
+                        style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}; box-shadow: 0 0 2px rgba(255, 255, 255, 0.4) inset, 0 2px 4px rgba(255, 255, 255, 0.2) inset, 0 -2px 4px rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(236, 72, 153, 0.6), 0 16px 48px rgba(168, 85, 247, 0.5), 0 24px 72px rgba(59, 130, 246, 0.4);">
 
                         @if($startButtonShowIcon)
                             @if($logo)
@@ -582,7 +594,10 @@
 
                         <!-- Glow Effect on Hover -->
                         <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                             style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                             style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.6), rgba(168, 85, 247, 0.6), rgba(59, 130, 246, 0.6)); filter: blur(20px);"></div>
+                        <!-- Inner Highlight -->
+                        <div class="absolute inset-x-0 top-0 h-1/2 opacity-30 pointer-events-none"
+                             style="border-radius: {{ $startButtonRadius }}px {{ $startButtonRadius }}px 0 0; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent);"></div>
                     </button>
 
                     <!-- Tooltip -->
@@ -616,8 +631,8 @@
                         <button
                             @click="startMenuOpen = !startMenuOpen; hideTooltip()"
                             :class="{'millennium-start-active': startMenuOpen}"
-                            class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-2xl hover:shadow-pink-500/70"
-                            style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}">
+                            class="millennium-start-button group flex items-center gap-3 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 hover:from-pink-500 hover:via-purple-500 hover:to-blue-500 transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 shadow-2xl hover:shadow-pink-500/70 border-2 border-white/20"
+                            style="width: {{ $startButtonWidth }}px; height: {{ $startButtonHeight }}px; border-radius: {{ $startButtonRadius }}px; margin-top: -8px; margin-bottom: -8px; {{ !$startButtonShowIcon && !$startButtonShowText ? 'padding: 12px;' : 'padding: 0 20px;' }}; box-shadow: 0 0 2px rgba(255, 255, 255, 0.4) inset, 0 2px 4px rgba(255, 255, 255, 0.2) inset, 0 -2px 4px rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(236, 72, 153, 0.6), 0 16px 48px rgba(168, 85, 247, 0.5), 0 24px 72px rgba(59, 130, 246, 0.4);">
 
                             @if($startButtonShowIcon)
                                 @if($startButtonIconType === 'upload' && $startButtonCustomIconPath)
@@ -650,7 +665,10 @@
 
                             <!-- Glow Effect on Hover -->
                             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                                 style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.4), rgba(168, 85, 247, 0.4), rgba(59, 130, 246, 0.4)); filter: blur(15px);"></div>
+                                 style="border-radius: {{ $startButtonRadius }}px; background: linear-gradient(45deg, rgba(236, 72, 153, 0.6), rgba(168, 85, 247, 0.6), rgba(59, 130, 246, 0.6)); filter: blur(20px);"></div>
+                            <!-- Inner Highlight -->
+                            <div class="absolute inset-x-0 top-0 h-1/2 opacity-30 pointer-events-none"
+                                 style="border-radius: {{ $startButtonRadius }}px {{ $startButtonRadius }}px 0 0; background: linear-gradient(to bottom, rgba(255, 255, 255, 0.4), transparent);"></div>
                         </button>
 
                         <!-- Tooltip -->
@@ -685,7 +703,8 @@
                         @click="scrollToTop()"
                         x-transition:enter="millennium-back-to-top-{{ $backToTopAnimation }}-enter"
                         x-transition:leave="millennium-back-to-top-{{ $backToTopAnimation }}-leave"
-                        class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition-all duration-300 transform hover:scale-110 active:scale-95 shadow-lg hover:shadow-purple-500/50"
+                        class="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 shadow-lg hover:shadow-purple-500/50 border-2 border-white/20 hover:border-white/40"
+                        style="box-shadow: 0 1px 2px rgba(255, 255, 255, 0.2) inset, 0 -1px 2px rgba(0, 0, 0, 0.3) inset, 0 4px 12px rgba(147, 51, 234, 0.5), 0 8px 24px rgba(236, 72, 153, 0.4);"
                         title="กลับขึ้นด้านบน">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
@@ -696,8 +715,9 @@
                 <!-- Dark Mode Toggle -->
                 <button
                     @click="toggleDarkMode()"
-                    class="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 transform hover:scale-110"
+                    class="flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 hover:bg-white/20 transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 border-2 border-white/10 hover:border-white/30"
                     :class="isDark ? 'text-yellow-400' : 'text-gray-300'"
+                    style="box-shadow: 0 1px 2px rgba(255, 255, 255, 0.1) inset, 0 -1px 2px rgba(0, 0, 0, 0.2) inset, 0 4px 12px rgba(255, 255, 255, 0.1), 0 8px 24px rgba(0, 0, 0, 0.2);"
                     title="สลับโหมดมืด/สว่าง">
                     <!-- Sun Icon -->
                     <svg x-show="isDark" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
