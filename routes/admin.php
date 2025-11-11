@@ -1137,6 +1137,7 @@ Route::prefix('floating-tools')->name('floating-tools.')->group(function () {
 Route::prefix('updates')->name('updates.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\UpdateController::class, 'index'])->name('index');
     Route::get('/check', [\App\Http\Controllers\Admin\UpdateController::class, 'check'])->name('check');
+    Route::post('/clear-cache', [\App\Http\Controllers\Api\WebhookController::class, 'clearVersionCacheManual'])->name('clear-cache');
     Route::get('/{id}', [\App\Http\Controllers\Admin\UpdateController::class, 'show'])->name('show');
     Route::post('/{id}/install', [\App\Http\Controllers\Admin\UpdateController::class, 'install'])->name('install');
     Route::get('/logs', [\App\Http\Controllers\Admin\UpdateController::class, 'logs'])->name('logs');
