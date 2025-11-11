@@ -169,6 +169,21 @@
                 ]
             ],
             [
+                'icon' => '🎨',
+                'label' => 'Smart Slider Pro',
+                'url' => '#',
+                'order' => 4.5,
+                'badge' => 'NEW',
+                'badge_color' => 'bg-gradient-to-r from-blue-500 to-indigo-500',
+                'submenu' => [
+                    ['label' => '🎯 Dashboard', 'url' => safeRoute('admin.smart-sliders.index')],
+                    ['label' => '➕ สร้าง Slider ใหม่', 'url' => safeRoute('admin.smart-sliders.create')],
+                    ['label' => '📚 Template Gallery', 'url' => safeRoute('admin.smart-sliders.index')],
+                    ['label' => '📊 Analytics', 'url' => safeRoute('admin.smart-sliders.index')],
+                    ['label' => '📥 Import/Export', 'url' => safeRoute('admin.smart-sliders.index')],
+                ]
+            ],
+            [
                 'icon' => '🏨',
                 'label' => 'จัดการโรงแรม',
                 'url' => '#',
