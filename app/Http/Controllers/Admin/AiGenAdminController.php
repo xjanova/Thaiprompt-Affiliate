@@ -18,7 +18,7 @@ class AiGenAdminController extends Controller
     /**
      * Get dashboard statistics.
      */
-    public function dashboard(): JsonResponse
+    public function dashboard(Request $request)
     {
         try {
             $stats = [
@@ -33,35 +33,57 @@ class AiGenAdminController extends Controller
                 'paid_usage' => AiGenUsageLog::paid()->count(),
             ];
 
-            return response()->json([
-                'success' => true,
-                'data' => $stats,
+            // If request wants JSON (AJAX)
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $stats,
+                ]);
+            }
+
+            // Return Blade view
+            return view('admin.ai-gen.dashboard', [
+                'stats' => $stats,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', $e->getMessage());
         }
     }
 
     /**
      * Get all providers.
      */
-    public function providers(): JsonResponse
+    public function providers(Request $request)
     {
         try {
             $providers = AiGenProvider::with('configs')->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => $providers,
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $providers,
+                ]);
+            }
+
+            return view('admin.ai-gen.providers', [
+                'providers' => $providers,
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', $e->getMessage());
         }
     }
 
