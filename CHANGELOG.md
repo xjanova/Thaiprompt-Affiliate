@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.126.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #819 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (e2f9b4e9)
+- fix(windows-ui): แก้ไขปัญหาปุ่ม Start ไม่ใช้ custom icon ที่อัปโหลด (87e7dfe8)
+### 🔧 Other Changes
+
+
 ## [v2.126.0] - 2025-11-11
 
 ### ✨ Features
