@@ -154,20 +154,17 @@
                             </div>
                         </label>
 
-                        <!-- Email Option -->
-                        <label class="relative cursor-pointer">
-                            <input type="radio" name="preferred_method" value="email" required class="peer sr-only">
-                            <div class="border-2 border-gray-200 rounded-xl p-6 text-center hover:border-purple-400 peer-checked:border-purple-600 peer-checked:bg-purple-50 transition-all">
+                        <!-- Email Option (Disabled - Coming Soon) -->
+                        <div class="relative opacity-50 cursor-not-allowed" title="Email verification coming soon">
+                            <div class="border-2 border-gray-300 bg-gray-100 rounded-xl p-6 text-center">
                                 <div class="text-4xl mb-3">📧</div>
-                                <div class="font-bold text-gray-800 mb-1">Email</div>
-                                <div class="text-sm text-gray-600">รับรหัสผ่านอีเมล</div>
+                                <div class="font-bold text-gray-500 mb-1">Email</div>
+                                <div class="text-sm text-gray-400">เร็วๆ นี้</div>
                             </div>
-                            <div class="absolute top-2 right-2 w-6 h-6 bg-purple-600 rounded-full hidden peer-checked:flex items-center justify-center">
-                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                                </svg>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <span class="bg-gray-700 text-white text-xs px-3 py-1 rounded-full">เร็วๆ นี้</span>
                             </div>
-                        </label>
+                        </div>
                     </div>
                     @error('preferred_method')
                         <p class="text-red-600 text-sm mt-2">{{ $message }}</p>

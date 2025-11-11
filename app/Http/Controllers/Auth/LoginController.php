@@ -3,12 +3,20 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Services\TwoFactorService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
+    protected $twoFactorService;
+
+    public function __construct(TwoFactorService $twoFactorService)
+    {
+        $this->twoFactorService = $twoFactorService;
+    }
+
     /**
      * Show the login form
      */
@@ -30,9 +38,19 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
 
-            // Redirect based on user role
+            // Get authenticated user
             $user = Auth::user();
 
+            // Check if 2FA is required for login
+            if ($this->twoFactorService->requiresVerification($user, 'login')) {
+                // Store intended URL in session before redirecting to 2FA
+                $request->session()->put('2fa_user_id', $user->id);
+                $request->session()->put('2fa_action', 'login');
+
+                return redirect()->route('user.two-factor.verify');
+            }
+
+            // Redirect based on user role
             // Check if user is super admin or admin role
             if ($user->is_super_admin || $user->role === 'admin' || $user->role === 'super_admin') {
                 return redirect()->intended(route('admin.dashboard'));
