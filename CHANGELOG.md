@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.6] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #826 from xjanova/claude/admin-affiliates-feature-011CV29djeAE8y4PewrCQSc4 (ce83238c)
+- feat(admin): modernize affiliates UI with enhanced design (55a822cd)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.127.5] - 2025-11-11
 
 ### ✨ Features
