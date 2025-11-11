@@ -157,7 +157,7 @@
                             <i class="fas fa-window-maximize mr-2"></i>Start Button
                         </button>
                         <button type="button" @click="activeTab = 'menurgb'" :class="activeTab === 'menurgb' ? 'active' : ''" class="settings-tab flex-1 min-w-[180px] px-6 py-3 rounded-xl text-sm font-semibold bg-white dark:bg-slate-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-all">
-                            <i class="fas fa-palette mr-2"></i>Menu RGB Effects
+                            <i class="fas fa-rainbow mr-2"></i>RGB Effects
                         </button>
                     </div>
                 </div>
@@ -470,60 +470,6 @@
                     </h2>
                 </div>
 
-                <!-- Millennium RGB Border Animation -->
-                <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <span class="text-2xl">🌈</span> Millennium RGB Border Animation
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">แถบสีสันที่วิ่งตามขอบ Taskbar</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="flex items-center">
-                            <label class="flex items-center cursor-pointer">
-                                <label class="toggle-switch"><input type="checkbox" name="millennium_rgb_enabled" value="1" {{ ($settings['millennium_rgb_enabled'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Border</span>
-                            </label>
-                        </div>
-                        <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความเร็ว (วินาที)</label>
-                            <input type="number" name="millennium_rgb_speed" min="1" max="10" value="{{ $settings['millennium_rgb_speed'] ?? 5 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                    </div>
-                    <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <p class="text-sm text-blue-700 dark:text-blue-300">
-                            <strong>💡 หมายเหตุ:</strong> Millennium RGB Border คือแถบสีสันที่วิ่งตามขอบ Taskbar ซึ่งแตกต่างจาก RGB Animation ทั่วไปของระบบ
-                        </p>
-                    </div>
-                </div>
-
-                <!-- RGB Settings -->
-                <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
-                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <span class="text-2xl">🌈</span> RGB Animation
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">เอฟเฟคแสงสีที่เปลี่ยนสีตลอดเวลา</p>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="flex items-center">
-                            <label class="flex items-center cursor-pointer">
-                                <label class="toggle-switch"><input type="checkbox" name="windows_rgb_enabled" value="1" {{ ($settings['windows_rgb_enabled'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ RGB Animation</span>
-                            </label>
-                        </div>
-                        <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความเร็ว (วินาที)</label>
-                            <input type="number" name="windows_rgb_speed" min="1" max="10" value="{{ $settings['windows_rgb_speed'] ?? 3 }}" class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div class="flex items-center">
-                            <label class="flex items-center cursor-pointer">
-                                <label class="toggle-switch"><input type="checkbox" name="windows_rgb_glow" value="1" {{ ($settings['windows_rgb_glow'] ?? true) ? 'checked' : '' }}><span class="toggle-slider"></span></label>
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เปิดใช้ Glow Effect</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">ปรับแต่งสี RGB เพิ่มเติมได้ที่ <a href="{{ route('admin.windows-ui.rgb-settings') }}" class="text-blue-600 hover:text-blue-700 underline">RGB Settings</a></p>
-                    </div>
-                </div>
-
                 <!-- Theme Settings -->
                 <div class="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-slate-800/50 dark:to-slate-700/50 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-slate-600 transition-all duration-300 hover:shadow-md">
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -783,20 +729,6 @@
                                             <input type="hidden" name="millennium_menu_max_height" x-model="heightValue">
                                             <input type="hidden" name="millennium_menu_max_height_unit" x-model="heightUnit">
                                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">แนะนำ: 600px หรือ 80vh</p>
-                                        </div>
-                                        <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4 border-2 border-purple-200 dark:border-purple-800">
-                                            <label class="flex items-center justify-between cursor-pointer">
-                                                <div>
-                                                    <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                                        <span class="text-xl">🌈</span> RGB Border (ขอบเมนู)
-                                                    </span>
-                                                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเส้นขอบ RGB รอบเมนู Start</p>
-                                                </div>
-                                                <label class="toggle-switch">
-                                                    <input type="checkbox" name="millennium_menu_rgb_enabled" value="1" {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_enabled', true) ? 'checked' : '' }}>
-                                                    <span class="toggle-slider"></span>
-                                                </label>
-                                            </label>
                                         </div>
                                     </div>
                                 </div>
@@ -1259,16 +1191,95 @@
                                         </div>
                                     </div>
                                 </div>
-                                    </button>
-                                </div>
                         </div>
                     </div>
 
-                    <!-- Tab 4: Menu RGB Effects -->
+                    <!-- Tab 4: RGB Effects -->
                     <div x-show="activeTab === 'menurgb'" x-transition>
                         <div class="space-y-6">
-                                <!-- RGB Toggle Switches -->
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                <!-- Category Header -->
+                                <div class="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl p-4 mb-6 border-2 border-purple-300 dark:border-purple-700">
+                                    <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                        <span class="text-2xl">🌈</span>
+                                        <span>การตั้งค่า RGB Effects ทั้งหมด</span>
+                                    </h2>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                        จัดการเอฟเฟกต์ RGB สำหรับ Taskbar, Windows และ Start Menu ในที่เดียว
+                                    </p>
+                                </div>
+
+                                <!-- Section 1: Taskbar RGB Border -->
+                                <div class="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl p-6 border-2 border-blue-200 dark:border-blue-700">
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                        <span class="text-xl">🖥️</span> Taskbar RGB Border
+                                    </h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">แถบสีสันที่วิ่งตามขอบ Taskbar</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <label class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl cursor-pointer border-2 border-gray-200 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-600 transition-all">
+                                            <div>
+                                                <span class="font-semibold text-gray-900 dark:text-white">เปิดใช้ RGB Border</span>
+                                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเส้นขอบสีสันรอบ Taskbar</p>
+                                            </div>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" name="millennium_rgb_enabled" value="1" {{ ($settings['millennium_rgb_enabled'] ?? true) ? 'checked' : '' }}>
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </label>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-tachometer-alt mr-2 text-blue-600"></i>ความเร็ว (วินาที)
+                                            </label>
+                                            <input type="number" name="millennium_rgb_speed" min="1" max="10" value="{{ $settings['millennium_rgb_speed'] ?? 5 }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-blue-500">
+                                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ความเร็วในการเปลี่ยนสี (แนะนำ: 3-7)</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Section 2: Windows RGB Animation -->
+                                <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6 border-2 border-indigo-200 dark:border-indigo-700">
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                        <span class="text-xl">✨</span> Windows RGB Animation
+                                    </h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">เอฟเฟกต์แสงสีที่เปลี่ยนสีตลอดเวลาทั่วทั้งระบบ</p>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <label class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl cursor-pointer border-2 border-gray-200 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all">
+                                            <div>
+                                                <span class="font-semibold text-gray-900 dark:text-white">เปิดใช้ RGB</span>
+                                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสดงเอฟเฟกต์ RGB</p>
+                                            </div>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" name="windows_rgb_enabled" value="1" {{ ($settings['windows_rgb_enabled'] ?? true) ? 'checked' : '' }}>
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </label>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-tachometer-alt mr-2 text-indigo-600"></i>ความเร็ว (วินาที)
+                                            </label>
+                                            <input type="number" name="windows_rgb_speed" min="1" max="10" value="{{ $settings['windows_rgb_speed'] ?? 3 }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-indigo-500">
+                                        </div>
+                                        <label class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-xl cursor-pointer border-2 border-gray-200 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-600 transition-all">
+                                            <div>
+                                                <span class="font-semibold text-gray-900 dark:text-white">Glow Effect</span>
+                                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">แสงเรืองรอบ RGB</p>
+                                            </div>
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" name="windows_rgb_glow" value="1" {{ ($settings['windows_rgb_glow'] ?? true) ? 'checked' : '' }}>
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Section 3: Menu RGB Effects -->
+                                <div class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-6 border-2 border-purple-200 dark:border-purple-700">
+                                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                                        <span class="text-xl">📱</span> Start Menu RGB Effects
+                                    </h3>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">เอฟเฟกต์ RGB สำหรับ Start Menu และรายการเมนู</p>
+
+                                    <!-- RGB Toggle Switches -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                     <label class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl cursor-pointer border-2 border-purple-200 dark:border-purple-800 hover:border-purple-400 dark:hover:border-purple-600 transition-all">
                                         <div>
                                             <span class="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
@@ -1334,10 +1345,17 @@
                                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ขนาดของแสงเรืองรอบขอบ (แนะนำ: 10-20)</p>
                                         </div>
                                     </div>
+                                    </div>
                                 </div>
-                                        <i class="fas fa-cog mr-2"></i>ตั้งค่า RGB เพิ่มเติม
+
+                                <!-- Link to Advanced RGB Settings -->
+                                <div class="text-center">
+                                    <a href="{{ route('admin.windows-ui.rgb-settings') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl transition-all shadow-lg hover:shadow-xl font-semibold">
+                                        <i class="fas fa-cog"></i>
+                                        <span>ตั้งค่า RGB ขั้นสูง</span>
+                                        <i class="fas fa-arrow-right"></i>
                                     </a>
-                                    </button>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ปรับแต่งสี RGB แบบละเอียด และตั้งค่าขั้นสูงเพิ่มเติม</p>
                                 </div>
                         </div>
                     </div>
