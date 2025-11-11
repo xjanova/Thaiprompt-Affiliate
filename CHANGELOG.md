@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.134.1] - 2025-11-11
+
+### ✨ Features
+- feat(line): Add gamification, rich media & smart follow-up for LINE OA (63029af9)
+- feat(line): Add visual progress & Flex Messages for LINE OA signup (0b940fdb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #857 from xjanova/claude/lineoa-member-signup-011CV1tqWaBrAC9LLxH3ds8U (f12bf5be)
+
 ## [v2.134.0] - 2025-11-11
 
 ### ✨ Features
