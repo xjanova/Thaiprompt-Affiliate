@@ -4,11 +4,19 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\WindowsUiSetting;
+use App\Services\WebPService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class WindowsUiController extends Controller
 {
+    protected WebPService $webPService;
+
+    public function __construct(WebPService $webPService)
+    {
+        $this->webPService = $webPService;
+    }
+
     /**
      * Display Windows UI settings dashboard
      *
@@ -192,7 +200,7 @@ class WindowsUiController extends Controller
             WindowsUiSetting::set('millennium_start_button_custom_icon_path', null, 'string');
         }
 
-        // Handle file uploads
+        // Handle file uploads with WebP conversion
         if ($request->hasFile('millennium_menu_logo')) {
             // Delete old logo if exists
             $oldPath = WindowsUiSetting::get('millennium_menu_logo');
@@ -200,8 +208,13 @@ class WindowsUiController extends Controller
                 \Storage::disk('public')->delete($oldPath);
             }
 
-            $path = $request->file('millennium_menu_logo')->store('windows-ui/menu', 'public');
-            $validated['millennium_menu_logo'] = $path;
+            // Convert and store as WebP (or keep SVG as-is)
+            $result = $this->webPService->convertAndStore(
+                $request->file('millennium_menu_logo'),
+                'windows-ui/menu-logos',
+                85 // Quality
+            );
+            $validated['millennium_menu_logo'] = $result['path'];
         }
 
         if ($request->hasFile('millennium_start_button_custom_icon')) {
@@ -211,8 +224,13 @@ class WindowsUiController extends Controller
                 \Storage::disk('public')->delete($oldPath);
             }
 
-            $path = $request->file('millennium_start_button_custom_icon')->store('windows-ui/start-button', 'public');
-            $validated['millennium_start_button_custom_icon_path'] = $path;
+            // Convert and store as WebP (or keep SVG as-is)
+            $result = $this->webPService->convertAndStore(
+                $request->file('millennium_start_button_custom_icon'),
+                'windows-ui/start-button-icons',
+                85 // Quality
+            );
+            $validated['millennium_start_button_custom_icon_path'] = $result['path'];
         }
 
         // Save each setting
@@ -409,14 +427,23 @@ class WindowsUiController extends Controller
         $validated['millennium_start_button_tooltip_enabled'] = $request->has('millennium_start_button_tooltip_enabled');
         $validated['millennium_taskbar_collapse_enabled'] = $request->has('millennium_taskbar_collapse_enabled');
 
-        // Handle file upload for custom icon
+        // Handle file upload for custom icon with WebP conversion
         if ($request->hasFile('millennium_start_button_custom_icon')) {
-            $file = $request->file('millennium_start_button_custom_icon');
-            $filename = 'start_button_icon_' . time() . '.' . $file->getClientOriginalExtension();
-            $path = $file->storeAs('icons', $filename, 'public');
+            // Delete old icon if exists
+            $oldPath = WindowsUiSetting::get('millennium_start_button_custom_icon_path');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
 
-            // Save the path
-            WindowsUiSetting::set('millennium_start_button_custom_icon_path', 'storage/' . $path, 'string');
+            // Convert and store as WebP (or keep SVG as-is)
+            $result = $this->webPService->convertAndStore(
+                $request->file('millennium_start_button_custom_icon'),
+                'windows-ui/start-button-icons',
+                85 // Quality
+            );
+
+            // Save the path (without 'storage/' prefix as it will be added when displaying)
+            WindowsUiSetting::set('millennium_start_button_custom_icon_path', $result['path'], 'string');
         }
 
         // Remove the file field from validated data (it's already handled)
@@ -522,10 +549,21 @@ class WindowsUiController extends Controller
             'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
         ]);
 
-        // Handle logo upload
+        // Handle logo upload with WebP conversion
         if ($request->hasFile('millennium_menu_logo')) {
-            $path = $request->file('millennium_menu_logo')->store('windows-ui/menu-logos', 'public');
-            $validated['millennium_menu_logo'] = $path;
+            // Delete old logo if exists
+            $oldPath = WindowsUiSetting::get('millennium_menu_logo');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+
+            // Convert and store as WebP (or keep SVG as-is)
+            $result = $this->webPService->convertAndStore(
+                $request->file('millennium_menu_logo'),
+                'windows-ui/menu-logos',
+                85 // Quality
+            );
+            $validated['millennium_menu_logo'] = $result['path'];
         } else {
             // Remove millennium_menu_logo from validated if no file uploaded
             unset($validated['millennium_menu_logo']);

@@ -780,8 +780,15 @@
                                         <!-- Menu Logo Upload -->
                                         <div class="md:col-span-2">
                                             <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                                                <i class="fas fa-image mr-2 text-blue-600"></i>โลโก้ในเมนู
+                                                <i class="fas fa-image mr-2 text-blue-600"></i>โลโก้ในเมนู Start
                                             </label>
+                                            <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-3 rounded mb-3">
+                                                <p class="text-xs text-blue-800 dark:text-blue-300">
+                                                    <i class="fas fa-info-circle mr-1"></i>
+                                                    <strong>หน่าย:</strong> โลโก้นี้จะแสดงผล<strong>ภายในเมนู Start</strong> เมื่อผู้ใช้เปิดเมนู (ไม่ใช่บนปุ่ม Start ใน Taskbar)
+                                                    <br>ไอคอนของปุ่ม Start ตั้งค่าได้ใน <strong>Tab "Start Button"</strong>
+                                                </p>
+                                            </div>
 
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <!-- Current Logo -->
@@ -814,7 +821,10 @@
                                                         <div class="flex flex-col items-center justify-center pt-5 pb-6">
                                                             <i class="fas fa-cloud-upload-alt text-3xl text-purple-500 dark:text-purple-400 mb-2"></i>
                                                             <p class="text-xs text-gray-600 dark:text-gray-400"><span class="font-semibold">คลิกเพื่ออัพโหลด</span></p>
-                                                            <p class="text-xs text-gray-500 dark:text-gray-500">PNG, JPG, GIF (สูงสุด 2MB)</p>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-500">PNG, JPG, GIF, SVG (สูงสุด 2MB)</p>
+                                                            <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                                                                <i class="fas fa-bolt mr-1"></i>จะแปลงเป็น WebP อัตโนมัติ
+                                                            </p>
                                                         </div>
                                                         <input type="file"
                                                                name="millennium_menu_logo"
@@ -1073,8 +1083,15 @@
                                         <!-- Icon Settings -->
                                         <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl p-4 border-2 border-blue-200 dark:border-blue-800">
                                             <h4 class="font-semibold text-blue-900 dark:text-blue-300 mb-3 flex items-center gap-2">
-                                                <i class="fas fa-icons"></i> การตั้งค่าไอคอน
+                                                <i class="fas fa-icons"></i> การตั้งค่าไอคอนปุ่ม Start
                                             </h4>
+                                            <div class="bg-indigo-50 dark:bg-indigo-900/20 border-l-4 border-indigo-500 p-3 rounded mb-3">
+                                                <p class="text-xs text-indigo-800 dark:text-indigo-300">
+                                                    <i class="fas fa-info-circle mr-1"></i>
+                                                    <strong>หมายเหตุ:</strong> ไอคอนนี้จะแสดงบน<strong>ปุ่ม Start ใน Taskbar</strong> (ไม่ใช่โลโก้ภายในเมนู)
+                                                    <br>โลโก้ภายในเมนู Start ตั้งค่าได้ใน <strong>Tab "Start Menu"</strong>
+                                                </p>
+                                            </div>
                                             <div class="space-y-3">
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ประเภทไอคอน</label>
@@ -1120,6 +1137,9 @@
                                                             <label class="flex flex-col items-center justify-center h-20 border border-dashed border-purple-300 dark:border-purple-600 rounded cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition-all">
                                                                 <i class="fas fa-upload text-lg text-purple-500 dark:text-purple-400 mb-1"></i>
                                                                 <p class="text-xs text-gray-500">คลิกเพื่ออัพโหลด</p>
+                                                                <p class="text-xs text-green-600 dark:text-green-400">
+                                                                    <i class="fas fa-bolt"></i>WebP Auto
+                                                                </p>
                                                                 <input type="file"
                                                                        name="millennium_start_button_custom_icon"
                                                                        id="startButtonIconInput"
