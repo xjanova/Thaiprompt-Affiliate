@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Redirect root /seller to /seller/dashboard
+Route::get('/', function () {
+    return redirect()->route('seller.dashboard');
+});
+
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/marketing', [DashboardController::class, 'marketing'])->name('marketing');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');

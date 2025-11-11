@@ -20,6 +20,11 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 
+// Redirect root /user to /user/dashboard
+Route::get('/', function () {
+    return redirect()->route('user.dashboard');
+});
+
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
 Route::put('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
