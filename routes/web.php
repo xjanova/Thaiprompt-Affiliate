@@ -245,6 +245,18 @@ Route::middleware('auth')->prefix('hotels')->name('hotels.')->group(function () 
     });
 });
 
+// ========================================
+// SMART SLIDER FRONTEND ROUTES
+// ========================================
+use App\Http\Controllers\Frontend\SliderController;
+
+Route::prefix('sliders')->name('sliders.')->group(function () {
+    Route::get('/{idOrAlias}', [SliderController::class, 'show'])->name('show');
+    Route::get('/{idOrAlias}/data', [SliderController::class, 'getData'])->name('data');
+    Route::post('/{slider}/track-click', [SliderController::class, 'trackClick'])->name('track-click');
+    Route::post('/{slider}/track-slide-change', [SliderController::class, 'trackSlideChange'])->name('track-slide-change');
+});
+
 // User Routes (Protected by auth middleware and role check)
 Route::middleware(['auth', 'role:user'])->prefix('user')->name('user.')->group(function () {
     require __DIR__.'/user.php';
