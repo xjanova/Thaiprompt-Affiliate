@@ -3,6 +3,12 @@
         Options -MultiViews -Indexes
     </IfModule>
 
+    # Increase PHP memory limit to prevent memory exhaustion with large route files
+    <IfModule mod_php.c>
+        php_value memory_limit 256M
+        php_value max_execution_time 60
+    </IfModule>
+
     RewriteEngine On
 
     # Handle Authorization Header

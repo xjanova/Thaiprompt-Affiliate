@@ -27,9 +27,11 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('/profile', [DashboardController::class, 'profile'])->name('profile');
-Route::put('/profile', [DashboardController::class, 'updateProfile'])->name('profile.update');
+Route::put('/profile', [DashboardController::class, 'updateProfile'])
+    ->middleware('two-factor:profile_change')
+    ->name('profile.update');
 Route::post('/profile/update-password', [DashboardController::class, 'updatePassword'])
-    ->middleware('turnstile:password_change')
+    ->middleware(['turnstile:password_change', 'two-factor:password_change'])
     ->name('profile.update-password');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
 Route::get('/referrals', [DashboardController::class, 'referrals'])->name('referrals');
@@ -70,23 +72,31 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
     // Withdrawal Routes
     Route::get('/withdraw', [WalletController::class, 'withdraw'])->name('withdraw');
     Route::post('/withdraw', [WalletController::class, 'submitWithdrawal'])
-        ->middleware('turnstile:withdrawal_request')
+        ->middleware(['turnstile:withdrawal_request', 'two-factor:withdrawal'])
         ->name('withdraw.submit');
     Route::get('/withdrawals', [WalletController::class, 'withdrawals'])->name('withdrawals');
     Route::delete('/withdrawal/{id}/cancel', [WalletController::class, 'cancelWithdrawal'])->name('withdrawal.cancel');
 
     // Transfer Routes
     Route::get('/transfer', [WalletController::class, 'transfer'])->name('transfer');
-    Route::post('/transfer', [WalletController::class, 'submitTransfer'])->name('transfer.submit');
+    Route::post('/transfer', [WalletController::class, 'submitTransfer'])
+        ->middleware('two-factor:transfer')
+        ->name('transfer.submit');
 
     // Transaction Routes
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
 
     // Payment Methods Routes
     Route::get('/payment-methods', [WalletController::class, 'paymentMethods'])->name('payment-methods');
-    Route::post('/payment-method', [WalletController::class, 'storePaymentMethod'])->name('payment-method.store');
-    Route::post('/payment-method/{id}/set-default', [WalletController::class, 'setDefaultPaymentMethod'])->name('payment-method.set-default');
-    Route::delete('/payment-method/{id}', [WalletController::class, 'deletePaymentMethod'])->name('payment-method.delete');
+    Route::post('/payment-method', [WalletController::class, 'storePaymentMethod'])
+        ->middleware('two-factor:payment_method_change')
+        ->name('payment-method.store');
+    Route::post('/payment-method/{id}/set-default', [WalletController::class, 'setDefaultPaymentMethod'])
+        ->middleware('two-factor:payment_method_change')
+        ->name('payment-method.set-default');
+    Route::delete('/payment-method/{id}', [WalletController::class, 'deletePaymentMethod'])
+        ->middleware('two-factor:payment_method_change')
+        ->name('payment-method.delete');
 });
 
 // Crypto Wallet Management (User)
@@ -123,7 +133,7 @@ Route::prefix('crypto-wallet')->name('crypto-wallet.')->group(function () {
             // Withdrawal Routes (wallet must be active)
             Route::get('/withdraw', [CryptoWalletController::class, 'withdraw'])->name('withdraw');
             Route::post('/withdraw', [CryptoWalletController::class, 'submitWithdrawal'])
-                ->middleware('turnstile:crypto_withdrawal')
+                ->middleware(['turnstile:crypto_withdrawal', 'two-factor:withdrawal'])
                 ->name('withdraw.submit');
             Route::get('/withdrawals', [CryptoWalletController::class, 'withdrawals'])->name('withdrawals');
             Route::delete('/withdrawal/{id}/cancel', [CryptoWalletController::class, 'cancelWithdrawal'])->name('withdrawal.cancel');
@@ -278,4 +288,12 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
     Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
     Route::post('/{ticket}/close', [TicketController::class, 'close'])->name('close');
+});
+
+// AI Gen System (User)
+Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\User\AiGenController::class, 'index'])->name('index');
+    Route::get('/packages', [\App\Http\Controllers\User\AiGenController::class, 'packages'])->name('packages');
+    Route::get('/my-creations', [\App\Http\Controllers\User\AiGenController::class, 'myCreations'])->name('my-creations');
+    Route::get('/explore', [\App\Http\Controllers\User\AiGenController::class, 'explore'])->name('explore');
 });

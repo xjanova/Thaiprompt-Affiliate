@@ -3,110 +3,293 @@
 @section('title', 'Cache Analytics')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
+<div class="space-y-6">
     <!-- Header -->
-    <div class="bg-gradient-to-r from-teal-600 to-teal-800 rounded-lg shadow-lg p-6 mb-6">
+    <div class="bg-gradient-to-r from-teal-600 via-cyan-600 to-blue-600 rounded-xl shadow-2xl p-6 text-white">
         <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-                <div class="bg-white bg-opacity-20 p-3 rounded-lg">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-white/20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-3xl font-bold text-white">Cache Analytics</h1>
-                    <p class="text-teal-100 mt-1">Monitor cache performance and hit rates</p>
+                    <h1 class="text-2xl font-bold">Cache Analytics</h1>
+                    <p class="text-teal-100 text-sm">Monitor cache performance and hit rates</p>
                 </div>
             </div>
-            <a href="{{ route('admin.dashboard') }}" class="bg-white text-teal-600 px-4 py-2 rounded-lg hover:bg-teal-50 transition">
-                Back to Dashboard
-            </a>
-        </div>
-    </div>
-
-    <!-- Cache Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">Hit Rate</h3>
-            <p class="text-3xl font-bold text-gray-900">--%</p>
-            <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-teal-600 h-2 rounded-full" style="width: 0%"></div>
-            </div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">Miss Rate</h3>
-            <p class="text-3xl font-bold text-gray-900">--%</p>
-            <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
-                <div class="bg-red-600 h-2 rounded-full" style="width: 0%"></div>
-            </div>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">Total Keys</h3>
-            <p class="text-3xl font-bold text-gray-900">--</p>
-        </div>
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-sm font-medium text-gray-500 mb-2">Memory Used</h3>
-            <p class="text-3xl font-bold text-gray-900">-- MB</p>
-        </div>
-    </div>
-
-    <!-- Development Notice -->
-    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm text-yellow-700">
-                    <strong class="font-bold">Under Development:</strong> Cache analytics with hit/miss rates, memory usage, and optimization recommendations.
-                </p>
+            <div class="flex items-center gap-3">
+                <select id="hoursFilter" class="px-4 py-2 bg-white text-teal-600 rounded-lg font-semibold">
+                    <option value="6">Last 6 Hours</option>
+                    <option value="24" selected>Last 24 Hours</option>
+                    <option value="168">Last 7 Days</option>
+                </select>
+                <a href="{{ route('admin.dashboard') }}" class="px-4 py-2 bg-white text-teal-600 rounded-lg hover:bg-teal-50 transition font-semibold">
+                    Back
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Cache Types -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Cache Types</h2>
-            <div class="space-y-3">
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span class="font-medium text-gray-900">Application Cache</span>
-                    <span class="text-sm text-gray-500">Redis</span>
+    <!-- Loading State -->
+    <div id="loadingState" class="bg-white rounded-lg shadow-lg p-8 text-center">
+        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+        <p class="mt-4 text-gray-600">Loading cache analytics...</p>
+    </div>
+
+    <!-- Content -->
+    <div id="contentArea" class="hidden space-y-6">
+        <!-- Cache Metrics -->
+        <div class="grid md:grid-cols-4 gap-4">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-600 text-sm">Hit Rate</span>
+                    <span class="text-green-600 text-2xl">✅</span>
                 </div>
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span class="font-medium text-gray-900">Session Cache</span>
-                    <span class="text-sm text-gray-500">Redis</span>
+                <div class="text-3xl font-bold text-gray-800"><span id="hitRate">-</span>%</div>
+                <div class="mt-2">
+                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div id="hitBar" class="bg-green-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
                 </div>
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span class="font-medium text-gray-900">Query Cache</span>
-                    <span class="text-sm text-gray-500">Database</span>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-600 text-sm">Miss Rate</span>
+                    <span class="text-red-600 text-2xl">❌</span>
                 </div>
-                <div class="flex justify-between items-center p-3 bg-gray-50 rounded">
-                    <span class="font-medium text-gray-900">File Cache</span>
-                    <span class="text-sm text-gray-500">Disk</span>
+                <div class="text-3xl font-bold text-gray-800"><span id="missRate">-</span>%</div>
+                <div class="mt-2">
+                    <div class="w-full bg-gray-200 rounded-full h-1.5">
+                        <div id="missBar" class="bg-red-600 h-1.5 rounded-full transition-all" style="width: 0%"></div>
+                    </div>
                 </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-600 text-sm">Total Keys</span>
+                    <span class="text-blue-600 text-2xl">🔑</span>
+                </div>
+                <div class="text-3xl font-bold text-gray-800" id="totalKeys">-</div>
+                <div class="mt-2 text-xs text-gray-500">Cached items</div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-gray-600 text-sm">Memory Used</span>
+                    <span class="text-orange-600 text-2xl">💾</span>
+                </div>
+                <div class="text-3xl font-bold text-gray-800" id="memoryUsed">-</div>
+                <div class="mt-2 text-xs text-gray-500" id="memoryPercent">-</div>
             </div>
         </div>
 
-        <div class="bg-white rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Cache Operations</h2>
-            <div class="space-y-3">
-                <button class="w-full px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition">
-                    Clear All Cache
-                </button>
-                <button class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    Clear Application Cache
-                </button>
-                <button class="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                    Clear View Cache
-                </button>
-                <button class="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition">
-                    Optimize Cache
-                </button>
+        <!-- Charts -->
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Hit Rate Trend</h3>
+                <canvas id="hitRateChart" height="250"></canvas>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Memory Usage</h3>
+                <canvas id="memoryChart" height="250"></canvas>
             </div>
         </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-800 mb-4">Cache Operations</h3>
+                <canvas id="operationsChart" height="250"></canvas>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-bold text-gray-808 mb-4">Key Count Trend</h3>
+                <canvas id="keysChart" height="250"></canvas>
+            </div>
+        </div>
+
+        <!-- Cache Stats -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Cache Statistics</h3>
+            <div class="grid md:grid-cols-3 gap-4" id="cacheStats">
+                <!-- Will be populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+        <svg class="w-12 h-12 text-red-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 class="text-lg font-bold text-red-800 mb-2">Failed to Load Data</h3>
+        <p class="text-red-600 mb-4">Unable to fetch cache analytics.</p>
+        <button onclick="loadData()" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Retry</button>
     </div>
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let charts = {};
+
+async function loadData() {
+    const hours = document.getElementById('hoursFilter').value;
+    const loadingState = document.getElementById('loadingState');
+    const contentArea = document.getElementById('contentArea');
+    const errorState = document.getElementById('errorState');
+
+    loadingState.classList.remove('hidden');
+    contentArea.classList.add('hidden');
+    errorState.classList.add('hidden');
+
+    try {
+        const response = await fetch(`{{ route('admin.analytics.cache') }}?hours=${hours}`);
+        const result = await response.json();
+
+        if (result.success) {
+            updateMetrics(result.data);
+            updateCharts(result.data);
+            updateStats(result.data);
+            loadingState.classList.add('hidden');
+            contentArea.classList.remove('hidden');
+        } else {
+            throw new Error('Failed to load data');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        loadingState.classList.add('hidden');
+        errorState.classList.remove('hidden');
+    }
+}
+
+function updateMetrics(data) {
+    const hitRate = data.hit_rate || 0;
+    const missRate = data.miss_rate || 0;
+
+    document.getElementById('hitRate').textContent = hitRate.toFixed(1);
+    document.getElementById('hitBar').style.width = hitRate + '%';
+
+    document.getElementById('missRate').textContent = missRate.toFixed(1);
+    document.getElementById('missBar').style.width = missRate + '%';
+
+    document.getElementById('totalKeys').textContent = (data.total_keys || 0).toLocaleString();
+    document.getElementById('memoryUsed').textContent = data.memory_used || '-';
+    document.getElementById('memoryPercent').textContent = data.memory_percent || '-';
+}
+
+function updateCharts(data) {
+    Object.values(charts).forEach(chart => chart.destroy());
+
+    // Hit Rate Chart
+    const hitCtx = document.getElementById('hitRateChart').getContext('2d');
+    charts.hitRate = new Chart(hitCtx, {
+        type: 'line',
+        data: {
+            labels: data.timeline || [],
+            datasets: [{
+                label: 'Hit Rate %',
+                data: data.hit_rates || [],
+                borderColor: 'rgb(34, 197, 94)',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, max: 100 } }
+        }
+    });
+
+    // Memory Chart
+    const memCtx = document.getElementById('memoryChart').getContext('2d');
+    charts.memory = new Chart(memCtx, {
+        type: 'line',
+        data: {
+            labels: data.timeline || [],
+            datasets: [{
+                label: 'Memory MB',
+                data: data.memory_usage || [],
+                borderColor: 'rgb(249, 115, 22)',
+                backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // Operations Chart
+    const opsCtx = document.getElementById('operationsChart').getContext('2d');
+    charts.operations = new Chart(opsCtx, {
+        type: 'bar',
+        data: {
+            labels: data.timeline || [],
+            datasets: [{
+                label: 'Hits',
+                data: data.hits || [],
+                backgroundColor: 'rgba(34, 197, 94, 0.8)'
+            }, {
+                label: 'Misses',
+                data: data.misses || [],
+                backgroundColor: 'rgba(239, 68, 68, 0.8)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // Keys Chart
+    const keysCtx = document.getElementById('keysChart').getContext('2d');
+    charts.keys = new Chart(keysCtx, {
+        type: 'line',
+        data: {
+            labels: data.timeline || [],
+            datasets: [{
+                label: 'Total Keys',
+                data: data.key_counts || [],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function updateStats(data) {
+    const container = document.getElementById('cacheStats');
+    const stats = data.stats || {};
+
+    container.innerHTML = Object.entries(stats).map(([key, value]) => `
+        <div class="bg-gray-50 rounded-lg p-4">
+            <div class="text-sm text-gray-600">${key.replace(/_/g, ' ').toUpperCase()}</div>
+            <div class="text-2xl font-bold text-gray-800 mt-1">${value}</div>
+        </div>
+    `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadData();
+    document.getElementById('hoursFilter').addEventListener('change', loadData);
+});
+</script>
+@endpush
 @endsection

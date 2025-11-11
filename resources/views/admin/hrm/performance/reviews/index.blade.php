@@ -1,0 +1,299 @@
+@extends('layouts.admin')
+
+@section('title', 'รีวิวประสิทธิภาพ')
+
+@section('content')
+<div class="space-y-6">
+    <!-- Success/Error Messages -->
+    @if(session('success'))
+        <div class="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-2 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200 px-6 py-4 rounded-xl shadow-lg animate-fade-in-down" role="alert">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="font-semibold">{{ session('success') }}</span>
+            </div>
+        </div>
+    @endif
+
+    <!-- Header with Actions -->
+    <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-900 dark:via-purple-900 dark:to-pink-950 rounded-2xl shadow-2xl p-8 text-white">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+            <div class="flex-1">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold">รีวิวประสิทธิภาพ</h2>
+                        <p class="text-purple-100 mt-1">ประเมินและติดตามผลการปฏิบัติงานของพนักงาน</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-4 mt-4">
+                    <div class="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
+                        <div class="text-sm text-purple-100">รีวิวทั้งหมด</div>
+                        <div class="text-2xl font-bold">{{ $reviews->total() }}</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
+                        <div class="text-sm text-purple-100">แบบร่าง</div>
+                        <div class="text-2xl font-bold">{{ $reviews->where('status', 'draft')->count() }}</div>
+                    </div>
+                    <div class="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2">
+                        <div class="text-sm text-purple-100">เสร็จสมบูรณ์</div>
+                        <div class="text-2xl font-bold">{{ $reviews->where('status', 'completed')->count() }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <a href="{{ route('admin.hrm.performance.goals.index') }}"
+                   class="inline-flex items-center px-6 py-3 bg-white/20 backdrop-blur-sm text-white font-semibold rounded-xl hover:bg-white/30 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    เป้าหมาย
+                </a>
+                <a href="{{ route('admin.hrm.performance.reviews.create') }}"
+                   class="inline-flex items-center px-6 py-3 bg-white text-purple-600 font-semibold rounded-xl hover:bg-purple-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    สร้างรีวิวใหม่
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+        <form action="{{ route('admin.hrm.performance.reviews.index') }}" method="GET" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Search -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ค้นหา</label>
+                    <div class="relative">
+                        <input type="text" name="search" value="{{ request('search') }}"
+                               placeholder="ค้นหาชื่อพนักงาน..."
+                               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white transition-all duration-200">
+                        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สถานะ</label>
+                    <select name="status" class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white transition-all duration-200">
+                        <option value="">ทั้งหมด</option>
+                        <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>แบบร่าง</option>
+                        <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>เสร็จสมบูรณ์</option>
+                        <option value="submitted" {{ request('status') == 'submitted' ? 'selected' : '' }}>ส่งแล้ว</option>
+                    </select>
+                </div>
+
+                <!-- Period Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รอบการประเมิน</label>
+                    <input type="text" name="review_period" value="{{ request('review_period') }}"
+                           placeholder="เช่น Q1 2024"
+                           class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 dark:bg-gray-700 dark:text-white transition-all duration-200">
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit" class="inline-flex items-center px-6 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    กรอง
+                </button>
+                <a href="{{ route('admin.hrm.performance.reviews.index') }}" class="inline-flex items-center px-6 py-2.5 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    รีเซ็ต
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Reviews List -->
+    @if($reviews->count() > 0)
+        <div class="space-y-4">
+            @foreach($reviews as $review)
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-200 dark:border-gray-700 overflow-hidden group">
+                    <div class="p-6">
+                        <div class="flex items-start justify-between gap-4">
+                            <!-- Employee Info -->
+                            <div class="flex items-start gap-4 flex-1">
+                                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg">
+                                    {{ substr($review->employee->first_name, 0, 1) }}{{ substr($review->employee->last_name, 0, 1) }}
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-1 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-200">
+                                        {{ $review->employee->first_name }} {{ $review->employee->last_name }}
+                                    </h3>
+                                    <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600 dark:text-gray-400 mb-3">
+                                        @if($review->employee->position)
+                                            <span class="flex items-center">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                                </svg>
+                                                {{ $review->employee->position }}
+                                            </span>
+                                        @endif
+                                        <span class="flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                            </svg>
+                                            {{ \Carbon\Carbon::parse($review->review_date)->format('d/m/Y') }}
+                                        </span>
+                                        <span class="px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 rounded-full text-xs font-semibold">
+                                            {{ $review->review_period }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Rating Display -->
+                                    @if($review->overall_rating)
+                                        <div class="flex items-center gap-3">
+                                            <div class="flex items-center">
+                                                @for($i = 1; $i <= 5; $i++)
+                                                    @if($i <= floor($review->overall_rating))
+                                                        <svg class="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                        </svg>
+                                                    @else
+                                                        <svg class="w-5 h-5 text-gray-300 dark:text-gray-600 fill-current" viewBox="0 0 20 20">
+                                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                        </svg>
+                                                    @endif
+                                                @endfor
+                                            </div>
+                                            <span class="text-lg font-bold text-gray-900 dark:text-white">
+                                                {{ number_format($review->overall_rating, 2) }}/5.00
+                                            </span>
+                                            @php
+                                                $ratingColor = 'gray';
+                                                if($review->overall_rating >= 4.5) $ratingColor = 'green';
+                                                elseif($review->overall_rating >= 3.5) $ratingColor = 'blue';
+                                                elseif($review->overall_rating >= 2.5) $ratingColor = 'yellow';
+                                                else $ratingColor = 'red';
+                                            @endphp
+                                            <span class="px-3 py-1 bg-{{ $ratingColor }}-100 text-{{ $ratingColor }}-800 dark:bg-{{ $ratingColor }}-900/30 dark:text-{{ $ratingColor }}-300 rounded-full text-xs font-semibold">
+                                                @if($review->overall_rating >= 4.5)
+                                                    ยอดเยี่ยม
+                                                @elseif($review->overall_rating >= 3.5)
+                                                    ดีมาก
+                                                @elseif($review->overall_rating >= 2.5)
+                                                    ดี
+                                                @else
+                                                    ต้องปรับปรุง
+                                                @endif
+                                            </span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Status & Actions -->
+                            <div class="flex flex-col items-end gap-3">
+                                @php
+                                    $statusColors = [
+                                        'draft' => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+                                        'completed' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+                                        'submitted' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                    ];
+                                    $statusLabels = [
+                                        'draft' => 'แบบร่าง',
+                                        'completed' => 'เสร็จสมบูรณ์',
+                                        'submitted' => 'ส่งแล้ว'
+                                    ];
+                                @endphp
+                                <span class="px-4 py-2 text-sm font-bold rounded-full {{ $statusColors[$review->status] ?? 'bg-gray-100 text-gray-800' }}">
+                                    {{ $statusLabels[$review->status] ?? $review->status }}
+                                </span>
+
+                                <div class="flex gap-2">
+                                    <a href="{{ route('admin.hrm.performance.reviews.show', $review) }}"
+                                       class="inline-flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                        ดู
+                                    </a>
+                                    <a href="{{ route('admin.hrm.performance.reviews.edit', $review) }}"
+                                       class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 shadow hover:shadow-lg transform hover:-translate-y-0.5">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        แก้ไข
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reviewer Info -->
+                        @if($review->reviewer)
+                            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                                    </svg>
+                                    <span>ประเมินโดย: <strong>{{ $review->reviewer->name }}</strong></span>
+                                    <span class="mx-2">•</span>
+                                    <span>{{ $review->updated_at->diffForHumans() }}</span>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <!-- Pagination -->
+        <div class="mt-8">
+            {{ $reviews->links() }}
+        </div>
+    @else
+        <!-- Empty State -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-12 text-center border border-gray-200 dark:border-gray-700">
+            <div class="max-w-md mx-auto">
+                <div class="w-24 h-24 bg-gradient-to-br from-purple-100 to-indigo-100 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-12 h-12 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">ยังไม่มีรีวิว</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">เริ่มต้นสร้างรีวิวประสิทธิภาพให้กับพนักงานของคุณ</p>
+                <a href="{{ route('admin.hrm.performance.reviews.create') }}"
+                   class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    สร้างรีวิวแรก
+                </a>
+            </div>
+        </div>
+    @endif
+</div>
+
+<style>
+@keyframes fade-in-down {
+    0% {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in-down {
+    animation: fade-in-down 0.5s ease-out;
+}
+</style>
+@endsection

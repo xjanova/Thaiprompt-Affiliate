@@ -19,34 +19,34 @@
     </div>
 
     <!-- Payment Information -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
         <div class="text-center">
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
-                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full mb-4">
+                <svg class="w-8 h-8 text-green-600 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
             </div>
-            <h2 class="text-2xl font-bold text-gray-900 mb-2">รายการฝากเงินของคุณ</h2>
-            <p class="text-gray-600">กรุณาสแกน QR Code ด้านล่างเพื่อชำระเงิน</p>
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">รายการฝากเงินของคุณ</h2>
+            <p class="text-gray-600 dark:text-gray-400">กรุณาสแกน QR Code ด้านล่างเพื่อชำระเงิน</p>
         </div>
 
-        <div class="mt-6 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl p-6 border border-indigo-100">
+        <div class="mt-6 bg-gradient-to-r from-indigo-100 to-purple-100 dark:from-indigo-900 dark:to-purple-900 rounded-xl p-6 border-2 border-indigo-200 dark:border-indigo-700">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <p class="text-sm text-gray-600 mb-1">จำนวนเงิน</p>
-                    <p class="text-3xl font-bold text-indigo-600">฿{{ number_format($result['amount'], 2) }}</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">จำนวนเงิน</p>
+                    <p class="text-3xl font-bold text-indigo-700 dark:text-indigo-300">฿{{ number_format($result['amount'], 2) }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600 mb-1">รหัสอ้างอิง</p>
-                    <p class="text-lg font-mono font-semibold text-gray-900">{{ $result['reference'] }}</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">รหัสอ้างอิง</p>
+                    <p class="text-lg font-mono font-semibold text-gray-900 dark:text-gray-100">{{ $result['reference'] }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600 mb-1">วิธีชำระเงิน</p>
-                    <p class="text-lg font-semibold text-gray-900">{{ $result['payment_method'] === 'promptpay' ? 'พร้อมเพย์' : $result['payment_method'] }}</p>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">วิธีชำระเงิน</p>
+                    <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $result['payment_method'] === 'promptpay' ? 'พร้อมเพย์' : $result['payment_method'] }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600 mb-1">สถานะ</p>
-                    <span class="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-semibold">
+                    <p class="text-sm text-gray-700 dark:text-gray-300 font-medium mb-1">สถานะ</p>
+                    <span class="inline-block px-3 py-1 bg-yellow-100 text-yellow-900 dark:bg-yellow-900 dark:text-yellow-100 rounded-full text-sm font-semibold border-2 border-yellow-300 dark:border-yellow-700">
                         {{ $result['status'] === 'pending' ? 'รอการชำระเงิน' : $result['status'] }}
                     </span>
                 </div>
@@ -55,8 +55,8 @@
     </div>
 
     <!-- QR Code Section -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">สแกน QR Code เพื่อชำระเงิน</h3>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">สแกน QR Code เพื่อชำระเงิน</h3>
 
         <div class="flex flex-col items-center">
             <!-- QR Code Display -->
@@ -88,57 +88,57 @@
     </div>
 
     <!-- Instructions -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">📱 วิธีการชำระเงิน</h3>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">📱 วิธีการชำระเงิน</h3>
 
         <div class="space-y-4">
             <div class="flex items-start gap-4">
-                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold">
                     1
                 </div>
                 <div>
-                    <p class="font-semibold text-gray-900 mb-1">เปิดแอปธนาคารหรือแอปพร้อมเพย์</p>
-                    <p class="text-sm text-gray-600">เช่น Mobile Banking, TrueMoney Wallet, Rabbit LINE Pay, ฯลฯ</p>
+                    <p class="font-semibold text-gray-900 dark:text-gray-100 mb-1">เปิดแอปธนาคารหรือแอปพร้อมเพย์</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">เช่น Mobile Banking, TrueMoney Wallet, Rabbit LINE Pay, ฯลฯ</p>
                 </div>
             </div>
 
             <div class="flex items-start gap-4">
-                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold">
                     2
                 </div>
                 <div>
-                    <p class="font-semibold text-gray-900 mb-1">เลือกสแกน QR Code</p>
-                    <p class="text-sm text-gray-600">ใช้กล้องในแอปสแกน QR Code ด้านบน</p>
+                    <p class="font-semibold text-gray-900 dark:text-gray-100 mb-1">เลือกสแกน QR Code</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">ใช้กล้องในแอปสแกน QR Code ด้านบน</p>
                 </div>
             </div>
 
             <div class="flex items-start gap-4">
-                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold">
                     3
                 </div>
                 <div>
-                    <p class="font-semibold text-gray-900 mb-1">ตรวจสอบจำนวนเงิน</p>
-                    <p class="text-sm text-gray-600">ตรวจสอบว่าจำนวนเงินถูกต้อง: ฿{{ number_format($result['amount'], 2) }}</p>
+                    <p class="font-semibold text-gray-900 dark:text-gray-100 mb-1">ตรวจสอบจำนวนเงิน</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบว่าจำนวนเงินถูกต้อง: ฿{{ number_format($result['amount'], 2) }}</p>
                 </div>
             </div>
 
             <div class="flex items-start gap-4">
-                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                <div class="flex-shrink-0 w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-300 font-bold">
                     4
                 </div>
                 <div>
-                    <p class="font-semibold text-gray-900 mb-1">ยืนยันการชำระเงิน</p>
-                    <p class="text-sm text-gray-600">กดยืนยันการโอนเงินในแอป</p>
+                    <p class="font-semibold text-gray-900 dark:text-gray-100 mb-1">ยืนยันการชำระเงิน</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">กดยืนยันการโอนเงินในแอป</p>
                 </div>
             </div>
 
             <div class="flex items-start gap-4">
-                <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-bold">
+                <div class="flex-shrink-0 w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center text-green-600 dark:text-green-300 font-bold">
                     ✓
                 </div>
                 <div>
-                    <p class="font-semibold text-gray-900 mb-1">รอการตรวจสอบ</p>
-                    <p class="text-sm text-gray-600">ระบบจะตรวจสอบการชำระเงินอัตโนมัติภายใน 1-5 นาที</p>
+                    <p class="font-semibold text-gray-900 dark:text-gray-100 mb-1">รอการตรวจสอบ</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">ระบบจะตรวจสอบการชำระเงินอัตโนมัติภายใน 1-5 นาที</p>
                 </div>
             </div>
         </div>

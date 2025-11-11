@@ -9,6 +9,26 @@ use Illuminate\Support\Facades\Log;
 class VersionService
 {
     /**
+     * Get GitHub token from database or .env
+     */
+    protected function getGitHubToken(): ?string
+    {
+        try {
+            // Try to get from database settings first (encrypted)
+            $encryptedToken = \App\Models\Setting::get('update_github_token');
+            if ($encryptedToken) {
+                return \Illuminate\Support\Facades\Crypt::decryptString($encryptedToken);
+            }
+        } catch (\Exception $e) {
+            // If decrypt fails or database not available, fall back to env
+            Log::debug('Could not get GitHub token from database: ' . $e->getMessage());
+        }
+
+        // Fallback to .env
+        return config('version.repository.token', env('GITHUB_TOKEN'));
+    }
+
+    /**
      * Get current application version
      */
     public function getCurrentVersion(): string
@@ -72,7 +92,15 @@ class VersionService
         return Cache::remember($cacheKey, $cacheTtl, function () {
             try {
                 $apiUrl = config('version.repository.api_url');
-                $response = Http::timeout(10)->get("{$apiUrl}/releases/latest");
+                $token = $this->getGitHubToken();
+
+                // Try GitHub API first (with authentication if available)
+                $headers = [];
+                if ($token) {
+                    $headers['Authorization'] = "Bearer {$token}";
+                }
+
+                $response = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -80,19 +108,48 @@ class VersionService
                     return ltrim($data['tag_name'] ?? '', 'v');
                 }
 
-                Log::warning('Failed to fetch latest version from GitHub', [
+                // If GitHub API fails (404, 401, etc.), fall back to git tags
+                Log::info('GitHub API not accessible, falling back to git tags', [
                     'status' => $response->status(),
                 ]);
 
-                return null;
+                return $this->getLatestVersionFromGitTags();
             } catch (\Exception $e) {
-                Log::error('Error fetching latest version', [
+                Log::info('Error fetching from GitHub API, trying git tags', [
                     'error' => $e->getMessage(),
                 ]);
 
-                return null;
+                // Fall back to git tags
+                return $this->getLatestVersionFromGitTags();
             }
         });
+    }
+
+    /**
+     * Get latest version from local git tags
+     */
+    protected function getLatestVersionFromGitTags(): ?string
+    {
+        try {
+            // Fetch latest tags from remote
+            exec('git fetch --tags 2>&1', $fetchOutput, $fetchCode);
+
+            // Get all version tags and sort them
+            exec('git tag -l "v*" | sort -V | tail -1', $output, $returnCode);
+
+            if ($returnCode === 0 && !empty($output[0])) {
+                // Remove 'v' prefix if exists
+                return ltrim(trim($output[0]), 'v');
+            }
+
+            Log::warning('No git tags found');
+            return null;
+        } catch (\Exception $e) {
+            Log::error('Error fetching git tags', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
     }
 
     /**
@@ -110,7 +167,15 @@ class VersionService
         return Cache::remember($cacheKey, $cacheTtl, function () {
             try {
                 $apiUrl = config('version.repository.api_url');
-                $response = Http::timeout(10)->get("{$apiUrl}/releases");
+                $token = $this->getGitHubToken();
+
+                // Try GitHub API first (with authentication if available)
+                $headers = [];
+                if ($token) {
+                    $headers['Authorization'] = "Bearer {$token}";
+                }
+
+                $response = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases");
 
                 if ($response->successful()) {
                     $releases = $response->json();
@@ -126,15 +191,57 @@ class VersionService
                     })->toArray();
                 }
 
-                return [];
+                // Fall back to git tags if GitHub API fails
+                Log::info('GitHub API not accessible for releases list, falling back to git tags');
+                return $this->getAvailableVersionsFromGitTags();
             } catch (\Exception $e) {
-                Log::error('Error fetching available versions', [
+                Log::info('Error fetching releases from GitHub API, trying git tags', [
                     'error' => $e->getMessage(),
                 ]);
 
-                return [];
+                return $this->getAvailableVersionsFromGitTags();
             }
         });
+    }
+
+    /**
+     * Get all available versions from local git tags
+     */
+    protected function getAvailableVersionsFromGitTags(): array
+    {
+        try {
+            // Fetch latest tags from remote
+            exec('git fetch --tags 2>&1', $fetchOutput, $fetchCode);
+
+            // Get all version tags sorted by version
+            exec('git tag -l "v*" | sort -V', $output, $returnCode);
+
+            if ($returnCode === 0 && !empty($output)) {
+                return collect($output)->map(function ($tag) {
+                    $version = ltrim(trim($tag), 'v');
+
+                    // Try to get the date of the tag
+                    exec("git log -1 --format=%ai " . escapeshellarg($tag), $dateOutput);
+                    $date = !empty($dateOutput[0]) ? $dateOutput[0] : null;
+
+                    return [
+                        'version' => $version,
+                        'name' => $tag,
+                        'published_at' => $date,
+                        'prerelease' => false,
+                        'url' => '',
+                        'body' => '',
+                    ];
+                })->reverse()->values()->toArray(); // Reverse to show newest first
+            }
+
+            return [];
+        } catch (\Exception $e) {
+            Log::error('Error fetching git tags list', [
+                'error' => $e->getMessage(),
+            ]);
+            return [];
+        }
     }
 
     /**
@@ -289,5 +396,196 @@ class VersionService
         }
 
         return null;
+    }
+
+    /**
+     * Test GitHub connection and API access
+     */
+    public function testGitHubConnection(): array
+    {
+        $results = [
+            'success' => true,
+            'checks' => [],
+            'errors' => [],
+            'debug_info' => [],
+        ];
+
+        try {
+            // Test 1: GitHub API reachability
+            $apiUrl = config('version.repository.api_url');
+            $token = $this->getGitHubToken();
+
+            $results['debug_info']['api_url'] = $apiUrl;
+            $results['debug_info']['has_token'] = !empty($token);
+            $results['debug_info']['php_version'] = PHP_VERSION;
+            $results['debug_info']['curl_enabled'] = function_exists('curl_version');
+            $results['debug_info']['openssl_enabled'] = extension_loaded('openssl');
+
+            Log::info('Testing GitHub connection', $results['debug_info']);
+
+            $headers = [];
+            if ($token) {
+                $headers['Authorization'] = "Bearer {$token}";
+            }
+
+            $startTime = microtime(true);
+
+            try {
+                $response = Http::withHeaders($headers)->timeout(10)->get($apiUrl);
+                $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+
+                Log::info('GitHub API response received', [
+                    'status' => $response->status(),
+                    'response_time' => $responseTime,
+                    'url' => $apiUrl,
+                ]);
+
+                if ($response->successful()) {
+                    $results['checks'][] = [
+                        'check' => 'GitHub API Reachability',
+                        'status' => 'passed',
+                        'message' => "Repository accessible (response time: {$responseTime}ms)",
+                        'response_time' => $responseTime,
+                    ];
+                } else {
+                    $results['success'] = false;
+                    $errorBody = substr($response->body(), 0, 500);
+                    $results['errors'][] = [
+                        'check' => 'GitHub API Reachability',
+                        'status' => 'failed',
+                        'message' => "HTTP {$response->status()}: {$errorBody}",
+                        'response_time' => $responseTime,
+                        'url' => $apiUrl,
+                        'full_error' => $response->body(),
+                    ];
+
+                    Log::error('GitHub API not reachable', [
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                        'url' => $apiUrl,
+                    ]);
+                }
+            } catch (\Exception $connectionError) {
+                $responseTime = round((microtime(true) - $startTime) * 1000, 2);
+                $results['success'] = false;
+                $results['errors'][] = [
+                    'check' => 'GitHub API Reachability',
+                    'status' => 'failed',
+                    'message' => "Connection failed: {$connectionError->getMessage()}",
+                    'response_time' => $responseTime,
+                    'url' => $apiUrl,
+                    'error_type' => get_class($connectionError),
+                ];
+
+                Log::error('GitHub API connection failed', [
+                    'error' => $connectionError->getMessage(),
+                    'type' => get_class($connectionError),
+                    'url' => $apiUrl,
+                ]);
+            }
+
+            // Test 2: Fetch latest release
+            if ($response->successful()) {
+                $releaseResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
+
+                if ($releaseResponse->successful()) {
+                    $data = $releaseResponse->json();
+                    $version = ltrim($data['tag_name'] ?? 'unknown', 'v');
+
+                    $results['checks'][] = [
+                        'check' => 'Latest Release',
+                        'status' => 'passed',
+                        'message' => "Latest version available: {$version}",
+                        'version' => $version,
+                    ];
+                } else {
+                    $results['errors'][] = [
+                        'check' => 'Latest Release',
+                        'status' => 'warning',
+                        'message' => "Could not fetch latest release (HTTP {$releaseResponse->status()})",
+                    ];
+                }
+
+                // Test 3: Fetch all releases
+                $releasesResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases");
+
+                if ($releasesResponse->successful()) {
+                    $releases = $releasesResponse->json();
+                    $count = count($releases);
+
+                    $results['checks'][] = [
+                        'check' => 'Releases List',
+                        'status' => 'passed',
+                        'message' => "Found {$count} releases",
+                        'count' => $count,
+                    ];
+                } else {
+                    $results['errors'][] = [
+                        'check' => 'Releases List',
+                        'status' => 'warning',
+                        'message' => "Could not fetch releases list (HTTP {$releasesResponse->status()})",
+                    ];
+                }
+            }
+
+            // Test 4: Check download URL accessibility
+            if ($response->successful()) {
+                $releaseResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
+
+                if ($releaseResponse->successful()) {
+                    $data = $releaseResponse->json();
+                    $downloadUrl = $data['zipball_url'] ?? null;
+
+                    if ($downloadUrl) {
+                        // Just check if the URL is valid, don't download
+                        $headResponse = Http::timeout(5)->head($downloadUrl);
+
+                        if ($headResponse->successful()) {
+                            $results['checks'][] = [
+                                'check' => 'Download URL',
+                                'status' => 'passed',
+                                'message' => 'Download URL is accessible',
+                                'url' => $downloadUrl,
+                            ];
+                        } else {
+                            $results['errors'][] = [
+                                'check' => 'Download URL',
+                                'status' => 'warning',
+                                'message' => "Download URL returned HTTP {$headResponse->status()}",
+                            ];
+                        }
+                    }
+                }
+            }
+
+            // Test 5: Test git command availability
+            $gitAvailable = shell_exec('git --version 2>&1');
+            if ($gitAvailable) {
+                $results['checks'][] = [
+                    'check' => 'Git Command',
+                    'status' => 'passed',
+                    'message' => trim($gitAvailable),
+                ];
+            } else {
+                $results['errors'][] = [
+                    'check' => 'Git Command',
+                    'status' => 'warning',
+                    'message' => 'Git command not available (fallback to API only)',
+                ];
+            }
+
+            // Set overall success status
+            $results['success'] = empty($results['errors']) || !empty(array_filter($results['errors'], fn($e) => $e['status'] === 'failed'));
+
+        } catch (\Exception $e) {
+            $results['success'] = false;
+            $results['errors'][] = [
+                'check' => 'Connection Test',
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        return $results;
     }
 }

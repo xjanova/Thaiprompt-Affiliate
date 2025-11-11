@@ -82,6 +82,9 @@ return [
         'name' => 'Thaiprompt-Affiliate',
         'branch' => 'main',
         'api_url' => 'https://api.github.com/repos/xjanova/Thaiprompt-Affiliate',
+        // Token will be loaded dynamically from database or .env when needed
+        // See VersionService and UpdateService for token loading logic
+        'token' => env('GITHUB_TOKEN'), // Fallback only
     ],
 
     /*
@@ -95,8 +98,9 @@ return [
 
     'update' => [
         'enabled' => env('VERSION_CHECK_ENABLED', true),
-        'cache_ttl' => env('VERSION_CHECK_CACHE_TTL', 3600), // 1 hour
+        'cache_ttl' => env('VERSION_CHECK_CACHE_TTL', 60), // 1 minute for immediate feedback
         'auto_check' => env('VERSION_AUTO_CHECK', true),
+        'allow_prerelease' => env('VERSION_ALLOW_PRERELEASE', false),
     ],
 
     /*

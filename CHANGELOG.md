@@ -2,6 +2,376 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.133.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #853 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (c16e7149)
+- feat: improve test connection error reporting and debugging (19a67532)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.132.3] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #852 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (0b628bd7)
+- fix: decrypt GitHub token before masking in settings display (2394288f)
+### 🔧 Other Changes
+
+
+## [v2.132.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #851 from xjanova/claude/enhance-button-taskbar-styling-011CV2QLBviKKFaofGzBLkTM (dc139bc6)
+- fix(ui): remove CSS !important to allow inline styles to control button colors (3c408938)
+### 🔧 Other Changes
+
+
+## [v2.132.1] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #850 from xjanova/claude/lineoa-member-signup-011CV1tqWaBrAC9LLxH3ds8U (02f9a01c)
+- feat(line): Add AI-powered smart conversation management for LINE OA signup (85d1c97f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.132.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #849 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (fcdbbc35)
+- feat: add GitHub Token Settings UI in Admin Panel (77873553)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.131.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #848 from xjanova/claude/enhance-button-taskbar-styling-011CV2QLBviKKFaofGzBLkTM (e0a9f646)
+- fix(ui): replace hardcoded gradient borders with RGB animation in all navigation buttons (32adee72)
+### 🔧 Other Changes
+
+
+## [v2.131.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #847 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (b4ea03d1)
+- fix: move GitHub token loading from config to runtime (d0f02ffe)
+### 🔧 Other Changes
+
+
+## [v2.131.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #846 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (28c733c3)
+- feat: add GitHub Token management in Admin Settings UI (5234fcf8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.130.2] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #845 from xjanova/claude/lineoa-member-signup-011CV1tqWaBrAC9LLxH3ds8U (9298f96e)
+- feat(line): Add comprehensive input validation & duplicate detection for LINE signup (36b1db5c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.130.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #844 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (4afc9436)
+- fix: handle 404 gracefully when no GitHub releases exist (9ed7b33f)
+### 🔧 Other Changes
+
+
+## [v2.130.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #843 from xjanova/claude/fix-popular-destinations-undefined-011CV2QYEvsURSbNYDTww6qW (9baece00)
+- feat: Create 139 beautiful blade views with full dark mode support (98839f78)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.129.1] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #842 from xjanova/claude/enhance-button-taskbar-styling-011CV2QLBviKKFaofGzBLkTM (6d695b96)
+- feat(ui): unify navigation buttons with taskbar styling - no rounded corners (4effd2e5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.129.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #841 from xjanova/claude/fix-popular-destinations-undefined-011CV2QYEvsURSbNYDTww6qW (2a33b8fd)
+- feat: add missing admin.api-keys.create view (410030e1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.128.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #840 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (15c1c30d)
+- feat: add comprehensive error reporting and debugging to update system (c130f3eb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.19] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #839 from xjanova/claude/enhance-button-taskbar-styling-011CV2QLBviKKFaofGzBLkTM (000e5dd0)
+- feat(ui): enhance navigation menu buttons with taskbar-style dimensional effects (c1e07728)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.18] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #838 from xjanova/claude/implement-two-factor-auth-011CV2QgRVqS6a9YSC4xBDfj (7664e72f)
+- feat(2fa): Complete Two-Factor Authentication implementation (5981bff3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.17] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #837 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (908ad3ab)
+- fix: implement actual file extraction and update system improvements (def1555e)
+### 🔧 Other Changes
+
+
+## [v2.127.16] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #836 from xjanova/claude/remove-taskbar-icons-011CV2S52N4HGQx5cvjfbFnE (2d445ce0)
+- feat(taskbar): implement customizable taskbar shortcuts system (fce99089)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.15] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #835 from xjanova/claude/enhance-button-taskbar-styling-011CV2QLBviKKFaofGzBLkTM (d18ffaab)
+- feat(ui): transform taskbar to Windows 11 style with full-width design (eb87ce93)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.14] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #834 from xjanova/claude/enhance-button-taskbar-styling-011CV2QLBviKKFaofGzBLkTM (d4493e61)
+- feat(ui): enhance button and taskbar styling with dimensional effects (d786ed73)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.13] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #833 from xjanova/claude/fix-popular-destinations-undefined-011CV2QYEvsURSbNYDTww6qW (73734449)
+- fix: resolve undefined $popularDestinations variable error in hotels.index view (329a9ffe)
+### 🔧 Other Changes
+
+
+## [v2.127.12] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #832 from xjanova/claude/system-update-011CV2Dr7CGAmDAit7YqSExM (39efa79e)
+- feat(update): Complete update system setup with database configuration (89e84a39)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.11] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #831 from xjanova/claude/fix-commission-controller-create-011CV2L5W5ECjWdufQjSuF6k (a99ba923)
+- fix: Add missing create and store methods to CommissionController (14348d5e)
+### 🔧 Other Changes
+
+
+## [v2.127.10] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #830 from xjanova/claude/system-update-011CV2Dr7CGAmDAit7YqSExM (502ed137)
+- feat(update): Add GitHub webhook auto-cache invalidation & reduce cache TTL (6168c789)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.9] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #829 from xjanova/claude/fix-memory-exhaustion-laravel-011CV2HCx51vMXkaSmgfmSro (daa05dcc)
+- fix(memory): Fix memory exhaustion during route loading (2f5be2e3)
+### 🔧 Other Changes
+
+
+## [v2.127.8] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #828 from xjanova/claude/fix-image-save-display-011CV2HMqMwx4XaqYkSio3VY (4076893e)
+- fix(windows-ui): Add enctype for file upload support (f48a1a49)
+### 🔧 Other Changes
+
+
+## [v2.127.7] - 2025-11-11
+
+### ✨ Features
+- feat(update): Enhance UpdateService with deploy.sh best practices (d5c888a6)
+### 🐛 Bug Fixes
+- fix(version): Add git tags fallback for version checking in private repositories (a9f054fc)
+### 🔧 Other Changes
+- Merge pull request #827 from xjanova/claude/system-update-011CV2Dr7CGAmDAit7YqSExM (7e05a881)
+
+## [v2.127.6] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #826 from xjanova/claude/admin-affiliates-feature-011CV29djeAE8y4PewrCQSc4 (ce83238c)
+- feat(admin): modernize affiliates UI with enhanced design (55a822cd)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.5] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #825 from xjanova/claude/lineoa-member-signup-011CV1tqWaBrAC9LLxH3ds8U (fe7a0ea7)
+- feat(line): Add comprehensive security & conversation management for LINE OA signup (46aae6af)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.4] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #824 from xjanova/claude/smart-slider-research-011CV1HYVpFkQw6mvC4zeU89 (f25d4916)
+- fix: Add missing selectedTemplate variable in create method (d316a922)
+### 🔧 Other Changes
+
+
+## [v2.127.3] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #823 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (ce8796d4)
+- feat(windows-ui): แยกเก็บไฟล์และใช้ WebP สำหรับรูปภาพโลโก้และไอคอน (4e6732b4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #822 from xjanova/claude/fix-menu-seeder-column-011CV26TkMwzfLe67shTsSsu (ee931493)
+- fix: Make AiGenMenuSeeder intelligent with auto-column detection and update support (7674122c)
+### 🔧 Other Changes
+
+
+## [v2.127.1] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #821 from xjanova/claude/fix-wallet-light-mode-011CV26G5Yn4LMEJ9ZVLYdpq (8627b3fe)
+- feat(wallet): Improve light mode styling for all wallet pages (74ce2598)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.127.0] - 2025-11-11
+
+### ✨ Features
+- feat: Complete all AI Gen Admin UI pages (fc1a1546)
+### 🐛 Bug Fixes
+- fix: Add AI Gen seeders to DatabaseSeeder (e230c170)
+### 🔧 Other Changes
+- Merge pull request #820 from xjanova/claude/ai-rental-system-api-011CV1MmXuLRa4UyfxJPtdta (5563fd35)
+- Merge: Resolve DatabaseSeeder conflict with claude/Main (3fb97101)
+- Merge: Resolve DatabaseSeeder conflict - integrate Video Reward and AI Gen seeders (48861318)
+
+## [v2.126.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #819 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (e2f9b4e9)
+- fix(windows-ui): แก้ไขปัญหาปุ่ม Start ไม่ใช้ custom icon ที่อัปโหลด (87e7dfe8)
+### 🔧 Other Changes
+
+
+## [v2.126.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #818 from xjanova/claude/create-missing-views-011CV1nu3USd7fzV7169FKyV (3b9c1417)
+- feat: พัฒนาระบบ Analytics ให้สมบูรณ์ 10 views (63658e20)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.125.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #817 from xjanova/claude/ai-rental-system-api-011CV1MmXuLRa4UyfxJPtdta (9ad0fed6)
+- feat: Add comprehensive AI Gen UI for Admin and Users (468f8b8b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- docs: Add comprehensive AI Gen UI Guide (e6804545)
+
 ## [v2.124.1] - 2025-11-11
 
 ### ✨ Features

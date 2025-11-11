@@ -34,7 +34,7 @@
 
     <!-- Add Payment Method Form -->
     <div id="add-form" class="bg-white rounded-2xl shadow-xl p-6 hidden">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">เพิ่มช่องทางรับเงินใหม่</h2>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">เพิ่มช่องทางรับเงินใหม่</h2>
 
         <form method="POST" action="{{ route('user.wallet.payment-method.store') }}" class="space-y-6">
             @csrf
@@ -45,7 +45,7 @@
                         id="payment-type"
                         required
                         onchange="togglePaymentFields()"
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                     <option value="">-- เลือกประเภท --</option>
                     <option value="promptpay">💳 พร้อมเพย์ (PromptPay)</option>
                     <option value="bank_transfer">🏦 โอนผ่านธนาคาร</option>
@@ -58,7 +58,7 @@
                 <input type="text"
                        name="name"
                        required
-                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                       class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                        placeholder="เช่น บัญชีหลัก, บัญชีสำรอง">
             </div>
 
@@ -68,7 +68,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อบัญชี</label>
                     <input type="text"
                            name="account_name"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                            placeholder="ชื่อเจ้าของบัญชี">
                 </div>
 
@@ -76,7 +76,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">หมายเลขบัญชี / เบอร์โทรศัพท์</label>
                     <input type="text"
                            name="account_number"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                            placeholder="หมายเลขบัญชี หรือ เบอร์โทรศัพท์">
                 </div>
             </div>
@@ -86,7 +86,7 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อธนาคาร</label>
                     <select name="bank_name"
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="">-- เลือกธนาคาร --</option>
                         <option value="ธนาคารกรุงเทพ">ธนาคารกรุงเทพ</option>
                         <option value="ธนาคารกสิกรไทย">ธนาคารกสิกรไทย</option>
@@ -113,7 +113,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">อีเมล PayPal</label>
                     <input type="email"
                            name="paypal_email"
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                            placeholder="your-email@example.com">
                 </div>
             </div>
@@ -124,13 +124,13 @@
                        value="1"
                        id="is_default"
                        class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                <label for="is_default" class="text-sm font-medium text-gray-700">ตั้งเป็นช่องทางเริ่มต้น</label>
+                <label for="is_default" class="text-sm font-medium text-gray-700 dark:text-gray-300">ตั้งเป็นช่องทางเริ่มต้น</label>
             </div>
 
             <div class="flex gap-3">
                 <button type="button"
                         onclick="hideAddForm()"
-                        class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition">
+                        class="flex-1 px-6 py-3 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold rounded-lg hover:bg-gray-300 transition">
                     ยกเลิก
                 </button>
                 <button type="submit"
@@ -142,13 +142,13 @@
     </div>
 
     <!-- Payment Methods List -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">ช่องทางรับเงินทั้งหมด</h2>
+    <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">ช่องทางรับเงินทั้งหมด</h2>
 
         @if($paymentMethods->isEmpty())
             <div class="text-center py-12">
                 <span class="text-6xl block mb-4">🏦</span>
-                <h3 class="text-lg font-bold text-gray-900 mb-2">ยังไม่มีช่องทางรับเงิน</h3>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">ยังไม่มีช่องทางรับเงิน</h3>
                 <p class="text-gray-600 mb-4">เพิ่มช่องทางรับเงินเพื่อสามารถถอนเงินได้</p>
                 <button onclick="showAddForm()"
                         class="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
@@ -176,18 +176,18 @@
                                 @endif
                             </div>
                             <div class="flex-1">
-                                <h3 class="text-lg font-bold text-gray-900 mb-1">{{ $method->name }}</h3>
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1">{{ $method->name }}</h3>
 
                                 @if($method->type === 'bank_transfer')
-                                    <p class="text-sm text-gray-600">{{ $method->bank_name }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->bank_name }}</p>
                                     <p class="text-sm font-medium text-gray-800 mt-2">{{ $method->account_name }}</p>
-                                    <p class="text-sm text-gray-600">{{ $method->account_number }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
                                 @elseif($method->type === 'promptpay')
-                                    <p class="text-sm text-gray-600">พร้อมเพย์</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">พร้อมเพย์</p>
                                     <p class="text-sm font-medium text-gray-800 mt-2">{{ $method->account_name }}</p>
-                                    <p class="text-sm text-gray-600">{{ $method->account_number }}</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
                                 @elseif($method->type === 'paypal')
-                                    <p class="text-sm text-gray-600">PayPal</p>
+                                    <p class="text-sm text-gray-600 dark:text-gray-400">PayPal</p>
                                     <p class="text-sm font-medium text-gray-800 mt-2">{{ $method->paypal_email }}</p>
                                 @endif
 
@@ -195,7 +195,7 @@
                                     <span class="px-2 py-1 rounded text-xs font-semibold {{ $method->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
                                         {{ $method->status === 'active' ? '✓ ใช้งาน' : '✗ ปิดใช้งาน' }}
                                     </span>
-                                    <span class="text-xs text-gray-500">
+                                    <span class="text-xs text-gray-600 dark:text-gray-400">
                                         เพิ่มเมื่อ: {{ $method->created_at->format('d/m/Y') }}
                                     </span>
                                 </div>

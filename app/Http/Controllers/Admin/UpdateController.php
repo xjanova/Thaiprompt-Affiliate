@@ -3,20 +3,26 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
 use App\Models\SystemUpdate;
 use App\Models\UpdateLog;
 use App\Models\UpdateNotification;
 use App\Services\UpdateService;
+use App\Services\VersionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Crypt;
 
 class UpdateController extends Controller
 {
     protected UpdateService $updateService;
+    protected VersionService $versionService;
 
-    public function __construct(UpdateService $updateService)
+    public function __construct(UpdateService $updateService, VersionService $versionService)
     {
         $this->updateService = $updateService;
+        $this->versionService = $versionService;
     }
 
     /**
@@ -54,20 +60,66 @@ class UpdateController extends Controller
     public function check()
     {
         try {
+            // Clear version caches first to get fresh data
+            $this->versionService->clearCache();
+
+            // Force check for updates (bypasses UpdateService cache)
             $updates = $this->updateService->checkForUpdates(true);
+
+            // Get fresh version comparison info
+            $versionInfo = $this->versionService->checkForUpdates();
+
+            $message = 'ระบบอัพเดทเป็นเวอร์ชันล่าสุดแล้ว';
+            $help = null;
+
+            if (count($updates) > 0) {
+                $message = 'พบอัพเดทใหม่ ' . count($updates) . ' รายการ';
+            } elseif (!$versionInfo['update_available'] && $versionInfo['latest_version'] === null) {
+                // No releases found on GitHub
+                $message = 'ไม่พบ releases บน GitHub repository';
+                $help = [
+                    'reason' => 'Repository ยังไม่มี releases หรือ repository เป็น private',
+                    'solutions' => [
+                        '1. สร้าง Release บน GitHub:',
+                        '   - ไปที่ https://github.com/xjanova/Thaiprompt-Affiliate/releases',
+                        '   - คลิก "Create a new release"',
+                        '   - เลือก tag และใส่รายละเอียด',
+                        '   - กด "Publish release"',
+                        '',
+                        '2. หรือถ้า repository เป็น private:',
+                        '   - สร้าง Personal Access Token บน GitHub',
+                        '   - เพิ่ม GITHUB_TOKEN=your_token ใน .env',
+                    ],
+                    'auto_release' => 'หรือใช้ GitHub Actions ที่มีอยู่แล้ว - แค่ merge PR ไปยัง main branch',
+                ];
+            }
 
             return response()->json([
                 'success' => true,
                 'updates' => $updates,
                 'count' => count($updates),
-                'message' => count($updates) > 0
-                    ? 'พบอัพเดทใหม่ ' . count($updates) . ' รายการ'
-                    : 'ระบบอัพเดทเป็นเวอร์ชันล่าสุดแล้ว'
+                'version_info' => $versionInfo,
+                'message' => $message,
+                'help' => $help,
             ]);
         } catch (\Exception $e) {
+            \Log::error('Update check failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'error_details' => [
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable APP_DEBUG to see stack trace',
+                ],
             ], 500);
         }
     }
@@ -105,18 +157,40 @@ class UpdateController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'อัพเดทสำเร็จ!',
-                    'log' => $result['log']
+                    'log' => $result['log'],
+                    'verification' => $result['verification'] ?? null,
                 ]);
             } else {
+                // Return detailed error information
                 return response()->json([
                     'success' => false,
-                    'message' => $result['error'] ?? 'เกิดข้อผิดพลาดในการอัพเดท'
+                    'message' => $result['error'] ?? 'เกิดข้อผิดพลาดในการอัพเดท',
+                    'error_type' => $result['error_type'] ?? 'unknown',
+                    'error_solution' => $result['error_solution'] ?? null,
+                    'retryable' => $result['retryable'] ?? false,
+                    'log' => $result['log'] ?? null,
                 ], 500);
             }
         } catch (\Exception $e) {
+            \Log::error('Update installation failed', [
+                'update_id' => $id,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage()
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'error_details' => [
+                    'message' => $e->getMessage(),
+                    'type' => get_class($e),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable APP_DEBUG to see stack trace',
+                ],
             ], 500);
         }
     }
@@ -171,25 +245,115 @@ class UpdateController extends Controller
     }
 
     /**
+     * Show settings page or get current settings (API)
+     */
+    public function getSettings()
+    {
+        // Get encrypted token from database
+        $encryptedToken = Setting::get('update_github_token');
+        $hasToken = !empty($encryptedToken);
+        $maskedToken = null;
+
+        // Decrypt and mask token if exists
+        if ($hasToken) {
+            try {
+                $decryptedToken = Crypt::decryptString($encryptedToken);
+                // Show first 7 chars and mask the rest
+                $maskedToken = substr($decryptedToken, 0, 7) . '***' . substr($decryptedToken, -4);
+            } catch (\Exception $e) {
+                // If decryption fails, just show generic masked
+                $maskedToken = '***';
+                \Log::warning('Failed to decrypt GitHub token for display', ['error' => $e->getMessage()]);
+            }
+        }
+
+        $settings = [
+            'auto_check' => Setting::get('update_auto_check', false),
+            'auto_update' => Setting::get('update_auto_update', false),
+            'backup_before_update' => Setting::get('update_backup_before_update', true),
+            'notification_email' => Setting::get('update_notification_email'),
+            'github_token' => $maskedToken,
+            'has_github_token' => $hasToken,
+        ];
+
+        // If AJAX request, return JSON
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'settings' => $settings,
+            ]);
+        }
+
+        // Otherwise, return the settings view
+        return view('admin.updates.settings');
+    }
+
+    /**
      * Update settings
      */
     public function updateSettings(Request $request)
     {
         $validated = $request->validate([
-            'auto_check' => 'boolean',
-            'auto_update' => 'boolean',
-            'backup_before_update' => 'boolean',
+            'auto_check' => 'nullable|boolean',
+            'auto_update' => 'nullable|boolean',
+            'backup_before_update' => 'nullable|boolean',
             'notification_email' => 'nullable|email',
+            'github_token' => 'nullable|string',
         ]);
 
-        foreach ($validated as $key => $value) {
-            Setting::set('update_' . $key, $value);
+        try {
+            foreach ($validated as $key => $value) {
+                // Skip null values
+                if ($value === null && $key !== 'notification_email') {
+                    continue;
+                }
+
+                // Encrypt GitHub token before storing
+                if ($key === 'github_token') {
+                    if (!empty($value)) {
+                        // Validate token format (GitHub tokens start with ghp_, gho_, ghs_, or ghu_)
+                        if (!preg_match('/^(ghp|gho|ghs|ghu)_[a-zA-Z0-9]{36,}$/', $value)) {
+                            return response()->json([
+                                'success' => false,
+                                'message' => 'รูปแบบ GitHub Token ไม่ถูกต้อง (ต้องขึ้นต้นด้วย ghp_, gho_, ghs_, หรือ ghu_)',
+                            ], 422);
+                        }
+
+                        // Encrypt token before storing
+                        $encryptedToken = Crypt::encryptString($value);
+                        Setting::set('update_github_token', $encryptedToken, 'string', 'update');
+
+                        \Log::info('GitHub token updated', ['masked_token' => substr($value, 0, 7) . '***']);
+                    } else {
+                        // Remove token if empty
+                        Setting::where('key', 'update_github_token')->delete();
+                        \Log::info('GitHub token removed');
+                    }
+                } else {
+                    $type = is_bool($value) ? 'boolean' : 'string';
+                    Setting::set('update_' . $key, $value, $type, 'update');
+                }
+            }
+
+            // Clear version caches to use new token immediately
+            $this->versionService->clearCache();
+            Cache::forget('available_updates');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกการตั้งค่าสำเร็จ',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update settings', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'บันทึกการตั้งค่าสำเร็จ'
-        ]);
     }
 
     /**
@@ -220,5 +384,51 @@ class UpdateController extends Controller
             'success' => true,
             'message' => 'ทำเครื่องหมายว่าอ่านแล้ว'
         ]);
+    }
+
+    /**
+     * Test GitHub connection
+     */
+    public function testConnection()
+    {
+        try {
+            $results = $this->versionService->testGitHubConnection();
+
+            return response()->json([
+                'success' => $results['success'],
+                'results' => $results,
+                'message' => $results['success']
+                    ? 'การเชื่อมต่อ GitHub ทำงานปกติ'
+                    : 'พบปัญหาในการเชื่อมต่อ GitHub',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('GitHub connection test failed', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'results' => [
+                    'success' => false,
+                    'checks' => [],
+                    'errors' => [
+                        [
+                            'check' => 'System Error',
+                            'status' => 'failed',
+                            'message' => $e->getMessage(),
+                        ]
+                    ],
+                    'debug_info' => [
+                        'type' => get_class($e),
+                        'file' => $e->getFile() . ':' . $e->getLine(),
+                        'trace' => config('app.debug') ? explode("\n", $e->getTraceAsString()) : ['Enable APP_DEBUG to see stack trace'],
+                    ],
+                ],
+            ], 500);
+        }
     }
 }
