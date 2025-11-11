@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.7] - 2025-11-11
+
+### ✨ Features
+- feat(update): Enhance UpdateService with deploy.sh best practices (d5c888a6)
+### 🐛 Bug Fixes
+- fix(version): Add git tags fallback for version checking in private repositories (a9f054fc)
+### 🔧 Other Changes
+- Merge pull request #827 from xjanova/claude/system-update-011CV2Dr7CGAmDAit7YqSExM (7e05a881)
+
 ## [v2.127.6] - 2025-11-11
 
 ### ✨ Features
