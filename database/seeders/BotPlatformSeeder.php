@@ -167,7 +167,13 @@ class BotPlatformSeeder extends Seeder
             ],
         ];
 
-        DB::table('bot_social_platforms')->insert($platforms);
+        // Use updateOrInsert to make this seeder idempotent
+        foreach ($platforms as $platform) {
+            DB::table('bot_social_platforms')->updateOrInsert(
+                ['code' => $platform['code']], // unique key
+                $platform
+            );
+        }
 
         $this->command->info('Bot social platforms seeded successfully!');
     }

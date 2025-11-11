@@ -66,9 +66,45 @@ class WindowsUiController extends Controller
             'millennium_menu_max_height' => ['nullable', 'integer', 'min:1', 'max:3000'],
             'millennium_menu_max_height_unit' => ['nullable', 'string', 'in:px,%,vh'],
 
+            // Menu Appearance Settings (รูปลักษณ์เมนู)
+            'millennium_menu_show_logo' => ['nullable', 'boolean'],
+            'millennium_menu_show_app_name' => ['nullable', 'boolean'],
+            'millennium_menu_show_subtitle' => ['nullable', 'boolean'],
+            'millennium_menu_logo' => ['nullable', 'image', 'max:2048'], // 2MB max
+            'millennium_menu_logo_size' => ['nullable', 'integer', 'min:20', 'max:100'],
+            'millennium_menu_app_name' => ['nullable', 'string', 'max:50'],
+            'millennium_menu_subtitle' => ['nullable', 'string', 'max:50'],
+            'millennium_menu_item_spacing' => ['nullable', 'integer', 'min:0', 'max:32'],
+            'millennium_menu_padding' => ['nullable', 'integer', 'min:4', 'max:32'],
+
+            // Start Button Settings (Tab 3)
+            'millennium_start_button_text' => ['nullable', 'string', 'max:20'],
+            'millennium_start_button_icon_type' => ['nullable', 'string', 'in:default,upload,fontawesome,emoji'],
+            'millennium_start_button_custom_icon' => ['nullable', 'image', 'max:2048'],
+            'millennium_start_button_fontawesome_icon' => ['nullable', 'string', 'max:100'],
+            'millennium_start_button_emoji' => ['nullable', 'string', 'max:4'],
+            'millennium_start_button_icon_position' => ['nullable', 'string', 'in:left,right'],
+            'millennium_start_button_style' => ['nullable', 'string', 'in:gradient,solid,outline,glass,neon,3d'],
+            'millennium_start_button_color_primary' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_start_button_color_secondary' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_start_button_text_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_start_button_tooltip_enabled' => ['nullable', 'boolean'],
+            'millennium_start_button_tooltip_text' => ['nullable', 'string', 'max:100'],
+            'millennium_start_button_tooltip_duration' => ['nullable', 'integer', 'min:3', 'max:30'],
+            'millennium_start_button_tooltip_position' => ['nullable', 'string', 'in:top,bottom,left,right'],
+            'millennium_start_button_tooltip_animation' => ['nullable', 'string', 'in:bounce,pulse,shake,swing,tada,flash'],
+
             // Responsive Taskbar Settings
             'millennium_taskbar_collapse_enabled' => ['nullable', 'boolean'],
             'millennium_taskbar_collapse_breakpoint' => ['nullable', 'integer', 'min:320', 'max:1920'],
+            'millennium_taskbar_collapse_style' => ['nullable', 'string', 'in:dropdown,slide-up,fullscreen'],
+
+            // Menu RGB Settings (Tab 4)
+            'millennium_menu_rgb_enabled' => ['nullable', 'boolean'],
+            'millennium_menu_item_hover_rgb' => ['nullable', 'boolean'],
+            'millennium_menu_rgb_speed' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'millennium_menu_rgb_border_width' => ['nullable', 'integer', 'min:1', 'max:10'],
+            'millennium_menu_rgb_glow_size' => ['nullable', 'integer', 'min:0', 'max:50'],
 
             // Clock Settings
             'millennium_clock_style' => ['nullable', 'string', 'in:digital,minimal,full,hidden'],
@@ -126,6 +162,58 @@ class WindowsUiController extends Controller
         $validated['millennium_back_to_top_enabled'] = $request->has('millennium_back_to_top_enabled');
         $validated['millennium_start_button_show_icon'] = $request->has('millennium_start_button_show_icon');
         $validated['millennium_start_button_show_text'] = $request->has('millennium_start_button_show_text');
+
+        // Menu Appearance checkboxes
+        $validated['millennium_menu_show_logo'] = $request->has('millennium_menu_show_logo');
+        $validated['millennium_menu_show_app_name'] = $request->has('millennium_menu_show_app_name');
+        $validated['millennium_menu_show_subtitle'] = $request->has('millennium_menu_show_subtitle');
+
+        // Start Button checkboxes
+        $validated['millennium_start_button_tooltip_enabled'] = $request->has('millennium_start_button_tooltip_enabled');
+
+        // Menu RGB checkboxes
+        $validated['millennium_menu_rgb_enabled'] = $request->has('millennium_menu_rgb_enabled');
+        $validated['millennium_menu_item_hover_rgb'] = $request->has('millennium_menu_item_hover_rgb');
+
+        // Handle image deletion
+        if ($request->has('delete_millennium_menu_logo')) {
+            $oldPath = WindowsUiSetting::get('millennium_menu_logo');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+            WindowsUiSetting::set('millennium_menu_logo', null, 'string');
+        }
+
+        if ($request->has('delete_millennium_start_button_custom_icon')) {
+            $oldPath = WindowsUiSetting::get('millennium_start_button_custom_icon_path');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+            WindowsUiSetting::set('millennium_start_button_custom_icon_path', null, 'string');
+        }
+
+        // Handle file uploads
+        if ($request->hasFile('millennium_menu_logo')) {
+            // Delete old logo if exists
+            $oldPath = WindowsUiSetting::get('millennium_menu_logo');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+
+            $path = $request->file('millennium_menu_logo')->store('windows-ui/menu', 'public');
+            $validated['millennium_menu_logo'] = $path;
+        }
+
+        if ($request->hasFile('millennium_start_button_custom_icon')) {
+            // Delete old icon if exists
+            $oldPath = WindowsUiSetting::get('millennium_start_button_custom_icon_path');
+            if ($oldPath && \Storage::disk('public')->exists($oldPath)) {
+                \Storage::disk('public')->delete($oldPath);
+            }
+
+            $path = $request->file('millennium_start_button_custom_icon')->store('windows-ui/start-button', 'public');
+            $validated['millennium_start_button_custom_icon_path'] = $path;
+        }
 
         // Save each setting
         foreach ($validated as $key => $value) {

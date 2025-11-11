@@ -14,6 +14,24 @@ SQLSTATE[42S21]: Column already exists: 1060 Duplicate column name 'xxx'
 ### 2. Missing Column in after() Clause
 เกิดเมื่ออ้างอิง column ที่ไม่มีจริงใน `after()`
 
+### 3. Invalid Default Value for Timestamp
+เกิดเมื่อสร้าง timestamp column ที่เป็น NOT NULL แต่ไม่มี default value
+
+```
+SQLSTATE[42000]: Syntax error or access violation: 1067 Invalid default value for 'column_name'
+```
+
+**สาเหตุ:** MySQL ต้องการให้ timestamp columns ที่เป็น NOT NULL มี default value
+
+### 4. Foreign Key Constraint Incorrectly Formed
+เกิดเมื่อ Laravel auto-pluralization สร้างชื่อตารางผิด
+
+```
+SQLSTATE[HY000]: General error: 1005 Can't create table (errno: 150 "Foreign key constraint is incorrectly formed")
+```
+
+**สาเหตุ:** Laravel pluralize ชื่อตารางอัตโนมัติ เช่น `trend_data` กลายเป็น `trend_datas`
+
 ## วิธีแก้ปัญหา: ใช้ SafeMigration Trait
 
 ### Basic Usage
@@ -326,6 +344,114 @@ return new class extends Migration
 };
 ```
 
+## กฎเกณฑ์สำคัญในการสร้าง Migration
+
+### 1. Timestamp Columns - ต้องมี Default Value เสมอ
+
+✅ **ถูกต้อง:**
+```php
+// ใช้ useCurrent() สำหรับ timestamp NOT NULL
+$table->timestamp('started_at')->useCurrent();
+$table->timestamp('created_at')->useCurrent();
+$table->timestamp('published_at')->useCurrent();
+
+// หรือใช้ nullable() ถ้าอนุญาตให้เป็น NULL
+$table->timestamp('completed_at')->nullable();
+$table->timestamp('deleted_at')->nullable();
+```
+
+❌ **ผิด - จะเกิด Error:**
+```php
+// ห้ามสร้าง timestamp NOT NULL โดยไม่มี default
+$table->timestamp('started_at'); // Error: Invalid default value
+$table->timestamp('created_at'); // Error: Invalid default value
+```
+
+**สรุป:**
+- timestamp NOT NULL → ใช้ `->useCurrent()`
+- timestamp ที่อนุญาต NULL → ใช้ `->nullable()`
+
+### 2. Foreign Keys - ระบุชื่อตารางชัดเจน
+
+Laravel มีระบบ auto-pluralization ที่อาจสร้างชื่อตารางผิด ดังนั้นควรระบุชื่อตารางชัดเจนเสมอ
+
+✅ **ถูกต้อง:**
+```php
+// ระบุชื่อตารางชัดเจนใน constrained()
+$table->foreignId('trend_data_id')
+    ->constrained('trend_data')  // ระบุชัดเจนว่าเป็นตาราง trend_data
+    ->onDelete('cascade');
+
+$table->foreignId('trend_keyword_id')
+    ->constrained('trend_keywords')  // ระบุชัดเจน
+    ->onDelete('cascade');
+
+$table->foreignId('user_id')
+    ->constrained('users')  // ระบุชัดเจน
+    ->onDelete('cascade');
+```
+
+❌ **ผิด - อาจเกิด Error:**
+```php
+// Laravel จะ pluralize อัตโนมัติและอาจผิด
+$table->foreignId('trend_data_id')
+    ->constrained()  // Laravel อาจเปลี่ยนเป็น trend_datas (ผิด!)
+    ->onDelete('cascade');
+```
+
+**ตัวอย่างที่มีปัญหา:**
+- `trend_data` → Laravel pluralize เป็น `trend_datas` ❌
+- `video_content` → Laravel pluralize เป็น `video_contents` ✅ (ถ้าชื่อตารางเป็น contents)
+- `user_data` → Laravel pluralize เป็น `user_datas` ❌
+
+**กฎทอง:** ระบุชื่อตารางใน `constrained('table_name')` เสมอ เพื่อหลีกเลี่ยงปัญหา
+
+### 3. ตัวอย่างการสร้างตาราง Pivot/Relation
+
+✅ **ถูกต้อง - ตัวอย่างเต็มรูปแบบ:**
+```php
+Schema::create('trend_data_keyword', function (Blueprint $table) {
+    $table->id();
+
+    // Foreign keys - ระบุชื่อตารางชัดเจน
+    $table->foreignId('trend_data_id')
+        ->constrained('trend_data')  // ไม่ใช่ trend_datas
+        ->onDelete('cascade');
+
+    $table->foreignId('trend_keyword_id')
+        ->constrained('trend_keywords')
+        ->onDelete('cascade');
+
+    // Timestamp columns - มี default value
+    $table->timestamp('created_at')->useCurrent();
+    $table->timestamp('updated_at')->useCurrent();
+
+    // หรือใช้ timestamps() ซึ่งจะสร้าง nullable columns
+    // $table->timestamps();
+
+    // Indexes
+    $table->unique(['trend_data_id', 'trend_keyword_id']);
+    $table->index('trend_data_id');
+});
+```
+
+### 4. การใช้ timestamps() vs สร้าง timestamp เอง
+
+Laravel's `timestamps()` method จะสร้าง columns แบบ nullable:
+
+```php
+$table->timestamps();
+// สร้าง: created_at TIMESTAMP NULL, updated_at TIMESTAMP NULL
+```
+
+ถ้าต้องการ NOT NULL ให้สร้างเอง:
+
+```php
+$table->timestamp('created_at')->useCurrent();
+$table->timestamp('updated_at')->useCurrent();
+// สร้าง: created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+```
+
 ## Best Practices สำหรับ Production
 
 ### 1. เสมอใช้ Safe Methods
@@ -432,9 +558,216 @@ ALTER TABLE users DROP COLUMN phone;
 ALTER TABLE users DROP COLUMN verified;
 ```
 
+## Checklist ก่อนสร้าง Migration ใหม่
+
+ก่อนสร้างหรือรัน migration ใหม่ ให้ตรวจสอบรายการต่อไปนี้:
+
+### ✅ Timestamp Columns
+- [ ] timestamp NOT NULL ทุกตัวมี `->useCurrent()`
+- [ ] timestamp ที่เป็น NULL มี `->nullable()`
+- [ ] ไม่มี `$table->timestamp('xxx')` ที่ไม่มีทั้ง useCurrent() และ nullable()
+
+### ✅ Foreign Keys
+- [ ] ระบุชื่อตารางชัดเจนใน `->constrained('table_name')`
+- [ ] ไม่ใช้ `->constrained()` แบบไม่มีพารามิเตอร์
+- [ ] ตรวจสอบว่าตารางที่อ้างอิงมีอยู่จริง
+- [ ] มี `onDelete()` และ `onUpdate()` ที่เหมาะสม (cascade, set null, restrict)
+
+### ✅ Table Structure
+- [ ] ชื่อตารางเป็น snake_case และเป็นพหูพจน์ (users, products, trend_keywords)
+- [ ] มี primary key (ใช้ `$table->id()`)
+- [ ] มี indexes ที่จำเป็น (foreign keys, unique constraints)
+- [ ] มี timestamps ถ้าต้องการ track การเปลี่ยนแปลง
+
+### ✅ Column Definitions
+- [ ] ตั้งชื่อ column เป็น snake_case
+- [ ] ใช้ data types ที่เหมาะสม (string, text, integer, decimal, boolean, json)
+- [ ] ตั้ง default values ที่เหมาะสม
+- [ ] ใช้ nullable() เฉพาะ columns ที่อนุญาตให้เป็น null
+
+### ✅ Migration Order
+- [ ] migrations ที่สร้างตารางต้นทาง (parent) มาก่อนตารางปลายทาง (child)
+- [ ] ตัวอย่าง: users → posts → comments (ตามลำดับ foreign key)
+- [ ] ตรวจสอบ timestamp ในชื่อไฟล์ให้ถูกต้อง
+
+### ✅ Testing
+- [ ] ทดสอบ `php artisan migrate` (ขึ้น)
+- [ ] ทดสอบ `php artisan migrate:rollback` (ลง)
+- [ ] ทดสอบ `php artisan migrate` อีกครั้ง (idempotency)
+- [ ] เช็ค migration status: `php artisan migrate:status`
+
+### ✅ Rollback Safety
+- [ ] เขียน `down()` method ให้ครบถ้วน
+- [ ] ลบ foreign keys ก่อนลบ indexes
+- [ ] ลบ indexes ก่อนลบ columns
+- [ ] ลบ columns ก่อนลบตาราง
+
+## ตัวอย่าง Migration Template ที่สมบูรณ์
+
+```php
+<?php
+
+use Database\Migrations\Concerns\SafeMigration;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    use SafeMigration;
+
+    public function up(): void
+    {
+        Schema::create('example_table', function (Blueprint $table) {
+            // Primary Key
+            $table->id();
+
+            // Foreign Keys - ระบุชื่อตารางชัดเจน
+            $table->foreignId('user_id')
+                ->constrained('users')
+                ->onDelete('cascade');
+
+            // Regular Columns - กำหนด type และ constraints
+            $table->string('title');
+            $table->text('description')->nullable();
+            $table->decimal('price', 10, 2)->default(0);
+            $table->boolean('is_active')->default(true);
+
+            // Custom Timestamp Columns - ใช้ useCurrent()
+            $table->timestamp('published_at')->useCurrent();
+            $table->timestamp('expired_at')->nullable();
+
+            // Laravel Timestamps - nullable by default
+            $table->timestamps();
+            $table->softDeletes();
+
+            // Indexes
+            $table->index('user_id');
+            $table->index('is_active');
+            $table->index(['user_id', 'is_active']);
+            $table->unique('title');
+        });
+
+        // Foreign Keys (alternative method)
+        // $this->safeAddForeign('example_table', 'user_id', 'users');
+    }
+
+    public function down(): void
+    {
+        // ลบตารางพร้อม foreign keys
+        Schema::dropIfExists('example_table');
+
+        // หรือลบทีละส่วนถ้าต้องการ
+        // $this->safeDropForeign('example_table', 'example_table_user_id_foreign');
+        // $this->safeDropTable('example_table');
+    }
+};
+```
+
+## 🚀 Smart Migration System
+
+ระบบนี้จะช่วยจัดการกรณีที่ตารางมีอยู่แล้วแต่โครงสร้างไม่ตรงกับ migration
+
+### การทำงาน
+
+1. ✅ **ตรวจสอบ** - เช็คว่าตารางมีอยู่หรือยัง
+2. 🔍 **เปรียบเทียบ** - เปรียบเทียบ schema ของตารางกับ migration
+3. ➕ **เพิ่มคอลัมน์** - เพิ่มคอลัมน์ที่ยังไม่มีอัตโนมัติ
+4. ⏭️ **ข้าม** - ข้ามถ้า schema ตรงกันแล้ว
+
+### การใช้งาน
+
+```bash
+# รัน Smart Migration
+php artisan migrate:smart --force
+
+# ระบบจะแสดงผลการทำงาน:
+# ✓ Tables created: X
+# ✓ Tables updated: Y
+# ✓ Columns added: Z
+```
+
+### ตัวอย่างการทำงาน
+
+**กรณีที่ 1: ตารางยังไม่มี**
+```
+→ Processing: 2025_01_08_000003_create_trend_keywords_table
+  → Creating new table 'trend_keywords'...
+  ✓ Table created successfully
+```
+
+**กรณีที่ 2: ตารางมีแล้วแต่ขาดบางคอลัมน์**
+```
+→ Processing: 2025_01_08_000003_create_trend_keywords_table
+  → Table 'trend_keywords' exists, checking schema...
+  → Adding 2 missing column(s)...
+    ✓ Added: last_seen_at
+    ✓ Added: metadata
+```
+
+**กรณีที่ 3: Schema ตรงกันแล้ว**
+```
+→ Processing: 2025_01_08_000003_create_trend_keywords_table
+  → Table 'trend_keywords' exists, checking schema...
+  ✓ Schema up to date (skipped)
+```
+
+### ความสามารถ
+
+Smart Migration สามารถจัดการ:
+
+- ✅ เพิ่มคอลัมน์ใหม่ที่ยังไม่มี
+- ✅ สร้างตารางใหม่ถ้ายังไม่มี
+- ✅ ตรวจสอบและข้ามถ้า schema ตรงกันแล้ว
+- ✅ รองรับ data types ทั่วไป (string, text, integer, decimal, boolean, json, timestamp, date)
+- ✅ รองรับ foreign keys
+- ✅ รองรับ timestamps(), softDeletes(), id()
+
+### ข้อจำกัด
+
+- ⚠️ ไม่สามารถแก้ไข data type ของคอลัมน์ที่มีอยู่แล้ว
+- ⚠️ ไม่สามารถลบคอลัมน์
+- ⚠️ ไม่สามารถเปลี่ยนชื่อคอลัมน์
+- ⚠️ Indexes และ foreign keys อาจต้องสร้างด้วยตนเอง
+
+สำหรับกรณีข้างต้น ให้ใช้ migration ปกติ หรือ alter table ด้วยตนเอง
+
+## คำสั่ง Artisan ที่เป็นประโยชน์
+
+```bash
+# สร้าง migration ใหม่
+php artisan make:migration create_example_table
+
+# ตรวจสอบสถานะ migrations
+php artisan migrate:status
+
+# รัน Smart Migration (แนะนำ)
+php artisan migrate:smart --force
+
+# รัน migrations แบบปกติ
+php artisan migrate
+
+# Rollback batch ล่าสุด
+php artisan migrate:rollback
+
+# Rollback migration จำนวนที่กำหนด
+php artisan migrate:rollback --step=2
+
+# Rollback ทั้งหมดแล้ว migrate ใหม่
+php artisan migrate:refresh
+
+# Rollback ทั้งหมด
+php artisan migrate:reset
+
+# ดู SQL queries โดยไม่รัน migration
+php artisan migrate --pretend
+```
+
 ## Summary
 
 - ✅ ใช้ `SafeMigration` trait กับ migration ทุกตัว
+- ✅ timestamp NOT NULL ต้องมี `->useCurrent()`
+- ✅ Foreign keys ต้องระบุ `->constrained('table_name')` ชัดเจน
 - ✅ ใช้ `safeAddColumn()`, `safeDropColumn()` แทนการเรียกตรงๆ
 - ✅ เช็คว่า column ที่อ้างอิงใน `after()` มีอยู่จริง
 - ✅ ทดสอบ migrate และ rollback บน local ก่อน deploy

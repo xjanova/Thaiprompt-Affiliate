@@ -192,7 +192,7 @@ return new class extends Migration
             // Session
             $table->string('session_id')->nullable();
 
-            $table->timestamp('created_at');
+            $table->timestamp('created_at')->useCurrent();
 
             // Indexes
             $table->index(['slider_id', 'event_type', 'created_at']);

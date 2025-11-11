@@ -110,8 +110,11 @@ class VideoRewardSystemSeeder extends Seeder
             ],
         ];
 
-        foreach ($levels as $level) {
-            VideoLevel::create($level);
+        foreach ($levels as $levelData) {
+            VideoLevel::updateOrCreate(
+                ['level' => $levelData['level']],
+                $levelData
+            );
         }
 
         $this->command->info('📊 Video levels seeded');
@@ -165,8 +168,11 @@ class VideoRewardSystemSeeder extends Seeder
             ],
         ];
 
-        foreach ($channels as $channel) {
-            VideoChannel::create($channel);
+        foreach ($channels as $channelData) {
+            VideoChannel::updateOrCreate(
+                ['name' => $channelData['name']],
+                $channelData
+            );
         }
 
         $this->command->info('📺 Video channels seeded');
@@ -327,8 +333,11 @@ class VideoRewardSystemSeeder extends Seeder
             ],
         ];
 
-        foreach ($videos as $video) {
-            VideoContent::create($video);
+        foreach ($videos as $videoData) {
+            VideoContent::updateOrCreate(
+                ['video_id' => $videoData['video_id']],
+                $videoData
+            );
         }
 
         $this->command->info('🎬 Video contents seeded');
@@ -480,8 +489,14 @@ class VideoRewardSystemSeeder extends Seeder
             ],
         ];
 
-        foreach ($quests as $quest) {
-            VideoQuest::create($quest);
+        foreach ($quests as $questData) {
+            VideoQuest::updateOrCreate(
+                [
+                    'name' => $questData['name'],
+                    'frequency' => $questData['frequency']
+                ],
+                $questData
+            );
         }
 
         $this->command->info('🎮 Video quests seeded');
@@ -531,8 +546,14 @@ class VideoRewardSystemSeeder extends Seeder
             ],
         ];
 
-        foreach ($rates as $rate) {
-            CoinExchangeRate::create($rate);
+        foreach ($rates as $rateData) {
+            CoinExchangeRate::updateOrCreate(
+                [
+                    'coins_amount' => $rateData['coins_amount'],
+                    'min_level' => $rateData['min_level']
+                ],
+                $rateData
+            );
         }
 
         $this->command->info('💰 Coin exchange rates seeded');

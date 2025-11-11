@@ -130,19 +130,11 @@
     };
 
     // ========================================
-    // HYBRID APPROACH: Try database first, fallback to hard-coded
+    // HARD-CODED MENUS (Direct approach - no database lookup)
     // ========================================
 
-    // Try to load from database first (for backward compatibility)
-    $menuItemsRaw = WindowsUiSetting::get("windows_start_menu_items_{$type}", null);
-
-    // If database has menu items, use them; otherwise use hard-coded fallback
-    if (!empty($menuItemsRaw) && is_array($menuItemsRaw)) {
-        // Use database menu items (preserves user customizations)
-        $menuItems = collect($menuItemsRaw)->sortBy('order')->values()->toArray();
-    } else {
-        // Fallback to hard-coded menus
-        if ($type === 'admin') {
+    // Always use hard-coded menus for consistency and completeness
+    if ($type === 'admin') {
             $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => safeRoute('admin.dashboard'), 'order' => 0],
             [
@@ -166,6 +158,23 @@
                     ['label' => 'จัดการ AI Bots', 'url' => safeRoute('admin.ai-bots.index')],
                     ['label' => 'AI Providers', 'url' => safeRoute('admin.ai-providers.index')],
                     ['label' => 'ติดตั้ง AI', 'url' => safeRoute('admin.ai-installation.index')],
+                    ['label' => 'AI Monitoring', 'url' => safeRoute('admin.ai-monitoring.index')],
+                    ['label' => 'Knowledge Bases', 'url' => safeRoute('admin.knowledge-bases.index')],
+                ]
+            ],
+            [
+                'icon' => '🎨',
+                'label' => 'Smart Slider Pro',
+                'url' => '#',
+                'order' => 4.5,
+                'badge' => 'NEW',
+                'badge_color' => 'bg-gradient-to-r from-blue-500 to-indigo-500',
+                'submenu' => [
+                    ['label' => '🎯 Dashboard', 'url' => safeRoute('admin.smart-sliders.index')],
+                    ['label' => '➕ สร้าง Slider ใหม่', 'url' => safeRoute('admin.smart-sliders.create')],
+                    ['label' => '📚 Template Gallery', 'url' => safeRoute('admin.smart-sliders.index')],
+                    ['label' => '📊 Analytics', 'url' => safeRoute('admin.smart-sliders.index')],
+                    ['label' => '📥 Import/Export', 'url' => safeRoute('admin.smart-sliders.index')],
                 ]
             ],
             [
@@ -178,6 +187,7 @@
                     ['label' => 'การจองทั้งหมด', 'url' => safeRoute('admin.hotels.bookings.index')],
                     ['label' => 'สถิติการจอง', 'url' => safeRoute('admin.hotels.bookings.analytics')],
                     ['label' => 'จัดการรีวิว', 'url' => safeRoute('admin.hotels.reviews.index')],
+                    ['label' => 'เจ้าของโรงแรม', 'url' => safeRoute('admin.hotel-owners.index')],
                     ['label' => 'สิ่งอำนวยความสะดวก', 'url' => safeRoute('admin.hotels.facilities.index')],
                     ['label' => 'โปรโมชั่นพิเศษ', 'url' => safeRoute('admin.hotels.special-offers.index')],
                 ]
@@ -217,7 +227,9 @@
                     ['label' => 'ประวัติธุรกรรม', 'url' => safeRoute('admin.wallet.transactions')],
                     ['label' => 'คำขอถอนเงิน', 'url' => safeRoute('admin.withdrawals.pending')],
                     ['label' => 'ประวัติการถอน', 'url' => safeRoute('admin.withdrawals.index')],
-                    ['label' => 'ตั้งค่า Payment', 'url' => safeRoute('admin.payment-gateways.index')],
+                    ['label' => 'ตั้งค่า Payment Gateway', 'url' => safeRoute('admin.payment-gateways.index')],
+                    ['label' => 'ตั้งค่ากระเป๋าเงิน', 'url' => safeRoute('admin.wallet-settings.index')],
+                    ['label' => 'ตั้งค่า Cashback', 'url' => safeRoute('admin.cashback.index')],
                 ]
             ],
             [
@@ -276,7 +288,10 @@
                 'order' => 13,
                 'submenu' => [
                     ['label' => 'คอร์สเรียน', 'url' => safeRoute('admin.academy.courses.index')],
-                    ['label' => 'ใบประกาศ', 'url' => safeRoute('admin.academy.certificates.index')],
+                    ['label' => 'จัดการแบบทดสอบ', 'url' => safeRoute('admin.quiz-management.index')],
+                    ['label' => 'ใบประกาศนักเรียน', 'url' => safeRoute('admin.certificates.index')],
+                    ['label' => 'ใบประกาศระบบ', 'url' => safeRoute('admin.academy.certificates.index')],
+                    ['label' => 'แดชบอร์ดอาจารย์', 'url' => safeRoute('admin.instructor.dashboard')],
                     ['label' => 'ตั้งค่า', 'url' => safeRoute('admin.academy.settings.index')],
                 ]
             ],
@@ -301,6 +316,7 @@
                     ['label' => 'แผน MLM', 'url' => safeRoute('admin.mlm.plans.index')],
                     ['label' => 'ผังสายงาน', 'url' => safeRoute('admin.mlm.genealogy.index')],
                     ['label' => 'คอมมิชชั่น', 'url' => safeRoute('admin.mlm.commissions.index')],
+                    ['label' => 'ผู้มุ่งหวัง (Prospects)', 'url' => safeRoute('admin.mlm-prospects.index')],
                     ['label' => 'Product PV', 'url' => safeRoute('admin.mlm.product-pv.index')],
                     ['label' => 'รายงาน', 'url' => safeRoute('admin.mlm.reports.dashboard')],
                     ['label' => 'ตั้งค่า MLM', 'url' => safeRoute('admin.mlm.settings.index')],
@@ -370,7 +386,8 @@
                     ['label' => 'ภาพรวม', 'url' => safeRoute('admin.security.index')],
                     ['label' => 'Threat Intelligence', 'url' => safeRoute('admin.security.threat-intelligence')],
                     ['label' => 'Analytics', 'url' => safeRoute('admin.security.analytics')],
-                    ['label' => 'OTP Settings', 'url' => safeRoute('admin.otp.settings')],
+                    ['label' => 'ตั้งค่า OTP', 'url' => safeRoute('admin.otp.settings')],
+                    ['label' => 'ตั้งค่า 2FA', 'url' => safeRoute('admin.two-factor.settings')],
                 ]
             ],
             [
@@ -416,6 +433,18 @@
                 ]
             ],
             [
+                'icon' => '🎬',
+                'label' => 'คอนเทนต์ & มีเดีย',
+                'url' => '#',
+                'order' => 24.5,
+                'submenu' => [
+                    ['label' => 'WebP Image Converter', 'url' => safeRoute('admin.webp.index')],
+                    ['label' => 'Page Builder', 'url' => safeRoute('admin.page-builder.index')],
+                    ['label' => 'Tarot System', 'url' => safeRoute('admin.tarot.index')],
+                    ['label' => 'Video Rewards', 'url' => safeRoute('admin.video-rewards.dashboard')],
+                ]
+            ],
+            [
                 'icon' => '⚙️',
                 'label' => 'ตั้งค่าระบบ',
                 'url' => '#',
@@ -423,14 +452,22 @@
                 'submenu' => [
                     ['label' => 'ตั้งค่าทั่วไป', 'url' => safeRoute('admin.settings.index')],
                     ['label' => 'ตั้งค่า Mobile App', 'url' => safeRoute('admin.app-management.settings.index')],
+                    ['label' => 'คุณสมบัติแอป', 'url' => safeRoute('admin.app-management.features.index')],
+                    ['label' => 'แบนเนอร์แอป', 'url' => safeRoute('admin.app-management.banners.index')],
+                    ['label' => 'โหมดซ่อมบำรุง', 'url' => safeRoute('admin.app-management.maintenance.index')],
                     ['label' => 'ตั้งค่า OCR', 'url' => safeRoute('admin.settings.ocr')],
-                    ['label' => 'ตั้งค่า 2FA', 'url' => safeRoute('admin.two-factor.settings')],
+                    ['label' => 'จัดการ API', 'url' => safeRoute('admin.api-management.endpoints.index')],
+                    ['label' => 'API Keys', 'url' => safeRoute('admin.api-management.keys.index')],
+                    ['label' => 'อัพเดทระบบ', 'url' => safeRoute('admin.updates.index')],
+                    ['label' => 'รีเซ็ตระบบ', 'url' => safeRoute('admin.system-reset.index')],
                 ]
             ],
         ];
     } elseif ($type === 'seller') {
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => safeRoute('seller.dashboard'), 'order' => 0],
+            ['icon' => '📢', 'label' => 'การตลาด', 'url' => safeRoute('seller.marketing'), 'order' => 0.5],
+            ['icon' => '🔔', 'label' => 'การแจ้งเตือน', 'url' => safeRoute('seller.notifications.index'), 'order' => 0.7],
             [
                 'icon' => '📦',
                 'label' => 'สินค้า',
@@ -439,6 +476,7 @@
                 'submenu' => [
                     ['label' => 'รายการสินค้า', 'url' => safeRoute('seller.products.index')],
                     ['label' => 'เพิ่มสินค้า', 'url' => safeRoute('seller.products.create')],
+                    ['label' => 'แพ็คเกจ/สมาชิก', 'url' => safeRoute('seller.packages')],
                 ]
             ],
             [
@@ -449,7 +487,10 @@
                 'submenu' => [
                     ['label' => 'ขายสินค้า', 'url' => safeRoute('seller.pos.terminal')],
                     ['label' => 'รายการขาย', 'url' => safeRoute('seller.pos.transactions')],
+                    ['label' => 'อุปกรณ์ POS', 'url' => safeRoute('seller.pos.devices')],
                     ['label' => 'Session', 'url' => safeRoute('seller.pos.sessions')],
+                    ['label' => 'หมวดหมู่', 'url' => safeRoute('seller.pos.categories')],
+                    ['label' => 'โฆษณา', 'url' => safeRoute('seller.pos.advertisements')],
                     ['label' => 'ตั้งค่า POS', 'url' => safeRoute('seller.pos.settings')],
                 ]
             ],
@@ -486,6 +527,7 @@
                     ['label' => '📈 Cohort Analysis', 'url' => safeRoute('seller.analytics.cohort')],
                     ['label' => '🏆 Products Ranking', 'url' => safeRoute('seller.analytics.products')],
                     ['label' => '🖥️ System Monitoring', 'url' => safeRoute('seller.analytics.system-monitoring')],
+                    ['label' => '📤 Export Data', 'url' => safeRoute('seller.analytics.export')],
                     ['label' => '⚙️ Settings', 'url' => safeRoute('seller.analytics.settings')],
                 ]
             ],
@@ -498,6 +540,7 @@
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => safeRoute('user.profile'), 'order' => 1],
             ['icon' => '🪪', 'label' => 'ยืนยันตัวตน KYC', 'url' => safeRoute('user.kyc.index'), 'order' => 2],
             ['icon' => '💰', 'label' => 'คอมมิชชั่น', 'url' => safeRoute('user.commissions'), 'order' => 3],
+            ['icon' => '🔔', 'label' => 'การแจ้งเตือน', 'url' => safeRoute('user.notifications.index'), 'order' => 3.5],
             [
                 'icon' => '🛒',
                 'label' => 'ช๊อปปิ้ง',
@@ -525,7 +568,10 @@
                 'order' => 7,
                 'submenu' => [
                     ['label' => 'กระเป๋าของฉัน', 'url' => safeRoute('user.wallet.index')],
+                    ['label' => 'เติมเงิน', 'url' => safeRoute('user.wallet.deposit')],
                     ['label' => 'ถอนเงิน', 'url' => safeRoute('user.wallet.withdraw')],
+                    ['label' => 'โอนเงิน', 'url' => safeRoute('user.wallet.transfer')],
+                    ['label' => 'ประวัติธุรกรรม', 'url' => safeRoute('user.wallet.transactions')],
                 ]
             ],
             [
@@ -564,6 +610,9 @@
                 'submenu' => [
                     ['label' => 'ผู้แนะนำ', 'url' => safeRoute('user.referrals')],
                     ['label' => 'ผังสายงาน', 'url' => safeRoute('user.organization')],
+                    ['label' => 'ผังแบบไบนารี', 'url' => safeRoute('user.organization.binary')],
+                    ['label' => 'ผู้มุ่งหวัง', 'url' => safeRoute('user.prospects.index')],
+                    ['label' => 'ลีดเดอร์บอร์ด', 'url' => safeRoute('user.ranks.leaderboard')],
                 ]
             ],
             [
@@ -582,11 +631,21 @@
                 'order' => 13,
                 'submenu' => [
                     ['label' => 'จำลองรายได้', 'url' => safeRoute('user.mlm.income-simulator')],
+                    ['label' => 'จำลองเงินปันผล', 'url' => safeRoute('user.mlm.dividend-simulator')],
+                ]
+            ],
+            [
+                'icon' => '🔐',
+                'label' => 'ความปลอดภัย',
+                'url' => '#',
+                'order' => 13.5,
+                'submenu' => [
+                    ['label' => 'ตั้งค่า 2FA', 'url' => safeRoute('user.two-factor.setup')],
+                    ['label' => 'การตั้งค่าอีเมล', 'url' => safeRoute('user.email.preferences')],
                 ]
             ],
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => safeRoute('user.themes.index'), 'order' => 14],
-            ];
-        }
+        ];
     }
 @endphp
 
@@ -638,23 +697,30 @@
             <!-- Header Section -->
             <div class="flex-shrink-0 mb-6">
                 <!-- Logo & App Name -->
-                <div class="flex items-center gap-3 mb-4">
+                <div class="flex items-center gap-3 mb-4 {{ (!$showAppName && !$showSubtitle) ? 'justify-center' : '' }}">
                     @if($showLogo)
+                        @php
+                            // ถ้าปิดข้อความทั้งหมด ให้โลโก้แสดงเต็มความกว้าง
+                            $logoFullWidth = !$showAppName && !$showSubtitle;
+                            $logoDisplayStyle = $logoFullWidth
+                                ? 'width: 100%; height: auto; max-height: ' . ($logoSize * 2) . 'px;'
+                                : 'width: ' . $logoSize . 'px; height: ' . $logoSize . 'px;';
+                        @endphp
                         @if($menuLogo)
                             <!-- Custom menu logo -->
-                            <img src="{{ asset('storage/' . $menuLogo) }}" alt="{{ $appName }}" class="rounded-lg object-cover" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px;">
+                            <img src="{{ asset('storage/' . $menuLogo) }}" alt="{{ $appName }}" class="rounded-lg {{ $logoFullWidth ? 'object-contain' : 'object-cover' }}" style="{{ $logoDisplayStyle }}">
                         @elseif($mainLogo)
                             <!-- Main system logo -->
-                            <img src="{{ Storage::url($mainLogo) }}" alt="{{ $appName }}" class="rounded-lg object-cover" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px;">
+                            <img src="{{ Storage::url($mainLogo) }}" alt="{{ $appName }}" class="rounded-lg {{ $logoFullWidth ? 'object-contain' : 'object-cover' }}" style="{{ $logoDisplayStyle }}">
                         @else
                             <!-- Default gradient logo with first letter -->
-                            <div class="rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px; font-size: {{ $logoSize * 0.5 }}px;">
+                            <div class="rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold" style="{{ $logoDisplayStyle }} font-size: {{ $logoSize * 0.5 }}px;">
                                 {{ substr($appName, 0, 1) }}
                             </div>
                         @endif
                     @endif
                     @if($showAppName || $showSubtitle)
-                        <div>
+                        <div class="flex-1">
                             @if($showAppName)
                                 <div class="text-white font-bold text-lg">{{ $appName }}</div>
                             @endif

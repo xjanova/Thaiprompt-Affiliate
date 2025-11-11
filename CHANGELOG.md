@@ -2,6 +2,305 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.126.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #819 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (e2f9b4e9)
+- fix(windows-ui): แก้ไขปัญหาปุ่ม Start ไม่ใช้ custom icon ที่อัปโหลด (87e7dfe8)
+### 🔧 Other Changes
+
+
+## [v2.126.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #818 from xjanova/claude/create-missing-views-011CV1nu3USd7fzV7169FKyV (3b9c1417)
+- feat: พัฒนาระบบ Analytics ให้สมบูรณ์ 10 views (63658e20)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.125.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #817 from xjanova/claude/ai-rental-system-api-011CV1MmXuLRa4UyfxJPtdta (9ad0fed6)
+- feat: Add comprehensive AI Gen UI for Admin and Users (468f8b8b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- docs: Add comprehensive AI Gen UI Guide (e6804545)
+
+## [v2.124.1] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #816 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (ce2929e7)
+- feat(admin): เพิ่มระบบอัพโหลดรูปภาพพร้อม preview และแก้ไขการแสดงรูป (d6133e53)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.124.0] - 2025-11-11
+
+### ✨ Features
+- feat: สร้าง Admin views ที่ขาดหายไป 62 ไฟล์ - แก้ปัญหา 404 errors (84d1bcfa)
+- feat: สร้าง User views ที่ขาดหายไป 11 ไฟล์ (44a4c978)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #815 from xjanova/claude/create-missing-views-011CV1nu3USd7fzV7169FKyV (bf7693b2)
+
+## [v2.123.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #814 from xjanova/claude/create-missing-views-011CV1nu3USd7fzV7169FKyV (45c70144)
+- feat: สร้าง views สำหรับ 2FA และ Email Preferences พร้อมเพิ่มเมนู Security กลับ (9f1cafd5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.122.4] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #813 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (ef2e01c8)
+- fix(admin): เพิ่ม validation rules สำหรับ Menu Appearance และ Settings ทั้งหมด (e6f3914c)
+### 🔧 Other Changes
+
+
+## [v2.122.3] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #812 from xjanova/claude/fix-404-routing-errors-011CV1d8PsypjPLu1s7fEb6a (d079cdd2)
+- fix: ลบเมนู 2FA และ Email Preferences ที่ views ยังไม่พร้อม (34df1228)
+### 🔧 Other Changes
+
+
+## [v2.122.2] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #811 from xjanova/claude/user-tickets-create-011CV1jqwU6x46hc1nftq19n (00b15ed4)
+- feat(tickets): ปรับปรุงไอคอน Font Awesome ให้สวยงามขึ้น (06fa6f09)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.122.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #810 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (ceba62b8)
+- fix(admin): แก้ไข Windows UI - ลบ tags หลุด และรวม RGB settings (e7d163a1)
+### 🔧 Other Changes
+
+
+## [v2.122.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #809 from xjanova/claude/user-tickets-create-011CV1m9fhCU5RdJCXkyHsY6 (24f144d7)
+- feat: เพิ่มไอคอน Font Awesome สวยงามให้กับหมวดหมู่ ticket (722f53b9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.121.0] - 2025-11-11
+
+### ✨ Features
+- feat: เพิ่ม migration สำหรับลบข้อมูลเมนูเก่าที่ไม่ได้ใช้ (2ffe01f6)
+### 🐛 Bug Fixes
+- fix: เพิ่ม redirect routes สำหรับ /user และ /seller ไป dashboard (93801959)
+### 🔧 Other Changes
+- Merge pull request #808 from xjanova/claude/fix-404-routing-errors-011CV1d8PsypjPLu1s7fEb6a (2bfbb51e)
+- docs: อัพเดท seeders และเพิ่มเอกสารสำหรับการเปลี่ยนแปลงระบบเมนู (47767330)
+
+## [v2.120.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #807 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (fc8a022e)
+- refactor(admin): ปรับปรุง Windows UI admin page ให้เป็นระบบและเพิ่ม sticky save button (931b023f)
+
+## [v2.120.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #806 from xjanova/claude/fix-404-routing-errors-011CV1d8PsypjPLu1s7fEb6a (c6b5db73)
+- refactor: เปลี่ยนจาก hybrid approach เป็น hard-coded menus อย่างเดียว (3bcac68e)
+
+## [v2.120.0] - 2025-11-11
+
+### ✨ Features
+- feat: Improve Windows UI menu logo and settings controls (5a645db5)
+### 🐛 Bug Fixes
+- fix: Prevent route loading when routes are cached to avoid memory exhaustion (ce02d88e)
+### 🔧 Other Changes
+- Merge pull request #805 from xjanova/claude/fix-route-loading-condition-011CV1cchXmt9zdXcsmDf4Xv (13444bdc)
+
+## [v2.119.5] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่มเมนูที่ขาดหายไป 53 รายการใน Millennium Start Menu (c82587fa)
+### 🔧 Other Changes
+- Merge pull request #804 from xjanova/claude/fix-404-routing-errors-011CV1d8PsypjPLu1s7fEb6a (3b8ca513)
+- docs: เพิ่มรายงานการตรวจสอบ 404 errors และ missing routes (e19f413c)
+
+## [v2.119.4] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #803 from xjanova/claude/fix-duplicate-category-slug-011CV1Z3GgnMxyg9EbrzQLnw (f6b48f26)
+- fix: Make BotMarketplaceCategorySeeder idempotent with updateOrInsert (d3c9eb5a)
+### 🔧 Other Changes
+
+
+## [v2.119.3] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #802 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (21463568)
+- fix: Make BotPlatformSeeder idempotent with updateOrInsert (6b6d232a)
+### 🔧 Other Changes
+
+
+## [v2.119.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #801 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (1f26e592)
+- fix: Make AiGenSeeder idempotent with updateOrCreate (4d2c437b)
+### 🔧 Other Changes
+
+
+## [v2.119.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #800 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (3e08ed91)
+- fix: Make VideoRewardSystemSeeder idempotent with updateOrCreate (14c5f504)
+### 🔧 Other Changes
+
+
+## [v2.119.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #799 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (6bbff7ee)
+- feat: Add Smart Migration System for intelligent schema updates (b0f9b4a8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.118.6] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #798 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (43614e59)
+- docs: Add migration rules for timestamp and foreign key constraints (9fd06a41)
+
+## [v2.118.5] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add default CURRENT_TIMESTAMP to all timestamp columns in migrations (87793345)
+- fix: Explicitly specify table names in foreign key constraints (72474d12)
+### 🔧 Other Changes
+- Merge pull request #797 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (108c2a6f)
+
+## [v2.118.4] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #796 from xjanova/claude/resolve-viral-trend-conflicts-011CV1RRcbmz3ndJJPwJEmx1 (15bd2795)
+- fix: Add useCurrent() to all timestamp fields in trend migrations (6023fb65)
+### 🔧 Other Changes
+
+
+## [v2.118.3] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #795 from xjanova/claude/fix-timestamp-default-value-011CV1TngXUcbJ3ebGwiH68v (8ad270b4)
+- fix: Add default CURRENT_TIMESTAMP to trend_keywords timestamp columns (91139a65)
+### 🔧 Other Changes
+
+
+## [v2.118.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #794 from xjanova/claude/resolve-viral-trend-conflicts-011CV1RRcbmz3ndJJPwJEmx1 (d3c63451)
+- fix: Resolve migration and seeder issues (9bc82665)
+### 🔧 Other Changes
+
+
+## [v2.118.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #793 from xjanova/claude/resolve-viral-trend-conflicts-011CV1RRcbmz3ndJJPwJEmx1 (7b0fceb0)
+- fix: Remove extra closing brace in admin.php (cd20309d)
+### 🔧 Other Changes
+
+
+## [v2.118.0] - 2025-11-11
+
+### ✨ Features
+- feat: implement viral trend detection system (941b52b0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #792 from xjanova/claude/resolve-viral-trend-conflicts-011CV1RRcbmz3ndJJPwJEmx1 (f660aa9e)
+- Merge branch 'claude/viral-trend-detection-system-011CUvqX5vkWhrXoysJj9T3e' - resolve conflicts (daa27360)
+
+## [v2.117.0] - 2025-11-11
+
+### ✨ Features
+- feat: Complete Smart Slider Pro with Menu Integration (6f56c4eb)
+- feat: Add Smart Slider Admin UI (Dashboard & Create) (4f7db7c5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #791 from xjanova/claude/smart-slider-research-011CV1HYVpFkQw6mvC4zeU89 (fd416053)
+
+## [v2.116.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #790 from xjanova/claude/ai-rental-system-api-011CV1MmXuLRa4UyfxJPtdta (5ee24f93)
+- feat: Add AI Gen rental system for image and video generation (0af7e80d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' - resolve routes/api.php conflict (ebbf813d)
+
 ## [v2.115.0] - 2025-11-11
 
 ### ✨ Features
