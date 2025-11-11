@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.120.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #807 from xjanova/claude/admin-windows-ui-011CV1fPuowhjseyYzKBJEAX (fc8a022e)
+- refactor(admin): ปรับปรุง Windows UI admin page ให้เป็นระบบและเพิ่ม sticky save button (931b023f)
+
 ## [v2.120.1] - 2025-11-11
 
 ### ✨ Features
