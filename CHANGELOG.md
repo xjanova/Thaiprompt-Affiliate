@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.10] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #830 from xjanova/claude/system-update-011CV2Dr7CGAmDAit7YqSExM (502ed137)
+- feat(update): Add GitHub webhook auto-cache invalidation & reduce cache TTL (6168c789)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.127.9] - 2025-11-11
 
 ### ✨ Features
