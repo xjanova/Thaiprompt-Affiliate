@@ -66,14 +66,38 @@ class UpdateController extends Controller
             // Get fresh version comparison info
             $versionInfo = $this->versionService->checkForUpdates();
 
+            $message = 'ระบบอัพเดทเป็นเวอร์ชันล่าสุดแล้ว';
+            $help = null;
+
+            if (count($updates) > 0) {
+                $message = 'พบอัพเดทใหม่ ' . count($updates) . ' รายการ';
+            } elseif (!$versionInfo['update_available'] && $versionInfo['latest_version'] === null) {
+                // No releases found on GitHub
+                $message = 'ไม่พบ releases บน GitHub repository';
+                $help = [
+                    'reason' => 'Repository ยังไม่มี releases หรือ repository เป็น private',
+                    'solutions' => [
+                        '1. สร้าง Release บน GitHub:',
+                        '   - ไปที่ https://github.com/xjanova/Thaiprompt-Affiliate/releases',
+                        '   - คลิก "Create a new release"',
+                        '   - เลือก tag และใส่รายละเอียด',
+                        '   - กด "Publish release"',
+                        '',
+                        '2. หรือถ้า repository เป็น private:',
+                        '   - สร้าง Personal Access Token บน GitHub',
+                        '   - เพิ่ม GITHUB_TOKEN=your_token ใน .env',
+                    ],
+                    'auto_release' => 'หรือใช้ GitHub Actions ที่มีอยู่แล้ว - แค่ merge PR ไปยัง main branch',
+                ];
+            }
+
             return response()->json([
                 'success' => true,
                 'updates' => $updates,
                 'count' => count($updates),
                 'version_info' => $versionInfo,
-                'message' => count($updates) > 0
-                    ? 'พบอัพเดทใหม่ ' . count($updates) . ' รายการ'
-                    : 'ระบบอัพเดทเป็นเวอร์ชันล่าสุดแล้ว'
+                'message' => $message,
+                'help' => $help,
             ]);
         } catch (\Exception $e) {
             \Log::error('Update check failed', [

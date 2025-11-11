@@ -49,7 +49,15 @@ class UpdateService
 
             // Fetch from GitHub API
             $apiUrl = $repositoryConfig['api_url'] . '/releases';
-            $response = Http::timeout(30)->get($apiUrl);
+            $token = config('version.repository.token', env('GITHUB_TOKEN'));
+
+            $headers = [];
+            if ($token) {
+                $headers['Authorization'] = "Bearer {$token}";
+                Log::info('Using GitHub token for authentication');
+            }
+
+            $response = Http::withHeaders($headers)->timeout(30)->get($apiUrl);
 
             if (!$response->successful()) {
                 $errorMessage = "Failed to fetch updates from GitHub API (HTTP {$response->status()})";
@@ -57,11 +65,22 @@ class UpdateService
                     'status' => $response->status(),
                     'url' => $apiUrl,
                     'body' => $response->body(),
-                    'headers' => $response->headers(),
+                    'has_token' => !empty($token),
                 ];
 
-                Log::error($errorMessage, $errorDetails);
+                Log::warning($errorMessage, $errorDetails);
 
+                // If 404, likely no releases exist yet - return empty instead of throwing
+                if ($response->status() === 404) {
+                    Log::info('No releases found (404) - repository may not have any releases yet');
+
+                    // Cache empty result for shorter time
+                    Cache::put($cacheKey, [], 300); // 5 minutes
+
+                    return [];
+                }
+
+                // For other errors, throw exception
                 throw new \Exception($errorMessage . "\nURL: {$apiUrl}\nStatus: {$response->status()}\nResponse: " . substr($response->body(), 0, 200));
             }
 
