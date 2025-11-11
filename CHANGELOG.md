@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.125.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #817 from xjanova/claude/ai-rental-system-api-011CV1MmXuLRa4UyfxJPtdta (9ad0fed6)
+- feat: Add comprehensive AI Gen UI for Admin and Users (468f8b8b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- docs: Add comprehensive AI Gen UI Guide (e6804545)
+
 ## [v2.124.1] - 2025-11-11
 
 ### ✨ Features
