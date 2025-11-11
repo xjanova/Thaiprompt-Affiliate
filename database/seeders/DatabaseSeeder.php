@@ -89,6 +89,8 @@ class DatabaseSeeder extends Seeder
             HotelSeeder::class,                 // ระบบจองโรงแรม
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
             TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
+            VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
+            VideoRewardMenuSeeder::class,       // เมนูระบบ Video Rewards
 
             // 13. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
@@ -97,6 +99,9 @@ class DatabaseSeeder extends Seeder
             // 14. AI Gen System (Image & Video Generation)
             AiGenSeeder::class,                 // AI Gen Providers, Packages, and Quotas
             AiGenMenuSeeder::class,             // AI Gen System Menu Items for Admin Panel
+
+            // 15. Database Updates & Maintenance
+            UpdateDatabaseSeeder::class,        // Database schema and data updates
         ]);
 
         $this->command->info('');
