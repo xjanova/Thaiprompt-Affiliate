@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.118.4] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #796 from xjanova/claude/resolve-viral-trend-conflicts-011CV1RRcbmz3ndJJPwJEmx1 (15bd2795)
+- fix: Add useCurrent() to all timestamp fields in trend migrations (6023fb65)
+### 🔧 Other Changes
+
+
 ## [v2.118.3] - 2025-11-11
 
 ### ✨ Features
