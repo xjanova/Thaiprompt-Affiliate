@@ -29,8 +29,9 @@ class SmartSliderController extends Controller
     public function create()
     {
         $templates = SmartSliderTemplate::active()->get();
+        $selectedTemplate = ''; // Default to blank template
 
-        return view('admin.smart-sliders.create', compact('templates'));
+        return view('admin.smart-sliders.create', compact('templates', 'selectedTemplate'));
     }
 
     /**
