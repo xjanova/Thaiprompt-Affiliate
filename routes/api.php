@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
 use App\Http\Controllers\Api\AppConfigController;
+use App\Http\Controllers\Api\AiGenController;
+use App\Http\Controllers\Api\AiGenPackageController;
 use App\Http\Controllers\LineWebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -134,6 +136,25 @@ Route::prefix('v1')->group(function () {
             Route::get('/banners', [AppConfigController::class, 'banners']);
             Route::post('/banners/{bannerId}/view', [AppConfigController::class, 'trackBannerView']);
             Route::post('/banners/{bannerId}/click', [AppConfigController::class, 'trackBannerClick']);
+        });
+
+        // AI Gen - Image & Video Generation
+        Route::prefix('ai-gen')->group(function () {
+            // Dashboard & User Info
+            Route::get('/dashboard', [AiGenController::class, 'dashboard']);
+
+            // Generation
+            Route::post('/generate', [AiGenController::class, 'generate']);
+            Route::get('/generations', [AiGenController::class, 'myGenerations']);
+            Route::get('/generations/{generationId}', [AiGenController::class, 'getGeneration']);
+            Route::get('/generations/{generationId}/status', [AiGenController::class, 'checkStatus']);
+            Route::post('/generations/{generationId}/favorite', [AiGenController::class, 'toggleFavorite']);
+            Route::delete('/generations/{generationId}', [AiGenController::class, 'deleteGeneration']);
+
+            // Packages
+            Route::get('/packages', [AiGenPackageController::class, 'index']);
+            Route::get('/packages/{packageId}', [AiGenPackageController::class, 'show']);
+            Route::post('/packages/{packageId}/purchase', [AiGenPackageController::class, 'purchase']);
         });
     });
 });
