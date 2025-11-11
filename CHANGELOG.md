@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.14] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #834 from xjanova/claude/enhance-button-taskbar-styling-011CV2QLBviKKFaofGzBLkTM (d4493e61)
+- feat(ui): enhance button and taskbar styling with dimensional effects (d786ed73)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.127.13] - 2025-11-11
 
 ### ✨ Features
