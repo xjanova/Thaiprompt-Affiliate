@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.129.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #841 from xjanova/claude/fix-popular-destinations-undefined-011CV2QYEvsURSbNYDTww6qW (2a33b8fd)
+- feat: add missing admin.api-keys.create view (410030e1)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.128.0] - 2025-11-11
 
 ### ✨ Features
