@@ -32,8 +32,8 @@ return new class extends Migration
         // Pivot table for trend_data and keywords
         Schema::create('trend_data_keyword', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('trend_data_id')->constrained()->onDelete('cascade');
-            $table->foreignId('trend_keyword_id')->constrained()->onDelete('cascade');
+            $table->foreignId('trend_data_id')->constrained('trend_data')->onDelete('cascade');
+            $table->foreignId('trend_keyword_id')->constrained('trend_keywords')->onDelete('cascade');
             $table->integer('weight')->default(1); // TF-IDF weight
             $table->timestamps();
 
