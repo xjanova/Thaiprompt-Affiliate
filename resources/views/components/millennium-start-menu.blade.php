@@ -634,16 +634,6 @@
                     ['label' => 'จำลองเงินปันผล', 'url' => safeRoute('user.mlm.dividend-simulator')],
                 ]
             ],
-            [
-                'icon' => '🔐',
-                'label' => 'ความปลอดภัย',
-                'url' => '#',
-                'order' => 13.5,
-                'submenu' => [
-                    ['label' => 'ตั้งค่า 2FA', 'url' => safeRoute('user.two-factor.setup')],
-                    ['label' => 'การตั้งค่าอีเมล', 'url' => safeRoute('user.email.preferences')],
-                ]
-            ],
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => safeRoute('user.themes.index'), 'order' => 14],
         ];
     }
