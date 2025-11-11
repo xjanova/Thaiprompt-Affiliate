@@ -156,22 +156,23 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                     @foreach($menuItems as $menuItem)
                         @if($menuItem->shouldDisplay())
                             <a href="{{ $menuItem->url ?? '#' }}"
-                               class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30"
-                               style="color: {{ $headerTextColor }};"
+                               class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:-translate-y-0.5 hover:shadow-lg border-2 border-transparent hover:border-indigo-200 dark:hover:border-indigo-700"
+                               style="color: {{ $headerTextColor }}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);"
                                @if($menuItem->target === '_blank') target="_blank" rel="noopener noreferrer" @endif>
                                 @if($menuItem->icon)<span class="text-lg group-hover:scale-110 transition-transform duration-300">{{ $menuItem->icon }}</span>@endif
                                 <span class="group-hover:translate-x-0.5 transition-transform duration-300">{{ $menuItem->title }}</span>
-                                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:w-full transition-all duration-300"></span>
+                                <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:w-full transition-all duration-300 shadow-lg shadow-indigo-500/50"></span>
                             </a>
                         @endif
                     @endforeach
                 @else
                     {{-- Fallback to hardcoded menu if no database items --}}
                     <a href="{{ route('home') }}"
-                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 hover:shadow-md">
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/30 dark:hover:to-purple-900/30 hover:text-indigo-700 dark:hover:text-indigo-300 hover:shadow-lg hover:-translate-y-0.5 border-2 border-transparent hover:border-indigo-200 dark:hover:border-indigo-700"
+                       style="box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);">
                         <span class="text-lg group-hover:scale-110 transition-transform duration-300">🏠</span>
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">หน้าแรก</span>
-                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:w-full transition-all duration-300"></span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600 group-hover:w-full transition-all duration-300 shadow-lg shadow-indigo-500/50"></span>
                     </a>
                     <a href="{{ route('marketplace.index') }}"
                        class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-900 dark:text-gray-100 rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-blue-50 hover:to-cyan-50 dark:hover:from-blue-900/30 dark:hover:to-cyan-900/30 hover:text-blue-700 dark:hover:text-blue-300 hover:shadow-md">
@@ -222,7 +223,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-slate-600 to-gray-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
                     <a href="{{ route('platform.wiki') }}"
-                       class="nav-link-special group relative inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-full text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105 transform transition-all duration-300 overflow-hidden"
+                       class="nav-link-special group relative inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 via-pink-600 to-rose-600 text-white rounded-full text-sm font-bold shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/50 hover:scale-105 hover:-translate-y-1 transform transition-all duration-300 overflow-hidden border-2 border-white/20"
+                       style="box-shadow: 0 1px 3px rgba(255, 255, 255, 0.2) inset, 0 -1px 2px rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(147, 51, 234, 0.5), 0 16px 48px rgba(236, 72, 153, 0.4);"
                        title="สารานุกรมความรู้ - Platform Wiki">
                         <span class="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-rose-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                         <span class="relative text-lg group-hover:rotate-12 transition-transform duration-300">📚</span>
@@ -314,7 +316,8 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span>เข้าสู่ระบบ</span>
                     </a>
                     <a href="{{ route('register') }}"
-                       class="group relative inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-lg font-semibold text-sm shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/50 hover:scale-105 transform transition-all duration-300 overflow-hidden">
+                       class="group relative inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-lg font-semibold text-sm shadow-lg shadow-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/50 hover:scale-105 hover:-translate-y-1 transform transition-all duration-300 overflow-hidden border-2 border-white/20"
+                       style="box-shadow: 0 1px 3px rgba(255, 255, 255, 0.2) inset, 0 -1px 2px rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(79, 70, 229, 0.5), 0 16px 48px rgba(139, 92, 246, 0.4);">
                         <span class="absolute inset-0 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
                         <svg class="relative w-4 h-4 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
