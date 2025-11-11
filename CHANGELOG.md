@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.119.5] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เพิ่มเมนูที่ขาดหายไป 53 รายการใน Millennium Start Menu (c82587fa)
+### 🔧 Other Changes
+- Merge pull request #804 from xjanova/claude/fix-404-routing-errors-011CV1d8PsypjPLu1s7fEb6a (3b8ca513)
+- docs: เพิ่มรายงานการตรวจสอบ 404 errors และ missing routes (e19f413c)
+
 ## [v2.119.4] - 2025-11-11
 
 ### ✨ Features
