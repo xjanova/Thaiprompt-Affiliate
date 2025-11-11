@@ -9,6 +9,26 @@ use Illuminate\Support\Facades\Log;
 class VersionService
 {
     /**
+     * Get GitHub token from database or .env
+     */
+    protected function getGitHubToken(): ?string
+    {
+        try {
+            // Try to get from database settings first (encrypted)
+            $encryptedToken = \App\Models\Setting::get('update_github_token');
+            if ($encryptedToken) {
+                return \Illuminate\Support\Facades\Crypt::decryptString($encryptedToken);
+            }
+        } catch (\Exception $e) {
+            // If decrypt fails or database not available, fall back to env
+            Log::debug('Could not get GitHub token from database: ' . $e->getMessage());
+        }
+
+        // Fallback to .env
+        return config('version.repository.token', env('GITHUB_TOKEN'));
+    }
+
+    /**
      * Get current application version
      */
     public function getCurrentVersion(): string
@@ -72,7 +92,7 @@ class VersionService
         return Cache::remember($cacheKey, $cacheTtl, function () {
             try {
                 $apiUrl = config('version.repository.api_url');
-                $token = config('version.repository.token', env('GITHUB_TOKEN'));
+                $token = $this->getGitHubToken();
 
                 // Try GitHub API first (with authentication if available)
                 $headers = [];
@@ -147,7 +167,7 @@ class VersionService
         return Cache::remember($cacheKey, $cacheTtl, function () {
             try {
                 $apiUrl = config('version.repository.api_url');
-                $token = config('version.repository.token', env('GITHUB_TOKEN'));
+                $token = $this->getGitHubToken();
 
                 // Try GitHub API first (with authentication if available)
                 $headers = [];
@@ -393,7 +413,7 @@ class VersionService
         try {
             // Test 1: GitHub API reachability
             $apiUrl = config('version.repository.api_url');
-            $token = config('version.repository.token', env('GITHUB_TOKEN'));
+            $token = $this->getGitHubToken();
 
             $results['debug_info']['api_url'] = $apiUrl;
             $results['debug_info']['has_token'] = !empty($token);
