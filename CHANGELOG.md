@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.0] - 2025-11-11
+
+### ✨ Features
+- feat: Complete all AI Gen Admin UI pages (fc1a1546)
+### 🐛 Bug Fixes
+- fix: Add AI Gen seeders to DatabaseSeeder (e230c170)
+### 🔧 Other Changes
+- Merge pull request #820 from xjanova/claude/ai-rental-system-api-011CV1MmXuLRa4UyfxJPtdta (5563fd35)
+- Merge: Resolve DatabaseSeeder conflict with claude/Main (3fb97101)
+- Merge: Resolve DatabaseSeeder conflict - integrate Video Reward and AI Gen seeders (48861318)
+
 ## [v2.126.1] - 2025-11-11
 
 ### ✨ Features
