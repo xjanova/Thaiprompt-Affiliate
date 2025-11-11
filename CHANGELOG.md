@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.130.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #844 from xjanova/claude/fix-github-update-system-011CV2RJ6GheAXBpVEKfyWA7 (4afc9436)
+- fix: handle 404 gracefully when no GitHub releases exist (9ed7b33f)
+### 🔧 Other Changes
+
+
 ## [v2.130.0] - 2025-11-11
 
 ### ✨ Features
