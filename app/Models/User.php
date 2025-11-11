@@ -288,6 +288,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Get two-factor authentication settings for the user
+     */
+    public function twoFactorSettings()
+    {
+        return $this->hasOne(TwoFactorUserSetting::class);
+    }
+
+    /**
      * Get membership retention status
      */
     public function retentionStatus()
