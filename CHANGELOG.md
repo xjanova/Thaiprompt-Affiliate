@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.118.1] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #793 from xjanova/claude/resolve-viral-trend-conflicts-011CV1RRcbmz3ndJJPwJEmx1 (7b0fceb0)
+- fix: Remove extra closing brace in admin.php (cd20309d)
+### 🔧 Other Changes
+
+
 ## [v2.118.0] - 2025-11-11
 
 ### ✨ Features
