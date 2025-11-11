@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LineLoginLog;
 use App\Models\User;
 use App\Services\LineService;
+use App\Services\LineTokenService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -16,10 +17,12 @@ use Illuminate\Support\Str;
 class LineLoginController extends Controller
 {
     protected LineService $lineService;
+    protected LineTokenService $tokenService;
 
-    public function __construct(LineService $lineService)
+    public function __construct(LineService $lineService, LineTokenService $tokenService)
     {
         $this->lineService = $lineService;
+        $this->tokenService = $tokenService;
     }
 
     /**
@@ -102,14 +105,17 @@ class LineLoginController extends Controller
             $user = User::where('line_user_id', $lineUserId)->first();
 
             if ($user) {
-                // Update LINE info
+                // Update LINE info (without token)
                 $user->update([
                     'line_display_name' => $displayName,
                     'line_picture_url' => $pictureUrl,
-                    'line_access_token' => $accessToken,
                     'line_linked_at' => now(),
                     'line_verified' => true,
                 ]);
+
+                // Store encrypted access token securely
+                $expiresIn = $tokenData['expires_in'] ?? null;
+                $this->tokenService->storeAccessToken($user, $accessToken, $expiresIn);
 
                 // Log action
                 LineLoginLog::logAction($lineUserId, 'login', $user->id, [
@@ -178,12 +184,14 @@ class LineLoginController extends Controller
         // Log action
         LineLoginLog::logAction($lineUserId, 'unlink', $user->id);
 
+        // Revoke access token securely
+        $this->tokenService->revokeAccessToken($user);
+
         // Unlink LINE account
         $user->update([
             'line_user_id' => null,
             'line_display_name' => null,
             'line_picture_url' => null,
-            'line_access_token' => null,
             'line_linked_at' => null,
             'line_verified' => false,
         ]);
@@ -263,10 +271,13 @@ class LineLoginController extends Controller
                 'line_user_id' => $lineUserId,
                 'line_display_name' => $displayName,
                 'line_picture_url' => $pictureUrl,
-                'line_access_token' => $accessToken,
                 'line_linked_at' => now(),
                 'line_verified' => true,
             ]);
+
+            // Store encrypted access token securely
+            $expiresIn = $tokenData['expires_in'] ?? null;
+            $this->tokenService->storeAccessToken($user, $accessToken, $expiresIn);
 
             // Log action
             LineLoginLog::logAction($lineUserId, 'link', $user->id, [

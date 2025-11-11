@@ -16,7 +16,8 @@ class LineSignupService
 {
     public function __construct(
         private LineService $lineService,
-        private MlmProspectService $prospectService
+        private MlmProspectService $prospectService,
+        private ConversationTimeoutService $timeoutService
     ) {}
 
     /**
@@ -24,6 +25,12 @@ class LineSignupService
      */
     public function startConversation(MlmProspect $prospect): void
     {
+        // Check if conversation is expired and can be resumed
+        if ($prospect->conversation_expired) {
+            $this->timeoutService->resumeConversation($prospect);
+            return;
+        }
+
         $firstStep = LineSignupFlow::getFirstStep();
 
         if (!$firstStep) {
@@ -39,6 +46,9 @@ class LineSignupService
         $prospect->markAsInProgress();
         $prospect->updateConversationStep($firstStep->step_key);
 
+        // Start conversation tracking
+        $this->timeoutService->startTracking($prospect);
+
         // Send first message
         $this->sendFlowMessage($prospect, $firstStep);
     }
@@ -48,6 +58,15 @@ class LineSignupService
      */
     public function handleConversationMessage(MlmProspect $prospect, string $message): void
     {
+        // Check if conversation is expired
+        if ($this->timeoutService->isExpired($prospect)) {
+            $this->timeoutService->expireConversation($prospect);
+            return;
+        }
+
+        // Update conversation activity
+        $this->timeoutService->updateActivity($prospect);
+
         // Get current step
         $currentStep = LineSignupFlow::getByStepKey($prospect->conversation_step);
 
@@ -167,12 +186,19 @@ class LineSignupService
 
             DB::commit();
 
+            // Clear rate limit attempts after successful signup
+            \App\Http\Middleware\LineSignupThrottle::clearAttempts(
+                $prospect->line_user_id,
+                request()->ip()
+            );
+
             // Send success message
             $this->sendSuccessMessage($prospect, $user);
 
             Log::info('Signup completed successfully', [
                 'prospect_id' => $prospect->id,
                 'user_id' => $user->id,
+                'rate_limits_cleared' => true,
             ]);
 
         } catch (\Exception $e) {

@@ -53,6 +53,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'crypto.wallet.active' => \App\Http\Middleware\CheckCryptoWalletStatus::class,
             // API Access Control middleware
             'api.access' => \App\Http\Middleware\ApiAccessControl::class,
+            // LINE OA Security middleware
+            'line.webhook.throttle' => \App\Http\Middleware\LineWebhookThrottle::class,
+            'line.signup.throttle' => \App\Http\Middleware\LineSignupThrottle::class,
         ]);
 
         // Global middleware for IP blocking
