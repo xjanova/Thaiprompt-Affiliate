@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.131.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #848 from xjanova/claude/enhance-button-taskbar-styling-011CV2QLBviKKFaofGzBLkTM (e0a9f646)
+- fix(ui): replace hardcoded gradient borders with RGB animation in all navigation buttons (32adee72)
+### 🔧 Other Changes
+
+
 ## [v2.131.1] - 2025-11-11
 
 ### ✨ Features
