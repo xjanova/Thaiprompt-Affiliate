@@ -653,23 +653,30 @@
             <!-- Header Section -->
             <div class="flex-shrink-0 mb-6">
                 <!-- Logo & App Name -->
-                <div class="flex items-center gap-3 mb-4">
+                <div class="flex items-center gap-3 mb-4 {{ (!$showAppName && !$showSubtitle) ? 'justify-center' : '' }}">
                     @if($showLogo)
+                        @php
+                            // ถ้าปิดข้อความทั้งหมด ให้โลโก้แสดงเต็มความกว้าง
+                            $logoFullWidth = !$showAppName && !$showSubtitle;
+                            $logoDisplayStyle = $logoFullWidth
+                                ? 'width: 100%; height: auto; max-height: ' . ($logoSize * 2) . 'px;'
+                                : 'width: ' . $logoSize . 'px; height: ' . $logoSize . 'px;';
+                        @endphp
                         @if($menuLogo)
                             <!-- Custom menu logo -->
-                            <img src="{{ asset('storage/' . $menuLogo) }}" alt="{{ $appName }}" class="rounded-lg object-cover" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px;">
+                            <img src="{{ asset('storage/' . $menuLogo) }}" alt="{{ $appName }}" class="rounded-lg {{ $logoFullWidth ? 'object-contain' : 'object-cover' }}" style="{{ $logoDisplayStyle }}">
                         @elseif($mainLogo)
                             <!-- Main system logo -->
-                            <img src="{{ Storage::url($mainLogo) }}" alt="{{ $appName }}" class="rounded-lg object-cover" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px;">
+                            <img src="{{ Storage::url($mainLogo) }}" alt="{{ $appName }}" class="rounded-lg {{ $logoFullWidth ? 'object-contain' : 'object-cover' }}" style="{{ $logoDisplayStyle }}">
                         @else
                             <!-- Default gradient logo with first letter -->
-                            <div class="rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold" style="width: {{ $logoSize }}px; height: {{ $logoSize }}px; font-size: {{ $logoSize * 0.5 }}px;">
+                            <div class="rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold" style="{{ $logoDisplayStyle }} font-size: {{ $logoSize * 0.5 }}px;">
                                 {{ substr($appName, 0, 1) }}
                             </div>
                         @endif
                     @endif
                     @if($showAppName || $showSubtitle)
-                        <div>
+                        <div class="flex-1">
                             @if($showAppName)
                                 <div class="text-white font-bold text-lg">{{ $appName }}</div>
                             @endif

@@ -895,11 +895,15 @@
                             </div>
 
                             <!-- Logo Size -->
-                            <div>
+                            <div x-data="{ logoSize: {{ \App\Models\WindowsUiSetting::get('millennium_menu_logo_size', 40) }} }">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-expand-arrows-alt mr-2 text-blue-600"></i>ขนาดโลโก้ (px)
+                                    <i class="fas fa-expand-arrows-alt mr-2 text-blue-600"></i>ขนาดโลโก้
                                 </label>
-                                <input type="number" name="millennium_menu_logo_size" min="20" max="100" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_logo_size', 40) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                                <div class="flex items-center gap-4">
+                                    <input type="range" x-model="logoSize" min="20" max="100" class="flex-1 h-3 bg-gradient-to-r from-blue-200 to-purple-200 rounded-lg appearance-none cursor-pointer dark:from-blue-800 dark:to-purple-800 accent-blue-600">
+                                    <span class="text-2xl font-bold text-blue-600 dark:text-blue-400 min-w-[5rem] text-center" x-text="logoSize + 'px'"></span>
+                                </div>
+                                <input type="hidden" name="millennium_menu_logo_size" x-model="logoSize">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ขนาดของโลโก้ในเมนู (แนะนำ: 30-60px)</p>
                             </div>
 
@@ -922,20 +926,28 @@
                             </div>
 
                             <!-- Menu Item Spacing -->
-                            <div>
+                            <div x-data="{ itemSpacing: {{ \App\Models\WindowsUiSetting::get('millennium_menu_item_spacing', 8) }} }">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-arrows-alt-v mr-2 text-blue-600"></i>ระยะห่างแต่ละเมนู (px)
+                                    <i class="fas fa-arrows-alt-v mr-2 text-blue-600"></i>ระยะห่างแต่ละเมนู
                                 </label>
-                                <input type="number" name="millennium_menu_item_spacing" min="0" max="32" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_item_spacing', 8) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                                <div class="flex items-center gap-4">
+                                    <input type="range" x-model="itemSpacing" min="0" max="32" class="flex-1 h-3 bg-gradient-to-r from-blue-200 to-purple-200 rounded-lg appearance-none cursor-pointer dark:from-blue-800 dark:to-purple-800 accent-blue-600">
+                                    <span class="text-2xl font-bold text-blue-600 dark:text-blue-400 min-w-[5rem] text-center" x-text="itemSpacing + 'px'"></span>
+                                </div>
+                                <input type="hidden" name="millennium_menu_item_spacing" x-model="itemSpacing">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ระยะห่างระหว่างรายการเมนู (แนะนำ: 4-12px)</p>
                             </div>
 
                             <!-- Menu Item Padding -->
-                            <div>
+                            <div x-data="{ menuPadding: {{ \App\Models\WindowsUiSetting::get('millennium_menu_padding', 12) }} }">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-expand-alt mr-2 text-blue-600"></i>ขนาดภายในเมนู (px)
+                                    <i class="fas fa-expand-alt mr-2 text-blue-600"></i>ขนาดภายในเมนู
                                 </label>
-                                <input type="number" name="millennium_menu_padding" min="4" max="32" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_padding', 12) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all">
+                                <div class="flex items-center gap-4">
+                                    <input type="range" x-model="menuPadding" min="4" max="32" class="flex-1 h-3 bg-gradient-to-r from-blue-200 to-purple-200 rounded-lg appearance-none cursor-pointer dark:from-blue-800 dark:to-purple-800 accent-blue-600">
+                                    <span class="text-2xl font-bold text-blue-600 dark:text-blue-400 min-w-[5rem] text-center" x-text="menuPadding + 'px'"></span>
+                                </div>
+                                <input type="hidden" name="millennium_menu_padding" x-model="menuPadding">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ขนาด padding ภายในแต่ละรายการ (แนะนำ: 8-16px)</p>
                             </div>
 
@@ -957,21 +969,29 @@
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Main Menu Item Height -->
-                            <div>
+                            <div x-data="{ mainHeight: {{ \App\Models\WindowsUiSetting::get('millennium_menu_item_height', 50) }} }">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-arrows-alt-v mr-2 text-purple-600"></i>ความสูงเมนูหลัก (px)
+                                    <i class="fas fa-arrows-alt-v mr-2 text-purple-600"></i>ความสูงเมนูหลัก
                                 </label>
-                                <input type="number" name="millennium_menu_item_height" min="30" max="100" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_item_height') }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all" placeholder="เว้นว่างใช้ค่าอัตโนมัติ">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">กำหนดความสูงรายการเมนูหลัก (เว้นว่าง = อัตโนมัติ)</p>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" x-model="mainHeight" min="30" max="100" class="flex-1 h-3 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer dark:from-purple-800 dark:to-pink-800 accent-purple-600">
+                                    <span class="text-2xl font-bold text-purple-600 dark:text-purple-400 min-w-[5rem] text-center" x-text="mainHeight + 'px'"></span>
+                                </div>
+                                <input type="hidden" name="millennium_menu_item_height" x-model="mainHeight">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">กำหนดความสูงรายการเมนูหลัก (แนะนำ: 40-70px)</p>
                             </div>
 
                             <!-- Submenu Item Height -->
-                            <div>
+                            <div x-data="{ subHeight: {{ \App\Models\WindowsUiSetting::get('millennium_menu_subitem_height', 35) }} }">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-arrows-alt-v mr-2 text-purple-600"></i>ความสูงเมนูย่อย (px)
+                                    <i class="fas fa-arrows-alt-v mr-2 text-purple-600"></i>ความสูงเมนูย่อย
                                 </label>
-                                <input type="number" name="millennium_menu_subitem_height" min="20" max="80" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_subitem_height') }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all" placeholder="เว้นว่างใช้ค่าอัตโนมัติ">
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">กำหนดความสูงรายการเมนูย่อย (เว้นว่าง = อัตโนมัติ)</p>
+                                <div class="flex items-center gap-4">
+                                    <input type="range" x-model="subHeight" min="20" max="80" class="flex-1 h-3 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer dark:from-purple-800 dark:to-pink-800 accent-purple-600">
+                                    <span class="text-2xl font-bold text-purple-600 dark:text-purple-400 min-w-[5rem] text-center" x-text="subHeight + 'px'"></span>
+                                </div>
+                                <input type="hidden" name="millennium_menu_subitem_height" x-model="subHeight">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">กำหนดความสูงรายการเมนูย่อย (แนะนำ: 25-50px)</p>
                             </div>
                         </div>
                     </div>
@@ -1367,27 +1387,39 @@
                             <i class="fas fa-sliders-h text-purple-600"></i> การตั้งค่า RGB
                         </h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
+                            <div x-data="{ rgbSpeed: {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_speed', 5) }} }">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-tachometer-alt mr-2 text-purple-600"></i>ความเร็ว (วินาที)
+                                    <i class="fas fa-tachometer-alt mr-2 text-purple-600"></i>ความเร็ว RGB
                                 </label>
-                                <input type="number" name="millennium_menu_rgb_speed" min="1" max="20" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_speed', 5) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
+                                <div class="flex items-center gap-4">
+                                    <input type="range" x-model="rgbSpeed" min="1" max="20" class="flex-1 h-3 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer dark:from-purple-800 dark:to-pink-800 accent-purple-600">
+                                    <span class="text-2xl font-bold text-purple-600 dark:text-purple-400 min-w-[5rem] text-center" x-text="rgbSpeed + 's'"></span>
+                                </div>
+                                <input type="hidden" name="millennium_menu_rgb_speed" x-model="rgbSpeed">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ความเร็วในการเปลี่ยนสี (แนะนำ: 3-7)</p>
                             </div>
 
-                            <div>
+                            <div x-data="{ borderWidth: {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_border_width', 2) }} }">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-border-style mr-2 text-purple-600"></i>ความหนาขอบ (px)
+                                    <i class="fas fa-border-style mr-2 text-purple-600"></i>ความหนาขอบ RGB
                                 </label>
-                                <input type="number" name="millennium_menu_rgb_border_width" min="1" max="10" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_border_width', 2) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
+                                <div class="flex items-center gap-4">
+                                    <input type="range" x-model="borderWidth" min="1" max="10" class="flex-1 h-3 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer dark:from-purple-800 dark:to-pink-800 accent-purple-600">
+                                    <span class="text-2xl font-bold text-purple-600 dark:text-purple-400 min-w-[5rem] text-center" x-text="borderWidth + 'px'"></span>
+                                </div>
+                                <input type="hidden" name="millennium_menu_rgb_border_width" x-model="borderWidth">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ความหนาของเส้นขอบ RGB (แนะนำ: 2-4)</p>
                             </div>
 
-                            <div>
+                            <div x-data="{ glowSize: {{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_glow_size', 15) }} }">
                                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                    <i class="fas fa-sun mr-2 text-purple-600"></i>ขนาด Glow (px)
+                                    <i class="fas fa-sun mr-2 text-purple-600"></i>ขนาด Glow RGB
                                 </label>
-                                <input type="number" name="millennium_menu_rgb_glow_size" min="0" max="50" value="{{ \App\Models\WindowsUiSetting::get('millennium_menu_rgb_glow_size', 15) }}" class="w-full px-4 py-3 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:border-purple-500 focus:ring-2 focus:ring-purple-200 transition-all">
+                                <div class="flex items-center gap-4">
+                                    <input type="range" x-model="glowSize" min="0" max="50" class="flex-1 h-3 bg-gradient-to-r from-purple-200 to-pink-200 rounded-lg appearance-none cursor-pointer dark:from-purple-800 dark:to-pink-800 accent-purple-600">
+                                    <span class="text-2xl font-bold text-purple-600 dark:text-purple-400 min-w-[5rem] text-center" x-text="glowSize + 'px'"></span>
+                                </div>
+                                <input type="hidden" name="millennium_menu_rgb_glow_size" x-model="glowSize">
                                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">ขนาดของแสงเรืองรอบขอบ (แนะนำ: 10-20)</p>
                             </div>
                         </div>
