@@ -963,6 +963,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'include',
                 body: JSON.stringify({ icon, label, url })
@@ -976,7 +977,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.dispatchEvent(new CustomEvent('taskbar-shortcut-added'));
                 return true;
             } else {
-                alert('❌ เกิดข้อผิดพลาด: ' + (data.message || 'ไม่สามารถเพิ่มไอค่อนทางลัดได้'));
+                const errorMsg = data.message || (data.errors ? JSON.stringify(data.errors) : 'ไม่สามารถเพิ่มไอค่อนทางลัดได้');
+                alert('❌ เกิดข้อผิดพลาด: ' + errorMsg);
+                console.error('API Error:', data);
                 return false;
             }
         } catch (error) {
@@ -1030,64 +1033,109 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add long press handlers to menu items
     function initLongPress() {
-        // Select all menu items (both main and submenu)
-        const menuItems = document.querySelectorAll('.millennium-menu-container a, .millennium-menu-container button');
+        // Try multiple selectors to find menu items
+        const selectors = [
+            '.millennium-menu-container a',
+            '.millennium-menu-container button[type="button"]',
+            '[x-show] a', // Alpine.js menu items
+            'div[class*="space-y"] a' // Menu with spacing
+        ];
 
-        menuItems.forEach(item => {
-            // Skip if already initialized
-            if (item.dataset.longPressInit) return;
-            item.dataset.longPressInit = 'true';
+        let foundItems = 0;
 
-            // Extract menu item data
-            const iconEl = item.querySelector('span:first-child');
-            const labelEl = item.querySelector('span:not(:first-child)');
-            const url = item.getAttribute('href') || item.dataset.url || '#';
+        selectors.forEach(selector => {
+            const items = document.querySelectorAll(selector);
 
-            // Skip if no icon or label
-            if (!iconEl || !labelEl) return;
+            items.forEach(item => {
+                // Skip if already initialized
+                if (item.dataset.longPressInit) return;
 
-            const icon = iconEl.textContent.trim();
-            const label = labelEl.textContent.trim();
+                // Skip items that are part of the search or footer
+                if (item.closest('.millennium-search') || item.closest('.millennium-footer')) return;
 
-            // Skip items without valid URLs
-            if (url === '#' || url === '') return;
+                item.dataset.longPressInit = 'true';
 
-            // Mouse events
-            item.addEventListener('mousedown', (e) => {
-                startLongPress(e, icon, label, url);
-            });
+                // Extract menu item data - try different methods
+                let icon = '';
+                let label = '';
+                const url = item.getAttribute('href') || '#';
 
-            item.addEventListener('mouseup', endLongPress);
-            item.addEventListener('mouseleave', endLongPress);
-
-            // Touch events
-            item.addEventListener('touchstart', (e) => {
-                startLongPress(e, icon, label, url);
-            }, { passive: false });
-
-            item.addEventListener('touchend', endLongPress);
-            item.addEventListener('touchcancel', endLongPress);
-
-            // Prevent context menu on long press
-            item.addEventListener('contextmenu', (e) => {
-                if (longPressTriggered) {
-                    e.preventDefault();
+                // Method 1: Find spans
+                const spans = item.querySelectorAll('span');
+                if (spans.length >= 2) {
+                    // First span with emoji/icon, second span with text
+                    icon = spans[0].textContent.trim();
+                    label = spans[1].textContent.trim();
+                } else if (spans.length === 1) {
+                    // Only label, no icon
+                    label = spans[0].textContent.trim();
+                    icon = '📌'; // Default icon
+                } else {
+                    // No spans, use text content
+                    const text = item.textContent.trim();
+                    // Try to extract emoji from start
+                    const emojiMatch = text.match(/^([\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}])/u);
+                    if (emojiMatch) {
+                        icon = emojiMatch[1];
+                        label = text.substring(icon.length).trim();
+                    } else {
+                        label = text;
+                        icon = '📌';
+                    }
                 }
+
+                // Clean up label (remove extra whitespace and arrows)
+                label = label.replace(/[→›▸▹]/g, '').trim();
+
+                // Skip if no valid data
+                if (!label || label.length === 0) return;
+                if (url === '#' || url === '') return;
+
+                foundItems++;
+
+                // Mouse events
+                item.addEventListener('mousedown', (e) => {
+                    // Don't trigger on submenu toggle buttons
+                    if (item.tagName === 'BUTTON' && !url) return;
+                    startLongPress(e, icon, label, url);
+                });
+
+                item.addEventListener('mouseup', endLongPress);
+                item.addEventListener('mouseleave', endLongPress);
+
+                // Touch events
+                item.addEventListener('touchstart', (e) => {
+                    if (item.tagName === 'BUTTON' && !url) return;
+                    startLongPress(e, icon, label, url);
+                }, { passive: false });
+
+                item.addEventListener('touchend', endLongPress);
+                item.addEventListener('touchcancel', endLongPress);
+
+                // Prevent context menu on long press
+                item.addEventListener('contextmenu', (e) => {
+                    if (longPressTriggered) {
+                        e.preventDefault();
+                    }
+                });
             });
         });
+
+        console.log(`[Taskbar Shortcuts] Initialized long press on ${foundItems} menu items`);
     }
 
-    // Initialize on load
-    initLongPress();
+    // Initialize on load and after a short delay (for Alpine.js rendering)
+    setTimeout(initLongPress, 100);
+    setTimeout(initLongPress, 500);
 
     // Re-initialize when menu items are dynamically updated
     const observer = new MutationObserver(() => {
-        initLongPress();
+        setTimeout(initLongPress, 100);
     });
 
-    const menuContainer = document.querySelector('.millennium-menu-container');
-    if (menuContainer) {
-        observer.observe(menuContainer, {
+    // Observe the entire body for menu changes
+    if (document.body) {
+        observer.observe(document.body, {
             childList: true,
             subtree: true
         });

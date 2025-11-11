@@ -252,19 +252,27 @@
             this.showTooltip = false;
             localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
         },
+        getCsrfToken() {
+            return document.querySelector('meta[name="csrf-token"]')?.content || '';
+        },
         async loadTaskbarShortcuts() {
             this.loadingShortcuts = true;
             try {
                 const response = await fetch('/api/v1/taskbar-shortcuts', {
+                    method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
-                    }
+                        'X-CSRF-TOKEN': this.getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
                     const data = await response.json();
                     this.taskbarShortcuts = data.shortcuts || [];
+                } else {
+                    console.error('Failed to load shortcuts:', response.status);
                 }
             } catch (error) {
                 console.error('Error loading taskbar shortcuts:', error);
@@ -282,13 +290,17 @@
                     method: 'DELETE',
                     headers: {
                         'Accept': 'application/json',
-                        'Authorization': 'Bearer ' + localStorage.getItem('auth_token')
-                    }
+                        'X-CSRF-TOKEN': this.getCsrfToken(),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'include'
                 });
 
                 if (response.ok) {
                     await this.loadTaskbarShortcuts();
                     alert('ลบไอค่อนทางลัดสำเร็จ');
+                } else {
+                    alert('ไม่สามารถลบไอค่อนทางลัดได้');
                 }
             } catch (error) {
                 console.error('Error removing shortcut:', error);
