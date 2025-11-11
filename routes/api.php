@@ -8,6 +8,10 @@ use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
 use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\LineWebhookController;
+use App\Http\Controllers\Api\VideoRewardController;
+use App\Http\Controllers\Api\VideoWatchController;
+use App\Http\Controllers\Api\VideoQuestController;
+use App\Http\Controllers\Api\CoinExchangeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -134,6 +138,38 @@ Route::prefix('v1')->group(function () {
             Route::get('/banners', [AppConfigController::class, 'banners']);
             Route::post('/banners/{bannerId}/view', [AppConfigController::class, 'trackBannerView']);
             Route::post('/banners/{bannerId}/click', [AppConfigController::class, 'trackBannerClick']);
+        });
+
+        // Video Reward System
+        Route::prefix('video-rewards')->group(function () {
+            // Dashboard & Overview
+            Route::get('/dashboard', [VideoRewardController::class, 'dashboard']);
+            Route::get('/statistics', [VideoRewardController::class, 'statistics']);
+            Route::get('/leaderboard', [VideoRewardController::class, 'leaderboard']);
+
+            // Channels & Videos
+            Route::get('/channels', [VideoRewardController::class, 'channels']);
+            Route::get('/channels/{channelId}/videos', [VideoRewardController::class, 'channelVideos']);
+            Route::get('/videos/{videoId}', [VideoRewardController::class, 'videoDetails']);
+
+            // Video Watching
+            Route::post('/watch/start', [VideoWatchController::class, 'startWatch']);
+            Route::post('/watch/heartbeat', [VideoWatchController::class, 'heartbeat']);
+            Route::post('/watch/end', [VideoWatchController::class, 'endWatch']);
+            Route::post('/watch/claim-reward', [VideoWatchController::class, 'claimReward']);
+
+            // Quests
+            Route::get('/quests', [VideoQuestController::class, 'index']);
+            Route::get('/quests/{questId}', [VideoQuestController::class, 'show']);
+            Route::post('/quests/{questId}/claim', [VideoQuestController::class, 'claimReward']);
+            Route::get('/quests/history', [VideoQuestController::class, 'history']);
+
+            // Coin Exchange
+            Route::get('/exchange/rates', [CoinExchangeController::class, 'rates']);
+            Route::post('/exchange/calculate', [CoinExchangeController::class, 'calculate']);
+            Route::post('/exchange/request', [CoinExchangeController::class, 'exchange']);
+            Route::get('/exchange/history', [CoinExchangeController::class, 'history']);
+            Route::get('/exchange/requests/{requestId}', [CoinExchangeController::class, 'show']);
         });
     });
 });

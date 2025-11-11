@@ -731,6 +731,90 @@ class User extends Authenticatable
     }
 
     /**
+     * Video Reward System Relationships
+     */
+
+    /**
+     * Get user's video level
+     */
+    public function videoLevel()
+    {
+        return $this->hasOne(\App\Models\UserVideoLevel::class);
+    }
+
+    /**
+     * Get user's video coin balance
+     */
+    public function videoCoin()
+    {
+        return $this->hasOne(\App\Models\VideoCoin::class);
+    }
+
+    /**
+     * Get user's video watches
+     */
+    public function videoWatches()
+    {
+        return $this->hasMany(\App\Models\UserVideoWatch::class);
+    }
+
+    /**
+     * Get user's watch sessions
+     */
+    public function videoWatchSessions()
+    {
+        return $this->hasMany(\App\Models\VideoWatchSession::class);
+    }
+
+    /**
+     * Get user's quest progress
+     */
+    public function questProgress()
+    {
+        return $this->hasMany(\App\Models\UserQuestProgress::class);
+    }
+
+    /**
+     * Get user's daily streak
+     */
+    public function dailyStreak()
+    {
+        return $this->hasOne(\App\Models\UserDailyStreak::class);
+    }
+
+    /**
+     * Get coin exchange requests
+     */
+    public function coinExchangeRequests()
+    {
+        return $this->hasMany(\App\Models\CoinExchangeRequest::class);
+    }
+
+    /**
+     * Get users referred by this user (video system)
+     */
+    public function videoReferrals()
+    {
+        return $this->hasMany(User::class, 'video_referred_by');
+    }
+
+    /**
+     * Get user who referred this user (video system)
+     */
+    public function videoReferrer()
+    {
+        return $this->belongsTo(User::class, 'video_referred_by');
+    }
+
+    /**
+     * Get referral rewards given to this user
+     */
+    public function videoReferralRewards()
+    {
+        return $this->hasMany(\App\Models\VideoReferralReward::class, 'referrer_id');
+    }
+
+    /**
      * Scopes
      */
 
