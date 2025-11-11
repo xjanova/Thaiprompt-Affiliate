@@ -2,6 +2,28 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.112.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #786 from xjanova/claude/add-missing-seeders-011CV1CP6QFu8qG1SvXy6SB1 (0645bb3c)
+- feat: add claude/Main branch support to GitHub workflow (86b30bc1)
+- Merge pull request #785 from xjanova/claude/add-missing-seeders-011CV1CP6QFu8qG1SvXy6SB1 (32f54399)
+- feat: add missing BotMarketplaceCategorySeeder and BotPlatformSeeder to DatabaseSeeder (f591bddd)
+- Merge pull request #783 from xjanova/claude/remove-license-manager-add-direct-update-011CUzd4YYkcxZxcBmasowtq (10d08fd6)
+- feat: remove license manager and add direct GitHub update system (9f1f12d3)
+- feat: Complete bot automation system with advanced features (15be6fdc)
+- feat: Add comprehensive bot automation system (9cb9db70)
+### 🐛 Bug Fixes
+- Merge pull request #778 from xjanova/claude/check-flow-logic-011CUzXefQzoixumULAVCvad (b3da68c6)
+- fix: configure auto-versioning for main branch only + update to v2.111.0 (ab4cd78f)
+### 🔧 Other Changes
+- Merge pull request #781 from xjanova/claude/add-bot-automation-system-011CUvpE36jri4ofi4AHNc7o (751babea)
+- Merge pull request #780 from xjanova/claude/refactor-menu-system-011CUyoKCFhadeKWY55Deoqu (cbc2d36d)
+- Merge pull request #779 from xjanova/claude/review-membership-system-011CUzMn5CG1QFgqkS2XpdnQ (484c500a)
+- Add: เพิ่ม User Prospects Views และ LINE Signup Result Pages (8b3ca4b4)
+- Add: เพิ่ม Admin Views สำหรับ Signup Flow และ MLM Prospects (6b4bfeec)
+- Feature: เพิ่มการตั้งค่าความสูงและสีของเมนู (e8e36121)
+
 ## [v2.111.0] - 2025-11-10
 
 ### ✨ Features
