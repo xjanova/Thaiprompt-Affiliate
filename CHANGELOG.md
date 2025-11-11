@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.119.4] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #803 from xjanova/claude/fix-duplicate-category-slug-011CV1Z3GgnMxyg9EbrzQLnw (f6b48f26)
+- fix: Make BotMarketplaceCategorySeeder idempotent with updateOrInsert (d3c9eb5a)
+### 🔧 Other Changes
+
+
 ## [v2.119.3] - 2025-11-11
 
 ### ✨ Features
