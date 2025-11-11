@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.18] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #838 from xjanova/claude/implement-two-factor-auth-011CV2QgRVqS6a9YSC4xBDfj (7664e72f)
+- feat(2fa): Complete Two-Factor Authentication implementation (5981bff3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.127.17] - 2025-11-11
 
 ### ✨ Features
