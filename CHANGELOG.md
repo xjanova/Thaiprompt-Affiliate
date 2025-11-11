@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.118.0] - 2025-11-11
+
+### ✨ Features
+- feat: implement viral trend detection system (941b52b0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #792 from xjanova/claude/resolve-viral-trend-conflicts-011CV1RRcbmz3ndJJPwJEmx1 (f660aa9e)
+- Merge branch 'claude/viral-trend-detection-system-011CUvqX5vkWhrXoysJj9T3e' - resolve conflicts (daa27360)
+
 ## [v2.117.0] - 2025-11-11
 
 ### ✨ Features
