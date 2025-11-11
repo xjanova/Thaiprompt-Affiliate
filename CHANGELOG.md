@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.127.8] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #828 from xjanova/claude/fix-image-save-display-011CV2HMqMwx4XaqYkSio3VY (4076893e)
+- fix(windows-ui): Add enctype for file upload support (f48a1a49)
+### 🔧 Other Changes
+
+
 ## [v2.127.7] - 2025-11-11
 
 ### ✨ Features
