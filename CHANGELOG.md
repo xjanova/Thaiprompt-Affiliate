@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.132.1] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #850 from xjanova/claude/lineoa-member-signup-011CV1tqWaBrAC9LLxH3ds8U (02f9a01c)
+- feat(line): Add AI-powered smart conversation management for LINE OA signup (85d1c97f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.132.0] - 2025-11-11
 
 ### ✨ Features
