@@ -277,7 +277,7 @@
     x-init="init()"
     class="millennium-container">
 
-    <!-- Millennium Taskbar -->
+    <!-- Millennium Taskbar - Windows 11 Style -->
     <div class="fixed left-0 right-0 z-50 {{ $taskbarPosition === 'top' ? 'top-0' : 'bottom-0' }} millennium-taskbar"
          style="
             height: {{ $taskbarHeight }}px;
@@ -291,26 +291,27 @@
             <div class="absolute inset-0 millennium-taskbar-rgb"></div>
         @endif
 
-        <!-- Taskbar Background -->
-        <div class="absolute inset-0 border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-4 shadow-2xl rounded-2xl mx-2 my-1"
+        <!-- Taskbar Background - Windows 11 Style -->
+        <div class="absolute inset-0 border-{{ $taskbarPosition === 'top' ? 'b' : 't' }}-2"
              style="
                 opacity: {{ $taskbarOpacity / 100 }};
                 backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px) saturate(180%);
                 -webkit-backdrop-filter: blur({{ $taskbarBlur ? $taskbarBlurAmount : 0 }}px) saturate(180%);
-                border-image: linear-gradient(135deg, rgba(168, 85, 247, 0.6), rgba(236, 72, 153, 0.6), rgba(59, 130, 246, 0.6)) 1;
+                @if($millenniumRgbEnabled)
+                border-image: linear-gradient(90deg, rgba(168, 85, 247, 0.6), rgba(236, 72, 153, 0.6), rgba(59, 130, 246, 0.6)) 1;
+                @else
                 border-color: {{ $taskbarBorderColor }};
+                @endif
                 @if($taskbarUseGradient)
                 background: linear-gradient(to right, {{ $taskbarGradientFrom }}, {{ $taskbarGradientTo }});
                 @else
                 background-color: {{ $taskbarBgColor }};
                 @endif
                 box-shadow:
-                    0 0 2px rgba(255, 255, 255, 0.2) inset,
-                    0 1px 3px rgba(255, 255, 255, 0.15) inset,
-                    0 -1px 2px rgba(0, 0, 0, 0.2) inset,
-                    0 8px 24px rgba(168, 85, 247, 0.4),
-                    0 16px 48px rgba(59, 130, 246, 0.3),
-                    0 24px 80px rgba(236, 72, 153, 0.2);
+                    0 0 1px rgba(255, 255, 255, 0.15) inset,
+                    0 {{ $taskbarPosition === 'top' ? '1' : '-1' }}px 3px rgba(255, 255, 255, 0.1) inset,
+                    0 {{ $taskbarPosition === 'top' ? '-2' : '2' }}px 8px rgba(0, 0, 0, 0.15),
+                    0 {{ $taskbarPosition === 'top' ? '-4' : '4' }}px 16px rgba(0, 0, 0, 0.1);
              "></div>
 
         <!-- Taskbar Content -->
@@ -818,8 +819,10 @@
     }
 
     .millennium-taskbar-rgb {
-        height: 3px;
+        height: 2px;
         {{ $taskbarPosition === 'bottom' ? 'top: 0;' : 'bottom: 0;' }}
+        left: 0;
+        right: 0;
         background: linear-gradient(90deg,
             {{ $millenniumRgbColors[0] ?? '#FF0080' }} 0%,
             {{ $millenniumRgbColors[1] ?? '#00F0FF' }} 25%,
@@ -872,9 +875,10 @@
         border-radius: {{ $startButtonRadius }}px !important;
     }
 
-    /* Taskbar Glass Morphism */
+    /* Taskbar Glass Morphism - Windows 11 Acrylic */
     .millennium-taskbar {
-        backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(30px) saturate(180%);
+        -webkit-backdrop-filter: blur(30px) saturate(180%);
     }
 
     /* Taskbar Color Customization */
