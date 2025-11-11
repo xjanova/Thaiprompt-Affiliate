@@ -275,6 +275,7 @@
                 'order' => 12,
                 'submenu' => [
                     ['label' => 'ตั้งค่า LINE OA', 'url' => safeRoute('admin.line-oa.index')],
+                    ['label' => '📊 LINE Analytics', 'url' => safeRoute('admin.line-oa.analytics')],
                     ['label' => 'AI Chat Bot', 'url' => safeRoute('admin.line-bot.ai.index')],
                     ['label' => 'Broadcast', 'url' => safeRoute('admin.line-bot.broadcast.index')],
                     ['label' => 'Avatar', 'url' => safeRoute('admin.line-bot.avatars.index')],
