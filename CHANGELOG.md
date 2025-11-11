@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.112.2] - 2025-11-11
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Create readme.text (01acf8b4)
+
 ## [v2.112.1] - 2025-11-11
 
 ### ✨ Features
