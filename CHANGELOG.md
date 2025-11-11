@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.130.0] - 2025-11-11
+
+### ✨ Features
+- Merge pull request #843 from xjanova/claude/fix-popular-destinations-undefined-011CV2QYEvsURSbNYDTww6qW (9baece00)
+- feat: Create 139 beautiful blade views with full dark mode support (98839f78)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.129.1] - 2025-11-11
 
 ### ✨ Features
