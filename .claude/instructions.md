@@ -14,6 +14,7 @@
   - ⚠️ **CRITICAL**: ทุกครั้งที่สร้าง/ลบ/แก้ไข Seeder ต้องอัพเดท DatabaseSeeder.php
   - Smart seeding strategies (check before seeding, protect user data)
   - รัน `php scripts/verify-seeders.php` ก่อน commit เสมอ
+  - 🔧 **Git Hook**: Pre-commit hook จะตรวจสอบอัตโนมัติและบล็อก commit ถ้าไม่ผ่าน
 
 - [ ] **[DATABASE_GUIDELINES.md](./.claude/DATABASE_GUIDELINES.md)** - กฎสำหรับ Database, Migrations และ Schema
   - Table existence checks (Schema::hasTable, Schema::hasColumn)
@@ -122,6 +123,12 @@
 - มี version detection และ error handling
 - ทดสอบ deployment script หลังแก้ไข
 
+### 8. 🪝 Git Hooks (บังคับ)
+- ติดตั้ง Git Hooks เสมอเมื่อเริ่มโปรเจคใหม่ หรือ clone repository
+- Git Hooks จะตรวจสอบและบังคับให้ปฏิบัติตามกฎอัตโนมัติ
+- **ติดตั้ง**: `bash scripts/git-hooks/install.sh`
+- Pre-commit hook จะตรวจสอบ seeder synchronization อัตโนมัติ
+
 ---
 
 ## 🎯 Code Quality Standards
@@ -169,6 +176,7 @@
 - [ ] Seeder ทุกตัวอยู่ใน DatabaseSeeder.php (บังคับ)
 - [ ] รัน `php scripts/verify-seeders.php` ผ่าน (บังคับ)
 - [ ] Smart seeding (check before insert)
+- [ ] Git pre-commit hook จะตรวจสอบอัตโนมัติ
 
 ### Routes & Views
 - [ ] Routes ไม่ซ้ำ มี middleware
@@ -179,6 +187,93 @@
 - [ ] Packages ทั้งหมดอยู่ใน deploy.sh (บังคับ)
 - [ ] มี error handling และ fallback
 - [ ] ทดสอบ deployment script
+
+---
+
+## 🪝 Git Hooks Setup (IMPORTANT)
+
+### ทำไมต้องมี Git Hooks?
+
+Git Hooks จะ **ตรวจสอบและบังคับให้ปฏิบัติตามกฎอัตโนมัติ** ก่อนที่จะ commit โค้ด
+
+**ปัญหาที่แก้ไข**:
+- ❌ ลืมเพิ่ม Seeder ลง DatabaseSeeder.php → Deployment fails
+- ❌ Commit โค้ดที่ผิดกฎ → Production errors
+- ❌ ต้องจำกฎทั้งหมด → มนุษย์ลืมได้
+
+**ประโยชน์**:
+- ✅ ตรวจสอบอัตโนมัติก่อน commit
+- ✅ บล็อก commit ถ้าไม่ผ่านกฎ
+- ✅ ลดข้อผิดพลาดจากมนุษย์
+
+### 🔧 วิธีติดตั้ง Git Hooks
+
+**เมื่อเริ่มโปรเจคใหม่หรือ clone repository**:
+
+```bash
+# ติดตั้ง Git Hooks ทั้งหมด
+bash scripts/git-hooks/install.sh
+```
+
+**ตรวจสอบว่าติดตั้งแล้ว**:
+
+```bash
+# ตรวจสอบว่ามี pre-commit hook
+test -x .git/hooks/pre-commit && echo "✓ Installed" || echo "✗ Not installed"
+```
+
+### 📋 Git Hooks ที่มีอยู่
+
+**1. Pre-Commit Hook (Seeder Verification)**
+- **ทำงาน**: ตรวจสอบว่าทุก Seeder อยู่ใน DatabaseSeeder.php
+- **เมื่อไร**: ก่อน `git commit`
+- **ถ้าไม่ผ่าน**: บล็อก commit และแสดงวิธีแก้ไข
+
+**ตัวอย่างเมื่อ Hook บล็อก Commit**:
+```
+❌ COMMIT BLOCKED
+⚠  CRITICAL RULE #1 VIOLATION
+
+You MUST add missing seeders to DatabaseSeeder.php before committing.
+
+🔧 To fix:
+   1. Open database/seeders/DatabaseSeeder.php
+   2. Add missing seeder(s) to the call() array
+   3. Run: php scripts/verify-seeders.php
+   4. Try committing again
+```
+
+### 🚨 เมื่อ Claude สร้าง Seeder ใหม่
+
+**ขั้นตอนที่ Claude ต้องทำ (MANDATORY)**:
+
+1. ✅ สร้างไฟล์ Seeder ใหม่
+2. ✅ **เพิ่ม Seeder ลง DatabaseSeeder.php ทันที** (ห้ามลืม!)
+3. ✅ Commit ทั้งสองไฟล์พร้อมกัน
+4. ✅ Pre-commit hook จะตรวจสอบอัตโนมัติ
+
+**ตัวอย่างที่ถูกต้อง**:
+```bash
+# 1. สร้าง seeder
+php artisan make:seeder NewFeatureSeeder
+
+# 2. เพิ่มลง DatabaseSeeder.php (อย่าลืม!)
+# แก้ไขไฟล์ database/seeders/DatabaseSeeder.php
+
+# 3. Commit ทั้งสองไฟล์
+git add database/seeders/NewFeatureSeeder.php
+git add database/seeders/DatabaseSeeder.php
+git commit -m "Add NewFeatureSeeder"
+
+# 4. Pre-commit hook จะรันอัตโนมัติ
+# ถ้าทุกอย่างถูกต้อง → Commit สำเร็จ
+# ถ้ามีปัญหา → Commit ถูกบล็อก
+```
+
+### 📚 เอกสารเพิ่มเติม
+
+- **[scripts/git-hooks/README.md](../scripts/git-hooks/README.md)** - คู่มือ Git Hooks
+- **[.claude/seeder-guidelines.md](./.claude/seeder-guidelines.md)** - CRITICAL RULE #1
 
 ---
 
