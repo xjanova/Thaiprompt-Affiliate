@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.145.0] - 2025-11-12
+
+### ✨ Features
+- feat: Add comprehensive AI Image/Video Generation tab to ai-bot.blade.php (faba9f5e)
+- feat: Complete crypto.blade.php with comprehensive wallet, cryptocurrency, exchange, staking, and security features (48739855)
+- feat: Complete overview with clickable cards and all missing content (c252912b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #882 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (0cf55c01)
+
 ## [v2.144.1] - 2025-11-12
 
 ### ✨ Features
