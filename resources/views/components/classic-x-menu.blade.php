@@ -126,6 +126,21 @@
                 ]
             ],
             [
+                'icon' => 'fa-chart-line',
+                'label' => 'Trading Bot',
+                'url' => '#',
+                'badge' => 'NEW',
+                'submenu' => [
+                    ['label' => 'แดชบอร์ด', 'url' => safeRoute('admin.trading-bot.dashboard')],
+                    ['label' => 'จัดการแพ็คเกจ', 'url' => safeRoute('admin.trading-bot.packages.index')],
+                    ['label' => 'สมาชิก', 'url' => safeRoute('admin.trading-bot.subscriptions.index')],
+                    ['label' => 'บอททั้งหมด', 'url' => safeRoute('admin.trading-bot.bots.index')],
+                    ['label' => 'Exchange', 'url' => safeRoute('admin.trading-bot.exchanges.index')],
+                    ['label' => 'Analytics', 'url' => safeRoute('admin.trading-bot.analytics')],
+                    ['label' => 'Arbitrage Monitor', 'url' => safeRoute('admin.trading-bot.arbitrage-monitor')],
+                ]
+            ],
+            [
                 'icon' => 'fa-envelope',
                 'label' => 'จัดการอีเมล',
                 'url' => '#',
