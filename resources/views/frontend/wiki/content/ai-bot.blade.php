@@ -141,7 +141,7 @@
     </div>
 
     {{-- AI Image/Video Creation Tab --}}
-    <div class="tab-content" data-tab-content="ai-creation">
+    <div class="tab-content" data-tab-content="ai-creation" style="display: none;">
         <section class="wiki-section">
             <h2>🎨 AI Image & Video Generation - สร้างภาพและวิดีโอด้วย AI</h2>
 
@@ -348,7 +348,7 @@
     </div>
 
     {{-- LINE Bot Tab --}}
-    <div class="tab-content" data-tab-content="line-bot">
+    <div class="tab-content" data-tab-content="line-bot" style="display: none;">
         <section class="wiki-section">
             <h2>💬 LINE Official Account Integration</h2>
 
@@ -441,7 +441,7 @@
     </div>
 
     {{-- Knowledge Base Tab --}}
-    <div class="tab-content" data-tab-content="knowledge">
+    <div class="tab-content" data-tab-content="knowledge" style="display: none;">
         <section class="wiki-section">
             <h2>📚 Knowledge Base & RAG System</h2>
 
@@ -523,7 +523,7 @@
     </div>
 
     {{-- Bot Rental Tab --}}
-    <div class="tab-content" data-tab-content="rental">
+    <div class="tab-content" data-tab-content="rental" style="display: none;">
         <section class="wiki-section">
             <h2>💼 AI Bot Rental System</h2>
 
