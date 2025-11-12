@@ -40,9 +40,14 @@ class LineOaSetting extends Model
      */
     public static function getActive(): ?self
     {
-        return Cache::remember('line_oa_settings', 3600, function () {
-            return self::where('is_active', true)->first();
-        });
+        try {
+            return Cache::remember('line_oa_settings', 3600, function () {
+                return self::where('is_active', true)->first();
+            });
+        } catch (\Exception $e) {
+            // Return null if database is not available (e.g., during migrations)
+            return null;
+        }
     }
 
     /**
