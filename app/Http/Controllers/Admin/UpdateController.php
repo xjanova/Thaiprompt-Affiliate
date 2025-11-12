@@ -427,12 +427,28 @@ class UpdateController extends Controller
         try {
             $results = $this->versionService->testGitHubConnection();
 
+            // Count passed, failed, and warnings
+            $passedCount = count($results['checks'] ?? []);
+            $failedErrors = array_filter($results['errors'] ?? [], fn($e) => $e['status'] === 'failed');
+            $warnings = array_filter($results['errors'] ?? [], fn($e) => $e['status'] === 'warning');
+            $failedCount = count($failedErrors);
+            $warningCount = count($warnings);
+
+            // Build detailed message
+            $message = $results['success']
+                ? "การเชื่อมต่อ GitHub ทำงานปกติ ({$passedCount} ผ่าน"
+                    . ($warningCount > 0 ? ", {$warningCount} คำเตือน" : "") . ")"
+                : "พบปัญหาร้ายแรงในการเชื่อมต่อ GitHub ({$failedCount} ล้มเหลว)";
+
             return response()->json([
                 'success' => $results['success'],
                 'results' => $results,
-                'message' => $results['success']
-                    ? 'การเชื่อมต่อ GitHub ทำงานปกติ'
-                    : 'พบปัญหาในการเชื่อมต่อ GitHub',
+                'message' => $message,
+                'summary' => [
+                    'passed' => $passedCount,
+                    'failed' => $failedCount,
+                    'warnings' => $warningCount,
+                ],
             ]);
         } catch (\Throwable $e) {
             \Log::error('GitHub connection test failed', [
