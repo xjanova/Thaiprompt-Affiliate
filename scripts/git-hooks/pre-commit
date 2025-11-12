@@ -1,0 +1,87 @@
+#!/bin/bash
+
+###############################################################################
+# Git Pre-Commit Hook
+#
+# This hook automatically verifies that all seeder files are properly
+# included in DatabaseSeeder.php before allowing a commit.
+#
+# Created: 2025-11-12
+# Purpose: Enforce CRITICAL RULE #1 from seeder-guidelines.md
+#
+# Installation:
+#   bash scripts/git-hooks/install.sh
+###############################################################################
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+echo ""
+echo -e "${CYAN}═══════════════════════════════════════════════${NC}"
+echo -e "${CYAN}  🔍 Pre-Commit: Seeder Verification${NC}"
+echo -e "${CYAN}═══════════════════════════════════════════════${NC}"
+echo ""
+
+# Check if any seeder files are being committed
+SEEDER_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep 'database/seeders/.*Seeder\.php$' || true)
+
+if [ -z "$SEEDER_FILES" ]; then
+    echo -e "${GREEN}✓${NC} No seeder files in this commit. Skipping verification."
+    echo ""
+    exit 0
+fi
+
+echo -e "${BLUE}ℹ${NC} Seeder files detected in commit:"
+echo "$SEEDER_FILES" | sed 's/^/  • /'
+echo ""
+
+# Run the seeder verification script
+if [ -f "scripts/verify-seeders.php" ]; then
+    echo -e "${BLUE}ℹ${NC} Running seeder verification script..."
+    echo ""
+
+    # Run the verification script
+    php scripts/verify-seeders.php
+    VERIFICATION_RESULT=$?
+
+    if [ $VERIFICATION_RESULT -eq 0 ]; then
+        echo -e "${GREEN}✓${NC} All seeders are properly included in DatabaseSeeder.php"
+        echo -e "${GREEN}✓${NC} Commit allowed to proceed"
+        echo ""
+        exit 0
+    else
+        echo ""
+        echo -e "${RED}═══════════════════════════════════════════════${NC}"
+        echo -e "${RED}  ❌ COMMIT BLOCKED${NC}"
+        echo -e "${RED}═══════════════════════════════════════════════${NC}"
+        echo ""
+        echo -e "${YELLOW}⚠${NC}  CRITICAL RULE #1 VIOLATION (seeder-guidelines.md)"
+        echo ""
+        echo -e "${YELLOW}You MUST add missing seeders to DatabaseSeeder.php before committing.${NC}"
+        echo ""
+        echo -e "${BLUE}📖 Documentation:${NC}"
+        echo "   • .claude/seeder-guidelines.md (CRITICAL RULE #1)"
+        echo "   • .claude/instructions.md (Section 5: Seeder Synchronization)"
+        echo ""
+        echo -e "${BLUE}🔧 To fix:${NC}"
+        echo "   1. Open database/seeders/DatabaseSeeder.php"
+        echo "   2. Add missing seeder(s) to the call() array"
+        echo "   3. Add descriptive comment for each seeder"
+        echo "   4. Run: php scripts/verify-seeders.php"
+        echo "   5. Try committing again"
+        echo ""
+        exit 1
+    fi
+else
+    echo -e "${YELLOW}⚠${NC}  Warning: Seeder verification script not found"
+    echo -e "${YELLOW}   Expected: scripts/verify-seeders.php${NC}"
+    echo ""
+    echo -e "${BLUE}ℹ${NC} Allowing commit to proceed (no verification possible)"
+    echo ""
+    exit 0
+fi
