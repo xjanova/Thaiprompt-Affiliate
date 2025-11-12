@@ -218,8 +218,20 @@
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
-    <!-- Millennium Taskbar -->
-    <x-millennium-taskbar type="user" />
+    @php
+        $userTheme = auth()->user()->menu_theme_preference ?? 'millennium';
+    @endphp
+
+    @if($userTheme === 'classic_x')
+        <!-- Classic X Sidebar -->
+        <x-classic-x-sidebar type="user" />
+
+        <!-- Classic X Content Wrapper -->
+        <div class="classic-x-content" id="classicXContent">
+    @else
+        <!-- Millennium Taskbar -->
+        <x-millennium-taskbar type="user" />
+    @endif
 
     <!-- Page Loader -->
     <x-page-loader />
@@ -256,6 +268,10 @@
             @yield('content')
         </main>
     </div>
+
+    @if($userTheme === 'classic_x')
+        </div> <!-- Close classic-x-content wrapper -->
+    @endif
 
     <!-- Fixed Floating Toast Notifications -->
     <div class="fixed top-4 right-4 z-[9999] space-y-3 max-w-md">
