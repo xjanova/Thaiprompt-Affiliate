@@ -140,7 +140,7 @@
     </div>
 
     {{-- Unilevel System Tab --}}
-    <div class="tab-content" data-tab-content="unilevel">
+    <div class="tab-content" data-tab-content="unilevel" style="display: none;">
         <section class="wiki-section">
             <h2>🎯 ระบบ Unilevel MLM - โครงสร้างหลายชั้น</h2>
 
@@ -255,7 +255,7 @@
     </div>
 
     {{-- Commission Tab --}}
-    <div class="tab-content" data-tab-content="commission">
+    <div class="tab-content" data-tab-content="commission" style="display: none;">
         <section class="wiki-section">
             <h2>💰 ระบบคอมมิชชั่น - หัวใจของ MLM</h2>
 
@@ -388,7 +388,7 @@
     </div>
 
     {{-- Rank & Bonus Tab --}}
-    <div class="tab-content" data-tab-content="rank">
+    <div class="tab-content" data-tab-content="rank" style="display: none;">
         <section class="wiki-section">
             <h2>👑 ระบบยศและโบนัส - เส้นทางสู่ความสำเร็จ</h2>
 
@@ -489,7 +489,7 @@
     </div>
 
     {{-- Genealogy Tab --}}
-    <div class="tab-content" data-tab-content="genealogy">
+    <div class="tab-content" data-tab-content="genealogy" style="display: none;">
         <section class="wiki-section">
             <h2>🌳 ระบบ Genealogy - แสดงโครงสร้างองค์กร</h2>
 

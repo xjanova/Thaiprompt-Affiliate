@@ -160,7 +160,7 @@
     </div>
 
     <!-- Tab 2: Cryptocurrency -->
-    <div class="tab-content" data-tab-content="crypto">
+    <div class="tab-content" data-tab-content="crypto" style="display: none;">
         <section class="wiki-section">
             <h2>₿ Cryptocurrency Integration - ระบบ Crypto แบบครบวงจร</h2>
 
@@ -311,7 +311,7 @@
     </div>
 
     <!-- Tab 3: Exchange -->
-    <div class="tab-content" data-tab-content="exchange">
+    <div class="tab-content" data-tab-content="exchange" style="display: none;">
         <section class="wiki-section">
             <h2>💱 Crypto Exchange Features - ระบบแลกเปลี่ยน Crypto</h2>
 
@@ -432,7 +432,7 @@
     </div>
 
     <!-- Tab 4: Investment & Staking -->
-    <div class="tab-content" data-tab-content="investment">
+    <div class="tab-content" data-tab-content="investment" style="display: none;">
         <section class="wiki-section">
             <h2>📈 Investment & Staking - ระบบลงทุนและ Staking</h2>
 
@@ -546,7 +546,7 @@
     </div>
 
     <!-- Tab 5: Security -->
-    <div class="tab-content" data-tab-content="security">
+    <div class="tab-content" data-tab-content="security" style="display: none;">
         <section class="wiki-section">
             <h2>🔐 Security Features - ระบบรักษาความปลอดภัย</h2>
 
