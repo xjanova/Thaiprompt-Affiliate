@@ -207,7 +207,7 @@
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">💡 Authentication Best Practices</h4>
             <ul style="line-height: 2; color: var(--wiki-text);">
                 <li><strong>Enforce 2FA:</strong> Require two-factor authentication for admin accounts and high-value transactions (>฿50,000)</li>
@@ -356,8 +356,8 @@
         </div>
 
         <div style="background: #fff3cd; padding: 2rem; border-radius: 12px; border-left: 4px solid #ffc107; margin-bottom: 2rem;">
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #856404;">⚠️ Security Incident Response Plan</h4>
-            <div style="line-height: 2; color: #856404;">
+            <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--wiki-warning-dark);">⚠️ Security Incident Response Plan</h4>
+            <div style="line-height: 2; color: var(--wiki-warning-dark);">
                 <strong>1. Detection (0-15 min):</strong> Automated alerts via SIEM, security team notified immediately<br>
                 <strong>2. Analysis (15-30 min):</strong> Determine scope, severity, affected systems. Activate incident response team<br>
                 <strong>3. Containment (30-60 min):</strong> Isolate affected systems, block malicious IPs, preserve evidence<br>
@@ -551,7 +551,7 @@
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">💡 Compliance & Audit Best Practices</h4>
             <ul style="line-height: 2; color: var(--wiki-text);">
                 <li><strong>Principle of Least Privilege:</strong> Only collect necessary data, delete after retention period (PDPA right to be forgotten)</li>
@@ -617,25 +617,25 @@
             </thead>
             <tbody>
                 <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: #dc3545;">🔴 Critical</strong></td>
+                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-danger);">🔴 Critical</strong></td>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Active breach, data exfiltration, ransomware, system compromise</td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong>5 minutes</strong></td>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Phone call + SMS + Email (CISO, CEO)</td>
                 </tr>
                 <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: #fd7e14;">🟠 High</strong></td>
+                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">🟠 High</strong></td>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Failed login attempts (10+), DDoS attack, malware detected</td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong>15 minutes</strong></td>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Email + SMS (Security Team)</td>
                 </tr>
                 <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: #ffc107;">🟡 Medium</strong></td>
+                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">🟡 Medium</strong></td>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Suspicious activity, policy violations, unauthorized access attempts</td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong>1 hour</strong></td>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Email (Security Analysts)</td>
                 </tr>
                 <tr>
-                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: #28a745;">🟢 Low</strong></td>
+                    <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-success);">🟢 Low</strong></td>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Informational events, compliance checks, routine scans</td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong>4 hours</strong></td>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Dashboard only</td>
@@ -742,7 +742,7 @@
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
             <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📊 Security Metrics Dashboard</h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
                 <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">

@@ -133,7 +133,7 @@
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">💡 Vendor Best Practices</h4>
             <ul style="line-height: 2; color: var(--wiki-text);">
                 <li><strong>High-Quality Photos:</strong> Use 1200x1200px images, white background, multiple angles. Good photos increase sales by 40%</li>
@@ -242,7 +242,7 @@
             💵 Commission Calculation Example
         </h3>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
             <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📊 Sample Transaction Breakdown</h4>
             <div style="font-family: monospace; font-size: 0.95rem; line-height: 2;">
                 <strong>Vendor: ABC Fashion (Silver Tier - 12% commission)</strong><br><br>
@@ -251,13 +251,13 @@
                 • Product Price: ฿1,500<br>
                 • Shipping Fee: ฿50 (customer paid)<br>
                 • Total Order Value: ฿1,550<br>
-                <hr style="margin: 1rem 0; border-color: #ddd;">
+                <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                 <span style="color: rgb(var(--secondary-rgb));"><strong>Deductions:</strong></span><br>
                 • Platform Commission (12%): -฿180<br>
                 • Payment Gateway Fee (2.9% + ฿11): -฿56<br>
                 • Shipping Cost (actual): -฿42<br>
-                <hr style="margin: 1rem 0; border-color: #ddd;">
+                <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                 <strong style="color: rgb(var(--accent-rgb)); font-size: 1.1rem;">Vendor Receives: ฿1,272</strong><br>
                 <em style="color: var(--wiki-text-secondary); font-size: 0.9rem;">Payout Date: Next Friday (Weekly cycle)</em>
@@ -332,21 +332,21 @@
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">147</td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">฿44,100</strong></td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">4.8 ⭐</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="color: #28a745;">287</span></td>
+                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="color: var(--wiki-success);">287</span></td>
                 </tr>
                 <tr>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>Denim Jeans (Slim Fit)</strong></td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">89</td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">฿53,400</strong></td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">4.6 ⭐</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="color: #ffc107;">24</span></td>
+                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="color: var(--wiki-warning);">24</span></td>
                 </tr>
                 <tr>
                     <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>Casual Sneakers (Canvas)</strong></td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">106</td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">฿63,600</strong></td>
                     <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">4.9 ⭐</td>
-                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="color: #dc3545;">8</span></td>
+                    <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="color: var(--wiki-danger);">8</span></td>
                 </tr>
             </tbody>
         </table>
@@ -384,7 +384,7 @@
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">💡 Data-Driven Optimization Tips</h4>
             <ul style="line-height: 2; color: var(--wiki-text);">
                 <li><strong>Stock Management:</strong> Products in red (<10 units) need restocking. Use sales velocity to predict reorder points</li>
@@ -509,7 +509,7 @@
             📊 Marketplace-Wide Analytics
         </h3>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
                 <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">
                     <div style="font-size: 2rem; margin-bottom: 0.5rem; color: rgb(var(--primary-rgb));">847</div>

@@ -36,6 +36,16 @@
     --wiki-card-bg: #ffffff;
     --wiki-shadow: rgba(0,0,0,0.05);
     --wiki-shadow-hover: rgba(0,0,0,0.1);
+
+    /* Semantic colors - work in both modes */
+    --wiki-success: #10b981;
+    --wiki-success-dark: #059669;
+    --wiki-danger: #ef4444;
+    --wiki-danger-dark: #dc2626;
+    --wiki-warning: #f59e0b;
+    --wiki-warning-dark: #d97706;
+    --wiki-info: #3b82f6;
+    --wiki-info-dark: #2563eb;
 }
 
 .dark {
@@ -48,6 +58,16 @@
     --wiki-card-bg: #111827;
     --wiki-shadow: rgba(0,0,0,0.3);
     --wiki-shadow-hover: rgba(0,0,0,0.5);
+
+    /* Semantic colors adjusted for dark mode */
+    --wiki-success: #34d399;
+    --wiki-success-dark: #10b981;
+    --wiki-danger: #f87171;
+    --wiki-danger-dark: #ef4444;
+    --wiki-warning: #fbbf24;
+    --wiki-warning-dark: #f59e0b;
+    --wiki-info: #60a5fa;
+    --wiki-info-dark: #3b82f6;
 }
 
 /* Reading Progress Bar with RGB gradient */

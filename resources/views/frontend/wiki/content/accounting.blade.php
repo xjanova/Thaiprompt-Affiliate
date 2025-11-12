@@ -365,7 +365,7 @@
                         <li><strong>Operating:</strong> +฿450,000</li>
                         <li><strong>Investing:</strong> -฿200,000</li>
                         <li><strong>Financing:</strong> -฿50,000</li>
-                        <li><hr style="margin: 0.5rem 0; border-color: #ddd;"></li>
+                        <li><hr style="margin: 0.5rem 0; border-color: var(--wiki-border);"></li>
                         <li><strong style="color: rgb(var(--accent-rgb));">Net Cash Flow:</strong> +฿200,000</li>
                     </ul>
                 </div>
@@ -638,7 +638,7 @@
                 </div>
             </div>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📊 Tax Compliance Example</h4>
                 <div style="font-family: monospace; font-size: 0.95rem; line-height: 2;">
                     <strong>บริษัท ABC จำกัด - ภาษีประจำเดือน มกราคม 2025</strong><br><br>
@@ -648,14 +648,14 @@
                     • Input VAT (ภาษีซื้อ 7%): -฿84,000<br>
                     • <strong style="color: rgb(var(--accent-rgb));">VAT Payable: ฿91,000</strong><br>
                     • Due: 15 Feb 2025<br>
-                    <hr style="margin: 1rem 0; border-color: #ddd;">
+                    <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                     <span style="color: rgb(var(--secondary-rgb));"><strong>WHT (ภ.ง.ด.53):</strong></span><br>
                     • Service Fees Paid: ฿500,000<br>
                     • WHT 3% Withheld: ฿15,000<br>
                     • <strong style="color: rgb(var(--accent-rgb));">WHT Payable: ฿15,000</strong><br>
                     • Due: 7 Feb 2025<br>
-                    <hr style="margin: 1rem 0; border-color: #ddd;">
+                    <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                     <strong style="color: rgb(var(--primary-rgb)); font-size: 1.1rem;">Total Tax Payment: ฿106,000</strong>
                 </div>

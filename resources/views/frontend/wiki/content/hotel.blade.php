@@ -465,7 +465,7 @@
                 </tbody>
             </table>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h4 style="font-weight: 700; margin-bottom: 1.5rem;">💰 Commission Savings with Direct Bookings</h4>
                 <div style="font-family: monospace; font-size: 0.95rem; line-height: 2;">
                     <strong>Monthly Performance (1,000 Bookings)</strong><br><br>
@@ -474,13 +474,13 @@
                     • Revenue: ฿2,125,000<br>
                     • Commission (15% avg): -฿318,750<br>
                     • Net: ฿1,806,250<br>
-                    <hr style="margin: 1rem 0; border-color: #ddd;">
+                    <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                     <span style="color: rgb(var(--primary-rgb));"><strong>Direct Bookings (15%):</strong></span><br>
                     • Revenue: ฿375,000<br>
                     • Commission: ฿0<br>
                     • Net: ฿375,000<br>
-                    <hr style="margin: 1rem 0; border-color: #ddd;">
+                    <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                     <strong style="color: rgb(var(--secondary-rgb)); font-size: 1.1rem;">If Increase Direct to 30% → Save ฿212,500/month! 💰</strong>
                 </div>

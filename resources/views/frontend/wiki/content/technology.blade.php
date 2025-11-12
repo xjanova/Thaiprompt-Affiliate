@@ -245,54 +245,54 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">📐 Application Layers</h2>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <div style="display: flex; flex-direction: column; gap: 1.5rem;">
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #0d6efd;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #0d6efd; font-size: 1.1rem;">🌐 Presentation Layer</strong>
+                            <strong style="color: var(--wiki-info); font-size: 1.1rem;">🌐 Presentation Layer</strong>
                             <span style="background: #0d6efd; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">Frontend</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                             Blade Views, Livewire Components, JavaScript, TailwindCSS - Handles user interface and interactions
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #6f42c1;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #6f42c1; font-size: 1.1rem;">🎮 Controller Layer</strong>
+                            <strong style="color: var(--wiki-info-dark); font-size: 1.1rem;">🎮 Controller Layer</strong>
                             <span style="background: #6f42c1; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">Request Handling</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                             HTTP Controllers, API Controllers, Form Requests - Receives requests, validates input, returns responses
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #fd7e14;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #fd7e14; font-size: 1.1rem;">⚙️ Service Layer</strong>
+                            <strong style="color: var(--wiki-warning); font-size: 1.1rem;">⚙️ Service Layer</strong>
                             <span style="background: #fd7e14; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">Business Logic</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                             Service Classes, Action Classes, DTOs - Contains reusable business logic, orchestrates operations
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #20c997;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #20c997; font-size: 1.1rem;">🗄️ Data Access Layer</strong>
+                            <strong style="color: var(--wiki-success); font-size: 1.1rem;">🗄️ Data Access Layer</strong>
                             <span style="background: #20c997; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">Repositories</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                             Repositories, Eloquent Models, Query Builders - Abstracts database operations and queries
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #dc3545;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #dc3545; font-size: 1.1rem;">💾 Database Layer</strong>
+                            <strong style="color: var(--wiki-danger); font-size: 1.1rem;">💾 Database Layer</strong>
                             <span style="background: #dc3545; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">Persistence</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                             MySQL/MariaDB, Redis, Migrations, Seeders - Stores and retrieves data persistently
                         </p>
                     </div>
@@ -505,50 +505,50 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">⚖️ Load Balancing & Scaling</h2>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h4 style="font-weight: 700; margin-bottom: 1.5rem;">🔄 Horizontal Scaling Architecture</h4>
 
                 <div style="display: grid; gap: 1.5rem;">
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #0d6efd;">
-                        <strong style="color: #0d6efd; font-size: 1.1rem;">⚖️ Load Balancer (Nginx/HAProxy)</strong>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                        <strong style="color: var(--wiki-info); font-size: 1.1rem;">⚖️ Load Balancer (Nginx/HAProxy)</strong>
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                             Distributes incoming traffic across multiple application servers using round-robin or least-connections algorithm
                         </p>
                     </div>
 
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
                         <div style="background: white; padding: 1rem; border-radius: 10px; border-left: 4px solid #28a745;">
-                            <strong style="color: #28a745;">🖥️ App Server 1</strong>
-                            <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">Primary instance</p>
+                            <strong style="color: var(--wiki-success);">🖥️ App Server 1</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); font-size: 0.9rem;">Primary instance</p>
                         </div>
                         <div style="background: white; padding: 1rem; border-radius: 10px; border-left: 4px solid #28a745;">
-                            <strong style="color: #28a745;">🖥️ App Server 2</strong>
-                            <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">Replica instance</p>
+                            <strong style="color: var(--wiki-success);">🖥️ App Server 2</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); font-size: 0.9rem;">Replica instance</p>
                         </div>
                         <div style="background: white; padding: 1rem; border-radius: 10px; border-left: 4px solid #28a745;">
-                            <strong style="color: #28a745;">🖥️ App Server N</strong>
-                            <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">Auto-scaled</p>
+                            <strong style="color: var(--wiki-success);">🖥️ App Server N</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); font-size: 0.9rem;">Auto-scaled</p>
                         </div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                         <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #dc3545;">
-                            <strong style="color: #dc3545; font-size: 1.1rem;">🗄️ Database Master (Write)</strong>
-                            <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                            <strong style="color: var(--wiki-danger); font-size: 1.1rem;">🗄️ Database Master (Write)</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                                 Primary database for writes, replicates to read replicas
                             </p>
                         </div>
                         <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #ffc107;">
-                            <strong style="color: #ffc107; font-size: 1.1rem;">🗄️ Database Slaves (Read)</strong>
-                            <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                            <strong style="color: var(--wiki-warning); font-size: 1.1rem;">🗄️ Database Slaves (Read)</strong>
+                            <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                                 Read replicas for queries, reduces master load
                             </p>
                         </div>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #6f42c1;">
-                        <strong style="color: #6f42c1; font-size: 1.1rem;">⚡ Redis Cluster (Cache & Sessions)</strong>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; line-height: 1.8;">
+                        <strong style="color: var(--wiki-info-dark); font-size: 1.1rem;">⚡ Redis Cluster (Cache & Sessions)</strong>
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); line-height: 1.8;">
                             Shared cache layer, session storage, job queue - all servers connect to same Redis cluster
                         </p>
                     </div>
@@ -600,17 +600,17 @@
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb));">4 hours</div>
                         <div style="font-weight: 600;">RTO (Recovery Time Objective)</div>
-                        <div style="font-size: 0.85rem; color: #6c757d; margin-top: 0.5rem;">Maximum downtime tolerance</div>
+                        <div style="font-size: 0.85rem; color: var(--wiki-text-muted); margin-top: 0.5rem;">Maximum downtime tolerance</div>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--secondary-rgb));">15 min</div>
                         <div style="font-weight: 600;">RPO (Recovery Point Objective)</div>
-                        <div style="font-size: 0.85rem; color: #6c757d; margin-top: 0.5rem;">Maximum data loss tolerance</div>
+                        <div style="font-size: 0.85rem; color: var(--wiki-text-muted); margin-top: 0.5rem;">Maximum data loss tolerance</div>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--accent-rgb));">99.9%</div>
                         <div style="font-weight: 600;">Uptime SLA</div>
-                        <div style="font-size: 0.85rem; color: #6c757d; margin-top: 0.5rem;">~43 min downtime/month allowed</div>
+                        <div style="font-size: 0.85rem; color: var(--wiki-text-muted); margin-top: 0.5rem;">~43 min downtime/month allowed</div>
                     </div>
                 </div>
             </div>
@@ -707,76 +707,76 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🔄 CI/CD Pipeline</h2>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h4 style="font-weight: 700; margin-bottom: 1.5rem;">🚀 Automated Deployment Process</h4>
 
                 <div style="display: grid; gap: 1rem;">
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #0dcaf0;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #0dcaf0; font-size: 1.1rem;">1️⃣ Code Push</strong>
+                            <strong style="color: var(--wiki-info); font-size: 1.1rem;">1️⃣ Code Push</strong>
                             <span style="background: #0dcaf0; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">Git</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted);">
                             Developer pushes code to GitHub/GitLab → Webhook triggers CI/CD pipeline
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #6f42c1;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #6f42c1; font-size: 1.1rem;">2️⃣ Code Quality Checks</strong>
+                            <strong style="color: var(--wiki-info-dark); font-size: 1.1rem;">2️⃣ Code Quality Checks</strong>
                             <span style="background: #6f42c1; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">~2 min</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted);">
                             PHP CS Fixer, ESLint, PHPStan (static analysis), SonarQube security scan
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #ffc107;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #ffc107; font-size: 1.1rem;">3️⃣ Automated Testing</strong>
+                            <strong style="color: var(--wiki-warning); font-size: 1.1rem;">3️⃣ Automated Testing</strong>
                             <span style="background: #ffc107; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">~5 min</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted);">
                             Unit tests (PHPUnit), Feature tests, E2E tests (critical paths only)
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #fd7e14;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #fd7e14; font-size: 1.1rem;">4️⃣ Build Assets</strong>
+                            <strong style="color: var(--wiki-warning); font-size: 1.1rem;">4️⃣ Build Assets</strong>
                             <span style="background: #fd7e14; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">~3 min</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted);">
                             npm run build, compile CSS/JS, optimize images, generate asset manifest
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #20c997;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #20c997; font-size: 1.1rem;">5️⃣ Deploy to Staging</strong>
+                            <strong style="color: var(--wiki-success); font-size: 1.1rem;">5️⃣ Deploy to Staging</strong>
                             <span style="background: #20c997; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">~2 min</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted);">
                             Deploy to staging environment, run database migrations, clear cache
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #0d6efd;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #0d6efd; font-size: 1.1rem;">6️⃣ Smoke Tests</strong>
+                            <strong style="color: var(--wiki-info); font-size: 1.1rem;">6️⃣ Smoke Tests</strong>
                             <span style="background: #0d6efd; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">~1 min</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted);">
                             Test critical endpoints on staging, verify homepage loads, check database connectivity
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #28a745;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                            <strong style="color: #28a745; font-size: 1.1rem;">7️⃣ Deploy to Production</strong>
+                            <strong style="color: var(--wiki-success); font-size: 1.1rem;">7️⃣ Deploy to Production</strong>
                             <span style="background: #28a745; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">~3 min</span>
                         </div>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d;">
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted);">
                             Zero-downtime deployment, blue-green strategy, automatic rollback on failure
                         </p>
                     </div>
@@ -784,7 +784,7 @@
                     <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--secondary-rgb), 0.02) 100%); padding: 1.5rem; border-radius: 10px; border: 2px solid rgb(var(--primary-rgb));">
                         <div style="text-align: center;">
                             <strong style="color: rgb(var(--primary-rgb)); font-size: 1.3rem;">✅ Total Pipeline Time: ~16 minutes</strong>
-                            <p style="margin: 0.5rem 0 0 0; color: #6c757d;">From code push to production deployment</p>
+                            <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted);">From code push to production deployment</p>
                         </div>
                     </div>
                 </div>

@@ -61,15 +61,15 @@
 
         <div class="stats-grid" style="margin: 2rem 0;">
             <div class="stat-card">
-                <div class="stat-number" style="color: #ef4444;">65%</div>
+                <div class="stat-number" style="color: var(--wiki-danger);">65%</div>
                 <div class="stat-label">ของคนไทยมีรายได้ไม่เพียงพอ</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" style="color: #f59e0b;">3M+</div>
+                <div class="stat-number" style="color: var(--wiki-warning);">3M+</div>
                 <div class="stat-label">คนทำงาน Freelance/Part-time</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" style="color: #ef4444;">40%</div>
+                <div class="stat-number" style="color: var(--wiki-danger);">40%</div>
                 <div class="stat-label">ของผู้ทำ MLM ขาดทุน</div>
             </div>
         </div>

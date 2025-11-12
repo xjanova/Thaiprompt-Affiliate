@@ -198,7 +198,7 @@
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">💡 Best Practices</h4>
             <ul style="line-height: 2; color: var(--wiki-text);">
                 <li><strong>Hardware Fingerprinting:</strong> Bind license to MAC address, CPU ID, or hardware signature to prevent key sharing</li>
@@ -377,7 +377,7 @@
             </tbody>
         </table>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
             <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📈 Quotation Conversion Tips</h4>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
                 <div>
@@ -611,7 +611,7 @@
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">💡 Customer Portal Benefits</h4>
             <ul style="line-height: 2; color: var(--wiki-text);">
                 <li><strong>24/7 Self-Service:</strong> Customers can manage licenses, download software, and check status anytime without contacting support</li>
@@ -822,17 +822,17 @@
             </div>
         </div>
 
-        <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+        <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
             <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📊 ROI Example: Software Sales Business</h4>
             <div style="font-family: monospace; font-size: 0.95rem; line-height: 2;">
                 <strong>Software Vendor - Medium Size</strong><br><br>
 
-                <span style="color: #e91e63;"><strong>Before Automated System:</strong></span><br>
+                <span style="color: var(--wiki-danger);"><strong>Before Automated System:</strong></span><br>
                 • Manual quotation creation: 30 min each × 200/mo = ฿75,000/mo cost<br>
                 • License key generation: Manual process, 15 min each = ฿35,000/mo<br>
                 • Renewal tracking: Spreadsheets, missed renewals 20% = ฿240,000/mo lost<br>
                 • Customer support: 40% tickets for keys/downloads = ฿120,000/mo<br>
-                <hr style="margin: 1rem 0; border-color: #ddd;">
+                <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                 <span style="color: rgb(var(--primary-rgb));"><strong>After Software Sales System:</strong></span><br>
                 • Auto quotation: 2 min each = ฿67,500/mo saved<br>
@@ -840,7 +840,7 @@
                 • Auto renewals: 87% renewal rate = ฿240,000/mo recovered<br>
                 • Self-service portal: 65% fewer support tickets = ฿78,000/mo saved<br>
                 • Upsells via portal: +12% upgrade rate = ฿150,000/mo new revenue<br>
-                <hr style="margin: 1rem 0; border-color: #ddd;">
+                <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                 <strong>Investment:</strong> ฿9,990/month (Included in Platform)<br>
                 <strong style="color: rgb(var(--secondary-rgb));">Net Benefit:</strong> ฿560,510/month<br>
