@@ -74,7 +74,6 @@ Route::prefix('v1')->group(function () {
     // App Configuration (public)
     Route::prefix('app')->group(function () {
         Route::get('/maintenance-status', [AppConfigController::class, 'maintenanceStatus']);
-        Route::get('/check-update', [AppConfigController::class, 'checkUpdate']);
 
         // Emergency Alert Banners (public - anyone can view)
         Route::get('/banners', [\App\Http\Controllers\Admin\AppBannerController::class, 'apiBanners']);
