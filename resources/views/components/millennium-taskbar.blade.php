@@ -113,6 +113,7 @@
             ['icon' => '📈', 'label' => 'วิเคราะห์ระบบ', 'url' => route('admin.analytics.index'), 'color' => 'from-cyan-600 to-blue-600'],
             ['icon' => '👥', 'label' => 'ผู้ใช้งาน', 'url' => route('admin.users.index'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '🔒', 'label' => 'ความปลอดภัย', 'url' => route('admin.security.index'), 'color' => 'from-red-600 to-rose-600', 'highlight' => true],
+            ['icon' => '🎨', 'label' => 'AI Gen System', 'url' => route('admin.ai-gen.dashboard'), 'color' => 'from-violet-600 via-fuchsia-600 to-pink-600', 'highlight' => true],
             ['icon' => '🏨', 'label' => 'จัดการโรงแรม', 'url' => route('admin.hotels.index'), 'color' => 'from-orange-600 to-amber-600'],
             ['icon' => '👨‍💼', 'label' => 'ผู้เช่าโรงแรม', 'url' => route('admin.hotel-owners.index'), 'color' => 'from-amber-600 to-yellow-600'],
             ['icon' => '🛒', 'label' => 'อีคอมเมิร์ซ', 'url' => route('admin.ecommerce.products.index'), 'color' => 'from-green-600 to-emerald-600'],
@@ -152,6 +153,7 @@
         $menuItems = [
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('user.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
             ['icon' => '💰', 'label' => 'เส้นทางเศรษฐี', 'url' => route('user.wealth-guide'), 'color' => 'from-yellow-600 via-amber-600 to-orange-600', 'highlight' => true],
+            ['icon' => '🎨', 'label' => 'AI Gen (สร้างภาพ/วิดีโอ)', 'url' => route('user.ai-gen.index'), 'color' => 'from-violet-600 via-purple-600 to-fuchsia-600', 'highlight' => true],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('user.profile'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '🪪', 'label' => 'ยืนยันตัวตน (KYC)', 'url' => route('user.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
             ['icon' => '🔐', 'label' => 'Two-Factor Auth', 'url' => route('user.two-factor.setup'), 'color' => 'from-red-500 to-rose-500', 'highlight' => true],
@@ -167,7 +169,7 @@
             ['icon' => '💖', 'label' => 'รักษายอด', 'url' => route('user.retention.index'), 'color' => 'from-red-600 to-pink-600'],
             ['icon' => '📦', 'label' => 'ที่อยู่จัดส่ง', 'url' => route('shipping-addresses.index'), 'color' => 'from-cyan-600 to-blue-600'],
             ['icon' => '🔔', 'label' => 'การแจ้งเตือน', 'url' => route('user.notifications.index'), 'color' => 'from-sky-600 to-blue-600'],
-            ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '⚙️', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
         ];
 
         // Add Hotel Owner menu if user is hotel admin
