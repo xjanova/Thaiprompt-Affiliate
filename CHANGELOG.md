@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.150.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #897 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (ff738a11)
+- fix: Improve tab switching JavaScript with scroll-to-top and better event handling (5627d9b2)
+### 🔧 Other Changes
+
+
 ## [v2.150.0] - 2025-11-12
 
 ### ✨ Features
