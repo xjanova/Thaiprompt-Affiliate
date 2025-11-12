@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.158.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #916 from xjanova/claude/line-membership-signup-ai-011CV44jm1c6wQcdFm8AfUDJ (c2144ee3)
+- fix: Add LineSignupTemplateSeeder to DatabaseSeeder (e3d22ab1)
+### 🔧 Other Changes
+
+
 ## [v2.158.0] - 2025-11-12
 
 ### ✨ Features
