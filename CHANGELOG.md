@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.157.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #912 from xjanova/claude/fix-app-maintenance-route-011CV47dLoWZz35CYq5jNHU2 (d98b6620)
+- fix: correct app-maintenance route prefix (7bd0c0ef)
+### 🔧 Other Changes
+
+
 ## [v2.157.0] - 2025-11-12
 
 ### ✨ Features
