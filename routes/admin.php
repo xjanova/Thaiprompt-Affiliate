@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\HeaderSettingsController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\SeoController;
@@ -173,6 +174,12 @@ Route::get('settings', [SettingsController::class, 'index'])->name('settings.ind
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
 Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
+
+// Header Settings
+Route::prefix('header-settings')->name('header-settings.')->group(function () {
+    Route::get('/', [HeaderSettingsController::class, 'index'])->name('index');
+    Route::put('/', [HeaderSettingsController::class, 'update'])->name('update');
+});
 
 // WebP Management
 Route::prefix('webp')->name('webp.')->group(function () {
