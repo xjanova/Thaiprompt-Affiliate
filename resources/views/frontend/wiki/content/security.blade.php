@@ -26,38 +26,10 @@
             </div>
         </div>
     </div>
-</div>
+</section>
 
-{{-- Tab Navigation --}}
-<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border); padding-bottom: 1rem;">
-    <button class="wiki-tab active" data-tab="tab1"
-            style="flex: 1; min-width: 200px; padding: 1rem 1.5rem; border: none; background: rgb(var(--primary-rgb)); color: white; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem;"
-            onmouseover="if(!this.classList.contains('active')) this.style.background='rgba(var(--primary-rgb), 0.1)'; if(!this.classList.contains('active')) this.style.color='rgb(var(--primary-rgb))'"
-            onmouseout="if(!this.classList.contains('active')) this.style.background='var(--wiki-card-bg)'; if(!this.classList.contains('active')) this.style.color='var(--wiki-text)'">
-        🔐 Authentication & Access
-    </button>
-    <button class="wiki-tab" data-tab="tab2"
-            style="flex: 1; min-width: 200px; padding: 1rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem;"
-            onmouseover="if(!this.classList.contains('active')) this.style.background='rgba(var(--secondary-rgb), 0.1)'; if(!this.classList.contains('active')) this.style.color='rgb(var(--secondary-rgb))'"
-            onmouseout="if(!this.classList.contains('active')) this.style.background='var(--wiki-card-bg)'; if(!this.classList.contains('active')) this.style.color='var(--wiki-text)'">
-        🛡️ Threat Protection
-    </button>
-    <button class="wiki-tab" data-tab="tab3"
-            style="flex: 1; min-width: 200px; padding: 1rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem;"
-            onmouseover="if(!this.classList.contains('active')) this.style.background='rgba(var(--accent-rgb), 0.1)'; if(!this.classList.contains('active')) this.style.color='rgb(var(--accent-rgb))'"
-            onmouseout="if(!this.classList.contains('active')) this.style.background='var(--wiki-card-bg)'; if(!this.classList.contains('active')) this.style.color='var(--wiki-text)'">
-        ✅ Compliance & Audit
-    </button>
-    <button class="wiki-tab" data-tab="tab4"
-            style="flex: 1; min-width: 200px; padding: 1rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem;"
-            onmouseover="if(!this.classList.contains('active')) this.style.background='rgba(var(--primary-rgb), 0.1)'; if(!this.classList.contains('active')) this.style.color='rgb(var(--primary-rgb))'"
-            onmouseout="if(!this.classList.contains('active')) this.style.background='var(--wiki-card-bg)'; if(!this.classList.contains('active')) this.style.color='var(--wiki-text)'">
-        📊 Security Monitoring
-    </button>
-</div>
-
-{{-- Tab 1: Authentication & Access Control --}}
-<div class="wiki-tab-content active" data-tab-content="tab1" style="display: block;">
+{{-- 1: Authentication & Access Control --}}
+<section id="tab1" class="wiki-section">
     <section class="wiki-section" style="margin-bottom: 3rem;">
         <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>🔐</span> Authentication Methods
@@ -246,10 +218,10 @@
             </ul>
         </div>
     </section>
-</div>
+</section>
 
-{{-- Tab 2: Threat Protection --}}
-<div class="wiki-tab-content" data-tab-content="tab2" style="display: none;">
+{{-- 2: Threat Protection --}}
+<section id="tab2" class="wiki-section">
     <section class="wiki-section" style="margin-bottom: 3rem;">
         <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>🛡️</span> Multi-Layer Security Protection
@@ -406,10 +378,10 @@
             </ul>
         </div>
     </section>
-</div>
+</section>
 
-{{-- Tab 3: Compliance & Audit --}}
-<div class="wiki-tab-content" data-tab-content="tab3" style="display: none;">
+{{-- 3: Compliance & Audit --}}
+<section id="tab3" class="wiki-section">
     <section class="wiki-section" style="margin-bottom: 3rem;">
         <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>✅</span> Regulatory Compliance
@@ -591,10 +563,10 @@
             </ul>
         </div>
     </section>
-</div>
+</section>
 
-{{-- Tab 4: Security Monitoring --}}
-<div class="wiki-tab-content" data-tab-content="tab4" style="display: none;">
+{{-- 4: Security Monitoring --}}
+<section id="tab4" class="wiki-section">
     <section class="wiki-section" style="margin-bottom: 3rem;">
         <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>📊</span> 24/7 Security Operations Center (SOC)
@@ -806,37 +778,3 @@
     </section>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>

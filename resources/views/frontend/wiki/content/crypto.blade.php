@@ -6,26 +6,8 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div class="tab-navigation" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
-        <button class="tab-btn active" data-tab="wallet" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-            💵 Digital Wallet
-        </button>
-        <button class="tab-btn" data-tab="crypto" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-            ₿ Cryptocurrency
-        </button>
-        <button class="tab-btn" data-tab="exchange" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-            💱 Exchange
-        </button>
-        <button class="tab-btn" data-tab="investment" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-            📈 Investment & Staking
-        </button>
-        <button class="tab-btn" data-tab="security" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-            🔐 Security
-        </button>
-    </div>
-
     <!-- Tab 1: Digital Wallet -->
-    <div class="tab-content active" data-tab-content="wallet">
+    <section id="wallet" class="wiki-section">
         <section class="wiki-section">
             <h2>💰 Digital Wallet System - ระบบกระเป๋าเงินดิจิทัล</h2>
 
@@ -160,7 +142,7 @@
     </div>
 
     <!-- Tab 2: Cryptocurrency -->
-    <div class="tab-content" data-tab-content="crypto" style="display: none;">
+    <section id="crypto" class="wiki-section">
         <section class="wiki-section">
             <h2>₿ Cryptocurrency Integration - ระบบ Crypto แบบครบวงจร</h2>
 
@@ -311,7 +293,7 @@
     </div>
 
     <!-- Tab 3: Exchange -->
-    <div class="tab-content" data-tab-content="exchange" style="display: none;">
+    <section id="exchange" class="wiki-section">
         <section class="wiki-section">
             <h2>💱 Crypto Exchange Features - ระบบแลกเปลี่ยน Crypto</h2>
 
@@ -432,7 +414,7 @@
     </div>
 
     <!-- Tab 4: Investment & Staking -->
-    <div class="tab-content" data-tab-content="investment" style="display: none;">
+    <section id="investment" class="wiki-section">
         <section class="wiki-section">
             <h2>📈 Investment & Staking - ระบบลงทุนและ Staking</h2>
 
@@ -546,7 +528,7 @@
     </div>
 
     <!-- Tab 5: Security -->
-    <div class="tab-content" data-tab-content="security" style="display: none;">
+    <section id="security" class="wiki-section">
         <section class="wiki-section">
             <h2>🔐 Security Features - ระบบรักษาความปลอดภัย</h2>
 

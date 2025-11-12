@@ -3,26 +3,10 @@
     <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
         <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">🏪 Point of Sale System</h1>
         <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบขายหน้าร้านที่ทันสมัย รองรับ Multi-device, Offline Mode และเชื่อมต่อระบบบัญชี</p>
-    </div>
+    </section>
 
-    {{-- Tab Navigation --}}
-    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
-        <button class="wiki-tab active" data-tab="terminal" style="padding: 1rem 2rem; border: none; background: rgb(var(--primary-rgb)); color: white; cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-            💻 POS Terminal & Hardware
-        </button>
-        <button class="wiki-tab" data-tab="sales" style="padding: 1rem 2rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-            🛒 Sales & Inventory
-        </button>
-        <button class="wiki-tab" data-tab="reports" style="padding: 1rem 2rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-            📊 Multi-location & Reports
-        </button>
-        <button class="wiki-tab" data-tab="integration" style="padding: 1rem 2rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-            🔗 Integration & Features
-        </button>
-    </div>
-
-    {{-- Tab 1: POS Terminal & Hardware --}}
-    <div class="wiki-tab-content active" data-tab-content="terminal" style="display: block;">
+{{-- 1: POS Terminal & Hardware --}}
+    <section id="terminal" class="wiki-section">
         <section class="wiki-section">
             <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">💻 POS Terminal & Hardware</h2>
 
@@ -135,10 +119,10 @@
                 </ul>
             </div>
         </section>
-    </div>
+    </section>
 
-    {{-- Tab 2: Sales & Inventory --}}
-    <div class="wiki-tab-content" data-tab-content="sales" style="display: none;">
+{{-- 2: Sales & Inventory --}}
+    <section id="sales" class="wiki-section">
         <section class="wiki-section">
             <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🛒 Sales & Inventory Management</h2>
 
@@ -279,10 +263,10 @@
                 </ul>
             </div>
         </section>
-    </div>
+    </section>
 
-    {{-- Tab 3: Multi-location & Reports --}}
-    <div class="wiki-tab-content" data-tab-content="reports" style="display: none;">
+{{-- 3: Multi-location & Reports --}}
+    <section id="reports" class="wiki-section">
         <section class="wiki-section">
             <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📊 Multi-location & Sales Reports</h2>
 
@@ -458,10 +442,10 @@
                 </ul>
             </div>
         </section>
-    </div>
+    </section>
 
-    {{-- Tab 4: Integration & Features --}}
-    <div class="wiki-tab-content" data-tab-content="integration" style="display: none;">
+{{-- 4: Integration & Features --}}
+    <section id="integration" class="wiki-section">
         <section class="wiki-section">
             <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🔗 Integration & Advanced Features</h2>
 
@@ -714,37 +698,3 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>

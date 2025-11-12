@@ -6,26 +6,8 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div class="tab-navigation" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
-        <button class="tab-btn active" data-tab="ai-chatbot" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            🧠 AI Chatbot
-        </button>
-        <button class="tab-btn" data-tab="ai-creation" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            🎨 AI Image/Video
-        </button>
-        <button class="tab-btn" data-tab="line-bot" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            💬 LINE Bot
-        </button>
-        <button class="tab-btn" data-tab="knowledge" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            📚 Knowledge Base
-        </button>
-        <button class="tab-btn" data-tab="rental" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            💼 Bot Rental
-        </button>
-    </div>
-
     {{-- AI Chatbot Tab --}}
-    <div class="tab-content active" data-tab-content="ai-chatbot">
+    <section id="ai-chatbot" class="wiki-section">
         <section class="wiki-section">
             <h2>🧠 AI Chatbot Multi-Provider</h2>
 
@@ -138,10 +120,10 @@
                 </ul>
             </div>
         </section>
-    </div>
+    </section>
 
     {{-- AI Image/Video Creation Tab --}}
-    <div class="tab-content" data-tab-content="ai-creation" style="display: none;">
+    <section id="ai-creation" class="wiki-section">
         <section class="wiki-section">
             <h2>🎨 AI Image & Video Generation - สร้างภาพและวิดีโอด้วย AI</h2>
 
@@ -345,10 +327,10 @@
                 </div>
             </div>
         </section>
-    </div>
+    </section>
 
     {{-- LINE Bot Tab --}}
-    <div class="tab-content" data-tab-content="line-bot" style="display: none;">
+    <section id="line-bot" class="wiki-section">
         <section class="wiki-section">
             <h2>💬 LINE Official Account Integration</h2>
 
@@ -438,10 +420,10 @@
                 </div>
             </div>
         </section>
-    </div>
+    </section>
 
     {{-- Knowledge Base Tab --}}
-    <div class="tab-content" data-tab-content="knowledge" style="display: none;">
+    <section id="knowledge" class="wiki-section">
         <section class="wiki-section">
             <h2>📚 Knowledge Base & RAG System</h2>
 
@@ -520,10 +502,10 @@
                 </ul>
             </div>
         </section>
-    </div>
+    </section>
 
     {{-- Bot Rental Tab --}}
-    <div class="tab-content" data-tab-content="rental" style="display: none;">
+    <section id="rental" class="wiki-section">
         <section class="wiki-section">
             <h2>💼 AI Bot Rental System</h2>
 
@@ -623,5 +605,5 @@
                 </p>
             </div>
         </section>
-    </div>
+    </section>
 </div>

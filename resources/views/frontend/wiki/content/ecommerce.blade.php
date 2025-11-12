@@ -2,26 +2,10 @@
 <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
     <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">🛍️ E-Commerce & Marketplace System</h1>
     <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบอีคอมเมิร์ซและตลาดกลางออนไลน์แบบครบวงจร รองรับหลายผู้ขาย เชื่อมต่อ Marketplace ชั้นนำ</p>
-</div>
+</section>
 
-{{-- Tab Navigation --}}
-<div style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--wiki-border); margin-bottom: 2rem; flex-wrap: wrap;">
-    <button class="wiki-tab active" data-tab="products" style="padding: 0.75rem 1.5rem; border: none; background: rgb(var(--primary-rgb)); color: white; font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        📦 Product Management
-    </button>
-    <button class="wiki-tab" data-tab="cart" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        🛒 Cart & Checkout
-    </button>
-    <button class="wiki-tab" data-tab="shipping" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        🚚 Shipping & Delivery
-    </button>
-    <button class="wiki-tab" data-tab="marketplace" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        🏪 Multi-Vendor Marketplace
-    </button>
-</div>
-
-{{-- Tab 1: Product Management --}}
-<div class="wiki-tab-content active" data-tab-content="products">
+{{-- 1: Product Management --}}
+<section id="products" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📦 Product Management System</h2>
 
     <div class="info-box success">
@@ -116,10 +100,10 @@
             <li><strong>Cross-selling:</strong> เพิ่ม Related Products เพื่อเพิ่มโอกาสขายเพิ่ม</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 2: Cart & Checkout --}}
-<div class="wiki-tab-content" data-tab-content="cart" style="display: none;">
+{{-- 2: Cart & Checkout --}}
+<section id="cart" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🛒 Shopping Cart & Checkout System</h2>
 
     <div class="info-box success">
@@ -253,10 +237,10 @@
             <li><strong>3 วัน:</strong> อีเมลสุดท้าย "โอกาสสุดท้าย!" + ส่วนลด 10%</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 3: Shipping & Delivery --}}
-<div class="wiki-tab-content" data-tab-content="shipping" style="display: none;">
+{{-- 3: Shipping & Delivery --}}
+<section id="shipping" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🚚 Shipping & Delivery System</h2>
 
     <div class="info-box success">
@@ -396,10 +380,10 @@
             <li><strong>Track Proactively:</strong> ติดตามพัสดุเองและแจ้งลูกค้าทันทีถ้ามีปัญหา</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 4: Multi-Vendor Marketplace --}}
-<div class="wiki-tab-content" data-tab-content="marketplace" style="display: none;">
+{{-- 4: Multi-Vendor Marketplace --}}
+<section id="marketplace" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🏪 Multi-Vendor Marketplace System</h2>
 
     <div class="info-box success">
@@ -533,38 +517,3 @@
     </div>
 </div>
 
-<script>
-// Tab switching functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>

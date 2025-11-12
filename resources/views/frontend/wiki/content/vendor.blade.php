@@ -28,37 +28,8 @@
     </div>
 </div>
 
-{{-- Tab Navigation --}}
-<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border); padding-bottom: 1rem;">
-    <button class="wiki-tab active" data-tab="tab1"
-            style="flex: 1; min-width: 200px; padding: 1rem 1.5rem; border: none; background: rgb(var(--primary-rgb)); color: white; border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem;"
-            onmouseover="if(!this.classList.contains('active')) this.style.background='rgba(var(--primary-rgb), 0.1)'; if(!this.classList.contains('active')) this.style.color='rgb(var(--primary-rgb))'"
-            onmouseout="if(!this.classList.contains('active')) this.style.background='var(--wiki-card-bg)'; if(!this.classList.contains('active')) this.style.color='var(--wiki-text)'">
-        🏪 Vendor Store Management
-    </button>
-    <button class="wiki-tab" data-tab="tab2"
-            style="flex: 1; min-width: 200px; padding: 1rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem;"
-            onmouseover="if(!this.classList.contains('active')) this.style.background='rgba(var(--secondary-rgb), 0.1)'; if(!this.classList.contains('active')) this.style.color='rgb(var(--secondary-rgb))'"
-            onmouseout="if(!this.classList.contains('active')) this.style.background='var(--wiki-card-bg)'; if(!this.classList.contains('active')) this.style.color='var(--wiki-text)'">
-        💰 Commission & Payouts
-    </button>
-    <button class="wiki-tab" data-tab="tab3"
-            style="flex: 1; min-width: 200px; padding: 1rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem;"
-            onmouseover="if(!this.classList.contains('active')) this.style.background='rgba(var(--accent-rgb), 0.1)'; if(!this.classList.contains('active')) this.style.color='rgb(var(--accent-rgb))'"
-            onmouseout="if(!this.classList.contains('active')) this.style.background='var(--wiki-card-bg)'; if(!this.classList.contains('active')) this.style.color='var(--wiki-text)'">
-        📊 Vendor Analytics
-    </button>
-    <button class="wiki-tab" data-tab="tab4"
-            style="flex: 1; min-width: 200px; padding: 1rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); border-radius: 12px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-size: 1rem;"
-            onmouseover="if(!this.classList.contains('active')) this.style.background='rgba(var(--primary-rgb), 0.1)'; if(!this.classList.contains('active')) this.style.color='rgb(var(--primary-rgb))'"
-            onmouseout="if(!this.classList.contains('active')) this.style.background='var(--wiki-card-bg)'; if(!this.classList.contains('active')) this.style.color='var(--wiki-text)'">
-        ⚙️ Marketplace Admin
-    </button>
-</div>
-
-{{-- Tab 1: Vendor Store Management --}}
-<div class="wiki-tab-content active" data-tab-content="tab1" style="display: block;">
-    <section class="wiki-section" style="margin-bottom: 3rem;">
+{{-- Vendor Store Management Section --}}
+<section id="vendor-store" class="wiki-section" style="margin-bottom: 3rem;">
         <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>🏪</span> Vendor Store Setup & Management
         </h2>
@@ -173,11 +144,9 @@
             </ul>
         </div>
     </section>
-</div>
 
-{{-- Tab 2: Commission & Payouts --}}
-<div class="wiki-tab-content" data-tab-content="tab2" style="display: none;">
-    <section class="wiki-section" style="margin-bottom: 3rem;">
+{{-- Commission & Payouts Section --}}
+<section id="vendor-commission" class="wiki-section" style="margin-bottom: 3rem;">
         <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>💰</span> Commission Structure & Auto-Split
         </h2>
@@ -306,11 +275,9 @@
             </ul>
         </div>
     </section>
-</div>
 
-{{-- Tab 3: Vendor Analytics --}}
-<div class="wiki-tab-content" data-tab-content="tab3" style="display: none;">
-    <section class="wiki-section" style="margin-bottom: 3rem;">
+{{-- Vendor Analytics Section --}}
+<section id="vendor-analytics" class="wiki-section" style="margin-bottom: 3rem;">
         <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>📊</span> Performance Analytics & Insights
         </h2>
@@ -428,11 +395,9 @@
             </ul>
         </div>
     </section>
-</div>
 
-{{-- Tab 4: Marketplace Admin --}}
-<div class="wiki-tab-content" data-tab-content="tab4" style="display: none;">
-    <section class="wiki-section" style="margin-bottom: 3rem;">
+{{-- Marketplace Admin Section --}}
+<section id="vendor-admin" class="wiki-section" style="margin-bottom: 3rem;">
         <h2 style="color: rgb(var(--primary-rgb)); font-size: 2rem; font-weight: 700; margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>⚙️</span> Marketplace Administration & Control
         </h2>
@@ -577,39 +542,3 @@
             </ul>
         </div>
     </section>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>

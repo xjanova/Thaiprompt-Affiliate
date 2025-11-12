@@ -6,24 +6,8 @@
     </div>
 
     <section class="wiki-section">
-        {{-- Tab Navigation --}}
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border); padding-bottom: 0.5rem;">
-            <button class="wiki-tab active" data-tab="ticket-mgmt" style="padding: 0.75rem 1.5rem; border: 2px solid var(--wiki-border); border-radius: 10px; background: rgb(var(--primary-rgb)); color: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                🎫 Ticket Management
-            </button>
-            <button class="wiki-tab" data-tab="communication" style="padding: 0.75rem 1.5rem; border: 2px solid var(--wiki-border); border-radius: 10px; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                💬 Communication & Collaboration
-            </button>
-            <button class="wiki-tab" data-tab="analytics" style="padding: 0.75rem 1.5rem; border: 2px solid var(--wiki-border); border-radius: 10px; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                📊 Analytics & Reports
-            </button>
-            <button class="wiki-tab" data-tab="automation" style="padding: 0.75rem 1.5rem; border: 2px solid var(--wiki-border); border-radius: 10px; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                🤖 Automation & AI
-            </button>
-        </div>
-
-        {{-- Tab 1: Ticket Management --}}
-        <div class="wiki-tab-content active" data-tab-content="ticket-mgmt" style="display: block;">
+                {{-- Tab 1: Ticket Management --}}
+        <section id="ticket-mgmt" class="wiki-section">
             <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border-left: 4px solid rgb(var(--primary-rgb));">
                 <h3 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">🎯 Advanced Ticket Management</h3>
                 <p style="line-height: 1.8; margin: 0;">ระบบจัดการ Ticket ที่ทรงพลัง รองรับ Multi-channel, Priority-based routing, SLA tracking และ Auto-assignment ช่วยให้ทีม Support ทำงานอย่างมีประสิทธิภาพสูงสุด</p>
@@ -173,10 +157,10 @@
                     <li><strong>Customer History:</strong> แสดงประวัติ Ticket เก่า และ Order ก่อนหน้า</li>
                 </ul>
             </div>
-        </div>
+        </section>
 
-        {{-- Tab 2: Communication & Collaboration --}}
-        <div class="wiki-tab-content" data-tab-content="communication" style="display: none;">
+{{-- 2: Communication & Collaboration --}}
+        <section id="communication" class="wiki-section">
             <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.05) 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border-left: 4px solid rgb(var(--secondary-rgb));">
                 <h3 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--secondary-rgb));">💬 Multi-Channel Communication</h3>
                 <p style="line-height: 1.8; margin: 0;">รองรับการสื่อสารหลากหลายช่องทาง พร้อม Internal Notes, Knowledge Base, Canned Responses และ File Attachments ทำให้การแก้ปัญหารวดเร็วและมีประสิทธิภาพ</p>
@@ -344,10 +328,10 @@
                     <li><strong>Follow-up:</strong> ตั้ง Reminder สำหรับ Ticket ที่ยังรอการติดตามผล</li>
                 </ul>
             </div>
-        </div>
+        </section>
 
-        {{-- Tab 3: Analytics & Reports --}}
-        <div class="wiki-tab-content" data-tab-content="analytics" style="display: none;">
+{{-- 3: Analytics & Reports --}}
+        <section id="analytics" class="wiki-section">
             <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border-left: 4px solid rgb(var(--accent-rgb));">
                 <h3 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">📊 Advanced Analytics & Reporting</h3>
                 <p style="line-height: 1.8; margin: 0;">ติดตามและวิเคราะห์ประสิทธิภาพของทีม Support ด้วย Real-time dashboards, Custom reports, SLA tracking และ Customer satisfaction metrics</p>
@@ -614,10 +598,10 @@
                     <em style="color: var(--wiki-text-secondary);">Plus: Happier customers, better reviews, increased retention!</em>
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- Tab 4: Automation & AI --}}
-        <div class="wiki-tab-content" data-tab-content="automation" style="display: none;">
+{{-- 4: Automation & AI --}}
+        <section id="automation" class="wiki-section">
             <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.05) 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border-left: 4px solid rgb(var(--primary-rgb));">
                 <h3 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">🤖 AI-Powered Support Automation</h3>
                 <p style="line-height: 1.8; margin: 0;">ระบบ AI และ Automation ที่ช่วยลดภาระงาน ตอบคำถามอัตโนมัติ และปรับปรุงประสิทธิภาพของทีม Support อย่างมีนัยสำคัญ</p>
@@ -842,37 +826,3 @@
     </section>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>
