@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.161.6] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #929 from xjanova/claude/fix-theme-controller-index-011CV4KgEE6ZYSxGXVYvRBvB (00b8b4c8)
+- Fix: Add Font Awesome and theme switcher menu to Classic X user layout (acb73204)
+
 ## [v2.161.5] - 2025-11-12
 
 ### ✨ Features
