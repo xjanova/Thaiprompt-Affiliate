@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.161.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #924 from xjanova/claude/admin-menu-ui-revamp-011CV4JN42KSJCamJZRnmE9P (92040f8e)
+- fix: Fix theme switcher functionality and add menu item (8978757d)
+### 🔧 Other Changes
+
+
 ## [v2.161.0] - 2025-11-12
 
 ### ✨ Features
