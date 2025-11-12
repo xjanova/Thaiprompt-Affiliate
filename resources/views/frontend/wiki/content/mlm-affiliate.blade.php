@@ -5,29 +5,9 @@
         <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบขายตรงและตลาดแบบบูรณาการ รองรับทั้ง Binary และ Unilevel พร้อมระบบคอมมิชชั่นแบบ Real-time</p>
     </div>
 
-    <!-- Tab Navigation -->
-    <div class="tab-navigation" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
-        <button class="tab-btn active" data-tab="binary" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            🌳 Binary System
-        </button>
-        <button class="tab-btn" data-tab="unilevel" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            🎯 Unilevel System
-        </button>
-        <button class="tab-btn" data-tab="commission" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            💰 Commission
-        </button>
-        <button class="tab-btn" data-tab="rank" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            👑 Rank & Bonus
-        </button>
-        <button class="tab-btn" data-tab="genealogy" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
-            📊 Genealogy
-        </button>
-    </div>
-
-    {{-- Binary System Tab --}}
-    <div class="tab-content active" data-tab-content="binary">
-        <section class="wiki-section">
-            <h2>🌳 ระบบ Binary MLM - โครงสร้างต้นไม้สองขา</h2>
+    {{-- Binary System Section --}}
+    <section id="mlm-binary" class="wiki-section">
+        <h2>🌳 ระบบ Binary MLM - โครงสร้างต้นไม้สองขา</h2>
 
             <p style="font-size: 1.1rem; margin-bottom: 2rem;">
                 ระบบ Binary เป็นโครงสร้างแบบต้นไม้ที่<strong>แต่ละคนสามารถมีสมาชิกใต้สายงานได้เพียง 2 คน</strong>เท่านั้น (ซ้าย-ขวา)
@@ -137,12 +117,10 @@
                 </div>
             </div>
         </section>
-    </div>
 
-    {{-- Unilevel System Tab --}}
-    <div class="tab-content" data-tab-content="unilevel" style="display: none;">
-        <section class="wiki-section">
-            <h2>🎯 ระบบ Unilevel MLM - โครงสร้างหลายชั้น</h2>
+    {{-- Unilevel System Section --}}
+    <section id="mlm-unilevel" class="wiki-section">
+        <h2>🎯 ระบบ Unilevel MLM - โครงสร้างหลายชั้น</h2>
 
             <p style="font-size: 1.1rem; margin-bottom: 2rem;">
                 ระบบ Unilevel <strong>ไม่จำกัดจำนวนสมาชิกชั้นที่ 1</strong> (Front Line) แต่<strong>จำกัดความลึกของระดับ</strong>ที่จ่ายคอมมิชชั่น
@@ -252,12 +230,10 @@
                 </ul>
             </div>
         </section>
-    </div>
 
-    {{-- Commission Tab --}}
-    <div class="tab-content" data-tab-content="commission" style="display: none;">
-        <section class="wiki-section">
-            <h2>💰 ระบบคอมมิชชั่น - หัวใจของ MLM</h2>
+    {{-- Commission Section --}}
+    <section id="mlm-commission" class="wiki-section">
+        <h2>💰 ระบบคอมมิชชั่น - หัวใจของ MLM</h2>
 
             <p style="font-size: 1.1rem; margin-bottom: 2rem;">
                 ระบบคอมมิชชั่นของเราครอบคลุม<strong>ทุกประเภทรางวัล</strong>ที่ใช้ในธุรกิจ MLM พร้อมระบบคำนวณและจ่ายแบบ Real-time
@@ -385,12 +361,10 @@
                 <p>ระบบคำนวณและจ่ายคอมมิชชั่นแบบ Real-time ภายใน <strong>1-5 นาที</strong> หลังจากมีการสั่งซื้อ ไม่ต้องรอถึงสิ้นเดือน!</p>
             </div>
         </section>
-    </div>
 
-    {{-- Rank & Bonus Tab --}}
-    <div class="tab-content" data-tab-content="rank" style="display: none;">
-        <section class="wiki-section">
-            <h2>👑 ระบบยศและโบนัส - เส้นทางสู่ความสำเร็จ</h2>
+    {{-- Rank & Bonus Section --}}
+    <section id="mlm-rank" class="wiki-section">
+        <h2>👑 ระบบยศและโบนัส - เส้นทางสู่ความสำเร็จ</h2>
 
             <p style="font-size: 1.1rem; margin-bottom: 2rem;">
                 ระบบยศ (Rank System) คือ<strong>แรงจูงใจหลัก</strong>ของธุรกิจ MLM ยิ่งขึ้นยศสูง ยิ่งได้รับสิทธิพิเศษและรายได้มากขึ้น
@@ -486,12 +460,10 @@
                 </p>
             </div>
         </section>
-    </div>
 
-    {{-- Genealogy Tab --}}
-    <div class="tab-content" data-tab-content="genealogy" style="display: none;">
-        <section class="wiki-section">
-            <h2>🌳 ระบบ Genealogy - แสดงโครงสร้างองค์กร</h2>
+    {{-- Genealogy Section --}}
+    <section id="mlm-genealogy" class="wiki-section">
+        <h2>🌳 ระบบ Genealogy - แสดงโครงสร้างองค์กร</h2>
 
             <p style="font-size: 1.1rem; margin-bottom: 2rem;">
                 ระบบ Genealogy คือ<strong>การแสดงโครงสร้างองค์กรแบบ Tree View</strong> ทำให้เห็นภาพรวมของทีมและสายงาน
@@ -619,5 +591,4 @@
                 </ul>
             </div>
         </section>
-    </div>
 </div>
