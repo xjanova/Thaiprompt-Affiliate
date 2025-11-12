@@ -627,39 +627,61 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    const tabContents = document.querySelectorAll('.tab-content');
+(function() {
+    // Wait for DOM to be ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAIBotTabs);
+    } else {
+        initAIBotTabs();
+    }
 
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
+    function initAIBotTabs() {
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
 
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text-primary)';
-                btn.style.border = '1px solid var(--wiki-border)';
-                btn.style.borderBottom = 'none';
+        console.log('AI-Bot Tabs initialized:', tabButtons.length, 'buttons found');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetTab = this.getAttribute('data-tab');
+                console.log('AI-Bot Tab clicked:', targetTab);
+
+                // Remove active class from all buttons and contents
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    btn.style.background = 'var(--wiki-card-bg)';
+                    btn.style.color = 'var(--wiki-text-primary)';
+                    btn.style.border = '1px solid var(--wiki-border)';
+                    btn.style.borderBottom = 'none';
+                });
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    content.style.display = 'none';
+                });
+
+                // Add active class to clicked button and show corresponding content
+                this.classList.add('active');
+                this.style.background = 'linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)))';
+                this.style.color = 'white';
+                this.style.border = 'none';
+
+                const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                    targetContent.style.display = 'block';
+                    console.log('AI-Bot Tab content shown:', targetTab);
+
+                    // Scroll to top of the page smoothly
+                    window.scrollTo({
+                        top: 0,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    console.error('AI-Bot Tab content not found:', targetTab);
+                }
             });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and show corresponding content
-            button.classList.add('active');
-            button.style.background = 'linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)))';
-            button.style.color = 'white';
-            button.style.border = 'none';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
         });
-    });
-});
+    }
+})();
 </script>
