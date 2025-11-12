@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.145.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #884 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (5def2428)
+- fix: Fix Model relationships and missing fields for ticket system (b5ce2753)
+### 🔧 Other Changes
+
+
 ## [v2.145.1] - 2025-11-12
 
 ### ✨ Features
