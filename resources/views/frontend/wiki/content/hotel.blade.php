@@ -3,26 +3,10 @@
     <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
         <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">🏨 Hotel Booking System</h1>
         <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบจองโรงแรมครบวงจร Channel Manager & Property Management ระดับมืออาชีพ</p>
-    </div>
+    </section>
 
-    {{-- Tab Navigation --}}
-    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
-        <button class="wiki-tab active" data-tab="room" style="padding: 1rem 2rem; border: none; background: rgb(var(--primary-rgb)); color: white; cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-            🛏️ Room Management
-        </button>
-        <button class="wiki-tab" data-tab="booking" style="padding: 1rem 2rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-            📅 Booking & Reservation
-        </button>
-        <button class="wiki-tab" data-tab="channel" style="padding: 1rem 2rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-            🌐 Channel Manager
-        </button>
-        <button class="wiki-tab" data-tab="guest" style="padding: 1rem 2rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; border-radius: 8px 8px 0 0; transition: all 0.3s;">
-            ⭐ Guest Experience
-        </button>
-    </div>
-
-    {{-- Tab 1: Room Management --}}
-    <div class="wiki-tab-content active" data-tab-content="room" style="display: block;">
+{{-- 1: Room Management --}}
+    <section id="room" class="wiki-section">
         <section class="wiki-section">
             <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🛏️ Room Management & Inventory</h2>
 
@@ -170,10 +154,10 @@
                 </ul>
             </div>
         </section>
-    </div>
+    </section>
 
-    {{-- Tab 2: Booking & Reservation --}}
-    <div class="wiki-tab-content" data-tab-content="booking" style="display: none;">
+{{-- 2: Booking & Reservation --}}
+    <section id="booking" class="wiki-section">
         <section class="wiki-section">
             <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📅 Booking & Reservation System</h2>
 
@@ -339,10 +323,10 @@
                 </ul>
             </div>
         </section>
-    </div>
+    </section>
 
-    {{-- Tab 3: Channel Manager --}}
-    <div class="wiki-tab-content" data-tab-content="channel" style="display: none;">
+{{-- 3: Channel Manager --}}
+    <section id="channel" class="wiki-section">
         <section class="wiki-section">
             <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🌐 Channel Manager & Distribution</h2>
 
@@ -513,10 +497,10 @@
                 </ul>
             </div>
         </section>
-    </div>
+    </section>
 
-    {{-- Tab 4: Guest Experience --}}
-    <div class="wiki-tab-content" data-tab-content="guest" style="display: none;">
+{{-- 4: Guest Experience --}}
+    <section id="guest" class="wiki-section">
         <section class="wiki-section">
             <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">⭐ Guest Experience & Reviews</h2>
 
@@ -685,37 +669,3 @@
     </div>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>

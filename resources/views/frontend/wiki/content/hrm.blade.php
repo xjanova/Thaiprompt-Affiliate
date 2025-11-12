@@ -2,26 +2,10 @@
 <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
     <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">👥 Human Resource Management (HRM)</h1>
     <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบบริหารทรัพยากรบุคคลครบวงจร จัดการพนักงาน ลา เงินเดือน และประเมินผลอัตโนมัติ</p>
-</div>
+</section>
 
-{{-- Tab Navigation --}}
-<div style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--wiki-border); margin-bottom: 2rem; flex-wrap: wrap;">
-    <button class="wiki-tab active" data-tab="employee" style="padding: 0.75rem 1.5rem; border: none; background: rgb(var(--primary-rgb)); color: white; font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        👥 Employee Management
-    </button>
-    <button class="wiki-tab" data-tab="attendance" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        ⏰ Attendance & Leave
-    </button>
-    <button class="wiki-tab" data-tab="payroll" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        💵 Payroll System
-    </button>
-    <button class="wiki-tab" data-tab="performance" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        📊 Performance & KPI
-    </button>
-</div>
-
-{{-- Tab 1: Employee Management --}}
-<div class="wiki-tab-content active" data-tab-content="employee">
+{{-- 1: Employee Management --}}
+<section id="employee" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">👥 Employee Management System</h2>
 
     <div class="info-box success">
@@ -132,10 +116,10 @@
             <li><strong>PDPA Compliance:</strong> ขออนุญาตเก็บข้อมูลส่วนบุคคล และให้สิทธิ์พนักงานขอลบข้อมูลได้</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 2: Attendance & Leave --}}
-<div class="wiki-tab-content" data-tab-content="attendance" style="display: none;">
+{{-- 2: Attendance & Leave --}}
+<section id="attendance" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">⏰ Attendance & Leave Management</h2>
 
     <div class="info-box success">
@@ -278,10 +262,10 @@
             <li><strong>Overtime Approval:</strong> กำหนดให้ต้องขออนุมัติ OT ก่อนทำ ป้องกันปัญหา</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 3: Payroll System --}}
-<div class="wiki-tab-content" data-tab-content="payroll" style="display: none;">
+{{-- 3: Payroll System --}}
+<section id="payroll" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">💵 Payroll Management System</h2>
 
     <div class="info-box success">
@@ -379,10 +363,10 @@
             <li><strong>Confidentiality:</strong> ข้อมูลเงินเดือนเป็นความลับ จำกัดสิทธิ์การเข้าถึง</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 4: Performance & KPI --}}
-<div class="wiki-tab-content" data-tab-content="performance" style="display: none;">
+{{-- 4: Performance & KPI --}}
+<section id="performance" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📊 Performance & KPI Management</h2>
 
     <div class="info-box success">
@@ -510,38 +494,3 @@
     </div>
 </div>
 
-<script>
-// Tab switching functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>

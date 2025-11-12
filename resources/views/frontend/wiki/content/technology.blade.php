@@ -6,24 +6,8 @@
     </div>
 
     <section class="wiki-section">
-        {{-- Tab Navigation --}}
-        <div style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border); padding-bottom: 0.5rem;">
-            <button class="wiki-tab active" data-tab="tech-stack" style="padding: 0.75rem 1.5rem; border: 2px solid var(--wiki-border); border-radius: 10px; background: rgb(var(--primary-rgb)); color: white; cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                🚀 Technology Stack
-            </button>
-            <button class="wiki-tab" data-tab="architecture" style="padding: 0.75rem 1.5rem; border: 2px solid var(--wiki-border); border-radius: 10px; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                🏗️ Architecture Patterns
-            </button>
-            <button class="wiki-tab" data-tab="infrastructure" style="padding: 0.75rem 1.5rem; border: 2px solid var(--wiki-border); border-radius: 10px; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                ☁️ Infrastructure & Deployment
-            </button>
-            <button class="wiki-tab" data-tab="development" style="padding: 0.75rem 1.5rem; border: 2px solid var(--wiki-border); border-radius: 10px; background: var(--wiki-card-bg); color: var(--wiki-text); cursor: pointer; font-weight: 600; transition: all 0.3s;">
-                💻 Development Workflow
-            </button>
-        </div>
-
-        {{-- Tab 1: Technology Stack --}}
-        <div class="wiki-tab-content active" data-tab-content="tech-stack" style="display: block;">
+                {{-- Tab 1: Technology Stack --}}
+        <section id="tech-stack" class="wiki-section">
             <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border-left: 4px solid rgb(var(--primary-rgb));">
                 <h3 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">🚀 Modern Technology Stack</h3>
                 <p style="line-height: 1.8; margin: 0;">ใช้เทคโนโลยีชั้นนำและ Best Practices ในการพัฒนา ทำให้ระบบมีประสิทธิภาพสูง ปลอดภัย และขยายตัวได้ง่าย</p>
@@ -194,10 +178,10 @@
                     <li><strong>Modern PHP:</strong> Type hints, Null coalescing, Arrow functions, Named arguments</li>
                 </ul>
             </div>
-        </div>
+        </section>
 
-        {{-- Tab 2: Architecture Patterns --}}
-        <div class="wiki-tab-content" data-tab-content="architecture" style="display: none;">
+{{-- 2: Architecture Patterns --}}
+        <section id="architecture" class="wiki-section">
             <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.05) 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border-left: 4px solid rgb(var(--secondary-rgb));">
                 <h3 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--secondary-rgb));">🏗️ Architecture & Design Patterns</h3>
                 <p style="line-height: 1.8; margin: 0;">สถาปัตยกรรมที่ออกแบบมาอย่างดี ใช้ Design Patterns ที่เหมาะสม ทำให้โค้ดอ่านง่าย แก้ไขง่าย และขยายตัวได้ดี</p>
@@ -399,10 +383,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- Tab 3: Infrastructure & Deployment --}}
-        <div class="wiki-tab-content" data-tab-content="infrastructure" style="display: none;">
+{{-- 3: Infrastructure & Deployment --}}
+        <section id="infrastructure" class="wiki-section">
             <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border-left: 4px solid rgb(var(--accent-rgb));">
                 <h3 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">☁️ Infrastructure & Deployment</h3>
                 <p style="line-height: 1.8; margin: 0;">โครงสร้างพื้นฐานที่แข็งแกร่ง รองรับการ Deploy อัตโนมัติ และสามารถขยายตัวได้ตามความต้องการ</p>
@@ -630,10 +614,10 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        {{-- Tab 4: Development Workflow --}}
-        <div class="wiki-tab-content" data-tab-content="development" style="display: none;">
+{{-- 4: Development Workflow --}}
+        <section id="development" class="wiki-section">
             <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.05) 100%); padding: 2rem; border-radius: 15px; margin-bottom: 2rem; border-left: 4px solid rgb(var(--primary-rgb));">
                 <h3 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">💻 Development Workflow & Standards</h3>
                 <p style="line-height: 1.8; margin: 0;">กระบวนการพัฒนาที่มีมาตรฐาน ทดสอบอัตโนมัติ และ Deploy แบบ Continuous Integration/Continuous Deployment (CI/CD)</p>
@@ -878,37 +862,3 @@
     </section>
 </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>

@@ -2,26 +2,10 @@
 <div style="background: linear-gradient(135deg, rgb(var(--primary-rgb)) 0%, rgb(var(--secondary-rgb)) 50%, rgb(var(--accent-rgb)) 100%); padding: 3rem 2rem; border-radius: 20px; margin-bottom: 3rem; color: white; text-align: center;">
     <h1 style="font-size: 2.5rem; font-weight: 800; margin-bottom: 1rem; color: white;">🎓 Academy & Learning Management System (LMS)</h1>
     <p style="font-size: 1.25rem; opacity: 0.95; max-width: 800px; margin: 0 auto;">ระบบเรียนรู้ออนไลน์แบบครบวงจร พร้อม Gamification เพิ่มแรงจูงใจและประกาศนียบัตรดิจิทัล</p>
-</div>
+</section>
 
-{{-- Tab Navigation --}}
-<div style="display: flex; gap: 0.5rem; border-bottom: 2px solid var(--wiki-border); margin-bottom: 2rem; flex-wrap: wrap;">
-    <button class="wiki-tab active" data-tab="courses" style="padding: 0.75rem 1.5rem; border: none; background: rgb(var(--primary-rgb)); color: white; font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        📚 Courses & Content
-    </button>
-    <button class="wiki-tab" data-tab="gamification" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        🏆 Gamification
-    </button>
-    <button class="wiki-tab" data-tab="certificates" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        📜 Certificates
-    </button>
-    <button class="wiki-tab" data-tab="analytics" style="padding: 0.75rem 1.5rem; border: none; background: var(--wiki-card-bg); color: var(--wiki-text); font-weight: 600; border-radius: 8px 8px 0 0; cursor: pointer; transition: all 0.3s;">
-        📊 Analytics & Reports
-    </button>
-</div>
-
-{{-- Tab 1: Courses & Content --}}
-<div class="wiki-tab-content active" data-tab-content="courses">
+{{-- 1: Courses & Content --}}
+<section id="courses" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📚 Learning Content & Courses</h2>
 
     <div class="info-box success">
@@ -126,10 +110,10 @@
             <li><strong>Real-world Examples:</strong> ใช้ตัวอย่างจากการทำงานจริง</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 2: Gamification --}}
-<div class="wiki-tab-content" data-tab-content="gamification" style="display: none;">
+{{-- 2: Gamification --}}
+<section id="gamification" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">🏆 Gamification System</h2>
 
     <div class="info-box success">
@@ -207,10 +191,10 @@
             <li><strong>Fair Competition:</strong> แบ่ง Leaderboard ตามระดับ</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 3: Certificates --}}
-<div class="wiki-tab-content" data-tab-content="certificates" style="display: none;">
+{{-- 3: Certificates --}}
+<section id="certificates" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📜 Digital Certificates</h2>
 
     <div class="info-box success">
@@ -283,10 +267,10 @@
             <li><strong>Blockchain Proof:</strong> บันทึกบน Blockchain เพิ่มความน่าเชื่อถือ</li>
         </ul>
     </div>
-</div>
+</section>
 
-{{-- Tab 4: Analytics & Reports --}}
-<div class="wiki-tab-content" data-tab-content="analytics" style="display: none;">
+{{-- 4: Analytics & Reports --}}
+<section id="analytics" class="wiki-section">
     <h2 style="font-size: 1.75rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text);">📊 Learning Analytics & Reports</h2>
 
     <div class="info-box success">
@@ -362,38 +346,3 @@
     </div>
 </div>
 
-<script>
-// Tab switching functionality
-document.addEventListener('DOMContentLoaded', function() {
-    const tabButtons = document.querySelectorAll('.wiki-tab');
-    const tabContents = document.querySelectorAll('.wiki-tab-content');
-
-    tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const targetTab = button.getAttribute('data-tab');
-
-            // Remove active class from all buttons and contents
-            tabButtons.forEach(btn => {
-                btn.classList.remove('active');
-                btn.style.background = 'var(--wiki-card-bg)';
-                btn.style.color = 'var(--wiki-text)';
-            });
-            tabContents.forEach(content => {
-                content.classList.remove('active');
-                content.style.display = 'none';
-            });
-
-            // Add active class to clicked button and corresponding content
-            button.classList.add('active');
-            button.style.background = 'rgb(var(--primary-rgb))';
-            button.style.color = 'white';
-
-            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                targetContent.style.display = 'block';
-            }
-        });
-    });
-});
-</script>
