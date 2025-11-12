@@ -5,10 +5,17 @@
 @section('content')
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Knowledge Base Articles</h1>
-        <a href="{{ route('admin.tickets.kb-articles.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus mr-2"></i>Create Article
-        </a>
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Knowledge Base Articles</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.tickets.index') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left mr-2"></i>กลับหน้าหลัก
+            </a>
+            <a href="{{ route('admin.tickets.kb-articles.create') }}" class="btn btn-primary">
+                <i class="fas fa-plus mr-2"></i>Create Article
+            </a>
+        </div>
     </div>
 
     <div class="card shadow mb-4">

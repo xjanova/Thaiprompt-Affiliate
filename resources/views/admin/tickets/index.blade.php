@@ -64,6 +64,71 @@
         </div>
     </div>
 
+    <!-- Management Menu -->
+    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-6">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+            <i class="fa-solid fa-cog mr-2"></i>
+            จัดการระบบ Ticket
+        </h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+            <!-- Analytics -->
+            <a href="{{ route('admin.tickets.analytics') }}"
+               class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 rounded-xl transition-all transform hover:scale-105 hover:shadow-lg border border-blue-200 dark:border-blue-800">
+                <i class="fa-solid fa-chart-line text-3xl text-blue-600 dark:text-blue-400 mb-2"></i>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">Analytics</span>
+            </a>
+
+            <!-- Ratings -->
+            <a href="{{ route('admin.tickets.ratings') }}"
+               class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 hover:from-yellow-100 hover:to-orange-100 dark:hover:from-yellow-900/30 dark:hover:to-orange-900/30 rounded-xl transition-all transform hover:scale-105 hover:shadow-lg border border-yellow-200 dark:border-yellow-800">
+                <i class="fa-solid fa-star text-3xl text-yellow-600 dark:text-yellow-400 mb-2"></i>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">ความพึงพอใจ</span>
+            </a>
+
+            <!-- Categories -->
+            <a href="{{ route('admin.tickets.categories.index') }}"
+               class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 hover:from-purple-100 hover:to-pink-100 dark:hover:from-purple-900/30 dark:hover:to-pink-900/30 rounded-xl transition-all transform hover:scale-105 hover:shadow-lg border border-purple-200 dark:border-purple-800">
+                <i class="fa-solid fa-folder text-3xl text-purple-600 dark:text-purple-400 mb-2"></i>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">หมวดหมู่</span>
+            </a>
+
+            <!-- Canned Responses -->
+            <a href="{{ route('admin.tickets.canned-responses.index') }}"
+               class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 hover:from-green-100 hover:to-emerald-100 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30 rounded-xl transition-all transform hover:scale-105 hover:shadow-lg border border-green-200 dark:border-green-800">
+                <i class="fa-solid fa-comment-dots text-3xl text-green-600 dark:text-green-400 mb-2"></i>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">ข้อความสำเร็จรูป</span>
+            </a>
+
+            <!-- SLA Policies -->
+            <a href="{{ route('admin.tickets.sla-policies.index') }}"
+               class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 hover:from-red-100 hover:to-rose-100 dark:hover:from-red-900/30 dark:hover:to-rose-900/30 rounded-xl transition-all transform hover:scale-105 hover:shadow-lg border border-red-200 dark:border-red-800">
+                <i class="fa-solid fa-clock text-3xl text-red-600 dark:text-red-400 mb-2"></i>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">SLA Policies</span>
+            </a>
+
+            <!-- Assignment Rules -->
+            <a href="{{ route('admin.tickets.assignment-rules.index') }}"
+               class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-cyan-50 to-teal-50 dark:from-cyan-900/20 dark:to-teal-900/20 hover:from-cyan-100 hover:to-teal-100 dark:hover:from-cyan-900/30 dark:hover:to-teal-900/30 rounded-xl transition-all transform hover:scale-105 hover:shadow-lg border border-cyan-200 dark:border-cyan-800">
+                <i class="fa-solid fa-user-check text-3xl text-cyan-600 dark:text-cyan-400 mb-2"></i>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">กฎการมอบหมาย</span>
+            </a>
+
+            <!-- Knowledge Base -->
+            <a href="{{ route('admin.tickets.kb-articles.index') }}"
+               class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 hover:from-amber-100 hover:to-yellow-100 dark:hover:from-amber-900/30 dark:hover:to-yellow-900/30 rounded-xl transition-all transform hover:scale-105 hover:shadow-lg border border-amber-200 dark:border-amber-800">
+                <i class="fa-solid fa-book text-3xl text-amber-600 dark:text-amber-400 mb-2"></i>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">ฐานความรู้</span>
+            </a>
+
+            <!-- Settings -->
+            <a href="{{ route('admin.tickets.settings') }}"
+               class="flex flex-col items-center justify-center p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-900/20 dark:to-gray-900/20 hover:from-slate-100 hover:to-gray-100 dark:hover:from-slate-900/30 dark:hover:to-gray-900/30 rounded-xl transition-all transform hover:scale-105 hover:shadow-lg border border-slate-200 dark:border-slate-800">
+                <i class="fa-solid fa-cog text-3xl text-slate-600 dark:text-slate-400 mb-2"></i>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">ตั้งค่า</span>
+            </a>
+        </div>
+    </div>
+
     <!-- Quick Filters -->
     <div class="flex flex-wrap gap-4">
         <a href="{{ route('admin.tickets.index', ['status' => 'open']) }}"
