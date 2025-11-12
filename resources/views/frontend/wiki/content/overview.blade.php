@@ -550,30 +550,98 @@
 </style>
 
 <script>
+// Section to Category mapping
+const sectionCategoryMap = {
+    // MLM & Affiliate
+    'mlm-binary': 'mlm-affiliate',
+    'mlm-unilevel': 'mlm-affiliate',
+    'mlm-commission': 'mlm-affiliate',
+    'mlm-rank': 'mlm-affiliate',
+    'mlm-genealogy': 'mlm-affiliate',
+
+    // AI & Bot
+    'ai-chatbot': 'ai-bot',
+    'ai-creation': 'ai-bot',
+    'line-bot': 'ai-bot',
+    'knowledge': 'ai-bot',
+    'rental': 'ai-bot',
+
+    // Investment & Crypto
+    'investment': 'crypto',
+    'wallet': 'crypto',
+    'crypto': 'crypto',
+    'exchange': 'crypto',
+    'security': 'crypto',
+
+    // E-Commerce
+    'products': 'ecommerce',
+    'cart': 'ecommerce',
+    'shipping': 'ecommerce',
+    'marketplace': 'ecommerce',
+
+    // Vendor
+    'vendor-store': 'vendor',
+    'vendor-commission': 'vendor',
+    'vendor-analytics': 'vendor',
+    'vendor-admin': 'vendor'
+};
+
 // Handle clickable cards to load Wiki content
 document.addEventListener('DOMContentLoaded', function() {
-    // Get all links that should trigger Wiki content loading
-    const wikiLinks = document.querySelectorAll('a[href^="/wiki#"]');
+    // Get all links with # href (anchor links)
+    const anchorLinks = document.querySelectorAll('a[href^="#"]');
 
-    wikiLinks.forEach(link => {
+    anchorLinks.forEach(link => {
         link.addEventListener('click', function(e) {
-            e.preventDefault(); // Prevent default navigation
+            e.preventDefault();
 
-            // Extract category from href
             const href = this.getAttribute('href');
-            const category = href.replace('/wiki#', '');
+            const sectionId = href.substring(1); // Remove the # character
+            const category = sectionCategoryMap[sectionId];
 
-            console.log('Overview card clicked, loading category:', category);
+            console.log('Card clicked - Section:', sectionId, 'Category:', category);
 
-            // Check if loadWikiContent function exists (from parent Wiki page)
-            if (typeof window.loadWikiContent === 'function') {
-                window.loadWikiContent(category);
-            } else if (typeof parent.loadWikiContent === 'function') {
-                parent.loadWikiContent(category);
+            // If we found a category mapping, load it first then scroll
+            if (category && typeof window.loadWikiContent === 'function') {
+                console.log('Loading category:', category);
+
+                // Load the category content
+                window.loadWikiContent(category).then(() => {
+                    console.log('Category loaded, scrolling to section:', sectionId);
+
+                    // Wait for content to render, then scroll to the section
+                    setTimeout(() => {
+                        const targetElement = document.getElementById(sectionId);
+                        if (targetElement) {
+                            targetElement.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+
+                            // Update URL hash
+                            if (history.pushState) {
+                                history.pushState(null, null, href);
+                            }
+                        } else {
+                            console.warn('Section not found:', sectionId);
+                        }
+                    }, 500);
+                }).catch(error => {
+                    console.error('Error loading category:', error);
+                });
             } else {
-                // Fallback: Navigate to the URL
-                console.log('loadWikiContent not found, navigating to:', href);
-                window.location.href = href;
+                // No mapping found, try direct scroll (for in-page anchors)
+                console.log('No category mapping, trying direct scroll');
+                const targetElement = document.getElementById(sectionId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    if (history.pushState) {
+                        history.pushState(null, null, href);
+                    }
+                }
             }
         });
     });
