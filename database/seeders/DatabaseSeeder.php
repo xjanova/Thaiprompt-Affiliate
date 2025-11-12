@@ -45,6 +45,7 @@ class DatabaseSeeder extends Seeder
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
             LineOaSettingSeeder::class,         // LINE OA Settings Configuration
             LineFlexMessageTemplateSeeder::class, // LINE Flex Message Templates
+            LineSignupTemplateSeeder::class,    // LINE Signup Templates (AI-Powered Membership Signup)
 
             // 5. AI & Integrations
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)
