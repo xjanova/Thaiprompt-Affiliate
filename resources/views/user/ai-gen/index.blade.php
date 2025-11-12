@@ -91,7 +91,7 @@
                     <i class="fas fa-images"></i> My Creations
                 </a>
             </li>
-            <li class="nav-link active" data-toggle="tab" href="#my-creations">
+            <li class="nav-item">
                 <a class="nav-link" data-toggle="tab" href="#explore">
                     <i class="fas fa-compass"></i> Explore
                 </a>
@@ -135,42 +135,23 @@
 
             <!-- Explore Tab -->
             <div class="tab-pane fade" id="explore">
-                <div class="row">
-                    <div class="col-lg-3 mb-4">
-                        <div class="category-card">
-                            <div class="category-icon">
-                                <i class="fas fa-palette"></i>
-                            </div>
-                            <h5>Art & Design</h5>
-                            <p>Creative artwork and designs</p>
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-outline-primary active" data-explore-filter="all">All</button>
+                            <button class="btn btn-outline-primary" data-explore-filter="image">Images</button>
+                            <button class="btn btn-outline-primary" data-explore-filter="video">Videos</button>
+                            <button class="btn btn-outline-primary" data-explore-filter="popular">Popular</button>
                         </div>
                     </div>
-                    <div class="col-lg-3 mb-4">
-                        <div class="category-card">
-                            <div class="category-icon">
-                                <i class="fas fa-camera"></i>
-                            </div>
-                            <h5>Photography</h5>
-                            <p>Realistic photo-style images</p>
+                </div>
+
+                <div class="generations-grid" id="explore-grid">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Loading...</span>
                         </div>
-                    </div>
-                    <div class="col-lg-3 mb-4">
-                        <div class="category-card">
-                            <div class="category-icon">
-                                <i class="fas fa-film"></i>
-                            </div>
-                            <h5>Videos</h5>
-                            <p>Dynamic video content</p>
-                        </div>
-                    </div>
-                    <div class="col-lg-3 mb-4">
-                        <div class="category-card">
-                            <div class="category-icon">
-                                <i class="fas fa-star"></i>
-                            </div>
-                            <h5>Popular</h5>
-                            <p>Trending creations</p>
-                        </div>
+                        <p class="text-muted mt-3">Loading trending creations...</p>
                     </div>
                 </div>
             </div>
@@ -681,12 +662,313 @@
         return new Date(dateString).toLocaleDateString();
     }
 
+    // View generation details
+    async function viewGeneration(generationId) {
+        try {
+            const response = await fetch(`/api/v1/ai-gen/generations/${generationId}`, {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                const gen = data.data;
+                currentGeneration = gen;
+
+                // Update modal content
+                document.getElementById('view-title').textContent = gen.prompt.substring(0, 50) + '...';
+                document.getElementById('view-date').textContent = formatDate(gen.created_at);
+                document.getElementById('preview-image').src = gen.file_url || gen.thumbnail_url || '/images/placeholder.jpg';
+                document.getElementById('detail-type').textContent = gen.type;
+                document.getElementById('detail-provider').textContent = gen.provider?.name || 'N/A';
+                document.getElementById('detail-status').innerHTML = `<span class="badge badge-${getStatusColor(gen.status)}">${gen.status}</span>`;
+                document.getElementById('detail-prompt').textContent = gen.prompt;
+                document.getElementById('favorite-text').textContent = gen.is_favorite ? 'Remove from Favorites' : 'Add to Favorites';
+
+                // Show modal
+                $('#viewModal').modal('show');
+            }
+        } catch (error) {
+            console.error('Error loading generation:', error);
+            alert('Failed to load generation details');
+        }
+    }
+
+    // Download generation
+    function downloadGeneration() {
+        if (!currentGeneration || !currentGeneration.file_url) {
+            alert('No file available for download');
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = currentGeneration.file_url;
+        link.download = `ai-gen-${currentGeneration.id}.${currentGeneration.type === 'video' ? 'mp4' : 'png'}`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // Toggle favorite
+    async function toggleFavorite() {
+        if (!currentGeneration) return;
+
+        try {
+            const response = await fetch(`/api/v1/ai-gen/generations/${currentGeneration.id}/favorite`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                currentGeneration.is_favorite = data.is_favorite;
+                document.getElementById('favorite-text').textContent = data.is_favorite ? 'Remove from Favorites' : 'Add to Favorites';
+                loadGenerations(); // Reload to update the grid
+            }
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+            alert('Failed to update favorite status');
+        }
+    }
+
+    // Delete generation
+    async function deleteGeneration() {
+        if (!currentGeneration) return;
+
+        if (!confirm('Are you sure you want to delete this generation?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/v1/ai-gen/generations/${currentGeneration.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                $('#viewModal').modal('hide');
+                loadGenerations(); // Reload the grid
+                alert('Generation deleted successfully');
+            }
+        } catch (error) {
+            console.error('Error deleting generation:', error);
+            alert('Failed to delete generation');
+        }
+    }
+
+    // Poll generation status
+    async function pollGenerationStatus(generationId, maxAttempts = 60) {
+        let attempts = 0;
+
+        const poll = async () => {
+            if (attempts >= maxAttempts) {
+                console.log('Stopped polling for generation', generationId);
+                return;
+            }
+
+            attempts++;
+
+            try {
+                const response = await fetch(`/api/v1/ai-gen/generations/${generationId}/status`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    const status = data.data.status;
+
+                    if (status === 'completed' || status === 'failed') {
+                        // Reload generations to show the completed/failed item
+                        loadGenerations();
+                        return;
+                    }
+
+                    // Continue polling
+                    setTimeout(poll, 5000); // Poll every 5 seconds
+                }
+            } catch (error) {
+                console.error('Error polling status:', error);
+            }
+        };
+
+        poll();
+    }
+
+    // Load packages
+    async function loadPackages() {
+        const grid = document.getElementById('packages-grid');
+        grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>';
+
+        try {
+            const response = await fetch('/api/v1/ai-gen/packages', {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data.length > 0) {
+                grid.innerHTML = data.data.map((pkg, index) => `
+                    <div class="col-lg-4 mb-4">
+                        <div class="package-card ${index === 1 ? 'popular' : ''}">
+                            <h3>${pkg.name}</h3>
+                            <p class="text-muted">${pkg.description || ''}</p>
+                            <div class="package-price">${pkg.price > 0 ? pkg.currency + ' ' + pkg.price : 'Free'}</div>
+                            <ul class="list-unstyled mt-4">
+                                <li><i class="fas fa-check text-success"></i> ${pkg.image_credits} Image Credits</li>
+                                <li><i class="fas fa-check text-success"></i> ${pkg.video_credits} Video Credits</li>
+                                <li><i class="fas fa-check text-success"></i> ${pkg.duration_days ? pkg.duration_days + ' Days' : 'Unlimited'}</li>
+                            </ul>
+                            <button class="btn btn-primary btn-block mt-4" onclick="purchasePackage(${pkg.id}, '${pkg.name}', ${pkg.price})">
+                                ${pkg.price > 0 ? 'Purchase Now' : 'Activate Free Plan'}
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No packages available</p></div>';
+            }
+        } catch (error) {
+            console.error('Error loading packages:', error);
+            grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Failed to load packages</p></div>';
+        }
+    }
+
+    // Purchase package
+    async function purchasePackage(packageId, packageName, price) {
+        if (!confirm(`Purchase ${packageName} for ${price > 0 ? price + ' THB' : 'FREE'}?`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/v1/ai-gen/packages/${packageId}/purchase`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    payment_method: 'credit_card' // Default for demo
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message || 'Package purchased successfully!');
+                loadDashboardData(); // Reload stats
+                loadPackages(); // Reload packages
+            } else {
+                alert('Error: ' + (data.error || 'Failed to purchase package'));
+            }
+        } catch (error) {
+            console.error('Error purchasing package:', error);
+            alert('An error occurred. Please try again.');
+        }
+    }
+
+    // Load explore content
+    async function loadExplore(filter = 'all') {
+        const grid = document.getElementById('explore-grid');
+        grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>';
+
+        try {
+            const params = new URLSearchParams();
+            params.append('status', 'completed'); // Only show completed generations
+            params.append('per_page', '24');
+
+            if (filter !== 'all') {
+                if (filter === 'image' || filter === 'video') {
+                    params.append('type', filter);
+                } else if (filter === 'popular') {
+                    params.append('is_favorite', 'true');
+                }
+            }
+
+            // For explore, we fetch public/completed generations from all users
+            // Note: This would need a backend endpoint that returns public generations
+            // For now, showing user's own completed generations as demo
+            const response = await fetch('/api/v1/ai-gen/generations?' + params, {
+                headers: {
+                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                    'Accept': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success && data.data.data.length > 0) {
+                renderExplore(data.data.data);
+            } else {
+                grid.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <i class="fas fa-compass fa-4x text-muted mb-3"></i>
+                        <h5>No content to explore yet</h5>
+                        <p class="text-muted">Start creating to see your work here!</p>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error loading explore:', error);
+            grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Failed to load content</p></div>';
+        }
+    }
+
+    function renderExplore(generations) {
+        const grid = document.getElementById('explore-grid');
+
+        grid.innerHTML = generations.map(gen => `
+            <div class="generation-card" onclick="viewGeneration(${gen.id})">
+                <img src="${gen.file_url || gen.thumbnail_url || '/images/placeholder.jpg'}" alt="${gen.prompt}">
+                <div class="generation-info">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="badge badge-${gen.type === 'image' ? 'primary' : 'success'}">
+                            ${gen.type}
+                        </span>
+                        ${gen.is_favorite ? '<i class="fas fa-heart text-danger"></i>' : ''}
+                    </div>
+                    <p class="mb-0 text-muted small">${gen.prompt.substring(0, 60)}...</p>
+                    <small class="text-muted">${formatDate(gen.created_at)}</small>
+                </div>
+            </div>
+        `).join('');
+    }
+
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
         loadDashboardData();
         loadGenerations();
 
-        // Filter buttons
+        // Load packages when tab is clicked
+        $('a[href="#packages"]').on('shown.bs.tab', function() {
+            loadPackages();
+        });
+
+        // Load explore when tab is clicked
+        $('a[href="#explore"]').on('shown.bs.tab', function() {
+            loadExplore();
+        });
+
+        // Filter buttons for My Creations
         document.querySelectorAll('[data-filter]').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
@@ -695,10 +977,80 @@
             });
         });
 
+        // Filter buttons for Explore
+        document.querySelectorAll('[data-explore-filter]').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('[data-explore-filter]').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                loadExplore(this.dataset.exploreFilter);
+            });
+        });
+
         // Create form submission
         document.getElementById('createForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            // Implement generation logic
+
+            const formData = new FormData(this);
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+
+            // Disable submit button and show loading
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+            try {
+                // Get form data
+                const data = {
+                    provider: formData.get('provider'),
+                    type: formData.get('type'),
+                    prompt: formData.get('prompt'),
+                    parameters: {
+                        style: formData.get('style'),
+                        size: formData.get('size')
+                    }
+                };
+
+                // Make API request
+                const response = await fetch('/api/v1/ai-gen/generate', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Close modal
+                    $('#createModal').modal('hide');
+
+                    // Show success message
+                    alert('Generation started! Your creation will appear in a moment.');
+
+                    // Reset form
+                    this.reset();
+
+                    // Reload generations
+                    loadGenerations();
+
+                    // Start polling for status if needed
+                    if (result.data && result.data.id) {
+                        pollGenerationStatus(result.data.id);
+                    }
+                } else {
+                    alert('Error: ' + (result.error || 'Failed to start generation'));
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
         });
     });
 </script>
