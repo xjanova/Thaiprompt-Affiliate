@@ -2,6 +2,19 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.147.0] - 2025-11-12
+
+### ✨ Features
+- feat: Complete comprehensive support and technology Wiki content (8c3c7b36)
+- feat: Complete security, vendor, and software Wiki content with 4-tab systems (cbaabe0d)
+- feat: Complete software.blade.php with comprehensive 4-tab system (ffe151cc)
+- feat: Complete comprehensive Wiki content for Accounting and Hotel systems (0e090479)
+- feat: Complete comprehensive Wiki content for HRM, Academy, and POS systems (ca91a829)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #888 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (6ef96baf)
+
 ## [v2.146.1] - 2025-11-12
 
 ### ✨ Features
