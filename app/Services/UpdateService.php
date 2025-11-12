@@ -447,8 +447,15 @@ class UpdateService
         // Create zip of important files
         $zip = new ZipArchive();
         if ($zip->open($backupFile, ZipArchive::CREATE) === TRUE) {
-            // Add database backup
-            $zip->addFile($dbBackupFile, 'database.sql');
+            // Add database backup (only if it exists and was created successfully)
+            if (File::exists($dbBackupFile) && File::size($dbBackupFile) > 0) {
+                $zip->addFile($dbBackupFile, 'database.sql');
+            } else {
+                Log::warning('Database backup file not found or empty - skipping in backup archive', [
+                    'file' => $dbBackupFile,
+                    'exists' => File::exists($dbBackupFile),
+                ]);
+            }
 
             // Add .env file
             if (File::exists(base_path('.env'))) {
@@ -460,8 +467,10 @@ class UpdateService
 
             $zip->close();
 
-            // Remove temporary database backup
-            File::delete($dbBackupFile);
+            // Remove temporary database backup (if it exists)
+            if (File::exists($dbBackupFile)) {
+                File::delete($dbBackupFile);
+            }
         }
 
         return $backupFile;
@@ -519,7 +528,24 @@ class UpdateService
             $filePath = $file->getRealPath();
             $relativePath = $zipPath . '/' . $file->getRelativePathname();
 
-            $zip->addFile($filePath, $relativePath);
+            // Check if file exists and is readable (skip broken symlinks)
+            if (file_exists($filePath) && is_readable($filePath)) {
+                try {
+                    $zip->addFile($filePath, $relativePath);
+                } catch (\Exception $e) {
+                    Log::warning('Failed to add file to zip archive', [
+                        'file' => $filePath,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // Continue with other files
+                }
+            } else {
+                Log::debug('Skipping non-existent or unreadable file in backup', [
+                    'file' => $filePath,
+                    'exists' => file_exists($filePath),
+                    'readable' => is_readable($filePath),
+                ]);
+            }
         }
     }
 
