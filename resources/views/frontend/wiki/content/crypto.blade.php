@@ -676,3 +676,41 @@
         </section>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const targetTab = button.getAttribute('data-tab');
+
+            // Remove active class from all buttons and contents
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'var(--wiki-card-bg)';
+                btn.style.color = 'var(--wiki-text-primary)';
+                btn.style.border = '1px solid var(--wiki-border)';
+                btn.style.borderBottom = 'none';
+            });
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+                content.style.display = 'none';
+            });
+
+            // Add active class to clicked button and show corresponding content
+            button.classList.add('active');
+            button.style.background = 'linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)))';
+            button.style.color = 'white';
+            button.style.border = 'none';
+
+            const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+                targetContent.style.display = 'block';
+            }
+        });
+    });
+});
+</script>
