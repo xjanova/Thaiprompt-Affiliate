@@ -104,7 +104,7 @@
 
             <div class="info-box tip">
                 <h4>💡 ตัวอย่างการคำนวณ Binary</h4>
-                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; font-family: monospace; font-size: 0.9rem; line-height: 1.8;">
+                <div style="background: var(--wiki-hover-bg); padding: 1.5rem; border-radius: 8px; margin-top: 1rem; font-family: monospace; font-size: 0.9rem; line-height: 1.8;">
 สมมติคุณมี:<br>
 • ขาซ้าย (Left Leg): 100,000 PV<br>
 • ขาขวา (Right Leg): 150,000 PV<br>
@@ -374,7 +374,7 @@
                 <div style="background: linear-gradient(135deg, rgba(156, 163, 175, 0.1), rgba(156, 163, 175, 0.05)); border: 3px solid #9ca3af; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
                      onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(156, 163, 175, 0.3)'"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #e5e7eb; color: #374151;">🆕 Member</div>
+                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #e5e7eb; color: var(--wiki-text-primary);">🆕 Member</div>
                     <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">สมาชิกทั่วไป</h4>
                     <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
                         <li>✅ ไม่มีเงื่อนไข</li>
@@ -386,7 +386,7 @@
                 <div style="background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(192, 192, 192, 0.1)); border: 3px solid #c0c0c0; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
                      onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(192, 192, 192, 0.4)'"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #c0c0c0; color: #374151;">🥈 Silver</div>
+                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #c0c0c0; color: var(--wiki-text-primary);">🥈 Silver</div>
                     <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Silver Partner</h4>
                     <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
                         <li>📌 ยอดส่วนตัว 50,000 บาท</li>
@@ -399,7 +399,7 @@
                 <div style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 215, 0, 0.1)); border: 3px solid #ffd700; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
                      onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(255, 215, 0, 0.4)'"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #ffd700; color: #92400e;">🥇 Gold</div>
+                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #ffd700; color: var(--wiki-text-primary);">🥇 Gold</div>
                     <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Gold Partner</h4>
                     <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
                         <li>📌 ยอดส่วนตัว 150,000 บาท</li>
@@ -413,7 +413,7 @@
                 <div style="background: linear-gradient(135deg, rgba(229, 228, 226, 0.2), rgba(229, 228, 226, 0.1)); border: 3px solid #e5e4e2; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
                      onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(229, 228, 226, 0.4)'"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #e5e4e2; color: #374151;">💎 Platinum</div>
+                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #e5e4e2; color: var(--wiki-text-primary);">💎 Platinum</div>
                     <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Platinum Partner</h4>
                     <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
                         <li>📌 ยอดส่วนตัว 500,000 บาท</li>
@@ -427,7 +427,7 @@
                 <div style="background: linear-gradient(135deg, rgba(185, 242, 255, 0.3), rgba(185, 242, 255, 0.15)); border: 3px solid #b9f2ff; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
                      onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(185, 242, 255, 0.5)'"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
-                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #b9f2ff; color: #0369a1;">💠 Diamond</div>
+                    <div style="display: inline-block; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 800; font-size: 1.1rem; margin-bottom: 1rem; background: #b9f2ff; color: var(--wiki-text-primary);">💠 Diamond</div>
                     <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">Diamond Partner</h4>
                     <ul style="text-align: left; list-style: none; padding: 0; line-height: 2;">
                         <li>📌 ยอดส่วนตัว 2,000,000 บาท</li>

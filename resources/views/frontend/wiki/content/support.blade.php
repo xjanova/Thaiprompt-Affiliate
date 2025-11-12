@@ -87,30 +87,30 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: #dc3545;">🔴 Critical</strong></td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #dc3545;">15 min</strong></td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #dc3545;">4 hours</strong></td>
+                        <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-danger);">🔴 Critical</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-danger);">15 min</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-danger);">4 hours</strong></td>
                         <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Senior Agent + Manager notify</td>
                         <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Auto-escalate after 2 hours</td>
                     </tr>
                     <tr>
-                        <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: #fd7e14;">🟠 High</strong></td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #fd7e14;">1 hour</strong></td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #fd7e14;">8 hours</strong></td>
+                        <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">🟠 High</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">1 hour</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">8 hours</strong></td>
                         <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Available Senior Agent</td>
                         <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Escalate after 6 hours</td>
                     </tr>
                     <tr>
-                        <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: #ffc107;">🟡 Medium</strong></td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #ffc107;">4 hours</strong></td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #ffc107;">24 hours</strong></td>
+                        <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">🟡 Medium</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">4 hours</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">24 hours</strong></td>
                         <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Round-robin to any agent</td>
                         <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Escalate after 18 hours</td>
                     </tr>
                     <tr>
-                        <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: #28a745;">🟢 Low</strong></td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #28a745;">8 hours</strong></td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #28a745;">48 hours</strong></td>
+                        <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-success);">🟢 Low</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-success);">8 hours</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-success);">48 hours</strong></td>
                         <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Least loaded agent</td>
                         <td style="padding: 1rem; border: 1px solid var(--wiki-border);">Escalate after 36 hours</td>
                     </tr>
@@ -119,7 +119,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🔄 Ticket Workflow & Status</h2>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
                     <div style="background: white; padding: 1rem 1.5rem; border-radius: 10px; border: 2px solid #6c757d; font-weight: 600;">
                         1️⃣ New
@@ -244,34 +244,34 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">⚡ Canned Responses & Templates</h2>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h4 style="font-weight: 700; margin-bottom: 1.5rem;">🎯 Common Response Templates</h4>
 
                 <div style="display: grid; gap: 1rem;">
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #28a745;">
-                        <strong style="color: #28a745;">✅ Order Confirmation</strong>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">
+                        <strong style="color: var(--wiki-success);">✅ Order Confirmation</strong>
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); font-size: 0.9rem;">
                             "สวัสดีค่ะ คุณ {customer_name} ออเดอร์ {order_id} ได้รับการยืนยันแล้วค่ะ จะจัดส่งภายใน 2-3 วันทำการ..."
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #0dcaf0;">
-                        <strong style="color: #0dcaf0;">📦 Shipping Update</strong>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">
+                        <strong style="color: var(--wiki-info);">📦 Shipping Update</strong>
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); font-size: 0.9rem;">
                             "พัสดุของคุณได้ถูกส่งแล้วค่ะ Tracking: {tracking_number} คาดว่าจะได้รับภายในวันที่ {delivery_date}..."
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #ffc107;">
-                        <strong style="color: #ffc107;">🔄 Refund Process</strong>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">
+                        <strong style="color: var(--wiki-warning);">🔄 Refund Process</strong>
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); font-size: 0.9rem;">
                             "คำขอคืนเงินของคุณได้รับการอนุมัติแล้วค่ะ จำนวนเงิน ฿{refund_amount} จะโอนคืนภายใน 7-14 วันทำการ..."
                         </p>
                     </div>
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #dc3545;">
-                        <strong style="color: #dc3545;">❌ Out of Stock</strong>
-                        <p style="margin: 0.5rem 0 0 0; color: #6c757d; font-size: 0.9rem;">
+                        <strong style="color: var(--wiki-danger);">❌ Out of Stock</strong>
+                        <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); font-size: 0.9rem;">
                             "ขออภัยค่ะ สินค้า {product_name} หมดสต็อกชั่วคราว คาดว่าจะมีสินค้าเข้าใหม่วันที่ {restock_date}..."
                         </p>
                     </div>
@@ -343,37 +343,37 @@
                 <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); border: 2px solid rgb(var(--primary-rgb)); border-radius: 12px; padding: 2rem; text-align: center;">
                     <div style="font-size: 2.5rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin-bottom: 0.5rem;">4.2 min</div>
                     <div style="font-weight: 600; color: var(--wiki-text-secondary);">Avg First Response</div>
-                    <div style="font-size: 0.85rem; color: #28a745; margin-top: 0.5rem;">↓ 32% vs last month</div>
+                    <div style="font-size: 0.85rem; color: var(--wiki-success); margin-top: 0.5rem;">↓ 32% vs last month</div>
                 </div>
 
                 <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%); border: 2px solid rgb(var(--secondary-rgb)); border-radius: 12px; padding: 2rem; text-align: center;">
                     <div style="font-size: 2.5rem; font-weight: 800; color: rgb(var(--secondary-rgb)); margin-bottom: 0.5rem;">2.8 hrs</div>
                     <div style="font-weight: 600; color: var(--wiki-text-secondary);">Avg Resolution Time</div>
-                    <div style="font-size: 0.85rem; color: #28a745; margin-top: 0.5rem;">↓ 18% vs last month</div>
+                    <div style="font-size: 0.85rem; color: var(--wiki-success); margin-top: 0.5rem;">↓ 18% vs last month</div>
                 </div>
 
                 <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.05) 100%); border: 2px solid rgb(var(--accent-rgb)); border-radius: 12px; padding: 2rem; text-align: center;">
                     <div style="font-size: 2.5rem; font-weight: 800; color: rgb(var(--accent-rgb)); margin-bottom: 0.5rem;">94.6%</div>
                     <div style="font-weight: 600; color: var(--wiki-text-secondary);">Customer Satisfaction</div>
-                    <div style="font-size: 0.85rem; color: #28a745; margin-top: 0.5rem;">↑ 3.2% vs last month</div>
+                    <div style="font-size: 0.85rem; color: var(--wiki-success); margin-top: 0.5rem;">↑ 3.2% vs last month</div>
                 </div>
 
                 <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%); border: 2px solid rgb(var(--primary-rgb)); border-radius: 12px; padding: 2rem; text-align: center;">
                     <div style="font-size: 2.5rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin-bottom: 0.5rem;">1,847</div>
                     <div style="font-weight: 600; color: var(--wiki-text-secondary);">Tickets This Month</div>
-                    <div style="font-size: 0.85rem; color: #dc3545; margin-top: 0.5rem;">↑ 12% vs last month</div>
+                    <div style="font-size: 0.85rem; color: var(--wiki-danger); margin-top: 0.5rem;">↑ 12% vs last month</div>
                 </div>
 
                 <div style="background: linear-gradient(135deg, rgba(var(--secondary-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.05) 100%); border: 2px solid rgb(var(--secondary-rgb)); border-radius: 12px; padding: 2rem; text-align: center;">
                     <div style="font-size: 2.5rem; font-weight: 800; color: rgb(var(--secondary-rgb)); margin-bottom: 0.5rem;">97.3%</div>
                     <div style="font-weight: 600; color: var(--wiki-text-secondary);">SLA Compliance</div>
-                    <div style="font-size: 0.85rem; color: #28a745; margin-top: 0.5rem;">↑ 1.8% vs last month</div>
+                    <div style="font-size: 0.85rem; color: var(--wiki-success); margin-top: 0.5rem;">↑ 1.8% vs last month</div>
                 </div>
 
                 <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); border: 2px solid rgb(var(--accent-rgb)); border-radius: 12px; padding: 2rem; text-align: center;">
                     <div style="font-size: 2.5rem; font-weight: 800; color: rgb(var(--accent-rgb)); margin-bottom: 0.5rem;">38%</div>
                     <div style="font-weight: 600; color: var(--wiki-text-secondary);">Self-Service Rate</div>
-                    <div style="font-size: 0.85rem; color: #28a745; margin-top: 0.5rem;">↑ 7% vs last month</div>
+                    <div style="font-size: 0.85rem; color: var(--wiki-success); margin-top: 0.5rem;">↑ 7% vs last month</div>
                 </div>
             </div>
 
@@ -396,7 +396,7 @@
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong>247</strong></td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3.8 min</td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">2.3 hrs</td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #28a745;">96.2%</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-success);">96.2%</strong></td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="background: #28a745; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">🌟 Excellent</span></td>
                     </tr>
                     <tr>
@@ -404,7 +404,7 @@
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong>198</strong></td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">4.1 min</td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">2.9 hrs</td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #28a745;">94.8%</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-success);">94.8%</strong></td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="background: #0dcaf0; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">👍 Great</span></td>
                     </tr>
                     <tr>
@@ -412,7 +412,7 @@
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong>176</strong></td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">4.5 min</td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3.2 hrs</td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #28a745;">93.1%</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-success);">93.1%</strong></td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="background: #0dcaf0; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">👍 Great</span></td>
                     </tr>
                     <tr>
@@ -420,7 +420,7 @@
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong>154</strong></td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">5.2 min</td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3.8 hrs</td>
-                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: #ffc107;">91.3%</strong></td>
+                        <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: var(--wiki-warning);">91.3%</strong></td>
                         <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><span style="background: #ffc107; color: white; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.85rem;">✅ Good</span></td>
                     </tr>
                 </tbody>
@@ -570,18 +570,18 @@
                 </div>
             </div>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h4 style="font-weight: 700; margin-bottom: 1.5rem;">💰 ROI Example: Support Ticket System</h4>
                 <div style="font-family: monospace; font-size: 0.95rem; line-height: 2;">
                     <strong>E-commerce Company - 2,000 tickets/month</strong><br><br>
 
-                    <span style="color: #e91e63;"><strong>Before Ticket System:</strong></span><br>
+                    <span style="color: var(--wiki-danger);"><strong>Before Ticket System:</strong></span><br>
                     • Email chaos: Lost threads, duplicate responses = 40% wasted time<br>
                     • No SLA tracking: Slow responses, 72% CSAT only<br>
                     • Manual routing: 15 min average assignment delay<br>
                     • No knowledge base: Same questions repeated daily<br>
                     • Agent cost: 6 agents × ฿25,000 = ฿150,000/month<br>
-                    <hr style="margin: 1rem 0; border-color: #ddd;">
+                    <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                     <span style="color: rgb(var(--primary-rgb));"><strong>After Support Ticket System:</strong></span><br>
                     • Auto-routing: <5 sec assignment, +40% agent efficiency<br>
@@ -589,7 +589,7 @@
                     • Canned responses: 3× faster replies, 4.2 min avg response<br>
                     • CSAT improved: 72% → 94.6% (+22.6 points)<br>
                     • Agent reduction: 6 → 4 agents needed = ฿50,000/month saved<br>
-                    <hr style="margin: 1rem 0; border-color: #ddd;">
+                    <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                     <strong>Investment:</strong> ฿4,990/month (Included in Platform)<br>
                     <strong style="color: rgb(var(--secondary-rgb));">Net Benefit:</strong> ฿45,010/month<br>
@@ -713,15 +713,15 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🔄 Workflow Automation Rules</h2>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h4 style="font-weight: 700; margin-bottom: 1.5rem;">⚙️ Example Automation Rules</h4>
 
                 <div style="display: grid; gap: 1.5rem;">
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #0dcaf0;">
                         <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem;">
-                            <strong style="color: #0dcaf0; font-size: 1.1rem;">🔵 Auto-Close Resolved Tickets</strong>
+                            <strong style="color: var(--wiki-info); font-size: 1.1rem;">🔵 Auto-Close Resolved Tickets</strong>
                         </div>
-                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+                        <div style="background: var(--wiki-hover-bg); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
                             <strong>Trigger:</strong> Status = "Resolved" for 72 hours<br>
                             <strong>Condition:</strong> No customer reply<br>
                             <strong>Action:</strong> Change status to "Closed" + Send CSAT survey
@@ -730,9 +730,9 @@
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #dc3545;">
                         <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem;">
-                            <strong style="color: #dc3545; font-size: 1.1rem;">🔴 VIP Customer Alert</strong>
+                            <strong style="color: var(--wiki-danger); font-size: 1.1rem;">🔴 VIP Customer Alert</strong>
                         </div>
-                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+                        <div style="background: var(--wiki-hover-bg); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
                             <strong>Trigger:</strong> New ticket from VIP customer<br>
                             <strong>Condition:</strong> Customer lifetime value > ฿100,000<br>
                             <strong>Action:</strong> Set priority to "High" + Assign to senior agent + Notify manager
@@ -741,9 +741,9 @@
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #ffc107;">
                         <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem;">
-                            <strong style="color: #ffc107; font-size: 1.1rem;">🟡 SLA Breach Warning</strong>
+                            <strong style="color: var(--wiki-warning); font-size: 1.1rem;">🟡 SLA Breach Warning</strong>
                         </div>
-                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+                        <div style="background: var(--wiki-hover-bg); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
                             <strong>Trigger:</strong> SLA deadline approaching (30 min left)<br>
                             <strong>Condition:</strong> Ticket status = "Open" or "In Progress"<br>
                             <strong>Action:</strong> Send urgent notification to agent + CC manager
@@ -752,9 +752,9 @@
 
                     <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid #28a745;">
                         <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 1rem;">
-                            <strong style="color: #28a745; font-size: 1.1rem;">🟢 Auto-Tag & Categorize</strong>
+                            <strong style="color: var(--wiki-success); font-size: 1.1rem;">🟢 Auto-Tag & Categorize</strong>
                         </div>
-                        <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
+                        <div style="background: var(--wiki-hover-bg); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.9rem;">
                             <strong>Trigger:</strong> New ticket received<br>
                             <strong>Condition:</strong> Contains keywords: "refund", "return", "exchange"<br>
                             <strong>Action:</strong> Add tag "Returns" + Set category "Refunds" + Add to returns queue
@@ -803,22 +803,22 @@
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb));">38%</div>
                         <div style="font-weight: 600;">Self-Service Rate</div>
-                        <div style="font-size: 0.85rem; color: #28a745;">760 tickets/mo saved</div>
+                        <div style="font-size: 0.85rem; color: var(--wiki-success);">760 tickets/mo saved</div>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--secondary-rgb));">45 sec</div>
                         <div style="font-weight: 600;">Avg Bot Response</div>
-                        <div style="font-size: 0.85rem; color: #28a745;">92% faster than human</div>
+                        <div style="font-size: 0.85rem; color: var(--wiki-success);">92% faster than human</div>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--accent-rgb));">24/7</div>
                         <div style="font-weight: 600;">Support Coverage</div>
-                        <div style="font-size: 0.85rem; color: #28a745;">No overtime costs</div>
+                        <div style="font-size: 0.85rem; color: var(--wiki-success);">No overtime costs</div>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb));">89%</div>
                         <div style="font-weight: 600;">Bot Satisfaction</div>
-                        <div style="font-size: 0.85rem; color: #28a745;">Customers love instant help</div>
+                        <div style="font-size: 0.85rem; color: var(--wiki-success);">Customers love instant help</div>
                     </div>
                 </div>
             </div>

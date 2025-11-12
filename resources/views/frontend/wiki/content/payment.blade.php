@@ -77,7 +77,7 @@
         </div>
 
         <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#4CAF50'; this.style.boxShadow='0 8px 24px rgba(76, 175, 80, 0.2)'; this.style.transform='translateY(-4px)'"
+             onmouseover="this.style.borderColor='var(--wiki-success)'; this.style.boxShadow='0 8px 24px rgba(76, 175, 80, 0.2)'; this.style.transform='translateY(-4px)'"
              onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">GB Prime Pay</h4>

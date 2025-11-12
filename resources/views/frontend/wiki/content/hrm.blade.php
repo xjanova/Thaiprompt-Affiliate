@@ -62,7 +62,7 @@
         </div>
 
         <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#4CAF50'; this.style.boxShadow='0 8px 24px rgba(76, 175, 80, 0.2)'; this.style.transform='translateY(-4px)'"
+             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
              onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🏢</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Organization Chart</h4>
@@ -77,7 +77,7 @@
         </div>
 
         <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#FF9800'; this.style.boxShadow='0 8px 24px rgba(255, 152, 0, 0.2)'; this.style.transform='translateY(-4px)'"
+             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
              onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Access & Permissions</h4>
@@ -92,7 +92,7 @@
         </div>
 
         <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#9C27B0'; this.style.boxShadow='0 8px 24px rgba(156, 39, 176, 0.2)'; this.style.transform='translateY(-4px)'"
+             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
              onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Employee Dashboard</h4>
@@ -170,7 +170,7 @@
         </div>
 
         <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#FF9800'; this.style.boxShadow='0 8px 24px rgba(255, 152, 0, 0.2)'"
+             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'"
              onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">💻</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Web Clock-in</h4>
@@ -277,10 +277,10 @@
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
         <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#4CAF50'; this.style.boxShadow='0 8px 24px rgba(76, 175, 80, 0.2)'; this.style.transform='translateY(-4px)'"
+             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
              onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
-            <div style="font-size: 3rem; margin-bottom: 1rem; color: #4CAF50;">➕</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #4CAF50;">Income (รายได้)</h4>
+            <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--wiki-success);">➕</div>
+            <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--wiki-success);">Income (รายได้)</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
                 <li>✅ Base Salary (เงินเดือนพื้นฐาน)</li>
                 <li>✅ Overtime (OT 1.5x, 3x)</li>
@@ -292,10 +292,10 @@
         </div>
 
         <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#F44336'; this.style.boxShadow='0 8px 24px rgba(244, 67, 54, 0.2)'; this.style.transform='translateY(-4px)'"
+             onmouseover="this.style.borderColor='var(--wiki-danger)'; this.style.boxShadow='0 8px 24px rgba(239, 68, 68, 0.2)'; this.style.transform='translateY(-4px)'"
              onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
-            <div style="font-size: 3rem; margin-bottom: 1rem; color: #F44336;">➖</div>
-            <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F44336;">Deductions (รายการหัก)</h4>
+            <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--wiki-danger);">➖</div>
+            <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--wiki-danger);">Deductions (รายการหัก)</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
                 <li>❌ Tax Withholding (ภาษีหัก ณ ที่จ่าย)</li>
                 <li>❌ Social Security (ประกันสังคม 5%)</li>
@@ -312,13 +312,13 @@
             <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Net Salary</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">เงินเดือนสุทธิ</p>
-            <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin-top: 1rem; font-family: monospace; font-size: 0.9rem; line-height: 2;">
+            <div style="background: var(--wiki-hover-bg); padding: 1.5rem; border-radius: 8px; margin-top: 1rem; font-family: monospace; font-size: 0.9rem; line-height: 2;">
                 <strong>Gross Salary:</strong> 30,000 บาท<br>
-                <span style="color: #4CAF50;">+ OT:</span> 3,000 บาท<br>
-                <span style="color: #4CAF50;">+ Allowance:</span> 2,000 บาท<br>
-                <span style="color: #F44336;">- Tax:</span> -2,500 บาท<br>
-                <span style="color: #F44336;">- SSO:</span> -750 บาท<br>
-                <hr style="margin: 0.5rem 0; border-color: #ddd;">
+                <span style="color: var(--wiki-success);">+ OT:</span> 3,000 บาท<br>
+                <span style="color: var(--wiki-success);">+ Allowance:</span> 2,000 บาท<br>
+                <span style="color: var(--wiki-danger);">- Tax:</span> -2,500 บาท<br>
+                <span style="color: var(--wiki-danger);">- SSO:</span> -750 บาท<br>
+                <hr style="margin: 0.5rem 0; border-color: var(--wiki-border);">
                 <strong style="font-size: 1.1rem; color: rgb(var(--primary-rgb));">Net Pay: 31,750 บาท</strong>
             </div>
         </div>

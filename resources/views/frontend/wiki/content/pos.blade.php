@@ -659,23 +659,23 @@
                 </div>
             </div>
 
-            <div style="background: #f8f9fa; padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
+            <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
                 <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📊 ROI Calculation Example</h4>
                 <div style="font-family: monospace; font-size: 0.95rem; line-height: 2;">
                     <strong>ร้านค้าปลีก ขนาดกลาง (2 สาขา)</strong><br><br>
 
-                    <span style="color: #4CAF50;"><strong>Before POS System:</strong></span><br>
+                    <span style="color: var(--wiki-success);"><strong>Before POS System:</strong></span><br>
                     • Manual Sales Recording: 30 min/day × 2 staff = ฿15,000/mo<br>
                     • Stock Counting Errors: ~฿8,000/mo loss<br>
                     • Delayed Reporting: 2 days lag in decision making<br>
-                    <hr style="margin: 1rem 0; border-color: #ddd;">
+                    <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                     <span style="color: rgb(var(--primary-rgb));"><strong>After POS System:</strong></span><br>
                     • Time Saved: 4 hours/day = ฿15,000/mo<br>
                     • Inventory Accuracy: 98% = ฿7,000/mo saved<br>
                     • Better Decisions: +10% revenue = ฿25,000/mo<br>
                     • Customer Insights: +5% repeat customers = ฿10,000/mo<br>
-                    <hr style="margin: 1rem 0; border-color: #ddd;">
+                    <hr style="margin: 1rem 0; border-color: var(--wiki-border);">
 
                     <strong>Investment:</strong> ฿5,990/month (Professional Plan)<br>
                     <strong style="color: rgb(var(--secondary-rgb));">Net Benefit:</strong> ฿51,010/month<br>
