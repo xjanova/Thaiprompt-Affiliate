@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.151.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #901 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (520c5309)
+- fix: Simplify loadCategory to use direct href navigation (8cbffb2e)
+### 🔧 Other Changes
+
+
 ## [v2.151.1] - 2025-11-12
 
 ### ✨ Features
