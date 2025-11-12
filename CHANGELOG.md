@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.163.0] - 2025-11-12
+
+### ✨ Features
+- feat: Add Chatbot Frontend (Controllers, Views, Routes, Menu) (563ffaae)
+- feat: Add AI service interfaces and implementations (1eaafdc1)
+- feat: Add Chatbot Rental System with Hybrid AI (b7f28720)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #933 from xjanova/claude/chatbot-rental-system-011CV4SMvxMEKqpAWbDN4ss7 (aa062fe1)
+- Merge branch 'claude/Main' into claude/chatbot-rental-system (75070f59)
+
 ## [v2.162.0] - 2025-11-12
 
 ### ✨ Features
