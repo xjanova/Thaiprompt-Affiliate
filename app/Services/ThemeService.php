@@ -292,12 +292,12 @@ class ThemeService
                 );
             }
 
-            // Create default system theme if not exists
+            // Create default system theme if not exists (Classic X)
             if (!Theme::where('is_system', true)->exists()) {
-                $defaultPreset = ThemePreset::where('name', 'line_oa_default')->first();
+                $defaultPreset = ThemePreset::where('name', 'classic_x')->first();
 
                 if ($defaultPreset) {
-                    $theme = $defaultPreset->toTheme('Line OA (Default)', true);
+                    $theme = $defaultPreset->toTheme('Classic X (Default)', true);
                     $theme->is_system = true;
                     $theme->save();
                 }

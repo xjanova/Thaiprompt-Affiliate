@@ -273,11 +273,9 @@ Route::get('shop/{slug}', function ($slug) {
     return redirect('/shop/' . $slug);
 });
 
-// Theme Management (User)
+// Theme Management (User) - Menu Theme Preference (Millennium vs Classic X)
 Route::prefix('themes')->name('themes.')->group(function () {
     Route::get('/', [\App\Http\Controllers\User\ThemeController::class, 'index'])->name('index');
-    Route::post('/set', [\App\Http\Controllers\User\ThemeController::class, 'setTheme'])->name('set');
-    Route::get('/css', [\App\Http\Controllers\User\ThemeController::class, 'getCss'])->name('css');
 });
 
 // Ticket Support System (User)
