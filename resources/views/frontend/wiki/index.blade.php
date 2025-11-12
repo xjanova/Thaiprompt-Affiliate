@@ -1,0 +1,607 @@
+@extends('layouts.app')
+
+@section('title', 'Platform Wiki - Thaiprompt Affiliate Knowledge Base')
+
+@section('content')
+@php
+    $primaryColor = \App\Models\Setting::get('primary_color', '#3B82F6');
+    $secondaryColor = \App\Models\Setting::get('secondary_color', '#8B5CF6');
+    $accentColor = \App\Models\Setting::get('accent_color', '#EC4899');
+@endphp
+
+@push('styles')
+<style>
+:root {
+    --primary: {{ $primaryColor }};
+    --secondary: {{ $secondaryColor }};
+    --accent: {{ $accentColor }};
+
+    /* Light mode colors */
+    --wiki-bg: #ffffff;
+    --wiki-border: #e5e7eb;
+    --wiki-text-primary: #111827;
+    --wiki-text-secondary: #374151;
+    --wiki-text-muted: #6b7280;
+    --wiki-hover-bg: #f3f4f6;
+    --wiki-card-bg: #ffffff;
+    --wiki-shadow: rgba(0,0,0,0.05);
+    --wiki-shadow-hover: rgba(0,0,0,0.1);
+}
+
+.dark {
+    --wiki-bg: #1f2937;
+    --wiki-border: #374151;
+    --wiki-text-primary: #f9fafb;
+    --wiki-text-secondary: #e5e7eb;
+    --wiki-text-muted: #9ca3af;
+    --wiki-hover-bg: #374151;
+    --wiki-card-bg: #111827;
+    --wiki-shadow: rgba(0,0,0,0.3);
+    --wiki-shadow-hover: rgba(0,0,0,0.5);
+}
+
+/* Reading Progress Bar */
+.reading-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+    z-index: 9999;
+    transition: width 0.1s ease-out;
+}
+
+/* Wiki Layout */
+.wiki-layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 2rem;
+    max-width: 100%;
+    margin: 0;
+    padding: 2rem;
+    min-height: 100vh;
+}
+
+@media (min-width: 1920px) {
+    .wiki-layout {
+        grid-template-columns: 380px 1fr;
+        padding: 2rem 4rem;
+    }
+}
+
+/* Sidebar */
+.wiki-sidebar {
+    position: sticky;
+    top: 2rem;
+    height: fit-content;
+    max-height: calc(100vh - 4rem);
+    overflow-y: auto;
+    background: var(--wiki-card-bg);
+    border: 2px solid var(--wiki-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px var(--wiki-shadow);
+}
+
+.wiki-sidebar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.wiki-sidebar::-webkit-scrollbar-track {
+    background: var(--wiki-hover-bg);
+    border-radius: 10px;
+}
+
+.wiki-sidebar::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 10px;
+}
+
+.sidebar-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--wiki-border);
+}
+
+.sidebar-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Menu Items */
+.wiki-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.wiki-menu-item {
+    margin-bottom: 0.5rem;
+}
+
+.wiki-menu-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    color: var(--wiki-text-secondary);
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.wiki-menu-link:hover {
+    background: var(--wiki-hover-bg);
+    color: var(--primary);
+    transform: translateX(4px);
+}
+
+.wiki-menu-link.active {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    font-weight: 700;
+}
+
+.menu-icon {
+    font-size: 1.25rem;
+    width: 24px;
+    text-align: center;
+}
+
+/* Main Content Area */
+.wiki-main-content {
+    background: var(--wiki-card-bg);
+    border: 2px solid var(--wiki-border);
+    border-radius: 16px;
+    padding: 3rem;
+    min-height: 600px;
+    box-shadow: 0 4px 6px var(--wiki-shadow);
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+}
+
+.spinner {
+    border: 4px solid var(--wiki-border);
+    border-top: 4px solid var(--primary);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+    margin-top: 1rem;
+    color: var(--wiki-text-muted);
+}
+
+/* Mobile Responsive */
+.mobile-menu-toggle {
+    display: none;
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: white;
+    border: none;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px var(--wiki-shadow-hover);
+    cursor: pointer;
+    z-index: 1000;
+    font-size: 1.5rem;
+}
+
+@media (max-width: 1024px) {
+    .wiki-layout {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+    }
+
+    .wiki-sidebar {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        width: 280px;
+        height: 100vh;
+        max-height: 100vh;
+        z-index: 999;
+        border-radius: 0 16px 16px 0;
+        transition: left 0.3s ease-in-out;
+    }
+
+    .wiki-sidebar.active {
+        left: 0;
+    }
+
+    .mobile-menu-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 998;
+        display: none;
+        backdrop-filter: blur(4px);
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+    }
+
+    .wiki-main-content {
+        padding: 1.5rem;
+    }
+}
+
+/* Badges */
+.wiki-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-green {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.badge-blue {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.badge-purple {
+    background: #e0e7ff;
+    color: #5b21b6;
+}
+
+.dark .badge-green {
+    background: #064e3b;
+    color: #d1fae5;
+}
+
+.dark .badge-blue {
+    background: #1e3a8a;
+    color: #dbeafe;
+}
+
+.dark .badge-purple {
+    background: #4c1d95;
+    color: #e0e7ff;
+}
+
+/* Info Box */
+.info-box {
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    border-left: 4px solid var(--primary);
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+}
+
+.dark .info-box {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3730a3 100%);
+}
+
+.info-box.success {
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    border-left-color: #10b981;
+}
+
+.dark .info-box.success {
+    background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+}
+
+.info-box.warning {
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border-left-color: #f59e0b;
+}
+
+.dark .info-box.warning {
+    background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+}
+</style>
+@endpush
+
+<div class="reading-progress"></div>
+
+<div class="wiki-layout">
+    {{-- Sidebar Navigation --}}
+    <aside class="wiki-sidebar" id="wikiSidebar">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">📚 Wiki Navigation</h2>
+        </div>
+
+        <ul class="wiki-menu">
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link active" data-category="overview">
+                    <span class="menu-icon">🚀</span>
+                    <span>ภาพรวม & สรุปฟีเจอร์</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="mlm-affiliate">
+                    <span class="menu-icon">💎</span>
+                    <span>MLM & Affiliate</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="ai-bot">
+                    <span class="menu-icon">🤖</span>
+                    <span>AI & Bot System</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="ecommerce">
+                    <span class="menu-icon">🛍️</span>
+                    <span>E-Commerce</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="crypto">
+                    <span class="menu-icon">₿</span>
+                    <span>Crypto & Trading</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="payment">
+                    <span class="menu-icon">💳</span>
+                    <span>Payment & Wallet</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="hrm">
+                    <span class="menu-icon">👥</span>
+                    <span>HRM System</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="academy">
+                    <span class="menu-icon">🎓</span>
+                    <span>Academy & Learning</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="pos">
+                    <span class="menu-icon">🏪</span>
+                    <span>POS System</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="accounting">
+                    <span class="menu-icon">📊</span>
+                    <span>ระบบบัญชี</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="hotel">
+                    <span class="menu-icon">🏨</span>
+                    <span>Hotel Booking</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="software">
+                    <span class="menu-icon">💻</span>
+                    <span>Software Sales</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="security">
+                    <span class="menu-icon">🔒</span>
+                    <span>Security System</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="vendor">
+                    <span class="menu-icon">🏬</span>
+                    <span>Vendor System</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="support">
+                    <span class="menu-icon">🎫</span>
+                    <span>Support Ticket</span>
+                </a>
+            </li>
+            <li class="wiki-menu-item">
+                <a href="#" class="wiki-menu-link" data-category="technology">
+                    <span class="menu-icon">⚙️</span>
+                    <span>Technology Stack</span>
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    {{-- Main Content --}}
+    <main class="wiki-main-content" id="wikiContent">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p class="loading-text">กำลังโหลดข้อมูล...</p>
+        </div>
+    </main>
+</div>
+
+{{-- Mobile Menu Toggle --}}
+<button class="mobile-menu-toggle" id="mobileMenuToggle">
+    📚
+</button>
+
+{{-- Sidebar Overlay --}}
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+@push('scripts')
+<script>
+(function() {
+    'use strict';
+
+    // Variables
+    const wikiContent = document.getElementById('wikiContent');
+    const menuLinks = document.querySelectorAll('.wiki-menu-link');
+    const mobileToggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.getElementById('wikiSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    let currentCategory = 'overview';
+
+    // Load wiki content
+    async function loadWikiContent(category) {
+        // Show loading
+        wikiContent.innerHTML = `
+            <div class="loading-spinner">
+                <div class="spinner"></div>
+                <p class="loading-text">กำลังโหลดข้อมูล...</p>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`/wiki/content/${category}`);
+            const data = await response.json();
+
+            if (data.success) {
+                wikiContent.innerHTML = data.content;
+                currentCategory = category;
+
+                // Update URL without reload
+                history.pushState({category}, '', `/wiki#${category}`);
+
+                // Scroll to top
+                window.scrollTo({top: 0, behavior: 'smooth'});
+
+                // Close mobile menu
+                closeMobileMenu();
+            } else {
+                throw new Error(data.message || 'Failed to load content');
+            }
+        } catch (error) {
+            console.error('Error loading wiki content:', error);
+            wikiContent.innerHTML = `
+                <div class="info-box warning">
+                    <h4>⚠️ เกิดข้อผิดพลาด</h4>
+                    <p>ไม่สามารถโหลดเนื้อหาได้ กรุณาลองใหม่อีกครั้ง</p>
+                    <button onclick="location.reload()" class="btn btn-primary mt-3">รีโหลดหน้า</button>
+                </div>
+            `;
+        }
+    }
+
+    // Menu click handler
+    menuLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+
+            const category = this.getAttribute('data-category');
+
+            // Update active state
+            menuLinks.forEach(l => l.classList.remove('active'));
+            this.classList.add('active');
+
+            // Load content
+            loadWikiContent(category);
+        });
+    });
+
+    // Mobile menu toggle
+    function toggleMobileMenu() {
+        sidebar.classList.toggle('active');
+        overlay.classList.toggle('active');
+    }
+
+    function closeMobileMenu() {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+    }
+
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', toggleMobileMenu);
+    }
+
+    if (overlay) {
+        overlay.addEventListener('click', closeMobileMenu);
+    }
+
+    // Reading progress
+    function updateReadingProgress() {
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight - windowHeight;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const progress = (scrollTop / documentHeight) * 100;
+
+        const progressBar = document.querySelector('.reading-progress');
+        if (progressBar) {
+            progressBar.style.width = progress + '%';
+        }
+    }
+
+    window.addEventListener('scroll', updateReadingProgress);
+
+    // Handle browser back/forward
+    window.addEventListener('popstate', function(event) {
+        if (event.state && event.state.category) {
+            loadWikiContent(event.state.category);
+
+            // Update menu active state
+            menuLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('data-category') === event.state.category) {
+                    link.classList.add('active');
+                }
+            });
+        }
+    });
+
+    // Load initial content from URL hash or default
+    function loadInitialContent() {
+        const hash = window.location.hash.replace('#', '');
+        const category = hash || 'overview';
+
+        // Find and activate the menu item
+        menuLinks.forEach(link => {
+            if (link.getAttribute('data-category') === category) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+
+        loadWikiContent(category);
+    }
+
+    // Initialize
+    loadInitialContent();
+
+})();
+</script>
+@endpush
+
+@endsection
