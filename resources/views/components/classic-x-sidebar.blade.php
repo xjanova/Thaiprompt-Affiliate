@@ -362,9 +362,32 @@
     @endif
 </style>
 
-<div class="classic-x-sidebar" id="classicXSidebar" x-data="{ collapsed: false, openSubmenus: [] }">
+<div class="classic-x-sidebar"
+     id="classicXSidebar"
+     x-data="{
+         collapsed: localStorage.getItem('classic-x-sidebar-collapsed') === 'true',
+         openSubmenus: JSON.parse(localStorage.getItem('classic-x-open-submenus') || '[]'),
+         init() {
+             if (this.collapsed) {
+                 this.$el.classList.add('collapsed');
+             }
+         },
+         toggleSidebar() {
+             this.collapsed = !this.collapsed;
+             localStorage.setItem('classic-x-sidebar-collapsed', this.collapsed);
+             if (this.collapsed) {
+                 this.$el.classList.add('collapsed');
+                 document.getElementById('classicXContent')?.classList.add('sidebar-collapsed');
+             } else {
+                 this.$el.classList.remove('collapsed');
+                 document.getElementById('classicXContent')?.classList.remove('sidebar-collapsed');
+             }
+         }
+     }"
+     :class="{ 'collapsed': collapsed }">
+
     @if($sidebarCollapsible)
-    <button class="classic-x-collapse-btn" @click="collapsed = !collapsed" title="Toggle Sidebar">
+    <button class="classic-x-collapse-btn" @click="toggleSidebar()" title="Toggle Sidebar">
         <i class="fas" :class="collapsed ? 'fa-chevron-{{ $sidebarPosition === 'left' ? 'right' : 'left' }}' : 'fa-chevron-{{ $sidebarPosition === 'left' ? 'left' : 'right' }}'"></i>
     </button>
     @endif
@@ -372,7 +395,7 @@
     @if($showLogo)
     <div class="classic-x-logo-container">
         @if($logo)
-            <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="classic-x-logo">
+            <img src="{{ asset($logo) }}" alt="{{ $appName }}" class="classic-x-logo" x-show="!collapsed || {{ $showLogo ? 'true' : 'false' }}">
         @else
             <h2 class="text-xl font-bold" x-show="!collapsed">{{ $appName }}</h2>
         @endif
@@ -381,41 +404,3 @@
 
     <x-classic-x-menu type="{{ $type }}" />
 </div>
-
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('classicXSidebar', () => ({
-            collapsed: localStorage.getItem('classic-x-sidebar-collapsed') === 'true',
-            openSubmenus: JSON.parse(localStorage.getItem('classic-x-open-submenus') || '[]'),
-
-            init() {
-                this.$watch('collapsed', value => {
-                    localStorage.setItem('classic-x-sidebar-collapsed', value);
-                    const sidebar = this.$el;
-                    if (value) {
-                        sidebar.classList.add('collapsed');
-                    } else {
-                        sidebar.classList.remove('collapsed');
-                    }
-                });
-
-                this.$watch('openSubmenus', value => {
-                    localStorage.setItem('classic-x-open-submenus', JSON.stringify(value));
-                });
-            },
-
-            toggleSubmenu(menuId) {
-                const index = this.openSubmenus.indexOf(menuId);
-                if (index > -1) {
-                    this.openSubmenus.splice(index, 1);
-                } else {
-                    this.openSubmenus.push(menuId);
-                }
-            },
-
-            isSubmenuOpen(menuId) {
-                return this.openSubmenus.includes(menuId);
-            }
-        }));
-    });
-</script>
