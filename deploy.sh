@@ -778,14 +778,31 @@ fi
 print_info "[10/20] 🎯 Smart Database Migration System..."
 echo ""
 
-# Step 10.1: Verify database connection
+# Step 10.1: Create database if not exists (Auto-fix for missing database)
+print_info "→ Ensuring database exists..."
+if command -v mysql >/dev/null 2>&1; then
+    # Try to create database if it doesn't exist
+    if [ -z "$DB_PASSWORD" ]; then
+        mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -e "CREATE DATABASE IF NOT EXISTS \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null && \
+            print_success "✓ Database '$DB_DATABASE' exists/created" || \
+            print_warning "⚠ Could not create database (may already exist or need manual creation)"
+    else
+        mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USERNAME" -p"$DB_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS \`$DB_DATABASE\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" 2>/dev/null && \
+            print_success "✓ Database '$DB_DATABASE' exists/created" || \
+            print_warning "⚠ Could not create database (may already exist or need manual creation)"
+    fi
+else
+    print_warning "⚠ mysql client not available - skipping database creation check"
+fi
+
+# Step 10.2: Verify database connection
 print_info "→ Verifying database connection..."
 if ! php artisan db:show >/dev/null 2>&1; then
-    error_exit "Database connection failed - ตรวจสอบ .env credentials"
+    error_exit "Database connection failed - ตรวจสอบ .env credentials หรือสร้างฐานข้อมูลด้วยตัวเอง: mysql -e \"CREATE DATABASE $DB_DATABASE;\""
 fi
 print_success "✓ Database connection OK"
 
-# Step 10.2: Schema Verification & Auto-Repair System
+# Step 10.3: Schema Verification & Auto-Repair System
 print_info "→ Verifying database schema integrity..."
 if php artisan schema:verify >/dev/null 2>&1; then
     print_success "✓ Database schema is correct"
@@ -860,12 +877,12 @@ else
     echo ""
 fi
 
-# Step 10.3: Show current migration status (BEFORE)
+# Step 10.4: Show current migration status (BEFORE)
 print_info "→ Current migration status (BEFORE):"
 php artisan migrate:status 2>/dev/null | tail -15 || true
 echo ""
 
-# Step 10.4: Check for pending migrations
+# Step 10.5: Check for pending migrations
 PENDING_COUNT=$(php artisan migrate:status --pending 2>/dev/null | grep -c "Pending" || echo "0")
 TOTAL_MIGRATIONS=$(php artisan migrate:status 2>/dev/null | grep -c "migration" || echo "0")
 
@@ -874,7 +891,7 @@ echo "  • Total migrations: $TOTAL_MIGRATIONS"
 echo "  • Pending migrations: $PENDING_COUNT"
 echo ""
 
-# Step 10.5: Smart Migration Handler with Auto-Recovery
+# Step 10.6: Smart Migration Handler with Auto-Recovery
 handle_migration_with_smart_recovery() {
     local migration_output_file="/tmp/migration_output_$$.log"
 
@@ -979,7 +996,7 @@ handle_migration_with_smart_recovery() {
     fi
 }
 
-# Step 10.5: Run migrations if needed
+# Step 10.7: Run migrations if needed
 if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     print_warning "⚠ Found $PENDING_COUNT pending migration(s) - Will apply now"
     echo ""
@@ -1042,12 +1059,12 @@ else
     echo ""
 fi
 
-# Step 10.6: Show migration status (AFTER)
+# Step 10.8: Show migration status (AFTER)
 print_info "→ Migration status (AFTER):"
 php artisan migrate:status 2>/dev/null | tail -15 || true
 echo ""
 
-# Step 10.7: Verify migration integrity
+# Step 10.9: Verify migration integrity
 print_info "→ Verifying database integrity..."
 MIGRATED_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
 echo "  • Successfully migrated: $MIGRATED_COUNT migrations"
