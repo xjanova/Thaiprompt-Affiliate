@@ -92,10 +92,6 @@
     $backToTopThreshold = WindowsUiSetting::get('millennium_back_to_top_threshold', 20);
     $backToTopAnimation = WindowsUiSetting::get('millennium_back_to_top_animation', 'fade');
 
-    // Get user's taskbar shortcuts
-    $taskbarIconSize = WindowsUiSetting::get('millennium_taskbar_icon_size', 48);
-    $taskbarIconBorderRadius = WindowsUiSetting::get('millennium_taskbar_icon_border_radius', 12);
-
     // Calculate start button border radius based on shape
     $startButtonRadius = match($startButtonShape) {
         'square' => 0,
@@ -199,8 +195,6 @@
         showTooltip: false,
         tooltipEnabled: {{ $tooltipEnabled ? 'true' : 'false' }},
         tooltipDuration: {{ $tooltipDuration }},
-        taskbarShortcuts: [],
-        loadingShortcuts: false,
         updateTime() {
             const now = new Date();
             let hours = now.getHours();
@@ -266,62 +260,6 @@
             this.showTooltip = false;
             localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
         },
-        getCsrfToken() {
-            const meta = document.querySelector('meta[name=\"csrf-token\"]');
-            return meta ? meta.content : '';
-        },
-        async loadTaskbarShortcuts() {
-            this.loadingShortcuts = true;
-            try {
-                const response = await fetch('/api/v1/taskbar-shortcuts', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.getCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    this.taskbarShortcuts = data.shortcuts || [];
-                } else {
-                    console.error('Failed to load shortcuts:', response.status);
-                }
-            } catch (error) {
-                console.error('Error loading taskbar shortcuts:', error);
-            } finally {
-                this.loadingShortcuts = false;
-            }
-        },
-        async removeShortcut(shortcutId) {
-            if (!confirm('ต้องการลบไอค่อนทางลัดนี้ใช่หรือไม่?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/v1/taskbar-shortcuts/${shortcutId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.getCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    await this.loadTaskbarShortcuts();
-                    alert('ลบไอค่อนทางลัดสำเร็จ');
-                } else {
-                    alert('ไม่สามารถลบไอค่อนทางลัดได้');
-                }
-            } catch (error) {
-                console.error('Error removing shortcut:', error);
-                alert('เกิดข้อผิดพลาดในการลบไอค่อนทางลัด');
-            }
-        },
         init() {
             this.updateTime();
             const interval = this.showSeconds ? 1000 : 60000;
@@ -333,14 +271,6 @@
 
             // Initialize tooltip
             this.initTooltip();
-
-            // Load taskbar shortcuts
-            this.loadTaskbarShortcuts();
-
-            // Listen for shortcut added event
-            window.addEventListener('taskbar-shortcut-added', () => {
-                this.loadTaskbarShortcuts();
-            });
         }
     }"
     x-init="init()"
@@ -474,25 +404,6 @@
                         @endif
                     </button>
                 @endif
-
-                <!-- User Customizable Taskbar Shortcuts -->
-                <template x-for="shortcut in taskbarShortcuts" :key="shortcut.id">
-                    <div class="group relative">
-                        <a :href="shortcut.url"
-                           class="flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 border-2 border-white/20 hover:border-white/40"
-                           style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, 0.1); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); box-shadow: 0 1px 2px rgba(255, 255, 255, 0.1) inset, 0 -1px 2px rgba(0, 0, 0, 0.2) inset, 0 4px 12px rgba(168, 85, 247, 0.3), 0 8px 24px rgba(59, 130, 246, 0.2);"
-                           :title="shortcut.label">
-                            <span :style="'font-size: ' + ({{ $taskbarIconSize }} * 0.5) + 'px;'" x-text="shortcut.icon"></span>
-                        </a>
-                        <!-- Remove Button (hover to show) -->
-                        <button
-                            @click.prevent="removeShortcut(shortcut.id)"
-                            class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-bold shadow-lg"
-                            title="ลบไอค่อนทางลัด">
-                            ✕
-                        </button>
-                    </div>
-                </template>
 
             </div>
 
