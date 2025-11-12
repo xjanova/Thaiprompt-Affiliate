@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.147.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #889 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (aa4a70db)
+- fix: Add missing JavaScript for tab navigation in mlm-affiliate, crypto, and ai-bot pages (a4beeed9)
+### 🔧 Other Changes
+
+
 ## [v2.147.0] - 2025-11-12
 
 ### ✨ Features
