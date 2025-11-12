@@ -370,6 +370,17 @@ class UpdateService
      */
     protected function updateProgress($log, $status, $message, $currentStep, $totalSteps)
     {
+        // Check for null or zero totalSteps to prevent division by zero
+        if ($currentStep === null || $totalSteps === null || $totalSteps === 0) {
+            // If steps are not provided, don't calculate percentage or show progress label
+            $log->update([
+                'status' => $status,
+                'message' => $message,
+                'progress' => null,
+            ]);
+            return;
+        }
+
         $percentage = round(($currentStep / $totalSteps) * 100);
 
         // Format progress message like deploy.sh [1/6], [2/6]
