@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.157.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #913 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (5dca8444)
+- fix: Improve card navigation with category loading before scroll (d921f4b6)
+### 🔧 Other Changes
+
+
 ## [v2.157.1] - 2025-11-12
 
 ### ✨ Features
