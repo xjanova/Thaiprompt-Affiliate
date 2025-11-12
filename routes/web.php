@@ -384,6 +384,12 @@ Route::middleware('auth')->prefix('trading-bot')->name('trading-bot.')->group(fu
     Route::post('/bots/{bot}/start', [TradingBotController::class, 'start'])->name('start');
     Route::post('/bots/{bot}/stop', [TradingBotController::class, 'stop'])->name('stop');
     Route::get('/bots/{bot}/analytics', [TradingBotController::class, 'analytics'])->name('analytics');
+    Route::get('/bots/{bot}/advanced-config', [TradingBotController::class, 'advancedConfig'])->name('advanced-config');
+    Route::get('/bots/{bot}/pro-analytics', [TradingBotController::class, 'proAnalytics'])->name('pro-analytics');
+
+    // Multi-Exchange & Risk Management
+    Route::get('/multi-exchange', [TradingBotController::class, 'multiExchange'])->name('multi-exchange');
+    Route::get('/risk-management', [TradingBotController::class, 'riskManagement'])->name('risk-management');
 
     // Trading Accounts
     Route::get('/accounts', [TradingBotController::class, 'accounts'])->name('accounts');
