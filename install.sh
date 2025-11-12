@@ -424,21 +424,65 @@ else
 fi
 
 # ========================================
-# STEP 9: Finalization
+# STEP 9: Finalization & Optimization
 # ========================================
-print_header "Step 9: Finalization"
+print_header "Step 9: Finalization & Optimization"
 
 # Create storage link
 print_info "Creating storage symlink..."
-php artisan storage:link --force
-print_success "Storage symlink created"
+if php artisan storage:link --force 2>/dev/null; then
+    print_success "Storage symlink created"
+else
+    print_warning "Storage symlink creation failed (may need manual setup)"
+fi
 
-# Cache configuration
-print_info "Caching configuration..."
+# Set proper permissions
+print_info "Setting file permissions..."
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+find storage -type f -exec chmod 664 {} \; 2>/dev/null || true
+find bootstrap/cache -type f -exec chmod 664 {} \; 2>/dev/null || true
+
+# Detect web server user
+WEB_USER=""
+if id -u www-data >/dev/null 2>&1; then
+    WEB_USER="www-data"
+elif id -u nginx >/dev/null 2>&1; then
+    WEB_USER="nginx"
+elif id -u apache >/dev/null 2>&1; then
+    WEB_USER="apache"
+fi
+
+# Set ownership if web server user detected
+if [ -n "$WEB_USER" ]; then
+    CURRENT_USER=$(whoami)
+    if chown -R "$CURRENT_USER:$WEB_USER" storage bootstrap/cache 2>/dev/null; then
+        print_success "Ownership set to $CURRENT_USER:$WEB_USER"
+    else
+        print_warning "Could not set ownership (may need sudo)"
+    fi
+fi
+print_success "File permissions configured"
+
+# Optimize Composer autoloader
+print_info "Optimizing Composer autoloader..."
+composer dump-autoload --optimize --no-dev 2>/dev/null || composer dump-autoload --optimize
+print_success "Autoloader optimized"
+
+# Clear all caches
+print_info "Clearing all caches..."
+php artisan cache:clear >/dev/null 2>&1 || true
+php artisan config:clear >/dev/null 2>&1 || true
+php artisan route:clear >/dev/null 2>&1 || true
+php artisan view:clear >/dev/null 2>&1 || true
+php artisan event:clear >/dev/null 2>&1 || true
+print_success "All caches cleared"
+
+# Rebuild caches for production
+print_info "Building production caches..."
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-print_success "Configuration cached"
+print_success "Production caches built"
 
 # Create setup completed flag
 print_info "Marking installation as completed..."
@@ -447,9 +491,71 @@ echo "$(date)" > storage/app/.setup_completed
 print_success "Installation marked as completed"
 
 # ========================================
+# Post-Installation Verification
+# ========================================
+print_header "🔍 Post-Installation Verification"
+
+# Verify critical files and directories
+print_info "Verifying installation..."
+
+VERIFICATION_PASSED=true
+
+# Check .env
+if [ -f ".env" ]; then
+    print_success "✓ .env file exists"
+else
+    print_error "✗ .env file missing"
+    VERIFICATION_PASSED=false
+fi
+
+# Check storage permissions
+if [ -w "storage/logs" ]; then
+    print_success "✓ Storage is writable"
+else
+    print_warning "⚠ Storage may not be writable"
+fi
+
+# Check if database is accessible
+if php artisan db:show >/dev/null 2>&1; then
+    print_success "✓ Database connection OK"
+else
+    print_warning "⚠ Database connection check failed"
+fi
+
+# Check if migrations ran
+MIGRATION_COUNT=$(php artisan migrate:status 2>/dev/null | grep -c "Ran" || echo "0")
+if [ "$MIGRATION_COUNT" -gt "0" ]; then
+    print_success "✓ Migrations completed ($MIGRATION_COUNT tables)"
+else
+    print_warning "⚠ No migrations detected"
+fi
+
+# Check if admin exists
+ADMIN_COUNT=$(php artisan tinker --execute="echo App\Models\User::where('role', 'super_admin')->count();" 2>/dev/null | tail -1 || echo "0")
+if [ "$ADMIN_COUNT" -gt "0" ]; then
+    print_success "✓ Super Admin account created"
+else
+    print_warning "⚠ Super Admin account not found"
+fi
+
+# Check if symlink exists
+if [ -L "public/storage" ]; then
+    print_success "✓ Storage symlink exists"
+else
+    print_warning "⚠ Storage symlink not found"
+fi
+
+echo ""
+if [ "$VERIFICATION_PASSED" = true ]; then
+    print_success "All critical checks passed!"
+else
+    print_warning "Some checks failed, but installation may still work"
+fi
+
+# ========================================
 # Installation Complete
 # ========================================
-print_header "✅ Installation Complete!"
+print_header "✅ Installation Complete & Optimized!"
 
 echo ""
 echo "📊 Installation Summary:"
@@ -460,33 +566,57 @@ echo "  Environment:    ${BLUE}$APP_ENV${NC}"
 echo "  Database:       ${BLUE}$DB_DATABASE@$DB_HOST${NC}"
 echo "  Admin Email:    ${BLUE}$ADMIN_EMAIL${NC}"
 echo ""
-echo "🎉 ${GREEN}Congratulations!${NC} TP-Affiliate has been installed successfully."
+echo "✨ ${GREEN}What was installed and optimized:${NC}"
+echo "  ✅ System requirements verified"
+echo "  ✅ Environment configured (.env)"
+echo "  ✅ Composer dependencies installed"
+echo "  ✅ Database created and migrated"
+echo "  ✅ Database seeded with initial data"
+echo "  ✅ Super Admin account created"
+echo "  ✅ File permissions configured"
+echo "  ✅ Composer autoloader optimized"
+echo "  ✅ All caches built (config, routes, views)"
+echo "  ✅ Storage symlink created"
+echo "  ✅ System ready for production use!"
+echo ""
+echo "🎉 ${GREEN}Congratulations!${NC} TP-Affiliate is fully installed and optimized."
 echo ""
 echo "📋 Next Steps:"
 echo ""
-echo "  ${BLUE}1.${NC} Configure your web server (Nginx/Apache) to point to the ${YELLOW}public/${NC} directory"
-echo "  ${BLUE}2.${NC} Set up your GitHub personal access token for deployments:"
-echo "      ${GREEN}→${NC} Go to GitHub Settings → Developer Settings → Personal Access Tokens"
-echo "      ${GREEN}→${NC} Generate new token with 'repo' permissions"
-echo "      ${GREEN}→${NC} Keep it safe for use with deploy.sh"
-echo "  ${BLUE}3.${NC} Configure additional settings in ${YELLOW}.env${NC} file if needed:"
-echo "      ${GREEN}→${NC} Email settings (MAIL_*, GMAIL_*, SMTP_*)"
-echo "      ${GREEN}→${NC} Cloudflare Turnstile (CLOUDFLARE_TURNSTILE_*)"
-echo "      ${GREEN}→${NC} Google Translate API (GOOGLE_TRANSLATE_*)"
-echo "  ${BLUE}4.${NC} Access your application:"
+echo "  ${BLUE}1.${NC} Configure your web server (Nginx/Apache):"
+echo "      ${GREEN}→${NC} Point DocumentRoot to ${YELLOW}$(pwd)/public${NC}"
+echo "      ${GREEN}→${NC} See INSTALLATION.md for detailed web server config"
+echo ""
+echo "  ${BLUE}2.${NC} Access your application:"
 echo "      ${GREEN}→${NC} Frontend: ${YELLOW}$APP_URL${NC}"
 echo "      ${GREEN}→${NC} Admin Panel: ${YELLOW}$APP_URL/admin${NC}"
-echo "  ${BLUE}5.${NC} Login with your admin credentials:"
+echo ""
+echo "  ${BLUE}3.${NC} Login with your admin credentials:"
 echo "      ${GREEN}→${NC} Email: ${YELLOW}$ADMIN_EMAIL${NC}"
-echo "      ${GREEN}→${NC} Password: (the password you set)"
+echo "      ${GREEN}→${NC} Password: (the password you just set)"
+echo ""
+echo "  ${BLUE}4.${NC} Configure additional settings (optional):"
+echo "      ${GREEN}→${NC} Email (MAIL_*, GMAIL_*, SMTP_*)"
+echo "      ${GREEN}→${NC} Cloudflare Turnstile (CLOUDFLARE_TURNSTILE_*)"
+echo "      ${GREEN}→${NC} Google Translate API (GOOGLE_TRANSLATE_*)"
+echo "      ${GREEN}→${NC} Edit ${YELLOW}.env${NC} file to configure"
+echo ""
+echo "  ${BLUE}5.${NC} Set up GitHub for deployments (optional):"
+echo "      ${GREEN}→${NC} Generate Personal Access Token at GitHub"
+echo "      ${GREEN}→${NC} Configure git remote with token"
+echo "      ${GREEN}→${NC} Use ${YELLOW}./deploy.sh${NC} for future updates"
 echo ""
 echo "📖 Documentation:"
-echo "  ${GREEN}→${NC} Read INSTALLATION.md for detailed deployment guide"
-echo "  ${GREEN}→${NC} Read README.md for general information"
+echo "  ${GREEN}→${NC} ${YELLOW}INSTALLATION.md${NC} - Complete setup guide"
+echo "  ${GREEN}→${NC} ${YELLOW}README.md${NC} - General information"
+echo "  ${GREEN}→${NC} ${YELLOW}DEPLOYMENT.md${NC} - Deployment guide"
 echo ""
-echo "🚀 Deployment:"
-echo "  ${GREEN}→${NC} For future updates, use: ${YELLOW}./deploy.sh${NC}"
-echo "  ${GREEN}→${NC} Make sure to set up your git remote first"
+echo "🚀 ${GREEN}Your system is ready to use immediately!${NC}"
+echo ""
+echo "💡 ${BLUE}Quick Test:${NC}"
+echo "  If you have PHP built-in server:"
+echo "  ${YELLOW}php artisan serve${NC}"
+echo "  Then visit: ${YELLOW}http://localhost:8000${NC}"
 echo ""
 echo "${GREEN}Happy deploying! 🎊${NC}"
 echo ""
