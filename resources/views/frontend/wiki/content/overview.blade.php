@@ -548,10 +548,11 @@
 
 <script>
 function loadCategory(category) {
-    // Find the menu link with matching category
-    const menuLink = document.querySelector(`.wiki-menu-link[data-category="${category}"]`);
-    if (menuLink) {
-        menuLink.click();
-    }
+    console.log('Loading category:', category);
+
+    // Update URL hash which will trigger the Wiki system to load content
+    window.location.hash = category;
+
+    // The Wiki system's loadInitialContent() will handle the rest
 }
 </script>

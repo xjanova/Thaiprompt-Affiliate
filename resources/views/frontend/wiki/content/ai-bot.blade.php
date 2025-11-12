@@ -6,20 +6,20 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div class="tab-navigation" id="aibot-tab-nav" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
-        <button class="aibot-tab-btn active" onclick="switchAiBotTab(this, 'ai-chatbot')" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+    <div class="tab-navigation" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
+        <button class="tab-btn active" data-tab="ai-chatbot" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             🧠 AI Chatbot
         </button>
-        <button class="aibot-tab-btn" onclick="switchAiBotTab(this, 'ai-creation')" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+        <button class="tab-btn" data-tab="ai-creation" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             🎨 AI Image/Video
         </button>
-        <button class="aibot-tab-btn" onclick="switchAiBotTab(this, 'line-bot')" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+        <button class="tab-btn" data-tab="line-bot" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             💬 LINE Bot
         </button>
-        <button class="aibot-tab-btn" onclick="switchAiBotTab(this, 'knowledge')" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+        <button class="tab-btn" data-tab="knowledge" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             📚 Knowledge Base
         </button>
-        <button class="aibot-tab-btn" onclick="switchAiBotTab(this, 'rental')" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+        <button class="tab-btn" data-tab="rental" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             💼 Bot Rental
         </button>
     </div>
@@ -625,51 +625,3 @@
         </section>
     </div>
 </div>
-
-<script>
-function switchAiBotTab(clickedButton, targetTab) {
-    // Scroll to top IMMEDIATELY when menu/tab is clicked
-    window.scrollTo({
-        top: 0,
-        behavior: 'smooth'
-    });
-
-    console.log('AI-Bot Tab clicked:', targetTab);
-
-    // Get all buttons and contents within this specific tab navigation
-    const tabNav = document.getElementById('aibot-tab-nav');
-    const allButtons = tabNav.querySelectorAll('.aibot-tab-btn');
-    const allContents = document.querySelectorAll('[data-tab-content]');
-
-    // Remove active from all buttons
-    allButtons.forEach(btn => {
-        btn.classList.remove('active');
-        btn.style.background = 'var(--wiki-card-bg)';
-        btn.style.color = 'var(--wiki-text-primary)';
-        btn.style.border = '1px solid var(--wiki-border)';
-        btn.style.borderBottom = 'none';
-    });
-
-    // Hide all tab contents
-    allContents.forEach(content => {
-        content.classList.remove('active');
-        content.style.display = 'none';
-    });
-
-    // Activate clicked button
-    clickedButton.classList.add('active');
-    clickedButton.style.background = 'linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)))';
-    clickedButton.style.color = 'white';
-    clickedButton.style.border = 'none';
-
-    // Show target content
-    const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-    if (targetContent) {
-        targetContent.classList.add('active');
-        targetContent.style.display = 'block';
-        console.log('AI-Bot Tab content shown:', targetTab);
-    } else {
-        console.error('AI-Bot Tab content not found:', targetTab);
-    }
-}
-</script>
