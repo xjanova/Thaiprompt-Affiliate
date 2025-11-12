@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.137.3] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Improve DNS error detection and provide helpful solutions (693f8548)
+- fix: Correct success status logic in GitHub connection test (5318179b)
+### 🔧 Other Changes
+- Merge pull request #868 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (2925ac42)
+
 ## [v2.137.2] - 2025-11-12
 
 ### ✨ Features
