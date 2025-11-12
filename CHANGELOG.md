@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.142.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #877 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (f97651d4)
+- feat: Add Windows UI RGB effects and fix tabs functionality (e032ecbb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.141.1] - 2025-11-12
 
 ### ✨ Features
