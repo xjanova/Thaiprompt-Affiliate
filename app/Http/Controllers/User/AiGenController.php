@@ -24,6 +24,9 @@ class AiGenController extends Controller
         $user = $request->user();
         $dashboard = $this->aiGenService->getUserDashboard($user);
 
+        // Create or get API token for Sanctum API calls
+        $token = $user->createToken('ai-gen-access')->plainTextToken;
+
         return view('user.ai-gen.index', [
             'stats' => [
                 'remaining_images' => $this->getRemainingCredits($dashboard, 'image'),
@@ -32,6 +35,7 @@ class AiGenController extends Controller
             ],
             'package_name' => $dashboard['subscription']['package_name'] ?? 'Free',
             'dashboard' => $dashboard,
+            'api_token' => $token,
         ]);
     }
 

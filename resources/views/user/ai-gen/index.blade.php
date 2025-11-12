@@ -1268,6 +1268,11 @@
         `).join('');
     }
 
+    // Initialize API token
+    @if(isset($api_token))
+        localStorage.setItem('token', '{{ $api_token }}');
+    @endif
+
     // Initialize
     document.addEventListener('DOMContentLoaded', function() {
         loadDashboardData();
