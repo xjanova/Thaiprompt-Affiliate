@@ -253,7 +253,8 @@
             localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
         },
         getCsrfToken() {
-            return document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const meta = document.querySelector('meta[name=\"csrf-token\"]');
+            return meta ? meta.content : '';
         },
         async loadTaskbarShortcuts() {
             this.loadingShortcuts = true;
