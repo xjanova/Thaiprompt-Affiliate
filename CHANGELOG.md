@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.136.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #863 from xjanova/claude/fix-missing-admin-api-route-011CV3LU1sEWBnVG2wTpXizK (e7aaba25)
+- fix: Add missing admin.api-endpoints route definition (dc398838)
+### 🔧 Other Changes
+
+
 ## [v2.136.0] - 2025-11-12
 
 ### ✨ Features
