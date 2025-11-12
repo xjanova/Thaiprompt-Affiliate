@@ -7,6 +7,11 @@
     $primaryColor = \App\Models\Setting::get('primary_color', '#3B82F6');
     $secondaryColor = \App\Models\Setting::get('secondary_color', '#8B5CF6');
     $accentColor = \App\Models\Setting::get('accent_color', '#EC4899');
+
+    // Get Windows UI RGB for effects
+    $primaryRgb = $stats['windows_rgb']['primary_rgb'] ?? '59, 130, 246';
+    $secondaryRgb = $stats['windows_rgb']['secondary_rgb'] ?? '139, 92, 246';
+    $accentRgb = $stats['windows_rgb']['accent_rgb'] ?? '236, 72, 153';
 @endphp
 
 @push('styles')
@@ -15,6 +20,11 @@
     --primary: {{ $primaryColor }};
     --secondary: {{ $secondaryColor }};
     --accent: {{ $accentColor }};
+
+    /* Windows UI RGB colors for effects */
+    --primary-rgb: {{ $primaryRgb }};
+    --secondary-rgb: {{ $secondaryRgb }};
+    --accent-rgb: {{ $accentRgb }};
 
     /* Light mode colors */
     --wiki-bg: #ffffff;
@@ -40,16 +50,20 @@
     --wiki-shadow-hover: rgba(0,0,0,0.5);
 }
 
-/* Reading Progress Bar */
+/* Reading Progress Bar with RGB gradient */
 .reading-progress {
     position: fixed;
     top: 0;
     left: 0;
     width: 0%;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+    background: linear-gradient(90deg,
+        rgb(var(--primary-rgb)),
+        rgb(var(--secondary-rgb)),
+        rgb(var(--accent-rgb)));
     z-index: 9999;
     transition: width 0.1s ease-out;
+    box-shadow: 0 2px 10px rgba(var(--primary-rgb), 0.5);
 }
 
 /* Wiki Layout */
@@ -70,7 +84,7 @@
     }
 }
 
-/* Sidebar */
+/* Sidebar with RGB glow effect on hover */
 .wiki-sidebar {
     position: sticky;
     top: 2rem;
@@ -82,6 +96,12 @@
     border-radius: 16px;
     padding: 1.5rem;
     box-shadow: 0 4px 6px var(--wiki-shadow);
+    transition: all 0.3s ease;
+}
+
+.wiki-sidebar:hover {
+    box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.15),
+                0 4px 12px rgba(var(--secondary-rgb), 0.1);
 }
 
 .wiki-sidebar::-webkit-scrollbar {
@@ -94,7 +114,7 @@
 }
 
 .wiki-sidebar::-webkit-scrollbar-thumb {
-    background: var(--primary);
+    background: rgb(var(--primary-rgb));
     border-radius: 10px;
 }
 
@@ -107,13 +127,15 @@
 .sidebar-title {
     font-size: 1.25rem;
     font-weight: 800;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg,
+        rgb(var(--primary-rgb)),
+        rgb(var(--secondary-rgb)));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-/* Menu Items */
+/* Menu Items with RGB hover effects */
 .wiki-menu {
     list-style: none;
     padding: 0;
@@ -134,20 +156,43 @@
     border-radius: 10px;
     font-size: 0.95rem;
     font-weight: 500;
-    transition: all 0.2s;
+    transition: all 0.3s ease;
     cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.wiki-menu-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+        rgba(var(--primary-rgb), 0.1),
+        rgba(var(--secondary-rgb), 0.1));
+    transition: left 0.3s ease;
+    z-index: -1;
+}
+
+.wiki-menu-link:hover::before {
+    left: 0;
 }
 
 .wiki-menu-link:hover {
-    background: var(--wiki-hover-bg);
-    color: var(--primary);
+    color: rgb(var(--primary-rgb));
     transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.2);
 }
 
 .wiki-menu-link.active {
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg,
+        rgb(var(--primary-rgb)),
+        rgb(var(--secondary-rgb)));
     color: white;
     font-weight: 700;
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.4);
 }
 
 .menu-icon {
@@ -156,7 +201,7 @@
     text-align: center;
 }
 
-/* Main Content Area */
+/* Main Content Area with RGB glow */
 .wiki-main-content {
     background: var(--wiki-card-bg);
     border: 2px solid var(--wiki-border);
@@ -164,9 +209,15 @@
     padding: 3rem;
     min-height: 600px;
     box-shadow: 0 4px 6px var(--wiki-shadow);
+    transition: all 0.3s ease;
 }
 
-/* Loading Spinner */
+.wiki-main-content:hover {
+    box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.1),
+                0 4px 12px rgba(var(--secondary-rgb), 0.08);
+}
+
+/* Loading Spinner with RGB */
 .loading-spinner {
     display: flex;
     flex-direction: column;
@@ -177,7 +228,8 @@
 
 .spinner {
     border: 4px solid var(--wiki-border);
-    border-top: 4px solid var(--primary);
+    border-top: 4px solid rgb(var(--primary-rgb));
+    border-right: 4px solid rgb(var(--secondary-rgb));
     border-radius: 50%;
     width: 50px;
     height: 50px;
@@ -202,14 +254,22 @@
     right: 2rem;
     width: 60px;
     height: 60px;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg,
+        rgb(var(--primary-rgb)),
+        rgb(var(--secondary-rgb)));
     color: white;
     border: none;
     border-radius: 50%;
-    box-shadow: 0 4px 12px var(--wiki-shadow-hover);
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.4);
     cursor: pointer;
     z-index: 1000;
     font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.mobile-menu-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(var(--primary-rgb), 0.6);
 }
 
 @media (max-width: 1024px) {
@@ -261,7 +321,7 @@
     }
 }
 
-/* Badges */
+/* Badges with RGB glow */
 .wiki-badge {
     display: inline-block;
     padding: 0.25rem 0.75rem;
@@ -270,6 +330,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+    cursor: default;
 }
 
 .badge-green {
@@ -277,14 +339,29 @@
     color: #065f46;
 }
 
+.badge-green:hover {
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+    transform: translateY(-2px);
+}
+
 .badge-blue {
     background: #dbeafe;
     color: #1e40af;
 }
 
+.badge-blue:hover {
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.4);
+    transform: translateY(-2px);
+}
+
 .badge-purple {
     background: #e0e7ff;
     color: #5b21b6;
+}
+
+.badge-purple:hover {
+    box-shadow: 0 4px 12px rgba(var(--secondary-rgb), 0.4);
+    transform: translateY(-2px);
 }
 
 .dark .badge-green {
@@ -302,13 +379,33 @@
     color: #e0e7ff;
 }
 
-/* Info Box */
+/* Info Box with icons and RGB effects */
 .info-box {
     background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
-    border-left: 4px solid var(--primary);
+    border-left: 4px solid rgb(var(--primary-rgb));
     padding: 1.5rem;
     border-radius: 8px;
     margin: 1.5rem 0;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.info-box:hover {
+    box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.2);
+    transform: translateY(-2px);
+}
+
+.info-box h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+.info-box h4::before {
+    content: 'ℹ️';
+    font-size: 1.5rem;
 }
 
 .dark .info-box {
@@ -320,6 +417,10 @@
     border-left-color: #10b981;
 }
 
+.info-box.success h4::before {
+    content: '✅';
+}
+
 .dark .info-box.success {
     background: linear-gradient(135deg, #065f46 0%, #047857 100%);
 }
@@ -329,8 +430,25 @@
     border-left-color: #f59e0b;
 }
 
+.info-box.warning h4::before {
+    content: '⚠️';
+}
+
 .dark .info-box.warning {
     background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+}
+
+.info-box.tip {
+    background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+    border-left-color: #ec4899;
+}
+
+.info-box.tip h4::before {
+    content: '💡';
+}
+
+.dark .info-box.tip {
+    background: linear-gradient(135deg, #831843 0%, #9f1239 100%);
 }
 </style>
 @endpush
@@ -492,6 +610,9 @@
                 wikiContent.innerHTML = data.content;
                 currentCategory = category;
 
+                // Initialize tabs after content loaded
+                initializeTabs();
+
                 // Update URL without reload
                 history.pushState({category}, '', `/wiki#${category}`);
 
@@ -509,10 +630,33 @@
                 <div class="info-box warning">
                     <h4>⚠️ เกิดข้อผิดพลาด</h4>
                     <p>ไม่สามารถโหลดเนื้อหาได้ กรุณาลองใหม่อีกครั้ง</p>
-                    <button onclick="location.reload()" class="btn btn-primary mt-3">รีโหลดหน้า</button>
+                    <button onclick="location.reload()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border: none; border-radius: 8px; cursor: pointer;">รีโหลดหน้า</button>
                 </div>
             `;
         }
+    }
+
+    // Initialize tabs functionality
+    function initializeTabs() {
+        const tabBtns = wikiContent.querySelectorAll('.tab-btn');
+        const tabContents = wikiContent.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+
+                // Remove active class from all
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                // Add active class
+                this.classList.add('active');
+                const targetContent = wikiContent.querySelector(`[data-tab-content="${tabName}"]`);
+                if (targetContent) {
+                    targetContent.classList.add('active');
+                }
+            });
+        });
     }
 
     // Menu click handler
