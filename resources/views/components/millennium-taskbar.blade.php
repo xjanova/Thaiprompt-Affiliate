@@ -92,10 +92,6 @@
     $backToTopThreshold = WindowsUiSetting::get('millennium_back_to_top_threshold', 20);
     $backToTopAnimation = WindowsUiSetting::get('millennium_back_to_top_animation', 'fade');
 
-    // Get user's taskbar shortcuts
-    $taskbarIconSize = WindowsUiSetting::get('millennium_taskbar_icon_size', 48);
-    $taskbarIconBorderRadius = WindowsUiSetting::get('millennium_taskbar_icon_border_radius', 12);
-
     // Calculate start button border radius based on shape
     $startButtonRadius = match($startButtonShape) {
         'square' => 0,
@@ -116,11 +112,21 @@
             ['icon' => '📊', 'label' => 'แดชบอร์ด', 'url' => route('admin.dashboard'), 'color' => 'from-indigo-600 to-purple-600'],
             ['icon' => '📈', 'label' => 'วิเคราะห์ระบบ', 'url' => route('admin.analytics.index'), 'color' => 'from-cyan-600 to-blue-600'],
             ['icon' => '👥', 'label' => 'ผู้ใช้งาน', 'url' => route('admin.users.index'), 'color' => 'from-blue-600 to-cyan-600'],
+            ['icon' => '🔒', 'label' => 'ความปลอดภัย', 'url' => route('admin.security.index'), 'color' => 'from-red-600 to-rose-600', 'highlight' => true],
             ['icon' => '🏨', 'label' => 'จัดการโรงแรม', 'url' => route('admin.hotels.index'), 'color' => 'from-orange-600 to-amber-600'],
             ['icon' => '👨‍💼', 'label' => 'ผู้เช่าโรงแรม', 'url' => route('admin.hotel-owners.index'), 'color' => 'from-amber-600 to-yellow-600'],
             ['icon' => '🛒', 'label' => 'อีคอมเมิร์ซ', 'url' => route('admin.ecommerce.products.index'), 'color' => 'from-green-600 to-emerald-600'],
             ['icon' => '🏪', 'label' => 'ระบบ POS', 'url' => route('admin.pos.dashboard'), 'color' => 'from-teal-600 to-cyan-600'],
             ['icon' => '💰', 'label' => 'กระเป๋าเงิน', 'url' => route('admin.wallet.index'), 'color' => 'from-yellow-600 to-orange-600'],
+            ['icon' => '₿', 'label' => 'คริปโตเคอเรนซี', 'url' => route('admin.crypto.dashboard'), 'color' => 'from-amber-500 to-orange-500', 'highlight' => true],
+            ['icon' => '📊', 'label' => 'ระบบบัญชี', 'url' => route('admin.accounting.dashboard'), 'color' => 'from-emerald-600 to-green-600', 'highlight' => true],
+            ['icon' => '🤖', 'label' => 'Bot Automation', 'url' => route('admin.bot-automation.dashboard'), 'color' => 'from-violet-600 to-purple-600', 'highlight' => true],
+            ['icon' => '👔', 'label' => 'ระบบ HRM', 'url' => route('admin.hrm.dashboard'), 'color' => 'from-blue-500 to-cyan-500', 'highlight' => true],
+            ['icon' => '🌐', 'label' => 'MLM System', 'url' => route('admin.mlm.reports.index'), 'color' => 'from-fuchsia-600 to-pink-600'],
+            ['icon' => '🎨', 'label' => 'Smart Sliders', 'url' => route('admin.smart-sliders.index'), 'color' => 'from-rose-600 to-pink-600'],
+            ['icon' => '🤖', 'label' => 'AI Management', 'url' => route('admin.ai-providers.index'), 'color' => 'from-purple-500 to-violet-500', 'highlight' => true],
+            ['icon' => '🔌', 'label' => 'API Management', 'url' => route('admin.api-endpoints.index'), 'color' => 'from-slate-600 to-gray-600'],
+            ['icon' => '📱', 'label' => 'App Management', 'url' => route('admin.app-management.settings.index'), 'color' => 'from-sky-600 to-blue-600'],
             ['icon' => '📧', 'label' => 'จัดการอีเมล', 'url' => route('admin.email.templates.index'), 'color' => 'from-blue-600 to-indigo-600'],
             ['icon' => '📱', 'label' => 'LINE OA & AI', 'url' => route('admin.line-oa.index'), 'color' => 'from-green-500 to-emerald-500'],
             ['icon' => '🎓', 'label' => 'Academy System', 'url' => route('admin.academy.courses.index'), 'color' => 'from-purple-600 to-pink-600'],
@@ -148,6 +154,8 @@
             ['icon' => '💰', 'label' => 'เส้นทางเศรษฐี', 'url' => route('user.wealth-guide'), 'color' => 'from-yellow-600 via-amber-600 to-orange-600', 'highlight' => true],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => route('user.profile'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '🪪', 'label' => 'ยืนยันตัวตน (KYC)', 'url' => route('user.kyc.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '🔐', 'label' => 'Two-Factor Auth', 'url' => route('user.two-factor.setup'), 'color' => 'from-red-500 to-rose-500', 'highlight' => true],
+            ['icon' => '🌐', 'label' => 'MLM Dashboard', 'url' => route('user.mlm.dashboard'), 'color' => 'from-violet-600 to-purple-600', 'highlight' => true],
             ['icon' => '💵', 'label' => 'คอมมิชชั่น', 'url' => route('user.commissions'), 'color' => 'from-green-600 to-emerald-600'],
             ['icon' => '🏨', 'label' => 'การจองโรงแรม', 'url' => route('hotels.bookings.index'), 'color' => 'from-orange-600 to-amber-600'],
             ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => route('user.tickets.index'), 'color' => 'from-blue-600 to-indigo-600'],
@@ -157,6 +165,8 @@
             ['icon' => '👥', 'label' => 'ผู้แนะนำ', 'url' => route('user.referrals'), 'color' => 'from-pink-600 to-rose-600'],
             ['icon' => '🌳', 'label' => 'ผังสายงาน', 'url' => route('user.organization'), 'color' => 'from-green-600 to-emerald-600'],
             ['icon' => '💖', 'label' => 'รักษายอด', 'url' => route('user.retention.index'), 'color' => 'from-red-600 to-pink-600'],
+            ['icon' => '📦', 'label' => 'ที่อยู่จัดส่ง', 'url' => route('shipping-addresses.index'), 'color' => 'from-cyan-600 to-blue-600'],
+            ['icon' => '🔔', 'label' => 'การแจ้งเตือน', 'url' => route('user.notifications.index'), 'color' => 'from-sky-600 to-blue-600'],
             ['icon' => '🎨', 'label' => 'ตั้งค่าธีม', 'url' => route('user.themes.index'), 'color' => 'from-purple-600 to-pink-600'],
         ];
 
@@ -185,8 +195,6 @@
         showTooltip: false,
         tooltipEnabled: {{ $tooltipEnabled ? 'true' : 'false' }},
         tooltipDuration: {{ $tooltipDuration }},
-        taskbarShortcuts: [],
-        loadingShortcuts: false,
         updateTime() {
             const now = new Date();
             let hours = now.getHours();
@@ -252,62 +260,6 @@
             this.showTooltip = false;
             localStorage.setItem('millennium_start_button_tooltip_seen', 'true');
         },
-        getCsrfToken() {
-            const meta = document.querySelector('meta[name=\"csrf-token\"]');
-            return meta ? meta.content : '';
-        },
-        async loadTaskbarShortcuts() {
-            this.loadingShortcuts = true;
-            try {
-                const response = await fetch('/api/v1/taskbar-shortcuts', {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.getCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    this.taskbarShortcuts = data.shortcuts || [];
-                } else {
-                    console.error('Failed to load shortcuts:', response.status);
-                }
-            } catch (error) {
-                console.error('Error loading taskbar shortcuts:', error);
-            } finally {
-                this.loadingShortcuts = false;
-            }
-        },
-        async removeShortcut(shortcutId) {
-            if (!confirm('ต้องการลบไอค่อนทางลัดนี้ใช่หรือไม่?')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/v1/taskbar-shortcuts/${shortcutId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.getCsrfToken(),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    credentials: 'include'
-                });
-
-                if (response.ok) {
-                    await this.loadTaskbarShortcuts();
-                    alert('ลบไอค่อนทางลัดสำเร็จ');
-                } else {
-                    alert('ไม่สามารถลบไอค่อนทางลัดได้');
-                }
-            } catch (error) {
-                console.error('Error removing shortcut:', error);
-                alert('เกิดข้อผิดพลาดในการลบไอค่อนทางลัด');
-            }
-        },
         init() {
             this.updateTime();
             const interval = this.showSeconds ? 1000 : 60000;
@@ -319,14 +271,6 @@
 
             // Initialize tooltip
             this.initTooltip();
-
-            // Load taskbar shortcuts
-            this.loadTaskbarShortcuts();
-
-            // Listen for shortcut added event
-            window.addEventListener('taskbar-shortcut-added', () => {
-                this.loadTaskbarShortcuts();
-            });
         }
     }"
     x-init="init()"
@@ -460,25 +404,6 @@
                         @endif
                     </button>
                 @endif
-
-                <!-- User Customizable Taskbar Shortcuts -->
-                <template x-for="shortcut in taskbarShortcuts" :key="shortcut.id">
-                    <div class="group relative">
-                        <a :href="shortcut.url"
-                           class="flex items-center justify-center rounded-xl transition-all duration-300 transform hover:scale-110 hover:-translate-y-1 active:scale-95 active:translate-y-0 border-2 border-white/20 hover:border-white/40"
-                           style="width: {{ $taskbarIconSize }}px; height: {{ $taskbarIconSize }}px; border-radius: {{ $taskbarIconBorderRadius }}px; background: rgba(255, 255, 255, 0.1); background-image: linear-gradient(135deg, rgba(168, 85, 247, 0.3), rgba(59, 130, 246, 0.3)); box-shadow: 0 1px 2px rgba(255, 255, 255, 0.1) inset, 0 -1px 2px rgba(0, 0, 0, 0.2) inset, 0 4px 12px rgba(168, 85, 247, 0.3), 0 8px 24px rgba(59, 130, 246, 0.2);"
-                           :title="shortcut.label">
-                            <span :style="'font-size: ' + ({{ $taskbarIconSize }} * 0.5) + 'px;'" x-text="shortcut.icon"></span>
-                        </a>
-                        <!-- Remove Button (hover to show) -->
-                        <button
-                            @click.prevent="removeShortcut(shortcut.id)"
-                            class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-xs font-bold shadow-lg"
-                            title="ลบไอค่อนทางลัด">
-                            ✕
-                        </button>
-                    </div>
-                </template>
 
             </div>
 
