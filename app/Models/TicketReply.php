@@ -56,6 +56,14 @@ class TicketReply extends Model
     }
 
     /**
+     * Get attachments (polymorphic)
+     */
+    public function fileAttachments()
+    {
+        return $this->morphMany(TicketAttachment::class, 'attachable');
+    }
+
+    /**
      * Check if reply is from staff
      */
     public function isFromStaff()
