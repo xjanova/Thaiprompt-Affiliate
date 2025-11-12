@@ -53,7 +53,8 @@
 
 #### 👥 การจัดการสมาชิก
 - ระบบสมัครสมาชิกอัตโนมัติ
-- การยืนยันตัวตนผ่านอีเมล
+- **🤖 LINE Membership Signup ขับเคลื่อนด้วย AI**
+- การยืนยันตัวตนผ่านอีเมล & OTP
 - โปรไฟล์ที่ปรับแต่งได้
 - ระบบอัปโหลดรูปโปรไฟล์
 - จัดการข้อมูลส่วนตัว
@@ -81,6 +82,47 @@
 - ประวัติธุรกรรมแบบละเอียด
 - การอนุมัติอัตโนมัติ/Manual
 - แจ้งเตือนผ่านระบบ
+
+</td>
+</tr>
+</table>
+
+### 🤖 LINE Membership Signup System
+
+<table>
+<tr>
+<td width="50%">
+
+#### ✨ AI-Powered Signup
+- AI Bot ช่วยเหลือตลอดการสมัคร
+- 7 ขั้นตอนที่ชัดเจน
+- Beautiful Flex Messages
+- OTP Verification ผ่าน LINE
+- ระบบแนะนำเพื่อนอัตโนมัติ
+- Real-time Progress Tracking
+
+#### 📊 Admin Dashboard
+- Dashboard ภาพรวมการสมัคร
+- Funnel Analytics แบบละเอียด
+- จัดการ Signup Sessions
+- Template Management
+- Export ข้อมูล CSV
+
+</td>
+<td width="50%">
+
+#### 🎁 Reward System
+- ให้รางวัลเมื่อสมัครสำเร็จ
+- โบนัสต้อนรับอัตโนมัติ
+- คะแนนสะสมสำหรับสมาชิกใหม่
+- Referral Rewards
+
+#### 🎨 Rich Menu & UI
+- Rich Menu สวยงาม
+- Progress Bar ทุกขั้นตอน
+- Responsive Design
+- Quick Reply Buttons
+- Visual Feedback
 
 </td>
 </tr>
@@ -271,6 +313,14 @@ Password: (ที่ตั้งไว้ใน install.sh)
 | 👑 [SUPER-ADMIN.md](SUPER-ADMIN.md) | คู่มือ Super Admin |
 | 🌍 [MULTI-LANGUAGE.md](MULTI-LANGUAGE.md) | คู่มือระบบหลายภาษา |
 | 📌 [VERSIONING.md](VERSIONING.md) | คู่มือระบบเวอร์ชั่น |
+
+### สำหรับ LINE Membership Signup
+
+| เอกสาร | คำอธิบาย |
+|--------|----------|
+| 🤖 [LINE_MEMBERSHIP_SIGNUP_README.md](LINE_MEMBERSHIP_SIGNUP_README.md) | เอกสารทางเทคนิคและ API |
+| 🚀 [LINE_SIGNUP_SETUP_GUIDE.md](LINE_SIGNUP_SETUP_GUIDE.md) | คู่มือติดตั้งและตั้งค่า |
+| 📖 [LINE_SIGNUP_USAGE_GUIDE.md](LINE_SIGNUP_USAGE_GUIDE.md) | คู่มือการใช้งานและ Best Practices |
 
 ### สำหรับนักพัฒนา
 
