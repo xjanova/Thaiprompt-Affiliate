@@ -939,7 +939,7 @@ class UpdateService
             return 'network';
         }
 
-        if (preg_match('/(dns|resolution failed|temporary failure)/i', $message)) {
+        if (preg_match('/(dns|resolution failed|temporary failure|could not resolve host|cURL error 6)/i', $message)) {
             return 'dns';
         }
 
@@ -1001,14 +1001,18 @@ class UpdateService
                 'retryable' => true,
             ],
             'dns' => [
-                'title' => 'ปัญหา DNS Resolution',
-                'message' => 'ไม่สามารถค้นหา domain name ได้',
+                'title' => 'ปัญหา DNS Resolution (ไม่สามารถเชื่อมต่อ GitHub)',
+                'message' => 'เซิร์ฟเวอร์ไม่สามารถแปล api.github.com เป็น IP address ได้',
                 'solutions' => [
-                    'ตรวจสอบ DNS settings',
-                    'ลอง flush DNS cache',
-                    'ลองใช้ DNS อื่น เช่น 8.8.8.8',
+                    'ตรวจสอบว่าเซิร์ฟเวอร์เชื่อมต่ออินเทอร์เน็ตได้หรือไม่: ping 8.8.8.8',
+                    'ตรวจสอบ DNS configuration: cat /etc/resolv.conf',
+                    'เพิ่ม DNS servers ของ Google/Cloudflare: nameserver 8.8.8.8 และ nameserver 1.1.1.1',
+                    'ติดต่อผู้ดูแลเซิร์ฟเวอร์เพื่อปลด DNS blocking หรือ firewall',
+                    'ลอง: sudo systemctl restart systemd-resolved (Ubuntu/Debian)',
+                    'หากใช้ shared hosting: ติดต่อ hosting provider เพื่อแก้ไข DNS',
                 ],
                 'retryable' => true,
+                'technical_note' => 'cURL error 6: Could not resolve host - DNS server ไม่ตอบสนองหรือถูก block',
             ],
             'filesystem' => [
                 'title' => 'ปัญหา File System',

@@ -110,16 +110,49 @@ class UpdateController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
+            // Classify error and provide helpful solutions
+            $errorMessage = $e->getMessage();
+            $errorType = 'unknown';
+            $solutions = [];
+
+            if (preg_match('/(dns|resolution failed|could not resolve host|cURL error 6)/i', $errorMessage)) {
+                $errorType = 'dns';
+                $solutions = [
+                    '1. ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต: ping 8.8.8.8',
+                    '2. ตรวจสอบ DNS configuration ของเซิร์ฟเวอร์',
+                    '3. เพิ่ม DNS servers: nameserver 8.8.8.8 ใน /etc/resolv.conf',
+                    '4. Restart DNS service: sudo systemctl restart systemd-resolved',
+                    '5. หากใช้ shared hosting: ติดต่อ hosting provider',
+                    '6. ตรวจสอบว่า Firewall ไม่ได้บล็อก DNS queries (port 53)',
+                ];
+            } elseif (preg_match('/(timeout|timed out)/i', $errorMessage)) {
+                $errorType = 'timeout';
+                $solutions = [
+                    '1. ตรวจสอบความเร็วอินเทอร์เน็ต',
+                    '2. ลองอีกครั้งในอีกสักครู่',
+                    '3. ตรวจสอบว่า api.github.com ไม่ถูกบล็อกโดย Firewall',
+                ];
+            } elseif (preg_match('/(could not read|failed to connect|network error)/i', $errorMessage)) {
+                $errorType = 'network';
+                $solutions = [
+                    '1. ตรวจสอบการเชื่อมต่ออินเทอร์เน็ต',
+                    '2. ตรวจสอบ Firewall settings',
+                    '3. ตรวจสอบว่า api.github.com สามารถเข้าถึงได้',
+                ];
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาด: การตรวจสอบอัพเดทล้มเหลว',
+                'error_type' => $errorType,
                 'error_details' => [
-                    'message' => $e->getMessage(),
+                    'message' => $errorMessage,
                     'type' => get_class($e),
-                    'file' => $e->getFile(),
-                    'line' => $e->getLine(),
-                    'trace' => config('app.debug') ? $e->getTraceAsString() : 'Enable APP_DEBUG to see stack trace',
+                    'file' => $e->getFile() . ':' . $e->getLine(),
+                    'trace' => config('app.debug') ? $e->getTraceAsString() : 'เปิด APP_DEBUG=true ใน .env เพื่อดู stack trace',
                 ],
+                'solutions' => $solutions,
+                'help' => empty($solutions) ? 'ติดต่อผู้ดูแลระบบสำหรับความช่วยเหลือ' : 'ลองวิธีแก้ไขด้านล่าง',
             ], 500);
         }
     }
