@@ -503,6 +503,35 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
     });
 });
 
+// LINE Membership Signup Management (AI-Powered Signup System)
+Route::prefix('line-membership-signup')->name('line-membership-signup.')->group(function () {
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'index'])->name('index');
+
+    // Sessions Management
+    Route::get('/sessions', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'sessions'])->name('sessions');
+    Route::get('/sessions/{session}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'showSession'])->name('sessions.show');
+
+    // Templates Management
+    Route::get('/templates', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'templates'])->name('templates');
+    Route::post('/templates', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'createTemplate'])->name('templates.create');
+    Route::put('/templates/{template}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'updateTemplate'])->name('templates.update');
+    Route::delete('/templates/{template}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'deleteTemplate'])->name('templates.delete');
+
+    // Invitations Management
+    Route::get('/invitations', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'invitations'])->name('invitations');
+
+    // Rewards Management
+    Route::get('/rewards', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'rewards'])->name('rewards');
+    Route::post('/rewards/{reward}/grant', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'grantReward'])->name('rewards.grant');
+
+    // Analytics API
+    Route::get('/analytics/data', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'analyticsData'])->name('analytics.data');
+
+    // Export
+    Route::get('/export/sessions', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'exportSessions'])->name('export.sessions');
+});
+
 // MLM Prospects Management
 Route::prefix('mlm-prospects')->name('mlm-prospects.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\MlmProspectController::class, 'index'])->name('index');
