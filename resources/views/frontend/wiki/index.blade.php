@@ -474,24 +474,51 @@
                     <span class="menu-icon">💎</span>
                     <span>MLM & Affiliate</span>
                 </a>
+                <ul class="sub-menu" style="list-style: none; padding-left: 2rem; margin-top: 0.5rem; display: none;">
+                    <li><a href="#mlm-binary" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🌳 Binary System</a></li>
+                    <li><a href="#mlm-unilevel" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🎯 Unilevel System</a></li>
+                    <li><a href="#mlm-commission" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">💰 Commission</a></li>
+                    <li><a href="#mlm-rank" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">👑 Rank & Bonus</a></li>
+                    <li><a href="#mlm-genealogy" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">📊 Genealogy</a></li>
+                </ul>
             </li>
             <li class="wiki-menu-item">
                 <a href="#" class="wiki-menu-link" data-category="ai-bot">
                     <span class="menu-icon">🤖</span>
                     <span>AI & Bot System</span>
                 </a>
+                <ul class="sub-menu" style="list-style: none; padding-left: 2rem; margin-top: 0.5rem; display: none;">
+                    <li><a href="#ai-chatbot" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🧠 AI Chatbot</a></li>
+                    <li><a href="#ai-creation" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🎨 AI Image/Video</a></li>
+                    <li><a href="#line-bot" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">💬 LINE Bot</a></li>
+                    <li><a href="#knowledge" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">📚 Knowledge Base</a></li>
+                    <li><a href="#rental" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">💼 Bot Rental</a></li>
+                </ul>
             </li>
             <li class="wiki-menu-item">
                 <a href="#" class="wiki-menu-link" data-category="ecommerce">
                     <span class="menu-icon">🛍️</span>
                     <span>E-Commerce</span>
                 </a>
+                <ul class="sub-menu" style="list-style: none; padding-left: 2rem; margin-top: 0.5rem; display: none;">
+                    <li><a href="#products" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">📦 Product Management</a></li>
+                    <li><a href="#cart" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🛒 Shopping Cart</a></li>
+                    <li><a href="#shipping" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🚚 Shipping</a></li>
+                    <li><a href="#marketplace" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🏪 Marketplace</a></li>
+                </ul>
             </li>
             <li class="wiki-menu-item">
                 <a href="#" class="wiki-menu-link" data-category="crypto">
                     <span class="menu-icon">₿</span>
                     <span>Crypto & Trading</span>
                 </a>
+                <ul class="sub-menu" style="list-style: none; padding-left: 2rem; margin-top: 0.5rem; display: none;">
+                    <li><a href="#wallet" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">💰 Wallet</a></li>
+                    <li><a href="#crypto" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">₿ Crypto</a></li>
+                    <li><a href="#exchange" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">💱 Exchange</a></li>
+                    <li><a href="#investment" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">📈 Investment</a></li>
+                    <li><a href="#security" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🔒 Security</a></li>
+                </ul>
             </li>
             <li class="wiki-menu-item">
                 <a href="#" class="wiki-menu-link" data-category="payment">
@@ -546,6 +573,12 @@
                     <span class="menu-icon">🏬</span>
                     <span>Vendor System</span>
                 </a>
+                <ul class="sub-menu" style="list-style: none; padding-left: 2rem; margin-top: 0.5rem; display: none;">
+                    <li><a href="#vendor-store" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">🏪 Store Management</a></li>
+                    <li><a href="#vendor-commission" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">💰 Commission</a></li>
+                    <li><a href="#vendor-analytics" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">📊 Analytics</a></li>
+                    <li><a href="#vendor-admin" style="display: block; padding: 0.5rem 0; color: var(--wiki-text-muted); font-size: 0.9rem; text-decoration: none;">⚙️ Admin</a></li>
+                </ul>
             </li>
             <li class="wiki-menu-item">
                 <a href="#" class="wiki-menu-link" data-category="support">
@@ -675,13 +708,53 @@
             e.preventDefault();
 
             const category = this.getAttribute('data-category');
+            const submenu = this.nextElementSibling;
 
             // Update active state
             menuLinks.forEach(l => l.classList.remove('active'));
             this.classList.add('active');
 
+            // Toggle submenu if exists
+            if (submenu && submenu.classList.contains('sub-menu')) {
+                // Hide all other submenus
+                document.querySelectorAll('.sub-menu').forEach(sm => {
+                    if (sm !== submenu) sm.style.display = 'none';
+                });
+
+                // Toggle current submenu
+                submenu.style.display = submenu.style.display === 'block' ? 'none' : 'block';
+            }
+
             // Load content
             loadWikiContent(category);
+        });
+    });
+
+    // Submenu link click handler - handle anchor links
+    document.querySelectorAll('.sub-menu a').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const href = this.getAttribute('href');
+
+            // If it's an anchor link (starts with #)
+            if (href && href.startsWith('#')) {
+                const targetId = href.substring(1);
+                // Wait a bit for content to load if needed
+                setTimeout(() => {
+                    const target = document.getElementById(targetId);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                        // Update URL hash
+                        if (history.pushState) {
+                            history.pushState(null, null, href);
+                        }
+
+                        // Close mobile menu
+                        closeMobileMenu();
+                    }
+                }, 300);
+            }
         });
     });
 
