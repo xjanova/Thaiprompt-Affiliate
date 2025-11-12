@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.157.0] - 2025-11-12
+
+### ✨ Features
+- feat: Enhance AI Gen UI/UX with premium design (78998138)
+### 🐛 Bug Fixes
+- fix: Complete AI Gen system implementation (4d20316d)
+### 🔧 Other Changes
+- Merge pull request #911 from xjanova/claude/fix-ai-gen-system-011CV43q5twZCSKMxJ9v3wvx (aa857eff)
+
 ## [v2.156.0] - 2025-11-12
 
 ### ✨ Features
