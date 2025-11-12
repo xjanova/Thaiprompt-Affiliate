@@ -15,10 +15,12 @@ class TicketAssignmentRule extends Model
         'description',
         'category_id',
         'priority',
+        'priority_filter',
         'keywords',
         'strategy',
         'assignable_users',
         'specific_user_id',
+        'assign_to_user_id',
         'last_assigned_index',
         'is_active',
         'sort_order',
@@ -46,6 +48,14 @@ class TicketAssignmentRule extends Model
     public function specificUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'specific_user_id');
+    }
+
+    /**
+     * Get the user to assign to
+     */
+    public function assignTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assign_to_user_id');
     }
 
     /**
