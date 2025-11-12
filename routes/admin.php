@@ -1406,7 +1406,7 @@ Route::prefix('app-management')->name('app-management.')->group(function () {
     });
 
     // App Maintenance
-    Route::prefix('maintenance')->name('maintenance.')->group(function () {
+    Route::prefix('app-maintenance')->name('app-maintenance.')->group(function () {
         Route::get('/', [AppMaintenanceController::class, 'index'])->name('index');
         Route::put('/', [AppMaintenanceController::class, 'update'])->name('update');
         Route::post('/toggle', [AppMaintenanceController::class, 'toggle'])->name('toggle');
