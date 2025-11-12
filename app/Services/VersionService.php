@@ -131,11 +131,17 @@ class VersionService
     protected function getLatestVersionFromGitTags(): ?string
     {
         try {
+            // Check if exec() is available
+            if (!function_exists('exec')) {
+                Log::info('exec() is disabled - cannot fetch git tags');
+                return null;
+            }
+
             // Fetch latest tags from remote
-            exec('git fetch --tags 2>&1', $fetchOutput, $fetchCode);
+            @exec('git fetch --tags 2>&1', $fetchOutput, $fetchCode);
 
             // Get all version tags and sort them
-            exec('git tag -l "v*" | sort -V | tail -1', $output, $returnCode);
+            @exec('git tag -l "v*" | sort -V | tail -1', $output, $returnCode);
 
             if ($returnCode === 0 && !empty($output[0])) {
                 // Remove 'v' prefix if exists
@@ -144,8 +150,8 @@ class VersionService
 
             Log::warning('No git tags found');
             return null;
-        } catch (\Exception $e) {
-            Log::error('Error fetching git tags', [
+        } catch (\Throwable $e) {
+            Log::info('Error fetching git tags (fallback)', [
                 'error' => $e->getMessage(),
             ]);
             return null;
@@ -210,18 +216,24 @@ class VersionService
     protected function getAvailableVersionsFromGitTags(): array
     {
         try {
+            // Check if exec() is available
+            if (!function_exists('exec')) {
+                Log::info('exec() is disabled - cannot fetch git tags');
+                return [];
+            }
+
             // Fetch latest tags from remote
-            exec('git fetch --tags 2>&1', $fetchOutput, $fetchCode);
+            @exec('git fetch --tags 2>&1', $fetchOutput, $fetchCode);
 
             // Get all version tags sorted by version
-            exec('git tag -l "v*" | sort -V', $output, $returnCode);
+            @exec('git tag -l "v*" | sort -V', $output, $returnCode);
 
             if ($returnCode === 0 && !empty($output)) {
                 return collect($output)->map(function ($tag) {
                     $version = ltrim(trim($tag), 'v');
 
                     // Try to get the date of the tag
-                    exec("git log -1 --format=%ai " . escapeshellarg($tag), $dateOutput);
+                    @exec("git log -1 --format=%ai " . escapeshellarg($tag), $dateOutput);
                     $date = !empty($dateOutput[0]) ? $dateOutput[0] : null;
 
                     return [
@@ -236,8 +248,8 @@ class VersionService
             }
 
             return [];
-        } catch (\Exception $e) {
-            Log::error('Error fetching git tags list', [
+        } catch (\Throwable $e) {
+            Log::info('Error fetching git tags list (fallback)', [
                 'error' => $e->getMessage(),
             ]);
             return [];
@@ -577,19 +589,38 @@ class VersionService
                 }
             }
 
-            // Test 5: Test git command availability
-            $gitAvailable = shell_exec('git --version 2>&1');
-            if ($gitAvailable) {
-                $results['checks'][] = [
-                    'check' => 'Git Command',
-                    'status' => 'passed',
-                    'message' => trim($gitAvailable),
-                ];
-            } else {
+            // Test 5: Test git command availability (optional - not critical for updates)
+            try {
+                if (function_exists('shell_exec')) {
+                    $gitAvailable = @shell_exec('git --version 2>&1');
+                    if ($gitAvailable && !empty(trim($gitAvailable))) {
+                        $results['checks'][] = [
+                            'check' => 'Git Command',
+                            'status' => 'passed',
+                            'message' => trim($gitAvailable),
+                        ];
+                    } else {
+                        $results['errors'][] = [
+                            'check' => 'Git Command',
+                            'status' => 'warning',
+                            'message' => 'Git command not available (fallback to API only)',
+                            'note' => 'Not required - updates work via API',
+                        ];
+                    }
+                } else {
+                    $results['errors'][] = [
+                        'check' => 'Git Command',
+                        'status' => 'warning',
+                        'message' => 'shell_exec() is disabled on this server',
+                        'note' => 'Not required - updates work via API',
+                    ];
+                }
+            } catch (\Throwable $e) {
                 $results['errors'][] = [
                     'check' => 'Git Command',
                     'status' => 'warning',
-                    'message' => 'Git command not available (fallback to API only)',
+                    'message' => 'Could not check git availability: ' . $e->getMessage(),
+                    'note' => 'Not required - updates work via API',
                 ];
             }
 
