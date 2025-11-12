@@ -99,8 +99,19 @@ Route::prefix('otp')->name('otp.')->group(function () {
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/about-us', [HomeController::class, 'aboutProfessional'])->name('about.professional');
-Route::get('/platform-wiki', [HomeController::class, 'platformWiki'])->name('platform.wiki');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
+
+// Wiki Routes (New modular system)
+Route::prefix('wiki')->name('wiki.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Frontend\WikiController::class, 'index'])->name('index');
+    Route::get('/content/{category}/{section?}', [\App\Http\Controllers\Frontend\WikiController::class, 'getContent'])->name('content');
+    Route::get('/search', [\App\Http\Controllers\Frontend\WikiController::class, 'search'])->name('search');
+});
+
+// Legacy wiki route (redirect to new system)
+Route::get('/platform-wiki', function () {
+    return redirect()->route('wiki.index');
+})->name('platform.wiki');
 
 // Dynamic Page Routes (Privacy Policy, Terms, etc.)
 Route::get('/page/{slug}', [PageController::class, 'show'])->name('page.show');

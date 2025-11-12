@@ -23,12 +23,30 @@ class Ticket extends Model
         'last_reply_at',
         'resolved_at',
         'closed_at',
+        // SLA fields
+        'first_response_at',
+        'due_at',
+        'sla_breached_at',
+        'is_overdue',
+        'response_time_minutes',
+        'resolution_time_minutes',
+        // Merging
+        'merged_into_ticket_id',
+        // Tags
+        'tags',
     ];
 
     protected $casts = [
         'last_reply_at' => 'datetime',
         'resolved_at' => 'datetime',
         'closed_at' => 'datetime',
+        'first_response_at' => 'datetime',
+        'due_at' => 'datetime',
+        'sla_breached_at' => 'datetime',
+        'is_overdue' => 'boolean',
+        'response_time_minutes' => 'integer',
+        'resolution_time_minutes' => 'integer',
+        'tags' => 'array',
     ];
 
     /**
@@ -106,6 +124,74 @@ class Ticket extends Model
     }
 
     /**
+     * Get attachments (polymorphic)
+     */
+    public function attachments()
+    {
+        return $this->morphMany(TicketAttachment::class, 'attachable');
+    }
+
+    /**
+     * Get the rating for this ticket
+     */
+    public function rating()
+    {
+        return $this->hasOne(TicketRating::class);
+    }
+
+    /**
+     * Get ticket relationships
+     */
+    public function relationships()
+    {
+        return $this->hasMany(TicketRelationship::class, 'ticket_id');
+    }
+
+    /**
+     * Get related tickets through relationships
+     */
+    public function relatedTickets()
+    {
+        return $this->belongsToMany(Ticket::class, 'ticket_relationships', 'ticket_id', 'related_ticket_id')
+            ->withPivot('relationship_type', 'note', 'created_by')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the ticket this was merged into
+     */
+    public function mergedIntoTicket()
+    {
+        return $this->belongsTo(Ticket::class, 'merged_into_ticket_id');
+    }
+
+    /**
+     * Get tickets that were merged into this one
+     */
+    public function mergedTickets()
+    {
+        return $this->hasMany(Ticket::class, 'merged_into_ticket_id');
+    }
+
+    /**
+     * Get linked knowledge base articles
+     */
+    public function kbArticles()
+    {
+        return $this->belongsToMany(KbArticle::class, 'kb_article_ticket', 'ticket_id', 'article_id')
+            ->withPivot('was_helpful')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get notification logs
+     */
+    public function notificationLogs()
+    {
+        return $this->hasMany(TicketNotificationLog::class);
+    }
+
+    /**
      * Scope to filter by status
      */
     public function scopeStatus($query, $status)
@@ -151,6 +237,56 @@ class Ticket extends Model
     public function scopeClosed($query)
     {
         return $query->whereIn('status', ['resolved', 'closed']);
+    }
+
+    /**
+     * Scope to get overdue tickets
+     */
+    public function scopeOverdue($query)
+    {
+        return $query->where('is_overdue', true)
+            ->whereNotNull('due_at')
+            ->where('due_at', '<', now())
+            ->open();
+    }
+
+    /**
+     * Scope to get unassigned tickets
+     */
+    public function scopeUnassigned($query)
+    {
+        return $query->whereNull('assigned_to');
+    }
+
+    /**
+     * Scope to filter by tags
+     */
+    public function scopeWithTag($query, $tag)
+    {
+        return $query->whereJsonContains('tags', $tag);
+    }
+
+    /**
+     * Scope: Search tickets (full-text)
+     */
+    public function scopeSearch($query, $keyword)
+    {
+        return $query->where(function ($q) use ($keyword) {
+            $q->where('ticket_number', 'like', "%{$keyword}%")
+              ->orWhere('subject', 'like', "%{$keyword}%")
+              ->orWhere('description', 'like', "%{$keyword}%");
+        });
+    }
+
+    /**
+     * Scope: Full-text search using MySQL FULLTEXT
+     */
+    public function scopeFullTextSearch($query, $keyword)
+    {
+        return $query->whereRaw(
+            "MATCH(ticket_number, subject, description) AGAINST(? IN NATURAL LANGUAGE MODE)",
+            [$keyword]
+        );
     }
 
     /**
@@ -238,5 +374,156 @@ class Ticket extends Model
             ->where('user_id', '!=', $userId)
             ->whereNull('read_at')
             ->count();
+    }
+
+    /**
+     * Check if ticket is overdue
+     */
+    public function checkOverdue()
+    {
+        if (!$this->due_at || $this->isClosed()) {
+            return false;
+        }
+
+        $isOverdue = now()->isAfter($this->due_at);
+
+        if ($isOverdue && !$this->is_overdue) {
+            $this->update([
+                'is_overdue' => true,
+                'sla_breached_at' => now(),
+            ]);
+        }
+
+        return $isOverdue;
+    }
+
+    /**
+     * Apply SLA policy to this ticket
+     */
+    public function applySlaPolicy()
+    {
+        $policy = TicketSlaPolicy::findMatchingPolicy($this->category_id, $this->priority);
+
+        if ($policy) {
+            $dueAt = $policy->calculateDueDate('first_response_time');
+            $this->update(['due_at' => $dueAt]);
+            return $policy;
+        }
+
+        return null;
+    }
+
+    /**
+     * Record first response
+     */
+    public function recordFirstResponse()
+    {
+        if (!$this->first_response_at) {
+            $responseTime = now()->diffInMinutes($this->created_at);
+            $this->update([
+                'first_response_at' => now(),
+                'response_time_minutes' => $responseTime,
+            ]);
+        }
+    }
+
+    /**
+     * Record resolution
+     */
+    public function recordResolution()
+    {
+        if (!$this->resolution_time_minutes) {
+            $resolutionTime = now()->diffInMinutes($this->created_at);
+            $this->update([
+                'resolved_at' => now(),
+                'resolution_time_minutes' => $resolutionTime,
+            ]);
+        }
+    }
+
+    /**
+     * Get SLA status badge color
+     */
+    public function getSlaStatusColorAttribute()
+    {
+        if (!$this->due_at || $this->isClosed()) {
+            return 'gray';
+        }
+
+        if ($this->is_overdue) {
+            return 'red';
+        }
+
+        $hoursRemaining = now()->diffInHours($this->due_at, false);
+
+        if ($hoursRemaining < 1) {
+            return 'red';
+        } elseif ($hoursRemaining < 4) {
+            return 'orange';
+        } else {
+            return 'green';
+        }
+    }
+
+    /**
+     * Get SLA status label
+     */
+    public function getSlaStatusLabelAttribute()
+    {
+        if (!$this->due_at || $this->isClosed()) {
+            return 'ไม่มี SLA';
+        }
+
+        if ($this->is_overdue) {
+            return 'เกิน SLA';
+        }
+
+        $hoursRemaining = now()->diffInHours($this->due_at, false);
+
+        if ($hoursRemaining < 1) {
+            return 'ใกล้เกิน SLA';
+        } elseif ($hoursRemaining < 4) {
+            return 'เตือน SLA';
+        } else {
+            return 'ตามกำหนด';
+        }
+    }
+
+    /**
+     * Check if ticket has been rated
+     */
+    public function isRated()
+    {
+        return $this->rating()->exists();
+    }
+
+    /**
+     * Check if ticket is merged
+     */
+    public function isMerged()
+    {
+        return !is_null($this->merged_into_ticket_id);
+    }
+
+    /**
+     * Add tag to ticket
+     */
+    public function addTag($tag)
+    {
+        $tags = $this->tags ?? [];
+        if (!in_array($tag, $tags)) {
+            $tags[] = $tag;
+            $this->update(['tags' => $tags]);
+        }
+    }
+
+    /**
+     * Remove tag from ticket
+     */
+    public function removeTag($tag)
+    {
+        $tags = $this->tags ?? [];
+        $tags = array_filter($tags, fn($t) => $t !== $tag);
+        $this->update(['tags' => array_values($tags)]);
     }
 }

@@ -93,11 +93,15 @@ class DatabaseSeeder extends Seeder
             VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
             VideoRewardMenuSeeder::class,       // เมนูระบบ Video Rewards
 
-            // 13. Bot Automation System
+            // 13. Support & Ticket System
+            TicketCannedResponseSeeder::class,  // Canned Responses สำหรับ Ticket Support (เทมเพลตตอบกลับอัตโนมัติ)
+            TicketSlaSeeder::class,             // SLA Policies สำหรับ Ticket System (เป้าหมายเวลาตอบกลับและแก้ไข)
+
+            // 14. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
 
-            // 14. AI Gen System Menu (AiGenSeeder already in section 5)
+            // 15. AI Gen System Menu (AiGenSeeder already in section 5)
             AiGenMenuSeeder::class,             // AI Gen System Menu Items for Admin Panel
         ]);
 

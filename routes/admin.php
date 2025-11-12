@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\HeaderSettingsController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\PageController;
 use App\Http\Controllers\Admin\SeoController;
@@ -173,6 +174,12 @@ Route::get('settings', [SettingsController::class, 'index'])->name('settings.ind
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
 Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
+
+// Header Settings
+Route::prefix('header-settings')->name('header-settings.')->group(function () {
+    Route::get('/', [HeaderSettingsController::class, 'index'])->name('index');
+    Route::put('/', [HeaderSettingsController::class, 'update'])->name('update');
+});
 
 // WebP Management
 Route::prefix('webp')->name('webp.')->group(function () {
@@ -1161,17 +1168,68 @@ Route::prefix('dev/releases')->middleware(\App\Http\Middleware\DevMode::class)->
 
 // Ticket Support System
 Route::prefix('tickets')->name('tickets.')->group(function () {
+    // Dashboard & Analytics
     Route::get('/', [TicketController::class, 'index'])->name('index');
-    Route::get('/categories', [TicketController::class, 'categories'])->name('categories');
-    Route::post('/categories', [TicketController::class, 'storeCategory'])->name('categories.store');
-    Route::put('/categories/{id}', [TicketController::class, 'updateCategoryData'])->name('categories.update');
-    Route::delete('/categories/{id}', [TicketController::class, 'destroyCategory'])->name('categories.destroy');
+    Route::get('/analytics', [TicketController::class, 'analytics'])->name('analytics');
+    Route::get('/ratings', [TicketController::class, 'ratings'])->name('ratings');
+
+    // Settings (must be before /{ticket})
+    Route::get('/settings', [TicketController::class, 'settings'])->name('settings');
+    Route::put('/settings', [TicketController::class, 'updateSettings'])->name('settings.update');
+
+    // Categories Management (must be before /{ticket})
+    Route::prefix('categories')->name('categories.')->group(function () {
+        Route::get('/', [TicketController::class, 'categories'])->name('index');
+        Route::post('/', [TicketController::class, 'storeCategory'])->name('store');
+        Route::put('/{id}', [TicketController::class, 'updateCategoryData'])->name('update');
+        Route::delete('/{id}', [TicketController::class, 'destroyCategory'])->name('destroy');
+    });
+
+    // Canned Responses Management (must be before /{ticket})
+    Route::prefix('canned-responses')->name('canned-responses.')->group(function () {
+        Route::get('/', [TicketController::class, 'cannedResponses'])->name('index');
+        Route::post('/', [TicketController::class, 'storeCannedResponse'])->name('store');
+        Route::put('/{id}', [TicketController::class, 'updateCannedResponse'])->name('update');
+        Route::delete('/{id}', [TicketController::class, 'destroyCannedResponse'])->name('destroy');
+    });
+
+    // SLA Policies Management (must be before /{ticket})
+    Route::prefix('sla-policies')->name('sla-policies.')->group(function () {
+        Route::get('/', [TicketController::class, 'slaPolicies'])->name('index');
+        Route::post('/', [TicketController::class, 'storeSlaPolicy'])->name('store');
+        Route::put('/{id}', [TicketController::class, 'updateSlaPolicy'])->name('update');
+        Route::delete('/{id}', [TicketController::class, 'destroySlaPolicy'])->name('destroy');
+    });
+
+    // Assignment Rules Management (must be before /{ticket})
+    Route::prefix('assignment-rules')->name('assignment-rules.')->group(function () {
+        Route::get('/', [TicketController::class, 'assignmentRules'])->name('index');
+        Route::post('/', [TicketController::class, 'storeAssignmentRule'])->name('store');
+        Route::put('/{id}', [TicketController::class, 'updateAssignmentRule'])->name('update');
+        Route::delete('/{id}', [TicketController::class, 'destroyAssignmentRule'])->name('destroy');
+        Route::post('/{id}/toggle', [TicketController::class, 'toggleAssignmentRule'])->name('toggle');
+    });
+
+    // Knowledge Base Articles Management (must be before /{ticket})
+    Route::prefix('kb-articles')->name('kb-articles.')->group(function () {
+        Route::get('/', [TicketController::class, 'kbArticles'])->name('index');
+        Route::get('/create', [TicketController::class, 'createKbArticle'])->name('create');
+        Route::post('/', [TicketController::class, 'storeKbArticle'])->name('store');
+        Route::get('/{id}/edit', [TicketController::class, 'editKbArticle'])->name('edit');
+        Route::put('/{id}', [TicketController::class, 'updateKbArticle'])->name('update');
+        Route::delete('/{id}', [TicketController::class, 'destroyKbArticle'])->name('destroy');
+        Route::post('/{id}/toggle', [TicketController::class, 'toggleKbArticle'])->name('toggle');
+    });
+
+    // Ticket Operations (MUST BE LAST - dynamic routes catch everything)
     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
     Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
     Route::post('/{ticket}/assign', [TicketController::class, 'assign'])->name('assign');
     Route::put('/{ticket}/status', [TicketController::class, 'updateStatus'])->name('update-status');
     Route::put('/{ticket}/priority', [TicketController::class, 'updatePriority'])->name('update-priority');
     Route::put('/{ticket}/category', [TicketController::class, 'updateCategory'])->name('update-category');
+    Route::post('/{ticket}/merge', [TicketController::class, 'merge'])->name('merge');
+    Route::post('/{ticket}/link', [TicketController::class, 'link'])->name('link');
     Route::delete('/{ticket}', [TicketController::class, 'destroy'])->name('destroy');
 });
 

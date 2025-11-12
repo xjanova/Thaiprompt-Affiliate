@@ -31,6 +31,20 @@ $headerGradientFrom = \App\Models\Setting::get('header_gradient_from', '#ffffff'
 $headerGradientTo = \App\Models\Setting::get('header_gradient_to', '#f3f4f6');
 $headerGradientDirection = \App\Models\Setting::get('header_gradient_direction', 'to-r');
 
+// 3D Effects Settings
+$header3dEnabled = \App\Models\Setting::get('header_3d_enabled', true);
+$header3dDepth = \App\Models\Setting::get('header_3d_depth', 3);
+$header3dPerspective = \App\Models\Setting::get('header_3d_perspective', 1000);
+$header3dShadowIntensity = \App\Models\Setting::get('header_3d_shadow_intensity', 'medium');
+
+// Logo Display Settings
+$headerShowLogo = \App\Models\Setting::get('header_show_logo', true);
+$headerLogoAnimated = \App\Models\Setting::get('header_logo_animated', true);
+
+// Windows UI Compatibility Settings
+$headerWindowsUiMode = \App\Models\Setting::get('header_windows_ui_mode', false);
+$headerWindowsUiHeight = \App\Models\Setting::get('header_windows_ui_height', 48);
+
 // Helper function to convert hex to rgba
 function hexToRgba($hex, $opacity) {
     $hex = ltrim($hex, '#');
@@ -50,6 +64,14 @@ $shadowClasses = [
     '2xl' => 'shadow-2xl',
 ];
 $currentShadow = $shadowClasses[$headerShadow] ?? 'shadow-lg';
+
+// Build 3D shadow styles based on intensity
+$shadow3dStyles = [
+    'low' => '0 2px 8px rgba(0, 0, 0, 0.08), 0 4px 16px rgba(0, 0, 0, 0.04)',
+    'medium' => '0 4px 16px rgba(0, 0, 0, 0.12), 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.06)',
+    'high' => '0 8px 24px rgba(0, 0, 0, 0.16), 0 16px 48px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.08)',
+];
+$current3dShadow = $shadow3dStyles[$header3dShadowIntensity] ?? $shadow3dStyles['medium'];
 
 // Build gradient direction classes
 $gradientDirections = [
@@ -75,7 +97,7 @@ $logoNavigationScrolledHeight = \App\Models\Setting::get('logo_navigation_scroll
 $menuItems = \App\Models\MenuItem::getForLocation('header');
 @endphp
 
-<nav class="header-navigation {{ $currentShadow }} backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border-b border-gray-200 dark:border-gray-700"
+<nav class="header-navigation {{ $currentShadow }} backdrop-blur-xl bg-white/95 dark:bg-gray-900/95 border-b border-gray-200 dark:border-gray-700 {{ $header3dEnabled ? 'header-3d-effect' : '' }}"
      x-data="navigationMenu()"
      x-init="init()"
      :class="{
@@ -107,9 +129,15 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
              top: 0;
              z-index: 1000;
          @endif
+         @if($header3dEnabled)
+         box-shadow: {{ $current3dShadow }};
+         transform: translateZ({{ $header3dDepth }}px);
+         transform-style: preserve-3d;
+         perspective: {{ $header3dPerspective }}px;
+         @endif
      "
      :style="{
-         height: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $headerHeightScrolled }}px' : '{{ $headerHeight }}px'),
+         height: ({{ $headerWindowsUiMode ? 'true' : 'false' }} ? '{{ $headerWindowsUiHeight }}px' : (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $headerHeightScrolled }}px' : '{{ $headerHeight }}px')),
          paddingLeft: '{{ $headerPaddingX }}px',
          paddingRight: '{{ $headerPaddingX }}px',
          @if($headerBlur)
@@ -129,18 +157,19 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
     <div class="max-w-7xl mx-auto">
         <div class="flex justify-between items-center" style="height: 100%;">
             <!-- Logo Section -->
-            <div class="shrink-0 flex items-center w-48">
-                <a href="{{ route('home') }}" class="flex items-center">
+            @if($headerShowLogo)
+            <div class="shrink-0 flex items-center w-48 {{ $header3dEnabled ? 'logo-3d-container' : '' }}">
+                <a href="{{ route('home') }}" class="flex items-center {{ $headerLogoAnimated ? 'logo-animated' : '' }}">
                     @if($logo)
                         <img src="{{ asset($logo) }}"
                              alt="{{ $appName }}"
-                             class="object-contain transition-all"
+                             class="object-contain transition-all {{ $header3dEnabled ? 'logo-3d-effect' : '' }}"
                              :style="{
                                  width: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $logoNavigationScrolledWidth }}px' : '{{ $logoNavigationWidth }}px'),
                                  height: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $logoNavigationScrolledHeight }}px' : '{{ $logoNavigationHeight }}px')
                              }">
                     @else
-                        <span class="text-2xl font-bold transition-all"
+                        <span class="text-2xl font-bold transition-all {{ $header3dEnabled ? 'logo-3d-effect' : '' }}"
                               :style="{
                                   fontSize: (scrolled && {{ $headerShrinkOnScroll ? 'true' : 'false' }} ? '{{ $headerLogoHeightScrolled / 2.5 }}px' : '{{ $headerLogoHeight / 2.5 }}px')
                               }">
@@ -149,6 +178,9 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                     @endif
                 </a>
             </div>
+            @else
+            <div class="shrink-0 w-48"></div>
+            @endif
 
             <!-- Desktop Navigation Links - Centered -->
             <div class="hidden sm:flex flex-1 justify-center items-center gap-3">
@@ -511,5 +543,185 @@ function navigationMenu() {
 /* Premium Navigation Link Styles */
 .nav-link-premium {
     /* Base styles are defined in Tailwind classes */
+}
+
+/* 3D Header Effects */
+.header-3d-effect {
+    position: relative;
+}
+
+.header-3d-effect::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.8) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0.1) 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+    border-radius: inherit;
+}
+
+.dark .header-3d-effect::before {
+    background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.02) 50%,
+        rgba(0, 0, 0, 0.1) 100%
+    );
+}
+
+.header-3d-effect::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(139, 92, 246, 0.5) 20%,
+        rgba(59, 130, 246, 0.5) 40%,
+        rgba(16, 185, 129, 0.5) 60%,
+        rgba(245, 158, 11, 0.5) 80%,
+        transparent 100%
+    );
+    pointer-events: none;
+    z-index: 2;
+    animation: shimmer 3s infinite linear;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% center;
+    }
+    100% {
+        background-position: 200% center;
+    }
+}
+
+/* Logo 3D Effects */
+.logo-3d-container {
+    perspective: 1000px;
+}
+
+.logo-3d-effect {
+    transform-style: preserve-3d;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15))
+            drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.logo-animated:hover .logo-3d-effect {
+    transform: translateY(-2px) rotateY(5deg) scale(1.05);
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.2))
+            drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15))
+            drop-shadow(0 0 20px rgba(139, 92, 246, 0.3));
+}
+
+.logo-animated {
+    transition: all 0.3s ease;
+}
+
+/* Enhanced 3D Navigation Links */
+@if($header3dEnabled)
+.nav-link-premium {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-link-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: -1;
+}
+
+.nav-link-premium:hover::before {
+    opacity: 0.5;
+}
+
+.nav-link-premium:hover {
+    transform: translateY(-1px) translateZ(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
+                0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.nav-link-premium:active {
+    transform: translateY(0) translateZ(2px);
+}
+@endif
+
+/* Windows UI Mode Adjustments */
+@if($headerWindowsUiMode)
+.header-navigation {
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dark .header-navigation {
+    background: rgba(30, 30, 30, 0.85) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.header-navigation * {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+@endif
+
+/* Responsive Adjustments */
+@media (max-width: 640px) {
+    .header-3d-effect {
+        transform: none !important;
+        perspective: none !important;
+    }
+
+    .logo-3d-effect {
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+    }
+}
+
+/* Smooth scroll behavior for header transitions */
+.header-scrolled {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.header-hidden {
+    transform: translateY(-100%) !important;
+}
+
+/* Loading shimmer animation for logo */
+@keyframes logo-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.9;
+        transform: scale(1.02);
+    }
+}
+
+.logo-animated .logo-3d-effect {
+    animation: logo-pulse 4s ease-in-out infinite;
+}
+
+.logo-animated:hover .logo-3d-effect {
+    animation: none;
 }
 </style>

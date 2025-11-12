@@ -2,6 +2,270 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.147.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #890 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (97085e3b)
+- refactor: Remove entire auto-update system (db09d215)
+
+## [v2.147.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #889 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (aa4a70db)
+- fix: Add missing JavaScript for tab navigation in mlm-affiliate, crypto, and ai-bot pages (a4beeed9)
+### 🔧 Other Changes
+
+
+## [v2.147.0] - 2025-11-12
+
+### ✨ Features
+- feat: Complete comprehensive support and technology Wiki content (8c3c7b36)
+- feat: Complete security, vendor, and software Wiki content with 4-tab systems (cbaabe0d)
+- feat: Complete software.blade.php with comprehensive 4-tab system (ffe151cc)
+- feat: Complete comprehensive Wiki content for Accounting and Hotel systems (0e090479)
+- feat: Complete comprehensive Wiki content for HRM, Academy, and POS systems (ca91a829)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #888 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (6ef96baf)
+
+## [v2.146.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #887 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (6e2fea54)
+- fix: Reorder ticket routes to fix 404 errors (9ef084af)
+### 🔧 Other Changes
+
+
+## [v2.146.0] - 2025-11-12
+
+### ✨ Features
+- feat: Complete HRM, E-Commerce & Payment systems (a55f733c)
+- feat: Complete E-Commerce & Payment systems with comprehensive 4-tab layouts (454f52cd)
+- feat: Complete MLM & Affiliate system with 5 comprehensive tabs (daf0dfd7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #886 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (ebfa4133)
+
+## [v2.145.3] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #885 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (95964785)
+- security: Remove GitHub token from API responses and prevent caching (a99e3d0e)
+
+## [v2.145.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #884 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (5def2428)
+- fix: Fix Model relationships and missing fields for ticket system (b5ce2753)
+### 🔧 Other Changes
+
+
+## [v2.145.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #883 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (2cf6cfe4)
+- fix: Check file existence before ZipArchive::addFile() calls (627f1cb0)
+### 🔧 Other Changes
+
+
+## [v2.145.0] - 2025-11-12
+
+### ✨ Features
+- feat: Add comprehensive AI Image/Video Generation tab to ai-bot.blade.php (faba9f5e)
+- feat: Complete crypto.blade.php with comprehensive wallet, cryptocurrency, exchange, staking, and security features (48739855)
+- feat: Complete overview with clickable cards and all missing content (c252912b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #882 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (0cf55c01)
+
+## [v2.144.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #881 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (9c0eedb7)
+- fix: Eliminate redundant API call in download URL test (7784e80c)
+### 🔧 Other Changes
+
+
+## [v2.144.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #880 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (dfede1fb)
+- feat: Add navigation menu and back buttons to all ticket views (92b4fd75)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.143.0] - 2025-11-12
+
+### ✨ Features
+- feat: Add complete ticket system admin views (2397325e)
+- feat: Add comprehensive ticket system routes and controller methods (ab35225f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #879 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (a1647ea4)
+
+## [v2.142.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #878 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (5257e5ad)
+- fix: Handle disabled exec() and shell_exec() functions gracefully (c7697afb)
+### 🔧 Other Changes
+
+
+## [v2.142.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #877 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (f97651d4)
+- feat: Add Windows UI RGB effects and fix tabs functionality (e032ecbb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.141.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #876 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (b6726658)
+- fix: Remove duplicate notifyUser() method declaration in TicketService (c0902b28)
+### 🔧 Other Changes
+
+
+## [v2.141.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #875 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (79397cff)
+- feat: Implement new modular Wiki system with lazy loading (eed50b81)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.140.0] - 2025-11-12
+
+### ✨ Features
+- feat: Add ticket system seeders to DatabaseSeeder (782c91ee)
+### 🐛 Bug Fixes
+- fix: Remove duplicate index in ticket_attachments migration (e27c3d3b)
+### 🔧 Other Changes
+- Merge pull request #874 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (8ac86d5b)
+
+## [v2.139.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #873 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (7ad0ccf5)
+- fix: Improve download URL test timeout and make it non-critical (5d401ded)
+### 🔧 Other Changes
+
+
+## [v2.139.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #872 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (2ade3c4d)
+- feat: Complete enterprise-grade ticket system enhancement with 10+ major features (c0405641)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.138.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #871 from xjanova/claude/fix-button-styling-windows-011CV3MWsE2heo29BNgKv8Wz (ecf11474)
+- fix: Add menu color settings validation to update method (4ca64d5e)
+### 🔧 Other Changes
+
+
+## [v2.138.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #870 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (edeb45de)
+- fix: Prevent undefined variable error and improve exception handling (b05329dc)
+### 🔧 Other Changes
+
+
+## [v2.138.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #869 from xjanova/claude/fix-missing-admin-api-route-011CV3LU1sEWBnVG2wTpXizK (7e6fec39)
+- feat: Create all 52 missing admin blade view files (8c645500)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.137.3] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Improve DNS error detection and provide helpful solutions (693f8548)
+- fix: Correct success status logic in GitHub connection test (5318179b)
+### 🔧 Other Changes
+- Merge pull request #868 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (2925ac42)
+
+## [v2.137.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #867 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (40f13d7a)
+- fix: Prevent division by zero in update progress tracking (6d4dd205)
+### 🔧 Other Changes
+
+
+## [v2.137.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #866 from xjanova/claude/fix-button-styling-windows-011CV3MWsE2heo29BNgKv8Wz (3f14120a)
+- fix: Fix button styling issues in Windows UI settings (6daecde3)
+### 🔧 Other Changes
+
+
+## [v2.137.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #865 from xjanova/claude/enhance-header-3d-logo-011CV3N2hGqEfMFj4tRJ44sj (75c4ae2e)
+- feat: Enhance header with 3D effects, logo controls, and Windows UI mode (0e9d774f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.136.2] - 2025-11-12
 
 ### ✨ Features

@@ -85,6 +85,16 @@ class WindowsUiController extends Controller
             'millennium_menu_item_spacing' => ['nullable', 'integer', 'min:0', 'max:32'],
             'millennium_menu_padding' => ['nullable', 'integer', 'min:4', 'max:32'],
 
+            // Menu Color Settings (สีเมนู)
+            'millennium_menu_use_gradient' => ['nullable', 'boolean'],
+            'millennium_menu_gradient_from' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_gradient_to' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_bg_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_text_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_border_color' => ['nullable', 'string', 'regex:/^#[A-Fa-f0-9]{6}$/'],
+            'millennium_menu_item_height' => ['nullable', 'integer', 'min:30', 'max:100'],
+            'millennium_menu_subitem_height' => ['nullable', 'integer', 'min:20', 'max:80'],
+
             // Start Button Settings (Tab 3)
             'millennium_start_button_text' => ['nullable', 'string', 'max:20'],
             'millennium_start_button_icon_type' => ['nullable', 'string', 'in:default,upload,fontawesome,emoji'],
@@ -175,6 +185,7 @@ class WindowsUiController extends Controller
         $validated['millennium_menu_show_logo'] = $request->has('millennium_menu_show_logo');
         $validated['millennium_menu_show_app_name'] = $request->has('millennium_menu_show_app_name');
         $validated['millennium_menu_show_subtitle'] = $request->has('millennium_menu_show_subtitle');
+        $validated['millennium_menu_use_gradient'] = $request->has('millennium_menu_use_gradient');
 
         // Start Button checkboxes
         $validated['millennium_start_button_tooltip_enabled'] = $request->has('millennium_start_button_tooltip_enabled');
@@ -362,6 +373,9 @@ class WindowsUiController extends Controller
             'millennium_menu_border_color',
             'millennium_menu_gradient_from',
             'millennium_menu_gradient_to',
+            'millennium_start_button_color_primary',
+            'millennium_start_button_color_secondary',
+            'millennium_start_button_text_color',
         ])) {
             return 'color';
         }
