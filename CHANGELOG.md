@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.140.0] - 2025-11-12
+
+### ✨ Features
+- feat: Add ticket system seeders to DatabaseSeeder (782c91ee)
+### 🐛 Bug Fixes
+- fix: Remove duplicate index in ticket_attachments migration (e27c3d3b)
+### 🔧 Other Changes
+- Merge pull request #874 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (8ac86d5b)
+
 ## [v2.139.1] - 2025-11-12
 
 ### ✨ Features
