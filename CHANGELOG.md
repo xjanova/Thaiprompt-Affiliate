@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.141.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #875 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (79397cff)
+- feat: Implement new modular Wiki system with lazy loading (eed50b81)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.140.0] - 2025-11-12
 
 ### ✨ Features
