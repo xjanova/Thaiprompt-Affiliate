@@ -1633,5 +1633,36 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     Route::get('/usage-logs', [AiGenAdminController::class, 'usageLogs'])->name('usage-logs');
 });
 
+// ========================================
+// DEPLOYMENT CENTER
+// ========================================
+use App\Http\Controllers\Admin\DeploymentController;
+
+Route::prefix('deployment')->name('deployment.')->group(function () {
+    // Deployment Center Dashboard
+    Route::get('/', [DeploymentController::class, 'index'])->name('index');
+
+    // Check for updates from GitHub
+    Route::get('/check-updates', [DeploymentController::class, 'checkUpdates'])->name('check-updates');
+
+    // Start new deployment
+    Route::post('/start', [DeploymentController::class, 'start'])->name('start');
+
+    // Stream deployment logs (SSE)
+    Route::get('/{id}/stream', [DeploymentController::class, 'stream'])->name('stream');
+
+    // Get deployment status
+    Route::get('/{id}/status', [DeploymentController::class, 'status'])->name('status');
+
+    // Get deployment history
+    Route::get('/history', [DeploymentController::class, 'history'])->name('history');
+
+    // Rollback deployment
+    Route::post('/{id}/rollback', [DeploymentController::class, 'rollback'])->name('rollback');
+
+    // Cancel deployment
+    Route::post('/{id}/cancel', [DeploymentController::class, 'cancel'])->name('cancel');
+});
+
 // Bot Automation System Routes
 require __DIR__.'/bot_automation.php';
