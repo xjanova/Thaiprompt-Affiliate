@@ -256,6 +256,11 @@
                 'url' => safeRoute('admin.analytics.index')
             ],
             [
+                'icon' => 'fa-rocket',
+                'label' => 'Deployment Center',
+                'url' => safeRoute('admin.deployment.index')
+            ],
+            [
                 'icon' => 'fa-palette',
                 'label' => 'ธีม & UI',
                 'url' => '#',
