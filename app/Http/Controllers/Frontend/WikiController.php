@@ -91,6 +91,13 @@ class WikiController extends Controller
             }
         }
 
+        // Get Windows UI RGB colors
+        $windowsRgb = [
+            'primary_rgb' => \App\Models\WindowsUiSetting::get('primary_rgb', '59, 130, 246'),
+            'secondary_rgb' => \App\Models\WindowsUiSetting::get('secondary_rgb', '139, 92, 246'),
+            'accent_rgb' => \App\Models\WindowsUiSetting::get('accent_rgb', '236, 72, 153'),
+        ];
+
         return [
             'version' => $version,
             'last_updated' => date('Y-m-d'),
@@ -102,6 +109,7 @@ class WikiController extends Controller
             'http_controllers' => $controllersCount,
             'services_count' => $servicesCount,
             'api_endpoints' => 20,
+            'windows_rgb' => $windowsRgb,
         ];
     }
 
