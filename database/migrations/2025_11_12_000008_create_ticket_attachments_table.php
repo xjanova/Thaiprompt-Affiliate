@@ -35,7 +35,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['attachable_type', 'attachable_id']);
+            // Note: morphs() already creates index on attachable_type, attachable_id
             $table->index('hash');
         });
     }
