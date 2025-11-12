@@ -194,8 +194,13 @@ Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
 Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function () {
     Route::get('/', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('index');
     Route::post('/process', [\App\Http\Controllers\CheckoutController::class, 'process'])->name('process');
+    Route::get('/payment/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'payment'])->name('payment');
+    Route::post('/payment/{orderId}/process', [\App\Http\Controllers\CheckoutController::class, 'processPayment'])->name('payment.process');
     Route::get('/success/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('success');
 });
+
+// Payment Callback Routes (for webhooks - no auth required)
+Route::post('/payment/callback/{transactionId}', [\App\Http\Controllers\CheckoutController::class, 'paymentCallback'])->name('payment.callback');
 
 // Shipping Addresses Routes (Authenticated)
 Route::middleware('auth')->prefix('shipping-addresses')->name('shipping-addresses.')->group(function () {
