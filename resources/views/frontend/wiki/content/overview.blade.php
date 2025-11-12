@@ -548,3 +548,34 @@
     font-size: 0.9rem;
 }
 </style>
+
+<script>
+// Handle clickable cards to load Wiki content
+document.addEventListener('DOMContentLoaded', function() {
+    // Get all links that should trigger Wiki content loading
+    const wikiLinks = document.querySelectorAll('a[href^="/wiki#"]');
+
+    wikiLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevent default navigation
+
+            // Extract category from href
+            const href = this.getAttribute('href');
+            const category = href.replace('/wiki#', '');
+
+            console.log('Overview card clicked, loading category:', category);
+
+            // Check if loadWikiContent function exists (from parent Wiki page)
+            if (typeof window.loadWikiContent === 'function') {
+                window.loadWikiContent(category);
+            } else if (typeof parent.loadWikiContent === 'function') {
+                parent.loadWikiContent(category);
+            } else {
+                // Fallback: Navigate to the URL
+                console.log('loadWikiContent not found, navigating to:', href);
+                window.location.href = href;
+            }
+        });
+    });
+});
+</script>
