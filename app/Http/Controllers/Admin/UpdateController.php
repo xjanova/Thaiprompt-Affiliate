@@ -285,40 +285,29 @@ class UpdateController extends Controller
         // Get encrypted token from database
         $encryptedToken = Setting::get('update_github_token');
         $hasToken = !empty($encryptedToken);
-        $maskedToken = null;
-
-        // Decrypt and mask token if exists
-        if ($hasToken) {
-            try {
-                $decryptedToken = Crypt::decryptString($encryptedToken);
-                // Show first 7 chars and mask the rest
-                $maskedToken = substr($decryptedToken, 0, 7) . '***' . substr($decryptedToken, -4);
-            } catch (\Exception $e) {
-                // If decryption fails, just show generic masked
-                $maskedToken = '***';
-                \Log::warning('Failed to decrypt GitHub token for display', ['error' => $e->getMessage()]);
-            }
-        }
 
         $settings = [
             'auto_check' => Setting::get('update_auto_check', false),
             'auto_update' => Setting::get('update_auto_update', false),
             'backup_before_update' => Setting::get('update_backup_before_update', true),
             'notification_email' => Setting::get('update_notification_email'),
-            'github_token' => $maskedToken,
+            // Security: Never return the actual token, even masked
+            // Frontend only needs to know if a token exists
             'has_github_token' => $hasToken,
         ];
 
-        // If AJAX request, return JSON
-        if (request()->expectsJson()) {
+        // If AJAX request, return JSON with security headers
+        if (request()->expectsJson() || request()->ajax()) {
             return response()->json([
                 'success' => true,
                 'settings' => $settings,
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate')
+              ->header('Pragma', 'no-cache')
+              ->header('Expires', '0');
         }
 
         // Otherwise, return the settings view
-        return view('admin.updates.settings');
+        return view('admin.updates.settings', compact('settings'));
     }
 
     /**
@@ -449,7 +438,9 @@ class UpdateController extends Controller
                     'failed' => $failedCount,
                     'warnings' => $warningCount,
                 ],
-            ]);
+            ])->header('Cache-Control', 'no-store, no-cache, must-revalidate')
+              ->header('Pragma', 'no-cache')
+              ->header('Expires', '0');
         } catch (\Throwable $e) {
             \Log::error('GitHub connection test failed', [
                 'error' => $e->getMessage(),
@@ -477,7 +468,9 @@ class UpdateController extends Controller
                         'trace' => config('app.debug') ? explode("\n", $e->getTraceAsString()) : ['Enable APP_DEBUG to see stack trace'],
                     ],
                 ],
-            ], 500);
+            ], 500)->header('Cache-Control', 'no-store, no-cache, must-revalidate')
+                   ->header('Pragma', 'no-cache')
+                   ->header('Expires', '0');
         }
     }
 }
