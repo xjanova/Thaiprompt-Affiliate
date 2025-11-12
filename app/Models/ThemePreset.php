@@ -104,16 +104,6 @@ class ThemePreset extends Model
     public static function defaultPresets()
     {
         return [
-            // Line OA Default
-            [
-                'name' => 'line_oa_default',
-                'display_name' => 'Line OA (Default)',
-                'description' => 'ธีมแบบ Line Official Account สีเขียว Line สดใส',
-                'category' => 'professional',
-                'is_featured' => true,
-                'config' => Theme::defaultConfig(),
-            ],
-
             // Ocean Blue
             [
                 'name' => 'ocean_blue',
