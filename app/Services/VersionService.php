@@ -500,12 +500,13 @@ class VersionService
             }
 
             // Test 2: Fetch latest release (only if initial connection was successful)
+            $latestReleaseData = null; // Store for reuse in Test 4
             if ($response !== null && $response->successful()) {
                 $releaseResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
 
                 if ($releaseResponse->successful()) {
-                    $data = $releaseResponse->json();
-                    $version = ltrim($data['tag_name'] ?? 'unknown', 'v');
+                    $latestReleaseData = $releaseResponse->json(); // Save for Test 4
+                    $version = ltrim($latestReleaseData['tag_name'] ?? 'unknown', 'v');
 
                     $results['checks'][] = [
                         'check' => 'Latest Release',
@@ -543,49 +544,51 @@ class VersionService
                 }
             }
 
-            // Test 4: Check download URL accessibility (only if initial connection was successful)
-            if ($response !== null && $response->successful()) {
-                $releaseResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
-
-                if ($releaseResponse->successful()) {
-                    $data = $releaseResponse->json();
-                    $downloadUrl = $data['zipball_url'] ?? null;
+            // Test 4: Check download URL accessibility (reuse data from Test 2 to avoid redundant API call)
+            if ($latestReleaseData !== null) {
+                try {
+                    $downloadUrl = $latestReleaseData['zipball_url'] ?? null;
 
                     if ($downloadUrl) {
-                        try {
-                            // Test if the download URL is accessible (increased timeout for slower connections)
-                            $headResponse = Http::timeout(15)->head($downloadUrl);
+                        // Test if the download URL is accessible (increased timeout for slower connections)
+                        $headResponse = Http::timeout(15)->head($downloadUrl);
 
-                            if ($headResponse->successful()) {
-                                $results['checks'][] = [
-                                    'check' => 'Download URL',
-                                    'status' => 'passed',
-                                    'message' => 'Download URL is accessible',
-                                    'url' => $downloadUrl,
-                                ];
-                            } else {
-                                $results['errors'][] = [
-                                    'check' => 'Download URL',
-                                    'status' => 'warning',
-                                    'message' => "Download URL returned HTTP {$headResponse->status()}",
-                                    'note' => 'This is optional - updates can still work via API',
-                                ];
-                            }
-                        } catch (\Throwable $downloadError) {
-                            // Download URL test is not critical - mark as warning only
+                        if ($headResponse->successful()) {
+                            $results['checks'][] = [
+                                'check' => 'Download URL',
+                                'status' => 'passed',
+                                'message' => 'Download URL is accessible',
+                                'url' => $downloadUrl,
+                            ];
+                        } else {
                             $results['errors'][] = [
                                 'check' => 'Download URL',
                                 'status' => 'warning',
-                                'message' => "Download URL test failed: {$downloadError->getMessage()}",
+                                'message' => "Download URL returned HTTP {$headResponse->status()}",
                                 'note' => 'This is optional - updates can still work via API',
                             ];
-
-                            Log::info('Download URL test failed (non-critical)', [
-                                'error' => $downloadError->getMessage(),
-                                'url' => $downloadUrl,
-                            ]);
                         }
+                    } else {
+                        $results['errors'][] = [
+                            'check' => 'Download URL',
+                            'status' => 'warning',
+                            'message' => 'No download URL found in release data',
+                            'note' => 'This is optional - updates can still work via API',
+                        ];
                     }
+                } catch (\Throwable $downloadError) {
+                    // Download URL test is not critical - mark as warning only
+                    $results['errors'][] = [
+                        'check' => 'Download URL',
+                        'status' => 'warning',
+                        'message' => "Download URL test failed: {$downloadError->getMessage()}",
+                        'note' => 'This is optional - updates can still work via API',
+                    ];
+
+                    Log::info('Download URL test failed (non-critical)', [
+                        'error' => $downloadError->getMessage(),
+                        'url' => $downloadUrl ?? 'unknown',
+                    ]);
                 }
             }
 
