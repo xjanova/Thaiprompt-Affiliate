@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.135.0] - 2025-11-12
+
+### ✨ Features
+- feat: Add missing views, menu items, and controllers based on system audit (00307bc5)
+### 🐛 Bug Fixes
+- fix(navigation): revert navigation menu from taskbar-style to premium-style (cdf56b5a)
+- fix(taskbar): remove taskbar shortcuts system to resolve compatibility issues (3fd8e6d8)
+### 🔧 Other Changes
+- Merge pull request #861 from xjanova/claude/remove-taskbar-shortcuts-011CV2QLBviKKFaofGzBLkTM (291092a6)
+
 ## [v2.134.4] - 2025-11-12
 
 ### ✨ Features
