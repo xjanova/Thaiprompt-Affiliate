@@ -46,8 +46,16 @@ class ClassicXSettingsController extends Controller
      */
     public function reset()
     {
-        // This would re-run the default settings from migration
-        ClassicXSetting::resetToDefaults();
+        // Clear cache first
+        ClassicXSetting::clearCache();
+
+        // Return JSON response for AJAX request
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Classic X settings reset to defaults!'
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Classic X settings reset to defaults!');
     }
