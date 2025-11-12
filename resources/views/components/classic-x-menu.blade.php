@@ -351,6 +351,7 @@
                     ['label' => 'ประวัติธุรกรรม', 'url' => safeRoute('user.wallet.transactions')],
                 ]
             ],
+            ['icon' => 'fa-palette', 'label' => 'เปลี่ยนธีม', 'url' => safeRoute('user.themes.index')],
             ['icon' => 'fa-cog', 'label' => 'ตั้งค่า', 'url' => safeRoute('user.settings')],
         ];
     }
