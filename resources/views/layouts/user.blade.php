@@ -274,6 +274,9 @@
 
     @if($userTheme === 'classic_x')
         </div> <!-- Close classic-x-content wrapper -->
+
+        <!-- Floating Action Buttons for Classic X Theme -->
+        <x-classic-x-floating-buttons />
     @endif
 
     <!-- Fixed Floating Toast Notifications -->
