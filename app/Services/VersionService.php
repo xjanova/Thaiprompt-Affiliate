@@ -540,22 +540,38 @@ class VersionService
                     $downloadUrl = $data['zipball_url'] ?? null;
 
                     if ($downloadUrl) {
-                        // Just check if the URL is valid, don't download
-                        $headResponse = Http::timeout(5)->head($downloadUrl);
+                        try {
+                            // Test if the download URL is accessible (increased timeout for slower connections)
+                            $headResponse = Http::timeout(15)->head($downloadUrl);
 
-                        if ($headResponse->successful()) {
-                            $results['checks'][] = [
-                                'check' => 'Download URL',
-                                'status' => 'passed',
-                                'message' => 'Download URL is accessible',
-                                'url' => $downloadUrl,
-                            ];
-                        } else {
+                            if ($headResponse->successful()) {
+                                $results['checks'][] = [
+                                    'check' => 'Download URL',
+                                    'status' => 'passed',
+                                    'message' => 'Download URL is accessible',
+                                    'url' => $downloadUrl,
+                                ];
+                            } else {
+                                $results['errors'][] = [
+                                    'check' => 'Download URL',
+                                    'status' => 'warning',
+                                    'message' => "Download URL returned HTTP {$headResponse->status()}",
+                                    'note' => 'This is optional - updates can still work via API',
+                                ];
+                            }
+                        } catch (\Throwable $downloadError) {
+                            // Download URL test is not critical - mark as warning only
                             $results['errors'][] = [
                                 'check' => 'Download URL',
                                 'status' => 'warning',
-                                'message' => "Download URL returned HTTP {$headResponse->status()}",
+                                'message' => "Download URL test failed: {$downloadError->getMessage()}",
+                                'note' => 'This is optional - updates can still work via API',
                             ];
+
+                            Log::info('Download URL test failed (non-critical)', [
+                                'error' => $downloadError->getMessage(),
+                                'url' => $downloadUrl,
+                            ]);
                         }
                     }
                 }
