@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.161.7] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #930 from xjanova/claude/fix-theme-controller-index-011CV4KgEE6ZYSxGXVYvRBvB (9218d2ed)
+- Add: Floating action buttons for Classic X theme (Dark Mode & Scroll to Top) (64c90cf1)
+
 ## [v2.161.6] - 2025-11-12
 
 ### ✨ Features
