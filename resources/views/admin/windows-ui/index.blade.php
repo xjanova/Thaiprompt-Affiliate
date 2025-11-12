@@ -75,13 +75,13 @@
     /* Settings Tab Styles */
     .settings-tab {
         cursor: pointer;
-        transition: all 0.2s;
     }
 
     .settings-tab.active {
-        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-        color: white;
+        background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+        color: white !important;
         box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        border-radius: 0.75rem;
     }
 </style>
 @endpush
