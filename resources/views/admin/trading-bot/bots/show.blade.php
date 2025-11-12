@@ -27,8 +27,8 @@
                         <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">Performance</h3>
                         <div class="space-y-2 text-sm">
                             <p><span class="font-medium">Total P&L:</span>
-                                <span class="{{ $bot->total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600' }} font-bold">
-                                    ฿{{ number_format($bot->total_profit_loss, 2) }}
+                                <span class="{{ $bot->net_profit >= 0 ? 'text-green-600' : 'text-red-600' }} font-bold">
+                                    ฿{{ number_format($bot->net_profit, 2) }}
                                 </span>
                             </p>
                             <p><span class="font-medium">ROI:</span> {{ number_format($performanceMetrics['roi_percentage'] ?? 0, 2) }}%</p>
