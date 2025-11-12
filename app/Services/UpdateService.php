@@ -473,6 +473,14 @@ class UpdateService
     protected function backupDatabase($outputFile)
     {
         try {
+            // Check if exec() is available
+            if (!function_exists('exec')) {
+                Log::warning('exec() is disabled - cannot create mysqldump backup', [
+                    'note' => 'Database backup skipped - consider manual backup before updates'
+                ]);
+                return false;
+            }
+
             $database = config('database.connections.mysql.database');
             $username = config('database.connections.mysql.username');
             $password = config('database.connections.mysql.password');
@@ -487,11 +495,11 @@ class UpdateService
                 escapeshellarg($outputFile)
             );
 
-            exec($command);
+            @exec($command);
 
             return true;
-        } catch (\Exception $e) {
-            Log::error('Database backup failed: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            Log::warning('Database backup failed: ' . $e->getMessage());
             return false;
         }
     }
@@ -671,41 +679,49 @@ class UpdateService
             $this->updateProgress($log, 'extracting', 'Installing dependencies...', null, null);
 
             try {
-                $composerPath = 'composer';
-                $basePath = base_path();
+                // Check if exec() is available
+                if (!function_exists('exec')) {
+                    Log::warning('exec() is disabled - skipping composer install', [
+                        'note' => 'Dependencies should be managed manually or via deployment process'
+                    ]);
+                    // Continue without composer install (may work if dependencies already installed)
+                } else {
+                    $composerPath = 'composer';
+                    $basePath = base_path();
 
-                // Check if composer is available
-                exec('which composer 2>&1', $whichOutput, $whichCode);
-                if ($whichCode !== 0) {
-                    Log::warning('Composer command not found in PATH', ['which_output' => $whichOutput]);
-                    // Try common paths
-                    if (file_exists('/usr/local/bin/composer')) {
-                        $composerPath = '/usr/local/bin/composer';
-                    } elseif (file_exists('/usr/bin/composer')) {
-                        $composerPath = '/usr/bin/composer';
+                    // Check if composer is available
+                    @exec('which composer 2>&1', $whichOutput, $whichCode);
+                    if ($whichCode !== 0) {
+                        Log::warning('Composer command not found in PATH', ['which_output' => $whichOutput]);
+                        // Try common paths
+                        if (file_exists('/usr/local/bin/composer')) {
+                            $composerPath = '/usr/local/bin/composer';
+                        } elseif (file_exists('/usr/bin/composer')) {
+                            $composerPath = '/usr/bin/composer';
+                        }
+                    }
+
+                    Log::info('Executing composer install', [
+                        'composer_path' => $composerPath,
+                        'working_dir' => $basePath,
+                    ]);
+
+                    // Try composer install with optimizations
+                    @exec("cd {$basePath} && {$composerPath} install --no-dev --optimize-autoloader 2>&1", $composerOutput, $composerCode);
+
+                    if ($composerCode !== 0) {
+                        Log::warning('Composer install completed with warnings', [
+                            'code' => $composerCode,
+                            'output' => implode("\n", $composerOutput),
+                            'composer_path' => $composerPath,
+                        ]);
+                    } else {
+                        Log::info('Composer dependencies installed successfully', [
+                            'output' => implode("\n", $composerOutput),
+                        ]);
                     }
                 }
-
-                Log::info('Executing composer install', [
-                    'composer_path' => $composerPath,
-                    'working_dir' => $basePath,
-                ]);
-
-                // Try composer install with optimizations
-                exec("cd {$basePath} && {$composerPath} install --no-dev --optimize-autoloader 2>&1", $composerOutput, $composerCode);
-
-                if ($composerCode !== 0) {
-                    Log::warning('Composer install completed with warnings', [
-                        'code' => $composerCode,
-                        'output' => implode("\n", $composerOutput),
-                        'composer_path' => $composerPath,
-                    ]);
-                } else {
-                    Log::info('Composer dependencies installed successfully', [
-                        'output' => implode("\n", array_slice($composerOutput, -10)), // Last 10 lines
-                    ]);
-                }
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::warning('Composer install exception', [
                     'error' => $e->getMessage(),
                     'type' => get_class($e),
