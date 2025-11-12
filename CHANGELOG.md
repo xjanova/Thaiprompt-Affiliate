@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.144.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #881 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (9c0eedb7)
+- fix: Eliminate redundant API call in download URL test (7784e80c)
+### 🔧 Other Changes
+
+
 ## [v2.144.0] - 2025-11-12
 
 ### ✨ Features
