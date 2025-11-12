@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.157.3] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #914 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (f09871e3)
+- fix: Improve dark/light mode compatibility across all wiki pages (a8ca5602)
+### 🔧 Other Changes
+
+
 ## [v2.157.2] - 2025-11-12
 
 ### ✨ Features
