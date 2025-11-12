@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.154.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #908 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (99b4c53d)
+- refactor: Remove tab system from AI-Bot and Crypto wiki pages (46b3feb0)
+- refactor: Remove tab system from 11 wiki content pages (242120a2)
+- refactor: Remove tab system from MLM and Vendor wiki pages (f05d22c7)
+
 ## [v2.154.1] - 2025-11-12
 
 ### ✨ Features
