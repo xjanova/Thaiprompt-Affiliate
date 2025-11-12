@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.137.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #866 from xjanova/claude/fix-button-styling-windows-011CV3MWsE2heo29BNgKv8Wz (3f14120a)
+- fix: Fix button styling issues in Windows UI settings (6daecde3)
+### 🔧 Other Changes
+
+
 ## [v2.137.0] - 2025-11-12
 
 ### ✨ Features
