@@ -247,8 +247,8 @@
                 'submenu' => [
                     ['label' => 'Theme Builder', 'url' => safeRoute('admin.themes.builder')],
                     ['label' => 'Page Builder', 'url' => safeRoute('admin.page-builder.index')],
-                    ['label' => 'Windows UI', 'url' => safeRoute('admin.windows-ui.index')],
-                    ['label' => 'Classic X Menu', 'url' => safeRoute('admin.classic-x-settings.index')],
+                    ['label' => 'Windows UI (Millennium)', 'url' => safeRoute('admin.windows-ui.index')],
+                    ['label' => 'Classic X Theme Settings', 'url' => safeRoute('admin.classic-x-settings.index')],
                 ]
             ],
             [
