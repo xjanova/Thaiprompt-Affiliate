@@ -21,9 +21,11 @@ class KbArticle extends Model
         'content',
         'meta_description',
         'keywords',
+        'tags',
         'author_id',
         'updated_by',
         'status',
+        'is_public',
         'published_at',
         'view_count',
         'helpful_count',
@@ -34,11 +36,13 @@ class KbArticle extends Model
 
     protected $casts = [
         'keywords' => 'array',
+        'tags' => 'array',
         'published_at' => 'datetime',
         'view_count' => 'integer',
         'helpful_count' => 'integer',
         'not_helpful_count' => 'integer',
         'is_featured' => 'boolean',
+        'is_public' => 'boolean',
         'sort_order' => 'integer',
     ];
 
@@ -49,7 +53,7 @@ class KbArticle extends Model
      */
     public function category(): BelongsTo
     {
-        return $this->belongsTo(KbCategory::class, 'category_id');
+        return $this->belongsTo(TicketCategory::class, 'category_id');
     }
 
     /**

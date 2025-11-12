@@ -51,7 +51,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Response Speed</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['avg_response_speed'] ?? 0, 1) }} / 5.0</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['average_response_speed'] ?? 0, 1) }} / 5.0</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-tachometer-alt fa-2x text-gray-300"></i>
@@ -67,7 +67,7 @@
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Solution Quality</div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['avg_solution_quality'] ?? 0, 1) }} / 5.0</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ number_format($stats['average_solution_quality'] ?? 0, 1) }} / 5.0</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-check-circle fa-2x text-gray-300"></i>
