@@ -658,6 +658,19 @@ Route::prefix('ai-bots')->name('ai-bots.')->group(function () {
     Route::get('/providers/{providerId}/models', [AiBotController::class, 'getModelsByProvider'])->name('providers.models');
 });
 
+// API Endpoint Management
+Route::prefix('api-endpoints')->name('api-endpoints.')->group(function () {
+    Route::get('/', [ApiEndpointController::class, 'index'])->name('index');
+    Route::get('/create', [ApiEndpointController::class, 'create'])->name('create');
+    Route::post('/', [ApiEndpointController::class, 'store'])->name('store');
+    Route::get('/{apiEndpoint}', [ApiEndpointController::class, 'show'])->name('show');
+    Route::get('/{apiEndpoint}/edit', [ApiEndpointController::class, 'edit'])->name('edit');
+    Route::put('/{apiEndpoint}', [ApiEndpointController::class, 'update'])->name('update');
+    Route::delete('/{apiEndpoint}', [ApiEndpointController::class, 'destroy'])->name('destroy');
+    Route::post('/{apiEndpoint}/toggle-status', [ApiEndpointController::class, 'toggleStatus'])->name('toggle-status');
+    Route::get('/{apiEndpoint}/analytics', [ApiEndpointController::class, 'analytics'])->name('analytics');
+});
+
 // Knowledge Base Management (RAG System)
 Route::prefix('ai-bots/{botId}/knowledge-bases')->name('knowledge-bases.')->group(function () {
     Route::get('/', [KnowledgeBaseController::class, 'index'])->name('index');
