@@ -3,7 +3,7 @@
     $currentTheme = $user->menu_theme_preference ?? 'millennium';
 @endphp
 
-<div class="menu-theme-switcher" x-data="{ open: false, currentTheme: '{{ $currentTheme }}' }">
+<div class="menu-theme-switcher" x-data="themeSwitcher()" x-init="init()">
     <button @click="open = true" class="theme-switcher-trigger" title="เปลี่ยนธีมเมนู">
         <i class="fas fa-palette"></i>
         <span class="hidden md:inline ml-2">ธีมเมนู</span>
@@ -224,32 +224,52 @@
 </style>
 
 <script>
-    function selectTheme(theme) {
-        this.currentTheme = theme;
-    }
+    function themeSwitcher() {
+        return {
+            open: false,
+            currentTheme: '{{ $currentTheme }}',
 
-    async function applyTheme() {
-        try {
-            const response = await fetch('{{ route("user.theme.update") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    menu_theme_preference: this.currentTheme
-                })
-            });
+            init() {
+                // Initialize theme
+                console.log('Theme Switcher initialized with theme:', this.currentTheme);
+            },
 
-            if (response.ok) {
-                // Reload page to apply new theme
-                window.location.reload();
-            } else {
-                alert('เกิดข้อผิดพลาดในการเปลี่ยนธีม');
+            selectTheme(theme) {
+                this.currentTheme = theme;
+                console.log('Selected theme:', theme);
+            },
+
+            async applyTheme() {
+                console.log('Applying theme:', this.currentTheme);
+
+                try {
+                    const response = await fetch('{{ route("user.theme.update") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            menu_theme_preference: this.currentTheme
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        console.log('Theme updated successfully, reloading...');
+                        // Reload page to apply new theme
+                        window.location.reload();
+                    } else {
+                        console.error('Failed to update theme:', data);
+                        alert('เกิดข้อผิดพลาดในการเปลี่ยนธีม: ' + (data.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error updating theme:', error);
+                    alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message);
+                }
             }
-        } catch (error) {
-            console.error('Error updating theme:', error);
-            alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
         }
     }
 </script>
