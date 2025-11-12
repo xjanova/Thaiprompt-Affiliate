@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.137.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #865 from xjanova/claude/enhance-header-3d-logo-011CV3N2hGqEfMFj4tRJ44sj (75c4ae2e)
+- feat: Enhance header with 3D effects, logo controls, and Windows UI mode (0e9d774f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.136.2] - 2025-11-12
 
 ### ✨ Features
