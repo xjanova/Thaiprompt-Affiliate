@@ -30,6 +30,11 @@ Route::post('/webhook/line', [LineWebhookController::class, 'handle'])
     ->middleware(['line.webhook.throttle'])
     ->name('api.line.webhook');
 
+// LINE Membership Signup Webhook
+Route::post('/webhook/line-membership-signup', [\App\Http\Controllers\LineMembershipSignupController::class, 'webhook'])
+    ->middleware(['line.webhook.throttle'])
+    ->name('api.line.membership.signup.webhook');
+
 // GitHub Release Webhook (auto-clear version cache)
 Route::post('/webhooks/github/release', [\App\Http\Controllers\Api\WebhookController::class, 'handleGitHubRelease'])
     ->name('api.webhook.github.release');

@@ -75,6 +75,25 @@ Route::prefix('line/signup')->name('line.signup.')->middleware(['line.signup.thr
     Route::get('/callback', [\App\Http\Controllers\LineSignupController::class, 'handleCallback'])->name('callback');
 });
 
+// LINE Membership Signup System (New AI-Powered Signup)
+Route::prefix('line/membership')->name('line.membership.')->group(function () {
+    // Public invitation routes
+    Route::get('/invitation/{token}', [\App\Http\Controllers\LineMembershipSignupController::class, 'showInvitation'])->name('invitation');
+    Route::post('/invitation/{token}', [\App\Http\Controllers\LineMembershipSignupController::class, 'processInvitation'])->name('invitation.process');
+
+    // Progress tracking (for debugging)
+    Route::get('/progress/{sessionToken}', [\App\Http\Controllers\LineMembershipSignupController::class, 'showProgress'])->name('progress');
+
+    // Authenticated routes
+    Route::middleware('auth')->group(function () {
+        // Create invitation link
+        Route::post('/invitations/create', [\App\Http\Controllers\LineMembershipSignupController::class, 'createInvitation'])->name('invitations.create');
+
+        // Analytics
+        Route::get('/analytics', [\App\Http\Controllers\LineMembershipSignupController::class, 'getAnalytics'])->name('analytics');
+    });
+});
+
 // OTP Routes
 Route::prefix('otp')->name('otp.')->group(function () {
     Route::post('/send', [OtpController::class, 'send'])->name('send');
