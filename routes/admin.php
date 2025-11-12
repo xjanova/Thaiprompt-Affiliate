@@ -1190,18 +1190,11 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
     Route::get('/analytics', [TicketController::class, 'analytics'])->name('analytics');
     Route::get('/ratings', [TicketController::class, 'ratings'])->name('ratings');
 
-    // Ticket Operations
-    Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
-    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
-    Route::post('/{ticket}/assign', [TicketController::class, 'assign'])->name('assign');
-    Route::put('/{ticket}/status', [TicketController::class, 'updateStatus'])->name('update-status');
-    Route::put('/{ticket}/priority', [TicketController::class, 'updatePriority'])->name('update-priority');
-    Route::put('/{ticket}/category', [TicketController::class, 'updateCategory'])->name('update-category');
-    Route::post('/{ticket}/merge', [TicketController::class, 'merge'])->name('merge');
-    Route::post('/{ticket}/link', [TicketController::class, 'link'])->name('link');
-    Route::delete('/{ticket}', [TicketController::class, 'destroy'])->name('destroy');
+    // Settings (must be before /{ticket})
+    Route::get('/settings', [TicketController::class, 'settings'])->name('settings');
+    Route::put('/settings', [TicketController::class, 'updateSettings'])->name('settings.update');
 
-    // Categories Management
+    // Categories Management (must be before /{ticket})
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [TicketController::class, 'categories'])->name('index');
         Route::post('/', [TicketController::class, 'storeCategory'])->name('store');
@@ -1209,7 +1202,7 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
         Route::delete('/{id}', [TicketController::class, 'destroyCategory'])->name('destroy');
     });
 
-    // Canned Responses Management
+    // Canned Responses Management (must be before /{ticket})
     Route::prefix('canned-responses')->name('canned-responses.')->group(function () {
         Route::get('/', [TicketController::class, 'cannedResponses'])->name('index');
         Route::post('/', [TicketController::class, 'storeCannedResponse'])->name('store');
@@ -1217,7 +1210,7 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
         Route::delete('/{id}', [TicketController::class, 'destroyCannedResponse'])->name('destroy');
     });
 
-    // SLA Policies Management
+    // SLA Policies Management (must be before /{ticket})
     Route::prefix('sla-policies')->name('sla-policies.')->group(function () {
         Route::get('/', [TicketController::class, 'slaPolicies'])->name('index');
         Route::post('/', [TicketController::class, 'storeSlaPolicy'])->name('store');
@@ -1225,7 +1218,7 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
         Route::delete('/{id}', [TicketController::class, 'destroySlaPolicy'])->name('destroy');
     });
 
-    // Assignment Rules Management
+    // Assignment Rules Management (must be before /{ticket})
     Route::prefix('assignment-rules')->name('assignment-rules.')->group(function () {
         Route::get('/', [TicketController::class, 'assignmentRules'])->name('index');
         Route::post('/', [TicketController::class, 'storeAssignmentRule'])->name('store');
@@ -1234,7 +1227,7 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
         Route::post('/{id}/toggle', [TicketController::class, 'toggleAssignmentRule'])->name('toggle');
     });
 
-    // Knowledge Base Articles Management
+    // Knowledge Base Articles Management (must be before /{ticket})
     Route::prefix('kb-articles')->name('kb-articles.')->group(function () {
         Route::get('/', [TicketController::class, 'kbArticles'])->name('index');
         Route::get('/create', [TicketController::class, 'createKbArticle'])->name('create');
@@ -1245,9 +1238,16 @@ Route::prefix('tickets')->name('tickets.')->group(function () {
         Route::post('/{id}/toggle', [TicketController::class, 'toggleKbArticle'])->name('toggle');
     });
 
-    // Settings
-    Route::get('/settings', [TicketController::class, 'settings'])->name('settings');
-    Route::put('/settings', [TicketController::class, 'updateSettings'])->name('settings.update');
+    // Ticket Operations (MUST BE LAST - dynamic routes catch everything)
+    Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
+    Route::post('/{ticket}/reply', [TicketController::class, 'reply'])->name('reply');
+    Route::post('/{ticket}/assign', [TicketController::class, 'assign'])->name('assign');
+    Route::put('/{ticket}/status', [TicketController::class, 'updateStatus'])->name('update-status');
+    Route::put('/{ticket}/priority', [TicketController::class, 'updatePriority'])->name('update-priority');
+    Route::put('/{ticket}/category', [TicketController::class, 'updateCategory'])->name('update-category');
+    Route::post('/{ticket}/merge', [TicketController::class, 'merge'])->name('merge');
+    Route::post('/{ticket}/link', [TicketController::class, 'link'])->name('link');
+    Route::delete('/{ticket}', [TicketController::class, 'destroy'])->name('destroy');
 });
 
 // Tarot Reading Management
