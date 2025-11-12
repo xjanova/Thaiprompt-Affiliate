@@ -4898,10 +4898,29 @@ sidebarOverlay.addEventListener('click', () => {
 // Smooth scroll
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
+        const href = this.getAttribute('href');
+
+        // Skip if it's just "#" or empty
+        if (!href || href === '#') {
+            return;
+        }
+
+        const target = document.querySelector(href);
+
+        // Only prevent default if we found the target
         if (target) {
+            e.preventDefault();
+
+            // Smooth scroll to target
             target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Update URL hash without jumping
+            if (history.pushState) {
+                history.pushState(null, null, href);
+            } else {
+                // Fallback for older browsers
+                window.location.hash = href;
+            }
 
             // Update active nav
             document.querySelectorAll('.wiki-nav a').forEach(a => a.classList.remove('active'));
@@ -4915,6 +4934,9 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
             // Scroll active link into view in sidebar
             this.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            // Target not found, allow default navigation
+            console.warn('Target not found for:', href);
         }
     });
 });
