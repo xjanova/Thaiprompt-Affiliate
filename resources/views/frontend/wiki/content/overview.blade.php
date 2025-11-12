@@ -103,23 +103,26 @@
         <div class="feature-category">
             <h3>💎 1. ระบบ MLM & Affiliate Marketing</h3>
             <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-                <div class="feature-card clickable-card" onclick="loadCategory('mlm-affiliate')" style="cursor: pointer;">
-                    <div class="feature-icon">🌳</div>
-                    <h4>MLM Binary & Unilevel</h4>
-                    <p>รองรับทั้งระบบ Binary และ Unilevel พร้อมระบบจัดการโครงสร้างองค์กรแบบ Real-time</p>
-                    <ul style="list-style: none; padding: 0;">
-                        <li>✅ Binary Placement อัตโนมัติ</li>
-                        <li>✅ Unilevel Genealogy Tree</li>
-                        <li>✅ Commission Calculator แบบ Multi-level</li>
-                        <li>✅ PV (Point Value) System</li>
-                        <li>✅ Rank Achievement & Bonuses</li>
-                    </ul>
-                    <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
-                        👆 คลิกเพื่ออ่านเพิ่มเติม
+                <a href="/wiki#mlm-affiliate" style="text-decoration: none; color: inherit;">
+                    <div class="feature-card clickable-card" style="cursor: pointer;">
+                        <div class="feature-icon">🌳</div>
+                        <h4>MLM Binary & Unilevel</h4>
+                        <p>รองรับทั้งระบบ Binary และ Unilevel พร้อมระบบจัดการโครงสร้างองค์กรแบบ Real-time</p>
+                        <ul style="list-style: none; padding: 0;">
+                            <li>✅ Binary Placement อัตโนมัติ</li>
+                            <li>✅ Unilevel Genealogy Tree</li>
+                            <li>✅ Commission Calculator แบบ Multi-level</li>
+                            <li>✅ PV (Point Value) System</li>
+                            <li>✅ Rank Achievement & Bonuses</li>
+                        </ul>
+                        <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
+                            👆 คลิกเพื่ออ่านเพิ่มเติม
+                        </div>
                     </div>
-                </div>
+                </a>
 
-                <div class="feature-card clickable-card" onclick="loadCategory('mlm-affiliate')" style="cursor: pointer;">
+                <a href="/wiki#mlm-affiliate" style="text-decoration: none; color: inherit;">
+                    <div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">💰</div>
                     <h4>ระบบคอมมิชชั่นอัจฉริยะ</h4>
                     <p>คำนวณค่าคอมมิชชั่นแบบอัตโนมัติ รองรับหลายระดับและหลายประเภท</p>
@@ -133,9 +136,9 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
 
-                <div class="feature-card clickable-card" onclick="loadCategory('mlm-affiliate')" style="cursor: pointer;">
+                <a href="/wiki#mlm-affiliate" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">📊</div>
                     <h4>Genealogy & Analytics</h4>
                     <p>ติดตามโครงสร้างองค์กรและประสิทธิภาพของทีม</p>
@@ -148,7 +151,7 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
             </div>
         </div>
 
@@ -156,7 +159,7 @@
         <div class="feature-category">
             <h3>🤖 2. AI & Bot Ecosystem</h3>
             <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-                <div class="feature-card clickable-card" onclick="loadCategory('ai-bot')" style="cursor: pointer;">
+                <a href="/wiki#ai-bot" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">🧠</div>
                     <h4>AI Chatbot Multi-Provider</h4>
                     <p>รองรับ AI หลายค่าย พร้อมระบบ RAG (Retrieval-Augmented Generation)</p>
@@ -170,9 +173,9 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
 
-                <div class="feature-card clickable-card" onclick="loadCategory('ai-bot')" style="cursor: pointer;">
+                <a href="/wiki#ai-bot" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">🎨</div>
                     <h4>AI Image & Video Generation</h4>
                     <p>สร้างภาพและวิดีโอด้วย AI เพื่อการตลาด</p>
@@ -186,9 +189,9 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
 
-                <div class="feature-card clickable-card" onclick="loadCategory('ai-bot')" style="cursor: pointer;">
+                <a href="/wiki#ai-bot" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">💬</div>
                     <h4>LINE Official Account Integration</h4>
                     <p>ผสานรวมกับ LINE OA ได้อย่างสมบูรณ์</p>
@@ -202,7 +205,7 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
             </div>
         </div>
 
@@ -210,7 +213,7 @@
         <div class="feature-category">
             <h3>📈 3. Investment & ROI Distribution</h3>
             <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-                <div class="feature-card clickable-card" onclick="loadCategory('crypto')" style="cursor: pointer;">
+                <a href="/wiki#crypto" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">💎</div>
                     <h4>Staking & Investment Plans</h4>
                     <p>ระบบ Staking และลงทุนแบบหลากหลาย</p>
@@ -224,9 +227,9 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
 
-                <div class="feature-card clickable-card" onclick="loadCategory('crypto')" style="cursor: pointer;">
+                <a href="/wiki#crypto" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">💰</div>
                     <h4>ROI & Dividend System</h4>
                     <p>ระบบจ่ายผลตอบแทนและปันผลอัตโนมัติ</p>
@@ -240,9 +243,9 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
 
-                <div class="feature-card clickable-card" onclick="loadCategory('crypto')" style="cursor: pointer;">
+                <a href="/wiki#crypto" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">📊</div>
                     <h4>Portfolio Management</h4>
                     <p>จัดการพอร์ตการลงทุนแบบมืออาชีพ</p>
@@ -255,7 +258,7 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
             </div>
         </div>
 
@@ -263,7 +266,7 @@
         <div class="feature-category">
             <h3>🛍️ 4. E-Commerce & Marketplace Integration</h3>
             <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-                <div class="feature-card clickable-card" onclick="loadCategory('ecommerce')" style="cursor: pointer;">
+                <a href="/wiki#ecommerce" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">🏪</div>
                     <h4>ระบบอีคอมเมิร์ซครบครัน</h4>
                     <p>ขายสินค้าออนไลน์ได้ทันทีพร้อมระบบจัดการที่ทันสมัย</p>
@@ -277,9 +280,9 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
 
-                <div class="feature-card clickable-card" onclick="loadCategory('ecommerce')" style="cursor: pointer;">
+                <a href="/wiki#ecommerce" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">🔗</div>
                     <h4>Marketplace Integration</h4>
                     <p>เชื่อมต่อกับ Marketplace ชั้นนำ</p>
@@ -293,9 +296,9 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
 
-                <div class="feature-card clickable-card" onclick="loadCategory('vendor')" style="cursor: pointer;">
+                <a href="/wiki#vendor" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">📦</div>
                     <h4>Multi-Vendor System</h4>
                     <p>รองรับผู้ขายหลายราย แบบ Marketplace</p>
@@ -308,7 +311,7 @@
                     <div class="click-hint" style="margin-top: 1rem; text-align: center; color: rgb(var(--primary-rgb)); font-weight: 600;">
                         👆 คลิกเพื่ออ่านเพิ่มเติม
                     </div>
-                </div>
+                </div></a>
             </div>
         </div>
 
@@ -545,12 +548,3 @@
     font-size: 0.9rem;
 }
 </style>
-
-<script>
-function loadCategory(category) {
-    console.log('Loading category:', category);
-
-    // Direct navigation to wiki page with hash
-    window.location.href = '/wiki#' + category;
-}
-</script>
