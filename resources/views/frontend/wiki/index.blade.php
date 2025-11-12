@@ -646,17 +646,24 @@
 
         tabBtns.forEach(btn => {
             btn.addEventListener('click', function() {
+                // Scroll to top when switching tabs
+                window.scrollTo({top: 0, behavior: 'smooth'});
+
                 const tabName = this.getAttribute('data-tab');
 
-                // Remove active class from all
+                // Remove active class and hide all tabs
                 tabBtns.forEach(b => b.classList.remove('active'));
-                tabContents.forEach(c => c.classList.remove('active'));
+                tabContents.forEach(c => {
+                    c.classList.remove('active');
+                    c.style.display = 'none';
+                });
 
-                // Add active class
+                // Add active class and show target tab
                 this.classList.add('active');
                 const targetContent = wikiContent.querySelector(`[data-tab-content="${tabName}"]`);
                 if (targetContent) {
                     targetContent.classList.add('active');
+                    targetContent.style.display = 'block';
                 }
             });
         });
