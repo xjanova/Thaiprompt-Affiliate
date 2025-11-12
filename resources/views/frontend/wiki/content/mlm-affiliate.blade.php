@@ -6,20 +6,20 @@
     </div>
 
     <!-- Tab Navigation -->
-    <div class="tab-navigation" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
-        <button class="tab-btn active" data-tab="binary" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+    <div class="tab-navigation" id="mlm-tab-nav" style="display: flex; gap: 0.5rem; margin-bottom: 2rem; flex-wrap: wrap; border-bottom: 2px solid var(--wiki-border);">
+        <button class="mlm-tab-btn active" onclick="switchMlmTab(this, 'binary')" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             🌳 Binary System
         </button>
-        <button class="tab-btn" data-tab="unilevel" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+        <button class="mlm-tab-btn" onclick="switchMlmTab(this, 'unilevel')" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             🎯 Unilevel System
         </button>
-        <button class="tab-btn" data-tab="commission" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+        <button class="mlm-tab-btn" onclick="switchMlmTab(this, 'commission')" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             💰 Commission
         </button>
-        <button class="tab-btn" data-tab="rank" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+        <button class="mlm-tab-btn" onclick="switchMlmTab(this, 'rank')" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             👑 Rank & Bonus
         </button>
-        <button class="tab-btn" data-tab="genealogy" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
+        <button class="mlm-tab-btn" onclick="switchMlmTab(this, 'genealogy')" style="padding: 0.75rem 1.5rem; background: var(--wiki-card-bg); color: var(--wiki-text-primary); border: 1px solid var(--wiki-border); border-bottom: none; border-radius: 8px 8px 0 0; font-weight: 600; cursor: pointer;">
             📊 Genealogy
         </button>
     </div>
@@ -623,61 +623,49 @@
 </div>
 
 <script>
-(function() {
-    // Wait for DOM to be ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initTabs);
+function switchMlmTab(clickedButton, targetTab) {
+    // Scroll to top IMMEDIATELY when menu/tab is clicked
+    window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+    });
+
+    console.log('MLM Tab clicked:', targetTab);
+
+    // Get all buttons and contents within this specific tab navigation
+    const tabNav = document.getElementById('mlm-tab-nav');
+    const allButtons = tabNav.querySelectorAll('.mlm-tab-btn');
+    const allContents = document.querySelectorAll('[data-tab-content]');
+
+    // Remove active from all buttons
+    allButtons.forEach(btn => {
+        btn.classList.remove('active');
+        btn.style.background = 'var(--wiki-card-bg)';
+        btn.style.color = 'var(--wiki-text-primary)';
+        btn.style.border = '1px solid var(--wiki-border)';
+        btn.style.borderBottom = 'none';
+    });
+
+    // Hide all tab contents
+    allContents.forEach(content => {
+        content.classList.remove('active');
+        content.style.display = 'none';
+    });
+
+    // Activate clicked button
+    clickedButton.classList.add('active');
+    clickedButton.style.background = 'linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)))';
+    clickedButton.style.color = 'white';
+    clickedButton.style.border = 'none';
+
+    // Show target content
+    const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
+    if (targetContent) {
+        targetContent.classList.add('active');
+        targetContent.style.display = 'block';
+        console.log('MLM Tab content shown:', targetTab);
     } else {
-        initTabs();
+        console.error('MLM Tab content not found:', targetTab);
     }
-
-    function initTabs() {
-        const tabButtons = document.querySelectorAll('.tab-btn');
-        const tabContents = document.querySelectorAll('.tab-content');
-
-        console.log('MLM-Affiliate Tabs initialized:', tabButtons.length, 'buttons found');
-
-        tabButtons.forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                const targetTab = this.getAttribute('data-tab');
-                console.log('Tab clicked:', targetTab);
-
-                // Remove active class from all buttons and contents
-                tabButtons.forEach(btn => {
-                    btn.classList.remove('active');
-                    btn.style.background = 'var(--wiki-card-bg)';
-                    btn.style.color = 'var(--wiki-text-primary)';
-                    btn.style.border = '1px solid var(--wiki-border)';
-                    btn.style.borderBottom = 'none';
-                });
-                tabContents.forEach(content => {
-                    content.classList.remove('active');
-                    content.style.display = 'none';
-                });
-
-                // Add active class to clicked button and corresponding content
-                this.classList.add('active');
-                this.style.background = 'linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)))';
-                this.style.color = 'white';
-                this.style.border = 'none';
-
-                const targetContent = document.querySelector(`[data-tab-content="${targetTab}"]`);
-                if (targetContent) {
-                    targetContent.classList.add('active');
-                    targetContent.style.display = 'block';
-                    console.log('Tab content shown:', targetTab);
-
-                    // Scroll to top of the page smoothly
-                    window.scrollTo({
-                        top: 0,
-                        behavior: 'smooth'
-                    });
-                } else {
-                    console.error('Tab content not found:', targetTab);
-                }
-            });
-        });
-    }
-})();
+}
 </script>
