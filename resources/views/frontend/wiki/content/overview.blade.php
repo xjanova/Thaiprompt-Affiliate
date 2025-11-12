@@ -550,9 +550,7 @@
 function loadCategory(category) {
     console.log('Loading category:', category);
 
-    // Update URL hash which will trigger the Wiki system to load content
-    window.location.hash = category;
-
-    // The Wiki system's loadInitialContent() will handle the rest
+    // Direct navigation to wiki page with hash
+    window.location.href = '/wiki#' + category;
 }
 </script>
