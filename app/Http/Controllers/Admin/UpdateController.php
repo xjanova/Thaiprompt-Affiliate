@@ -102,7 +102,7 @@ class UpdateController extends Controller
                 'message' => $message,
                 'help' => $help,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Update check failed', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
@@ -434,7 +434,7 @@ class UpdateController extends Controller
                     ? 'การเชื่อมต่อ GitHub ทำงานปกติ'
                     : 'พบปัญหาในการเชื่อมต่อ GitHub',
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('GitHub connection test failed', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),

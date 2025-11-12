@@ -429,6 +429,7 @@ class VersionService
             }
 
             $startTime = microtime(true);
+            $response = null; // Initialize to prevent undefined variable errors
 
             try {
                 $response = Http::withHeaders($headers)->timeout(10)->get($apiUrl);
@@ -465,9 +466,10 @@ class VersionService
                         'url' => $apiUrl,
                     ]);
                 }
-            } catch (\Exception $connectionError) {
+            } catch (\Throwable $connectionError) {
                 $responseTime = round((microtime(true) - $startTime) * 1000, 2);
                 $results['success'] = false;
+                $response = null; // Ensure $response is null on error
                 $results['errors'][] = [
                     'check' => 'GitHub API Reachability',
                     'status' => 'failed',
@@ -481,11 +483,12 @@ class VersionService
                     'error' => $connectionError->getMessage(),
                     'type' => get_class($connectionError),
                     'url' => $apiUrl,
+                    'trace' => $connectionError->getTraceAsString(),
                 ]);
             }
 
-            // Test 2: Fetch latest release
-            if ($response->successful()) {
+            // Test 2: Fetch latest release (only if initial connection was successful)
+            if ($response !== null && $response->successful()) {
                 $releaseResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
 
                 if ($releaseResponse->successful()) {
@@ -528,8 +531,8 @@ class VersionService
                 }
             }
 
-            // Test 4: Check download URL accessibility
-            if ($response->successful()) {
+            // Test 4: Check download URL accessibility (only if initial connection was successful)
+            if ($response !== null && $response->successful()) {
                 $releaseResponse = Http::withHeaders($headers)->timeout(10)->get("{$apiUrl}/releases/latest");
 
                 if ($releaseResponse->successful()) {
@@ -579,13 +582,22 @@ class VersionService
             $hasFailed = !empty(array_filter($results['errors'], fn($e) => $e['status'] === 'failed'));
             $results['success'] = !$hasFailed;
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             $results['success'] = false;
             $results['errors'][] = [
                 'check' => 'Connection Test',
                 'status' => 'failed',
                 'message' => $e->getMessage(),
+                'error_type' => get_class($e),
             ];
+
+            Log::error('GitHub connection test failed unexpectedly', [
+                'error' => $e->getMessage(),
+                'type' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
 
         return $results;
