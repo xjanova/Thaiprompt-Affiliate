@@ -4,7 +4,6 @@ use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PageController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\Auth\SetupController;
 use App\Http\Controllers\Auth\LineLoginController;
 use App\Http\Controllers\LineWebhookController;
 use App\Http\Controllers\LanguageController;
@@ -36,17 +35,6 @@ Route::prefix('api/translate')->name('api.translate.')->middleware('throttle:60,
     Route::get('/languages', [\App\Http\Controllers\TranslationController::class, 'languages'])->name('languages');
     Route::post('/detect', [\App\Http\Controllers\TranslationController::class, 'detect'])->name('detect');
     Route::get('/status', [\App\Http\Controllers\TranslationController::class, 'status'])->name('status');
-});
-
-// Setup Wizard (First time installation)
-Route::prefix('setup')->name('setup.')->group(function () {
-    Route::get('/', [SetupController::class, 'index'])->name('index');
-    Route::get('/check-requirements', [SetupController::class, 'checkRequirements'])->name('check-requirements');
-    Route::post('/test-database', [SetupController::class, 'testDatabase'])->name('test-database');
-    Route::post('/install-dependencies', [SetupController::class, 'installDependencies'])->name('install-dependencies');
-    Route::post('/run-migrations', [SetupController::class, 'runMigrations'])->name('run-migrations');
-    Route::post('/create-admin', [SetupController::class, 'createAdmin'])->name('create-admin');
-    Route::get('/info', [SetupController::class, 'info'])->name('info');
 });
 
 // Public Certificate Verification
