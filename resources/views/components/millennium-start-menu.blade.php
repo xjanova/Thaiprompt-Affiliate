@@ -971,7 +971,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Helper function to get CSRF token
     function getCsrfToken() {
-        return document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const meta = document.querySelector('meta[name="csrf-token"]');
+        return meta ? meta.content : '';
     }
 
     // Helper function to add shortcut to taskbar
