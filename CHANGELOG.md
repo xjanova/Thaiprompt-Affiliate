@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.164.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #936 from xjanova/claude/chatbot-rental-system-011CV4SMvxMEKqpAWbDN4ss7 (4052f4e5)
+- Add Git Hooks system for enforcing coding standards (a1344dbd)
+- Add ChatbotMenuSeeder to DatabaseSeeder (3b483c7a)
+
 ## [v2.164.0] - 2025-11-12
 
 ### ✨ Features
