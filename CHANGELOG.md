@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.139.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #872 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (2ade3c4d)
+- feat: Complete enterprise-grade ticket system enhancement with 10+ major features (c0405641)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.138.2] - 2025-11-12
 
 ### ✨ Features
