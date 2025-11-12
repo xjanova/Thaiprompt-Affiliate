@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.145.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #883 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (2cf6cfe4)
+- fix: Check file existence before ZipArchive::addFile() calls (627f1cb0)
+### 🔧 Other Changes
+
+
 ## [v2.145.0] - 2025-11-12
 
 ### ✨ Features
