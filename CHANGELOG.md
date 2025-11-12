@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.147.3] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #891 from xjanova/claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (f98a3250)
+- fix: Remove UpdateDatabaseSeeder reference from DatabaseSeeder (082130e4)
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/fix-update-patch-error-011CV3NonYLkbAzQ95GtB278 (66b7863e)
+
 ## [v2.147.2] - 2025-11-12
 
 ### ✨ Features
