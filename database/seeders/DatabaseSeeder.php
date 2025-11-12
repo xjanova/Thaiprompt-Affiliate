@@ -99,9 +99,6 @@ class DatabaseSeeder extends Seeder
 
             // 14. AI Gen System Menu (AiGenSeeder already in section 5)
             AiGenMenuSeeder::class,             // AI Gen System Menu Items for Admin Panel
-
-            // 15. Database Updates & Maintenance
-            UpdateDatabaseSeeder::class,        // Database schema and data updates
         ]);
 
         $this->command->info('');
