@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.160.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #919 from xjanova/claude/fix-ai-gen-system-011CV43q5twZCSKMxJ9v3wvx (d14addc4)
+- feat: Add AI Gen system links to navigation menu (9217182a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.159.0] - 2025-11-12
 
 ### ✨ Features
