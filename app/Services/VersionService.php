@@ -575,7 +575,9 @@ class VersionService
             }
 
             // Set overall success status
-            $results['success'] = empty($results['errors']) || !empty(array_filter($results['errors'], fn($e) => $e['status'] === 'failed'));
+            // Success only if there are no errors with 'failed' status (warnings are acceptable)
+            $hasFailed = !empty(array_filter($results['errors'], fn($e) => $e['status'] === 'failed'));
+            $results['success'] = !$hasFailed;
 
         } catch (\Exception $e) {
             $results['success'] = false;
