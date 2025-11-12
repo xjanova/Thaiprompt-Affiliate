@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.148.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #894 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (511624c5)
+- fix: Add display: none to non-active tab content sections (0cc149bb)
+### 🔧 Other Changes
+
+
 ## [v2.148.0] - 2025-11-12
 
 ### ✨ Features
