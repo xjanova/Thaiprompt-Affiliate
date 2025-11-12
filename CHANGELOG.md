@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.136.2] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #864 from xjanova/claude/fix-division-by-zero-threat-011CV3NV8NuWdWQ2tmrSQA3d (32096886)
+- fix: Prevent division by zero in threat intelligence dashboard (c42213d6)
+### 🔧 Other Changes
+
+
 ## [v2.136.1] - 2025-11-12
 
 ### ✨ Features
