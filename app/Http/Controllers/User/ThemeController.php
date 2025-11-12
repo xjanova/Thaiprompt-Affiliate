@@ -17,19 +17,20 @@ class ThemeController extends Controller
     }
 
     /**
-     * Get all available themes
+     * Display theme selection page
      *
-     * @return \Illuminate\Http\JsonResponse
+     * @return \Illuminate\View\View
      */
     public function index()
     {
         $themes = $this->themeService->getAllThemes(true);
-        $userTheme = $this->themeService->getThemeForUser(Auth::id());
+        $userThemeData = $this->themeService->getThemeForUser(Auth::id());
 
-        return response()->json([
-            'themes' => $themes,
-            'current_theme' => $userTheme,
-        ]);
+        // Extract theme and mode from the service response
+        $currentTheme = $userThemeData['theme'];
+        $currentMode = $userThemeData['mode'] ?? 'auto';
+
+        return view('user.themes.index', compact('themes', 'currentTheme', 'currentMode'));
     }
 
     /**
