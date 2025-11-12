@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.136.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #862 from xjanova/claude/audit-missing-menus-views-011CV2f63iTbKijxCDeXjf8R (2f2d986e)
+- feat: Add missing views, menu items, and controllers based on system audit (db9ec0a4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.135.0] - 2025-11-12
 
 ### ✨ Features
