@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.161.8] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #931 from xjanova/claude/fix-ecommerce-image-upload-011CV4TqGo4rCQHyW9ab89Xx (44674cbf)
+- Fix: E-commerce image upload functionality (917210dc)
+
 ## [v2.161.7] - 2025-11-12
 
 ### ✨ Features
