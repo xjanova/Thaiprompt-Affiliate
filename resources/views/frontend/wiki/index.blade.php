@@ -636,6 +636,9 @@
         }
     }
 
+    // Expose loadWikiContent to global scope for use in content files (e.g., overview.blade.php)
+    window.loadWikiContent = loadWikiContent;
+
     // Initialize tabs functionality
     function initializeTabs() {
         const tabBtns = wikiContent.querySelectorAll('.tab-btn');
