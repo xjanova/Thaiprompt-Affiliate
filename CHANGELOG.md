@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.158.3] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Auto-create database in deploy.sh if not exists (ff92c45a)
+### 🔧 Other Changes
+- Merge pull request #918 from xjanova/claude/line-membership-signup-ai-011CV44jm1c6wQcdFm8AfUDJ (a542c9f0)
+- docs: Add migration requirement guide for LINE Membership Signup (59c4f84e)
+
 ## [v2.158.2] - 2025-11-12
 
 ### ✨ Features
