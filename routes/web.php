@@ -380,3 +380,85 @@ Route::prefix('chatbot/marketplace')->name('chatbot.marketplace.')->group(functi
         Route::get('/my-earnings', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'myEarnings'])->name('my-earnings');
     });
 });
+
+// ========================================
+// TRADING BOT SYSTEM ROUTES
+// ========================================
+
+use App\Http\Controllers\TradingBotController;
+use App\Http\Controllers\Admin\TradingBotAdminController;
+
+// Public Trading Bot Marketplace
+Route::prefix('trading-bot')->name('trading-bot.')->group(function () {
+    Route::get('/marketplace', [TradingBotController::class, 'marketplace'])->name('marketplace');
+});
+
+// Authenticated Trading Bot Routes
+Route::middleware('auth')->prefix('trading-bot')->name('trading-bot.')->group(function () {
+    // Dashboard
+    Route::get('/', [TradingBotController::class, 'index'])->name('index');
+
+    // Subscription
+    Route::post('/subscribe/{package}', [TradingBotController::class, 'subscribe'])->name('subscribe');
+
+    // Bot Management
+    Route::get('/bots/create', [TradingBotController::class, 'create'])->name('create');
+    Route::post('/bots', [TradingBotController::class, 'store'])->name('store');
+    Route::get('/bots/{bot}', [TradingBotController::class, 'show'])->name('show');
+    Route::get('/bots/{bot}/edit', [TradingBotController::class, 'edit'])->name('edit');
+    Route::put('/bots/{bot}', [TradingBotController::class, 'update'])->name('update');
+    Route::delete('/bots/{bot}', [TradingBotController::class, 'destroy'])->name('destroy');
+    Route::post('/bots/{bot}/start', [TradingBotController::class, 'start'])->name('start');
+    Route::post('/bots/{bot}/stop', [TradingBotController::class, 'stop'])->name('stop');
+    Route::get('/bots/{bot}/analytics', [TradingBotController::class, 'analytics'])->name('analytics');
+
+    // Trading Accounts
+    Route::get('/accounts', [TradingBotController::class, 'accounts'])->name('accounts');
+    Route::post('/accounts', [TradingBotController::class, 'storeAccount'])->name('accounts.store');
+
+    // Strategies
+    Route::get('/strategies', [TradingBotController::class, 'strategies'])->name('strategies');
+    Route::get('/strategies/create', [TradingBotController::class, 'createStrategy'])->name('strategies.create');
+    Route::post('/strategies', [TradingBotController::class, 'storeStrategy'])->name('strategies.store');
+});
+
+// Admin Trading Bot Routes
+Route::middleware(['auth', 'role:admin,super_admin'])->prefix('admin/trading-bot')->name('admin.trading-bot.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [TradingBotAdminController::class, 'dashboard'])->name('dashboard');
+
+    // Package Management
+    Route::get('/packages', [TradingBotAdminController::class, 'packages'])->name('packages.index');
+    Route::get('/packages/create', [TradingBotAdminController::class, 'createPackage'])->name('packages.create');
+    Route::post('/packages', [TradingBotAdminController::class, 'storePackage'])->name('packages.store');
+    Route::get('/packages/{package}/edit', [TradingBotAdminController::class, 'editPackage'])->name('packages.edit');
+    Route::put('/packages/{package}', [TradingBotAdminController::class, 'updatePackage'])->name('packages.update');
+    Route::delete('/packages/{package}', [TradingBotAdminController::class, 'destroyPackage'])->name('packages.destroy');
+
+    // Subscription Management
+    Route::get('/subscriptions', [TradingBotAdminController::class, 'subscriptions'])->name('subscriptions.index');
+    Route::get('/subscriptions/{subscription}', [TradingBotAdminController::class, 'showSubscription'])->name('subscriptions.show');
+    Route::post('/subscriptions/{subscription}/cancel', [TradingBotAdminController::class, 'cancelSubscription'])->name('subscriptions.cancel');
+
+    // Bot Management
+    Route::get('/bots', [TradingBotAdminController::class, 'bots'])->name('bots.index');
+    Route::get('/bots/{bot}', [TradingBotAdminController::class, 'showBot'])->name('bots.show');
+    Route::post('/bots/{bot}/stop', [TradingBotAdminController::class, 'stopBot'])->name('bots.stop');
+    Route::post('/bots/{bot}/start', [TradingBotAdminController::class, 'startBot'])->name('bots.start');
+    Route::delete('/bots/{bot}', [TradingBotAdminController::class, 'destroyBot'])->name('bots.destroy');
+
+    // Exchange Management
+    Route::get('/exchanges', [TradingBotAdminController::class, 'exchanges'])->name('exchanges.index');
+    Route::post('/exchanges', [TradingBotAdminController::class, 'storeExchange'])->name('exchanges.store');
+    Route::put('/exchanges/{exchange}', [TradingBotAdminController::class, 'updateExchange'])->name('exchanges.update');
+
+    // Analytics
+    Route::get('/analytics', [TradingBotAdminController::class, 'analytics'])->name('analytics');
+
+    // Arbitrage Monitor
+    Route::get('/arbitrage-monitor', [TradingBotAdminController::class, 'arbitrageMonitor'])->name('arbitrage-monitor');
+
+    // Settings
+    Route::get('/settings', [TradingBotAdminController::class, 'settings'])->name('settings');
+    Route::put('/settings', [TradingBotAdminController::class, 'updateSettings'])->name('settings.update');
+});
