@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.146.0] - 2025-11-12
+
+### ✨ Features
+- feat: Complete HRM, E-Commerce & Payment systems (a55f733c)
+- feat: Complete E-Commerce & Payment systems with comprehensive 4-tab layouts (454f52cd)
+- feat: Complete MLM & Affiliate system with 5 comprehensive tabs (daf0dfd7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #886 from xjanova/claude/improve-wiki-system-011CV3RkY7wKctkMVqjgS8xM (ebfa4133)
+
 ## [v2.145.3] - 2025-11-12
 
 ### ✨ Features
