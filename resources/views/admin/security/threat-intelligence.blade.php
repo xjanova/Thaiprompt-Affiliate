@@ -135,7 +135,7 @@
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full"
-                             style="width: {{ ($threat->count / $stats['total_threats']) * 100 }}%"></div>
+                             style="width: {{ $stats['total_threats'] > 0 ? ($threat->count / $stats['total_threats']) * 100 : 0 }}%"></div>
                     </div>
                 </div>
                 @endforeach
@@ -168,7 +168,7 @@
                     </div>
                     <div class="w-full bg-gray-200 rounded-full h-2">
                         <div class="bg-gradient-to-r from-blue-500 to-cyan-600 h-2 rounded-full"
-                             style="width: {{ ($source->count / $stats['total_threats']) * 100 }}%"></div>
+                             style="width: {{ $stats['total_threats'] > 0 ? ($source->count / $stats['total_threats']) * 100 : 0 }}%"></div>
                     </div>
                 </div>
                 @endforeach
