@@ -254,15 +254,6 @@ class TicketService
     }
 
     /**
-     * Notify a specific user
-     */
-    private function notifyUser(Ticket $ticket, $userId, string $type)
-    {
-        // Create notification
-        Log::info("Notifying user {$userId} about ticket {$ticket->ticket_number} - {$type}");
-    }
-
-    /**
      * Get tickets with filters
      */
     public function getFilteredTickets(array $filters = [])
