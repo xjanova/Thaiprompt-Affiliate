@@ -225,6 +225,14 @@ Route::prefix('windows-ui')->name('windows-ui.')->group(function () {
     Route::put('/rgb-settings', [\App\Http\Controllers\Admin\WindowsUiController::class, 'updateRgbSettings'])->name('rgb-settings.update');
 });
 
+// Classic X Theme Settings (WordPress-Inspired Premium Theme)
+Route::prefix('classic-x-settings')->name('classic-x-settings.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\ClassicXSettingsController::class, 'index'])->name('index');
+    Route::put('/', [\App\Http\Controllers\Admin\ClassicXSettingsController::class, 'update'])->name('update');
+    Route::post('/reset', [\App\Http\Controllers\Admin\ClassicXSettingsController::class, 'reset'])->name('reset');
+    Route::get('/preview', [\App\Http\Controllers\Admin\ClassicXSettingsController::class, 'preview'])->name('preview');
+});
+
 // SEO Management
 Route::resource('seo', SeoController::class);
 

@@ -35,6 +35,7 @@ class User extends Authenticatable
         'rank_updated_at',
         'permissions',
         'preferred_language',
+        'menu_theme_preference',
         // LINE OA fields
         'line_user_id',
         'line_display_name',

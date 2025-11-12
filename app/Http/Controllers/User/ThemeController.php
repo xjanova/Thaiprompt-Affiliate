@@ -3,62 +3,44 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Services\ThemeService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ThemeController extends Controller
 {
-    protected $themeService;
-
-    public function __construct(ThemeService $themeService)
-    {
-        $this->themeService = $themeService;
-    }
-
     /**
-     * Show theme selector
+     * Update user's menu theme preference
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function updateTheme(Request $request)
     {
-        $themes = $this->themeService->getAllThemes(true);
-        $userThemeData = $this->themeService->getThemeForUser(auth()->id());
-
-        $currentTheme = $userThemeData['theme'];
-        $currentMode = $userThemeData['mode'];
-
-        return view('user.themes.index', compact('themes', 'currentTheme', 'currentMode'));
-    }
-
-    /**
-     * Set theme for user
-     */
-    public function setTheme(Request $request)
-    {
-        $validated = $request->validate([
-            'theme_id' => 'required|exists:themes,id',
-            'mode' => 'required|in:light,dark,auto',
+        $request->validate([
+            'menu_theme_preference' => 'required|in:millennium,classic_x'
         ]);
 
-        $this->themeService->setThemeForUser(
-            auth()->id(),
-            $validated['theme_id'],
-            $validated['mode']
-        );
+        $user = Auth::user();
+        $user->menu_theme_preference = $request->menu_theme_preference;
+        $user->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'เปลี่ยน Theme สำเร็จ'
+            'message' => 'Theme updated successfully',
+            'theme' => $user->menu_theme_preference
         ]);
     }
 
     /**
-     * Get current theme CSS
+     * Get user's current theme
+     *
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function getCss()
+    public function getCurrentTheme()
     {
-        $mode = request('mode', 'light');
-        $css = $this->themeService->getCssForUser(auth()->id(), $mode);
-
-        return response($css)->header('Content-Type', 'text/css');
+        $user = Auth::user();
+        return response()->json([
+            'theme' => $user->menu_theme_preference ?? 'millennium'
+        ]);
     }
 }

@@ -113,44 +113,93 @@
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
-    <!-- Millennium Taskbar -->
-    <x-millennium-taskbar type="admin" />
+    @php
+        $userTheme = auth()->user()->menu_theme_preference ?? 'millennium';
+    @endphp
 
-    <!-- Page Loader -->
-    <x-page-loader />
+    @if($userTheme === 'classic_x')
+        <!-- Classic X Sidebar -->
+        <x-classic-x-sidebar type="admin" />
 
-    <div class="min-h-screen">
-        <!-- Top Bar -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-            <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
-                 @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
-                    </div>
+        <!-- Main Content Area (with sidebar margin) -->
+        <div class="classic-x-content" id="classicXContent">
+            <!-- Top Bar -->
+            <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+                <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
+                     @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
+                        </div>
 
-                    <div class="flex items-center space-x-3">
-                        <!-- Dashboard Switcher -->
-                        <x-dashboard-switcher />
+                        <div class="flex items-center space-x-3">
+                            <!-- Theme Switcher -->
+                            <x-menu-theme-switcher />
 
-                        <!-- Notification Bell -->
-                        <x-notification-bell />
+                            <!-- Dashboard Switcher -->
+                            <x-dashboard-switcher />
 
-                        <!-- Language Switcher -->
-                        <div class="relative z-[60]">
-                            <x-language-switcher-pro />
+                            <!-- Notification Bell -->
+                            <x-notification-bell />
+
+                            <!-- Language Switcher -->
+                            <div class="relative z-[60]">
+                                <x-language-switcher-pro />
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </header>
+            </header>
 
-        <!-- Page Content -->
-        <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
-              @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
-            @yield('content')
-        </main>
-    </div>
+            <!-- Page Content -->
+            <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
+                  @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+                @yield('content')
+            </main>
+        </div>
+    @else
+        <!-- Millennium Taskbar -->
+        <x-millennium-taskbar type="admin" />
+
+        <!-- Page Loader -->
+        <x-page-loader />
+
+        <div class="min-h-screen">
+            <!-- Top Bar -->
+            <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+                <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
+                     @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <!-- Theme Switcher -->
+                            <x-menu-theme-switcher />
+
+                            <!-- Dashboard Switcher -->
+                            <x-dashboard-switcher />
+
+                            <!-- Notification Bell -->
+                            <x-notification-bell />
+
+                            <!-- Language Switcher -->
+                            <div class="relative z-[60]">
+                                <x-language-switcher-pro />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
+                  @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+                @yield('content')
+            </main>
+        </div>
+    @endif
 
     <!-- Fixed Floating Toast Notifications -->
     <div class="fixed top-4 right-4 z-[9999] space-y-3 max-w-md">
