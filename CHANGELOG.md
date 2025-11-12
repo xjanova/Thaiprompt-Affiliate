@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.154.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #906 from xjanova/claude/review-installation-system-011CV3dNGQQjHWG4NY7KfZWt (91d3601b)
+- feat: Add Deployment Center to admin menu (5413a193)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.153.1] - 2025-11-12
 
 ### ✨ Features
