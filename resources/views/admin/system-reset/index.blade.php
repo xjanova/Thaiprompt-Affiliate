@@ -17,10 +17,10 @@
                 <div class="mt-2 text-sm text-red-700 dark:text-red-300">
                     <p class="font-semibold">การรีเซ็ตข้อมูลเป็นการดำเนินการที่ไม่สามารถย้อนกลับได้!</p>
                     <ul class="list-disc list-inside mt-2 space-y-1">
+                        <li><strong>ลบข้อมูล:</strong> ผู้ใช้ทั้งหมด, ธุรกรรม, Log, กิจกรรมผู้ใช้</li>
+                        <li><strong>เก็บไว้:</strong> Super Admin (1 คน), การตั้งค่าระบบ, หมวดหมู่, Templates</li>
+                        <li><strong>ผลลัพธ์:</strong> ระบบพร้อมใช้งานทันที เหมือนเริ่มต้นใหม่แต่การตั้งค่าครบถ้วน</li>
                         <li>ข้อมูลที่ถูกลบจะไม่สามารถกู้คืนได้</li>
-                        <li>ระบบจะเก็บ log การรีเซ็ตไว้ตรวจสอบ</li>
-                        <li>Super Admin จะไม่ถูกลบในทุกกรณี</li>
-                        <li>ข้อมูล License และการตั้งค่าระบบสำคัญจะไม่ถูกลบ</li>
                     </ul>
                 </div>
             </div>
@@ -44,38 +44,86 @@
         </div>
     </div>
 
-    <!-- Reset Options Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        @foreach($resetOptions as $key => $option)
-        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-xl transition-all duration-200 transform hover:-translate-y-1"
-             :class="selectedOptions.includes('{{ $key }}') ? 'ring-2 ring-offset-2 ring-indigo-500' : ''">
-            <div class="p-6">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="flex items-center">
-                        <input type="checkbox"
-                               x-model="selectedOptions"
-                               value="{{ $key }}"
-                               id="option_{{ $key }}"
-                               class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
-                        <label for="option_{{ $key }}" class="ml-3 cursor-pointer">
-                            <div class="flex items-center">
-                                <i class="fas fa-{{ $option['icon'] }} text-2xl {{ $option['danger_level'] === 'critical' ? 'text-red-500' : ($option['danger_level'] === 'high' ? 'text-orange-500' : ($option['danger_level'] === 'medium' ? 'text-yellow-500' : 'text-blue-500')) }}"></i>
-                                <span class="ml-3 text-lg font-bold text-gray-900 dark:text-white">{{ $option['label'] }}</span>
-                            </div>
-                        </label>
+    <!-- Quick Reset Option -->
+    @if(isset($resetOptions['full_reset']))
+    <div class="bg-gradient-to-br from-red-500 to-rose-600 rounded-2xl shadow-2xl overflow-hidden">
+        <div class="p-8">
+            <div class="flex items-start gap-6">
+                <div class="flex-shrink-0">
+                    <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center">
+                        <i class="fas fa-sync-alt text-4xl text-white"></i>
                     </div>
-                    <span class="px-3 py-1 text-xs font-bold rounded-full {{ $option['danger_level'] === 'critical' ? 'bg-red-100 text-red-800' : ($option['danger_level'] === 'high' ? 'bg-orange-100 text-orange-800' : ($option['danger_level'] === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')) }}">
-                        {{ $option['danger_level'] === 'critical' ? 'วิกฤติ' : ($option['danger_level'] === 'high' ? 'สูง' : ($option['danger_level'] === 'medium' ? 'ปานกลาง' : 'ต่ำ')) }}
-                    </span>
                 </div>
-                <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">{{ $option['description'] }}</p>
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-gray-500 dark:text-gray-400">จำนวนข้อมูล:</span>
-                    <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ number_format($option['count']) }} รายการ</span>
+                <div class="flex-1">
+                    <h3 class="text-2xl font-bold text-white mb-2">🔄 รีเซ็ตระบบทั้งหมด (Full Reset)</h3>
+                    <p class="text-white/90 mb-4">ลบข้อมูลธุรกรรมและผู้ใช้ทั้งหมด เหลือเฉพาะ Super Admin และการตั้งค่าระบบ - ระบบพร้อมใช้งานทันที</p>
+                    <div class="flex items-center gap-4 text-sm text-white/80 mb-4">
+                        <span><i class="fas fa-database mr-2"></i>~{{ number_format($resetOptions['full_reset']['count']) }} รายการ</span>
+                        <span><i class="fas fa-clock mr-2"></i>ใช้เวลา 1-3 นาที</span>
+                    </div>
+                    <button @click="selectFullReset()"
+                            class="inline-flex items-center px-6 py-3 bg-white text-red-600 font-bold rounded-xl hover:bg-red-50 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        รีเซ็ตระบบทั้งหมดทันที
+                    </button>
                 </div>
             </div>
         </div>
-        @endforeach
+    </div>
+    @endif
+
+    <!-- Advanced Options Toggle -->
+    <div class="flex items-center justify-center">
+        <button @click="showAdvanced = !showAdvanced"
+                class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-800 dark:from-slate-700 dark:to-slate-800 text-white font-semibold rounded-xl hover:from-gray-800 hover:to-gray-900 transition-all duration-200 shadow-lg">
+            <i class="fas fa-sliders-h mr-2"></i>
+            <span x-text="showAdvanced ? 'ซ่อนตัวเลือกขั้นสูง' : 'แสดงตัวเลือกขั้นสูง (เลือกเอง)'"></span>
+            <i class="fas ml-2" :class="showAdvanced ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+        </button>
+    </div>
+
+    <!-- Reset Options Grid (Advanced) -->
+    <div x-show="showAdvanced" x-cloak x-transition class="space-y-4">
+        <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded">
+            <p class="text-sm text-blue-800 dark:text-blue-200">
+                <i class="fas fa-info-circle mr-2"></i>
+                <strong>ตัวเลือกขั้นสูง:</strong> เลือกเฉพาะหมวดข้อมูลที่ต้องการลบ (สามารถเลือกได้หลายหมวด)
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach($resetOptions as $key => $option)
+                @if($key !== 'full_reset')
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border-2 border-gray-200 dark:border-slate-700 overflow-hidden hover:shadow-xl transition-all duration-200"
+                     :class="selectedOptions.includes('{{ $key }}') ? 'ring-2 ring-offset-2 ring-indigo-500 border-indigo-500' : ''">
+                    <div class="p-5">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-start flex-1">
+                                <input type="checkbox"
+                                       x-model="selectedOptions"
+                                       value="{{ $key }}"
+                                       id="option_{{ $key }}"
+                                       class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 mt-0.5">
+                                <label for="option_{{ $key }}" class="ml-3 cursor-pointer flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <i class="fas fa-{{ $option['icon'] }} {{ $option['danger_level'] === 'critical' ? 'text-red-500' : ($option['danger_level'] === 'high' ? 'text-orange-500' : ($option['danger_level'] === 'medium' ? 'text-yellow-500' : 'text-blue-500')) }}"></i>
+                                        <span class="text-sm font-bold text-gray-900 dark:text-white">{{ $option['label'] }}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 leading-tight">{{ $option['description'] }}</p>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between text-xs pt-3 border-t border-gray-200 dark:border-slate-600">
+                            <span class="px-2 py-1 rounded-full {{ $option['danger_level'] === 'critical' ? 'bg-red-100 text-red-800' : ($option['danger_level'] === 'high' ? 'bg-orange-100 text-orange-800' : ($option['danger_level'] === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800')) }}">
+                                {{ $option['danger_level'] === 'critical' ? 'วิกฤติ' : ($option['danger_level'] === 'high' ? 'สูง' : ($option['danger_level'] === 'medium' ? 'ปานกลาง' : 'ต่ำ')) }}
+                            </span>
+                            <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ number_format($option['count']) }}</span>
+                        </div>
+                    </div>
+                </div>
+                @endif
+            @endforeach
+        </div>
     </div>
 
     <!-- Action Buttons -->
@@ -247,12 +295,19 @@ function systemReset() {
         selectedOptions: [],
         showConfirmModal: false,
         showLogs: false,
+        showAdvanced: false,
         confirmationText: '',
         isProcessing: false,
         resetOptions: @json($resetOptions),
 
+        selectFullReset() {
+            this.selectedOptions = ['full_reset'];
+            this.confirmationText = '';
+            this.showConfirmModal = true;
+        },
+
         selectAll() {
-            this.selectedOptions = Object.keys(this.resetOptions);
+            this.selectedOptions = Object.keys(this.resetOptions).filter(key => key !== 'full_reset');
         },
 
         clearSelection() {
@@ -295,15 +350,15 @@ function systemReset() {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('รีเซ็ตข้อมูลเรียบร้อยแล้ว\n\n' + this.formatSummary(data.summary));
+                    alert('✅ รีเซ็ตข้อมูลเรียบร้อยแล้ว!\n\n' + this.formatSummary(data.summary) + '\n\nระบบพร้อมใช้งานแล้ว');
                     this.showConfirmModal = false;
                     this.selectedOptions = [];
-                    location.reload();
+                    setTimeout(() => location.reload(), 1500);
                 } else {
-                    alert('เกิดข้อผิดพลาด: ' + data.message);
+                    alert('❌ เกิดข้อผิดพลาด: ' + data.message);
                 }
             } catch (error) {
-                alert('เกิดข้อผิดพลาด: ' + error.message);
+                alert('❌ เกิดข้อผิดพลาด: ' + error.message);
             } finally {
                 this.isProcessing = false;
             }
@@ -311,9 +366,12 @@ function systemReset() {
 
         formatSummary(summary) {
             let text = '';
+            let totalDeleted = 0;
             for (const [key, value] of Object.entries(summary)) {
-                text += `${value.label}: ลบ ${value.deleted_count} รายการ\n`;
+                text += `• ${value.label}: ${value.deleted_count.toLocaleString()} รายการ\n`;
+                totalDeleted += value.deleted_count;
             }
+            text += `\n📊 รวมทั้งหมด: ${totalDeleted.toLocaleString()} รายการ`;
             return text;
         }
     }
