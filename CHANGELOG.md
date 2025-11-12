@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.162.0] - 2025-11-12
+
+### ✨ Features
+- feat: Complete Trading Bot system with admin menu and CRUD forms (d29368a1)
+- feat: Add comprehensive admin panel views for Trading Bot system (da1eb250)
+- feat: Add comprehensive user-facing Trading Bot views (af021b6e)
+- feat: Add Trading Bot views and navigation integration (b473293e)
+- feat: Add comprehensive Crypto Trading Bot API system (6fb3d72f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #932 from xjanova/claude/crypto-trading-bot-api-011CV4Qdjefuvx3aaSNGNu6B (a538838b)
+- chore: Add cache clearing script and menu check guide (2a973b2d)
+
 ## [v2.161.8] - 2025-11-12
 
 ### ✨ Features
