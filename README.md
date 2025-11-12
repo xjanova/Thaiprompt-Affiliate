@@ -5,14 +5,14 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![Laravel](https://img.shields.io/badge/Laravel-11.x-red.svg)
 ![PHP](https://img.shields.io/badge/PHP-8.1%2B-purple.svg)
-![License](https://img.shields.io/badge/license-Commercial-green.svg)
+![Open Source](https://img.shields.io/badge/status-Open%20Source-green.svg)
 
 **ระบบแอฟฟิลิเอตที่ทันสมัยและพร้อมใช้งาน**
 พัฒนาด้วย Laravel 11 | รองรับหลายภาษา | ออกแบบสวยงามด้วย Tailwind CSS
 
 [🌟 คุณสมบัติ](#-คุณสมบัติเด่น) •
 [📦 การติดตั้ง](#-การติดตั้ง) •
-[🔑 License](#-license-และการเปิดใช้งาน) •
+[🚀 เริ่มต้นใช้งาน](#-การเริ่มต้นใช้งาน) •
 [📖 เอกสาร](#-เอกสารประกอบ) •
 [💬 การสนับสนุน](#-การสนับสนุน)
 
@@ -33,12 +33,12 @@
 
 ### 💡 จุดเด่น
 
-- 🔥 **ติดตั้งง่าย** - ใช้เวลาไม่เกิน 5 นาที
+- 🔥 **ติดตั้งง่าย** - ใช้เวลาไม่เกิน 5-10 นาที
 - 🎨 **UI/UX สวยงาม** - ออกแบบโดยมืออาชีพ
 - 🔐 **ปลอดภัยสูง** - มาตรฐาน Enterprise Level
 - 🌍 **รองรับหลายภาษา** - ไทย, อังกฤษ (เพิ่มได้ไม่จำกัด)
 - 📱 **Responsive** - ใช้งานได้ทุกอุปกรณ์
-- 🔄 **อัปเดตง่าย** - กดปุ่มเดียวจากในระบบ
+- 🔄 **อัปเดตง่าย** - Deploy ด้วย deploy.sh
 - 📊 **รายงานครบครัน** - Dashboard แบบ Real-time
 
 ---
@@ -147,15 +147,6 @@
 - 🔄 สลับภาษาได้ทันที
 - 📝 แปลผ่าน Google Translate API
 
-### 🔄 ระบบอัปเดตอัตโนมัติ
-
-- 🎯 ตรวจสอบเวอร์ชั่นใหม่อัตโนมัติ
-- 📦 ดาวน์โหลดและติดตั้งจากในระบบ
-- 🔐 ตรวจสอบ License ก่อนอัปเดต
-- 💾 Backup อัตโนมัติก่อนอัปเดต
-- ↩️ Rollback ได้ถ้ามีปัญหา
-- 📋 แสดง Changelog ก่อนอัปเดต
-
 ---
 
 ## 📦 การติดตั้ง
@@ -166,13 +157,13 @@
 |-----------|-----------------|
 | **PHP** | 8.1 หรือสูงกว่า |
 | **Web Server** | Nginx หรือ Apache |
-| **Database** | MySQL 5.7+ หรือ SQLite |
+| **Database** | MySQL 5.7+ หรือ MariaDB 10.3+ |
 | **Composer** | 2.0+ |
-| **Node.js** | 16+ (สำหรับ build assets) |
+| **Git** | สำหรับ deployment |
 | **RAM** | 512 MB ขั้นต่ำ (แนะนำ 1 GB+) |
-| **Disk Space** | 500 MB+ |
+| **Disk Space** | 1 GB+ |
 
-### 🚀 ติดตั้งด้วย Script อัตโนมัติ (แนะนำ)
+### 🚀 ติดตั้งด้วย install.sh (แนะนำ)
 
 ```bash
 # 1. Clone repository
@@ -183,245 +174,83 @@ cd Thaiprompt-Affiliate
 chmod +x install.sh
 ./install.sh
 
-# 3. ตั้งค่า License Key (ดูจากอีเมลที่ได้รับหลังซื้อ)
-php artisan license:activate YOUR-LICENSE-KEY
+# Script จะถามข้อมูลดังนี้:
+# - Application Name
+# - Application URL
+# - Environment (Production/Local)
+# - Database credentials
+# - Super Admin account (Name, Email, Password)
 
-# 4. เริ่มใช้งาน
-php artisan serve
+# 3. เสร็จแล้ว! เข้าใช้งานได้เลย
 ```
 
-**เปิด browser**: `http://localhost:8000`
+**สิ่งที่ install.sh ทำให้อัตโนมัติ:**
+- ✅ ตรวจสอบ system requirements
+- ✅ สร้างและตั้งค่า `.env`
+- ✅ ติดตั้ง Composer dependencies
+- ✅ สร้างฐานข้อมูล (ถ้ายังไม่มี)
+- ✅ รัน database migrations
+- ✅ รัน database seeders
+- ✅ สร้างบัญชี Super Admin
+- ✅ ตั้งค่าเริ่มต้น
+- ✅ Cache configuration
 
-### ⚙️ ติดตั้งแบบ Manual
-
-<details>
-<summary>คลิกเพื่อดูขั้นตอนการติดตั้งแบบ Manual</summary>
-
-```bash
-# 1. Clone และเข้าโฟลเดอร์
-git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
-cd Thaiprompt-Affiliate
-
-# 2. ติดตั้ง PHP dependencies
-composer install
-
-# 3. สร้างไฟล์ .env
-cp .env.example .env
-
-# 4. Generate Application Key
-php artisan key:generate
-
-# 5. ตั้งค่าฐานข้อมูล (แก้ไขในไฟล์ .env)
-# สำหรับ SQLite:
-touch database/database.sqlite
-
-# สำหรับ MySQL:
-# DB_CONNECTION=mysql
-# DB_HOST=127.0.0.1
-# DB_DATABASE=thaiprompt_affiliate
-# DB_USERNAME=root
-# DB_PASSWORD=your_password
-
-# 6. รัน migrations
-php artisan migrate
-
-# 7. ตั้งค่า permissions
-chmod -R 775 storage bootstrap/cache
-
-# 8. (Optional) Build frontend assets
-npm install
-npm run build
-
-# 9. เริ่มใช้งาน
-php artisan serve
-```
-</details>
-
-### 🐳 ติดตั้งด้วย Docker
-
-```bash
-# 1. Clone repository
-git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
-cd Thaiprompt-Affiliate
-
-# 2. Start Docker containers
-docker-compose up -d
-
-# 3. เข้าไปใน container
-docker-compose exec app bash
-
-# 4. ติดตั้งและ activate license
-composer install
-php artisan migrate
-php artisan license:activate YOUR-LICENSE-KEY
-
-# 5. Exit container
-exit
-```
-
-**เปิด browser**: `http://localhost:8000`
-
----
-
-## 🔑 License และการเปิดใช้งาน
-
-### 📋 ประเภท License
-
-<table>
-<tr>
-<th>แบบ</th>
-<th>ราคา</th>
-<th>โดเมน</th>
-<th>การสนับสนุน</th>
-<th>อัปเดต</th>
-</tr>
-<tr>
-<td><strong>🥉 Single Site</strong></td>
-<td>฿9,900</td>
-<td>1 โดเมน</td>
-<td>6 เดือน</td>
-<td>1 ปี</td>
-</tr>
-<tr>
-<td><strong>🥈 Multi Site</strong></td>
-<td>฿19,900</td>
-<td>5 โดเมน</td>
-<td>1 ปี</td>
-<td>1 ปี</td>
-</tr>
-<tr>
-<td><strong>🥇 Unlimited</strong></td>
-<td>฿39,900</td>
-<td>ไม่จำกัด</td>
-<td>ตลอดชีพ</td>
-<td>ตลอดชีพ</td>
-</tr>
-<tr>
-<td><strong>💎 Enterprise</strong></td>
-<td>ติดต่อเรา</td>
-<td>ไม่จำกัด</td>
-<td>ตลอดชีพ + Priority</td>
-<td>ตลอดชีพ</td>
-</tr>
-</table>
-
-### ✅ การเปิดใช้งาน License
-
-#### 1️⃣ ผ่าน Command Line
-
-```bash
-php artisan license:activate YOUR-LICENSE-KEY-HERE
-```
-
-#### 2️⃣ ผ่าน Admin Dashboard
-
-1. เข้าสู่ระบบ Admin
-2. ไปที่ **ตั้งค่า** → **License**
-3. กรอก License Key
-4. คลิก **เปิดใช้งาน**
-
-#### 3️⃣ ผ่านไฟล์ .env
-
-```env
-LICENSE_KEY=YOUR-LICENSE-KEY-HERE
-LICENSE_DOMAIN=yourdomain.com
-```
-
-### 🔐 ระบบตรวจสอบ License
-
-ระบบจะตรวจสอบความถูกต้องของ License ผ่าน:
-
-- ✅ **License Key** - รหัสสินค้าที่ได้รับ
-- ✅ **Domain Binding** - ผูกกับโดเมนที่ติดตั้ง
-- ✅ **IP Address** - บันทึก IP ของเซิร์ฟเวอร์
-- ✅ **Installation ID** - รหัสติดตั้งที่ไม่ซ้ำกัน
-- ✅ **Expiry Date** - วันหมดอายุของ License
-- ✅ **Remote Verification** - ตรวจสอบกับเซิร์ฟเวอร์หลักทุก 7 วัน
-
-### ⚠️ ข้อจำกัดหาก License ไม่ถูกต้อง
-
-- ❌ ไม่สามารถอัปเดตระบบได้
-- ❌ ไม่สามารถเข้าถึงฟีเจอร์ Premium
-- ⚠️ แสดงแบนเนอร์แจ้งเตือน
-- ⏰ ระบบจะหยุดทำงานหลัง 30 วัน
+**ดูคู่มือการติดตั้งแบบละเอียด:** [INSTALLATION.md](INSTALLATION.md)
 
 ---
 
 ## 🎯 การเริ่มต้นใช้งาน
 
-### 1️⃣ Setup Wizard (ครั้งแรก)
+### 1️⃣ หลังติดตั้งเสร็จ
 
-หลังติดตั้งและเปิดระบบครั้งแรก จะเข้าสู่ **Setup Wizard** อัตโนมัติ:
-
-1. **ยินดีต้อนรับ** - แนะนำระบบ
-2. **ตรวจสอบความพร้อม** - เช็คระบบ
-3. **ตั้งค่าฐานข้อมูล** - (ถ้ายังไม่ได้ตั้ง)
-4. **เปิดใช้งาน License** - ใส่ License Key
-5. **สร้าง Super Admin** - ตั้งค่าผู้ดูแลระบบ
-6. **ตั้งค่าทั่วไป** - ชื่อเว็บ, โลโก้, ฯลฯ
-7. **เสร็จสิ้น** - เริ่มใช้งาน!
-
-### 2️⃣ เข้าสู่ระบบ Admin
+เข้าสู่ระบบ Admin:
 
 ```
 URL: http://yourdomain.com/admin
-Email: ตามที่ตั้งไว้ใน Setup
-Password: ตามที่ตั้งไว้ใน Setup
+Email: (ที่ตั้งไว้ใน install.sh)
+Password: (ที่ตั้งไว้ใน install.sh)
 ```
 
-### 3️⃣ ตั้งค่าพื้นฐาน
+### 2️⃣ ตั้งค่าพื้นฐาน
 
-1. **ตั้งค่าทั่วไป** → ชื่อเว็บ, คำอธิบาย, โลโก้
-2. **ตั้งค่าอีเมล** → SMTP สำหรับส่งอีเมล
+1. **ตั้งค่าทั่วไป** → ชื่อเว็บ, โลโก้, คำอธิบาย
+2. **ตั้งค่าอีเมล** → SMTP/Gmail สำหรับส่งอีเมล
 3. **ตั้งค่าคอมมิชชั่น** → เปอร์เซ็นต์และระดับ
-4. **ตั้งค่า Payment** → เปิดใช้ช่องทางการชำระเงิน
+4. **ตั้งค่า Payment** → ช่องทางการชำระเงิน
+
+### 3️⃣ เริ่มเพิ่มข้อมูล
+
+1. เพิ่มสินค้า/บริการ
+2. เพิ่มแพ็กเกจสมาชิก
+3. ตั้งค่าอัตราคอมมิชชั่น
+4. สร้างหน้า Landing Page
 
 ---
 
 ## 🔄 การอัปเดตระบบ
 
-### 🎯 อัปเดตผ่าน Admin Dashboard (แนะนำ)
-
-1. ไปที่ **ตั้งค่า** → **อัปเดตระบบ**
-2. ระบบจะเช็คเวอร์ชั่นใหม่อัตโนมัติ
-3. ถ้ามีเวอร์ชั่นใหม่ จะแสดง:
-   - เลขเวอร์ชั่นใหม่
-   - รายการเปลี่ยนแปลง (Changelog)
-   - ขนาดไฟล์ที่ต้องดาวน์โหลด
-4. คลิก **"อัปเดตเลย"**
-5. ระบบจะทำงานอัตโนมัติ:
-   - ✅ ตรวจสอบ License
-   - ✅ Backup ฐานข้อมูล
-   - ✅ ดาวน์โหลดเวอร์ชั่นใหม่
-   - ✅ ติดตั้งและ Migrate
-   - ✅ ทำความสะอาด Cache
-6. **เสร็จสิ้น!** ใช้เวลาประมาณ 2-5 นาที
-
-### ⚙️ อัปเดตผ่าน Command Line
+### ใช้ deploy.sh สำหรับการอัปเดต
 
 ```bash
-# ตรวจสอบเวอร์ชั่นใหม่
-php artisan app:check-update
+# Deploy อัปเดตจาก GitHub
+./deploy.sh
 
-# อัปเดตไปยังเวอร์ชั่นล่าสุด
-php artisan app:update
-
-# อัปเดตไปยังเวอร์ชั่นเฉพาะ
-php artisan app:update v1.2.0
+# หรือระบุ branch
+./deploy.sh main
 ```
 
-### 📋 ตรวจสอบเวอร์ชั่นปัจจุบัน
+**สิ่งที่ deploy.sh ทำอัตโนมัติ:**
+- ✅ เปิด maintenance mode
+- ✅ Backup database และไฟล์สำคัญ
+- ✅ Pull code ล่าสุดจาก GitHub
+- ✅ Install/Update dependencies
+- ✅ Run migrations
+- ✅ Cache optimization
+- ✅ ปิด maintenance mode
 
-```bash
-# แสดงข้อมูลเวอร์ชั่น
-php artisan app:version
+**มี Auto-retry:** ถ้าเกิด timeout จะลองใหม่อัตโนมัติสูงสุด 3 ครั้ง
 
-# แสดง Changelog
-php artisan app:version --changelog
-
-# ตรวจสอบ System Requirements
-php artisan app:version --system
-```
+**Rollback:** ถ้ามีปัญหา สามารถ rollback ได้ด้วย commands ที่แสดงหลัง deploy เสร็จ
 
 ---
 
@@ -431,11 +260,9 @@ php artisan app:version --system
 
 | เอกสาร | คำอธิบาย |
 |--------|----------|
-| 📘 [GETTING-STARTED.md](GETTING-STARTED.md) | คู่มือเริ่มต้นใช้งาน |
-| 📦 [INSTALLATION-GUIDE.md](INSTALLATION-GUIDE.md) | คู่มือติดตั้งแบบละเอียด |
-| 🏭 [PRODUCTION-INSTALL.md](PRODUCTION-INSTALL.md) | คู่มือติดตั้งบน Production Server |
-| 🌐 [DEPLOYMENT.md](DEPLOYMENT.md) | คู่มือ Deploy และ Maintenance |
-| 🔐 [AUTHENTICATION.md](AUTHENTICATION.md) | คู่มือการ Clone Private Repository |
+| 📘 [INSTALLATION.md](INSTALLATION.md) | คู่มือติดตั้งแบบละเอียด (แนะนำ!) |
+| 🏭 [DEPLOYMENT.md](DEPLOYMENT.md) | คู่มือ Deploy และ Maintenance |
+| 🔐 [AUTHENTICATION.md](AUTHENTICATION.md) | คู่มือตั้งค่า GitHub Token |
 
 ### สำหรับ Admin
 
@@ -443,7 +270,6 @@ php artisan app:version --system
 |--------|----------|
 | 👑 [SUPER-ADMIN.md](SUPER-ADMIN.md) | คู่มือ Super Admin |
 | 🌍 [MULTI-LANGUAGE.md](MULTI-LANGUAGE.md) | คู่มือระบบหลายภาษา |
-| 🔑 [LICENSE-GUIDE.md](LICENSE-GUIDE.md) | คู่มือการจัดการ License |
 | 📌 [VERSIONING.md](VERSIONING.md) | คู่มือระบบเวอร์ชั่น |
 
 ### สำหรับนักพัฒนา
@@ -458,19 +284,29 @@ php artisan app:version --system
 
 ## 🛠️ Utility Scripts
 
-### 📦 install.sh - ติดตั้งอัตโนมัติ
+### 📦 install.sh - ติดตั้งระบบครั้งแรก
 
 ```bash
 ./install.sh
 ```
 
+ใช้สำหรับ:
+- ✅ ติดตั้งครั้งแรก
+- ✅ ตั้งค่าทั้งหมดในคำสั่งเดียว
+- ✅ สร้าง Super Admin
+
+### 🚀 deploy.sh - Deploy อัปเดต
+
+```bash
+./deploy.sh              # Deploy from current branch
+./deploy.sh main         # Deploy from main branch
+```
+
 คุณสมบัติ:
-- ✅ ตรวจสอบ PHP และ Composer
-- ✅ ติดตั้ง dependencies
-- ✅ สร้าง .env และ APP_KEY
-- ✅ รัน migrations
-- ✅ ตั้งค่า permissions
-- ✅ Cache optimization
+- ✅ Auto-backup ก่อน deploy
+- ✅ Smart migration system
+- ✅ Auto-retry on timeout
+- ✅ Rollback commands (ถ้ามีปัญหา)
 
 ### 🔧 fix-permissions.sh - แก้ไข Permissions
 
@@ -482,93 +318,20 @@ php artisan app:version --system
 - ❌ เจอ error "Permission denied"
 - ❌ Laravel ไม่สามารถเขียนไฟล์ได้
 
-### 🚀 deploy.sh - Deploy อัตโนมัติ
-
-```bash
-./deploy.sh              # Deploy from main
-./deploy.sh develop      # Deploy from develop
-```
-
-คุณสมบัติ:
-- ✅ Pre-flight checks
-- ✅ Maintenance mode
-- ✅ Database backup
-- ✅ Git pull
-- ✅ Composer install
-- ✅ Migrations
-- ✅ Cache optimization
-- ✅ Auto-rollback ถ้าเกิดข้อผิดพลาด
-
-### 🔄 rollback.sh - ย้อนกลับเวอร์ชั่น
-
-```bash
-./rollback.sh
-```
-
-ใช้เมื่อ:
-- ❌ Deploy ล้มเหลว
-- ❌ ต้องการย้อนกลับ
-
----
-
-## 🎨 Screenshots
-
-### Admin Dashboard
-![Admin Dashboard](screenshots/admin-dashboard.png)
-
-### User Dashboard
-![User Dashboard](screenshots/user-dashboard.png)
-
-### Commission Report
-![Commission Report](screenshots/commission-report.png)
-
-### Update Center
-![Update Center](screenshots/update-center.png)
-
 ---
 
 ## 🔧 การแก้ปัญหาที่พบบ่อย
 
 <details>
-<summary><strong>❌ License ไม่ถูกต้อง</strong></summary>
-
-**สาเหตุ:**
-- License Key ผิด
-- โดเมนไม่ตรงกับที่ลงทะเบียน
-- License หมดอายุ
-
-**วิธีแก้:**
-```bash
-# ตรวจสอบ License
-php artisan license:check
-
-# Activate ใหม่
-php artisan license:activate YOUR-KEY
-
-# ติดต่อ Support หากปัญหายังไม่หาย
-```
-</details>
-
-<details>
 <summary><strong>❌ Permission denied ใน storage/</strong></summary>
 
 ```bash
+# แก้ไข permissions
+chmod -R 775 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+
+# หรือใช้ script
 ./fix-permissions.sh
-```
-</details>
-
-<details>
-<summary><strong>❌ การอัปเดตล้มเหลว</strong></summary>
-
-```bash
-# Rollback
-./rollback.sh
-
-# ตรวจสอบ logs
-tail -f storage/logs/laravel.log
-
-# ลองอัปเดตอีกครั้ง
-php artisan app:update --force
 ```
 </details>
 
@@ -581,37 +344,48 @@ php artisan app:update --force
 4. Grant privileges: `GRANT ALL ON thaiprompt_affiliate.* TO 'user'@'localhost';`
 </details>
 
+<details>
+<summary><strong>❌ Deploy ล้มเหลว</strong></summary>
+
+```bash
+# ดู deployment logs
+tail -f storage/logs/deployment.log
+
+# Rollback (ใช้ command ที่แสดงหลัง deploy)
+git reset --hard COMMIT_HASH && composer install && php artisan migrate:rollback
+
+# หรือลองใหม่
+./deploy.sh
+```
+</details>
+
+<details>
+<summary><strong>❌ Storage symlink ไม่ทำงาน</strong></summary>
+
+```bash
+# ลบ symlink เดิม
+rm public/storage
+
+# สร้างใหม่
+php artisan storage:link --force
+```
+</details>
+
 ---
 
 ## 💬 การสนับสนุน
 
 ### 📧 ติดต่อเรา
 
-- **เว็บไซต์**: https://thaiprompt.com
-- **Email**: support@thaiprompt.com
-- **Line**: @thaiprompt
-- **Facebook**: fb.com/thaiprompt
 - **GitHub Issues**: [Report Bug](https://github.com/xjanova/Thaiprompt-Affiliate/issues)
-
-### 🆘 รับการสนับสนุน
-
-**Free Support** (สำหรับ Single Site):
-- 📧 Email Support
-- 📖 Documentation
-- ⏰ ตอบกลับภายใน 48 ชั่วโมง
-
-**Priority Support** (สำหรับ Enterprise):
-- 💬 Live Chat
-- 📞 โทรศัพท์
-- 🎥 Remote Assistance
-- ⏰ ตอบกลับภายใน 4 ชั่วโมง
+- **Email**: support@thaiprompt.com
+- **Website**: https://thaiprompt.com
 
 ### 📚 Resource เพิ่มเติม
 
-- 📖 [Knowledge Base](https://docs.thaiprompt.com)
-- 🎥 [Video Tutorials](https://www.youtube.com/@thaiprompt)
-- 👥 [Community Forum](https://forum.thaiprompt.com)
-- 📰 [Blog & Updates](https://blog.thaiprompt.com)
+- 📖 [Documentation](INSTALLATION.md)
+- 🐛 [Issue Tracker](https://github.com/xjanova/Thaiprompt-Affiliate/issues)
+- 💡 [Feature Requests](https://github.com/xjanova/Thaiprompt-Affiliate/discussions)
 
 ---
 
@@ -624,7 +398,7 @@ php artisan app:update --force
 
 **Backend:**
 - [Laravel 11](https://laravel.com) - PHP Framework
-- [MySQL](https://www.mysql.com) / [SQLite](https://www.sqlite.org) - Database
+- [MySQL](https://www.mysql.com) / [MariaDB](https://mariadb.org) - Database
 
 **Frontend:**
 - [Tailwind CSS](https://tailwindcss.com) - UI Framework
@@ -633,7 +407,7 @@ php artisan app:update --force
 - [Chart.js](https://www.chartjs.org) - Data Visualization
 
 **DevOps:**
-- [Docker](https://www.docker.com) - Containerization
+- [Git](https://git-scm.com) - Version Control
 - [Nginx](https://www.nginx.com) - Web Server
 
 ---
@@ -642,30 +416,36 @@ php artisan app:update --force
 
 Copyright © 2025 ThaiPrompt Team. All rights reserved.
 
-นี่คือซอฟต์แวร์เชิงพาณิชย์ (Commercial Software)
-ต้องซื้อ License จึงจะใช้งานได้ถูกต้องตามกฎหมาย
-
-**ห้าม:**
-- ❌ คัดลอกหรือแจกจ่ายซอร์สโค้ด
-- ❌ นำไปขายต่อ
-- ❌ ใช้งานโดยไม่มี License ที่ถูกต้อง
-- ❌ แก้ไขระบบตรวจสอบ License
-
-**อนุญาต:** (เฉพาะผู้ที่มี License ถูกต้อง)
-- ✅ ใช้งานบนโดเมนที่ลงทะเบียน
-- ✅ ปรับแต่งโค้ดตามต้องการ
-- ✅ ติดตั้งบน Server ของตัวเอง
-- ✅ รับอัปเดตตามระยะเวลา License
+This project is open source software.
 
 ---
 
 ## 🌟 Version
 
 **Current Version:** 1.0.0 (Foundation)
-**Release Date:** 2025-10-31
-**Next Update:** TBA
+**Release Date:** 2025-01-12
 
 [📋 ดู Changelog ทั้งหมด](CHANGELOG.md)
+
+---
+
+## 🚀 Quick Start Summary
+
+```bash
+# 1. Clone
+git clone https://github.com/xjanova/Thaiprompt-Affiliate.git
+cd Thaiprompt-Affiliate
+
+# 2. Install
+./install.sh
+
+# 3. Access
+# Frontend: http://yourdomain.com
+# Admin: http://yourdomain.com/admin
+
+# 4. Deploy updates (ในอนาคต)
+./deploy.sh
+```
 
 ---
 
@@ -674,7 +454,7 @@ Copyright © 2025 ThaiPrompt Team. All rights reserved.
 **Made with ❤️ in Thailand**
 
 [🏠 Website](https://thaiprompt.com) •
-[📖 Documentation](https://docs.thaiprompt.com) •
-[💬 Support](mailto:support@thaiprompt.com)
+[📖 Documentation](INSTALLATION.md) •
+[💬 Support](https://github.com/xjanova/Thaiprompt-Affiliate/issues)
 
 </div>
