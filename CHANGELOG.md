@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.150.0] - 2025-11-12
+
+### ✨ Features
+- feat: Modernize Ratings page with yellow/amber gradient theme (b800f2ef)
+- feat: Modernize Analytics page with blue/cyan gradient theme (77a295f5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #896 from xjanova/claude/admin-ticket-system-enhancement-011CV3R6iPkuwPo489AUf2SE (79250751)
+
 ## [v2.149.0] - 2025-11-12
 
 ### ✨ Features
