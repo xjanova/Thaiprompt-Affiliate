@@ -101,6 +101,7 @@ class DatabaseSeeder extends Seeder
             // 14. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
+            ChatbotMenuSeeder::class,           // Chatbot Rental System Menu (Bot Management, Marketplace, Rentals, Earnings)
 
             // 15. AI Gen System Menu (AiGenSeeder already in section 5)
             AiGenMenuSeeder::class,             // AI Gen System Menu Items for Admin Panel
