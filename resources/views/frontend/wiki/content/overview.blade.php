@@ -103,7 +103,7 @@
         <div class="feature-category">
             <h3>💎 1. ระบบ MLM & Affiliate Marketing</h3>
             <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-                <a href="/wiki#mlm-affiliate" style="text-decoration: none; color: inherit;">
+                <a href="#mlm-binary" style="text-decoration: none; color: inherit;">
                     <div class="feature-card clickable-card" style="cursor: pointer;">
                         <div class="feature-icon">🌳</div>
                         <h4>MLM Binary & Unilevel</h4>
@@ -121,7 +121,7 @@
                     </div>
                 </a>
 
-                <a href="/wiki#mlm-affiliate" style="text-decoration: none; color: inherit;">
+                <a href="#mlm-commission" style="text-decoration: none; color: inherit;">
                     <div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">💰</div>
                     <h4>ระบบคอมมิชชั่นอัจฉริยะ</h4>
@@ -138,7 +138,7 @@
                     </div>
                 </div></a>
 
-                <a href="/wiki#mlm-affiliate" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#mlm-genealogy" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">📊</div>
                     <h4>Genealogy & Analytics</h4>
                     <p>ติดตามโครงสร้างองค์กรและประสิทธิภาพของทีม</p>
@@ -159,7 +159,7 @@
         <div class="feature-category">
             <h3>🤖 2. AI & Bot Ecosystem</h3>
             <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-                <a href="/wiki#ai-bot" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#ai-chatbot" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">🧠</div>
                     <h4>AI Chatbot Multi-Provider</h4>
                     <p>รองรับ AI หลายค่าย พร้อมระบบ RAG (Retrieval-Augmented Generation)</p>
@@ -175,7 +175,7 @@
                     </div>
                 </div></a>
 
-                <a href="/wiki#ai-bot" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#ai-creation" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">🎨</div>
                     <h4>AI Image & Video Generation</h4>
                     <p>สร้างภาพและวิดีโอด้วย AI เพื่อการตลาด</p>
@@ -191,7 +191,7 @@
                     </div>
                 </div></a>
 
-                <a href="/wiki#ai-bot" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#line-bot" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">💬</div>
                     <h4>LINE Official Account Integration</h4>
                     <p>ผสานรวมกับ LINE OA ได้อย่างสมบูรณ์</p>
@@ -213,7 +213,7 @@
         <div class="feature-category">
             <h3>📈 3. Investment & ROI Distribution</h3>
             <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-                <a href="/wiki#crypto" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#investment" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">💎</div>
                     <h4>Staking & Investment Plans</h4>
                     <p>ระบบ Staking และลงทุนแบบหลากหลาย</p>
@@ -229,7 +229,7 @@
                     </div>
                 </div></a>
 
-                <a href="/wiki#crypto" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#investment" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">💰</div>
                     <h4>ROI & Dividend System</h4>
                     <p>ระบบจ่ายผลตอบแทนและปันผลอัตโนมัติ</p>
@@ -245,7 +245,7 @@
                     </div>
                 </div></a>
 
-                <a href="/wiki#crypto" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#investment" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">📊</div>
                     <h4>Portfolio Management</h4>
                     <p>จัดการพอร์ตการลงทุนแบบมืออาชีพ</p>
@@ -266,7 +266,7 @@
         <div class="feature-category">
             <h3>🛍️ 4. E-Commerce & Marketplace Integration</h3>
             <div class="feature-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
-                <a href="/wiki#ecommerce" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#products" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">🏪</div>
                     <h4>ระบบอีคอมเมิร์ซครบครัน</h4>
                     <p>ขายสินค้าออนไลน์ได้ทันทีพร้อมระบบจัดการที่ทันสมัย</p>
@@ -282,7 +282,7 @@
                     </div>
                 </div></a>
 
-                <a href="/wiki#ecommerce" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#cart" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">🔗</div>
                     <h4>Marketplace Integration</h4>
                     <p>เชื่อมต่อกับ Marketplace ชั้นนำ</p>
@@ -298,7 +298,7 @@
                     </div>
                 </div></a>
 
-                <a href="/wiki#vendor" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
+                <a href="#vendor-store" style="text-decoration: none; color: inherit;"><div class="feature-card clickable-card" style="cursor: pointer;">
                     <div class="feature-icon">📦</div>
                     <h4>Multi-Vendor System</h4>
                     <p>รองรับผู้ขายหลายราย แบบ Marketplace</p>
