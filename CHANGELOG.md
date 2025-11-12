@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.134.4] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #860 from xjanova/claude/remove-taskbar-icons-011CV2S52N4HGQx5cvjfbFnE (ad11c720)
+- fix(taskbar): remove optional chaining for better browser compatibility (58f12adc)
+### 🔧 Other Changes
+
+
 ## [v2.134.3] - 2025-11-11
 
 ### ✨ Features
