@@ -13,13 +13,19 @@ class LineMembershipSignupController extends Controller
 {
     protected $signupService;
     protected $lineService;
+    protected $aiService;
+    protected $richMenuService;
 
     public function __construct(
         LineMembershipSignupService $signupService,
-        LineService $lineService
+        LineService $lineService,
+        \App\Services\LineSignupAiService $aiService,
+        \App\Services\LineSignupRichMenuService $richMenuService
     ) {
         $this->signupService = $signupService;
         $this->lineService = $lineService;
+        $this->aiService = $aiService;
+        $this->richMenuService = $richMenuService;
     }
 
     /**
@@ -144,10 +150,242 @@ class LineMembershipSignupController extends Controller
                 $this->sendWelcomeMessage($lineUserId);
                 break;
 
+            case 'wealth_path':
+                $this->sendWealthPathMessage($lineUserId);
+                break;
+
+            case 'how_it_works':
+                $this->sendHowItWorksMessage($lineUserId);
+                break;
+
+            case 'success_stories':
+                $this->sendSuccessStoriesMessage($lineUserId);
+                break;
+
+            case 'learn_more':
+                $this->sendLearnMoreMessage($lineUserId);
+                break;
+
+            case 'earning_potential':
+                $this->sendEarningPotentialMessage($lineUserId);
+                break;
+
+            case 'resend_otp':
+                $this->handleResendOtp($lineUserId);
+                break;
+
+            case 'edit_data':
+                $this->handleEditData($lineUserId);
+                break;
+
+            case 'wealth_detail':
+                $step = $params['step'] ?? 1;
+                $this->sendWealthDetailMessage($lineUserId, $step);
+                break;
+
             case 'skip_step':
                 // Handle skip
                 break;
         }
+    }
+
+    /**
+     * Send wealth path message
+     */
+    protected function sendWealthPathMessage(string $lineUserId): void
+    {
+        $message = $this->richMenuService->buildWealthPathMessage();
+        $this->lineService->pushMessage($lineUserId, $message);
+
+        // Also send a text introduction
+        $introText = "💰 เส้นทางสู่เศรษฐี - 5 ขั้นตอน\n\nนี่คือแผนที่ชัดเจนสำหรับการสร้างรายได้ออนไลน์!\n\nดูแต่ละขั้นตอนเพื่อเข้าใจเส้นทางของคุณ 🚀";
+
+        $this->lineService->pushMessage($lineUserId, [
+            'type' => 'text',
+            'text' => $introText,
+        ]);
+    }
+
+    /**
+     * Send how it works message
+     */
+    protected function sendHowItWorksMessage(string $lineUserId): void
+    {
+        $message = $this->richMenuService->buildHowItWorksMessage();
+        $this->lineService->pushMessage($lineUserId, $message);
+    }
+
+    /**
+     * Send success stories message
+     */
+    protected function sendSuccessStoriesMessage(string $lineUserId): void
+    {
+        // Get success stories from AI service
+        $stories = $this->aiService->getWealthPathContent()['success_stories'];
+
+        foreach ($stories as $story) {
+            $this->lineService->pushMessage($lineUserId, [
+                'type' => 'text',
+                'text' => "🌟 {$story['name']}\n\n⬇️ ก่อน: {$story['before']}\n⬆️ หลัง: {$story['after']}\n\n💬 \"{$story['quote']}\"",
+            ]);
+        }
+
+        // Send CTA
+        $this->lineService->pushMessage($lineUserId, [
+            'type' => 'text',
+            'text' => "คุณก็ทำได้เหมือนกัน! 💪\n\nพร้อมเริ่มต้นแล้วหรือยัง? 🚀",
+            'quickReply' => [
+                'items' => [
+                    [
+                        'type' => 'action',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '🚀 เริ่มสมัครเลย!',
+                            'data' => 'action=start_signup',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Send learn more message
+     */
+    protected function sendLearnMoreMessage(string $lineUserId): void
+    {
+        $messages = [
+            [
+                'type' => 'text',
+                'text' => "📖 ข้อมูลเพิ่มเติมเกี่ยวกับระบบของเรา\n\n✅ สมัครฟรี 100%\n✅ ไม่มีค่าใช้จ่ายแอบแฝง\n✅ รับโบนัสต้อนรับ 100 คะแนน\n✅ เข้าถึงคอร์สเรียนฟรี 3 คอร์ส\n✅ eBook เส้นทางสู่เศรษฐีฟรี!",
+            ],
+            [
+                'type' => 'text',
+                'text' => "💰 วิธีการสร้างรายได้:\n\n1. แชร์ลิงก์ของคุณ\n2. เพื่อนสมัครผ่านลิงก์\n3. คุณได้รับค่าคอมมิชชั่น!\n\nยิ่งแชร์มาก ยิ่งได้มาก! 🚀",
+            ],
+        ];
+
+        foreach ($messages as $message) {
+            $this->lineService->pushMessage($lineUserId, $message);
+        }
+    }
+
+    /**
+     * Send earning potential message
+     */
+    protected function sendEarningPotentialMessage(string $lineUserId): void
+    {
+        $examples = [
+            ['referrals' => 5, 'monthly' => '1,000', 'yearly' => '12,000'],
+            ['referrals' => 10, 'monthly' => '3,000', 'yearly' => '36,000'],
+            ['referrals' => 20, 'monthly' => '8,000', 'yearly' => '96,000'],
+            ['referrals' => 50, 'monthly' => '25,000', 'yearly' => '300,000'],
+        ];
+
+        $this->lineService->pushMessage($lineUserId, [
+            'type' => 'text',
+            'text' => "💰 ตารางรายได้ที่เป็นไปได้\n\n(ตัวอย่างเฉลี่ยจากสมาชิกจริง)",
+        ]);
+
+        foreach ($examples as $example) {
+            $this->lineService->pushMessage($lineUserId, [
+                'type' => 'text',
+                'text' => "👥 {$example['referrals']} คน\n💰 {$example['monthly']} บาท/เดือน\n📈 {$example['yearly']} บาท/ปี",
+            ]);
+        }
+
+        $this->lineService->pushMessage($lineUserId, [
+            'type' => 'text',
+            'text' => "💡 ยิ่งมีทีมงานมาก ยิ่งได้มาก!\n\nพร้อมเริ่มแล้วหรือยัง? 🚀",
+            'quickReply' => [
+                'items' => [
+                    [
+                        'type' => 'action',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '🚀 เริ่มสมัครเลย!',
+                            'data' => 'action=start_signup',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Handle resend OTP
+     */
+    protected function handleResendOtp(string $lineUserId): void
+    {
+        $session = LineSignupSession::where('line_user_id', $lineUserId)
+            ->where('status', LineSignupSession::STATUS_ACTIVE)
+            ->first();
+
+        if (!$session || $session->current_step !== 'otp') {
+            return;
+        }
+
+        // Generate new OTP
+        $otp = $this->signupService->generateOtp();
+        $session->otp_code = $otp;
+        $session->otp_expires_at = now()->addMinutes(5);
+        $session->save();
+
+        // Send new OTP
+        $this->lineService->pushMessage($lineUserId, [
+            'type' => 'text',
+            'text' => "🔐 รหัส OTP ใหม่ของคุณคือ: {$otp}\n\nรหัสนี้จะหมดอายุใน 5 นาที",
+        ]);
+    }
+
+    /**
+     * Handle edit data
+     */
+    protected function handleEditData(string $lineUserId): void
+    {
+        $this->lineService->pushMessage($lineUserId, [
+            'type' => 'text',
+            'text' => "ขออภัยค่ะ ฟีเจอร์แก้ไขข้อมูลกำลังพัฒนาอยู่\n\nหากต้องการเปลี่ยนแปลงข้อมูล กรุณาติดต่อทีมงานค่ะ 🙏",
+        ]);
+    }
+
+    /**
+     * Send wealth detail message
+     */
+    protected function sendWealthDetailMessage(string $lineUserId, int $step): void
+    {
+        $wealthPath = $this->aiService->getWealthPathContent();
+        $stepData = $wealthPath['steps'][$step - 1] ?? null;
+
+        if (!$stepData) {
+            return;
+        }
+
+        $message = "🎯 {$stepData['title']}\n\n";
+        $message .= "{$stepData['icon']} {$stepData['description']}\n\n";
+        $message .= "💰 รายได้: {$stepData['earning']}\n";
+        $message .= "⏱️ ระยะเวลา: {$stepData['time']}\n\n";
+
+        if ($step === 1) {
+            $message .= "🚀 เริ่มต้นได้ง่ายๆ ภายใน 2 นาที!\n\nพร้อมเริ่มแล้วไหม?";
+        }
+
+        $this->lineService->pushMessage($lineUserId, [
+            'type' => 'text',
+            'text' => $message,
+            'quickReply' => [
+                'items' => [
+                    [
+                        'type' => 'action',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '🚀 เริ่มสมัครเลย!',
+                            'data' => 'action=start_signup',
+                        ],
+                    ],
+                ],
+            ],
+        ]);
     }
 
     /**
