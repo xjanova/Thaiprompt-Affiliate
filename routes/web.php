@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PageController;
+use App\Http\Controllers\Frontend\GameController;
+use App\Http\Controllers\Admin\GameController as AdminGameController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LineLoginController;
@@ -79,6 +81,9 @@ Route::prefix('games')->name('games.')->group(function () {
 
     Route::get('/{slug}/leaderboard', [\App\Http\Controllers\GameController::class, 'leaderboard'])->name('leaderboard');
 });
+
+Route::get('/demo/game-selector', [GameController::class, 'index'])->name('demo.game-selector');
+Route::get('/api/games', [GameController::class, 'getGames'])->name('api.games');
 
 Route::get('/demo/audio-spectrum', function () {
     return view('demo-audio-spectrum');
