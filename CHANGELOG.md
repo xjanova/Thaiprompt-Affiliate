@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.203.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1054 from xjanova/claude/add-food-passport-ratelimit-0165raU3XLRZXBGwyQ4sffR7 (39e48df2)
+- feat: apply Food Passport API rate limiting to all endpoints (bbb36e07)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.202.0] - 2025-11-13
 
 ### ✨ Features
