@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.175.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #998 from xjanova/claude/3d-web-typography-011CV5nJc539Q2xvUV7ERZSM (5fc07ce0)
+- Add Power-ups, Tournaments, and Season Leaderboard systems (bc5b6b77)
+- Add engaging Daily Rewards & Missions system (74bc9288)
+- Add complete game economy and multiplayer infrastructure (661e13f0)
+- Add complete Snake.io game with skins and shop system (ee012980)
+- Add complete game system infrastructure (6537ecf4)
+
 ## [v2.175.0] - 2025-11-13
 
 ### ✨ Features
