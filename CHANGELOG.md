@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.164.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #938 from xjanova/claude/fix-line-signup-table-missing-011CV57akWCqk5zPAR9tb67A (357a1708)
+- fix: Add missing line_signup_templates table migration (8a306219)
+### 🔧 Other Changes
+
+
 ## [v2.164.2] - 2025-11-13
 
 ### ✨ Features
