@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.196.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Complete DEX Smart Contracts (Uniswap V2 Style) (f2bf03f7)
+- feat: Add Complete TPIX Configuration & Storage Infrastructure (d7e4d874)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1038 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (bc38eac0)
+
 ## [v2.195.1] - 2025-11-13
 
 ### ✨ Features
