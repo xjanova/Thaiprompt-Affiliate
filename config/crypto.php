@@ -37,6 +37,17 @@ return [
     */
 
     'networks' => [
+        'tpix' => [
+            'rpc_url' => env('TPIX_RPC_URL', 'http://localhost:8545'),
+            'ws_url' => env('TPIX_WS_URL', 'ws://localhost:8546'),
+            'chain_id' => 7000,
+            'explorer' => env('TPIX_EXPLORER_URL', 'http://localhost:4000'),
+            'required_confirmations' => env('TPIX_CONFIRMATIONS', 5),
+            'is_native' => true,
+            'block_time' => 2, // seconds
+            'total_supply' => '7000000000', // 7 billion TPIX
+            'description' => 'TPIX Native Blockchain - Custom blockchain with native TPIX coin',
+        ],
         'ethereum' => [
             'rpc_url' => env('ETHEREUM_RPC_URL', 'https://ethereum.publicnode.com'),
             'chain_id' => 1,

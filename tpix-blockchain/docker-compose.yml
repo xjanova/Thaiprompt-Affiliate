@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # TPIX Blockchain Node
+  tpix-node:
+    image: 0xpolygon/polygon-edge:latest
+    container_name: tpix-node
+    hostname: tpix-node
+    ports:
+      - "8545:8545"   # JSON-RPC
+      - "8546:8546"   # WebSocket
+      - "9632:9632"   # gRPC
+      - "1478:1478"   # P2P Libp2p
+      - "5001:5001"   # Prometheus metrics
+    volumes:
+      - ./data:/data
+      - ./config:/config
+      - ./genesis.json:/genesis.json
+    command: >
+      server
+      --data-dir /data
+      --chain /genesis.json
+      --grpc-address 0.0.0.0:9632
+      --libp2p 0.0.0.0:1478
+      --jsonrpc 0.0.0.0:8545
+      --prometheus 0.0.0.0:5001
+      --block-gas-target 30000000
+      --max-peers 40
+      --max-inbound-peers 32
+      --max-outbound-peers 8
+      --log-level INFO
+      --seal
+    restart: unless-stopped
+    networks:
+      - tpix-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8545"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # TPIX Block Explorer
+  tpix-explorer:
+    image: blockscout/blockscout:latest
+    container_name: tpix-explorer
+    depends_on:
+      - tpix-node
+      - explorer-db
+    environment:
+      - ETHEREUM_JSONRPC_VARIANT=geth
+      - ETHEREUM_JSONRPC_HTTP_URL=http://tpix-node:8545
+      - ETHEREUM_JSONRPC_WS_URL=ws://tpix-node:8546
+      - DATABASE_URL=postgresql://postgres:postgres@explorer-db:5432/blockscout?ssl=false
+      - ECTO_USE_SSL=false
+      - SECRET_KEY_BASE=56NtB48ear7+wMSf0IQuWDAAazhpb31qyc7GiyspBP2vh7t5zlCsF5QDv76chXeN
+      - CHAIN_ID=7000
+      - COIN=TPIX
+      - SUBNETWORK=TPIX Network
+      - LOGO=/images/tpix-logo.svg
+      - LOGO_FOOTER=/images/tpix-logo.svg
+      - SUPPORTED_CHAINS=[]
+      - SHOW_OUTDATED_NETWORK_MODAL=false
+      - BLOCK_TRANSFORMER=base
+      - INDEXER_DISABLE_PENDING_TRANSACTIONS_FETCHER=false
+      - INDEXER_DISABLE_INTERNAL_TRANSACTIONS_FETCHER=false
+    ports:
+      - "4000:4000"
+    restart: unless-stopped
+    networks:
+      - tpix-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:4000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for Block Explorer
+  explorer-db:
+    image: postgres:14-alpine
+    container_name: tpix-explorer-db
+    environment:
+      - POSTGRES_DB=blockscout
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - explorer-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - tpix-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tpix-prometheus
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks:
+      - tpix-network
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tpix-grafana
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./config/grafana/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - tpix-network
+
+networks:
+  tpix-network:
+    driver: bridge
+
+volumes:
+  explorer-db-data:
+  prometheus-data:
+  grafana-data:

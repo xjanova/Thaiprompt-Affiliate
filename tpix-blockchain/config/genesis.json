@@ -1,0 +1,44 @@
+{
+  "name": "TPIX",
+  "genesis": {
+    "nonce": "0x0000000000000000",
+    "timestamp": "0x0",
+    "extraData": "0x54504958204e6574776f726b202d204e61746976652043727970746f20436f696e",
+    "gasLimit": "0x1c9c380",
+    "difficulty": "0x1",
+    "mixHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "coinbase": "0x0000000000000000000000000000000000000000",
+    "alloc": {
+      "0x0000000000000000000000000000000000000000": {
+        "balance": "0x5F5E1000000000000000000000"
+      }
+    },
+    "number": "0x0",
+    "gasUsed": "0x0",
+    "parentHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "baseFeePerGas": "0x3B9ACA00"
+  },
+  "params": {
+    "forks": {
+      "homestead": 0,
+      "byzantium": 0,
+      "constantinople": 0,
+      "petersburg": 0,
+      "istanbul": 0,
+      "berlin": 0,
+      "london": 0,
+      "shanghai": 0
+    },
+    "chainID": 7000,
+    "engine": {
+      "ibft": {
+        "epochSize": 100000,
+        "blockTime": 2,
+        "validatorPrefixPath": "test-chain-"
+      }
+    },
+    "blockGasLimit": 30000000,
+    "blockTime": 2
+  },
+  "bootnodes": []
+}

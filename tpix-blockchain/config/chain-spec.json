@@ -1,0 +1,54 @@
+{
+  "name": "TPIX Network",
+  "id": "tpix",
+  "chainId": 7000,
+  "nativeCurrency": {
+    "name": "TPIX",
+    "symbol": "TPIX",
+    "decimals": 18
+  },
+  "maxSupply": "7000000000000000000000000000",
+  "description": "TPIX is a native cryptocurrency with its own blockchain, designed for the Thaiprompt Affiliate ecosystem",
+  "consensus": {
+    "type": "IBFT",
+    "blockTime": 2,
+    "epochSize": 100000,
+    "blockGasLimit": 30000000
+  },
+  "features": {
+    "evmCompatible": true,
+    "erc20Support": true,
+    "smartContracts": true,
+    "nativeToken": true,
+    "fixedSupply": true
+  },
+  "networkEndpoints": {
+    "rpc": "http://localhost:8545",
+    "ws": "ws://localhost:8546",
+    "explorer": "http://localhost:4000"
+  },
+  "genesis": {
+    "difficulty": "1",
+    "gasLimit": "30000000",
+    "baseFeePerGas": "1000000000",
+    "alloc": {
+      "0x0000000000000000000000000000000000000000": {
+        "balance": "7000000000000000000000000000",
+        "comment": "Total supply: 7 billion TPIX tokens"
+      }
+    }
+  },
+  "forks": {
+    "homestead": 0,
+    "eip150": 0,
+    "eip155": 0,
+    "eip158": 0,
+    "byzantium": 0,
+    "constantinople": 0,
+    "petersburg": 0,
+    "istanbul": 0,
+    "berlin": 0,
+    "london": 0,
+    "shanghai": 0
+  }
+}
