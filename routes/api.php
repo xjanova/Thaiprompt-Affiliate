@@ -418,3 +418,51 @@ Route::prefix('webhook/chatbot')->name('api.webhook.chatbot.')->group(function (
         return response()->json(['success' => true]);
     })->name('handle');
 });
+
+/*
+|--------------------------------------------------------------------------
+| TPIX Token System API Routes
+|--------------------------------------------------------------------------
+| Complete REST API for TPIX Token Management
+| - Token marketplace
+| - Token creation & deployment
+| - Trading (buy/sell)
+| - Portfolio management
+| - Staking
+| - Referrals
+*/
+
+Route::prefix('v1/tpix')->name('api.tpix.')->group(function () {
+
+    // Public endpoints
+    Route::get('/tokens', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'index'])->name('tokens.index');
+    Route::get('/tokens/{id}', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'show'])->name('tokens.show');
+    Route::get('/tokens/{id}/transactions', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'transactions'])->name('tokens.transactions');
+
+    // Protected endpoints
+    Route::middleware('auth:sanctum')->group(function () {
+
+        // Token Management
+        Route::post('/tokens', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'store'])
+            ->middleware('rate_limit_token_operations:create')
+            ->name('tokens.store');
+        Route::post('/tokens/{id}/deploy', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'deploy'])
+            ->middleware(['check_token_ownership', 'rate_limit_token_operations:deploy'])
+            ->name('tokens.deploy');
+
+        // Token Trading
+        Route::post('/tokens/{id}/transfer', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'transfer'])
+            ->middleware(['verify_token_deployment', 'rate_limit_token_operations:transfer'])
+            ->name('tokens.transfer');
+        Route::post('/tokens/{id}/buy', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'buy'])
+            ->middleware(['verify_token_deployment', 'rate_limit_token_operations:trade'])
+            ->name('tokens.buy');
+        Route::post('/tokens/{id}/sell', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'sell'])
+            ->middleware(['verify_token_deployment', 'rate_limit_token_operations:trade'])
+            ->name('tokens.sell');
+
+        // Portfolio
+        Route::get('/portfolio', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'portfolio'])->name('portfolio');
+        Route::get('/balances', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'balances'])->name('balances');
+    });
+});
