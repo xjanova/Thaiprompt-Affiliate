@@ -88,6 +88,10 @@ Route::get('/demo/audio-spectrum', function () {
     return view('demo-audio-spectrum');
 })->name('demo.audio-spectrum');
 
+Route::get('/demo/snooker', function () {
+    return view('demo-snooker');
+})->name('demo.snooker');
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
