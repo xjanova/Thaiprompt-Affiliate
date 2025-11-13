@@ -24,6 +24,14 @@ Route::get('/demo/loading', function () {
     return view('demo-loading');
 })->name('demo.loading');
 
+Route::get('/demo/3d-navigation', function () {
+    return view('demo-3d-navigation');
+})->name('demo.3d-navigation');
+
+Route::get('/demo/space-shooter', function () {
+    return view('demo-space-shooter');
+})->name('demo.space-shooter');
+
 // Tournament Routes
 Route::prefix('tournaments')->name('tournaments.')->group(function () {
     Route::get('/', [\App\Http\Controllers\TournamentController::class, 'index'])->name('index');
