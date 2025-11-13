@@ -222,8 +222,69 @@
     /* Highlight parent menu when child is active */
     .classic-x-menu-link.has-active-child {
         background: rgba(255, 255, 255, 0.08);
-        border-left: 3px solid var(--classic-x-primary-color);
         font-weight: 500;
+        position: relative;
+        border-radius: 8px;
+        margin: 4px 8px;
+
+        /* Subtle RGB Border for Parent */
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        animation: rgbBorderGlowSubtle 4s linear infinite;
+    }
+
+    .classic-x-menu-link.has-active-child::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 8px;
+        padding: 2px;
+        background: linear-gradient(90deg,
+            rgba(255, 0, 0, 0.3), rgba(255, 127, 0, 0.3),
+            rgba(255, 255, 0, 0.3), rgba(0, 255, 0, 0.3),
+            rgba(0, 0, 255, 0.3), rgba(75, 0, 130, 0.3),
+            rgba(148, 0, 211, 0.3), rgba(255, 0, 0, 0.3));
+        background-size: 300% 100%;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: rgbRotate 5s linear infinite;
+        z-index: -1;
+        pointer-events: none;
+        opacity: 0.6;
+    }
+
+    @keyframes rgbBorderGlowSubtle {
+        0%, 100% {
+            box-shadow:
+                0 0 8px rgba(255, 0, 0, 0.3),
+                0 0 15px rgba(255, 0, 0, 0.2);
+        }
+        16.66% {
+            box-shadow:
+                0 0 8px rgba(255, 255, 0, 0.3),
+                0 0 15px rgba(255, 255, 0, 0.2);
+        }
+        33.33% {
+            box-shadow:
+                0 0 8px rgba(0, 255, 0, 0.3),
+                0 0 15px rgba(0, 255, 0, 0.2);
+        }
+        50% {
+            box-shadow:
+                0 0 8px rgba(0, 255, 255, 0.3),
+                0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        66.66% {
+            box-shadow:
+                0 0 8px rgba(0, 0, 255, 0.3),
+                0 0 15px rgba(0, 0, 255, 0.2);
+        }
+        83.33% {
+            box-shadow:
+                0 0 8px rgba(255, 0, 255, 0.3),
+                0 0 15px rgba(255, 0, 255, 0.2);
+        }
     }
 
     .classic-x-menu-icon {
@@ -297,8 +358,19 @@
         color: var(--classic-x-primary-color);
         font-weight: 600;
         background: rgba(255, 255, 255, 0.1);
-        border-left: 3px solid var(--classic-x-primary-color);
         position: relative;
+        padding-left: 58px;
+        border-radius: 8px;
+        margin: 4px 8px;
+
+        /* RGB Border Animation */
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        animation: rgbBorderGlow 3s linear infinite;
+        box-shadow:
+            0 0 10px rgba(var(--classic-x-primary-color-rgb, 34, 113, 177), 0.3),
+            0 0 20px rgba(var(--classic-x-primary-color-rgb, 34, 113, 177), 0.2),
+            inset 0 0 10px rgba(255, 255, 255, 0.1);
     }
 
     .classic-x-submenu-link.active::before {
@@ -307,6 +379,73 @@
         left: 40px;
         color: var(--classic-x-primary-color);
         font-size: 8px;
+    }
+
+    .classic-x-submenu-link.active::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 8px;
+        padding: 2px;
+        background: linear-gradient(90deg,
+            #ff0000, #ff7f00, #ffff00, #00ff00,
+            #0000ff, #4b0082, #9400d3, #ff0000);
+        background-size: 300% 100%;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: rgbRotate 4s linear infinite;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    /* RGB Animation Keyframes */
+    @keyframes rgbRotate {
+        0% {
+            background-position: 0% 50%;
+        }
+        100% {
+            background-position: 300% 50%;
+        }
+    }
+
+    @keyframes rgbBorderGlow {
+        0%, 100% {
+            box-shadow:
+                0 0 10px rgba(255, 0, 0, 0.5),
+                0 0 20px rgba(255, 0, 0, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        16.66% {
+            box-shadow:
+                0 0 10px rgba(255, 255, 0, 0.5),
+                0 0 20px rgba(255, 255, 0, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        33.33% {
+            box-shadow:
+                0 0 10px rgba(0, 255, 0, 0.5),
+                0 0 20px rgba(0, 255, 0, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        50% {
+            box-shadow:
+                0 0 10px rgba(0, 255, 255, 0.5),
+                0 0 20px rgba(0, 255, 255, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        66.66% {
+            box-shadow:
+                0 0 10px rgba(0, 0, 255, 0.5),
+                0 0 20px rgba(0, 0, 255, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        83.33% {
+            box-shadow:
+                0 0 10px rgba(255, 0, 255, 0.5),
+                0 0 20px rgba(255, 0, 255, 0.3),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
     }
 
     .classic-x-badge {
