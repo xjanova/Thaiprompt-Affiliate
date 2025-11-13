@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.173.15] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #985 from xjanova/claude/move-team-info-to-menu-011CV5Gi2C23kvf9t8yJ5Z2o (ef0b3d12)
+- Add RGB border to all active menu items (main menu + submenu) (74c641b6)
+- Add auto-scroll to active menu item on page load (6177668b)
+- Add RGB border to entire submenu container with active item (27adb563)
+
 ## [v2.173.14] - 2025-11-13
 
 ### ✨ Features
