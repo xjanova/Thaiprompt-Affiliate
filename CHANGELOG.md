@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.185.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1024 from xjanova/claude/add-tpix-currency-seeder-011CV6A9WPnYH2hoiZjNoGTR (1abaecdb)
+- feat: Add TPIXCurrencySeeder to DatabaseSeeder (08f9e411)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.184.0] - 2025-11-13
 
 ### ✨ Features
