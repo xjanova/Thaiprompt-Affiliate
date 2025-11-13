@@ -15,10 +15,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎬 Content Types</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🎥</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Video Lessons</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -30,9 +28,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📖</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Articles & Documents</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -44,9 +40,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">✍️</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Quiz & Exams</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -58,9 +52,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#FF9800'; this.style.boxShadow='0 8px 24px rgba(255, 152, 0, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📡</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Live Classes</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -72,9 +64,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#9C27B0'; this.style.boxShadow='0 8px 24px rgba(156, 39, 176, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Assignments</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -86,9 +76,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#00BCD4'; this.style.boxShadow='0 8px 24px rgba(0, 188, 212, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💬</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Discussion Forums</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -123,7 +111,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎁 Reward System</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border: 2px solid rgb(var(--primary-rgb)); border-radius: 12px; padding: 1.5rem;">
             <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">Points System</h4>
@@ -163,7 +151,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎯 Quests & Challenges</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid #FFD700; padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📅 Daily Quest</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เรียน 1 บท/วัน รับ 5 แต้ม</p>
@@ -204,10 +192,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎨 Certificate Features</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎨</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Custom Templates</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -218,9 +204,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">✍️</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Digital Signature</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -231,9 +215,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">🔍</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Verification System</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -244,9 +226,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#FF9800'; this.style.boxShadow='0 8px 24px rgba(255, 152, 0, 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">📧</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Auto Delivery</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -280,7 +260,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📊 Key Metrics</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-4">
         <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1.5rem; border-radius: 8px;">
             <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Enrollment Rate</div>
             <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin: 0;">85%</h4>
@@ -308,7 +288,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📋 Report Types</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">👤 Individual Progress</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ความคืบหน้าแต่ละคน, คะแนน, เวลาเรียน</p>

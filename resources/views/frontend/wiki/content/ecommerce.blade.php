@@ -15,10 +15,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🏷️ Product Types</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Physical Products</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">สินค้าที่มีตัวตน ต้องจัดส่ง</p>
@@ -31,9 +29,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💾</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Digital Products</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">สินค้าดิจิทัล ดาวน์โหลดทันที</p>
@@ -46,9 +42,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🔄</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Subscription Products</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">สินค้าแบบสมาชิกรายเดือน</p>
@@ -64,7 +58,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎨 Product Features</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📸 Product Gallery</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">รูปหลายมุม, Zoom, 360° View, Video Demo</p>
@@ -113,10 +107,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🛍️ Shopping Cart Features</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">⚡</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Real-time Updates</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -127,9 +119,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">💾</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Persistent Cart</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -140,9 +130,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">🎫</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Coupon System</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -159,19 +147,19 @@
     <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
             <div style="text-align: center; flex: 1; min-width: 150px;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--primary-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">1</div>
+                <div class="step-indicator">1</div>
                 <div style="font-weight: 700; margin-bottom: 0.25rem;">🛒 Review Cart</div>
                 <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ตรวจสอบสินค้า</div>
             </div>
             <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
             <div style="text-align: center; flex: 1; min-width: 150px;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--secondary-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">2</div>
+                <div class="step-indicator">2</div>
                 <div style="font-weight: 700; margin-bottom: 0.25rem;">📍 Shipping Info</div>
                 <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ที่อยู่จัดส่ง</div>
             </div>
             <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
             <div style="text-align: center; flex: 1; min-width: 150px;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--accent-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">3</div>
+                <div class="step-indicator">3</div>
                 <div style="font-weight: 700; margin-bottom: 0.25rem;">💳 Payment</div>
                 <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เลือกวิธีชำระ</div>
             </div>
@@ -186,8 +174,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📦 Order Management</h3>
 
-    <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-        <thead style="background: var(--wiki-card-bg);">
+    <table class="wiki-table">
+        <thead>
             <tr>
                 <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Order Status</th>
                 <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Description</th>
@@ -200,7 +188,7 @@
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รอชำระเงิน</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ชำระเงินภายใน 24 ชม.</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #DBEAFE; color: #1E40AF; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">💰 Paid</span></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ชำระเงินแล้ว รอจัดส่ง</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รอร้านค้าจัดส่ง</td>
@@ -210,7 +198,7 @@
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">กำลังเตรียมสินค้า</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รอติดตามพัสดุ</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #DBEAFE; color: #075985; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">🚚 Shipped</span></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">จัดส่งแล้ว</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ติดตามพัสดุได้</td>
@@ -220,7 +208,7 @@
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">จัดส่งสำเร็จ</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รีวิวสินค้าได้</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><span style="background: #FEE2E2; color: #991B1B; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 600;">❌ Cancelled</span></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ยกเลิกแล้ว</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">รอรีฟันด์ (ถ้าชำระแล้ว)</td>
@@ -250,10 +238,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🚛 Shipping Providers (Thailand)</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#DC2626'; this.style.boxShadow='0 8px 24px rgba(220, 38, 38, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📮</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #DC2626;">Thailand Post</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ไปรษณีย์ไทย</p>
@@ -266,9 +252,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#059669'; this.style.boxShadow='0 8px 24px rgba(5, 150, 105, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🟢</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #059669;">Kerry Express</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">เคอรี่ เอ็กซ์เพรส</p>
@@ -281,9 +265,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#F59E0B'; this.style.boxShadow='0 8px 24px rgba(245, 158, 11, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F59E0B;">Flash Express</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">แฟลช เอ็กซ์เพรส</p>
@@ -296,9 +278,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#EF4444'; this.style.boxShadow='0 8px 24px rgba(239, 68, 68, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🔴</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #EF4444;">J&T Express</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">เจแอนด์ที เอ็กซ์เพรส</p>
@@ -311,9 +291,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#8B5CF6'; this.style.boxShadow='0 8px 24px rgba(139, 92, 246, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🚗</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #8B5CF6;">Lalamove / Grab</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ส่งด่วนในเมือง</p>
@@ -326,9 +304,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#DC2626'; this.style.boxShadow='0 8px 24px rgba(220, 38, 38, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">✈️</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #DC2626;">DHL / FedEx</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ส่งระหว่างประเทศ</p>
@@ -344,7 +320,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📋 Shipping Features</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📊 Auto Calculate Shipping</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">คำนวณค่าส่งอัตโนมัติตาม น้ำหนัก, ขนาด, ระยะทาง</p>
@@ -393,10 +369,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">👥 Vendor Management</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🏪</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Vendor Registration</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ลงทะเบียนเป็นผู้ขาย</p>
@@ -409,9 +383,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Vendor Dashboard</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">แดชบอร์ดผู้ขาย</p>
@@ -424,9 +396,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">⭐</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Vendor Rating</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">คะแนนร้านค้า</p>
@@ -442,8 +412,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">💰 Commission System</h3>
 
-    <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-        <thead style="background: var(--wiki-card-bg);">
+    <table class="wiki-table">
+        <thead>
             <tr>
                 <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Product Category</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Commission Rate</th>
@@ -456,7 +426,7 @@
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb)); font-size: 1.1rem;">5%</strong></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 10,000 → ค่าคอม 500 บาท</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">👕 Fashion</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--secondary-rgb)); font-size: 1.1rem;">10%</strong></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 5,000 → ค่าคอม 500 บาท</td>
@@ -466,7 +436,7 @@
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--accent-rgb)); font-size: 1.1rem;">8%</strong></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 3,000 → ค่าคอม 240 บาท</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">🍴 Food & Beverage</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb)); font-size: 1.1rem;">12%</strong></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 2,000 → ค่าคอม 240 บาท</td>
@@ -476,7 +446,7 @@
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--secondary-rgb)); font-size: 1.1rem;">15%</strong></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 50,000 → ค่าคอม 7,500 บาท</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💾 Digital Products</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--accent-rgb)); font-size: 1.1rem;">20%</strong></td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ขาย 1,000 → ค่าคอม 200 บาท</td>
@@ -486,7 +456,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📈 Marketplace Analytics</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1.5rem; border-radius: 8px;">
             <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Total Vendors</div>
             <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin: 0;">1,250+</h4>

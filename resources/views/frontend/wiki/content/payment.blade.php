@@ -15,10 +15,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🏦 Payment Providers</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💳</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Stripe</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">International Gateway</p>
@@ -31,9 +29,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🇹🇭</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Omise</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Thailand Payment Gateway</p>
@@ -46,9 +42,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💙</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">PayPal</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Global Payment Platform</p>
@@ -61,9 +55,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#FF6B6B'; this.style.boxShadow='0 8px 24px rgba(255, 107, 107, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">2C2P</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Southeast Asia Gateway</p>
@@ -76,9 +68,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='var(--wiki-success)'; this.style.boxShadow='0 8px 24px rgba(76, 175, 80, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">GB Prime Pay</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Thai Local Gateway</p>
@@ -91,9 +81,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#9C27B0'; this.style.boxShadow='0 8px 24px rgba(156, 39, 176, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🏧</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Bank Transfer</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Direct Bank Transfer</p>
@@ -109,7 +97,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎨 Payment Features</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔐 Secure Payment</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">PCI-DSS Compliant, SSL Encryption, 3D Secure</p>
@@ -158,10 +146,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📱 Popular E-Wallets (Thailand)</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#FF6600'; this.style.boxShadow='0 8px 24px rgba(255, 102, 0, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🟠</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #FF6600;">TrueMoney Wallet</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">กระเป๋าเงินอันดับ 1</p>
@@ -174,9 +160,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#EE4D2D'; this.style.boxShadow='0 8px 24px rgba(238, 77, 45, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🟠</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #EE4D2D;">ShopeePay</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">E-Wallet from Shopee</p>
@@ -189,9 +173,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#00B900'; this.style.boxShadow='0 8px 24px rgba(0, 185, 0, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💚</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #00B900;">LINE Pay</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Pay via LINE App</p>
@@ -204,9 +186,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#1E3A8A'; this.style.boxShadow='0 8px 24px rgba(30, 58, 138, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #1E3A8A;">PromptPay</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Thailand National QR</p>
@@ -219,9 +199,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#4E9BDE'; this.style.boxShadow='0 8px 24px rgba(78, 155, 222, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💙</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #4E9BDE;">AirPay</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Mobile Wallet</p>
@@ -234,9 +212,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#7C3AED'; this.style.boxShadow='0 8px 24px rgba(124, 58, 237, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💜</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #7C3AED;">BluePay</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Digital Wallet</p>
@@ -252,7 +228,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📱 QR Code Payment Features</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📲 Dynamic QR Code</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">QR ใหม่ทุกครั้ง มีจำนวนเงินและรายละเอียด</p>
@@ -293,10 +269,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">💰 Supported Cryptocurrencies</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#F7931A'; this.style.boxShadow='0 8px 24px rgba(247, 147, 26, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">₿</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F7931A;">Bitcoin (BTC)</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">King of Cryptocurrency</p>
@@ -309,9 +283,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#627EEA'; this.style.boxShadow='0 8px 24px rgba(98, 126, 234, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">Ξ</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #627EEA;">Ethereum (ETH)</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Smart Contract Platform</p>
@@ -324,9 +296,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#26A17B'; this.style.boxShadow='0 8px 24px rgba(38, 161, 123, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">₮</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #26A17B;">USDT (Tether)</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Stablecoin (1 USDT = $1)</p>
@@ -339,9 +309,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#F3BA2F'; this.style.boxShadow='0 8px 24px rgba(243, 186, 47, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🔶</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F3BA2F;">Binance Coin (BNB)</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Binance Smart Chain</p>
@@ -354,9 +322,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#00D4AA'; this.style.boxShadow='0 8px 24px rgba(0, 212, 170, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">⬡</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #00D4AA;">USDC (USD Coin)</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Regulated Stablecoin</p>
@@ -369,9 +335,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#EB4D5C'; this.style.boxShadow='0 8px 24px rgba(235, 77, 92, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🔴</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #EB4D5C;">TRON (TRX)</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Low Fee Blockchain</p>
@@ -387,7 +351,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🔧 Crypto Payment Features</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">💱 Auto Conversion</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">แปลง Crypto เป็น THB อัตโนมัติทันที</p>
@@ -428,10 +392,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">💳 Installment Payment (ผ่อนชำระ 0%)</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💳</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Credit Card Installment</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ผ่อนผ่านบัตรเครดิต</p>
@@ -444,9 +406,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Bank Installment</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ผ่อนผ่านธนาคาร</p>
@@ -459,9 +419,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Digital Installment</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ผ่อนแบบดิจิทัล</p>
@@ -477,10 +435,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🛒 Buy Now Pay Later (BNPL)</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#FF6B9D'; this.style.boxShadow='0 8px 24px rgba(255, 107, 157, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💖</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #FF6B9D;">Atome</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Split Payment in 3</p>
@@ -493,9 +449,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#00C9A7'; this.style.boxShadow='0 8px 24px rgba(0, 201, 167, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💚</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #00C9A7;">hoolah</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Interest-Free BNPL</p>
@@ -508,9 +462,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#7C3AED'; this.style.boxShadow='0 8px 24px rgba(124, 58, 237, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">💜</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #7C3AED;">Grab PayLater</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Pay within 30 days</p>
@@ -523,9 +475,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='#F59E0B'; this.style.boxShadow='0 8px 24px rgba(245, 158, 11, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🧡</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: #F59E0B;">Pine BNPL</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Flexible Payment</p>
@@ -541,8 +491,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📊 Installment Plans Comparison</h3>
 
-    <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-        <thead style="background: var(--wiki-card-bg);">
+    <table class="wiki-table">
+        <thead>
             <tr>
                 <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Payment Method</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">ระยะเวลา</th>
@@ -559,7 +509,7 @@
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿3,000</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">2.5-3.5%</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💖 Atome</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3 งวด</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--secondary-rgb));">0%</strong></td>
@@ -573,7 +523,7 @@
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">฿500</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3.9% + ฿5</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">💜 Grab PayLater</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">30 วัน</td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);"><strong style="color: rgb(var(--primary-rgb));">0%</strong></td>

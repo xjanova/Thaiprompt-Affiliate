@@ -25,10 +25,8 @@
             </div>
 
             <h3>✨ ความสามารถของระบบ Binary</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
-                <div class="feature-card" style="border: 2px solid var(--wiki-border); transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+            <div class="wiki-grid wiki-grid-3">
+                <div class="wiki-card">
                     <div class="feature-icon">🎯</div>
                     <h4>Auto Placement</h4>
                     <p style="margin-bottom: 1rem;">วางตำแหน่งอัตโนมัติตามกฎเกณฑ์ที่กำหนด</p>
@@ -40,9 +38,7 @@
                     </ul>
                 </div>
 
-                <div class="feature-card" style="border: 2px solid var(--wiki-border); transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div class="feature-icon">⚖️</div>
                     <h4>Binary Matching Bonus</h4>
                     <p style="margin-bottom: 1rem;">คำนวณโบนัสจับคู่อัตโนมัติ</p>
@@ -54,9 +50,7 @@
                     </ul>
                 </div>
 
-                <div class="feature-card" style="border: 2px solid var(--wiki-border); transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div class="feature-icon">📊</div>
                     <h4>Real-time Analytics</h4>
                     <p style="margin-bottom: 1rem;">ดูสถิติและรายงานแบบ Real-time</p>
@@ -71,7 +65,7 @@
 
             <h3>⚙️ การตั้งค่าระบบ Binary</h3>
 
-            <table class="wiki-table" style="margin: 2rem 0;">
+            <table class="wiki-table">
                 <thead>
                     <tr>
                         <th style="width: 30%;">การตั้งค่า</th>
@@ -138,7 +132,7 @@
             </div>
 
             <h3>✨ ความสามารถของระบบ Unilevel</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="feature-card">
                     <div class="feature-icon">🌐</div>
                     <h4>Unlimited Width</h4>
@@ -178,7 +172,7 @@
 
             <h3>📊 ตารางคอมมิชชั่น Unilevel</h3>
 
-            <table class="wiki-table" style="margin: 2rem 0;">
+            <table class="wiki-table">
                 <thead>
                     <tr>
                         <th>Level</th>
@@ -241,10 +235,8 @@
 
             <h3>📦 ประเภทของคอมมิชชั่น</h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+            <div class="wiki-grid wiki-grid-3">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🎁</div>
                     <h4>1. Direct Commission</h4>
                     <p style="margin-bottom: 1rem; font-size: 0.9rem;">ค่าแนะนำตรง - ได้รับทันทีเมื่อแนะนำสมาชิกใหม่</p>
@@ -256,9 +248,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🤝</div>
                     <h4>2. Matching Bonus</h4>
                     <p style="margin-bottom: 1rem; font-size: 0.9rem;">โบนัสจับคู่ - สำหรับ Binary System</p>
@@ -270,9 +260,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
                     <h4>3. Level Commission</h4>
                     <p style="margin-bottom: 1rem; font-size: 0.9rem;">ค่าคอมระดับ - สำหรับ Unilevel System</p>
@@ -284,9 +272,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">👑</div>
                     <h4>4. Rank Bonus</h4>
                     <p style="margin-bottom: 1rem; font-size: 0.9rem;">โบนัสตามยศ - รางวัลเมื่อขึ้นยศ</p>
@@ -298,9 +284,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🏆</div>
                     <h4>5. Leadership Bonus</h4>
                     <p style="margin-bottom: 1rem; font-size: 0.9rem;">โบนัสผู้นำ - สำหรับ Leader ที่มียอดทีมสูง</p>
@@ -312,9 +296,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
                     <h4>6. Pool Bonus</h4>
                     <p style="margin-bottom: 1rem; font-size: 0.9rem;">โบนัสพูล - แบ่งปันจากกำไรบริษัท</p>
@@ -370,7 +352,7 @@
                 ระบบยศ (Rank System) คือ<strong>แรงจูงใจหลัก</strong>ของธุรกิจ MLM ยิ่งขึ้นยศสูง ยิ่งได้รับสิทธิพิเศษและรายได้มากขึ้น
             </p>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-4">
                 <div style="background: linear-gradient(135deg, rgba(156, 163, 175, 0.1), rgba(156, 163, 175, 0.05)); border: 3px solid #9ca3af; border-radius: 16px; padding: 2rem; text-align: center; transition: all 0.3s;"
                      onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(156, 163, 175, 0.3)'"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none'">
@@ -481,7 +463,7 @@
             </div>
 
             <h3>✨ ความสามารถของ Genealogy System</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="feature-card">
                     <div class="feature-icon">🎨</div>
                     <h4>Interactive Tree</h4>

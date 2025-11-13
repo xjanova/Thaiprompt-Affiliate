@@ -15,10 +15,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📋 Employee Profile & Data</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">👤</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Personal Information</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ข้อมูลส่วนบุคคล</p>
@@ -31,9 +29,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Employment Details</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ข้อมูลการจ้างงาน</p>
@@ -46,9 +42,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📑</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Documents Management</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">จัดการเอกสาร</p>
@@ -61,9 +55,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🏢</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Organization Chart</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">โครงสร้างองค์กร</p>
@@ -76,9 +68,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🔐</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Access & Permissions</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">สิทธิ์การเข้าถึง</p>
@@ -91,9 +81,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Employee Dashboard</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">แดชบอร์ดพนักงาน</p>
@@ -129,10 +117,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">⏱️ Time Attendance Methods</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">👆</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Fingerprint Scanner</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -143,9 +129,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">😊</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Face Recognition</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -156,9 +140,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">📱</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Mobile Check-in</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -169,9 +151,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+        <div class="wiki-card">
             <div style="font-size: 2.5rem; margin-bottom: 1rem;">💻</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Web Clock-in</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -185,8 +165,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🏖️ Leave Management</h3>
 
-    <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-        <thead style="background: var(--wiki-card-bg);">
+    <table class="wiki-table">
+        <thead>
             <tr>
                 <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Leave Type</th>
                 <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Annual Quota</th>
@@ -199,7 +179,7 @@
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">6-20 วัน</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ลาพักผ่อน ตามอายุงาน</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>🤒 Sick Leave</strong></td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">30 วัน</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ลาป่วย แนบใบรับรองแพทย์</td>
@@ -209,7 +189,7 @@
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3 วัน</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ลากิจส่วนตัว</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>👶 Maternity Leave</strong></td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">98 วัน</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ลาคลอดบุตร (ตามกฎหมาย)</td>
@@ -219,7 +199,7 @@
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">1-3 วัน</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ลาเพื่อจัดการศพ</td>
             </tr>
-            <tr style="background: var(--wiki-card-bg);">
+            <tr>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);"><strong>💍 Wedding Leave</strong></td>
                 <td style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">3 วัน</td>
                 <td style="padding: 1rem; border: 1px solid var(--wiki-border);">ลาแต่งงาน</td>
@@ -234,7 +214,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">⏰ Shift & OT Management</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">🔄 Shift Scheduling</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">กะเช้า, กะบ่าย, กะดึก พร้อม Rotation</p>
@@ -275,10 +255,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">💵 Salary Components</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--wiki-success);">➕</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--wiki-success);">Income (รายได้)</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -291,9 +269,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='var(--wiki-danger)'; this.style.boxShadow='0 8px 24px rgba(239, 68, 68, 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--wiki-danger);">➖</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem; color: var(--wiki-danger);">Deductions (รายการหัก)</h4>
             <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -306,9 +282,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">Net Salary</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">เงินเดือนสุทธิ</p>
@@ -326,7 +300,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📄 Payslip & Tax</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📧 Digital Payslip</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ส่งสลิปเงินเดือนทาง Email อัตโนมัติ</p>
@@ -376,10 +350,8 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">🎯 KPI & Goal Setting</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+    <div class="wiki-grid wiki-grid-3">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">SMART Goals</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">เป้าหมายที่วัดผลได้</p>
@@ -392,9 +364,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">📈</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">KPI Tracking</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">ติดตามผลงาน</p>
@@ -407,9 +377,7 @@
             </ul>
         </div>
 
-        <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-             onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-             onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+        <div class="wiki-card">
             <div style="font-size: 3rem; margin-bottom: 1rem;">🔄</div>
             <h4 style="font-weight: 700; margin-bottom: 1rem;">OKR System</h4>
             <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Objectives & Key Results</p>
@@ -428,19 +396,19 @@
     <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
             <div style="text-align: center; flex: 1; min-width: 150px;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--primary-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">1</div>
+                <div class="step-indicator">1</div>
                 <div style="font-weight: 700; margin-bottom: 0.25rem;">📋 Self-Evaluation</div>
                 <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ประเมินตนเอง</div>
             </div>
             <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
             <div style="text-align: center; flex: 1; min-width: 150px;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--secondary-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">2</div>
+                <div class="step-indicator">2</div>
                 <div style="font-weight: 700; margin-bottom: 0.25rem;">👨‍💼 Manager Review</div>
                 <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">หัวหน้าประเมิน</div>
             </div>
             <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
             <div style="text-align: center; flex: 1; min-width: 150px;">
-                <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--accent-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">3</div>
+                <div class="step-indicator">3</div>
                 <div style="font-weight: 700; margin-bottom: 0.25rem;">👥 360° Feedback</div>
                 <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เพื่อนร่วมงาน</div>
             </div>
@@ -455,7 +423,7 @@
 
     <h3 style="font-size: 1.5rem; font-weight: 700; margin: 2rem 0 1.5rem;">📚 Training & Development</h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="wiki-grid wiki-grid-3">
         <div style="background: var(--wiki-card-bg); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1rem; border-radius: 8px;">
             <h4 style="font-weight: 700; margin-bottom: 0.5rem;">📖 Training Plan</h4>
             <p style="font-size: 0.85rem; color: var(--wiki-text-secondary);">Individual Development Plan (IDP)</p>
