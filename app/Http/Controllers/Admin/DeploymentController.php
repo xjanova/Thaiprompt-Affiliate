@@ -18,10 +18,10 @@ class DeploymentController extends Controller
     public function index()
     {
         // Get current git info
-        $currentBranch = trim(\shell_exec('git rev-parse --abbrev-ref HEAD 2>/dev/null') ?? 'unknown');
-        $currentCommit = trim(\shell_exec('git rev-parse HEAD 2>/dev/null') ?? 'unknown');
+        $currentBranch = trim(Process::run('git rev-parse --abbrev-ref HEAD 2>/dev/null')->output() ?: 'unknown');
+        $currentCommit = trim(Process::run('git rev-parse HEAD 2>/dev/null')->output() ?: 'unknown');
         $currentCommitShort = substr($currentCommit, 0, 8);
-        $currentCommitMessage = trim(\shell_exec('git log -1 --pretty=%B 2>/dev/null') ?? '');
+        $currentCommitMessage = trim(Process::run('git log -1 --pretty=%B 2>/dev/null')->output() ?: '');
 
         // Get recent deployments
         $recentDeployments = Deployment::with('startedBy')
@@ -61,21 +61,21 @@ class DeploymentController extends Controller
     public function checkUpdates(Request $request)
     {
         try {
-            $branch = $request->get('branch', trim(\shell_exec('git rev-parse --abbrev-ref HEAD 2>/dev/null') ?? 'main'));
+            $branch = $request->get('branch', trim(Process::run('git rev-parse --abbrev-ref HEAD 2>/dev/null')->output() ?: 'main'));
 
             // Fetch latest from remote
-            \shell_exec('git fetch origin ' . escapeshellarg($branch) . ' 2>&1');
+            Process::run('git fetch origin ' . escapeshellarg($branch) . ' 2>&1');
 
             // Get local and remote commits
-            $localCommit = trim(\shell_exec('git rev-parse HEAD 2>/dev/null') ?? '');
-            $remoteCommit = trim(\shell_exec('git rev-parse origin/' . escapeshellarg($branch) . ' 2>/dev/null') ?? '');
+            $localCommit = trim(Process::run('git rev-parse HEAD 2>/dev/null')->output() ?: '');
+            $remoteCommit = trim(Process::run('git rev-parse origin/' . escapeshellarg($branch) . ' 2>/dev/null')->output() ?: '');
 
             $hasUpdates = $localCommit !== $remoteCommit;
 
             // Get commit log if there are updates
             $commits = [];
             if ($hasUpdates) {
-                $commitLog = \shell_exec('git log --oneline HEAD..origin/' . escapeshellarg($branch) . ' 2>/dev/null');
+                $commitLog = Process::run('git log --oneline HEAD..origin/' . escapeshellarg($branch) . ' 2>/dev/null')->output();
                 if ($commitLog) {
                     $lines = explode("\n", trim($commitLog));
                     foreach ($lines as $line) {
@@ -118,10 +118,10 @@ class DeploymentController extends Controller
         }
 
         // Get branch
-        $branch = $request->get('branch', trim(\shell_exec('git rev-parse --abbrev-ref HEAD 2>/dev/null') ?? 'main'));
+        $branch = $request->get('branch', trim(Process::run('git rev-parse --abbrev-ref HEAD 2>/dev/null')->output() ?: 'main'));
 
         // Get current commit for rollback
-        $currentCommit = trim(\shell_exec('git rev-parse HEAD 2>/dev/null') ?? '');
+        $currentCommit = trim(Process::run('git rev-parse HEAD 2>/dev/null')->output() ?: '');
 
         // Create deployment record
         $deployment = Deployment::create([
@@ -206,8 +206,8 @@ class DeploymentController extends Controller
                 $exitCode = $process->wait();
 
                 // Get final commit info
-                $newCommit = trim(\shell_exec('git rev-parse HEAD 2>/dev/null') ?? '');
-                $newCommitMessage = trim(\shell_exec('git log -1 --pretty=%B 2>/dev/null') ?? '');
+                $newCommit = trim(Process::run('git rev-parse HEAD 2>/dev/null')->output() ?: '');
+                $newCommitMessage = trim(Process::run('git log -1 --pretty=%B 2>/dev/null')->output() ?: '');
 
                 $duration = time() - $startTime;
 
