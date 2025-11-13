@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.176.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #997 from xjanova/claude/game-category-update-011CV5repfM2vwdh9JPzteqt (40e16d7c)
+- Merge branch 'claude/Main' into claude/game-category-update-011CV5repfM2vwdh9JPzteqt (a53a22d2)
+- Merge branch 'claude/Main' into claude/game-category-update-011CV5repfM2vwdh9JPzteqt (fc93b517)
+- Add missing views and links for Game Management System (5cd68fa7)
+- Add dynamic Game Management System with Admin Panel (170cf35e)
+- Add 3D OpenGL Game Selector page with stunning visual effects (5d04d1fd)
+
 ## [v2.176.3] - 2025-11-13
 
 ### ✨ Features
