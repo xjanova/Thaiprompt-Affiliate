@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.171.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #962 from xjanova/claude/setup-control-app-011CV5HkqyJQo7cRgeTrwyBA (657aa31b)
+- feat: Add complete Control App for Visual Studio (.NET MAUI) (3116ab69)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.170.2] - 2025-11-13
 
 ### ✨ Features
