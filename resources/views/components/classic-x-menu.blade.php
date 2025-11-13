@@ -380,9 +380,23 @@
     $appVersion = $packageJson['version'] ?? '2.169.1';
 
     $copyrightText = Setting::get('copyright_text', '© 2025 All Rights Reserved');
+
+    // Auto-expand submenu if it contains the active route
+    $activeSubmenus = [];
+    foreach ($menuItems as $index => $item) {
+        if (isset($item['submenu'])) {
+            foreach ($item['submenu'] as $subitem) {
+                if (isset($subitem['route']) && $currentRoute === $subitem['route']) {
+                    $activeSubmenus[] = 'menu-' . $index;
+                    break;
+                }
+            }
+        }
+    }
+    $activeSubmenusJson = json_encode($activeSubmenus);
 @endphp
 
-<ul class="classic-x-menu" x-data="{ openSubmenus: [] }">
+<ul class="classic-x-menu" x-data="{ openSubmenus: {{ $activeSubmenusJson }} }">
     @foreach($menuItems as $index => $item)
         <li class="classic-x-menu-item" x-data="{ menuId: 'menu-{{ $index }}' }">
             @if(isset($item['submenu']))
