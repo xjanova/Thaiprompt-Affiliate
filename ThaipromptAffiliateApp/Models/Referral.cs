@@ -48,6 +48,12 @@ namespace ThaipromptAffiliateApp.Models
         };
 
         public string LevelText => $"ระดับ {Level}";
+
+        // Additional helper properties for UI
+        public string Name => User?.Name ?? "ไม่ระบุชื่อ";
+        public string Email => User?.Email ?? "";
+        public DateTime JoinedDate => CreatedAt;
+        public string InitialName => !string.IsNullOrEmpty(Name) && Name.Length > 0 ? Name[0].ToString().ToUpper() : "?";
     }
 
     /// <summary>
@@ -99,6 +105,9 @@ namespace ThaipromptAffiliateApp.Models
 
         [JsonPropertyName("active_referrals")]
         public int ActiveReferrals { get; set; }
+
+        [JsonPropertyName("total_earnings")]
+        public decimal TotalEarnings { get; set; }
     }
 
     /// <summary>

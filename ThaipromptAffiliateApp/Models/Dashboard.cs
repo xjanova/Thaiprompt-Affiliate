@@ -82,6 +82,8 @@ namespace ThaipromptAffiliateApp.Models
         };
 
         public string FormattedAmount => $"฿{Amount:N2}";
+
+        public string Reference => $"COM-{Id:D6}";
     }
 
     /// <summary>
