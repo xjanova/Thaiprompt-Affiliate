@@ -323,6 +323,9 @@
 
         <!-- Floating Action Buttons for Classic X Theme -->
         <x-classic-x-floating-buttons />
+    @else
+        <!-- Floating Action Buttons for Millennium Theme -->
+        <x-classic-x-floating-buttons />
     @endif
 
     <!-- Fixed Floating Toast Notifications -->

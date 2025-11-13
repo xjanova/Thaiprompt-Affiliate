@@ -3,7 +3,11 @@
 @php
     // Get app information for footer
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
-    $appVersion = \App\Models\Setting::get('app_version', '2.0');
+
+    // Get version from package.json
+    $packageJson = json_decode(file_get_contents(base_path('package.json')), true);
+    $appVersion = $packageJson['version'] ?? '2.169.1';
+
     $copyrightText = \App\Models\Setting::get('copyright_text', '© 2025 All Rights Reserved');
 @endphp
 

@@ -101,8 +101,9 @@
         {{ $sidebarPosition }}: 0;
         top: 0;
         z-index: 1000;
-        overflow-y: auto;
         overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
         @if($enableShadows)
         box-shadow: {{ $shadowStyle }};
         @endif
@@ -116,6 +117,12 @@
         transform-style: preserve-3d;
         perspective: 1000px;
         @endif
+    }
+
+    .classic-x-sidebar-scrollable {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .classic-x-sidebar.collapsed {
@@ -402,5 +409,37 @@
     </div>
     @endif
 
-    <x-classic-x-menu type="{{ $type }}" />
+    <!-- Scrollable Menu Area -->
+    <div class="classic-x-sidebar-scrollable">
+        <x-classic-x-menu type="{{ $type }}" />
+    </div>
+
+    <!-- Classic X Menu Footer -->
+    @php
+        use App\Models\Setting;
+        $appName = Setting::get('app_name', 'TP-Affiliate');
+        // Get version from package.json
+        $packageJson = json_decode(file_get_contents(base_path('package.json')), true);
+        $appVersion = $packageJson['version'] ?? '2.169.1';
+        $copyrightText = Setting::get('copyright_text', '© 2025 All Rights Reserved');
+    @endphp
+    <div class="classic-x-menu-footer" style="
+        padding: 16px 20px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.5);
+        line-height: 1.6;
+    ">
+        <div style="text-align: center;">
+            <div style="font-weight: 600; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">
+                {{ $appName }}
+            </div>
+            <div style="margin-bottom: 4px;">
+                Version {{ $appVersion }}
+            </div>
+            <div style="font-size: 10px;">
+                {{ $copyrightText }}
+            </div>
+        </div>
+    </div>
 </div>

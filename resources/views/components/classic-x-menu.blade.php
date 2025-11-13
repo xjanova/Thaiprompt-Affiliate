@@ -374,11 +374,29 @@
     // Get app information for footer
     use App\Models\Setting;
     $appName = Setting::get('app_name', 'TP-Affiliate');
-    $appVersion = Setting::get('app_version', '2.0');
+
+    // Get version from package.json
+    $packageJson = json_decode(file_get_contents(base_path('package.json')), true);
+    $appVersion = $packageJson['version'] ?? '2.169.1';
+
     $copyrightText = Setting::get('copyright_text', '© 2025 All Rights Reserved');
+
+    // Auto-expand submenu if it contains the active route
+    $activeSubmenus = [];
+    foreach ($menuItems as $index => $item) {
+        if (isset($item['submenu'])) {
+            foreach ($item['submenu'] as $subitem) {
+                if (isset($subitem['route']) && $currentRoute === $subitem['route']) {
+                    $activeSubmenus[] = 'menu-' . $index;
+                    break;
+                }
+            }
+        }
+    }
+    $activeSubmenusJson = json_encode($activeSubmenus);
 @endphp
 
-<ul class="classic-x-menu" x-data="{ openSubmenus: [] }">
+<ul class="classic-x-menu" x-data="{ openSubmenus: {{ $activeSubmenusJson }} }">
     @foreach($menuItems as $index => $item)
         <li class="classic-x-menu-item" x-data="{ menuId: 'menu-{{ $index }}' }">
             @if(isset($item['submenu']))
@@ -425,25 +443,3 @@
         </li>
     @endforeach
 </ul>
-
-<!-- Classic X Menu Footer -->
-<div class="classic-x-menu-footer" style="
-    margin-top: auto;
-    padding: 16px 20px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.5);
-    line-height: 1.6;
-">
-    <div style="text-align: center;">
-        <div style="font-weight: 600; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">
-            {{ $appName }}
-        </div>
-        <div style="margin-bottom: 4px;">
-            Version {{ $appVersion }}
-        </div>
-        <div style="font-size: 10px;">
-            {{ $copyrightText }}
-        </div>
-    </div>
-</div>
