@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.165.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #944 from xjanova/claude/fix-bookings-error-011CV58QjpsCVjLa7B3NU5cB (433c0f9e)
+- Fix 404 error on /admin/hotels/bookings route (5a019bc6)
+
 ## [v2.165.2] - 2025-11-13
 
 ### ✨ Features
