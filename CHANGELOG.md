@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.182.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1020 from xjanova/claude/update-profile-picture-011CV64RYZWZ8yRVdfQ4evUm (fc56e49a)
+- feat: Implement instant profile picture updates with cache busting (089bc3da)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.181.3] - 2025-11-13
 
 ### ✨ Features
