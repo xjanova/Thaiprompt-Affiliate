@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.187.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1027 from xjanova/claude/food-passport-planning-011CV5uuSkVwEQkW26qgdq1J (ee0ff074)
+- feat: Implement Food Passport Phase 1 - Foundation (c6d52b4f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.186.0] - 2025-11-13
 
 ### ✨ Features
