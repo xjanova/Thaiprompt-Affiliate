@@ -8,6 +8,8 @@
 
     <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/renderers/CSS2DRenderer.js"></script>
 
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -34,6 +36,30 @@
             width: 100%;
             height: 100vh;
             z-index: 1;
+        }
+
+        /* Text Labels on Spheres */
+        .sphere-label {
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            white-space: nowrap;
+            pointer-events: none;
+            user-select: none;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transform: translate(-50%, -150%);
+        }
+
+        .sphere-label .icon {
+            font-size: 18px;
+            margin-right: 6px;
         }
 
         /* UI Overlay */
@@ -488,7 +514,7 @@
         <!-- Instructions -->
         <div class="instructions" id="instructions">
             <h2>🎮 วิธีการใช้งาน</h2>
-            <p>🖱️ ลากเมาส์เพื่อหมุนกล้อง | 🔍 Scroll เพื่อ Zoom | 🎯 คลิกทรงกลมเพื่อดูรายละเอียด</p>
+            <p>🖱️ คลิกซ้ายค้างลากเพื่อหมุนกล้อง | 🔍 Scroll เพื่อ Zoom เข้า-ออก | 🎯 คลิกทรงกลมเพื่อเข้าสู่ระบบ | ⚙️ กล้องหมุนอัตโนมัติ</p>
         </div>
 
         <!-- System Tooltip -->
@@ -525,7 +551,7 @@
     <!-- Main Script -->
     <script>
         // Global variables
-        let scene, camera, renderer, raycaster, mouse;
+        let scene, camera, renderer, labelRenderer, controls, raycaster, mouse;
         let spheres = [];
         let particles = [];
         let currentSystem = null;
@@ -545,13 +571,31 @@
                 0.1,
                 10000
             );
-            camera.position.z = 100;
+            camera.position.set(0, 30, 150);
 
-            // Renderer
+            // WebGL Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(window.devicePixelRatio);
             document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // CSS2D Renderer for labels
+            labelRenderer = new THREE.CSS2DRenderer();
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.domElement.style.position = 'absolute';
+            labelRenderer.domElement.style.top = '0';
+            labelRenderer.domElement.style.pointerEvents = 'none';
+            document.getElementById('canvas-container').appendChild(labelRenderer.domElement);
+
+            // Orbit Controls for camera
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 50;
+            controls.maxDistance = 300;
+            controls.maxPolarAngle = Math.PI;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
 
             // Raycaster for mouse interaction
             raycaster = new THREE.Raycaster();
@@ -617,6 +661,16 @@
                 const glow = new THREE.Mesh(glowGeometry, glowMaterial);
                 sphere.add(glow);
 
+                // Create text label using CSS2DObject
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'sphere-label';
+                labelDiv.innerHTML = `<span class="icon">${system.icon}</span>${system.name}`;
+                labelDiv.style.borderColor = system.color;
+
+                const label = new THREE.CSS2DObject(labelDiv);
+                label.position.set(0, 15, 0); // Position above sphere
+                sphere.add(label);
+
                 scene.add(sphere);
                 spheres.push(sphere);
             });
@@ -668,6 +722,9 @@
         function animate() {
             requestAnimationFrame(animate);
 
+            // Update controls
+            controls.update();
+
             // Rotate spheres
             spheres.forEach((sphere, index) => {
                 sphere.rotation.y += 0.005;
@@ -683,14 +740,9 @@
                 particle.rotation.x += 0.0001;
             });
 
-            // Auto rotate camera slowly
-            if (!isAnimating) {
-                camera.position.x += Math.sin(Date.now() * 0.0001) * 0.05;
-                camera.position.y += Math.cos(Date.now() * 0.0001) * 0.03;
-                camera.lookAt(scene.position);
-            }
-
+            // Render scene
             renderer.render(scene, camera);
+            labelRenderer.render(scene, camera);
         }
 
         // Mouse move handler
@@ -866,6 +918,7 @@
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
+            labelRenderer.setSize(window.innerWidth, window.innerHeight);
         }
 
         // System content generators
