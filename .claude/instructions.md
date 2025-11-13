@@ -10,6 +10,12 @@
 
 ก่อนลงมือทำงานใดๆ ต้องอ่านเอกสารเหล่านี้ก่อน:
 
+- [ ] **[THAI_LANGUAGE_RULES.md](./.claude/THAI_LANGUAGE_RULES.md)** - 🇹🇭 กฎการใช้ภาษาไทย (บังคับ)
+  - ⚠️ **CRITICAL**: ใช้ภาษาไทยในการสื่อสารและพัฒนา 100%
+  - คอมเม้นต์ทั้งหมดต้องเป็นภาษาไทย
+  - PHPDoc/JSDoc ต้องเป็นภาษาไทย พร้อม @example และ @tip
+  - ข้อความที่แสดงต่อผู้ใช้ต้องเป็นภาษาไทย
+
 - [ ] **[seeder-guidelines.md](./.claude/seeder-guidelines.md)** - กฎสำหรับ Seeders และ DatabaseSeeder.php synchronization
   - ⚠️ **CRITICAL**: ทุกครั้งที่สร้าง/ลบ/แก้ไข Seeder ต้องอัพเดท DatabaseSeeder.php
   - Smart seeding strategies (check before seeding, protect user data)
@@ -44,6 +50,8 @@
 ### ⚠️ Why This Is Critical
 
 **ถ้าไม่อ่านเอกสาร จะเกิดปัญหาเหล่านี้:**
+- ❌ ใช้ภาษาอังกฤษในการตอบผู้ใช้ → ไม่ตรงตามมาตรฐาน
+- ❌ คอมเม้นต์เป็นภาษาอังกฤษ → ทีมงานไทยอ่านยาก
 - ❌ สร้าง Seeder แล้วลืมเพิ่มใน DatabaseSeeder.php → Deployment fails
 - ❌ สร้าง Migration โดยไม่ check table exists → Production errors
 - ❌ UI ไม่รองรับ dark mode → User experience ไม่ดี
@@ -62,20 +70,23 @@
 ### 🔄 When to Re-read Guidelines
 
 อ่านเอกสารใหม่เมื่อ:
-1. **เริ่มแชทใหม่** - อ่านก่อนทำงานอะไรก็ตาม
-2. **ก่อนสร้าง Seeder** - อ่าน seeder-guidelines.md
-3. **ก่อนสร้าง Migration** - อ่าน DATABASE_GUIDELINES.md
-4. **ก่อนสร้าง UI Component** - อ่าน UI_DESIGN_SYSTEM.md
-5. **ก่อนแก้ไข Menu** - อ่าน MENU_RULES.md
-6. **ก่อนสร้าง Routes/Views** - อ่าน ROUTES_GUIDELINES.md
-7. **ก่อนติดตั้ง Package** - อ่าน DEPLOYMENT_GUIDELINES.md
-8. **เมื่อไม่แน่ใจ** - อ่านเอกสารที่เกี่ยวข้อง
+1. **เริ่มแชทใหม่** - อ่าน THAI_LANGUAGE_RULES.md ก่อนทำงานอะไรก็ตาม
+2. **ก่อนตอบผู้ใช้** - ตรวจสอบว่าใช้ภาษาไทย 100%
+3. **ก่อนเขียนคอมเม้นต์** - ต้องเป็นภาษาไทย พร้อม @example และ @tip
+4. **ก่อนสร้าง Seeder** - อ่าน seeder-guidelines.md
+5. **ก่อนสร้าง Migration** - อ่าน DATABASE_GUIDELINES.md
+6. **ก่อนสร้าง UI Component** - อ่าน UI_DESIGN_SYSTEM.md
+7. **ก่อนแก้ไข Menu** - อ่าน MENU_RULES.md
+8. **ก่อนสร้าง Routes/Views** - อ่าน ROUTES_GUIDELINES.md
+9. **ก่อนติดตั้ง Package** - อ่าน DEPLOYMENT_GUIDELINES.md
+10. **เมื่อไม่แน่ใจ** - อ่านเอกสารที่เกี่ยวข้อง
 
 ### ✅ How to Confirm You've Read
 
 เมื่ออ่านเอกสารแล้ว ให้ตอบผู้ใช้ว่า:
 ```
 ✅ อ่านเอกสารแนวทางแล้ว:
+- THAI_LANGUAGE_RULES.md: ใช้ภาษาไทย 100% ในการสื่อสารและคอมเม้นต์
 - seeder-guidelines.md: [สรุปสั้นๆ ว่าเข้าใจอะไร]
 - DATABASE_GUIDELINES.md: [สรุปสั้นๆ]
 - [เอกสารอื่นๆ ที่เกี่ยวข้อง]: [สรุปสั้นๆ]
@@ -87,20 +98,24 @@
 
 ## 💎 หลักการสำคัญ (Core Principles)
 
-### 1. 🌓 Dark/Light Mode (บังคับ)
+### 1. 🇹🇭 ใช้ภาษาไทย (บังคับ)
+- **ทุกการสื่อสารกับผู้ใช้ต้องเป็นภาษาไทย 100%**
+- คอมเม้นต์ในโค้ดทั้งหมดต้องเป็นภาษาไทย
+- PHPDoc/JSDoc ต้องเป็นภาษาไทย พร้อม @param, @returns, @example, @tip
+- ข้อความที่แสดงต่อผู้ใช้ต้องเป็นภาษาไทย
+- เอกสารและ README ต้องเป็นภาษาไทย
+- ชื่อตัวแปร/ฟังก์ชันใช้ภาษาอังกฤษได้ แต่ต้องมีคอมเม้นต์ภาษาไทย
+- อ่านรายละเอียดใน [THAI_LANGUAGE_RULES.md](./.claude/THAI_LANGUAGE_RULES.md)
+
+### 2. 🌓 Dark/Light Mode (บังคับ)
 - ทุก UI ต้องรองรับทั้งสองโหมด
 - ใช้ CSS variables และ Tailwind dark utilities
 - ทดสอบ contrast และ readability
 
-### 2. 📱 Responsive Design (บังคับ)
+### 3. 📱 Responsive Design (บังคับ)
 - Mobile-first approach
 - ทดสอบทุก device (mobile, tablet, desktop)
 - Touch-friendly บน mobile (≥44px)
-
-### 3. 💬 คอมเม้นต์ภาษาไทย (บังคับ)
-- อธิบายการทำงานเป็นภาษาไทย
-- มี JSDoc/PHPDoc พร้อม @param, @returns, @example
-- ใส่ @tip การใช้งานและ best practices
 
 ### 4. 🗄️ Database Best Practices (บังคับ)
 - ตรวจสอบ tables/columns ไม่ซ้ำ
@@ -155,6 +170,13 @@
 
 ## ✅ Checklist ก่อน Commit
 
+### Thai Language (บังคับ)
+- [ ] **ทุกคอมเม้นต์เป็นภาษาไทย 100%** (บังคับ)
+- [ ] มี PHPDoc/JSDoc ภาษาไทย พร้อม @param, @returns, @example, @tip (บังคับ)
+- [ ] ข้อความที่แสดงต่อผู้ใช้เป็นภาษาไทย (บังคับ)
+- [ ] Error messages และ validation messages เป็นภาษาไทย (บังคับ)
+- [ ] README และเอกสารเป็นภาษาไทย (ถ้ามี)
+
 ### Design & UI
 - [ ] รองรับ dark/light mode (บังคับ)
 - [ ] Responsive บนทุก device (บังคับ)
@@ -162,8 +184,6 @@
 - [ ] มี animations และ loading states
 
 ### Code Quality
-- [ ] มีคอมเม้นต์ภาษาไทย (บังคับ)
-- [ ] มี JSDoc/PHPDoc พร้อม @example และ @tip (บังคับ)
 - [ ] Code clean, readable, maintainable
 - [ ] Error handling ครบถ้วน
 
@@ -282,13 +302,14 @@ git commit -m "Add NewFeatureSeeder"
 **"โปรแกรมที่เราพัฒนาต้องมีคุณภาพระดับหลักล้าน"**
 
 ทุกครั้งที่เขียนโค้ด ถามตัวเองว่า:
-1. ✅ อ่านเอกสารแนวทางที่เกี่ยวข้องแล้วหรือยัง?
-2. ✅ UI สวยงามและรองรับ dark/light mode + responsive หรือยัง?
-3. ✅ มีคอมเม้นต์และคู่มือครบถ้วนหรือยัง?
-4. ✅ Database/Seeder/Routes ตรวจสอบแล้วหรือยัง?
-5. ✅ Code clean และไม่มี technical debt หรือยัง?
-6. ✅ ทดสอบครบทุก scenario หรือยัง?
-7. ✅ น่าภูมิใจที่จะให้คนอื่นใช้หรือยัง?
+1. ✅ ใช้ภาษาไทยในการสื่อสารและคอมเม้นต์ 100% หรือยัง?
+2. ✅ อ่านเอกสารแนวทางที่เกี่ยวข้องแล้วหรือยัง?
+3. ✅ UI สวยงามและรองรับ dark/light mode + responsive หรือยัง?
+4. ✅ มีคอมเม้นต์ภาษาไทยและคู่มือครบถ้วนหรือยัง?
+5. ✅ Database/Seeder/Routes ตรวจสอบแล้วหรือยัง?
+6. ✅ Code clean และไม่มี technical debt หรือยัง?
+7. ✅ ทดสอบครบทุก scenario หรือยัง?
+8. ✅ น่าภูมิใจที่จะให้คนอื่นใช้หรือยัง?
 
 **ถ้าตอบ "ใช่" ทั้งหมด แสดงว่าโค้ดมีคุณภาะ์ระดับหลักล้าน! 💎✨**
 
