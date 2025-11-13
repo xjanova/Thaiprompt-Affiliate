@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.173.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #973 from xjanova/claude/fix-profit-loss-column-011CV5aSD8EpbZcCWSkwPFnK (0a0a7b3a)
+- fix: Replace non-existent 'profit_loss' column with 'net_profit' (c505729f)
+### 🔧 Other Changes
+
+
 ## [v2.173.2] - 2025-11-13
 
 ### ✨ Features
