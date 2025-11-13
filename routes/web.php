@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Frontend\HomeController;
 use App\Http\Controllers\Frontend\PageController;
+use App\Http\Controllers\Frontend\GameController;
+use App\Http\Controllers\Admin\GameController as AdminGameController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LineLoginController;
@@ -30,9 +32,8 @@ Route::get('/demo/space-shooter', function () {
     return view('demo-space-shooter');
 })->name('demo.space-shooter');
 
-Route::get('/demo/game-selector', function () {
-    return view('demo-game-selector');
-})->name('demo.game-selector');
+Route::get('/demo/game-selector', [GameController::class, 'index'])->name('demo.game-selector');
+Route::get('/api/games', [GameController::class, 'getGames'])->name('api.games');
 
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');

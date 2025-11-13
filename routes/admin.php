@@ -1685,5 +1685,18 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     Route::get('/usage-logs', [AiGenAdminController::class, 'usageLogs'])->name('usage-logs');
 });
 
+// Game Management Routes
+Route::prefix('games')->name('games.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\GameController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Admin\GameController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Admin\GameController::class, 'store'])->name('store');
+    Route::get('/{game}', [App\Http\Controllers\Admin\GameController::class, 'show'])->name('show');
+    Route::get('/{game}/edit', [App\Http\Controllers\Admin\GameController::class, 'edit'])->name('edit');
+    Route::put('/{game}', [App\Http\Controllers\Admin\GameController::class, 'update'])->name('update');
+    Route::delete('/{game}', [App\Http\Controllers\Admin\GameController::class, 'destroy'])->name('destroy');
+    Route::patch('/{game}/toggle-active', [App\Http\Controllers\Admin\GameController::class, 'toggleActive'])->name('toggle-active');
+    Route::post('/update-order', [App\Http\Controllers\Admin\GameController::class, 'updateOrder'])->name('update-order');
+});
+
 // Bot Automation System Routes
 require __DIR__.'/bot_automation.php';

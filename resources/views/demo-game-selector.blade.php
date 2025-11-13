@@ -261,6 +261,38 @@
             background: linear-gradient(135deg, #ffff00, #ff8800);
         }
 
+        /* Game Image Wrapper */
+        .game-image-wrapper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 25px;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .game-bg-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.15;
+            filter: blur(2px);
+            transition: all 0.4s ease;
+        }
+
+        .game-card:hover .game-bg-image {
+            opacity: 0.25;
+            filter: blur(0px);
+            transform: scale(1.1);
+        }
+
+        .card-inner > *:not(.game-image-wrapper) {
+            position: relative;
+            z-index: 1;
+        }
+
         /* Loading Screen */
         #loading {
             position: absolute;
@@ -399,44 +431,64 @@
 
         <!-- Game Cards -->
         <div class="game-cards">
-            <!-- Card 1: 3D Navigation -->
-            <div class="game-card" onclick="window.location.href='{{ route('demo.3d-navigation') }}'">
-                <div class="card-inner">
-                    <div class="game-icon">🧭</div>
-                    <div class="game-title">3D Navigation</div>
-                    <div class="game-description">
-                        สำรวจโลก 3D ที่สวยงาม<br>
-                        ด้วยระบบนำทางที่ทันสมัย
+            @forelse($games as $index => $game)
+                <div class="game-card" data-index="{{ $index }}" data-color="{{ $game->primary_color }}" data-glow="{{ $game->glow_color }}" onclick="window.location.href='{{ $game->url }}'">
+                    <div class="card-inner" data-style="{{ $game->card_style }}">
+                        @if($game->image)
+                            <div class="game-image-wrapper">
+                                <img src="{{ asset($game->image) }}" alt="{{ $game->localized_title }}" class="game-bg-image">
+                            </div>
+                        @endif
+                        <div class="game-icon" style="color: {{ $game->primary_color }};">{{ $game->icon }}</div>
+                        <div class="game-title" style="color: {{ $game->primary_color }}; text-shadow: 0 0 20px {{ $game->glow_color }};">
+                            {{ $game->localized_title }}
+                        </div>
+                        <div class="game-description">
+                            {!! nl2br(e($game->localized_description)) !!}
+                        </div>
+                        <button class="play-button" style="background: linear-gradient(135deg, {{ $game->primary_color }}, {{ $game->secondary_color }});">
+                            เริ่มเล่น
+                        </button>
                     </div>
-                    <button class="play-button">เริ่มเล่น</button>
                 </div>
-            </div>
+            @empty
+                <!-- Default Cards if no games in database -->
+                <div class="game-card" data-index="0" onclick="window.location.href='{{ route('demo.3d-navigation') }}'">
+                    <div class="card-inner">
+                        <div class="game-icon">🧭</div>
+                        <div class="game-title">3D Navigation</div>
+                        <div class="game-description">
+                            สำรวจโลก 3D ที่สวยงาม<br>
+                            ด้วยระบบนำทางที่ทันสมัย
+                        </div>
+                        <button class="play-button">เริ่มเล่น</button>
+                    </div>
+                </div>
 
-            <!-- Card 2: Space Shooter -->
-            <div class="game-card" onclick="window.location.href='{{ route('demo.space-shooter') }}'">
-                <div class="card-inner">
-                    <div class="game-icon">🚀</div>
-                    <div class="game-title">Space Shooter</div>
-                    <div class="game-description">
-                        ยิงยานอวกาศศัตรู<br>
-                        ในสงครามอวกาศที่ตื่นเต้น
+                <div class="game-card" data-index="1" onclick="window.location.href='{{ route('demo.space-shooter') }}'">
+                    <div class="card-inner">
+                        <div class="game-icon">🚀</div>
+                        <div class="game-title">Space Shooter</div>
+                        <div class="game-description">
+                            ยิงยานอวกาศศัตรู<br>
+                            ในสงครามอวกาศที่ตื่นเต้น
+                        </div>
+                        <button class="play-button">เริ่มเล่น</button>
                     </div>
-                    <button class="play-button">เริ่มเล่น</button>
                 </div>
-            </div>
 
-            <!-- Card 3: Loading Demo -->
-            <div class="game-card" onclick="window.location.href='{{ route('demo.loading') }}'">
-                <div class="card-inner">
-                    <div class="game-icon">⚡</div>
-                    <div class="game-title">Loading Demo</div>
-                    <div class="game-description">
-                        ชมเอฟเฟกต์การโหลด<br>
-                        ที่สวยงามและทันสมัย
+                <div class="game-card" data-index="2" onclick="window.location.href='{{ route('demo.loading') }}'">
+                    <div class="card-inner">
+                        <div class="game-icon">⚡</div>
+                        <div class="game-title">Loading Demo</div>
+                        <div class="game-description">
+                            ชมเอฟเฟกต์การโหลด<br>
+                            ที่สวยงามและทันสมัย
+                        </div>
+                        <button class="play-button">เริ่มเล่น</button>
                     </div>
-                    <button class="play-button">เริ่มเล่น</button>
                 </div>
-            </div>
+            @endforelse
         </div>
 
         <!-- Instructions -->
