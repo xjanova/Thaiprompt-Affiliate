@@ -4,9 +4,11 @@ namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
 use App\Models\Commission;
+use App\Services\ImageUploadService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 
 class DashboardController extends Controller
@@ -205,7 +207,7 @@ class DashboardController extends Controller
     /**
      * Update user profile
      */
-    public function updateProfile(Request $request)
+    public function updateProfile(Request $request, ImageUploadService $imageUploadService)
     {
         $user = Auth::user();
 
@@ -226,9 +228,28 @@ class DashboardController extends Controller
             'shipping_postal_code' => ['nullable', 'string', 'max:20'],
             'shipping_country' => ['nullable', 'string', 'max:2'],
             'shipping_phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
+            'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
         ];
 
         $validated = $request->validate($rules);
+
+        // Handle profile picture upload
+        if ($request->hasFile('profile_picture')) {
+            // Delete old profile picture if exists
+            if ($user->profile_picture) {
+                $imageUploadService->deleteImage($user->profile_picture);
+            }
+
+            // Upload new profile picture with WebP conversion
+            // Use 'avatars' directory, max 800x800 for avatar, quality 90
+            $validated['profile_picture'] = $imageUploadService->uploadImage(
+                $request->file('profile_picture'),
+                'avatars',
+                800,
+                800,
+                90
+            );
+        }
 
         // Don't update phone if it hasn't changed, or if it changed, require verification
         if (isset($validated['phone']) && $validated['phone'] !== $user->phone) {
