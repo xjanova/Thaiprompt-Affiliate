@@ -26,7 +26,7 @@ return new class extends Migration
 
             // Pool Limits
             $table->decimal('pool_cap', 30, 8)->nullable()->comment('Maximum total stake');
-            $table->decimal('total_staked', 30, 8')->default(0)->comment('Currently staked');
+            $table->decimal('total_staked', 30, 8)->default(0)->comment('Currently staked');
             $table->integer('max_stakers')->nullable()->comment('Max number of stakers');
             $table->integer('current_stakers')->default(0);
 
