@@ -1366,6 +1366,29 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateSettings'])->name('settings.update');
 
+    // TPIX Native Blockchain Management
+    Route::prefix('tpix')->name('tpix.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\TPIXController::class, 'dashboard'])->name('dashboard');
+
+        // Network Status
+        Route::get('/network-status', [\App\Http\Controllers\Admin\TPIXController::class, 'networkStatus'])->name('network-status');
+
+        // Wallets
+        Route::get('/wallets', [\App\Http\Controllers\Admin\TPIXController::class, 'wallets'])->name('wallets');
+
+        // Transactions
+        Route::get('/transactions', [\App\Http\Controllers\Admin\TPIXController::class, 'transactions'])->name('transactions');
+        Route::get('/transactions/{id}', [\App\Http\Controllers\Admin\TPIXController::class, 'transactionDetails'])->name('transactions.details');
+
+        // Settings
+        Route::get('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'settings'])->name('settings');
+        Route::post('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'updateSettings'])->name('settings.update');
+
+        // API endpoint for checking blockchain connection
+        Route::get('/check-connection', [\App\Http\Controllers\Admin\TPIXController::class, 'checkConnection'])->name('check-connection');
+    });
+
     // HD Wallet Management (Hierarchical Deterministic Wallets)
     Route::prefix('hd-wallets')->name('hd-wallets.')->group(function () {
         // Overview

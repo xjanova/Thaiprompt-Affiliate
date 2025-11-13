@@ -152,6 +152,31 @@ Route::prefix('crypto-wallet')->name('crypto-wallet.')->group(function () {
     Route::get('/price/{currency}', [CryptoWalletController::class, 'getPrice'])->name('price');
 });
 
+// TPIX Native Blockchain Wallet (User)
+Route::prefix('tpix')->name('tpix.')->group(function () {
+    // Wallet Dashboard
+    Route::get('/wallet', [\App\Http\Controllers\TPIXWalletController::class, 'index'])->name('wallet');
+
+    // Deposit
+    Route::get('/deposit', [\App\Http\Controllers\TPIXWalletController::class, 'deposit'])->name('deposit');
+
+    // Withdrawal
+    Route::get('/withdrawal', [\App\Http\Controllers\TPIXWalletController::class, 'withdrawal'])->name('withdrawal');
+    Route::post('/withdrawal', [\App\Http\Controllers\TPIXWalletController::class, 'processWithdrawal'])
+        ->middleware(['turnstile:tpix_withdrawal', 'two-factor:withdrawal'])
+        ->name('withdrawal.process');
+
+    // Transactions
+    Route::get('/transactions', [\App\Http\Controllers\TPIXWalletController::class, 'transactions'])->name('transactions');
+    Route::get('/transactions/{id}', [\App\Http\Controllers\TPIXWalletController::class, 'transactionDetails'])->name('transactions.details');
+
+    // Send TPIX (P2P transfer)
+    Route::get('/send', [\App\Http\Controllers\TPIXWalletController::class, 'send'])->name('send');
+    Route::post('/send', [\App\Http\Controllers\TPIXWalletController::class, 'processSend'])
+        ->middleware('two-factor:transfer')
+        ->name('send.process');
+});
+
 // Notifications
 Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('index');
