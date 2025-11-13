@@ -399,42 +399,8 @@
 
 <div class="classic-x-sidebar"
      id="classicXSidebar"
-     x-data="{
-         collapsed: localStorage.getItem('classic-x-sidebar-collapsed') === 'true',
-         openSubmenus: JSON.parse(localStorage.getItem('classic-x-open-submenus') || '[]'),
-         init() {
-             // Initialize sidebar and content area based on collapsed state
-             const contentEl = document.getElementById('classicXContent');
-             if (this.collapsed) {
-                 this.$el.classList.add('collapsed');
-                 if (contentEl) {
-                     contentEl.classList.add('sidebar-collapsed');
-                 }
-             } else {
-                 this.$el.classList.remove('collapsed');
-                 if (contentEl) {
-                     contentEl.classList.remove('sidebar-collapsed');
-                 }
-             }
-         },
-         toggleSidebar() {
-             this.collapsed = !this.collapsed;
-             localStorage.setItem('classic-x-sidebar-collapsed', this.collapsed ? 'true' : 'false');
-
-             const contentEl = document.getElementById('classicXContent');
-             if (this.collapsed) {
-                 this.$el.classList.add('collapsed');
-                 if (contentEl) {
-                     contentEl.classList.add('sidebar-collapsed');
-                 }
-             } else {
-                 this.$el.classList.remove('collapsed');
-                 if (contentEl) {
-                     contentEl.classList.remove('sidebar-collapsed');
-                 }
-             }
-         }
-     }"
+     x-data="sidebarData()"
+     x-init="init()"
      :class="{ 'collapsed': collapsed }">
 
     @if($sidebarCollapsible)
@@ -521,3 +487,51 @@
         </div>
     </div>
 </div>
+
+<script>
+function sidebarData() {
+    return {
+        collapsed: localStorage.getItem('classic-x-sidebar-collapsed') === 'true',
+        openSubmenus: JSON.parse(localStorage.getItem('classic-x-open-submenus') || '[]'),
+
+        init() {
+            console.log('Classic X Sidebar initialized', { collapsed: this.collapsed });
+            const contentEl = document.getElementById('classicXContent');
+
+            if (this.collapsed) {
+                this.$el.classList.add('collapsed');
+                if (contentEl) {
+                    contentEl.classList.add('sidebar-collapsed');
+                }
+            } else {
+                this.$el.classList.remove('collapsed');
+                if (contentEl) {
+                    contentEl.classList.remove('sidebar-collapsed');
+                }
+            }
+        },
+
+        toggleSidebar() {
+            console.log('Toggle sidebar clicked');
+            this.collapsed = !this.collapsed;
+            localStorage.setItem('classic-x-sidebar-collapsed', this.collapsed ? 'true' : 'false');
+
+            const contentEl = document.getElementById('classicXContent');
+
+            if (this.collapsed) {
+                this.$el.classList.add('collapsed');
+                if (contentEl) {
+                    contentEl.classList.add('sidebar-collapsed');
+                }
+            } else {
+                this.$el.classList.remove('collapsed');
+                if (contentEl) {
+                    contentEl.classList.remove('sidebar-collapsed');
+                }
+            }
+
+            console.log('Sidebar toggled', { collapsed: this.collapsed });
+        }
+    };
+}
+</script>

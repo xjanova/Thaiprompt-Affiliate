@@ -402,27 +402,27 @@
 
 <ul class="classic-x-menu" x-data="{
     openSubmenus: {{ $activeSubmenusJson }},
-    lockedSubmenus: {{ $lockedSubmenusJson }}
+    lockedSubmenus: {{ $lockedSubmenusJson }},
+    toggleMenu(menuId) {
+        // If this submenu is locked (contains active item), don't allow closing
+        if (this.lockedSubmenus.includes(menuId)) {
+            return;
+        }
+        // Otherwise, toggle normally
+        if (this.openSubmenus.includes(menuId)) {
+            this.openSubmenus = this.openSubmenus.filter(id => id !== menuId);
+        } else {
+            this.openSubmenus = [...this.openSubmenus, menuId];
+        }
+    }
 }">
     @foreach($menuItems as $index => $item)
-        <li class="classic-x-menu-item" x-data="{ menuId: 'menu-{{ $index }}' }">
+        <li class="classic-x-menu-item">
             @if(isset($item['submenu']))
                 {{-- Menu item with submenu --}}
                 <a href="{{ $item['url'] }}"
                    class="classic-x-menu-link {{ isset($parentMenuHasActive[$index]) ? 'has-active-child' : '' }}"
-                   @click.prevent="
-                       // If this submenu is locked (contains active item), don't allow closing
-                       if (lockedSubmenus.includes(menuId)) {
-                           // Keep it open, do nothing
-                           return;
-                       }
-                       // Otherwise, toggle normally using proper Alpine.js reactivity
-                       if (openSubmenus.includes(menuId)) {
-                           openSubmenus = openSubmenus.filter(id => id !== menuId);
-                       } else {
-                           openSubmenus = [...openSubmenus, menuId];
-                       }
-                   ">
+                   @click.prevent="toggleMenu('menu-{{ $index }}')">
                     <span class="classic-x-menu-icon">
                         <i class="fas {{ $item['icon'] }}"></i>
                     </span>
@@ -432,15 +432,15 @@
                     @endif
                     <span class="classic-x-submenu-indicator"
                           :class="{
-                              'open': openSubmenus.includes(menuId),
-                              'locked': lockedSubmenus.includes(menuId)
+                              'open': openSubmenus.includes('menu-{{ $index }}'),
+                              'locked': lockedSubmenus.includes('menu-{{ $index }}')
                           }">
-                        <i class="fas" :class="lockedSubmenus.includes(menuId) ? 'fa-lock' : 'fa-chevron-down'"></i>
+                        <i class="fas" :class="lockedSubmenus.includes('menu-{{ $index }}') ? 'fa-lock' : 'fa-chevron-down'"></i>
                     </span>
                 </a>
 
                 {{-- Submenu --}}
-                <ul class="classic-x-submenu" :class="{ 'open': openSubmenus.includes(menuId) }">
+                <ul class="classic-x-submenu" :class="{ 'open': openSubmenus.includes('menu-{{ $index }}') }">
                     @foreach($item['submenu'] as $subitem)
                         <li>
                             <a href="{{ $subitem['url'] }}"
