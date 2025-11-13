@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- ============================================ -->
+    <!-- PREMIUM THEME - GOLD, RED, BLACK -->
+    <!-- ============================================ -->
+
+    <!-- Primary Colors - Luxurious Gold -->
+    <Color x:Key="PremiumGold">#D4AF37</Color>
+    <Color x:Key="PremiumGoldDark">#B8941E</Color>
+    <Color x:Key="PremiumGoldLight">#F1D95C</Color>
+
+    <!-- Secondary Colors - Crimson Red -->
+    <Color x:Key="PremiumRed">#DC143C</Color>
+    <Color x:Key="PremiumRedDark">#A01028</Color>
+    <Color x:Key="PremiumRedLight">#FF3D5C</Color>
+
+    <!-- Accent Colors - Deep Black -->
+    <Color x:Key="PremiumBlack">#0A0A0A</Color>
+    <Color x:Key="PremiumDark">#1A1A1A</Color>
+    <Color x:Key="PremiumDarkLight">#2A2A2A</Color>
+
+    <!-- Text Colors for Premium Theme -->
+    <Color x:Key="PremiumTextPrimary">#FFFFFF</Color>
+    <Color x:Key="PremiumTextSecondary">#D4AF37</Color>
+    <Color x:Key="PremiumTextTertiary">#999999</Color>
+
+    <!-- Background Colors -->
+    <Color x:Key="PremiumBackgroundPrimary">#0A0A0A</Color>
+    <Color x:Key="PremiumBackgroundSecondary">#1A1A1A</Color>
+    <Color x:Key="PremiumBackgroundTertiary">#2A2A2A</Color>
+
+    <!-- Border & Card Colors -->
+    <Color x:Key="PremiumBorder">#D4AF37</Color>
+    <Color x:Key="PremiumCard">#1A1A1A</Color>
+    <Color x:Key="PremiumDivider">#3A3A3A</Color>
+
+    <!-- ============================================ -->
+    <!-- PREMIUM GRADIENTS -->
+    <!-- ============================================ -->
+
+    <!-- Gold to Red Gradient - Main Premium Gradient -->
+    <LinearGradientBrush x:Key="PremiumGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#D4AF37" Offset="0.0" />
+        <GradientStop Color="#DC143C" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Gold Gradient - Elegant -->
+    <LinearGradientBrush x:Key="GoldGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#F1D95C" Offset="0.0" />
+        <GradientStop Color="#D4AF37" Offset="0.5" />
+        <GradientStop Color="#B8941E" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Red to Black Gradient - Dramatic -->
+    <LinearGradientBrush x:Key="RedBlackGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#DC143C" Offset="0.0" />
+        <GradientStop Color="#1A1A1A" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Dark Background Gradient - Subtle -->
+    <LinearGradientBrush x:Key="DarkBackgroundGradient" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#0A0A0A" Offset="0.0" />
+        <GradientStop Color="#1A1A1A" Offset="0.5" />
+        <GradientStop Color="#0A0A0A" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <!-- Radial Gold Glow -->
+    <RadialGradientBrush x:Key="GoldGlow">
+        <GradientStop Color="#D4AF37" Offset="0.0" />
+        <GradientStop Color="#00000000" Offset="1.0" />
+    </RadialGradientBrush>
+
+</ResourceDictionary>

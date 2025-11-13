@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="ThaipromptAffiliateApp.Views.SplashPage"
+             Shell.NavBarIsVisible="False"
+             Background="{StaticResource DarkGradient}">
+
+    <Grid>
+        <!-- Background Pattern -->
+        <BoxView Background="{StaticResource DarkGradient}"
+                 Opacity="1"/>
+
+        <!-- Content -->
+        <VerticalStackLayout VerticalOptions="Center"
+                           HorizontalOptions="Center"
+                           Spacing="30"
+                           Padding="40">
+
+            <!-- Logo Container with Glow Effect -->
+            <Frame Padding="0"
+                   CornerRadius="100"
+                   BorderColor="{StaticResource Primary}"
+                   BorderWidth="3"
+                   Background="Transparent"
+                   HasShadow="True"
+                   WidthRequest="180"
+                   HeightRequest="180"
+                   HorizontalOptions="Center">
+                <Frame.Shadow>
+                    <Shadow Brush="{StaticResource Primary}"
+                            Offset="0,0"
+                            Radius="40"
+                            Opacity="0.8" />
+                </Frame.Shadow>
+
+                <Frame Padding="20"
+                       CornerRadius="97"
+                       Background="{StaticResource PrimaryGradient}"
+                       HasShadow="False">
+
+                    <!-- Logo/Icon -->
+                    <Label Text="TP"
+                           FontSize="72"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center"
+                           VerticalOptions="Center"/>
+
+                </Frame>
+            </Frame>
+
+            <!-- App Name with Gradient Effect -->
+            <VerticalStackLayout Spacing="10">
+                <Label Text="THAIPROMPT"
+                       FontSize="36"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource Primary}"
+                       HorizontalOptions="Center"
+                       LetterSpacing="2"/>
+
+                <Label Text="AFFILIATE CONTROL"
+                       FontSize="16"
+                       TextColor="{StaticResource Secondary}"
+                       HorizontalOptions="Center"
+                       LetterSpacing="4"
+                       Opacity="0.9"/>
+
+                <!-- Decorative Line -->
+                <BoxView HeightRequest="2"
+                         WidthRequest="200"
+                         Background="{StaticResource PrimaryGradient}"
+                         HorizontalOptions="Center"
+                         Margin="0,10,0,0"/>
+            </VerticalStackLayout>
+
+            <!-- Loading Indicator -->
+            <VerticalStackLayout Spacing="15"
+                               Margin="0,40,0,0">
+                <ActivityIndicator IsRunning="True"
+                                 Color="{StaticResource Primary}"
+                                 WidthRequest="50"
+                                 HeightRequest="50"/>
+
+                <Label Text="กำลังเริ่มต้นระบบ..."
+                       TextColor="{StaticResource Primary}"
+                       FontSize="14"
+                       HorizontalOptions="Center"/>
+            </VerticalStackLayout>
+
+            <!-- Version Info -->
+            <Label Text="Version 1.0.0 Premium Edition"
+                   TextColor="{StaticResource TextTertiary}"
+                   FontSize="12"
+                   HorizontalOptions="Center"
+                   Margin="0,60,0,0"
+                   Opacity="0.6"/>
+
+        </VerticalStackLayout>
+
+        <!-- Decorative Corner Elements -->
+        <BoxView WidthRequest="100"
+                 HeightRequest="100"
+                 Background="{StaticResource Primary}"
+                 Opacity="0.1"
+                 HorizontalOptions="Start"
+                 VerticalOptions="Start"
+                 Margin="-50,-50,0,0"
+                 CornerRadius="50"/>
+
+        <BoxView WidthRequest="100"
+                 HeightRequest="100"
+                 Background="{StaticResource Secondary}"
+                 Opacity="0.1"
+                 HorizontalOptions="End"
+                 VerticalOptions="End"
+                 Margin="0,0,-50,-50"
+                 CornerRadius="50"/>
+
+    </Grid>
+
+</ContentPage>
