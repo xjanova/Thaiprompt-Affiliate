@@ -503,6 +503,70 @@ Route::prefix('v1/tpix')->name('api.tpix.')->group(function () {
             Route::get('/my/swaps', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'mySwaps'])->name('my.swaps');
         });
     });
+
+    // Staking Routes
+    Route::prefix('staking')->name('staking.')->group(function () {
+        // Public endpoints
+        Route::get('/pools', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'getPools'])->name('pools');
+        Route::get('/pools/{poolId}', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'getPool'])->name('pools.show');
+        Route::get('/pools/{poolId}/recent', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'getRecentStakes'])->name('pools.recent');
+
+        // Protected endpoints (requires authentication)
+        Route::middleware('auth:sanctum')->group(function () {
+            // Get user stake
+            Route::get('/my-stake/{poolId}', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'getMyStake'])->name('my-stake');
+
+            // Stake actions
+            Route::post('/stake', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'stake'])
+                ->middleware('tpix.rate.limit:trade')
+                ->name('stake');
+
+            Route::post('/unstake', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'unstake'])
+                ->middleware('tpix.rate.limit:trade')
+                ->name('unstake');
+
+            Route::post('/claim', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'claim'])
+                ->name('claim');
+
+            // History
+            Route::get('/history', [\App\Http\Controllers\Api\V1\StakingApiController::class, 'getHistory'])->name('history');
+
+            // Individual stake details
+            Route::get('/stakes/{stakeId}', function ($stakeId) {
+                $stake = \App\Models\TPIXStake::with('pool.token')->findOrFail($stakeId);
+
+                // Ensure user owns this stake
+                if ($stake->user_id !== auth()->id()) {
+                    abort(403, 'Unauthorized');
+                }
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'id' => $stake->id,
+                        'pool' => [
+                            'id' => $stake->pool->id,
+                            'pair' => $stake->pool->token->name,
+                            'token' => $stake->pool->token,
+                        ],
+                        'amount' => (float) $stake->staked_amount,
+                        'lock_period_days' => (int) $stake->lock_period_days,
+                        'apy' => (float) $stake->apy,
+                        'exchange_rate' => '1 ' . $stake->pool->token->symbol,
+                        'price_impact' => 0,
+                        'slippage_tolerance' => 0,
+                        'created_at' => $stake->created_at->toISOString(),
+                        'unlock_date' => $stake->unlock_date ? $stake->unlock_date->toISOString() : null,
+                        'status' => $stake->status,
+                        'blockchain_tx_hash' => $stake->blockchain_tx_hash,
+                        'blockchain_tx_url' => $stake->blockchain_tx_hash
+                            ? config('tpix.blockchain.explorer_url') . '/tx/' . $stake->blockchain_tx_hash
+                            : null,
+                    ],
+                ]);
+            })->name('stakes.show');
+        });
+    });
 });
 
 /*

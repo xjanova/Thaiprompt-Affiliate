@@ -15,21 +15,67 @@ class TPIXStake extends Model
         'pool_id',
         'user_id',
         'amount',
+        'staked_amount',  // Alias for amount
+        'lock_period_days',
+        'apy',
         'rewards_earned',
         'rewards_claimed',
         'status',
         'staked_at',
         'unlock_at',
+        'unlock_date',  // Alias for unlock_at
         'unstaked_at',
+        'last_reward_claim_at',
         'stake_tx_hash',
+        'blockchain_tx_hash',  // Alias for stake_tx_hash
         'unstake_tx_hash',
     ];
 
     protected $casts = [
         'staked_at' => 'datetime',
         'unlock_at' => 'datetime',
+        'unlock_date' => 'datetime',
         'unstaked_at' => 'datetime',
+        'last_reward_claim_at' => 'datetime',
+        'apy' => 'decimal:2',
+        'lock_period_days' => 'integer',
     ];
+
+    /**
+     * Accessors & Mutators for field aliases
+     */
+    public function getStakedAmountAttribute($value)
+    {
+        return $value ?? $this->attributes['amount'] ?? null;
+    }
+
+    public function setStakedAmountAttribute($value)
+    {
+        $this->attributes['amount'] = $value;
+        $this->attributes['staked_amount'] = $value;
+    }
+
+    public function getUnlockDateAttribute($value)
+    {
+        return $value ?? $this->attributes['unlock_at'] ?? null;
+    }
+
+    public function setUnlockDateAttribute($value)
+    {
+        $this->attributes['unlock_at'] = $value;
+        $this->attributes['unlock_date'] = $value;
+    }
+
+    public function getBlockchainTxHashAttribute($value)
+    {
+        return $value ?? $this->attributes['stake_tx_hash'] ?? null;
+    }
+
+    public function setBlockchainTxHashAttribute($value)
+    {
+        $this->attributes['stake_tx_hash'] = $value;
+        $this->attributes['blockchain_tx_hash'] = $value;
+    }
 
     /**
      * Relationships
