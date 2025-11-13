@@ -279,6 +279,37 @@
             font-weight: bold;
         }
 
+        /* Sound Toggle Button */
+        #sound-toggle {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 50;
+            pointer-events: auto;
+        }
+
+        #sound-toggle:hover {
+            background: rgba(0, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        #sound-toggle.muted {
+            border-color: #ff4444;
+            color: #ff4444;
+        }
+
         /* Shop Button */
         #shop-btn {
             position: absolute;
@@ -413,6 +444,9 @@
             <span class="key">MOUSE</span> to move |
             <span class="key">SPACE</span> boost
         </div>
+
+        <!-- Sound Toggle -->
+        <button id="sound-toggle" title="Toggle Sound">🔊</button>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -431,6 +465,78 @@
             FOOD_VALUE: 1,
             COLLISION_DISTANCE: 0.6,
         };
+
+        // Audio System (16-bit style)
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let soundEnabled = true;
+
+        // 16-bit sound generator
+        function playSound(type) {
+            if (!soundEnabled) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            const now = audioContext.currentTime;
+
+            switch(type) {
+                case 'eat':
+                    // Food collection sound - happy beep
+                    oscillator.frequency.setValueAtTime(800, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                    gainNode.gain.setValueAtTime(0.3, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.1);
+                    break;
+
+                case 'grow':
+                    // Growth sound - power up
+                    oscillator.frequency.setValueAtTime(400, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+                    gainNode.gain.setValueAtTime(0.2, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.15);
+                    break;
+
+                case 'die':
+                    // Death sound - descending explosion
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(500, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.5);
+                    gainNode.gain.setValueAtTime(0.5, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.5);
+                    break;
+
+                case 'boost':
+                    // Boost sound - whoosh
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.setValueAtTime(200, now);
+                    oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.15, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.1);
+                    break;
+
+                case 'kill':
+                    // Kill enemy sound - victory beep
+                    oscillator.frequency.setValueAtTime(600, now);
+                    oscillator.frequency.setValueAtTime(700, now + 0.05);
+                    oscillator.frequency.setValueAtTime(800, now + 0.1);
+                    gainNode.gain.setValueAtTime(0.25, now);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                    oscillator.start(now);
+                    oscillator.stop(now + 0.2);
+                    break;
+            }
+        }
 
         // Game state
         let scene, camera, renderer;
@@ -586,22 +692,31 @@
 
                 this.length += amount;
                 this.score += amount * CONFIG.FOOD_VALUE;
+
+                // Play eat sound
+                if (this.isPlayer) {
+                    playSound('eat');
+
+                    // Play grow sound every 5 segments
+                    if (this.length % 5 === 0) {
+                        playSound('grow');
+                    }
+                }
             }
 
             checkSelfCollision() {
-                const head = this.segments[0].position;
-
-                for (let i = 3; i < this.segments.length; i++) {
-                    const distance = head.distanceTo(this.segments[i].position);
-                    if (distance < CONFIG.COLLISION_DISTANCE) {
-                        return true;
-                    }
-                }
+                // Self collision is disabled in .io games
+                // Players should not die when hitting their own body
                 return false;
             }
 
             die() {
                 this.alive = false;
+
+                // Play death sound
+                if (this.isPlayer) {
+                    playSound('die');
+                }
 
                 // Convert segments to food
                 this.segments.forEach(segment => {
@@ -686,6 +801,14 @@
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('restart-btn').addEventListener('click', restartGame);
 
+            // Sound toggle
+            const soundToggle = document.getElementById('sound-toggle');
+            soundToggle.addEventListener('click', function() {
+                soundEnabled = !soundEnabled;
+                this.textContent = soundEnabled ? '🔊' : '🔇';
+                this.classList.toggle('muted', !soundEnabled);
+            });
+
             // Skin selection
             document.querySelectorAll('.skin-option').forEach(option => {
                 option.addEventListener('click', function() {
@@ -741,6 +864,105 @@
 
             const bot = new Snake(x, z, false, name, skin);
             bots.push(bot);
+        }
+
+        /**
+         * Check collision between two snakes
+         * Returns the snake that should die, or null if no collision
+         */
+        function checkSnakeCollision(snake1, snake2) {
+            if (!snake1.alive || !snake2.alive) return null;
+
+            const head1 = snake1.segments[0].position;
+            const head2 = snake2.segments[0].position;
+
+            // Check head-to-head collision
+            const headToHeadDistance = head1.distanceTo(head2);
+            if (headToHeadDistance < CONFIG.COLLISION_DISTANCE * 1.5) {
+                // Head-to-head collision
+                // Determine winner based on:
+                // 1. Size (longer snake wins)
+                // 2. If same size, boosting snake wins
+                // 3. If both boosting or both not, both die (return both)
+
+                if (snake1.length > snake2.length) {
+                    return snake2; // snake1 wins
+                } else if (snake2.length > snake1.length) {
+                    return snake1; // snake2 wins
+                } else {
+                    // Same length - check boost
+                    if (snake1.isBoosting && !snake2.isBoosting) {
+                        return snake2; // boosting snake wins
+                    } else if (snake2.isBoosting && !snake1.isBoosting) {
+                        return snake1; // boosting snake wins
+                    } else {
+                        // Both equal - smaller one dies (or random)
+                        return snake1.score <= snake2.score ? snake1 : snake2;
+                    }
+                }
+            }
+
+            // Check if snake1's head hits snake2's body
+            for (let i = 1; i < snake2.segments.length; i++) {
+                const distance = head1.distanceTo(snake2.segments[i].position);
+                if (distance < CONFIG.COLLISION_DISTANCE) {
+                    return snake1; // snake1 dies (hit snake2's body)
+                }
+            }
+
+            // Check if snake2's head hits snake1's body
+            for (let i = 1; i < snake1.segments.length; i++) {
+                const distance = head2.distanceTo(snake1.segments[i].position);
+                if (distance < CONFIG.COLLISION_DISTANCE) {
+                    return snake2; // snake2 dies (hit snake1's body)
+                }
+            }
+
+            return null; // No collision
+        }
+
+        /**
+         * Check all snake collisions and handle deaths
+         */
+        function checkAllSnakeCollisions() {
+            if (!player || !player.alive) return;
+
+            // Check player vs all bots
+            for (let i = bots.length - 1; i >= 0; i--) {
+                const bot = bots[i];
+                if (!bot.alive) continue;
+
+                const victim = checkSnakeCollision(player, bot);
+                if (victim) {
+                    if (victim === bot) {
+                        // Player killed a bot!
+                        playSound('kill');
+                    }
+                    victim.die();
+                    if (victim === bot) {
+                        createBot(); // Respawn bot
+                    }
+                    return; // Only one death per frame
+                }
+            }
+
+            // Check bot vs bot collisions
+            for (let i = bots.length - 1; i >= 0; i--) {
+                const bot1 = bots[i];
+                if (!bot1.alive) continue;
+
+                for (let j = i - 1; j >= 0; j--) {
+                    const bot2 = bots[j];
+                    if (!bot2.alive) continue;
+
+                    const victim = checkSnakeCollision(bot1, bot2);
+                    if (victim) {
+                        victim.die();
+                        createBot(); // Respawn
+                        return; // Only one death per frame
+                    }
+                }
+            }
         }
 
         function startGame() {
@@ -858,13 +1080,6 @@
 
                 bot.update();
 
-                // Check collisions
-                if (bot.checkSelfCollision()) {
-                    bot.die();
-                    createBot(); // Respawn
-                    return;
-                }
-
                 // Check food collision
                 for (let i = foods.length - 1; i >= 0; i--) {
                     const food = foods[i];
@@ -908,14 +1123,13 @@
                         break;
                     }
                 }
-
-                // Check self collision
-                if (player.checkSelfCollision()) {
-                    player.die();
-                }
             }
 
             updateBots();
+
+            // Check all snake-to-snake collisions
+            checkAllSnakeCollisions();
+
             updateLeaderboard();
 
             // Maintain food count
@@ -942,13 +1156,19 @@
         }
 
         let keys = {};
+        let raycaster = new THREE.Raycaster();
+        let mouseVector = new THREE.Vector2();
+
         function onKeyDown(e) {
             keys[e.code] = true;
 
             if (!player || !player.alive) return;
 
             if (e.code === 'Space') {
-                player.isBoosting = true;
+                if (!player.isBoosting) {
+                    player.isBoosting = true;
+                    playSound('boost');
+                }
             }
 
             const directions = {
@@ -978,11 +1198,32 @@
         function onMouseMove(e) {
             if (!player || !player.alive) return;
 
-            const mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            const mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            // Convert mouse position to normalized device coordinates (-1 to +1)
+            mouseVector.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouseVector.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
-            const direction = new THREE.Vector3(mouseX, 0, mouseY).normalize();
-            player.targetDirection.copy(direction);
+            // Use raycaster to find where mouse points on the ground plane
+            raycaster.setFromCamera(mouseVector, camera);
+
+            // Create a plane at y=0 (ground level)
+            const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const intersectPoint = new THREE.Vector3();
+
+            // Find intersection point
+            raycaster.ray.intersectPlane(groundPlane, intersectPoint);
+
+            if (intersectPoint) {
+                // Calculate direction from snake head to mouse position
+                const head = player.segments[0].position;
+                const direction = new THREE.Vector3()
+                    .subVectors(intersectPoint, head)
+                    .normalize();
+
+                // Only update if direction is valid
+                if (direction.length() > 0) {
+                    player.targetDirection.copy(direction);
+                }
+            }
         }
 
         init();
