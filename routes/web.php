@@ -26,6 +26,16 @@ Route::get('/demo/3d-navigation', function () {
     return view('demo-3d-navigation');
 })->name('demo.3d-navigation');
 
+// Rewards & Missions Routes (Authenticated)
+Route::middleware('auth')->prefix('rewards')->name('rewards.')->group(function () {
+    Route::get('/daily', [\App\Http\Controllers\RewardController::class, 'daily'])->name('daily');
+    Route::post('/daily/claim', [\App\Http\Controllers\RewardController::class, 'claimDaily'])->name('daily.claim');
+
+    Route::get('/missions', [\App\Http\Controllers\RewardController::class, 'missions'])->name('missions');
+    Route::post('/missions/{missionId}/claim', [\App\Http\Controllers\RewardController::class, 'claimMission'])->name('missions.claim');
+    Route::get('/missions/progress', [\App\Http\Controllers\RewardController::class, 'getMissionsProgress'])->name('missions.progress');
+});
+
 // Games Routes
 Route::prefix('games')->name('games.')->group(function () {
     Route::get('/', [\App\Http\Controllers\GameController::class, 'index'])->name('index');
