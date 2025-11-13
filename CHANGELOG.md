@@ -2,6 +2,28 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.174.6] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #995 from xjanova/claude/qrcode-barcode-generator-011CV5soSfeBW39LqMvx2j5C (fe5cde6b)
+- Upgrade QR Code & Barcode Generator to Pro Level 🚀 (5cd3ad43)
+- Add QR Code & Barcode Generator feature (cab78736)
+
+## [v2.174.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #994 from xjanova/claude/audio-spectrum-visualizer-011CV5sjNLpkzVxApxCu8RGs (e7fc3c60)
+- Enhance Audio Spectrum Visualizer with 15+ new features (14a01bfc)
+- Add comprehensive Audio Spectrum Visualizer with 2D and 3D modes (210f0f17)
+
 ## [v2.174.4] - 2025-11-13
 
 ### ✨ Features
