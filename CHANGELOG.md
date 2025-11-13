@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.185.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Fix syntax error in tpix_staking migration (b2226cd2)
+- fix: Add missing slug field to GameSeeder (85cd3530)
+### 🔧 Other Changes
+- Merge pull request #1025 from xjanova/claude/add-tpix-currency-seeder-011CV6A9WPnYH2hoiZjNoGTR (640e02fc)
+
 ## [v2.185.0] - 2025-11-13
 
 ### ✨ Features
