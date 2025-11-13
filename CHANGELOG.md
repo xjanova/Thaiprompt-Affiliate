@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.170.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #959 from xjanova/claude/admin-notification-bell-system-011CV5H4H6GNUrjE4NneiYfA (cab66a26)
+- feat: เพิ่มระบบแจ้งเตือนแบบเรียลไทม์สำหรับแอดมิน (15f4da4c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.169.2] - 2025-11-13
 
 ### ✨ Features
