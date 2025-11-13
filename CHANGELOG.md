@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.167.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #953 from xjanova/claude/fix-shell-exec-error-011CV4YnSkrDgcUeqbvof2E4 (7dea26a8)
+- Add GitHelper to read git info without shell execution (29cbb158)
+
 ## [v2.167.2] - 2025-11-13
 
 ### ✨ Features
