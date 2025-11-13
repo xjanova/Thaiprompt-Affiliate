@@ -241,6 +241,20 @@
 
             async applyTheme() {
                 console.log('Applying theme:', this.currentTheme);
+                this.open = false; // Close modal first
+
+                // Show loading indicator
+                const loadingDiv = document.createElement('div');
+                loadingDiv.id = 'theme-loading';
+                loadingDiv.innerHTML = `
+                    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 99999;">
+                        <div style="background: white; padding: 30px; border-radius: 15px; text-align: center;">
+                            <i class="fas fa-spinner fa-spin" style="font-size: 48px; color: #6366f1; margin-bottom: 15px;"></i>
+                            <p style="font-size: 18px; font-weight: 600; color: #1f2937;">กำลังเปลี่ยนธีม...</p>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(loadingDiv);
 
                 try {
                     const response = await fetch('{{ route("user.theme.update") }}', {
@@ -256,17 +270,22 @@
                     });
 
                     const data = await response.json();
+                    console.log('Server response:', data);
 
                     if (response.ok && data.success) {
-                        console.log('Theme updated successfully, reloading...');
-                        // Reload page to apply new theme
-                        window.location.reload();
+                        console.log('Theme updated successfully, reloading...', data);
+                        // Small delay to show success
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 500);
                     } else {
                         console.error('Failed to update theme:', data);
+                        document.getElementById('theme-loading')?.remove();
                         alert('เกิดข้อผิดพลาดในการเปลี่ยนธีม: ' + (data.message || 'Unknown error'));
                     }
                 } catch (error) {
                     console.error('Error updating theme:', error);
+                    document.getElementById('theme-loading')?.remove();
                     alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message);
                 }
             }
