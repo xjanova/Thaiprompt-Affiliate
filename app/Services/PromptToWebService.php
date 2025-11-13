@@ -27,6 +27,12 @@ class PromptToWebService
     public function generateWebPage(string $prompt, ?string $providerName = null, ?string $modelName = null): array
     {
         try {
+            // Check if prompt requests complex system
+            $complexityCheck = $this->checkPromptComplexity($prompt);
+            if (!$complexityCheck['allowed']) {
+                throw new \Exception($complexityCheck['message']);
+            }
+
             // Get AI provider and model
             $provider = $this->getProvider($providerName);
             $model = $this->getModel($provider, $modelName);
@@ -91,24 +97,33 @@ class PromptToWebService
     protected function buildSystemPrompt(): string
     {
         return <<<EOT
-You are an expert web developer specializing in creating beautiful, modern, and responsive web pages.
+You are an expert web developer specializing in creating SIMPLE, CLEAN, and beautiful web pages.
 
-Your task is to generate complete web pages based on user descriptions. Follow these guidelines:
+IMPORTANT: Create SIMPLE pages only. Keep it minimal and easy to understand.
 
-1. Create clean, semantic HTML5 code
-2. Use modern CSS with responsive design (mobile-first approach)
-3. Include inline CSS in a <style> tag
-4. Add interactive JavaScript if needed in a <script> tag
-5. Use Tailwind CSS utility classes when appropriate
-6. Make the design visually appealing with good color schemes
-7. Ensure accessibility (proper heading structure, alt text, ARIA labels)
-8. Support Thai language properly (use appropriate fonts)
+Your task is to generate simple web pages based on user descriptions. Follow these guidelines:
+
+1. Create SIMPLE, clean HTML5 code (keep it minimal - 1-2 sections max)
+2. Use Tailwind CSS for styling (already included via CDN)
+3. Use simple, clean design with plenty of white space
+4. Choose ONE main color scheme and stick to it
+5. Keep layout simple: header, main content, footer (if needed)
+6. Use simple animations only (CSS transitions, no complex JavaScript)
+7. Support Thai language properly (Tailwind includes Thai fonts)
+8. Make it responsive but keep the structure simple
+
+STYLE GUIDELINES:
+- Use Tailwind utility classes (bg-*, text-*, p-*, m-*, rounded-*, etc.)
+- Simple gradient backgrounds are OK (bg-gradient-to-*)
+- Use shadow-* for depth
+- Keep content centered and clean
+- Maximum 2-3 sections per page
 
 Return your response in this exact format:
 
 ```html
-<!-- TITLE: [Page Title Here] -->
-<!-- DESCRIPTION: [Brief description of the page] -->
+<!-- TITLE: [Simple Page Title] -->
+<!-- DESCRIPTION: [Brief description] -->
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -117,20 +132,27 @@ Return your response in this exact format:
     <title>[Page Title]</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Your CSS here */
+        /* Minimal custom CSS only if absolutely needed */
     </style>
 </head>
-<body>
-    <!-- Your HTML content here -->
+<body class="bg-gray-50">
+    <!-- Simple, clean HTML content here -->
+    <!-- Keep it minimal: 1-2 main sections -->
 
     <script>
-        // Your JavaScript here (if needed)
+        // Simple JavaScript only if needed (avoid if possible)
     </script>
 </body>
 </html>
 ```
 
-Important: Return ONLY the HTML code with embedded CSS and JavaScript. Do not include any explanations or markdown outside the HTML.
+REMEMBER:
+- KEEP IT SIMPLE - no complex layouts
+- KEEP IT CLEAN - lots of white space
+- KEEP IT MINIMAL - 1-2 sections maximum
+- Use Tailwind classes primarily
+
+Return ONLY the HTML code. No explanations or markdown outside the HTML.
 EOT;
     }
 
@@ -228,6 +250,59 @@ EOT;
 EOT;
 
         return $html;
+    }
+
+    /**
+     * Check if the prompt requests complex system features
+     */
+    protected function checkPromptComplexity(string $prompt): array
+    {
+        $lowerPrompt = mb_strtolower($prompt);
+
+        // Keywords that indicate complex systems
+        $complexKeywords = [
+            // Database related
+            'database', 'ฐานข้อมูล', 'mysql', 'mongodb', 'sql', 'crud',
+            // Backend related
+            'backend', 'api', 'rest api', 'graphql', 'server', 'เซิร์ฟเวอร์',
+            // Authentication
+            'login', 'เข้าสู่ระบบ', 'ล็อกอิน', 'authentication', 'auth', 'register', 'สมัครสมาชิก',
+            'user system', 'ระบบสมาชิก', 'ระบบผู้ใช้',
+            // E-commerce
+            'payment', 'ชำระเงิน', 'cart', 'ตะกร้า', 'checkout', 'order', 'สั่งซื้อ',
+            // Real-time features
+            'real-time', 'realtime', 'websocket', 'chat', 'แชท',
+            // File upload
+            'upload', 'อัพโหลด', 'file upload',
+            // Complex functionality
+            'dashboard', 'แดชบอร์ด', 'admin panel', 'cms',
+            'search', 'ค้นหา', 'filter', 'กรอง',
+        ];
+
+        foreach ($complexKeywords as $keyword) {
+            if (strpos($lowerPrompt, $keyword) !== false) {
+                return [
+                    'allowed' => false,
+                    'message' => "⚠️ ขออภัยครับ ระบบนี้รองรับเฉพาะการสร้างหน้าเว็บแบบง่ายๆ (Landing Page, Presentation Page) เท่านั้น\n\n" .
+                                "ไม่รองรับการสร้าง:\n" .
+                                "- ระบบที่ต้องใช้ฐานข้อมูล\n" .
+                                "- ระบบ Backend/API\n" .
+                                "- ระบบ Login/สมาชิก\n" .
+                                "- ระบบ E-commerce\n" .
+                                "- ระบบที่ซับซ้อนอื่นๆ\n\n" .
+                                "💡 แนะนำ: ลองขอหน้าเว็บแบบง่ายๆ เช่น:\n" .
+                                "- หน้า Landing Page แนะนำธุรกิจ\n" .
+                                "- หน้าแสดงข้อมูลบริษัท\n" .
+                                "- หน้าแสดงโปรโมชั่น\n" .
+                                "- หน้าแสดงรายละเอียดสินค้า (แบบ static)"
+                ];
+            }
+        }
+
+        return [
+            'allowed' => true,
+            'message' => ''
+        ];
     }
 
     /**
