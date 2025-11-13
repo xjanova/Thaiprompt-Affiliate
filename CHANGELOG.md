@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.201.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1049 from xjanova/claude/add-user-side-menu-011CV6J7YGH7tCSwvqwMeV58 (f400eed3)
+- feat: เพิ่มเมนูเกมส์ในเมนูฝั่งยูสเซอร์ (131c3296)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.200.0] - 2025-11-13
 
 ### ✨ Features
