@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<?xaml-comp compile="true" ?>
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <!-- Primary Colors -->
+    <Color x:Key="Primary">#3B82F6</Color>
+    <Color x:Key="PrimaryDark">#1D4ED8</Color>
+    <Color x:Key="PrimaryLight">#60A5FA</Color>
+
+    <!-- Secondary Colors -->
+    <Color x:Key="Secondary">#10B981</Color>
+    <Color x:Key="SecondaryDark">#059669</Color>
+    <Color x:Key="SecondaryLight">#34D399</Color>
+
+    <!-- Accent Colors -->
+    <Color x:Key="Accent">#8B5CF6</Color>
+    <Color x:Key="AccentDark">#6D28D9</Color>
+    <Color x:Key="AccentLight">#A78BFA</Color>
+
+    <!-- Neutral Colors -->
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
+    <Color x:Key="Transparent">Transparent</Color>
+
+    <!-- Gray Scale -->
+    <Color x:Key="Gray50">#F9FAFB</Color>
+    <Color x:Key="Gray100">#F3F4F6</Color>
+    <Color x:Key="Gray200">#E5E7EB</Color>
+    <Color x:Key="Gray300">#D1D5DB</Color>
+    <Color x:Key="Gray400">#9CA3AF</Color>
+    <Color x:Key="Gray500">#6B7280</Color>
+    <Color x:Key="Gray600">#4B5563</Color>
+    <Color x:Key="Gray700">#374151</Color>
+    <Color x:Key="Gray800">#1F2937</Color>
+    <Color x:Key="Gray900">#111827</Color>
+
+    <!-- Status Colors -->
+    <Color x:Key="Success">#10B981</Color>
+    <Color x:Key="Warning">#F59E0B</Color>
+    <Color x:Key="Error">#EF4444</Color>
+    <Color x:Key="Info">#3B82F6</Color>
+
+    <!-- Semantic Colors -->
+    <Color x:Key="TextPrimary">#111827</Color>
+    <Color x:Key="TextSecondary">#6B7280</Color>
+    <Color x:Key="TextTertiary">#9CA3AF</Color>
+    <Color x:Key="TextInverse">#FFFFFF</Color>
+
+    <Color x:Key="BackgroundPrimary">#FFFFFF</Color>
+    <Color x:Key="BackgroundSecondary">#F9FAFB</Color>
+    <Color x:Key="BackgroundTertiary">#F3F4F6</Color>
+
+    <Color x:Key="BorderColor">#E5E7EB</Color>
+    <Color x:Key="DividerColor">#E5E7EB</Color>
+
+    <!-- Shadow Color -->
+    <Color x:Key="Shadow">#33000000</Color>
+
+</ResourceDictionary>

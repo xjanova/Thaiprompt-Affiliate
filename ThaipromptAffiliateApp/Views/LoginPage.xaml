@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ThaipromptAffiliateApp.ViewModels"
+             x:Class="ThaipromptAffiliateApp.Views.LoginPage"
+             x:DataType="vm:LoginViewModel"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource BackgroundSecondary}">
+
+    <ScrollView>
+        <Grid RowDefinitions="Auto,*,Auto" Padding="0">
+
+            <!-- Header with Gradient -->
+            <Frame Grid.Row="0"
+                   CornerRadius="0,0,40,40"
+                   Padding="0"
+                   HasShadow="True"
+                   HeightRequest="280"
+                   Background="{StaticResource PrimaryGradient}">
+
+                <VerticalStackLayout Padding="30,60,30,40" Spacing="15" VerticalOptions="Center">
+                    <!-- Logo/Icon -->
+                    <Image Source="logo.png"
+                           HeightRequest="80"
+                           WidthRequest="80"
+                           HorizontalOptions="Center"/>
+
+                    <!-- Welcome Text -->
+                    <Label Text="ยินดีต้อนรับ"
+                           FontSize="32"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center"/>
+
+                    <Label Text="เข้าสู่ระบบเพื่อจัดการคอมมิชชั่น"
+                           FontSize="16"
+                           TextColor="White"
+                           Opacity="0.9"
+                           HorizontalOptions="Center"/>
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Login Form -->
+            <VerticalStackLayout Grid.Row="1"
+                               Padding="30,30"
+                               Spacing="20">
+
+                <!-- Email Input Card -->
+                <Frame Style="{StaticResource CardFrame}" Padding="0">
+                    <VerticalStackLayout Spacing="8" Padding="16">
+                        <Label Text="อีเมล"
+                               Style="{StaticResource LabelCaption}"
+                               TextColor="{StaticResource Gray600}"/>
+
+                        <Entry Text="{Binding Email}"
+                               Placeholder="กรอกอีเมลของคุณ"
+                               Keyboard="Email"
+                               Style="{StaticResource EntryStandard}"
+                               BackgroundColor="Transparent"
+                               HeightRequest="45"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Password Input Card -->
+                <Frame Style="{StaticResource CardFrame}" Padding="0">
+                    <VerticalStackLayout Spacing="8" Padding="16">
+                        <Label Text="รหัสผ่าน"
+                               Style="{StaticResource LabelCaption}"
+                               TextColor="{StaticResource Gray600}"/>
+
+                        <Entry Text="{Binding Password}"
+                               Placeholder="กรอกรหัสผ่านของคุณ"
+                               IsPassword="True"
+                               Style="{StaticResource EntryStandard}"
+                               BackgroundColor="Transparent"
+                               HeightRequest="45"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Forgot Password -->
+                <Label Text="ลืมรหัสผ่าน?"
+                       FontSize="14"
+                       TextColor="{StaticResource Primary}"
+                       HorizontalOptions="End">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ForgotPasswordCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <!-- Login Button -->
+                <Button Text="เข้าสู่ระบบ"
+                        Command="{Binding LoginCommand}"
+                        Style="{StaticResource ButtonPrimary}"
+                        Margin="0,10,0,0">
+                    <Button.Shadow>
+                        <Shadow Brush="{StaticResource Primary}"
+                                Offset="0,4"
+                                Radius="12"
+                                Opacity="0.3" />
+                    </Button.Shadow>
+                </Button>
+
+                <!-- Loading Indicator -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                 IsVisible="{Binding IsBusy}"
+                                 Color="{StaticResource Primary}"
+                                 HorizontalOptions="Center"
+                                 Margin="0,20,0,0"/>
+
+                <!-- Error Message -->
+                <Frame IsVisible="{Binding HasError}"
+                       BackgroundColor="{StaticResource Error}"
+                       CornerRadius="8"
+                       Padding="16"
+                       Margin="0,10,0,0">
+                    <Label Text="{Binding ErrorMessage}"
+                           TextColor="White"
+                           FontSize="14"
+                           HorizontalTextAlignment="Center"/>
+                </Frame>
+
+            </VerticalStackLayout>
+
+            <!-- Footer -->
+            <VerticalStackLayout Grid.Row="2"
+                               Padding="30,0,30,30"
+                               Spacing="15">
+
+                <BoxView HeightRequest="1"
+                         Color="{StaticResource Gray200}"
+                         Margin="0,0,0,15"/>
+
+                <HorizontalStackLayout HorizontalOptions="Center" Spacing="5">
+                    <Label Text="ยังไม่มีบัญชี?"
+                           TextColor="{StaticResource Gray600}"
+                           FontSize="14"/>
+
+                    <Label Text="สมัครสมาชิก"
+                           TextColor="{StaticResource Primary}"
+                           FontSize="14"
+                           FontAttributes="Bold">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding RegisterCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </HorizontalStackLayout>
+
+                <!-- App Version -->
+                <Label Text="Version 1.0.0"
+                       FontSize="12"
+                       TextColor="{StaticResource Gray400}"
+                       HorizontalOptions="Center"
+                       Margin="0,10,0,0"/>
+
+            </VerticalStackLayout>
+
+        </Grid>
+    </ScrollView>
+
+</ContentPage>

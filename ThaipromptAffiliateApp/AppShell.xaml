@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="ThaipromptAffiliateApp.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:ThaipromptAffiliateApp.Views"
+    Shell.FlyoutBehavior="Flyout"
+    Shell.NavBarIsVisible="True"
+    FlyoutBackgroundColor="{StaticResource Gray50}">
+
+    <!-- Flyout Header -->
+    <Shell.FlyoutHeaderTemplate>
+        <DataTemplate>
+            <Grid HeightRequest="200" Background="{StaticResource PrimaryGradient}">
+                <VerticalStackLayout Padding="20" VerticalOptions="Center">
+                    <!-- App Logo/Icon -->
+                    <Image Source="logo.png"
+                           HeightRequest="60"
+                           WidthRequest="60"
+                           Margin="0,0,0,10"
+                           HorizontalOptions="Start"/>
+
+                    <!-- App Title -->
+                    <Label Text="Thaiprompt Affiliate"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           TextColor="White"/>
+
+                    <!-- User Email (Bind to ViewModel) -->
+                    <Label Text="user@example.com"
+                           FontSize="14"
+                           TextColor="White"
+                           Opacity="0.9"
+                           Margin="0,5,0,0"/>
+                </VerticalStackLayout>
+            </Grid>
+        </DataTemplate>
+    </Shell.FlyoutHeaderTemplate>
+
+    <!-- Flyout Footer -->
+    <Shell.FlyoutFooterTemplate>
+        <DataTemplate>
+            <Grid Padding="20" Background="{StaticResource Gray100}">
+                <Label Text="Version 1.0.0"
+                       FontSize="12"
+                       TextColor="{StaticResource Gray500}"
+                       HorizontalOptions="Center"/>
+            </Grid>
+        </DataTemplate>
+    </Shell.FlyoutFooterTemplate>
+
+    <!-- Flyout Items -->
+    <FlyoutItem Title="แดชบอร์ด" Icon="dashboard_icon.png">
+        <ShellContent Route="dashboard" ContentTemplate="{DataTemplate local:DashboardPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="คอมมิชชั่น" Icon="commission_icon.png">
+        <ShellContent Route="commissions" ContentTemplate="{DataTemplate local:CommissionsPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="ผู้แนะนำ" Icon="referral_icon.png">
+        <ShellContent Route="referrals" ContentTemplate="{DataTemplate local:ReferralsPage}" />
+    </FlyoutItem>
+
+    <FlyoutItem Title="โปรไฟล์" Icon="profile_icon.png">
+        <ShellContent Route="profile" ContentTemplate="{DataTemplate local:ProfilePage}" />
+    </FlyoutItem>
+
+    <!-- Menu Items (Logout) -->
+    <MenuItem Text="ออกจากระบบ"
+              IconImageSource="logout_icon.png"
+              Clicked="OnLogoutClicked" />
+
+</Shell>

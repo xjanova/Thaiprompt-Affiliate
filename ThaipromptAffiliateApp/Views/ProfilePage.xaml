@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ThaipromptAffiliateApp.ViewModels"
+             x:Class="ThaipromptAffiliateApp.Views.ProfilePage"
+             x:DataType="vm:ProfileViewModel"
+             Title="โปรไฟล์"
+             BackgroundColor="{StaticResource BackgroundSecondary}">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="20" Spacing="20">
+
+            <!-- Profile Header -->
+            <Frame Style="{StaticResource CardFrameGradient}"
+                   Background="{StaticResource AccentGradient}">
+                <VerticalStackLayout Spacing="15" Padding="10">
+
+                    <!-- Avatar -->
+                    <Frame WidthRequest="100"
+                           HeightRequest="100"
+                           CornerRadius="50"
+                           Padding="0"
+                           HasShadow="True"
+                           HorizontalOptions="Center"
+                           BackgroundColor="White">
+                        <Label Text="{Binding UserInitial}"
+                               FontSize="40"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource Accent}"
+                               HorizontalOptions="Center"
+                               VerticalOptions="Center"/>
+                    </Frame>
+
+                    <!-- User Name -->
+                    <Label Text="{Binding UserName}"
+                           FontSize="24"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center"/>
+
+                    <!-- User Email -->
+                    <Label Text="{Binding UserEmail}"
+                           FontSize="14"
+                           TextColor="White"
+                           Opacity="0.9"
+                           HorizontalOptions="Center"/>
+
+                    <!-- Member Since -->
+                    <Label Text="{Binding MemberSince, StringFormat='สมาชิกตั้งแต่: {0:dd/MM/yyyy}'}"
+                           FontSize="12"
+                           TextColor="White"
+                           Opacity="0.8"
+                           HorizontalOptions="Center"/>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Quick Stats -->
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="15">
+
+                <Frame Grid.Column="0" Style="{StaticResource CardFrame}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="📊 สถิติ" FontSize="14" FontAttributes="Bold"/>
+                        <Label Text="{Binding TotalCommissions}"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource Primary}"/>
+                        <Label Text="คอมมิชชั่นทั้งหมด"
+                               FontSize="11"
+                               TextColor="{StaticResource Gray500}"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <Frame Grid.Column="1" Style="{StaticResource CardFrame}">
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="💎 ระดับ" FontSize="14" FontAttributes="Bold"/>
+                        <Label Text="{Binding UserLevel}"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource Accent}"/>
+                        <Label Text="สมาชิก"
+                               FontSize="11"
+                               TextColor="{StaticResource Gray500}"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+            </Grid>
+
+            <!-- Settings Menu -->
+            <Label Text="การตั้งค่า"
+                   Style="{StaticResource LabelHeadline}"/>
+
+            <!-- Account Settings -->
+            <Frame Style="{StaticResource CardFrame}" Padding="0">
+                <VerticalStackLayout>
+
+                    <!-- Edit Profile -->
+                    <Grid Padding="16" ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0" Text="👤" FontSize="24"/>
+                        <Label Grid.Column="1"
+                               Text="แก้ไขโปรไฟล์"
+                               VerticalOptions="Center"
+                               Margin="15,0,0,0"
+                               FontSize="16"/>
+                        <Label Grid.Column="2"
+                               Text="›"
+                               FontSize="24"
+                               TextColor="{StaticResource Gray400}"/>
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding EditProfileCommand}"/>
+                        </Grid.GestureRecognizers>
+                    </Grid>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Gray200}"/>
+
+                    <!-- Change Password -->
+                    <Grid Padding="16" ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0" Text="🔒" FontSize="24"/>
+                        <Label Grid.Column="1"
+                               Text="เปลี่ยนรหัสผ่าน"
+                               VerticalOptions="Center"
+                               Margin="15,0,0,0"
+                               FontSize="16"/>
+                        <Label Grid.Column="2"
+                               Text="›"
+                               FontSize="24"
+                               TextColor="{StaticResource Gray400}"/>
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ChangePasswordCommand}"/>
+                        </Grid.GestureRecognizers>
+                    </Grid>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Gray200}"/>
+
+                    <!-- Notifications -->
+                    <Grid Padding="16" ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0" Text="🔔" FontSize="24"/>
+                        <Label Grid.Column="1"
+                               Text="การแจ้งเตือน"
+                               VerticalOptions="Center"
+                               Margin="15,0,0,0"
+                               FontSize="16"/>
+                        <Switch Grid.Column="2"
+                                IsToggled="{Binding NotificationsEnabled}"
+                                OnColor="{StaticResource Primary}"/>
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- App Settings -->
+            <Frame Style="{StaticResource CardFrame}" Padding="0">
+                <VerticalStackLayout>
+
+                    <!-- Language -->
+                    <Grid Padding="16" ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0" Text="🌐" FontSize="24"/>
+                        <Label Grid.Column="1"
+                               Text="ภาษา"
+                               VerticalOptions="Center"
+                               Margin="15,0,0,0"
+                               FontSize="16"/>
+                        <Label Grid.Column="2"
+                               Text="ไทย"
+                               TextColor="{StaticResource Gray500}"
+                               FontSize="14"
+                               VerticalOptions="Center"/>
+                    </Grid>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Gray200}"/>
+
+                    <!-- Dark Mode -->
+                    <Grid Padding="16" ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0" Text="🌙" FontSize="24"/>
+                        <Label Grid.Column="1"
+                               Text="โหมดมืด"
+                               VerticalOptions="Center"
+                               Margin="15,0,0,0"
+                               FontSize="16"/>
+                        <Switch Grid.Column="2"
+                                IsToggled="{Binding DarkModeEnabled}"
+                                OnColor="{StaticResource Primary}"/>
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Help & Support -->
+            <Frame Style="{StaticResource CardFrame}" Padding="0">
+                <VerticalStackLayout>
+
+                    <!-- Help Center -->
+                    <Grid Padding="16" ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0" Text="❓" FontSize="24"/>
+                        <Label Grid.Column="1"
+                               Text="ศูนย์ช่วยเหลือ"
+                               VerticalOptions="Center"
+                               Margin="15,0,0,0"
+                               FontSize="16"/>
+                        <Label Grid.Column="2"
+                               Text="›"
+                               FontSize="24"
+                               TextColor="{StaticResource Gray400}"/>
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding HelpCenterCommand}"/>
+                        </Grid.GestureRecognizers>
+                    </Grid>
+
+                    <BoxView HeightRequest="1" Color="{StaticResource Gray200}"/>
+
+                    <!-- About -->
+                    <Grid Padding="16" ColumnDefinitions="Auto,*,Auto">
+                        <Label Grid.Column="0" Text="ℹ️" FontSize="24"/>
+                        <Label Grid.Column="1"
+                               Text="เกี่ยวกับ"
+                               VerticalOptions="Center"
+                               Margin="15,0,0,0"
+                               FontSize="16"/>
+                        <Label Grid.Column="2"
+                               Text="v1.0.0"
+                               TextColor="{StaticResource Gray500}"
+                               FontSize="14"
+                               VerticalOptions="Center"/>
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Logout Button -->
+            <Button Text="ออกจากระบบ"
+                    Command="{Binding LogoutCommand}"
+                    Style="{StaticResource ButtonPrimary}"
+                    BackgroundColor="{StaticResource Error}"
+                    Margin="0,10,0,30"/>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

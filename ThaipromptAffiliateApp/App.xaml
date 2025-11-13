@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:ThaipromptAffiliateApp"
+             x:Class="ThaipromptAffiliateApp.App">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Global Colors -->
+            <Color x:Key="Primary">#3B82F6</Color>
+            <Color x:Key="PrimaryDark">#1D4ED8</Color>
+            <Color x:Key="Secondary">#10B981</Color>
+            <Color x:Key="SecondaryDark">#059669</Color>
+            <Color x:Key="Accent">#8B5CF6</Color>
+            <Color x:Key="AccentDark">#6D28D9</Color>
+
+            <Color x:Key="White">#FFFFFF</Color>
+            <Color x:Key="Black">#000000</Color>
+            <Color x:Key="Gray50">#F9FAFB</Color>
+            <Color x:Key="Gray100">#F3F4F6</Color>
+            <Color x:Key="Gray200">#E5E7EB</Color>
+            <Color x:Key="Gray300">#D1D5DB</Color>
+            <Color x:Key="Gray400">#9CA3AF</Color>
+            <Color x:Key="Gray500">#6B7280</Color>
+            <Color x:Key="Gray600">#4B5563</Color>
+            <Color x:Key="Gray700">#374151</Color>
+            <Color x:Key="Gray800">#1F2937</Color>
+            <Color x:Key="Gray900">#111827</Color>
+
+            <Color x:Key="Error">#EF4444</Color>
+            <Color x:Key="Warning">#F59E0B</Color>
+            <Color x:Key="Success">#10B981</Color>
+            <Color x:Key="Info">#3B82F6</Color>
+
+            <!-- Gradients -->
+            <LinearGradientBrush x:Key="PrimaryGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#3B82F6" Offset="0.0" />
+                <GradientStop Color="#1D4ED8" Offset="1.0" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="SecondaryGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#10B981" Offset="0.0" />
+                <GradientStop Color="#059669" Offset="1.0" />
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="#8B5CF6" Offset="0.0" />
+                <GradientStop Color="#6D28D9" Offset="1.0" />
+            </LinearGradientBrush>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

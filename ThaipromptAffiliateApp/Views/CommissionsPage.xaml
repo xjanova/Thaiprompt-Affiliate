@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ThaipromptAffiliateApp.ViewModels"
+             x:Class="ThaipromptAffiliateApp.Views.CommissionsPage"
+             x:DataType="vm:CommissionsViewModel"
+             Title="คอมมิชชั่น"
+             BackgroundColor="{StaticResource BackgroundSecondary}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Filter Section -->
+        <Frame Grid.Row="0"
+               Style="{StaticResource CardFrame}"
+               Margin="20,20,20,10">
+            <HorizontalStackLayout Spacing="10">
+                <Picker Title="สถานะ"
+                        ItemsSource="{Binding StatusFilters}"
+                        SelectedItem="{Binding SelectedStatus}"
+                        HorizontalOptions="FillAndExpand"/>
+
+                <Button Text="กรอง"
+                        Command="{Binding FilterCommand}"
+                        Style="{StaticResource ButtonPrimary}"
+                        WidthRequest="100"/>
+            </HorizontalStackLayout>
+        </Frame>
+
+        <!-- Commissions List -->
+        <RefreshView Grid.Row="1"
+                     IsRefreshing="{Binding IsRefreshing}"
+                     Command="{Binding RefreshCommand}">
+
+            <CollectionView ItemsSource="{Binding Commissions}"
+                          EmptyView="ยังไม่มีข้อมูลคอมมิชชั่น"
+                          Margin="20,0">
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Style="{StaticResource CardFrame}"
+                               Padding="16"
+                               Margin="0,0,0,15">
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+
+                                <!-- Commission Description -->
+                                <Label Grid.Row="0" Grid.Column="0"
+                                       Text="{Binding Description}"
+                                       FontSize="16"
+                                       FontAttributes="Bold"
+                                       TextColor="{StaticResource TextPrimary}"/>
+
+                                <!-- Date -->
+                                <Label Grid.Row="1" Grid.Column="0"
+                                       Text="{Binding CreatedAt, StringFormat='📅 {0:dd/MM/yyyy HH:mm}'}"
+                                       FontSize="13"
+                                       TextColor="{StaticResource Gray500}"
+                                       Margin="0,5,0,0"/>
+
+                                <!-- Reference -->
+                                <Label Grid.Row="2" Grid.Column="0"
+                                       Text="{Binding Reference, StringFormat='Ref: {0}'}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource Gray400}"
+                                       Margin="0,3,0,0"/>
+
+                                <!-- Amount and Status -->
+                                <VerticalStackLayout Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
+                                                   VerticalOptions="Center"
+                                                   HorizontalOptions="End"
+                                                   Spacing="8">
+
+                                    <Label Text="{Binding Amount, StringFormat='฿{0:N2}'}"
+                                           FontSize="20"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource Success}"
+                                           HorizontalOptions="End"/>
+
+                                    <Frame BackgroundColor="{Binding StatusColor}"
+                                           Padding="10,5"
+                                           CornerRadius="8"
+                                           HasShadow="False">
+                                        <Label Text="{Binding StatusText}"
+                                               FontSize="11"
+                                               TextColor="White"
+                                               FontAttributes="Bold"/>
+                                    </Frame>
+
+                                </VerticalStackLayout>
+
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <!-- Footer (Load More) -->
+                <CollectionView.Footer>
+                    <VerticalStackLayout Padding="20">
+                        <Button Text="โหลดเพิ่มเติม"
+                                Command="{Binding LoadMoreCommand}"
+                                IsVisible="{Binding HasMore}"
+                                Style="{StaticResource ButtonOutline}"/>
+
+                        <ActivityIndicator IsRunning="{Binding IsLoadingMore}"
+                                         IsVisible="{Binding IsLoadingMore}"
+                                         Margin="0,20,0,0"/>
+                    </VerticalStackLayout>
+                </CollectionView.Footer>
+
+            </CollectionView>
+
+        </RefreshView>
+
+    </Grid>
+
+</ContentPage>
