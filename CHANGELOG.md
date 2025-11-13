@@ -2,6 +2,114 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.176.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1001 from xjanova/claude/add-tetris-game-011CV5uGgs2T4yMgMTVakq36 (dbfd5751)
+- docs: Add comprehensive Tetris game documentation to Wiki (246d786b)
+- Add Tetris game with top score tracking (d4bc08b5)
+
+## [v2.176.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1000 from xjanova/claude/prompt-to-web-system-011CV5svmKVX2r7dHw1DRAXX (41be7959)
+- feat: Add Prompt to Web AI-powered page generation system (58ab2220)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.175.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #999 from xjanova/claude/add-2d-snooker-game-011CV5tFLneR82fNEZar9pYt (5a8315f3)
+- Add 2D Snooker game with multiple game modes (26cc4b7d)
+
+## [v2.175.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #998 from xjanova/claude/3d-web-typography-011CV5nJc539Q2xvUV7ERZSM (5fc07ce0)
+- Add Power-ups, Tournaments, and Season Leaderboard systems (bc5b6b77)
+- Add engaging Daily Rewards & Missions system (74bc9288)
+- Add complete game economy and multiplayer infrastructure (661e13f0)
+- Add complete Snake.io game with skins and shop system (ee012980)
+- Add complete game system infrastructure (6537ecf4)
+
+## [v2.175.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #996 from xjanova/claude/upgrade-tarot-3d-system-011CV5ta9r7KGcE4weUY4w69 (7452a9da)
+- feat: Upgrade Tarot system to 3D WebGL with Three.js (52bf9595)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/upgrade-tarot-3d-system-011CV5ta9r7KGcE4weUY4w69 (46e7f26d)
+
+## [v2.174.6] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #995 from xjanova/claude/qrcode-barcode-generator-011CV5soSfeBW39LqMvx2j5C (fe5cde6b)
+- Upgrade QR Code & Barcode Generator to Pro Level 🚀 (5cd3ad43)
+- Add QR Code & Barcode Generator feature (cab78736)
+
+## [v2.174.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #994 from xjanova/claude/audio-spectrum-visualizer-011CV5sjNLpkzVxApxCu8RGs (e7fc3c60)
+- Enhance Audio Spectrum Visualizer with 15+ new features (14a01bfc)
+- Add comprehensive Audio Spectrum Visualizer with 2D and 3D modes (210f0f17)
+
+## [v2.174.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #993 from xjanova/claude/demo-3d-navigation-011CV5pPyn8tcsYFEzZ3qtpa (209acdd8)
+- Fix 3D blocks disappearing after animation (046b6f75)
+
+## [v2.174.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #992 from xjanova/claude/demo-3d-navigation-011CV5pPyn8tcsYFEzZ3qtpa (e7c260ef)
+- Fix 3D navigation demo visibility issues (901befaa)
+
+## [v2.174.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #991 from xjanova/claude/3d-web-typography-011CV5nJc539Q2xvUV7ERZSM (f7b36b3a)
+- Upgrade Space Shooter with advanced features (645e1d2e)
+- Add Three.js 3D Space Shooter game demo (6b96687b)
+
 ## [v2.174.1] - 2025-11-13
 
 ### ✨ Features

@@ -22,6 +22,87 @@ Route::get('/demo/loading', function () {
     return view('demo-loading');
 })->name('demo.loading');
 
+// Tournament Routes
+Route::prefix('tournaments')->name('tournaments.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\TournamentController::class, 'index'])->name('index');
+    Route::get('/{slug}', [\App\Http\Controllers\TournamentController::class, 'show'])->name('show');
+    Route::get('/{slug}/leaderboard', [\App\Http\Controllers\TournamentController::class, 'leaderboard'])->name('leaderboard');
+
+    // Authenticated routes
+    Route::middleware('auth')->group(function () {
+        Route::post('/{slug}/register', [\App\Http\Controllers\TournamentController::class, 'register'])->name('register');
+        Route::post('/{slug}/submit-score', [\App\Http\Controllers\TournamentController::class, 'submitScore'])->name('submit-score');
+    });
+});
+
+// Rewards & Missions Routes (Authenticated)
+Route::middleware('auth')->prefix('rewards')->name('rewards.')->group(function () {
+    Route::get('/daily', [\App\Http\Controllers\RewardController::class, 'daily'])->name('daily');
+    Route::post('/daily/claim', [\App\Http\Controllers\RewardController::class, 'claimDaily'])->name('daily.claim');
+
+    Route::get('/missions', [\App\Http\Controllers\RewardController::class, 'missions'])->name('missions');
+    Route::post('/missions/{missionId}/claim', [\App\Http\Controllers\RewardController::class, 'claimMission'])->name('missions.claim');
+    Route::get('/missions/progress', [\App\Http\Controllers\RewardController::class, 'getMissionsProgress'])->name('missions.progress');
+});
+
+// Games Routes
+Route::prefix('games')->name('games.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\GameController::class, 'index'])->name('index');
+    Route::get('/{slug}', [\App\Http\Controllers\GameController::class, 'show'])->name('show');
+
+    // API Routes for game progress
+    Route::middleware('auth')->group(function () {
+        Route::post('/{slug}/save-progress', [\App\Http\Controllers\GameController::class, 'saveProgress'])->name('save-progress');
+        Route::post('/{slug}/change-loadout', [\App\Http\Controllers\GameController::class, 'changeLoadout'])->name('change-loadout');
+
+        // Game Shop Routes
+        Route::prefix('{slug}/shop')->name('shop.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\GameShopController::class, 'index'])->name('index');
+            Route::post('/purchase/{skinId}', [\App\Http\Controllers\GameShopController::class, 'purchaseSkin'])->name('purchase');
+            Route::get('/owned', [\App\Http\Controllers\GameShopController::class, 'getOwnedSkins'])->name('owned');
+        });
+
+        // Game Achievements Routes
+        Route::get('/{slug}/achievements', [\App\Http\Controllers\GameController::class, 'achievements'])->name('achievements');
+
+        // Multiplayer API Routes
+        Route::prefix('{slug}/multiplayer')->name('multiplayer.')->group(function () {
+            Route::post('/create-room', [\App\Http\Controllers\MultiplayerController::class, 'createRoom'])->name('create-room');
+            Route::get('/rooms', [\App\Http\Controllers\MultiplayerController::class, 'listRooms'])->name('rooms');
+            Route::post('/join/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'joinRoom'])->name('join');
+            Route::post('/leave/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'leaveRoom'])->name('leave');
+            Route::post('/update/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'updatePosition'])->name('update');
+            Route::get('/state/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'getRoomState'])->name('state');
+            Route::post('/death/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'reportDeath'])->name('death');
+        });
+    });
+
+    Route::get('/{slug}/leaderboard', [\App\Http\Controllers\GameController::class, 'leaderboard'])->name('leaderboard');
+});
+
+Route::get('/demo/audio-spectrum', function () {
+    return view('demo-audio-spectrum');
+})->name('demo.audio-spectrum');
+
+Route::get('/demo/snooker', function () {
+    return view('demo-snooker');
+})->name('demo.snooker');
+
+// Prompt to Web Routes
+Route::prefix('prompt-to-web')->name('prompt-to-web.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PromptToWebController::class, 'index'])->name('index');
+    Route::post('/generate', [\App\Http\Controllers\PromptToWebController::class, 'generate'])->name('generate');
+    Route::post('/{id}/improve', [\App\Http\Controllers\PromptToWebController::class, 'improve'])->name('improve');
+    Route::get('/preview/{slug}', [\App\Http\Controllers\PromptToWebController::class, 'preview'])->name('preview');
+    Route::get('/show/{slug}', [\App\Http\Controllers\PromptToWebController::class, 'show'])->name('show');
+    Route::get('/list', [\App\Http\Controllers\PromptToWebController::class, 'list'])->name('list');
+    Route::delete('/{id}', [\App\Http\Controllers\PromptToWebController::class, 'delete'])->name('delete');
+});
+
+Route::get('/demo/tetris', function () {
+    return view('demo-tetris');
+})->name('demo.tetris');
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
@@ -333,6 +414,29 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
         Route::post('/reading/{id}/save', [\App\Http\Controllers\TarotReadingController::class, 'saveReading'])->name('reading.save');
         Route::get('/history', [\App\Http\Controllers\TarotReadingController::class, 'history'])->name('history');
         Route::get('/saved', [\App\Http\Controllers\TarotReadingController::class, 'savedReadings'])->name('saved');
+    });
+});
+
+// QR Code & Barcode Generator Routes (Public)
+Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {
+    // Public routes
+    Route::get('/', [\App\Http\Controllers\QrBarcodeController::class, 'index'])->name('index');
+    Route::get('/scanner', [\App\Http\Controllers\QrBarcodeController::class, 'scanner'])->name('scanner');
+    Route::post('/decode', [\App\Http\Controllers\QrBarcodeController::class, 'decode'])->name('decode');
+    Route::get('/templates', [\App\Http\Controllers\QrBarcodeController::class, 'templates'])->name('templates');
+    Route::get('/gallery', [\App\Http\Controllers\QrBarcodeController::class, 'gallery'])->name('gallery');
+    Route::get('/show/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'show'])->name('show');
+    Route::get('/r/{shortUrl}', [\App\Http\Controllers\QrBarcodeController::class, 'redirect'])->name('redirect');
+
+    // Authenticated routes
+    Route::middleware('auth')->group(function () {
+        Route::post('/store', [\App\Http\Controllers\QrBarcodeController::class, 'store'])->name('store');
+        Route::get('/history', [\App\Http\Controllers\QrBarcodeController::class, 'history'])->name('history');
+        Route::get('/analytics', [\App\Http\Controllers\QrBarcodeController::class, 'analytics'])->name('analytics');
+        Route::put('/update/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'destroy'])->name('destroy');
+        Route::post('/favorite/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'toggleFavorite'])->name('favorite');
+        Route::post('/batch-generate', [\App\Http\Controllers\QrBarcodeController::class, 'batchGenerate'])->name('batch-generate');
     });
 });
 
