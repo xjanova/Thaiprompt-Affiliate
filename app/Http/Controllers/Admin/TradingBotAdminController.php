@@ -49,7 +49,7 @@ class TradingBotAdminController extends Controller
             ->get();
 
         $topPerformingBots = TradingBot::select('trading_bots.*')
-            ->selectRaw('(total_profit_loss / NULLIF(allocated_capital, 0) * 100) as roi')
+            ->selectRaw('(net_profit / NULLIF(allocated_capital, 0) * 100) as roi')
             ->where('status', '!=', 'error')
             ->orderByRaw('roi DESC')
             ->take(10)

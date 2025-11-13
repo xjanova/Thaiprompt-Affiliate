@@ -183,8 +183,8 @@
                             </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-600 dark:text-gray-400">P&L:</span>
-                                <span class="font-bold {{ $bot->total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600' }}">
-                                    {{ $bot->total_profit_loss >= 0 ? '+' : '' }}฿{{ number_format($bot->total_profit_loss, 2) }}
+                                <span class="font-bold {{ $bot->net_profit >= 0 ? 'text-green-600' : 'text-red-600' }}">
+                                    {{ $bot->net_profit >= 0 ? '+' : '' }}฿{{ number_format($bot->net_profit, 2) }}
                                 </span>
                             </div>
                             <div class="flex justify-between">

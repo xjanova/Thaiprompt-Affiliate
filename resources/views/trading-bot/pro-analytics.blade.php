@@ -26,7 +26,7 @@
             <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-xl p-6 text-white">
                     <p class="text-sm opacity-90 mb-1">Total Profit</p>
-                    <p class="text-3xl font-bold">฿{{ number_format($performanceData['total_profit_loss'] ?? 0, 2) }}</p>
+                    <p class="text-3xl font-bold">฿{{ number_format($bot->net_profit ?? 0, 2) }}</p>
                     <p class="text-sm mt-2 opacity-90">
                         <span class="text-green-200">↑ {{ number_format($performanceData['roi_percentage'] ?? 0, 2) }}%</span>
                     </p>
