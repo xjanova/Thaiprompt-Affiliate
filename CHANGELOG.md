@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.172.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Premium Control App with Dynamic Configuration & WebView (c2b87b62)
+- feat: Complete Control App with development tools and full platform support (41cec334)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #965 from xjanova/claude/setup-control-app-011CV5HkqyJQo7cRgeTrwyBA (6139f3ec)
+- docs: Update README with Premium Edition features and add comprehensive documentation (2b41d3b4)
+
 ## [v2.171.2] - 2025-11-13
 
 ### ✨ Features
