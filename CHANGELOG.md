@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.173.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #970 from xjanova/claude/pos-fullscreen-mode-011CV5XBpro1uQ2n7UMXWfHZ (10d95671)
+- feat: Add fullscreen mode to POS cashier interface (0cbfebd4)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.172.4] - 2025-11-13
 
 ### ✨ Features
