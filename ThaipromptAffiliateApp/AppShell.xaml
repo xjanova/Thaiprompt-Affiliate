@@ -50,6 +50,10 @@
     </Shell.FlyoutFooterTemplate>
 
     <!-- Flyout Items -->
+    <FlyoutItem Title="หน้าแรก" Icon="home_icon.png">
+        <ShellContent Route="home" ContentTemplate="{DataTemplate local:HomePage}" />
+    </FlyoutItem>
+
     <FlyoutItem Title="แดชบอร์ด" Icon="dashboard_icon.png">
         <ShellContent Route="dashboard" ContentTemplate="{DataTemplate local:DashboardPage}" />
     </FlyoutItem>

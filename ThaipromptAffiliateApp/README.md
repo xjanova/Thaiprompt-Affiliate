@@ -8,11 +8,11 @@
 
 ### 🎨 Premium Features
 - ✨ **Dynamic Configuration** - ตั้งค่าทั้งแอพจาก Control Panel
-- 🌐 **WebView Integration** - หน้าแรกแสดงเว็บไซต์ของคุณ
+- 🏠 **Premium Hero Section** - หน้าแรกสวยงาม ทำงานแบบ Offline
 - 🎨 **Dynamic Theme** - เปลี่ยนสีทั้งแอพได้ (ทอง, แดง, ดำ)
 - 📱 **Dynamic Menu** - เมนูตั้งค่าได้จาก Backend
 - 🖼️ **Logo Management** - เปลี่ยนโลโก้ได้ทันที
-- ⚡ **Zero Configuration** - ไม่ต้อง Build ใหม่เมื่อเปลี่ยนการตั้งค่า
+- ⚡ **Offline Mode** - ทำงานได้แม้ไม่มีอินเทอร์เน็ต
 
 ### 📊 Core Features
 - ✅ เข้าสู่ระบบและจัดการบัญชี
@@ -123,6 +123,7 @@ ThaipromptAffiliateApp/
 │   ├── Commission.cs
 │   ├── Referral.cs
 │   ├── AppConfiguration.cs  # 🆕 Dynamic Configuration Model
+│   ├── HomeContent.cs       # 🆕 Hero Section Content Model
 │   └── ThemeConfig.cs
 ├── Services/              # Business Logic Services
 │   ├── ApiService.cs     # HTTP API Client
@@ -131,14 +132,14 @@ ThaipromptAffiliateApp/
 ├── ViewModels/           # MVVM ViewModels
 │   ├── BaseViewModel.cs
 │   ├── LoginViewModel.cs
-│   ├── WebViewViewModel.cs      # 🆕 WebView Homepage
+│   ├── HomeViewModel.cs         # 🆕 Hero Homepage ViewModel
 │   ├── DashboardViewModel.cs
 │   ├── CommissionsViewModel.cs
 │   ├── ReferralsViewModel.cs
 │   └── ProfileViewModel.cs
 ├── Views/                # UI Pages (XAML)
 │   ├── SplashPage.xaml         # 🆕 Premium Splash Screen
-│   ├── WebViewPage.xaml        # 🆕 WebView Homepage
+│   ├── HomePage.xaml           # 🆕 Premium Hero Homepage
 │   ├── LoginPage.xaml
 │   ├── DashboardPage.xaml
 │   ├── CommissionsPage.xaml
@@ -182,12 +183,12 @@ ThaipromptAffiliateApp/
 - **ฟีเจอร์เปิด/ปิด** - เปิด/ปิดฟีเจอร์ต่างๆ
 - **Cache 60 นาที** - ลดการโหลดจาก API
 
-#### 2. WebView Homepage
-- **แสดงเว็บไซต์** - หน้าแรกแสดงเว็บเต็มจอ
-- **Navigation Controls** - ปุ่ม Back, Forward, Refresh, Home
-- **Loading Indicator** - แสดงสถานะการโหลด
-- **Quick Links Bar** - ปุ่มลัดด้านล่าง (Wiki, Dashboard, etc.)
-- **Configurable** - ตั้งค่าได้จาก API
+#### 2. Premium Hero Homepage
+- **Hero Section** - ส่วนหัวขนาดใหญ่พร้อม Gradient สวยงาม
+- **Quick Actions** - ปุ่มลัดไปยังฟีเจอร์สำคัญ (แดชบอร์ด, คอมมิชชั่น, ผู้แนะนำ)
+- **Stats Overview** - แสดงสถิติสรุปแบบเรียลไทม์
+- **Featured Content** - เนื้อหาแนะนำที่เปลี่ยนได้จาก API
+- **Offline Ready** - ทำงานได้แม้ไม่มีเน็ต พร้อม Cached Data
 
 #### 3. Premium Theme System
 - **สีทอง (Gold)** - #D4AF37 - สื่อถึงความหรูหรา
@@ -465,11 +466,11 @@ Copyright © 2025 Thai Prompt. All rights reserved.
 ### Version 1.0.0 Premium Edition (2025-01-13)
 - ✨ **Premium Features Launch**
   - 🎨 Dynamic Configuration System
-  - 🌐 WebView Homepage Integration
+  - 🏠 Premium Hero Section Homepage
   - 💎 Premium Gold/Red/Black Theme
   - 📱 Dynamic Navigation Menu
   - 🖼️ Image/Logo Management
-  - ⚡ Zero Configuration Deployment
+  - ⚡ Offline Mode Support
 
 - 🎨 **Modern UI**
   - Premium Gradient Design
