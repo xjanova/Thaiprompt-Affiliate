@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.173.10] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #980 from xjanova/claude/create-404-landing-page-011CV5eTPuNvDaKtnF6GQ3qr (f5605636)
+- Add beautiful 404 landing page with navigation menu (6da56241)
+
 ## [v2.173.9] - 2025-11-13
 
 ### ✨ Features
