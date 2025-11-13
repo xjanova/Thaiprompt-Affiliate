@@ -33,8 +33,17 @@ class AppServiceProvider extends ServiceProvider
         // Use Tailwind pagination views
         Paginator::useTailwind();
 
-        // Register Commission Observer for Retention System
+        // Register Commission Observer for Retention System & Notifications
         \App\Models\Commission::observe(\App\Observers\CommissionObserver::class);
+
+        // Register KYC Verification Observer for Admin Notifications
+        \App\Models\KycVerification::observe(\App\Observers\KycVerificationObserver::class);
+
+        // Register Ticket Observer for Admin Notifications
+        \App\Models\Ticket::observe(\App\Observers\TicketObserver::class);
+
+        // Register TicketReply Observer for User Notifications
+        \App\Models\TicketReply::observe(\App\Observers\TicketReplyObserver::class);
 
         // Register Order Observer for MLM System
         \App\Models\Order::observe(\App\Observers\OrderObserver::class);

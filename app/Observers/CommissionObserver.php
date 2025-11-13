@@ -4,15 +4,20 @@ namespace App\Observers;
 
 use App\Models\Commission;
 use App\Services\MembershipRetentionService;
+use App\Services\NotificationService;
 use App\Models\MembershipRetentionSetting;
 
 class CommissionObserver
 {
     protected $retentionService;
+    protected $notificationService;
 
-    public function __construct(MembershipRetentionService $retentionService)
-    {
+    public function __construct(
+        MembershipRetentionService $retentionService,
+        NotificationService $notificationService
+    ) {
         $this->retentionService = $retentionService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -46,26 +51,35 @@ class CommissionObserver
     public function created(Commission $commission)
     {
         // Add points to retention system
-        if (!MembershipRetentionSetting::get('enable_retention_system', true)) {
-            return;
+        if (MembershipRetentionSetting::get('enable_retention_system', true)) {
+            if ($commission->user_id && $commission->amount > 0) {
+                $ratio = MembershipRetentionSetting::get('commission_to_points_ratio', 1.0);
+                $points = $commission->amount * $ratio;
+
+                $this->retentionService->addPoints(
+                    $commission->user,
+                    $points,
+                    'commission',
+                    $commission->id,
+                    "Commission from order #{$commission->order_id}",
+                    [
+                        'commission_id' => $commission->id,
+                        'order_id' => $commission->order_id,
+                        'amount' => $commission->amount,
+                    ]
+                );
+            }
         }
 
-        if ($commission->user_id && $commission->amount > 0) {
-            $ratio = MembershipRetentionSetting::get('commission_to_points_ratio', 1.0);
-            $points = $commission->amount * $ratio;
-
-            $this->retentionService->addPoints(
-                $commission->user,
-                $points,
-                'commission',
-                $commission->id,
-                "Commission from order #{$commission->order_id}",
-                [
+        // Notify admins about new commission pending approval
+        if ($commission->status === 'pending') {
+            try {
+                $this->notificationService->notifyAdminNewCommission($commission);
+            } catch (\Exception $e) {
+                \Log::error('Failed to notify admin about new commission: ' . $e->getMessage(), [
                     'commission_id' => $commission->id,
-                    'order_id' => $commission->order_id,
-                    'amount' => $commission->amount,
-                ]
-            );
+                ]);
+            }
         }
     }
 
@@ -74,7 +88,28 @@ class CommissionObserver
      */
     public function updated(Commission $commission)
     {
-        // Handle commission status changes if needed
+        // Notify user when commission is approved
+        if ($commission->isDirty('status') && $commission->status === 'approved') {
+            try {
+                $this->notificationService->notifyCommissionApproved($commission->user, $commission);
+            } catch (\Exception $e) {
+                \Log::error('Failed to notify user about commission approval: ' . $e->getMessage(), [
+                    'commission_id' => $commission->id,
+                ]);
+            }
+        }
+
+        // Notify user when commission is rejected
+        if ($commission->isDirty('status') && $commission->status === 'rejected') {
+            try {
+                $reason = $commission->rejection_reason ?? 'ไม่ระบุเหตุผล';
+                $this->notificationService->notifyCommissionRejected($commission->user, $commission, $reason);
+            } catch (\Exception $e) {
+                \Log::error('Failed to notify user about commission rejection: ' . $e->getMessage(), [
+                    'commission_id' => $commission->id,
+                ]);
+            }
+        }
     }
 
     /**

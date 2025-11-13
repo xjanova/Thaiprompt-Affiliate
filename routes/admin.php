@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\WithdrawalController;
 use App\Http\Controllers\Admin\WalletSettingsController;
 use App\Http\Controllers\Admin\CashbackSettingController;
 use App\Http\Controllers\Admin\LanguageSettingController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Admin\NotificationManagementController;
 use App\Http\Controllers\Admin\NotificationTemplateController;
 use App\Http\Controllers\Admin\VisualBuilderController;
@@ -320,15 +321,27 @@ Route::prefix('settings')->name('settings.')->group(function () {
     Route::get('ocr/setup-guide', [SettingsController::class, 'setupGuide'])->name('ocr.setup-guide');
 });
 
-// Notification Management
+// Notification Bell API (for notification bell component)
 Route::prefix('notifications')->name('notifications.')->group(function () {
+    Route::get('/unread', [NotificationController::class, 'unread'])->name('unread');
+    Route::get('/immediate', [NotificationController::class, 'immediate'])->name('immediate');
+    Route::post('/{id}/read', [NotificationController::class, 'markAsRead'])->name('read');
+    Route::post('/read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
+    Route::post('/{id}/archive', [NotificationController::class, 'archive'])->name('archive');
+    Route::delete('/{id}', [NotificationController::class, 'destroy'])->name('delete');
+    Route::post('/bulk-delete', [NotificationController::class, 'bulkDelete'])->name('bulk-delete');
+    Route::post('/bulk-mark-as-read', [NotificationController::class, 'bulkMarkAsRead'])->name('bulk-mark-as-read');
+});
+
+// Notification Management (Admin Panel)
+Route::prefix('notification-management')->name('notification-management.')->group(function () {
     Route::get('/', [NotificationManagementController::class, 'index'])->name('index');
     Route::get('/statistics', [NotificationManagementController::class, 'statistics'])->name('statistics');
     Route::get('/create', [NotificationManagementController::class, 'create'])->name('create');
     Route::post('/', [NotificationManagementController::class, 'store'])->name('store');
     Route::get('/{notification}', [NotificationManagementController::class, 'show'])->name('show');
-    Route::delete('/{notification}', [NotificationManagementController::class, 'destroy'])->name('destroy');
-    Route::post('/bulk-delete', [NotificationManagementController::class, 'bulkDelete'])->name('bulk-delete');
+    Route::delete('/{notification}', [NotificationManagementController::class, 'destroy'])->name('destroy-notification');
+    Route::post('/bulk-delete-management', [NotificationManagementController::class, 'bulkDelete'])->name('bulk-delete-management');
 });
 
 // Notification Templates
