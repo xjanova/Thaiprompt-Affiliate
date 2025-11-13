@@ -35,6 +35,27 @@ Route::prefix('games')->name('games.')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::post('/{slug}/save-progress', [\App\Http\Controllers\GameController::class, 'saveProgress'])->name('save-progress');
         Route::post('/{slug}/change-loadout', [\App\Http\Controllers\GameController::class, 'changeLoadout'])->name('change-loadout');
+
+        // Game Shop Routes
+        Route::prefix('{slug}/shop')->name('shop.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\GameShopController::class, 'index'])->name('index');
+            Route::post('/purchase/{skinId}', [\App\Http\Controllers\GameShopController::class, 'purchaseSkin'])->name('purchase');
+            Route::get('/owned', [\App\Http\Controllers\GameShopController::class, 'getOwnedSkins'])->name('owned');
+        });
+
+        // Game Achievements Routes
+        Route::get('/{slug}/achievements', [\App\Http\Controllers\GameController::class, 'achievements'])->name('achievements');
+
+        // Multiplayer API Routes
+        Route::prefix('{slug}/multiplayer')->name('multiplayer.')->group(function () {
+            Route::post('/create-room', [\App\Http\Controllers\MultiplayerController::class, 'createRoom'])->name('create-room');
+            Route::get('/rooms', [\App\Http\Controllers\MultiplayerController::class, 'listRooms'])->name('rooms');
+            Route::post('/join/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'joinRoom'])->name('join');
+            Route::post('/leave/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'leaveRoom'])->name('leave');
+            Route::post('/update/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'updatePosition'])->name('update');
+            Route::get('/state/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'getRoomState'])->name('state');
+            Route::post('/death/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'reportDeath'])->name('death');
+        });
     });
 
     Route::get('/{slug}/leaderboard', [\App\Http\Controllers\GameController::class, 'leaderboard'])->name('leaderboard');

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Game;
 use App\Models\UserGameProgress;
 use App\Models\GameLeaderboard;
+use App\Models\GameAchievement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -131,10 +132,14 @@ class GameController extends Controller
         // Check for unlocks
         $unlocks = $this->checkUnlocks($progress, $validated);
 
+        // Check for achievement unlocks
+        $achievementUnlocks = $this->checkAchievements($game, Auth::user(), $validated);
+
         return response()->json([
             'success' => true,
             'progress' => $progress->fresh(),
             'unlocks' => $unlocks,
+            'achievements' => $achievementUnlocks,
         ]);
     }
 
@@ -192,6 +197,30 @@ class GameController extends Controller
     }
 
     /**
+     * Show achievements page
+     */
+    public function achievements($slug)
+    {
+        $game = Game::where('slug', $slug)->where('is_active', true)->firstOrFail();
+
+        // Get all achievements for this game
+        $achievements = GameAchievement::where('game_id', $game->id)
+            ->orderBy('requirement')
+            ->get();
+
+        // Get user's unlocked achievements
+        $unlockedAchievementIds = [];
+        if (Auth::check()) {
+            $unlockedAchievementIds = Auth::user()->achievements()
+                ->whereIn('achievement_id', $achievements->pluck('id'))
+                ->pluck('achievement_id')
+                ->toArray();
+        }
+
+        return view('games.achievements', compact('game', 'achievements', 'unlockedAchievementIds'));
+    }
+
+    /**
      * Check and unlock ships/weapons based on progress
      */
     private function checkUnlocks($progress, $stats)
@@ -236,5 +265,77 @@ class GameController extends Controller
         }
 
         return $unlocks;
+    }
+
+    /**
+     * Check and unlock achievements based on stats
+     */
+    private function checkAchievements($game, $user, $stats)
+    {
+        $achievementUnlocks = [];
+
+        // Get all achievements for this game
+        $achievements = GameAchievement::where('game_id', $game->id)->get();
+
+        foreach ($achievements as $achievement) {
+            // Check if user already has this achievement
+            if ($user->achievements()->where('achievement_id', $achievement->id)->exists()) {
+                continue;
+            }
+
+            $shouldUnlock = false;
+            $value = 0;
+
+            // Check based on achievement type
+            switch ($achievement->type) {
+                case 'score':
+                    $value = $stats['score'] ?? 0;
+                    $shouldUnlock = $value >= $achievement->requirement;
+                    break;
+
+                case 'wave':
+                    $value = $stats['wave'] ?? 0;
+                    $shouldUnlock = $value >= $achievement->requirement;
+                    break;
+
+                case 'kills':
+                    $value = $stats['kills'] ?? 0;
+                    $shouldUnlock = $value >= $achievement->requirement;
+                    break;
+
+                case 'boss':
+                    $value = $stats['bosses'] ?? 0;
+                    $shouldUnlock = $value >= $achievement->requirement;
+                    break;
+
+                case 'time':
+                    $value = $stats['playtime'] ?? 0;
+                    $shouldUnlock = $value >= $achievement->requirement;
+                    break;
+            }
+
+            if ($shouldUnlock) {
+                // Unlock achievement
+                $user->achievements()->attach($achievement->id, [
+                    'unlocked_at' => now()
+                ]);
+
+                // Award points if configured
+                if ($achievement->reward_points > 0) {
+                    // You can add a points system here if needed
+                    // $user->increment('points', $achievement->reward_points);
+                }
+
+                $achievementUnlocks[] = [
+                    'id' => $achievement->id,
+                    'name' => $achievement->name,
+                    'description' => $achievement->description,
+                    'icon' => $achievement->icon,
+                    'reward_points' => $achievement->reward_points,
+                ];
+            }
+        }
+
+        return $achievementUnlocks;
     }
 }
