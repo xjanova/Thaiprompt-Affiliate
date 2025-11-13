@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ThaipromptAffiliateApp.ViewModels"
+             xmlns:models="clr-namespace:ThaipromptAffiliateApp.Models"
+             x:Class="ThaipromptAffiliateApp.Views.HomePage"
+             x:DataType="vm:HomeViewModel"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource PremiumBlack}">
+
+    <RefreshView Command="{Binding RefreshCommand}"
+                 IsRefreshing="{Binding IsBusy}"
+                 RefreshColor="{StaticResource PremiumGold}">
+
+        <ScrollView>
+            <VerticalStackLayout Spacing="0">
+
+                <!-- Hero Section -->
+                <Grid RowDefinitions="Auto,Auto,Auto"
+                      Padding="0"
+                      Background="{StaticResource PremiumGradient}">
+
+                    <!-- Background Pattern/Image -->
+                    <BoxView Grid.RowSpan="3"
+                             Opacity="0.1"
+                             BackgroundColor="White"/>
+
+                    <!-- Top Bar -->
+                    <HorizontalStackLayout Grid.Row="0"
+                                         Padding="20,50,20,10"
+                                         Spacing="15">
+
+                        <!-- Logo -->
+                        <Border StrokeShape="RoundRectangle 30"
+                                Stroke="Transparent"
+                                Background="White"
+                                Padding="5"
+                                WidthRequest="60"
+                                HeightRequest="60">
+                            <Image Source="{Binding LogoUrl}"
+                                   Aspect="AspectFit"
+                                   IsVisible="{Binding LogoUrl, Converter={StaticResource StringNotNullOrEmptyConverter}}"/>
+                        </Border>
+
+                        <!-- App Name -->
+                        <VerticalStackLayout Spacing="2"
+                                           VerticalOptions="Center"
+                                           HorizontalOptions="FillAndExpand">
+                            <Label Text="{Binding AppName}"
+                                   FontSize="22"
+                                   FontAttributes="Bold"
+                                   TextColor="White"/>
+
+                            <!-- Offline Indicator -->
+                            <Label Text="🔄 โหมดออฟไลน์"
+                                   FontSize="12"
+                                   TextColor="White"
+                                   Opacity="0.8"
+                                   IsVisible="{Binding IsOfflineMode}"/>
+                        </VerticalStackLayout>
+
+                        <!-- Notification Bell -->
+                        <Border StrokeShape="RoundRectangle 20"
+                                Background="#40FFFFFF"
+                                Padding="12"
+                                WidthRequest="40"
+                                HeightRequest="40">
+                            <Label Text="🔔"
+                                   FontSize="18"
+                                   HorizontalOptions="Center"
+                                   VerticalOptions="Center"/>
+                        </Border>
+                    </HorizontalStackLayout>
+
+                    <!-- Welcome Message -->
+                    <VerticalStackLayout Grid.Row="1"
+                                       Padding="20,20,20,10"
+                                       Spacing="5">
+                        <Label Text="{Binding WelcomeTitle}"
+                               FontSize="16"
+                               TextColor="White"
+                               Opacity="0.9"/>
+                        <Label Text="{Binding Subtitle}"
+                               FontSize="28"
+                               FontAttributes="Bold"
+                               TextColor="White"/>
+                    </VerticalStackLayout>
+
+                    <!-- Stats Cards Mini -->
+                    <ScrollView Grid.Row="2"
+                              Orientation="Horizontal"
+                              Padding="20,10,20,30"
+                              HorizontalScrollBarVisibility="Never">
+
+                        <HorizontalStackLayout Spacing="15"
+                                             BindableLayout.ItemsSource="{Binding StatsCards}">
+                            <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="models:StatCard">
+                                    <Border StrokeShape="RoundRectangle 15"
+                                            Background="#40FFFFFF"
+                                            Padding="15,10"
+                                            WidthRequest="140">
+                                        <VerticalStackLayout Spacing="5">
+                                            <Label Text="{Binding Icon}"
+                                                   FontSize="24"/>
+                                            <Label Text="{Binding Value}"
+                                                   FontSize="20"
+                                                   FontAttributes="Bold"
+                                                   TextColor="White"/>
+                                            <Label Text="{Binding Title}"
+                                                   FontSize="11"
+                                                   TextColor="White"
+                                                   Opacity="0.8"/>
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </DataTemplate>
+                            </BindableLayout.ItemTemplate>
+                        </HorizontalStackLayout>
+                    </ScrollView>
+                </Grid>
+
+                <!-- Quick Actions Section -->
+                <VerticalStackLayout Padding="20"
+                                   Spacing="15"
+                                   BackgroundColor="{StaticResource PremiumBlack}">
+
+                    <Label Text="🚀 เมนูหลัก"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource PremiumGold}"/>
+
+                    <!-- Quick Action Grid -->
+                    <Grid RowDefinitions="Auto,Auto"
+                          ColumnDefinitions="*,*"
+                          RowSpacing="15"
+                          ColumnSpacing="15"
+                          BindableLayout.ItemsSource="{Binding QuickActions}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:QuickAction">
+                                <Border StrokeShape="RoundRectangle 20"
+                                        Background="{StaticResource PremiumDark}"
+                                        Padding="20,15">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=NavigateToActionCommand}"
+                                                            CommandParameter="{Binding .}"/>
+                                    </Border.GestureRecognizers>
+
+                                    <VerticalStackLayout Spacing="8">
+                                        <!-- Icon with background -->
+                                        <Border StrokeShape="RoundRectangle 25"
+                                                Background="{Binding Color}"
+                                                WidthRequest="50"
+                                                HeightRequest="50"
+                                                Padding="0">
+                                            <Label Text="{Binding Icon}"
+                                                   FontSize="24"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"/>
+                                        </Border>
+
+                                        <Label Text="{Binding Title}"
+                                               FontSize="15"
+                                               FontAttributes="Bold"
+                                               TextColor="White"/>
+
+                                        <Label Text="{Binding Description}"
+                                               FontSize="11"
+                                               TextColor="White"
+                                               Opacity="0.7"
+                                               LineBreakMode="WordWrap"/>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </Grid>
+                </VerticalStackLayout>
+
+                <!-- Featured Section -->
+                <VerticalStackLayout Padding="20,0,20,20"
+                                   Spacing="15"
+                                   BackgroundColor="{StaticResource PremiumBlack}"
+                                   IsVisible="{Binding FeaturedItems.Count}">
+
+                    <Label Text="⭐ แนะนำสำหรับคุณ"
+                           FontSize="18"
+                           FontAttributes="Bold"
+                           TextColor="{StaticResource PremiumGold}"/>
+
+                    <!-- Featured Items -->
+                    <VerticalStackLayout Spacing="15"
+                                       BindableLayout.ItemsSource="{Binding FeaturedItems}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="models:FeaturedItem">
+                                <Border StrokeShape="RoundRectangle 15"
+                                        Background="{StaticResource PremiumDark}"
+                                        Padding="15">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:HomeViewModel}}, Path=OpenFeaturedItemCommand}"
+                                                            CommandParameter="{Binding .}"/>
+                                    </Border.GestureRecognizers>
+
+                                    <Grid ColumnDefinitions="60,*,Auto"
+                                          ColumnSpacing="15">
+
+                                        <!-- Icon -->
+                                        <Border Grid.Column="0"
+                                                StrokeShape="RoundRectangle 15"
+                                                Background="{StaticResource PremiumGradient}"
+                                                WidthRequest="60"
+                                                HeightRequest="60">
+                                            <Label Text="{Binding Icon}"
+                                                   FontSize="30"
+                                                   HorizontalOptions="Center"
+                                                   VerticalOptions="Center"/>
+                                        </Border>
+
+                                        <!-- Content -->
+                                        <VerticalStackLayout Grid.Column="1"
+                                                           Spacing="5"
+                                                           VerticalOptions="Center">
+                                            <Label Text="{Binding Title}"
+                                                   FontSize="15"
+                                                   FontAttributes="Bold"
+                                                   TextColor="White"/>
+                                            <Label Text="{Binding Description}"
+                                                   FontSize="13"
+                                                   TextColor="White"
+                                                   Opacity="0.7"
+                                                   LineBreakMode="WordWrap"/>
+                                        </VerticalStackLayout>
+
+                                        <!-- Arrow -->
+                                        <Label Grid.Column="2"
+                                               Text="›"
+                                               FontSize="30"
+                                               TextColor="{StaticResource PremiumGold}"
+                                               VerticalOptions="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+
+                <!-- Bottom Spacing -->
+                <BoxView HeightRequest="20"
+                         BackgroundColor="{StaticResource PremiumBlack}"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
+</ContentPage>

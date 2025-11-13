@@ -20,10 +20,12 @@ public static class MauiProgram
             });
 
         // Register Services
-        builder.Services.AddSingleton<IApiService, ApiService>();
+        builder.Services.AddSingleton<ApiService>();
+        builder.Services.AddSingleton<IConfigurationService, ConfigurationService>();
         builder.Services.AddSingleton<IThemeService, ThemeService>();
 
         // Register ViewModels
+        builder.Services.AddTransient<HomeViewModel>();
         builder.Services.AddTransient<LoginViewModel>();
         builder.Services.AddTransient<DashboardViewModel>();
         builder.Services.AddTransient<CommissionsViewModel>();
@@ -31,6 +33,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ProfileViewModel>();
 
         // Register Views
+        builder.Services.AddTransient<HomePage>();
         builder.Services.AddTransient<LoginPage>();
         builder.Services.AddTransient<DashboardPage>();
         builder.Services.AddTransient<CommissionsPage>();
