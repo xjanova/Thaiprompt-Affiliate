@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.199.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1045 from xjanova/claude/tpi-coin-011CV6FysHKGzasWbNAXs3Z5 (834e483b)
+- feat: Update TPIX currency name to 'Thaiprompt Index' (25462822)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.198.1] - 2025-11-13
 
 ### ✨ Features
