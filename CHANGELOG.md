@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.197.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1042 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (ae06c7be)
+- feat: Add Complete UI Views, Controllers & Queue Configuration (58d36a96)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.196.3] - 2025-11-13
 
 ### ✨ Features
