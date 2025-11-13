@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.195.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1037 from xjanova/claude/fix-migration-syntax-errors-011CV6FAZMk52Cj7XHF9mAwH (4743c806)
+- fix: correct migration syntax errors (44435f1f)
+### 🔧 Other Changes
+
+
 ## [v2.195.0] - 2025-11-13
 
 ### ✨ Features
