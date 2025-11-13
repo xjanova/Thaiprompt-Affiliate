@@ -122,7 +122,6 @@
             ['icon' => '₿', 'label' => 'คริปโตเคอเรนซี', 'url' => route('admin.crypto.dashboard'), 'color' => 'from-amber-500 to-orange-500', 'highlight' => true],
             ['icon' => '📊', 'label' => 'ระบบบัญชี', 'url' => route('admin.accounting.dashboard'), 'color' => 'from-emerald-600 to-green-600', 'highlight' => true],
             ['icon' => '🤖', 'label' => 'Bot Automation', 'url' => route('admin.bot-automation.dashboard'), 'color' => 'from-violet-600 to-purple-600', 'highlight' => true],
-            ['icon' => '🚀', 'label' => 'Deployment Center', 'url' => route('admin.deployment.index'), 'color' => 'from-indigo-600 to-purple-600', 'highlight' => true],
             ['icon' => '👔', 'label' => 'ระบบ HRM', 'url' => route('admin.hrm.dashboard'), 'color' => 'from-blue-500 to-cyan-500', 'highlight' => true],
             ['icon' => '🌐', 'label' => 'MLM System', 'url' => route('admin.mlm.reports.index'), 'color' => 'from-fuchsia-600 to-pink-600'],
             ['icon' => '🎨', 'label' => 'Smart Sliders', 'url' => route('admin.smart-sliders.index'), 'color' => 'from-rose-600 to-pink-600'],
