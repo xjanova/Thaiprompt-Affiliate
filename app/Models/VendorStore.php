@@ -20,6 +20,7 @@ class VendorStore extends Model
         'store_description',
         'store_logo',
         'store_banner',
+        'banner_position_y',
         'store_domain',
         'store_email',
         'store_phone',
@@ -65,6 +66,7 @@ class VendorStore extends Model
     ];
 
     protected $casts = [
+        'banner_position_y' => 'integer',
         'commission_rate' => 'decimal:2',
         'minimum_order_amount' => 'decimal:2',
         'shipping_fee' => 'decimal:2',

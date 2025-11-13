@@ -7,6 +7,7 @@ use App\Models\VendorStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Intervention\Image\Facades\Image;
 
 class StoreController extends Controller
 {
@@ -60,8 +61,9 @@ class StoreController extends Controller
             'tiktok_url' => 'nullable|url|max:255',
             'primary_color' => 'nullable|string|max:7',
             'secondary_color' => 'nullable|string|max:7',
-            'store_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'store_banner' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096',
+            'store_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+            'store_banner' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
+            'banner_position_y' => 'nullable|numeric',
             'minimum_order_amount' => 'nullable|numeric|min:0',
             'shipping_fee' => 'nullable|numeric|min:0',
             'free_shipping_threshold' => 'nullable|numeric|min:0',
@@ -71,25 +73,35 @@ class StoreController extends Controller
         $validated['enable_cod'] = $request->has('enable_cod');
         $validated['enable_reviews'] = $request->has('enable_reviews');
 
-        // Handle logo upload
+        // Handle logo upload with WebP conversion
         if ($request->hasFile('store_logo')) {
             // Delete old logo if exists
             if ($store->store_logo && Storage::exists($store->store_logo)) {
                 Storage::delete($store->store_logo);
             }
 
-            $logoPath = $request->file('store_logo')->store('stores/logos', 'public');
+            $logoPath = $this->convertAndSaveAsWebP(
+                $request->file('store_logo'),
+                'stores/logos',
+                400,  // max width
+                400   // max height
+            );
             $validated['store_logo'] = 'storage/' . $logoPath;
         }
 
-        // Handle banner upload
+        // Handle banner upload with WebP conversion
         if ($request->hasFile('store_banner')) {
             // Delete old banner if exists
             if ($store->store_banner && Storage::exists($store->store_banner)) {
                 Storage::delete($store->store_banner);
             }
 
-            $bannerPath = $request->file('store_banner')->store('stores/banners', 'public');
+            $bannerPath = $this->convertAndSaveAsWebP(
+                $request->file('store_banner'),
+                'stores/banners',
+                1920,  // max width
+                600    // max height
+            );
             $validated['store_banner'] = 'storage/' . $bannerPath;
         }
 
@@ -102,5 +114,47 @@ class StoreController extends Controller
 
         return redirect()->route('seller.store.settings')
             ->with('success', 'ตั้งค่าร้านค้าสำเร็จแล้ว');
+    }
+
+    /**
+     * Convert and save image as WebP format
+     *
+     * @param \Illuminate\Http\UploadedFile $file
+     * @param string $directory
+     * @param int $maxWidth
+     * @param int $maxHeight
+     * @return string The saved file path
+     */
+    private function convertAndSaveAsWebP($file, $directory, $maxWidth = 1920, $maxHeight = 1080)
+    {
+        try {
+            // Generate unique filename
+            $filename = Str::random(40) . '.webp';
+            $fullPath = $directory . '/' . $filename;
+
+            // Load the image using Intervention Image
+            $image = Image::make($file);
+
+            // Resize image while maintaining aspect ratio
+            $image->resize($maxWidth, $maxHeight, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            });
+
+            // Encode to WebP with quality of 85
+            $encodedImage = $image->encode('webp', 85);
+
+            // Save to storage
+            Storage::disk('public')->put($fullPath, $encodedImage);
+
+            return $fullPath;
+        } catch (\Exception $e) {
+            // Fallback: If WebP conversion fails, save the original file
+            \Log::error('WebP conversion failed: ' . $e->getMessage());
+
+            // Save original file without conversion
+            $originalPath = $file->store($directory, 'public');
+            return $originalPath;
+        }
     }
 }
