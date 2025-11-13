@@ -140,6 +140,22 @@ Route::prefix('v1')->group(function () {
             Route::get('/gas-price', [CryptoWalletApiController::class, 'getGasPrice']);
         });
 
+        // TPIX Native Blockchain API
+        Route::prefix('tpix')->group(function () {
+            Route::get('/network-info', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getNetworkInfo']);
+            Route::get('/balance', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getBalance']);
+            Route::get('/block-number', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getBlockNumber']);
+            Route::get('/transaction', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getTransaction']);
+            Route::get('/transaction-receipt', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getTransactionReceipt']);
+            Route::post('/send-raw-transaction', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'sendRawTransaction']);
+            Route::post('/estimate-gas', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'estimateGas']);
+            Route::get('/gas-price', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getGasPrice']);
+            Route::get('/transaction-count', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getTransactionCount']);
+            Route::post('/validate-address', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'validateAddress']);
+            Route::post('/to-wei', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'toWei']);
+            Route::post('/from-wei', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'fromWei']);
+        });
+
         // App Configuration (protected)
         Route::prefix('app')->group(function () {
             Route::get('/config', [AppConfigController::class, 'config']);
