@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.201.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1050 from xjanova/claude/fix-mlm-genealogy-column-011CV6GyzbDWLfNpQL4JLwG7 (f88c216e)
+- fix: Prevent duplicate entry errors in GamesSeeder (cd08192e)
+### 🔧 Other Changes
+
+
 ## [v2.201.0] - 2025-11-13
 
 ### ✨ Features
