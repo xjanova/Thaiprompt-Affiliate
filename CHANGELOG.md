@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.173.9] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #979 from xjanova/claude/image-preview-webp-conversion-011CV5HL3rjNLmDkzXBmRrD2 (2ca0415e)
+- Improve banner drag functionality with better image display (94e47ed7)
+
 ## [v2.173.8] - 2025-11-13
 
 ### ✨ Features
