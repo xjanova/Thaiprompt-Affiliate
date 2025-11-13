@@ -2,6 +2,26 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.165.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #945 from xjanova/claude/fix-ecommerce-image-upload-011CV4TqGo4rCQHyW9ab89Xx (d974759e)
+- fix: Add error handling for PaymentGateway database query (7aa65a94)
+### 🔧 Other Changes
+
+
+## [v2.165.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #944 from xjanova/claude/fix-bookings-error-011CV58QjpsCVjLa7B3NU5cB (433c0f9e)
+- Fix 404 error on /admin/hotels/bookings route (5a019bc6)
+
 ## [v2.165.2] - 2025-11-13
 
 ### ✨ Features
