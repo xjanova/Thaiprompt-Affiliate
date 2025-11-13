@@ -64,9 +64,10 @@
             height: 250px;
             transform-style: preserve-3d;
             transition: transform 0.5s ease;
-            animation: floatIn 1s ease-out backwards;
+            animation: floatIn 1s ease-out forwards;
             cursor: pointer;
             text-decoration: none;
+            opacity: 1;
         }
 
         .block-3d:nth-child(1) { animation-delay: 0.1s; }
@@ -77,7 +78,7 @@
         .block-3d:nth-child(6) { animation-delay: 0.6s; }
 
         .block-3d:hover {
-            transform: translateY(-20px) rotateX(10deg) rotateY(10deg) scale(1.05);
+            transform: translateY(-20px) rotateX(10deg) rotateY(10deg) scale(1.05) !important;
         }
 
         .block-inner {
@@ -301,28 +302,36 @@
     </div>
 
     <script>
-        // Simple mouse parallax effect
-        document.addEventListener('mousemove', (e) => {
-            const blocks = document.querySelectorAll('.block-3d');
-            const mouseX = (e.clientX / window.innerWidth) - 0.5;
-            const mouseY = (e.clientY / window.innerHeight) - 0.5;
+        // Wait for page to fully load
+        window.addEventListener('load', function() {
+            // Simple mouse parallax effect (only after animations complete)
+            setTimeout(() => {
+                document.addEventListener('mousemove', (e) => {
+                    const blocks = document.querySelectorAll('.block-3d');
+                    const mouseX = (e.clientX / window.innerWidth) - 0.5;
+                    const mouseY = (e.clientY / window.innerHeight) - 0.5;
 
-            blocks.forEach((block, index) => {
-                const depth = (index + 1) * 10;
-                const moveX = mouseX * depth;
-                const moveY = mouseY * depth;
+                    blocks.forEach((block, index) => {
+                        if (!block.matches(':hover')) {
+                            const depth = (index + 1) * 5;
+                            const moveX = mouseX * depth;
+                            const moveY = mouseY * depth;
+                            block.style.transform = `translateX(${moveX}px) translateY(${moveY}px)`;
+                        }
+                    });
+                });
+            }, 1500); // Wait for all animations to complete
 
-                block.style.transform = `translateX(${moveX}px) translateY(${moveY}px)`;
-            });
-        });
-
-        // Click animation
-        document.querySelectorAll('.block-3d').forEach(block => {
-            block.addEventListener('click', function(e) {
-                this.style.transform = 'scale(0.9)';
-                setTimeout(() => {
-                    window.location.href = this.href;
-                }, 200);
+            // Click animation
+            document.querySelectorAll('.block-3d').forEach(block => {
+                block.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    this.style.transform = 'scale(0.9)';
+                    this.style.opacity = '0.5';
+                    setTimeout(() => {
+                        window.location.href = this.href;
+                    }, 300);
+                });
             });
         });
     </script>
