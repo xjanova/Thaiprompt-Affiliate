@@ -26,6 +26,10 @@ Route::get('/demo/3d-navigation', function () {
     return view('demo-3d-navigation');
 })->name('demo.3d-navigation');
 
+Route::get('/demo/space-shooter', function () {
+    return view('demo-space-shooter');
+})->name('demo.space-shooter');
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
