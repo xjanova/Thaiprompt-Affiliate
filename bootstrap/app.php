@@ -54,6 +54,11 @@ return Application::configure(basePath: dirname(__DIR__))
             // LINE OA Security middleware
             'line.webhook.throttle' => \App\Http\Middleware\LineWebhookThrottle::class,
             'line.signup.throttle' => \App\Http\Middleware\LineSignupThrottle::class,
+            // TPIX Blockchain & Token middleware
+            'tpix.token.ownership' => \App\Http\Middleware\CheckTokenOwnership::class,
+            'tpix.rate.limit' => \App\Http\Middleware\RateLimitTokenOperations::class,
+            'tpix.token.deployed' => \App\Http\Middleware\VerifyTokenDeployment::class,
+            'tpix.staking.eligible' => \App\Http\Middleware\CheckStakingEligibility::class,
         ]);
 
         // Global middleware for IP blocking
