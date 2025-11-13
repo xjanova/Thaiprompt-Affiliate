@@ -88,7 +88,7 @@
                         <label class="block text-sm font-medium text-gray-300 mb-2">ชื่อ WiFi (SSID)</label>
                         <input type="text" x-model="wifiData.ssid" @input="generateQR()" placeholder="MyWiFiNetwork"
                                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-3">
-                        <label class="block text-sm font-medium text-gray-300 mb-2">รหัsผ่าน</label>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">รหัสผ่าน</label>
                         <input type="text" x-model="wifiData.password" @input="generateQR()" placeholder="password123"
                                class="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent mb-3">
                         <label class="block text-sm font-medium text-gray-300 mb-2">ประเภทการเข้ารหัส</label>
@@ -315,8 +315,280 @@
 @endpush
 
 @push('scripts')
+<!-- QR Code & Barcode Libraries -->
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
-<script src="{{ asset('js/qr-barcode-generator.js') }}"></script>
+
+<!-- Inline QR Barcode Generator Script -->
+<script>
+console.log('Loading QR Barcode Generator...');
+
+function qrBarcodeGenerator() {
+    return {
+        type: 'qrcode',
+        qrFormat: 'url',
+        qrContent: 'https://thaiprompt.com',
+        qrColor: '#000000',
+        qrBgColor: '#ffffff',
+        qrSize: 256,
+        placeholder: 'ใส่ข้อความที่ต้องการ...',
+        emailData: { email: '', subject: '' },
+        phoneData: { number: '', message: '' },
+        wifiData: { ssid: '', password: '', encryption: 'WPA' },
+        vcardData: { name: '', phone: '', email: '', organization: '' },
+        barcodeFormat: 'CODE128',
+        barcodeContent: '123456789',
+        barcodeWidth: 2,
+        barcodeHeight: 80,
+        barcodeShowText: true,
+
+        init() {
+            console.log('QR Barcode Generator initialized!');
+            setTimeout(() => {
+                this.generateQR();
+                this.generateBarcode();
+            }, 500);
+        },
+
+        updatePlaceholder() {
+            const placeholders = {
+                text: 'ใส่ข้อความที่ต้องการ...',
+                url: 'https://example.com',
+                email: 'example@email.com',
+                phone: '+66812345678',
+                sms: '+66812345678',
+                wifi: 'MyWiFiNetwork',
+                vcard: 'ชื่อ นามสกุล'
+            };
+            this.placeholder = placeholders[this.qrFormat] || 'ใส่ข้อมูล...';
+            this.generateQR();
+        },
+
+        getQRContent() {
+            switch (this.qrFormat) {
+                case 'text':
+                case 'url':
+                    return this.qrContent;
+                case 'email':
+                    const subject = this.emailData.subject ? `?subject=${encodeURIComponent(this.emailData.subject)}` : '';
+                    return `mailto:${this.emailData.email}${subject}`;
+                case 'phone':
+                    return `tel:${this.phoneData.number}`;
+                case 'sms':
+                    const message = this.phoneData.message ? `?body=${encodeURIComponent(this.phoneData.message)}` : '';
+                    return `sms:${this.phoneData.number}${message}`;
+                case 'wifi':
+                    return `WIFI:T:${this.wifiData.encryption};S:${this.wifiData.ssid};P:${this.wifiData.password};;`;
+                case 'vcard':
+                    return `BEGIN:VCARD\nVERSION:3.0\nFN:${this.vcardData.name}\nTEL:${this.vcardData.phone}\nEMAIL:${this.vcardData.email}\nORG:${this.vcardData.organization}\nEND:VCARD`;
+                default:
+                    return this.qrContent;
+            }
+        },
+
+        generateQR() {
+            const content = this.getQRContent();
+            if (!content) return;
+
+            const canvas = document.getElementById('qrCanvas');
+            if (!canvas) {
+                console.error('QR Canvas not found!');
+                return;
+            }
+
+            if (typeof QRCode === 'undefined') {
+                console.error('QRCode library not loaded!');
+                return;
+            }
+
+            try {
+                QRCode.toCanvas(canvas, content, {
+                    width: parseInt(this.qrSize),
+                    margin: 2,
+                    color: {
+                        dark: this.qrColor,
+                        light: this.qrBgColor
+                    },
+                    errorCorrectionLevel: 'M'
+                }, (error) => {
+                    if (error) console.error('QR error:', error);
+                    else console.log('QR generated!');
+                });
+            } catch (error) {
+                console.error('QR generation error:', error);
+            }
+        },
+
+        downloadQR() {
+            const canvas = document.getElementById('qrCanvas');
+            if (!canvas) return;
+
+            const link = document.createElement('a');
+            link.download = `qrcode-${Date.now()}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            this.showNotification('ดาวน์โหลด QR Code สำเร็จ!', 'success');
+        },
+
+        downloadQRSVG() {
+            const content = this.getQRContent();
+            if (!content) return;
+
+            QRCode.toString(content, {
+                type: 'svg',
+                width: parseInt(this.qrSize),
+                margin: 2,
+                color: {
+                    dark: this.qrColor,
+                    light: this.qrBgColor
+                }
+            }, (error, svg) => {
+                if (error) return;
+
+                const blob = new Blob([svg], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `qrcode-${Date.now()}.svg`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+                this.showNotification('ดาวน์โหลด SVG สำเร็จ!', 'success');
+            });
+        },
+
+        async copyQRToClipboard() {
+            const canvas = document.getElementById('qrCanvas');
+            if (!canvas) return;
+
+            canvas.toBlob(async (blob) => {
+                try {
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    this.showNotification('คัดลอก QR Code สำเร็จ!', 'success');
+                } catch (error) {
+                    this.showNotification('เบราว์เซอร์ของคุณไม่รองรับการคัดลอกรูปภาพ', 'error');
+                }
+            });
+        },
+
+        getBarcodePlaceholder() {
+            const placeholders = {
+                CODE128: 'ข้อความหรือตัวเลข',
+                EAN13: '13 หลัก (เช่น 1234567890128)',
+                EAN8: '8 หลัก (เช่น 12345670)',
+                UPC: '12 หลัก (เช่น 123456789012)',
+                CODE39: 'ตัวอักษรและตัวเลข',
+                ITF14: '14 หลัก',
+                MSI: 'ตัวเลข',
+                pharmacode: 'ตัวเลข 3-131070'
+            };
+            return placeholders[this.barcodeFormat] || 'ใส่ข้อมูล...';
+        },
+
+        getBarcodeHelp() {
+            const help = {
+                CODE128: 'รองรับตัวอักษร ตัวเลข และสัญลักษณ์พิเศษ',
+                EAN13: 'ใช้สำหรับรหัสสินค้า 13 หลัก',
+                EAN8: 'ใช้สำหรับรหัสสินค้า 8 หลัก',
+                UPC: 'ใช้สำหรับรหัสสินค้า 12 หลัก',
+                CODE39: 'รองรับตัวอักษร A-Z, ตัวเลข 0-9',
+                ITF14: 'ใช้สำหรับกล่องสินค้า 14 หลัก',
+                MSI: 'รองรับเฉพาะตัวเลข',
+                pharmacode: 'ใช้สำหรับยา รองรับตัวเลข 3-131070'
+            };
+            return help[this.barcodeFormat] || '';
+        },
+
+        generateBarcode() {
+            if (!this.barcodeContent) return;
+
+            const svg = document.getElementById('barcodeSVG');
+            if (!svg) {
+                console.error('Barcode SVG not found!');
+                return;
+            }
+
+            if (typeof JsBarcode === 'undefined') {
+                console.error('JsBarcode library not loaded!');
+                return;
+            }
+
+            try {
+                JsBarcode(svg, this.barcodeContent, {
+                    format: this.barcodeFormat,
+                    width: parseFloat(this.barcodeWidth),
+                    height: parseInt(this.barcodeHeight),
+                    displayValue: this.barcodeShowText,
+                    fontSize: 14,
+                    margin: 10,
+                    background: '#ffffff',
+                    lineColor: '#000000'
+                });
+                console.log('Barcode generated!');
+            } catch (error) {
+                console.error('Barcode error:', error);
+            }
+        },
+
+        downloadBarcode() {
+            const svg = document.getElementById('barcodeSVG');
+            if (!svg) return;
+
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+
+                const link = document.createElement('a');
+                link.download = `barcode-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                this.showNotification('ดาวน์โหลด Barcode สำเร็จ!', 'success');
+            };
+
+            img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+        },
+
+        downloadBarcodeSVG() {
+            const svg = document.getElementById('barcodeSVG');
+            if (!svg) return;
+
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const blob = new Blob([svgData], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `barcode-${Date.now()}.svg`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+            this.showNotification('ดาวน์โหลด SVG สำเร็จ!', 'success');
+        },
+
+        showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-4 rounded-xl shadow-2xl z-50 ${
+                type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-500' : 'bg-gradient-to-r from-red-500 to-pink-500'
+            } text-white font-semibold`;
+            notification.innerHTML = `<div class="flex items-center space-x-3"><i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} text-xl"></i><span>${message}</span></div>`;
+
+            document.body.appendChild(notification);
+            setTimeout(() => notification.style.opacity = '1', 10);
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+    };
+}
+
+window.qrBarcodeGenerator = qrBarcodeGenerator;
+console.log('QR Barcode Generator loaded successfully!');
+</script>
 @endpush
 @endsection
