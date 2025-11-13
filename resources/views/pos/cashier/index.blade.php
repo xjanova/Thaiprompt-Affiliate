@@ -46,6 +46,44 @@
             transform: translateX(-4px);
         }
 
+        /* Fullscreen exit button */
+        .fullscreen-exit-btn {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: rgba(34, 197, 94, 0.9);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .fullscreen-exit-btn.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .fullscreen-exit-btn:hover {
+            background: rgba(34, 197, 94, 1);
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Hide header in fullscreen */
+        :fullscreen .fullscreen-hide {
+            display: none !important;
+        }
+
         /* Print styles */
         @media print {
             .no-print {
@@ -57,7 +95,7 @@
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
     <div class="pos-container" x-data="posSystem()">
         <!-- Header -->
-        <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 no-print">
+        <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 no-print fullscreen-hide">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <h1 class="text-xl font-bold text-gray-900 dark:text-white">
@@ -78,8 +116,14 @@
                         <div class="text-gray-500 dark:text-gray-400">{{ auth()->user()->name }}</div>
                     </div>
 
+                    <!-- Fullscreen Toggle -->
+                    <button @click="toggleFullscreen()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600" title="โหมดเต็มหน้าจอ">
+                        <i class="fas fa-expand" x-show="!isFullscreen"></i>
+                        <i class="fas fa-compress" x-show="isFullscreen"></i>
+                    </button>
+
                     <!-- Dark Mode Toggle -->
-                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600">
+                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600" title="โหมดมืด/สว่าง">
                         <i class="fas fa-moon dark:hidden"></i>
                         <i class="fas fa-sun hidden dark:inline"></i>
                     </button>
@@ -95,7 +139,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="flex h-[calc(100vh-64px)]">
+        <div class="flex" :class="isFullscreen ? 'h-screen' : 'h-[calc(100vh-64px)]'">
             <!-- Products Section (Left) -->
             <div class="flex-1 overflow-y-auto p-4">
                 <!-- Search Bar -->
@@ -307,6 +351,14 @@
                 </div>
             </div>
         </div>
+
+        <!-- Fullscreen Exit Button (Bottom Corner) -->
+        <button @click="toggleFullscreen()"
+                :class="{'active': isFullscreen}"
+                class="fullscreen-exit-btn no-print"
+                title="ออกจากโหมดเต็มหน้าจอ">
+            <i class="fas fa-compress text-xl"></i>
+        </button>
     </div>
 
     <script>
@@ -329,6 +381,7 @@
                 paymentMethod: 'cash',
                 discountPercentage: 0,
                 amountPaid: 0,
+                isFullscreen: false,
 
                 // Calculated values
                 subtotal: 0,
@@ -415,6 +468,34 @@
                     // Change is calculated in template
                 },
 
+                toggleFullscreen() {
+                    const elem = document.documentElement;
+
+                    if (!document.fullscreenElement) {
+                        // Enter fullscreen
+                        if (elem.requestFullscreen) {
+                            elem.requestFullscreen();
+                        } else if (elem.webkitRequestFullscreen) {
+                            elem.webkitRequestFullscreen();
+                        } else if (elem.mozRequestFullScreen) {
+                            elem.mozRequestFullScreen();
+                        } else if (elem.msRequestFullscreen) {
+                            elem.msRequestFullscreen();
+                        }
+                    } else {
+                        // Exit fullscreen
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                        } else if (document.webkitExitFullscreen) {
+                            document.webkitExitFullscreen();
+                        } else if (document.mozCancelFullScreen) {
+                            document.mozCancelFullScreen();
+                        } else if (document.msExitFullscreen) {
+                            document.msExitFullscreen();
+                        }
+                    }
+                },
+
                 async searchProducts() {
                     // Implement product search via AJAX if needed
                 },
@@ -477,6 +558,16 @@
 
                 init() {
                     this.calculateTotals();
+
+                    // Listen for fullscreen changes
+                    const fullscreenChangeHandler = () => {
+                        this.isFullscreen = !!document.fullscreenElement;
+                    };
+
+                    document.addEventListener('fullscreenchange', fullscreenChangeHandler);
+                    document.addEventListener('webkitfullscreenchange', fullscreenChangeHandler);
+                    document.addEventListener('mozfullscreenchange', fullscreenChangeHandler);
+                    document.addEventListener('msfullscreenchange', fullscreenChangeHandler);
                 }
             }
         }
