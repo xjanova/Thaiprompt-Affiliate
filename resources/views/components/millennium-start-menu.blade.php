@@ -628,6 +628,18 @@
                 ]
             ],
             [
+                'icon' => '🎮',
+                'label' => 'เกมส์',
+                'url' => '#',
+                'order' => 6.8,
+                'submenu' => [
+                    ['label' => 'เกมส์ทั้งหมด', 'url' => safeRoute('games.index')],
+                    ['label' => 'ทัวร์นาเมนต์', 'url' => safeRoute('tournaments.index')],
+                    ['label' => 'รางวัลรายวัน', 'url' => safeRoute('rewards.daily')],
+                    ['label' => 'ภารกิจ', 'url' => safeRoute('rewards.missions')],
+                ]
+            ],
+            [
                 'icon' => '💳',
                 'label' => 'กระเป๋าเงิน THB',
                 'url' => '#',
