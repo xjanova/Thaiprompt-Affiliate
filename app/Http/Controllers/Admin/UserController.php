@@ -106,6 +106,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,'.$user->id],
             'role_id' => ['required', 'exists:roles,id'],
+            'menu_theme_preference' => ['nullable', 'string', 'in:millennium,classic_x'],
         ]);
 
         if ($request->filled('password')) {
@@ -118,6 +119,11 @@ class UserController extends Controller
         // Get role to set the old role field for backward compatibility
         $role = Role::find($validated['role_id']);
         $validated['role'] = $role->name;
+
+        // Set default theme if not provided
+        if (!isset($validated['menu_theme_preference'])) {
+            $validated['menu_theme_preference'] = $user->menu_theme_preference ?? 'millennium';
+        }
 
         $user->update($validated);
 
