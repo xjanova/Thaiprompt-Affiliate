@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.189.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Caching Layer & Complete Documentation (5f9021e1)
+- feat: Add Complete REST API for TPIX Token System (916a4b10)
+- feat: Add Beautiful Token Management UI (Admin & User Views) (350bd9ef)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1029 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (d4f66851)
+
 ## [v2.188.0] - 2025-11-13
 
 ### ✨ Features
