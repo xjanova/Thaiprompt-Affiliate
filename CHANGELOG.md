@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.177.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1009 from xjanova/claude/add-missing-seeders-011CV5zGPFhVdUW3Evj4z3Zh (d5481070)
+- Add missing seeders to DatabaseSeeder (e61ad1b3)
+
 ## [v2.177.3] - 2025-11-13
 
 ### ✨ Features
