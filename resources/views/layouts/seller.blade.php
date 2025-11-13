@@ -234,8 +234,36 @@
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
-    <!-- Millennium Taskbar -->
-    <x-millennium-taskbar type="seller" />
+    @php
+        $user = auth()->user();
+        $userTheme = $user->menu_theme_preference ?? 'millennium';
+
+        // Debug logging
+        \Log::info('Seller layout loading', [
+            'user_id' => $user->id,
+            'theme' => $userTheme,
+            'raw_value' => $user->menu_theme_preference
+        ]);
+    @endphp
+
+    <!-- Debug Info (remove in production) -->
+    @if(config('app.debug'))
+        <div style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; z-index: 99999; font-size: 12px;">
+            <strong>Theme Debug:</strong><br>
+            User ID: {{ $user->id }}<br>
+            Current Theme: <strong>{{ $userTheme }}</strong><br>
+            Layout: Seller
+        </div>
+    @endif
+
+    @if($userTheme === 'classic_x')
+        <!-- Classic X Sidebar -->
+        <x-classic-x-sidebar type="seller" />
+
+        <div class="classic-x-content" id="classicXContent">
+    @else
+        <!-- Millennium Taskbar -->
+        <x-millennium-taskbar type="seller" />
 
     <!-- Page Loader -->
     <x-page-loader />
@@ -280,7 +308,10 @@
               @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
             @yield('content')
         </main>
-    </div>
+    </div>        </div>
+    @endif
+
+
 
     <!-- Fixed Floating Toast Notifications -->
     <div class="fixed top-4 right-4 z-[9999] space-y-3 max-w-md">

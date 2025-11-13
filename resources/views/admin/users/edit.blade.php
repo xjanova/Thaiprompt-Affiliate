@@ -101,6 +101,31 @@
                 @enderror
             </div>
 
+            <!-- Menu Theme Preference -->
+            <div>
+                <label for="menu_theme_preference" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    ธีมเมนู
+                </label>
+                <select id="menu_theme_preference"
+                        name="menu_theme_preference"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('menu_theme_preference') border-red-500 @enderror">
+                    <option value="millennium" {{ old('menu_theme_preference', $user->menu_theme_preference ?? 'millennium') === 'millennium' ? 'selected' : '' }}>
+                        Millennium Theme (Windows 11 Style)
+                    </option>
+                    <option value="classic_x" {{ old('menu_theme_preference', $user->menu_theme_preference ?? 'millennium') === 'classic_x' ? 'selected' : '' }}>
+                        Classic X Theme (WordPress Style)
+                    </option>
+                </select>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    <strong>คำอธิบาย:</strong><br>
+                    • <strong>Millennium:</strong> สไตล์ Windows 11 ที่ทันสมัย มี Taskbar แบบ Floating พร้อม Blur Effect<br>
+                    • <strong>Classic X:</strong> สไตล์ WordPress ที่ได้รับการยกระดับ มี Sidebar แบบ Professional
+                </p>
+                @error('menu_theme_preference')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
             <!-- Password (Optional) -->
             <div class="border-t dark:border-slate-700 pt-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">เปลี่ยนรหัสผ่าน (ถ้าต้องการ)</h3>

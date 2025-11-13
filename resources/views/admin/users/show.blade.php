@@ -91,6 +91,30 @@
             </div>
 
             <div>
+                <dt class="text-sm font-medium text-gray-600">ธีมเมนู</dt>
+                <dd class="mt-1">
+                    @php
+                        $userTheme = $user->menu_theme_preference ?? 'millennium';
+                    @endphp
+                    @if($userTheme === 'classic_x')
+                        <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-lg bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200 shadow-sm">
+                            <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm3 1v10h8V4H6z" clip-rule="evenodd"/>
+                            </svg>
+                            Classic X Theme
+                        </span>
+                    @else
+                        <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border border-purple-200 shadow-sm">
+                            <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                            </svg>
+                            Millennium Theme
+                        </span>
+                    @endif
+                </dd>
+            </div>
+
+            <div>
                 <dt class="text-sm font-medium text-gray-600">สมัครเมื่อ</dt>
                 <dd class="mt-1 text-sm text-gray-900">{{ $user->created_at->format('d/m/Y H:i') }}</dd>
             </div>
