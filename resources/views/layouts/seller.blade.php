@@ -263,55 +263,102 @@
         <!-- Classic X Sidebar -->
         <x-classic-x-sidebar type="seller" />
 
+        <!-- Classic X Content Wrapper -->
         <div class="classic-x-content" id="classicXContent">
+            <!-- Top Bar -->
+            <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-50">
+                <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
+                     @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
+                        </div>
+
+                        <div class="flex items-center space-x-3">
+                            <!-- Quick POS Access -->
+                            <a href="{{ route('seller.pos.terminal') }}"
+                               class="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                                <span class="text-sm">เปิด POS</span>
+                            </a>
+
+                            <!-- Theme Switcher -->
+                            <x-menu-theme-switcher />
+
+                            <!-- Dashboard Switcher -->
+                            <x-dashboard-switcher />
+
+                            <!-- Notification Bell -->
+                            <x-notification-bell />
+
+                            <!-- Language Switcher -->
+                            <div class="relative z-[60]">
+                                <x-language-switcher-pro />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
+                  @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+                @yield('content')
+            </main>
+        </div>
     @else
         <!-- Millennium Taskbar -->
         <x-millennium-taskbar type="seller" />
 
-    <!-- Page Loader -->
-    <x-page-loader />
+        <!-- Page Loader -->
+        <x-page-loader />
 
-    <div class="min-h-screen">
-        <!-- Top Bar -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-            <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
-                 @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
-                    </div>
+        <div class="min-h-screen">
+            <!-- Top Bar -->
+            <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+                <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
+                     @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white">@yield('title')</h1>
+                        </div>
 
-                    <div class="flex items-center space-x-3">
-                        <!-- Quick POS Access -->
-                        <a href="{{ route('seller.pos.terminal') }}"
-                           class="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                            </svg>
-                            <span class="text-sm">เปิด POS</span>
-                        </a>
+                        <div class="flex items-center space-x-3">
+                            <!-- Quick POS Access -->
+                            <a href="{{ route('seller.pos.terminal') }}"
+                               class="hidden md:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                </svg>
+                                <span class="text-sm">เปิด POS</span>
+                            </a>
 
-                        <!-- Dashboard Switcher -->
-                        <x-dashboard-switcher />
+                            <!-- Theme Switcher -->
+                            <x-menu-theme-switcher />
 
-                        <!-- Notification Bell -->
-                        <x-notification-bell />
+                            <!-- Dashboard Switcher -->
+                            <x-dashboard-switcher />
 
-                        <!-- Language Switcher -->
-                        <div class="relative z-[60]">
-                            <x-language-switcher-pro />
+                            <!-- Notification Bell -->
+                            <x-notification-bell />
+
+                            <!-- Language Switcher -->
+                            <div class="relative z-[60]">
+                                <x-language-switcher-pro />
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </header>
+            </header>
 
-        <!-- Page Content -->
-        <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
-              @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
-            @yield('content')
-        </main>
-    </div>        </div>
+            <!-- Page Content -->
+            <main class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-6"
+                  @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
+                @yield('content')
+            </main>
+        </div>
     @endif
 
 
