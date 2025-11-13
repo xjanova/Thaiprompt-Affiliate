@@ -183,7 +183,7 @@ class HomeController extends Controller
         $mlmOrgStats = [
             'total_members' => \App\Models\MlmMember::count(),
             'active_members' => \App\Models\MlmMember::where('status', 'active')->count(),
-            'total_levels' => \DB::table('mlm_genealogy')->max('level') ?? 0,
+            'total_levels' => \DB::table('mlm_genealogy')->max('depth') ?? 0,
             'monthly_growth' => \App\Models\MlmMember::whereMonth('created_at', date('m'))->count(),
         ];
 
