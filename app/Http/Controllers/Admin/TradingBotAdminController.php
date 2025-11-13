@@ -359,9 +359,9 @@ class TradingBotAdminController extends Controller
     {
         $stats = [
             'total_trades' => DB::table('trading_trades')->count(),
-            'successful_trades' => DB::table('trading_trades')->where('status', 'filled')->where('profit_loss', '>', 0)->count(),
+            'successful_trades' => DB::table('trading_trades')->where('status', 'filled')->where('net_profit', '>', 0)->count(),
             'total_volume' => DB::table('trading_trades')->sum('quantity'),
-            'total_profit' => DB::table('trading_trades')->where('status', 'filled')->sum('profit_loss'),
+            'total_profit' => DB::table('trading_trades')->where('status', 'filled')->sum('net_profit'),
         ];
 
         // Revenue by package

@@ -93,9 +93,9 @@
                                 <td class="px-4 py-2 text-sm">฿{{ number_format($trade->price, 2) }}</td>
                                 <td class="px-4 py-2 text-sm">{{ number_format($trade->quantity, 8) }}</td>
                                 <td class="px-4 py-2">
-                                    @if($trade->profit_loss !== null)
-                                        <span class="{{ $trade->profit_loss >= 0 ? 'text-green-600' : 'text-red-600' }} font-semibold">
-                                            ฿{{ number_format($trade->profit_loss, 2) }}
+                                    @if($trade->net_profit !== null)
+                                        <span class="{{ $trade->net_profit >= 0 ? 'text-green-600' : 'text-red-600' }} font-semibold">
+                                            ฿{{ number_format($trade->net_profit, 2) }}
                                         </span>
                                     @else
                                         <span class="text-gray-400">-</span>
