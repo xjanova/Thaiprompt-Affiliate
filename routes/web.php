@@ -103,6 +103,10 @@ Route::prefix('prompt-to-web')->name('prompt-to-web.')->group(function () {
     Route::delete('/{id}', [\App\Http\Controllers\PromptToWebController::class, 'delete'])->name('delete');
 });
 
+Route::get('/demo/tetris', function () {
+    return view('demo-tetris');
+})->name('demo.tetris');
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 

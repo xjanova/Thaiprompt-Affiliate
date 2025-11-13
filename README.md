@@ -189,6 +189,56 @@
 - 🔄 สลับภาษาได้ทันที
 - 📝 แปลผ่าน Google Translate API
 
+### 🎮 Demo Games & Interactive Features
+
+<table>
+<tr>
+<td width="50%">
+
+#### 🎯 Tetris Game
+- **เกมเตตริสสุดเท่ห์** - เล่นฟรี ไม่จำกัด!
+- 🏆 **Top Score Tracking** - บันทึกคะแนนสูงสุดถาวร
+- 👻 **Ghost Piece** - ดูตำแหน่งที่ชิ้นจะตก
+- ⏭️ **Next Piece Preview** - ดูชิ้นถัดไปล่วงหน้า
+- 📊 **Level System** - เลเวลขึ้นทุก 10 เส้น
+- 🎨 **Modern UI** - ดีไซน์สวยงามด้วย Gradient & Neon
+- 🎹 **Full Controls** - ลูกศร, Space (Hard Drop), P (Pause)
+- 💾 **LocalStorage** - บันทึกคะแนนอัตโนมัติ
+- 🎉 **Game Over Screen** - แสดงสถิติและสถิติใหม่
+
+**เล่นเลย:** `/demo/tetris`
+
+</td>
+<td width="50%">
+
+#### 🚀 เกมอื่นๆ
+**Space Shooter**
+- เกมยิงยานอวกาศ 3D
+- Three.js & WebGL
+- `/demo/space-shooter`
+
+**3D Navigation**
+- ระบบนำทางแบบ 3D
+- Interactive Environment
+- `/demo/3d-navigation`
+
+**Loading Animations**
+- Animation Showcase
+- GSAP Effects
+- `/demo/loading`
+
+</td>
+</tr>
+</table>
+
+**คุณสมบัติเด่นของเกมทั้งหมด:**
+- ✨ ไม่ต้องติดตั้ง Plugin - เล่นได้ทันทีบน Browser
+- 🎯 HTML5 Canvas & WebGL - เทคโนโลジีทันสมัย
+- 🎨 Responsive Design - เล่นได้ทุกอุปกรณ์
+- 💪 Pure JavaScript - ไม่มี Framework Dependencies
+- 🏆 Persistent Storage - บันทึกความก้าวหน้า
+- 🎭 เอฟเฟกต์สวยงาม - Animation เต็มรูปแบบ
+
 ---
 
 ## 📦 การติดตั้ง
@@ -305,6 +355,7 @@ Password: (ที่ตั้งไว้ใน install.sh)
 | 📘 [INSTALLATION.md](INSTALLATION.md) | คู่มือติดตั้งแบบละเอียด (แนะนำ!) |
 | 🏭 [DEPLOYMENT.md](DEPLOYMENT.md) | คู่มือ Deploy และ Maintenance |
 | 🔐 [AUTHENTICATION.md](AUTHENTICATION.md) | คู่มือตั้งค่า GitHub Token |
+| 🎮 [DEMO_GAMES.md](DEMO_GAMES.md) | คู่มือเกมและ Demo แอนิเมชั่น (ใหม่!) |
 
 ### สำหรับ Admin
 
