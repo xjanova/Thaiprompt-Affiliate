@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Game;
 use App\Models\GameAchievement;
+use App\Models\GameSkin;
 
 class GamesSeeder extends Seeder
 {
@@ -13,7 +14,32 @@ class GamesSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create Space Shooter Game
+        // Create Snake.io Game
+        $snakeIo = Game::create([
+            'slug' => 'snake-io',
+            'name' => 'Snake.io',
+            'description' => 'เกมหนอนออนไลน์สุดมันส์! กินอาหาร โตขึ้น และหลีกเลี่ยงการชน - เล่นได้ทุกคน แต่สมาชิกจะมี skins พิเศษและบันทึกสกอร์!',
+            'category' => 'io',
+            'min_level_required' => 1,
+            'is_active' => true,
+            'requires_auth' => false,
+            'settings' => ['world_size' => 200, 'food_count' => 100, 'bot_count' => 10],
+        ]);
+
+        // Skins for Snake.io
+        $skins = [
+            ['slug' => 'classic', 'name' => 'Classic Green', 'price' => 0, 'color_primary' => '#00ff00', 'color_secondary' => '#00aa00'],
+            ['slug' => 'fire', 'name' => 'Fire Snake', 'price' => 100, 'color_primary' => '#ff4400', 'color_secondary' => '#aa2200', 'is_premium' => true],
+            ['slug' => 'ice', 'name' => 'Ice Snake', 'price' => 100, 'color_primary' => '#00aaff', 'color_secondary' => '#0077cc', 'is_premium' => true],
+            ['slug' => 'gold', 'name' => 'Golden Snake', 'price' => 500, 'color_primary' => '#ffd700', 'color_secondary' => '#ffaa00', 'is_premium' => true],
+            ['slug' => 'rainbow', 'name' => 'Rainbow Snake', 'price' => 1000, 'color_primary' => '#ff00ff', 'color_secondary' => '#00ffff', 'is_premium' => true, 'is_limited' => true],
+        ];
+
+        foreach ($skins as $skin) {
+            GameSkin::create(array_merge(['game_id' => $snakeIo->id, 'is_active' => true], $skin));
+        }
+
+        // Create Space Shooter Game (Future)
         $spaceShooter = Game::create([
             'slug' => 'space-shooter',
             'name' => 'Space Shooter 3D Ultimate',

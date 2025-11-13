@@ -39,29 +39,17 @@ class GameController extends Controller
             return redirect()->route('login')->with('error', 'Please login to play this game.');
         }
 
-        // Get user progress
-        $progress = null;
-        $unlockedShips = ['basic'];
-        $unlockedWeapons = ['basic'];
-
-        if (Auth::check()) {
-            $progress = UserGameProgress::firstOrCreate(
-                [
-                    'user_id' => Auth::id(),
-                    'game_id' => $game->id,
-                ],
-                [
-                    'unlocked_ships' => ['basic'],
-                    'unlocked_weapons' => ['basic'],
-                    'current_ship' => 'basic',
-                    'current_weapon' => 'basic',
-                ]
-            );
-
-            $unlockedShips = $progress->unlocked_ships ?? ['basic'];
-            $unlockedWeapons = $progress->unlocked_weapons ?? ['basic'];
+        // Route to appropriate game view
+        if ($slug === 'snake-io') {
+            return $this->showSnakeIo($game);
         }
 
+        // Space Shooter or other games
+        return $this->showSpaceShooter($game);
+    }
+
+    private function showSnakeIo($game)
+    {
         // Get leaderboard
         $leaderboard = GameLeaderboard::where('game_id', $game->id)
             ->with('user:id,name,profile_picture')
@@ -69,13 +57,32 @@ class GameController extends Controller
             ->limit(10)
             ->get();
 
-        return view('games.space-shooter', compact(
-            'game',
-            'progress',
-            'unlockedShips',
-            'unlockedWeapons',
-            'leaderboard'
-        ));
+        return view('games.snake-io', compact('game', 'leaderboard'));
+    }
+
+    private function showSpaceShooter($game)
+    {
+        $progress = null;
+        $unlockedShips = ['basic'];
+        $unlockedWeapons = ['basic'];
+
+        if (Auth::check()) {
+            $progress = UserGameProgress::firstOrCreate(
+                ['user_id' => Auth::id(), 'game_id' => $game->id],
+                ['unlocked_ships' => ['basic'], 'unlocked_weapons' => ['basic']]
+            );
+
+            $unlockedShips = $progress->unlocked_ships ?? ['basic'];
+            $unlockedWeapons = $progress->unlocked_weapons ?? ['basic'];
+        }
+
+        $leaderboard = GameLeaderboard::where('game_id', $game->id)
+            ->with('user:id,name,profile_picture')
+            ->orderBy('score', 'desc')
+            ->limit(10)
+            ->get();
+
+        return view('games.space-shooter', compact('game', 'progress', 'unlockedShips', 'unlockedWeapons', 'leaderboard'));
     }
 
     /**

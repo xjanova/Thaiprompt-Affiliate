@@ -26,10 +26,6 @@ Route::get('/demo/3d-navigation', function () {
     return view('demo-3d-navigation');
 })->name('demo.3d-navigation');
 
-Route::get('/demo/space-shooter', function () {
-    return view('demo-space-shooter');
-})->name('demo.space-shooter');
-
 // Games Routes
 Route::prefix('games')->name('games.')->group(function () {
     Route::get('/', [\App\Http\Controllers\GameController::class, 'index'])->name('index');
