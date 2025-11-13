@@ -1,0 +1,49 @@
+{
+  "_animations-CH_iu5NA.js": {
+    "file": "assets/animations-CH_iu5NA.js",
+    "name": "animations"
+  },
+  "_charts-BR_H7_9u.js": {
+    "file": "assets/charts-BR_H7_9u.js",
+    "name": "charts"
+  },
+  "_crypto-ug04Ifqu.js": {
+    "file": "assets/crypto-ug04Ifqu.js",
+    "name": "crypto"
+  },
+  "_threejs-CuOWkSyT.js": {
+    "file": "assets/threejs-CuOWkSyT.js",
+    "name": "threejs"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-C6G_3qQV.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-C-Yb3eAF.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "resources/js/crypto/app.js": {
+    "file": "assets/app-2KVKZrG1.js",
+    "name": "app",
+    "src": "resources/js/crypto/app.js",
+    "isEntry": true,
+    "imports": [
+      "_crypto-ug04Ifqu.js",
+      "_charts-BR_H7_9u.js",
+      "_animations-CH_iu5NA.js"
+    ]
+  },
+  "resources/js/wealth-guide-pro.js": {
+    "file": "assets/wealth-guide-pro-CUCQCyQO.js",
+    "name": "wealth-guide-pro",
+    "src": "resources/js/wealth-guide-pro.js",
+    "isEntry": true,
+    "imports": [
+      "_threejs-CuOWkSyT.js"
+    ]
+  }
+}
