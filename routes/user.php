@@ -216,6 +216,34 @@ Route::prefix('tokens')->name('tokens.')->group(function () {
     Route::get('/{id}/transactions', [\App\Http\Controllers\User\TokenController::class, 'transactions'])->name('transactions');
 });
 
+// TPIX DEX (Decentralized Exchange)
+Route::prefix('dex')->name('dex.')->group(function () {
+    // Swap
+    Route::get('/swap', [\App\Http\Controllers\User\DEXController::class, 'swap'])->name('swap');
+
+    // Liquidity Pools
+    Route::get('/pools', [\App\Http\Controllers\User\DEXController::class, 'pools'])->name('pools');
+    Route::get('/add-liquidity', [\App\Http\Controllers\User\DEXController::class, 'addLiquidity'])->name('add-liquidity');
+    Route::get('/remove-liquidity/{positionId}', [\App\Http\Controllers\User\DEXController::class, 'removeLiquidity'])->name('remove-liquidity');
+
+    // My DEX Activity
+    Route::get('/my-positions', [\App\Http\Controllers\User\DEXController::class, 'myPositions'])->name('my-positions');
+    Route::get('/swap-history', [\App\Http\Controllers\User\DEXController::class, 'swapHistory'])->name('swap-history');
+});
+
+// TPIX Staking
+Route::prefix('staking')->name('staking.')->group(function () {
+    // Staking Pools
+    Route::get('/', [\App\Http\Controllers\User\StakingController::class, 'index'])->name('index');
+    Route::get('/pools/{poolId}', [\App\Http\Controllers\User\StakingController::class, 'show'])->name('show');
+
+    // Stake Actions
+    Route::get('/stake/{poolId}', [\App\Http\Controllers\User\StakingController::class, 'stakeForm'])->name('stake-form');
+
+    // My Staking
+    Route::get('/history', [\App\Http\Controllers\User\StakingController::class, 'history'])->name('history');
+});
+
 // Notifications
 Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('index');
