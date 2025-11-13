@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="456" height="456" viewBox="0 0 456 456" xmlns="http://www.w3.org/2000/svg">
+    <!-- Background Circle with Gradient -->
+    <defs>
+        <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+
+    <!-- Background -->
+    <rect width="456" height="456" rx="100" fill="url(#gradient)"/>
+
+    <!-- Thai Prompt "TP" Text -->
+    <text x="228" y="280" font-family="Arial, sans-serif" font-size="180" font-weight="bold"
+          fill="white" text-anchor="middle">TP</text>
+
+    <!-- Subtitle -->
+    <text x="228" y="340" font-family="Arial, sans-serif" font-size="32"
+          fill="white" opacity="0.9" text-anchor="middle">Affiliate</text>
+</svg>

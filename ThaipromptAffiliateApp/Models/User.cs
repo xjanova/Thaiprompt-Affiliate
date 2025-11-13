@@ -29,7 +29,21 @@ namespace ThaipromptAffiliateApp.Models
         public string? ReferralCode { get; set; }
 
         [JsonPropertyName("created_at")]
-        public DateTime? CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        [JsonPropertyName("total_commissions")]
+        public int TotalCommissions { get; set; }
+
+        [JsonPropertyName("level")]
+        public string? Level { get; set; }
+
+        [JsonPropertyName("phone")]
+        public string? Phone { get; set; }
+
+        // Helper properties
+        public string Initial => !string.IsNullOrEmpty(Name) ? Name[0].ToString().ToUpper() : "?";
+
+        public string DisplayName => !string.IsNullOrEmpty(Name) ? Name : "User";
     }
 
     /// <summary>

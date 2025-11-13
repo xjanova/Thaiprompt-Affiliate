@@ -1,0 +1,11 @@
+This is a placeholder for OpenSans-Regular.ttf font file.
+
+Download the actual font from:
+https://fonts.google.com/specimen/Open+Sans
+
+Place the following files in this directory:
+- OpenSans-Regular.ttf
+- OpenSans-Semibold.ttf
+- OpenSans-Bold.ttf
+
+These fonts are referenced in MauiProgram.cs
