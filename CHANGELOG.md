@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.181.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1018 from xjanova/claude/audio-spectrum-visualizer-011CV5sjNLpkzVxApxCu8RGs (fbb9583b)
+- Add Audio Spectrum Visualizer to user dropdown menu (f51ec5e7)
+
 ## [v2.181.1] - 2025-11-13
 
 ### ✨ Features
