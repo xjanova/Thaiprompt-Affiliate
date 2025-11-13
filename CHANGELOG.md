@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.173.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #971 from xjanova/claude/fix-menu-items-label-column-011CV5WwxEAALPrSGrkWYaf2 (bf81ecb0)
+- fix: Replace 'label' with 'title' in ChatbotMenuSeeder to match menu_items schema (23494c6a)
+### 🔧 Other Changes
+
+
 ## [v2.173.0] - 2025-11-13
 
 ### ✨ Features
