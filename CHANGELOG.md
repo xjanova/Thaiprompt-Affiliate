@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.177.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1006 from xjanova/claude/pos-fullscreen-mode-011CV5XBpro1uQ2n7UMXWfHZ (63028943)
+- fix: Improve fullscreen button visibility (77d0a65a)
+### 🔧 Other Changes
+
+
 ## [v2.177.0] - 2025-11-13
 
 ### ✨ Features
