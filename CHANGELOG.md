@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.172.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #967 from xjanova/claude/move-team-info-to-menu-011CV5Gi2C23kvf9t8yJ5Z2o (e75a5223)
+- Fix Setting namespace conflict in Classic X components (19f0484e)
+
 ## [v2.172.1] - 2025-11-13
 
 ### ✨ Features
