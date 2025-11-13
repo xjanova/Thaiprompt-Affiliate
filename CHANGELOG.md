@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.176.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1001 from xjanova/claude/add-tetris-game-011CV5uGgs2T4yMgMTVakq36 (dbfd5751)
+- docs: Add comprehensive Tetris game documentation to Wiki (246d786b)
+- Add Tetris game with top score tracking (d4bc08b5)
+
 ## [v2.176.0] - 2025-11-13
 
 ### ✨ Features
