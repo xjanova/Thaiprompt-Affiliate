@@ -106,6 +106,11 @@
     $menuFooterEnabled = WindowsUiSetting::get('millennium_menu_footer_enabled', true);
     $menuFooterText = WindowsUiSetting::get('millennium_menu_footer_text', 'Licensed © 2025 TP-Affiliate');
 
+    // Get app information for footer
+    $footerAppName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+    $footerAppVersion = \App\Models\Setting::get('app_version', '2.0');
+    $footerCopyright = \App\Models\Setting::get('copyright_text', '© 2025 All Rights Reserved');
+
     // Calculate font weight CSS value
     $mainFontWeightValue = match($mainFontWeight) {
         'normal' => '400',
@@ -898,8 +903,16 @@
             <!-- Footer Section -->
             @if($menuFooterEnabled)
             <div class="flex-shrink-0 mt-4 pt-4 border-t border-white/10">
-                <div class="text-white/40 text-xs text-center">
-                    {{ $menuFooterText }}
+                <div class="text-center space-y-1">
+                    <div class="text-white/60 text-xs font-semibold">
+                        {{ $footerAppName }}
+                    </div>
+                    <div class="text-white/40 text-[10px]">
+                        Version {{ $footerAppVersion }}
+                    </div>
+                    <div class="text-white/30 text-[10px]">
+                        {{ $footerCopyright }}
+                    </div>
                 </div>
             </div>
             @endif
