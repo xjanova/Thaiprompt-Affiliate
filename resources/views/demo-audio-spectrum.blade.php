@@ -335,6 +335,30 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
+        .preset-cyber {
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 100%);
+        }
+
+        .preset-aurora {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+        }
+
+        .preset-ice {
+            background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+        }
+
+        .preset-lava {
+            background: linear-gradient(135deg, #ff9a56 0%, #ff4e50 100%);
+        }
+
+        .preset-electric {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        }
+
+        .preset-space {
+            background: linear-gradient(135deg, #2c3e50 0%, #4ca1af 100%);
+        }
+
         /* Value Display */
         .value-display {
             display: inline-block;
@@ -456,15 +480,32 @@
                     <div class="control-group">
                         <label>ประเภท:</label>
                         <select id="visualizationType">
-                            <option value="bars">แท่งแนวตั้ง (Bars)</option>
-                            <option value="circular">วงกลม (Circular)</option>
-                            <option value="waveform">คลื่นเสียง (Waveform)</option>
-                            <option value="particles">อนุภาค (Particles)</option>
-                            <option value="spiral">เกลียว (Spiral)</option>
-                            <option value="radial">รัศมี (Radial)</option>
-                            <option value="3d-bars">แท่ง 3D (3D Bars)</option>
-                            <option value="3d-sphere">ทรงกลม 3D (3D Sphere)</option>
-                            <option value="3d-tunnel">อุโมงค์ 3D (3D Tunnel)</option>
+                            <optgroup label="🎨 2D Visualizations">
+                                <option value="bars">แท่งแนวตั้ง (Bars)</option>
+                                <option value="circular">วงกลม (Circular)</option>
+                                <option value="waveform">คลื่นเสียง (Waveform)</option>
+                                <option value="particles">อนุภาค (Particles)</option>
+                                <option value="spiral">เกลียว (Spiral)</option>
+                                <option value="radial">รัศมี (Radial)</option>
+                                <option value="symmetrical">สะท้อนกระจก (Symmetrical)</option>
+                                <option value="double-helix">เกลียวคู่ (Double Helix)</option>
+                                <option value="flower">ดอกไม้ (Flower)</option>
+                                <option value="lightning">สายฟ้า (Lightning)</option>
+                                <option value="matrix">Matrix Rain</option>
+                                <option value="fireworks">ดอกไม้ไฟ (Fireworks)</option>
+                                <option value="dna">DNA Helix</option>
+                                <option value="crystal">คริสตัล (Crystal)</option>
+                                <option value="gravity">Gravity Balls</option>
+                            </optgroup>
+                            <optgroup label="🎮 3D Visualizations">
+                                <option value="3d-bars">แท่ง 3D (3D Bars)</option>
+                                <option value="3d-sphere">ทรงกลม 3D (3D Sphere)</option>
+                                <option value="3d-tunnel">อุโมงค์ 3D (3D Tunnel)</option>
+                                <option value="3d-wave">คลื่น 3D (3D Wave)</option>
+                                <option value="3d-galaxy">กาแล็กซี่ 3D (3D Galaxy)</option>
+                                <option value="3d-cubes">ลูกบาศก์ 3D (3D Cubes)</option>
+                                <option value="3d-particles">อนุภาค 3D (3D Particles)</option>
+                            </optgroup>
                         </select>
                     </div>
                 </div>
@@ -502,12 +543,18 @@
                     <div class="control-section">
                         <h3>🎭 ธีมสำเร็จรูป</h3>
                         <div class="preset-grid">
-                            <button class="preset-btn preset-neon" data-preset="neon">Neon</button>
-                            <button class="preset-btn preset-ocean" data-preset="ocean">Ocean</button>
-                            <button class="preset-btn preset-sunset" data-preset="sunset">Sunset</button>
-                            <button class="preset-btn preset-forest" data-preset="forest">Forest</button>
-                            <button class="preset-btn preset-fire" data-preset="fire">Fire</button>
-                            <button class="preset-btn preset-galaxy" data-preset="galaxy">Galaxy</button>
+                            <button class="preset-btn preset-neon" data-preset="neon">💖 Neon</button>
+                            <button class="preset-btn preset-ocean" data-preset="ocean">🌊 Ocean</button>
+                            <button class="preset-btn preset-sunset" data-preset="sunset">🌅 Sunset</button>
+                            <button class="preset-btn preset-forest" data-preset="forest">🌲 Forest</button>
+                            <button class="preset-btn preset-fire" data-preset="fire">🔥 Fire</button>
+                            <button class="preset-btn preset-galaxy" data-preset="galaxy">🌌 Galaxy</button>
+                            <button class="preset-btn preset-cyber" data-preset="cyber">🤖 Cyber</button>
+                            <button class="preset-btn preset-aurora" data-preset="aurora">🌈 Aurora</button>
+                            <button class="preset-btn preset-ice" data-preset="ice">❄️ Ice</button>
+                            <button class="preset-btn preset-lava" data-preset="lava">🌋 Lava</button>
+                            <button class="preset-btn preset-electric" data-preset="electric">⚡ Electric</button>
+                            <button class="preset-btn preset-space" data-preset="space">🚀 Space</button>
                         </div>
                     </div>
                 </div>
@@ -575,6 +622,62 @@
                         <input type="range" id="zoomSpeed" min="0" max="5" step="0.1" value="0">
                     </div>
                 </div>
+
+                <!-- Special Effects Section -->
+                <div class="control-section">
+                    <h3>🌟 เอฟเฟกต์พิเศษ</h3>
+
+                    <div class="control-group">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="mirrorMode" style="cursor: pointer;">
+                            <span>โหมดสะท้อนกระจก</span>
+                        </label>
+                    </div>
+
+                    <div class="control-group">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="rainbowMode" style="cursor: pointer;">
+                            <span>โหมดสีรุ้ง</span>
+                        </label>
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label">
+                            <span>เอฟเฟกต์หาง (Trail):</span>
+                            <span class="value-display" id="trailValue">0.1</span>
+                        </label>
+                        <input type="range" id="trail" min="0" max="0.9" step="0.1" value="0.1">
+                    </div>
+
+                    <div class="control-group">
+                        <label class="control-label">
+                            <span>ความเข้มเงา:</span>
+                            <span class="value-display" id="shadowValue">20</span>
+                        </label>
+                        <input type="range" id="shadow" min="0" max="100" value="20">
+                    </div>
+                </div>
+
+                <!-- Actions Section -->
+                <div class="control-section">
+                    <h3>📸 การจับภาพ</h3>
+
+                    <button class="btn btn-secondary" id="fullscreenButton">
+                        🖥️ เต็มจอ (Fullscreen)
+                    </button>
+
+                    <button class="btn btn-secondary" id="screenshotButton">
+                        📷 ถ่ายภาพ (Screenshot)
+                    </button>
+
+                    <button class="btn btn-secondary" id="recordButton">
+                        🎥 บันทึกวิดีโอ
+                    </button>
+
+                    <button class="btn btn-danger" id="stopRecordButton" disabled style="display: none;">
+                        ⏹️ หยุดบันทึก
+                    </button>
+                </div>
             </div>
 
             <!-- Canvas Container -->
@@ -634,7 +737,11 @@ class AudioSpectrumVisualizer {
             barCount: 64,
             sensitivity: 100,
             rotationSpeed: 1,
-            zoomSpeed: 0
+            zoomSpeed: 0,
+            mirrorMode: false,
+            rainbowMode: false,
+            trail: 0.1,
+            shadow: 20
         };
 
         // Animation
@@ -642,6 +749,13 @@ class AudioSpectrumVisualizer {
         this.isPlaying = false;
         this.rotation = 0;
         this.zoom = 1;
+
+        // Recording
+        this.mediaRecorder = null;
+        this.recordedChunks = [];
+
+        // Particles (for certain visualizations)
+        this.particles = [];
 
         // Initialize
         this.init();
@@ -784,6 +898,48 @@ class AudioSpectrumVisualizer {
         document.getElementById('zoomSpeed').addEventListener('input', (e) => {
             this.settings.zoomSpeed = parseFloat(e.target.value);
             document.getElementById('zoomSpeedValue').textContent = e.target.value;
+        });
+
+        // Mirror Mode
+        document.getElementById('mirrorMode').addEventListener('change', (e) => {
+            this.settings.mirrorMode = e.target.checked;
+        });
+
+        // Rainbow Mode
+        document.getElementById('rainbowMode').addEventListener('change', (e) => {
+            this.settings.rainbowMode = e.target.checked;
+        });
+
+        // Trail Effect
+        document.getElementById('trail').addEventListener('input', (e) => {
+            this.settings.trail = parseFloat(e.target.value);
+            document.getElementById('trailValue').textContent = e.target.value;
+        });
+
+        // Shadow
+        document.getElementById('shadow').addEventListener('input', (e) => {
+            this.settings.shadow = parseInt(e.target.value);
+            document.getElementById('shadowValue').textContent = e.target.value;
+        });
+
+        // Fullscreen Button
+        document.getElementById('fullscreenButton').addEventListener('click', () => {
+            this.toggleFullscreen();
+        });
+
+        // Screenshot Button
+        document.getElementById('screenshotButton').addEventListener('click', () => {
+            this.takeScreenshot();
+        });
+
+        // Record Button
+        document.getElementById('recordButton').addEventListener('click', () => {
+            this.startRecording();
+        });
+
+        // Stop Record Button
+        document.getElementById('stopRecordButton').addEventListener('click', () => {
+            this.stopRecording();
         });
 
         // Preset Buttons
@@ -1000,9 +1156,14 @@ class AudioSpectrumVisualizer {
             this.ctx.filter = 'none';
         }
 
-        // Clear canvas with fade effect
-        this.ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
+        // Clear canvas with trail effect
+        this.ctx.fillStyle = `rgba(10, 10, 10, ${this.settings.trail})`;
         this.ctx.fillRect(0, 0, width, height);
+
+        // Save context for mirror mode
+        if (this.settings.mirrorMode) {
+            this.ctx.save();
+        }
 
         const type = this.settings.visualizationType;
 
@@ -1025,6 +1186,44 @@ class AudioSpectrumVisualizer {
             case 'radial':
                 this.renderRadial();
                 break;
+            case 'symmetrical':
+                this.renderSymmetrical();
+                break;
+            case 'double-helix':
+                this.renderDoubleHelix();
+                break;
+            case 'flower':
+                this.renderFlower();
+                break;
+            case 'lightning':
+                this.renderLightning();
+                break;
+            case 'dna':
+                this.renderDNA();
+                break;
+            case 'matrix':
+                this.renderMatrix();
+                break;
+            case 'fireworks':
+                this.renderFireworks();
+                break;
+            case 'crystal':
+                this.renderCrystal();
+                break;
+            case 'gravity':
+                this.renderGravity();
+                break;
+        }
+
+        // Apply mirror effect
+        if (this.settings.mirrorMode) {
+            this.ctx.restore();
+            this.ctx.save();
+            this.ctx.scale(1, -1);
+            this.ctx.translate(0, -height);
+            this.ctx.globalAlpha = 0.5;
+            this.ctx.drawImage(this.canvas, 0, 0);
+            this.ctx.restore();
         }
     }
 
@@ -1235,6 +1434,355 @@ class AudioSpectrumVisualizer {
         this.ctx.shadowBlur = 0;
     }
 
+    renderSymmetrical() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const barCount = this.settings.barCount / 2;
+        const barWidth = (width / (barCount * 2)) * 0.8;
+
+        for (let i = 0; i < barCount; i++) {
+            const index = Math.floor((i / barCount) * this.bufferLength);
+            const value = this.dataArray[index];
+            const percent = (value / 255) * (this.settings.sensitivity / 100);
+            const barHeight = percent * height * 0.4;
+
+            const x1 = width/2 - (i * barWidth);
+            const x2 = width/2 + (i * barWidth);
+            const y = height/2 - barHeight/2;
+
+            const color = this.getColor(i / barCount);
+            this.ctx.fillStyle = color;
+            this.ctx.fillRect(x1, y, barWidth * 0.9, barHeight);
+            this.ctx.fillRect(x2, y, barWidth * 0.9, barHeight);
+
+            this.ctx.shadowBlur = this.settings.shadow * (this.settings.brightness / 100);
+            this.ctx.shadowColor = color;
+        }
+        this.ctx.shadowBlur = 0;
+    }
+
+    renderDoubleHelix() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const barCount = this.settings.barCount;
+
+        for (let i = 0; i < barCount; i++) {
+            const index = Math.floor((i / barCount) * this.bufferLength);
+            const value = this.dataArray[index];
+            const percent = (value / 255) * (this.settings.sensitivity / 100);
+
+            const angle = (i / barCount) * Math.PI * 4 + this.rotation;
+            const radius = 100;
+            const x1 = centerX + Math.cos(angle) * radius * (1 + percent);
+            const y1 = centerY + (i / barCount - 0.5) * height * 0.8;
+            const x2 = centerX - Math.cos(angle) * radius * (1 + percent);
+            const y2 = y1;
+
+            const color = this.getColor(i / barCount);
+            const size = 5 + percent * 10;
+
+            this.ctx.fillStyle = color;
+            this.ctx.beginPath();
+            this.ctx.arc(x1, y1, size, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.beginPath();
+            this.ctx.arc(x2, y2, size, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.shadowBlur = this.settings.shadow * (this.settings.brightness / 100);
+            this.ctx.shadowColor = color;
+        }
+        this.ctx.shadowBlur = 0;
+    }
+
+    renderFlower() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const barCount = this.settings.barCount;
+        const petals = 8;
+
+        for (let i = 0; i < barCount; i++) {
+            const index = Math.floor((i / barCount) * this.bufferLength);
+            const value = this.dataArray[index];
+            const percent = (value / 255) * (this.settings.sensitivity / 100);
+
+            const angle = (i / barCount) * Math.PI * 2 + this.rotation;
+            const petalAngle = Math.sin(angle * petals) * 0.5 + 0.5;
+            const radius = 50 + petalAngle * 100 + percent * 100;
+
+            const x = centerX + Math.cos(angle) * radius * this.zoom;
+            const y = centerY + Math.sin(angle) * radius * this.zoom;
+
+            const color = this.getColor(i / barCount);
+            const size = 3 + percent * 8;
+
+            const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, size);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, 'transparent');
+
+            this.ctx.fillStyle = gradient;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.shadowBlur = this.settings.shadow * (this.settings.brightness / 100);
+            this.ctx.shadowColor = color;
+        }
+        this.ctx.shadowBlur = 0;
+    }
+
+    renderLightning() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const centerX = width / 2;
+        const barCount = Math.min(this.settings.barCount, 32);
+
+        for (let i = 0; i < barCount; i++) {
+            const index = Math.floor((i / barCount) * this.bufferLength);
+            const value = this.dataArray[index];
+            const percent = (value / 255) * (this.settings.sensitivity / 100);
+
+            if (percent > 0.3) {
+                const startX = centerX + (Math.random() - 0.5) * width * 0.3;
+                const startY = 0;
+                let x = startX;
+                let y = startY;
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(x, y);
+
+                const segments = Math.floor(5 + percent * 10);
+                for (let j = 0; j < segments; j++) {
+                    x += (Math.random() - 0.5) * 50;
+                    y += height / segments;
+                    this.ctx.lineTo(x, y);
+                }
+
+                const color = this.getColor(Math.random());
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = 2 + percent * 4;
+                this.ctx.shadowBlur = this.settings.shadow * 2 * (this.settings.brightness / 100);
+                this.ctx.shadowColor = color;
+                this.ctx.stroke();
+            }
+        }
+        this.ctx.shadowBlur = 0;
+    }
+
+    renderDNA() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const centerX = width / 2;
+        const barCount = this.settings.barCount;
+
+        this.ctx.beginPath();
+        for (let i = 0; i < barCount; i++) {
+            const index = Math.floor((i / barCount) * this.bufferLength);
+            const value = this.dataArray[index];
+            const percent = (value / 255) * (this.settings.sensitivity / 100);
+
+            const y = (i / barCount) * height;
+            const angle = (i / barCount) * Math.PI * 4 + this.rotation;
+            const radius = 50 + percent * 50;
+
+            const x1 = centerX + Math.cos(angle) * radius;
+            const x2 = centerX - Math.cos(angle) * radius;
+
+            const color = this.getColor(i / barCount);
+
+            // Draw backbone
+            if (i > 0) {
+                this.ctx.strokeStyle = color;
+                this.ctx.lineWidth = 3;
+                this.ctx.lineTo(x1, y);
+                this.ctx.stroke();
+                this.ctx.beginPath();
+                this.ctx.moveTo(x1, y);
+            } else {
+                this.ctx.moveTo(x1, y);
+            }
+
+            // Draw rungs
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(x1, y);
+            this.ctx.lineTo(x2, y);
+            this.ctx.stroke();
+
+            this.ctx.shadowBlur = this.settings.shadow * (this.settings.brightness / 100);
+            this.ctx.shadowColor = color;
+        }
+        this.ctx.shadowBlur = 0;
+    }
+
+    renderMatrix() {
+        // Simple matrix rain effect
+        const barCount = Math.min(this.settings.barCount, 50);
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const columnWidth = width / barCount;
+
+        for (let i = 0; i < barCount; i++) {
+            const index = Math.floor((i / barCount) * this.bufferLength);
+            const value = this.dataArray[index];
+            const percent = (value / 255) * (this.settings.sensitivity / 100);
+
+            const x = i * columnWidth;
+            const segments = Math.floor(3 + percent * 10);
+
+            for (let j = 0; j < segments; j++) {
+                const y = (j / segments + (this.rotation % 1)) * height;
+                const alpha = 1 - j / segments;
+                const color = this.getColor(i / barCount);
+
+                this.ctx.fillStyle = color.replace(')', `, ${alpha})`).replace('rgb', 'rgba');
+                this.ctx.font = `${12 + percent * 8}px monospace`;
+                this.ctx.fillText(String.fromCharCode(0x30A0 + Math.random() * 96), x, y);
+            }
+        }
+    }
+
+    renderFireworks() {
+        if (!this.particles.length || Math.random() > 0.95) {
+            const barCount = this.settings.barCount;
+            for (let i = 0; i < barCount; i++) {
+                const index = Math.floor((i / barCount) * this.bufferLength);
+                const value = this.dataArray[index];
+                const percent = (value / 255) * (this.settings.sensitivity / 100);
+
+                if (percent > 0.6) {
+                    const width = this.canvas.width;
+                    const height = this.canvas.height;
+
+                    for (let j = 0; j < 20; j++) {
+                        this.particles.push({
+                            x: width / 2,
+                            y: height / 2,
+                            vx: (Math.random() - 0.5) * 10 * percent,
+                            vy: (Math.random() - 0.5) * 10 * percent,
+                            life: 1,
+                            color: this.getColor(Math.random())
+                        });
+                    }
+                }
+            }
+        }
+
+        this.particles = this.particles.filter(p => {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vy += 0.2;
+            p.life -= 0.02;
+
+            if (p.life > 0) {
+                this.ctx.fillStyle = p.color.replace(')', `, ${p.life})`).replace('rgb', 'rgba');
+                this.ctx.beginPath();
+                this.ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                this.ctx.fill();
+                return true;
+            }
+            return false;
+        });
+    }
+
+    renderCrystal() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const barCount = this.settings.barCount;
+        const sides = 6;
+
+        for (let i = 0; i < barCount; i++) {
+            const index = Math.floor((i / barCount) * this.bufferLength);
+            const value = this.dataArray[index];
+            const percent = (value / 255) * (this.settings.sensitivity / 100);
+
+            const layer = Math.floor(i / sides);
+            const angle = (i % sides) / sides * Math.PI * 2 + this.rotation;
+            const radius = (layer + 1) * 20 + percent * 50;
+
+            const x = centerX + Math.cos(angle) * radius * this.zoom;
+            const y = centerY + Math.sin(angle) * radius * this.zoom;
+
+            const color = this.getColor(i / barCount);
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX, centerY);
+            this.ctx.lineTo(x, y);
+            this.ctx.strokeStyle = color;
+            this.ctx.lineWidth = 2 + percent * 3;
+            this.ctx.shadowBlur = this.settings.shadow * (this.settings.brightness / 100);
+            this.ctx.shadowColor = color;
+            this.ctx.stroke();
+        }
+        this.ctx.shadowBlur = 0;
+    }
+
+    renderGravity() {
+        const width = this.canvas.width;
+        const height = this.canvas.height;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const barCount = this.settings.barCount;
+
+        for (let i = 0; i < barCount; i++) {
+            const index = Math.floor((i / barCount) * this.bufferLength);
+            const value = this.dataArray[index];
+            const percent = (value / 255) * (this.settings.sensitivity / 100);
+
+            const angle = (i / barCount) * Math.PI * 2 + this.rotation;
+            const baseRadius = 100;
+            const gravity = Math.sin(Date.now() * 0.001 + i) * 50;
+            const radius = baseRadius + gravity + percent * 100;
+
+            const x = centerX + Math.cos(angle) * radius * this.zoom;
+            const y = centerY + Math.sin(angle) * radius * this.zoom;
+
+            const color = this.getColor(i / barCount);
+            const size = 5 + percent * 15;
+
+            const gradient = this.ctx.createRadialGradient(x, y, 0, x, y, size);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, 'transparent');
+
+            this.ctx.fillStyle = gradient;
+            this.ctx.beginPath();
+            this.ctx.arc(x, y, size, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.shadowBlur = this.settings.shadow * (this.settings.brightness / 100);
+            this.ctx.shadowColor = color;
+        }
+        this.ctx.shadowBlur = 0;
+    }
+
+    getColor(t) {
+        if (this.settings.rainbowMode) {
+            const hue = (t * 360 + this.rotation * 100) % 360;
+            return `hsl(${hue}, 80%, ${50 * (this.settings.brightness / 100)}%)`;
+        }
+
+        const r1 = parseInt(this.settings.primaryColor.slice(1, 3), 16);
+        const g1 = parseInt(this.settings.primaryColor.slice(3, 5), 16);
+        const b1 = parseInt(this.settings.primaryColor.slice(5, 7), 16);
+        const r2 = parseInt(this.settings.secondaryColor.slice(1, 3), 16);
+        const g2 = parseInt(this.settings.secondaryColor.slice(3, 5), 16);
+        const b2 = parseInt(this.settings.secondaryColor.slice(5, 7), 16);
+
+        const r = Math.floor(r1 + (r2 - r1) * t);
+        const g = Math.floor(g1 + (g2 - g1) * t);
+        const b = Math.floor(b1 + (b2 - b1) * t);
+
+        return `rgb(${r}, ${g}, ${b})`;
+    }
+
     render3D() {
         const type = this.settings.visualizationType;
 
@@ -1295,36 +1843,18 @@ class AudioSpectrumVisualizer {
 
     applyPreset(preset) {
         const presets = {
-            neon: {
-                primaryColor: '#f093fb',
-                secondaryColor: '#f5576c',
-                brightness: 150
-            },
-            ocean: {
-                primaryColor: '#4facfe',
-                secondaryColor: '#00f2fe',
-                brightness: 120
-            },
-            sunset: {
-                primaryColor: '#fa709a',
-                secondaryColor: '#fee140',
-                brightness: 130
-            },
-            forest: {
-                primaryColor: '#30cfd0',
-                secondaryColor: '#330867',
-                brightness: 110
-            },
-            fire: {
-                primaryColor: '#ff0844',
-                secondaryColor: '#ffb199',
-                brightness: 140
-            },
-            galaxy: {
-                primaryColor: '#667eea',
-                secondaryColor: '#764ba2',
-                brightness: 100
-            }
+            neon: { primaryColor: '#f093fb', secondaryColor: '#f5576c', brightness: 150 },
+            ocean: { primaryColor: '#4facfe', secondaryColor: '#00f2fe', brightness: 120 },
+            sunset: { primaryColor: '#fa709a', secondaryColor: '#fee140', brightness: 130 },
+            forest: { primaryColor: '#30cfd0', secondaryColor: '#330867', brightness: 110 },
+            fire: { primaryColor: '#ff0844', secondaryColor: '#ffb199', brightness: 140 },
+            galaxy: { primaryColor: '#667eea', secondaryColor: '#764ba2', brightness: 100 },
+            cyber: { primaryColor: '#00ff88', secondaryColor: '#00d4ff', brightness: 160 },
+            aurora: { primaryColor: '#a8edea', secondaryColor: '#fed6e3', brightness: 110 },
+            ice: { primaryColor: '#e0c3fc', secondaryColor: '#8ec5fc', brightness: 120 },
+            lava: { primaryColor: '#ff9a56', secondaryColor: '#ff4e50', brightness: 150 },
+            electric: { primaryColor: '#f6d365', secondaryColor: '#fda085', brightness: 140 },
+            space: { primaryColor: '#2c3e50', secondaryColor: '#4ca1af', brightness: 100 }
         };
 
         const config = presets[preset];
@@ -1333,11 +1863,96 @@ class AudioSpectrumVisualizer {
             this.settings.secondaryColor = config.secondaryColor;
             this.settings.brightness = config.brightness;
 
-            // Update UI
             document.getElementById('primaryColor').value = config.primaryColor;
             document.getElementById('secondaryColor').value = config.secondaryColor;
             document.getElementById('brightness').value = config.brightness;
             document.getElementById('brightnessValue').textContent = config.brightness + '%';
+        }
+    }
+
+    toggleFullscreen() {
+        const container = document.querySelector('.canvas-container');
+        if (!document.fullscreenElement) {
+            container.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    takeScreenshot() {
+        const canvas = this.settings.visualizationType.startsWith('3d-')
+            ? this.renderer.domElement
+            : this.canvas;
+
+        canvas.toBlob((blob) => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `audio-spectrum-${Date.now()}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    async startRecording() {
+        try {
+            const canvas = this.settings.visualizationType.startsWith('3d-')
+                ? this.renderer.domElement
+                : this.canvas;
+
+            const stream = canvas.captureStream(30); // 30 FPS
+
+            // Add audio if available
+            if (this.audioElement) {
+                const audioContext = new AudioContext();
+                const audioSource = audioContext.createMediaElementSource(this.audioElement);
+                const dest = audioContext.createMediaStreamDestination();
+                audioSource.connect(dest);
+                audioSource.connect(audioContext.destination);
+
+                stream.addTrack(dest.stream.getAudioTracks()[0]);
+            }
+
+            this.mediaRecorder = new MediaRecorder(stream, {
+                mimeType: 'video/webm;codecs=vp9',
+                videoBitsPerSecond: 2500000
+            });
+
+            this.recordedChunks = [];
+
+            this.mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    this.recordedChunks.push(event.data);
+                }
+            };
+
+            this.mediaRecorder.onstop = () => {
+                const blob = new Blob(this.recordedChunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `audio-spectrum-${Date.now()}.webm`;
+                a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            this.mediaRecorder.start();
+            document.getElementById('recordButton').style.display = 'none';
+            document.getElementById('stopRecordButton').style.display = 'block';
+            document.getElementById('stopRecordButton').disabled = false;
+
+        } catch (error) {
+            alert('ไม่สามารถบันทึกวิดีโอได้: ' + error.message);
+        }
+    }
+
+    stopRecording() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+            this.mediaRecorder.stop();
+            document.getElementById('recordButton').style.display = 'block';
+            document.getElementById('stopRecordButton').style.display = 'none';
         }
     }
 }
