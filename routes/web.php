@@ -30,6 +30,17 @@ Route::get('/demo/space-shooter', function () {
     return view('demo-space-shooter');
 })->name('demo.space-shooter');
 
+// Prompt to Web Routes
+Route::prefix('prompt-to-web')->name('prompt-to-web.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\PromptToWebController::class, 'index'])->name('index');
+    Route::post('/generate', [\App\Http\Controllers\PromptToWebController::class, 'generate'])->name('generate');
+    Route::post('/{id}/improve', [\App\Http\Controllers\PromptToWebController::class, 'improve'])->name('improve');
+    Route::get('/preview/{slug}', [\App\Http\Controllers\PromptToWebController::class, 'preview'])->name('preview');
+    Route::get('/show/{slug}', [\App\Http\Controllers\PromptToWebController::class, 'show'])->name('show');
+    Route::get('/list', [\App\Http\Controllers\PromptToWebController::class, 'list'])->name('list');
+    Route::delete('/{id}', [\App\Http\Controllers\PromptToWebController::class, 'delete'])->name('delete');
+});
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
