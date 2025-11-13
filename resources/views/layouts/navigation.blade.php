@@ -227,6 +227,13 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">จองโรงแรม</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-orange-600 to-amber-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
+                    <a href="{{ route('trading-bot.marketplace') }}"
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-purple-50 hover:to-blue-50 dark:hover:from-purple-900/30 dark:hover:to-blue-900/30"
+                       style="color: {{ $headerTextColor }};">
+                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">💹</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">Trading Bot</span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-600 to-blue-600 group-hover:w-full transition-all duration-300"></span>
+                    </a>
                     @auth
                         <a href="{{ route('my-rentals.index') }}"
                            class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/30 dark:hover:to-emerald-900/30"
@@ -417,6 +424,11 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
                    style="color: {{ $headerTextColor }};">
                     🏨 จองโรงแรม
+                </a>
+                <a href="{{ route('trading-bot.marketplace') }}"
+                   class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
+                   style="color: {{ $headerTextColor }};">
+                    💹 Trading Bot
                 </a>
                 @auth
                     <a href="{{ route('my-rentals.index') }}"

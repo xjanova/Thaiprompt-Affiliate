@@ -9,7 +9,19 @@ use Illuminate\Support\Facades\Auth;
 class ThemeController extends Controller
 {
     /**
-     * Update user's menu theme preference
+     * Display menu theme selection page (Millennium vs Classic X)
+     *
+     * @return \Illuminate\View\View
+     */
+    public function index()
+    {
+        // This page uses menu_theme_preference (millennium vs classic_x)
+        // No need to fetch themes from database
+        return view('user.themes.index');
+    }
+
+    /**
+     * Update user's menu theme preference (Millennium vs Classic X)
      *
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse

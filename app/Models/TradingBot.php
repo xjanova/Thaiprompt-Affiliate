@@ -157,6 +157,14 @@ class TradingBot extends Model
     }
 
     /**
+     * Get total profit/loss attribute
+     */
+    public function getTotalProfitLossAttribute()
+    {
+        return $this->net_profit ?? 0;
+    }
+
+    /**
      * Start the bot
      */
     public function start(): void
@@ -278,5 +286,69 @@ class TradingBot extends Model
     public function scopeProfitable($query)
     {
         return $query->where('net_profit', '>', 0);
+    }
+
+    /**
+     * Get performance metrics for display
+     */
+    public function getPerformanceMetrics(): array
+    {
+        return [
+            'total_trades' => $this->total_trades ?? 0,
+            'winning_trades' => $this->winning_trades ?? 0,
+            'losing_trades' => $this->losing_trades ?? 0,
+            'win_rate' => $this->win_rate ?? 0,
+            'total_profit' => $this->total_profit ?? 0,
+            'total_loss' => $this->total_loss ?? 0,
+            'net_profit' => $this->net_profit ?? 0,
+            'roi_percentage' => $this->roi_percentage ?? 0,
+            'profit_factor' => $this->profit_factor ?? 0,
+            'average_win' => $this->average_win ?? 0,
+            'average_loss' => $this->average_loss ?? 0,
+            'max_consecutive_wins' => $this->max_consecutive_wins ?? 0,
+            'max_consecutive_losses' => $this->max_consecutive_losses ?? 0,
+        ];
+    }
+
+    /**
+     * Get detailed performance data
+     */
+    public function getDetailedPerformance(): array
+    {
+        $metrics = $this->getPerformanceMetrics();
+
+        // Add recent trades
+        $metrics['recent_trades'] = $this->trades()
+            ->latest()
+            ->take(10)
+            ->get();
+
+        // Add performance chart data
+        $metrics['daily_performance'] = $this->portfolioSnapshots()
+            ->whereDate('snapshot_date', '>=', now()->subDays(30))
+            ->orderBy('snapshot_date')
+            ->get();
+
+        return $metrics;
+    }
+
+    /**
+     * Check if bot can be started
+     */
+    public function canStart(): bool
+    {
+        if ($this->status === 'running') {
+            return false;
+        }
+
+        if (!$this->account || !$this->strategy) {
+            return false;
+        }
+
+        if (!$this->dry_run && !$this->account->canTrade()) {
+            return false;
+        }
+
+        return true;
     }
 }
