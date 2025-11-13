@@ -65,8 +65,8 @@ return new class extends Migration
             $table->decimal('rewards_pending', 30, 8)->default(0);
 
             // Timing
-            $table->timestamp('staked_at');
-            $table->timestamp('unlock_at')->comment('When can unstake');
+            $table->timestamp('staked_at')->nullable();
+            $table->timestamp('unlock_at')->nullable()->comment('When can unstake');
             $table->timestamp('last_reward_claim_at')->nullable();
 
             // Status
