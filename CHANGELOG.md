@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.181.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1017 from xjanova/claude/fix-missing-marketplace-route-011CV64MjfdqBN3pH8p5pcfA (edf14aeb)
+- fix: Add missing user.marketplace.products route and implementation (61e155bf)
+### 🔧 Other Changes
+
+
 ## [v2.181.0] - 2025-11-13
 
 ### ✨ Features
