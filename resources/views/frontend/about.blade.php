@@ -686,75 +686,423 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initMindmap() {
-    // Define nodes
+    // Define nodes with Wiki links
     nodes = new vis.DataSet([
         // Center
-        { id: 1, label: 'Thaiprompt\nAffiliate', level: 0, color: { background: '#3B82F6', border: '#1E40AF' }, font: { color: '#FFFFFF', size: 20, bold: true } },
+        {
+            id: 1,
+            label: 'Thaiprompt\nAffiliate',
+            level: 0,
+            color: { background: '#3B82F6', border: '#1E40AF' },
+            font: { color: '#FFFFFF', size: 20, bold: true },
+            wikiUrl: '/wiki',
+            title: 'คลิกเพื่อดูเอกสารทั้งหมด'
+        },
 
-        // Main Features - Level 1
-        { id: 2, label: 'MLM System', level: 1, color: { background: '#8B5CF6', border: '#6D28D9' }, font: { color: '#FFFFFF', size: 16 } },
-        { id: 3, label: 'E-Commerce', level: 1, color: { background: '#EC4899', border: '#BE185D' }, font: { color: '#FFFFFF', size: 16 } },
-        { id: 4, label: 'Wallet & Crypto', level: 1, color: { background: '#10B981', border: '#047857' }, font: { color: '#FFFFFF', size: 16 } },
-        { id: 5, label: 'AI Integration', level: 1, color: { background: '#F59E0B', border: '#D97706' }, font: { color: '#FFFFFF', size: 16 } },
+        // 🔗 Blockchain & TPIX - Level 1 (NEW!)
+        {
+            id: 2,
+            label: '🔗 Blockchain\n& TPIX',
+            level: 1,
+            color: { background: '#7C3AED', border: '#5B21B6' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/README.md',
+            title: 'Native Blockchain & Token Ecosystem\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // MLM Sub-features
-        { id: 6, label: 'Unilevel Plan', level: 2, color: { background: '#A78BFA', border: '#7C3AED' }, font: { size: 12 } },
-        { id: 7, label: 'Binary Plan', level: 2, color: { background: '#A78BFA', border: '#7C3AED' }, font: { size: 12 } },
-        { id: 8, label: 'Commission\nEngine', level: 2, color: { background: '#A78BFA', border: '#7C3AED' }, font: { size: 12 } },
+        // 🌱 Food Passport - Level 1 (NEW!)
+        {
+            id: 3,
+            label: '🌱 Food\nPassport',
+            level: 1,
+            color: { background: '#059669', border: '#047857' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md',
+            title: 'Food Traceability & Carbon Credit\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // E-Commerce Sub-features
-        { id: 9, label: 'Multi-Vendor', level: 2, color: { background: '#F472B6', border: '#DB2777' }, font: { size: 12 } },
-        { id: 10, label: 'Product\nManagement', level: 2, color: { background: '#F472B6', border: '#DB2777' }, font: { size: 12 } },
-        { id: 11, label: 'Payment\nGateway', level: 2, color: { background: '#F472B6', border: '#DB2777' }, font: { size: 12 } },
+        // 🎮 Games - Level 1 (NEW!)
+        {
+            id: 4,
+            label: '🎮 Games &\nEntertainment',
+            level: 1,
+            color: { background: '#DC2626', border: '#991B1B' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/DEMO_GAMES.md',
+            title: 'Tetris, Space Shooter, 3D Navigation\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // Wallet Sub-features
-        { id: 12, label: 'THB Wallet', level: 2, color: { background: '#34D399', border: '#059669' }, font: { size: 12 } },
-        { id: 13, label: 'Crypto\nExchange', level: 2, color: { background: '#34D399', border: '#059669' }, font: { size: 12 } },
-        { id: 14, label: 'Withdrawal\nSystem', level: 2, color: { background: '#34D399', border: '#059669' }, font: { size: 12 } },
+        // 💎 MLM System - Level 1
+        {
+            id: 5,
+            label: '💎 MLM\nSystem',
+            level: 1,
+            color: { background: '#8B5CF6', border: '#6D28D9' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md',
+            title: 'Multi-Level Marketing System\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // AI Sub-features
-        { id: 15, label: 'OpenAI GPT', level: 2, color: { background: '#FBBF24', border: '#F59E0B' }, font: { size: 12 } },
-        { id: 16, label: 'Claude AI', level: 2, color: { background: '#FBBF24', border: '#F59E0B' }, font: { size: 12 } },
-        { id: 17, label: 'LINE Bot', level: 2, color: { background: '#FBBF24', border: '#F59E0B' }, font: { size: 12 } },
+        // 🛒 E-Commerce - Level 1
+        {
+            id: 6,
+            label: '🛒 E-Commerce\nMulti-Vendor',
+            level: 1,
+            color: { background: '#EC4899', border: '#BE185D' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MULTIVENDOR_DESIGN.md',
+            title: 'Multi-Vendor Marketplace\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // Additional Features
-        { id: 18, label: 'Investment\n& Staking', level: 1, color: { background: '#6366F1', border: '#4338CA' }, font: { color: '#FFFFFF', size: 14 } },
-        { id: 19, label: 'Hotel\nBooking', level: 1, color: { background: '#EF4444', border: '#DC2626' }, font: { color: '#FFFFFF', size: 14 } },
-        { id: 20, label: 'Academy\nLearning', level: 1, color: { background: '#14B8A6', border: '#0D9488' }, font: { color: '#FFFFFF', size: 14 } },
-        { id: 21, label: 'HRM\nSystem', level: 1, color: { background: '#F97316', border: '#EA580C' }, font: { color: '#FFFFFF', size: 14 } },
+        // 💰 Wallet - Level 1
+        {
+            id: 7,
+            label: '💰 Digital\nWallet',
+            level: 1,
+            color: { background: '#10B981', border: '#047857' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/WALLET_SYSTEM.md',
+            title: 'Digital Wallet & Crypto Exchange\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 🤖 AI - Level 1
+        {
+            id: 8,
+            label: '🤖 AI\nIntegration',
+            level: 1,
+            color: { background: '#F59E0B', border: '#D97706' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/LINE_BOT_AI_IMPLEMENTATION.md',
+            title: 'AI Chatbot & Automation\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 📈 Investment - Level 1
+        {
+            id: 9,
+            label: '📈 Investment\n& Staking',
+            level: 1,
+            color: { background: '#6366F1', border: '#4338CA' },
+            font: { color: '#FFFFFF', size: 14 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/TPIX_TOKEN_SYSTEM.md#-staking-pools',
+            title: 'Investment & Staking Pools\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 🏨 Hotel - Level 1
+        {
+            id: 10,
+            label: '🏨 Hotel\nBooking',
+            level: 1,
+            color: { background: '#EF4444', border: '#DC2626' },
+            font: { color: '#FFFFFF', size: 14 },
+            wikiUrl: '/wiki',
+            title: 'Hotel Booking System\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 🎓 Academy - Level 1
+        {
+            id: 11,
+            label: '🎓 Academy\n& Learning',
+            level: 1,
+            color: { background: '#14B8A6', border: '#0D9488' },
+            font: { color: '#FFFFFF', size: 14 },
+            wikiUrl: '/wiki',
+            title: 'Online Learning Platform\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 👥 HRM - Level 1
+        {
+            id: 12,
+            label: '👥 HRM\nSystem',
+            level: 1,
+            color: { background: '#F97316', border: '#EA580C' },
+            font: { color: '#FFFFFF', size: 14 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/HRM_SYSTEM_README.md',
+            title: 'Human Resource Management\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // ===== BLOCKCHAIN SUB-FEATURES (Level 2) =====
+        {
+            id: 20,
+            label: 'TPIX Coin\n(Native)',
+            level: 2,
+            color: { background: '#A78BFA', border: '#7C3AED' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/README.md#-specifications',
+            title: '7B Total Supply | 2s Block Time'
+        },
+        {
+            id: 21,
+            label: 'Smart\nContracts',
+            level: 2,
+            color: { background: '#A78BFA', border: '#7C3AED' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/docs/SMART_CONTRACTS.md',
+            title: 'EVM-Compatible | Solidity ^0.8.20'
+        },
+        {
+            id: 22,
+            label: 'Token\nFactory',
+            level: 2,
+            color: { background: '#A78BFA', border: '#7C3AED' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/TPIX_TOKEN_SYSTEM.md#1-token-management',
+            title: 'Create & Deploy Custom Tokens'
+        },
+        {
+            id: 23,
+            label: 'Block\nExplorer',
+            level: 2,
+            color: { background: '#A78BFA', border: '#7C3AED' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/README.md#access-services',
+            title: 'Blockscout Explorer'
+        },
+
+        // ===== FOOD PASSPORT SUB-FEATURES (Level 2) =====
+        {
+            id: 30,
+            label: 'Farm to Fork\nTraceability',
+            level: 2,
+            color: { background: '#34D399', border: '#059669' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md#1--traceability-system',
+            title: 'Track Food Journey'
+        },
+        {
+            id: 31,
+            label: 'Quality\nControl',
+            level: 2,
+            color: { background: '#34D399', border: '#059669' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md#2--quality-control',
+            title: 'Quality Checkpoints & Certifications'
+        },
+        {
+            id: 32,
+            label: 'Carbon\nFootprint',
+            level: 2,
+            color: { background: '#34D399', border: '#059669' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md#3--carbon-footprint-tracking',
+            title: 'Calculate & Track Carbon Emissions'
+        },
+        {
+            id: 33,
+            label: 'Carbon\nCredit',
+            level: 2,
+            color: { background: '#34D399', border: '#059669' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md#4--carbon-credit-system',
+            title: 'Earn & Trade Carbon Credits'
+        },
+
+        // ===== GAMES SUB-FEATURES (Level 2) =====
+        {
+            id: 40,
+            label: 'Tetris\nGame',
+            level: 2,
+            color: { background: '#F87171', border: '#DC2626' },
+            font: { size: 12 },
+            wikiUrl: '/demo/tetris',
+            title: 'Play Tetris with Top Scores'
+        },
+        {
+            id: 41,
+            label: 'Space\nShooter',
+            level: 2,
+            color: { background: '#F87171', border: '#DC2626' },
+            font: { size: 12 },
+            wikiUrl: '/demo/space-shooter',
+            title: '3D Space Shooting Game'
+        },
+        {
+            id: 42,
+            label: '3D\nNavigation',
+            level: 2,
+            color: { background: '#F87171', border: '#DC2626' },
+            font: { size: 12 },
+            wikiUrl: '/demo/3d-navigation',
+            title: 'Interactive 3D Environment'
+        },
+        {
+            id: 43,
+            label: 'Tarot\n3D WebGL',
+            level: 2,
+            color: { background: '#F87171', border: '#DC2626' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/TAROT_3D_WEBGL_SYSTEM.md',
+            title: '3D Tarot Card System'
+        },
+
+        // ===== MLM SUB-FEATURES (Level 2) =====
+        {
+            id: 50,
+            label: 'Unilevel\nPlan',
+            level: 2,
+            color: { background: '#C4B5FD', border: '#8B5CF6' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md#unilevel-plan',
+            title: 'Multi-Level Commission Structure'
+        },
+        {
+            id: 51,
+            label: 'Binary\nPlan',
+            level: 2,
+            color: { background: '#C4B5FD', border: '#8B5CF6' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md#binary-plan',
+            title: 'Binary Tree Matching Bonus'
+        },
+        {
+            id: 52,
+            label: 'Commission\nEngine',
+            level: 2,
+            color: { background: '#C4B5FD', border: '#8B5CF6' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md#commission-calculation',
+            title: 'Real-time Commission Calculation'
+        },
+
+        // ===== E-COMMERCE SUB-FEATURES (Level 2) =====
+        {
+            id: 60,
+            label: 'Multi-Vendor\nMarketplace',
+            level: 2,
+            color: { background: '#F9A8D4', border: '#EC4899' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MULTIVENDOR_SETUP.md',
+            title: 'Multiple Sellers Platform'
+        },
+        {
+            id: 61,
+            label: 'Product\nManagement',
+            level: 2,
+            color: { background: '#F9A8D4', border: '#EC4899' },
+            font: { size: 12 },
+            wikiUrl: '/wiki',
+            title: 'Inventory & Catalog Management'
+        },
+        {
+            id: 62,
+            label: 'Payment\nGateway',
+            level: 2,
+            color: { background: '#F9A8D4', border: '#EC4899' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/CRYPTO_GATEWAY_README.md',
+            title: 'PromptPay, Credit Card, Crypto'
+        },
+
+        // ===== WALLET SUB-FEATURES (Level 2) =====
+        {
+            id: 70,
+            label: 'THB\nWallet',
+            level: 2,
+            color: { background: '#6EE7B7', border: '#10B981' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/WALLET_SYSTEM.md#thb-wallet',
+            title: 'Thai Baht Digital Wallet'
+        },
+        {
+            id: 71,
+            label: 'Crypto\nExchange',
+            level: 2,
+            color: { background: '#6EE7B7', border: '#10B981' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/CRYPTO_GATEWAY_README.md',
+            title: '20+ Cryptocurrencies Supported'
+        },
+        {
+            id: 72,
+            label: 'Withdrawal\nSystem',
+            level: 2,
+            color: { background: '#6EE7B7', border: '#10B981' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/WALLET_SYSTEM.md#withdrawal-system',
+            title: 'Fast & Secure Withdrawals'
+        },
+
+        // ===== AI SUB-FEATURES (Level 2) =====
+        {
+            id: 80,
+            label: 'OpenAI\nGPT-4',
+            level: 2,
+            color: { background: '#FCD34D', border: '#F59E0B' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/AI_GEN_SYSTEM.md',
+            title: 'GPT-4 Integration'
+        },
+        {
+            id: 81,
+            label: 'Claude\nAI',
+            level: 2,
+            color: { background: '#FCD34D', border: '#F59E0B' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/AI_GEN_SYSTEM.md',
+            title: 'Claude AI Integration'
+        },
+        {
+            id: 82,
+            label: 'LINE\nBot AI',
+            level: 2,
+            color: { background: '#FCD34D', border: '#F59E0B' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/LINE_BOT_AI_IMPLEMENTATION.md',
+            title: 'AI-Powered LINE Official Account'
+        },
     ]);
 
-    // Define edges
+    // Define edges (connections between nodes)
     edges = new vis.DataSet([
-        // Main connections
-        { from: 1, to: 2, width: 3, color: { color: '#8B5CF6' } },
-        { from: 1, to: 3, width: 3, color: { color: '#EC4899' } },
-        { from: 1, to: 4, width: 3, color: { color: '#10B981' } },
-        { from: 1, to: 5, width: 3, color: { color: '#F59E0B' } },
-        { from: 1, to: 18, width: 2, color: { color: '#6366F1' } },
-        { from: 1, to: 19, width: 2, color: { color: '#EF4444' } },
-        { from: 1, to: 20, width: 2, color: { color: '#14B8A6' } },
-        { from: 1, to: 21, width: 2, color: { color: '#F97316' } },
+        // Main Level 1 connections from center
+        { from: 1, to: 2, width: 3, color: { color: '#7C3AED' } },  // Blockchain
+        { from: 1, to: 3, width: 3, color: { color: '#059669' } },  // Food Passport
+        { from: 1, to: 4, width: 3, color: { color: '#DC2626' } },  // Games
+        { from: 1, to: 5, width: 3, color: { color: '#8B5CF6' } },  // MLM
+        { from: 1, to: 6, width: 3, color: { color: '#EC4899' } },  // E-Commerce
+        { from: 1, to: 7, width: 3, color: { color: '#10B981' } },  // Wallet
+        { from: 1, to: 8, width: 3, color: { color: '#F59E0B' } },  // AI
+        { from: 1, to: 9, width: 2, color: { color: '#6366F1' } },  // Investment
+        { from: 1, to: 10, width: 2, color: { color: '#EF4444' } }, // Hotel
+        { from: 1, to: 11, width: 2, color: { color: '#14B8A6' } }, // Academy
+        { from: 1, to: 12, width: 2, color: { color: '#F97316' } }, // HRM
 
-        // MLM connections
-        { from: 2, to: 6, width: 2, color: { color: '#A78BFA' } },
-        { from: 2, to: 7, width: 2, color: { color: '#A78BFA' } },
-        { from: 2, to: 8, width: 2, color: { color: '#A78BFA' } },
+        // Blockchain sub-features
+        { from: 2, to: 20, width: 2, color: { color: '#A78BFA' } }, // TPIX Coin
+        { from: 2, to: 21, width: 2, color: { color: '#A78BFA' } }, // Smart Contracts
+        { from: 2, to: 22, width: 2, color: { color: '#A78BFA' } }, // Token Factory
+        { from: 2, to: 23, width: 2, color: { color: '#A78BFA' } }, // Block Explorer
 
-        // E-Commerce connections
-        { from: 3, to: 9, width: 2, color: { color: '#F472B6' } },
-        { from: 3, to: 10, width: 2, color: { color: '#F472B6' } },
-        { from: 3, to: 11, width: 2, color: { color: '#F472B6' } },
+        // Food Passport sub-features
+        { from: 3, to: 30, width: 2, color: { color: '#34D399' } }, // Traceability
+        { from: 3, to: 31, width: 2, color: { color: '#34D399' } }, // Quality Control
+        { from: 3, to: 32, width: 2, color: { color: '#34D399' } }, // Carbon Footprint
+        { from: 3, to: 33, width: 2, color: { color: '#34D399' } }, // Carbon Credit
 
-        // Wallet connections
-        { from: 4, to: 12, width: 2, color: { color: '#34D399' } },
-        { from: 4, to: 13, width: 2, color: { color: '#34D399' } },
-        { from: 4, to: 14, width: 2, color: { color: '#34D399' } },
+        // Games sub-features
+        { from: 4, to: 40, width: 2, color: { color: '#F87171' } }, // Tetris
+        { from: 4, to: 41, width: 2, color: { color: '#F87171' } }, // Space Shooter
+        { from: 4, to: 42, width: 2, color: { color: '#F87171' } }, // 3D Navigation
+        { from: 4, to: 43, width: 2, color: { color: '#F87171' } }, // Tarot 3D
 
-        // AI connections
-        { from: 5, to: 15, width: 2, color: { color: '#FBBF24' } },
-        { from: 5, to: 16, width: 2, color: { color: '#FBBF24' } },
-        { from: 5, to: 17, width: 2, color: { color: '#FBBF24' } },
+        // MLM sub-features
+        { from: 5, to: 50, width: 2, color: { color: '#C4B5FD' } }, // Unilevel
+        { from: 5, to: 51, width: 2, color: { color: '#C4B5FD' } }, // Binary
+        { from: 5, to: 52, width: 2, color: { color: '#C4B5FD' } }, // Commission
+
+        // E-Commerce sub-features
+        { from: 6, to: 60, width: 2, color: { color: '#F9A8D4' } }, // Multi-Vendor
+        { from: 6, to: 61, width: 2, color: { color: '#F9A8D4' } }, // Product Mgmt
+        { from: 6, to: 62, width: 2, color: { color: '#F9A8D4' } }, // Payment
+
+        // Wallet sub-features
+        { from: 7, to: 70, width: 2, color: { color: '#6EE7B7' } }, // THB Wallet
+        { from: 7, to: 71, width: 2, color: { color: '#6EE7B7' } }, // Crypto Exchange
+        { from: 7, to: 72, width: 2, color: { color: '#6EE7B7' } }, // Withdrawal
+
+        // AI sub-features
+        { from: 8, to: 80, width: 2, color: { color: '#FCD34D' } }, // OpenAI
+        { from: 8, to: 81, width: 2, color: { color: '#FCD34D' } }, // Claude
+        { from: 8, to: 82, width: 2, color: { color: '#FCD34D' } }, // LINE Bot
     ]);
 
     // Create network
@@ -812,6 +1160,28 @@ function initMindmap() {
     };
 
     network = new vis.Network(container, data, options);
+
+    // Add click event to open Wiki/Documentation
+    network.on('click', function(params) {
+        if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const node = nodes.get(nodeId);
+
+            if (node && node.wikiUrl) {
+                // Open Wiki/Documentation in new tab
+                window.open(node.wikiUrl, '_blank');
+            }
+        }
+    });
+
+    // Add hover effect to show cursor pointer
+    network.on('hoverNode', function() {
+        document.getElementById('mindmap-container').style.cursor = 'pointer';
+    });
+
+    network.on('blurNode', function() {
+        document.getElementById('mindmap-container').style.cursor = 'default';
+    });
 
     // Stabilize and then fit
     network.once('stabilizationIterationsDone', function() {
