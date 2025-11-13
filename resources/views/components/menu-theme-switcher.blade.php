@@ -190,6 +190,11 @@
 </div>
 
 <style>
+    /* Hide elements with x-cloak until Alpine.js loads (prevent FOUC) */
+    [x-cloak] {
+        display: none !important;
+    }
+
     .theme-switcher-trigger {
         display: flex;
         align-items: center;

@@ -416,10 +416,12 @@
                            // Keep it open, do nothing
                            return;
                        }
-                       // Otherwise, toggle normally
-                       openSubmenus.includes(menuId)
-                           ? openSubmenus = openSubmenus.filter(id => id !== menuId)
-                           : openSubmenus.push(menuId)
+                       // Otherwise, toggle normally using proper Alpine.js reactivity
+                       if (openSubmenus.includes(menuId)) {
+                           openSubmenus = openSubmenus.filter(id => id !== menuId);
+                       } else {
+                           openSubmenus = [...openSubmenus, menuId];
+                       }
                    ">
                     <span class="classic-x-menu-icon">
                         <i class="fas {{ $item['icon'] }}"></i>
