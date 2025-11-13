@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.196.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1039 from xjanova/claude/add-tpix-currency-seeder-011CV6A9WPnYH2hoiZjNoGTR (a72cfd38)
+- fix: Add missing name field to GameSeeder (ceeb024a)
+### 🔧 Other Changes
+
+
 ## [v2.196.0] - 2025-11-13
 
 ### ✨ Features
