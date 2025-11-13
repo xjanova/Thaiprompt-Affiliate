@@ -46,7 +46,7 @@
             transform: translateX(-4px);
         }
 
-        /* Fullscreen exit button */
+        /* Fullscreen toggle button (floating) */
         .fullscreen-exit-btn {
             position: fixed;
             bottom: 20px;
@@ -64,11 +64,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
             z-index: 9999;
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .fullscreen-exit-btn.active {
             opacity: 1;
             pointer-events: auto;
         }
@@ -115,18 +110,6 @@
                         <div class="font-medium">{{ $device->store->name }}</div>
                         <div class="text-gray-500 dark:text-gray-400">{{ auth()->user()->name }}</div>
                     </div>
-
-                    <!-- Fullscreen Toggle -->
-                    <button @click="toggleFullscreen()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600" title="โหมดเต็มหน้าจอ">
-                        <i class="fas fa-expand" x-show="!isFullscreen"></i>
-                        <i class="fas fa-compress" x-show="isFullscreen"></i>
-                    </button>
-
-                    <!-- Dark Mode Toggle -->
-                    <button onclick="toggleDarkMode()" class="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600" title="โหมดมืด/สว่าง">
-                        <i class="fas fa-moon dark:hidden"></i>
-                        <i class="fas fa-sun hidden dark:inline"></i>
-                    </button>
 
                     @if($activeSession)
                         <a href="{{ route('pos.session.close', $activeSession) }}" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition">
@@ -352,12 +335,12 @@
             </div>
         </div>
 
-        <!-- Fullscreen Exit Button (Bottom Corner) -->
+        <!-- Fullscreen Toggle Button (Bottom Corner) -->
         <button @click="toggleFullscreen()"
-                :class="{'active': isFullscreen}"
                 class="fullscreen-exit-btn no-print"
-                title="ออกจากโหมดเต็มหน้าจอ">
-            <i class="fas fa-compress text-xl"></i>
+                :title="isFullscreen ? 'ออกจากโหมดเต็มหน้าจอ' : 'ขยายเต็มหน้าจอ'">
+            <i class="fas fa-expand text-xl" x-show="!isFullscreen"></i>
+            <i class="fas fa-compress text-xl" x-show="isFullscreen"></i>
         </button>
     </div>
 
