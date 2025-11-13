@@ -194,8 +194,13 @@ Route::middleware('auth')->prefix('cart')->name('cart.')->group(function () {
 Route::middleware('auth')->prefix('checkout')->name('checkout.')->group(function () {
     Route::get('/', [\App\Http\Controllers\CheckoutController::class, 'index'])->name('index');
     Route::post('/process', [\App\Http\Controllers\CheckoutController::class, 'process'])->name('process');
+    Route::get('/payment/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'payment'])->name('payment');
+    Route::post('/payment/{orderId}/process', [\App\Http\Controllers\CheckoutController::class, 'processPayment'])->name('payment.process');
     Route::get('/success/{orderId}', [\App\Http\Controllers\CheckoutController::class, 'success'])->name('success');
 });
+
+// Payment Callback Routes (for webhooks - no auth required)
+Route::post('/payment/callback/{transactionId}', [\App\Http\Controllers\CheckoutController::class, 'paymentCallback'])->name('payment.callback');
 
 // Shipping Addresses Routes (Authenticated)
 Route::middleware('auth')->prefix('shipping-addresses')->name('shipping-addresses.')->group(function () {
@@ -352,6 +357,33 @@ Route::prefix('api/crypto')->name('api.crypto.')->group(function () {
     Route::get('/compare', [\App\Http\Controllers\CryptoPriceChartController::class, 'getComparisonData'])->name('compare');
     Route::get('/market-overview', [\App\Http\Controllers\CryptoPriceChartController::class, 'getMarketOverview'])->name('market-overview');
     Route::get('/realtime-prices', [\App\Http\Controllers\CryptoPriceChartController::class, 'getRealTimePrices'])->name('realtime-prices');
+});
+
+// ========================================
+// CHATBOT RENTAL SYSTEM ROUTES
+// ========================================
+Route::prefix('chatbot')->name('chatbot.')->middleware('auth')->group(function () {
+    // Bot Management
+    Route::get('/', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'index'])->name('index');
+    Route::get('/create', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'create'])->name('create');
+    Route::get('/{id}', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'show'])->name('show');
+    Route::get('/{id}/edit', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'edit'])->name('edit');
+    Route::get('/{id}/keywords', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'keywords'])->name('keywords');
+    Route::get('/{id}/integrations', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'integrations'])->name('integrations');
+    Route::get('/{id}/auto-content', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'autoContent'])->name('auto-content');
+    Route::get('/{id}/analytics', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'analytics'])->name('analytics');
+    Route::get('/{id}/playground', [\App\Http\Controllers\Chatbot\ChatbotController::class, 'playground'])->name('playground');
+});
+
+// Chatbot Marketplace
+Route::prefix('chatbot/marketplace')->name('chatbot.marketplace.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'show'])->name('show');
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/my-rentals', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'myRentals'])->name('my-rentals');
+        Route::get('/my-earnings', [\App\Http\Controllers\Chatbot\MarketplaceWebController::class, 'myEarnings'])->name('my-earnings');
+    });
 });
 
 // ========================================

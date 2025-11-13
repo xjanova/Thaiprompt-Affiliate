@@ -163,6 +163,19 @@
                 ]
             ],
             [
+                'icon' => '💬',
+                'label' => 'ระบบบอทแชท',
+                'url' => '#',
+                'order' => 4.3,
+                'submenu' => [
+                    ['label' => 'บอทของฉัน', 'url' => safeRoute('chatbot.index')],
+                    ['label' => 'สร้างบอทใหม่', 'url' => safeRoute('chatbot.create')],
+                    ['label' => 'ตลาดบอท', 'url' => safeRoute('chatbot.marketplace.index')],
+                    ['label' => 'บอทที่เช่า', 'url' => safeRoute('chatbot.marketplace.my-rentals')],
+                    ['label' => 'รายได้ของฉัน', 'url' => safeRoute('chatbot.marketplace.my-earnings')],
+                ]
+            ],
+            [
                 'icon' => '🎨',
                 'label' => 'Smart Slider Pro',
                 'url' => '#',
@@ -551,6 +564,19 @@
             ],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าร้าน', 'url' => safeRoute('seller.settings'), 'order' => 7],
             ['icon' => '👤', 'label' => 'โปรไฟล์', 'url' => safeRoute('seller.profile'), 'order' => 8],
+            [
+                'icon' => '💬',
+                'label' => 'ระบบบอทแชท',
+                'url' => '#',
+                'order' => 8.5,
+                'submenu' => [
+                    ['label' => 'บอทของฉัน', 'url' => safeRoute('chatbot.index')],
+                    ['label' => 'สร้างบอทใหม่', 'url' => safeRoute('chatbot.create')],
+                    ['label' => 'ตลาดบอท', 'url' => safeRoute('chatbot.marketplace.index')],
+                    ['label' => 'บอทที่เช่า', 'url' => safeRoute('chatbot.marketplace.my-rentals')],
+                    ['label' => 'รายได้ของฉัน', 'url' => safeRoute('chatbot.marketplace.my-earnings')],
+                ]
+            ],
         ];
     } else { // user
         $menuItems = [
@@ -579,6 +605,19 @@
                 ]
             ],
             ['icon' => '🎫', 'label' => 'Ticket Support', 'url' => safeRoute('user.tickets.index'), 'order' => 6],
+            [
+                'icon' => '💬',
+                'label' => 'ระบบบอทแชท',
+                'url' => '#',
+                'order' => 6.5,
+                'submenu' => [
+                    ['label' => 'บอทของฉัน', 'url' => safeRoute('chatbot.index')],
+                    ['label' => 'สร้างบอทใหม่', 'url' => safeRoute('chatbot.create')],
+                    ['label' => 'ตลาดบอท', 'url' => safeRoute('chatbot.marketplace.index')],
+                    ['label' => 'บอทที่เช่า', 'url' => safeRoute('chatbot.marketplace.my-rentals')],
+                    ['label' => 'รายได้ของฉัน', 'url' => safeRoute('chatbot.marketplace.my-earnings')],
+                ]
+            ],
             [
                 'icon' => '💳',
                 'label' => 'กระเป๋าเงิน THB',

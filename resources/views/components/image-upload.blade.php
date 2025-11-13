@@ -158,18 +158,17 @@ function imageUploader(config) {
 
         handleFileSelect(event) {
             const selectedFiles = Array.from(event.target.files);
-            this.addFiles(selectedFiles);
-            // Reset input
-            event.target.value = '';
+            this.addFiles(selectedFiles, event.target);
         },
 
         handleDrop(event) {
             this.dragOver = false;
             const droppedFiles = Array.from(event.dataTransfer.files);
-            this.addFiles(droppedFiles);
+            const input = event.currentTarget.querySelector('input[type="file"]');
+            this.addFiles(droppedFiles, input);
         },
 
-        addFiles(newFiles) {
+        addFiles(newFiles, inputElement = null) {
             this.errors = [];
 
             // Filter only image files
@@ -191,14 +190,55 @@ function imageUploader(config) {
                 return;
             }
 
-            // Validate and add files
+            // Validate files first
+            const validFiles = [];
             imageFiles.forEach(file => {
                 if (file.size > this.maxSize) {
                     this.errors.push(`${file.name}: ขนาดไฟล์เกิน ${this.maxSizeMB}MB`);
-                    return;
+                } else {
+                    validFiles.push(file);
                 }
+            });
 
-                // Create preview
+            // If no input element, just show previews
+            if (!inputElement) {
+                validFiles.forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.files.push({
+                            file: file,
+                            name: file.name,
+                            size: file.size,
+                            preview: e.target.result
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                });
+                return;
+            }
+
+            // Use DataTransfer to store actual files in input element
+            const dataTransfer = new DataTransfer();
+
+            // Add existing files from input
+            if (inputElement.files) {
+                Array.from(inputElement.files).forEach(file => {
+                    dataTransfer.items.add(file);
+                });
+            }
+
+            // Add new valid files
+            validFiles.forEach(file => {
+                if (this.multiple || dataTransfer.files.length === 0) {
+                    dataTransfer.items.add(file);
+                }
+            });
+
+            // Update input element with all files
+            inputElement.files = dataTransfer.files;
+
+            // Create previews
+            validFiles.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.files.push({
@@ -213,8 +253,28 @@ function imageUploader(config) {
         },
 
         removeFile(index) {
-            this.files.splice(index, 1);
+            const removed = this.files.splice(index, 1)[0];
             this.errors = [];
+
+            // Update input element to remove the file
+            this.updateInputFiles();
+        },
+
+        updateInputFiles() {
+            // Find the input element
+            const input = this.$el.querySelector('input[type="file"]');
+            if (!input) return;
+
+            // Create new DataTransfer with remaining files
+            const dataTransfer = new DataTransfer();
+            this.files.forEach(item => {
+                if (item.file) {
+                    dataTransfer.items.add(item.file);
+                }
+            });
+
+            // Update input
+            input.files = dataTransfer.files;
         },
 
         removeExistingImage(index) {

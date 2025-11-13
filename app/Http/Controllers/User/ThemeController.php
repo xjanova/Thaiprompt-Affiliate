@@ -32,15 +32,45 @@ class ThemeController extends Controller
             'menu_theme_preference' => 'required|in:millennium,classic_x'
         ]);
 
-        $user = Auth::user();
-        $user->menu_theme_preference = $request->menu_theme_preference;
-        $user->save();
+        try {
+            $user = Auth::user();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Theme updated successfully',
-            'theme' => $user->menu_theme_preference
-        ]);
+            // Log current state
+            \Log::info('Updating theme for user', [
+                'user_id' => $user->id,
+                'old_theme' => $user->menu_theme_preference,
+                'new_theme' => $request->menu_theme_preference
+            ]);
+
+            $user->menu_theme_preference = $request->menu_theme_preference;
+            $saved = $user->save();
+
+            // Verify save
+            $user->refresh();
+
+            \Log::info('Theme updated', [
+                'user_id' => $user->id,
+                'saved' => $saved,
+                'current_theme' => $user->menu_theme_preference
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Theme updated successfully',
+                'theme' => $user->menu_theme_preference,
+                'saved' => $saved
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to update theme', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update theme: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

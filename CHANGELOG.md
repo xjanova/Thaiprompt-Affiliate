@@ -2,6 +2,205 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.165.7] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #948 from xjanova/claude/fix-shell-exec-error-011CV4YnSkrDgcUeqbvof2E4 (3ce64f6a)
+- Replace shell_exec() with Laravel Process facade (605d9140)
+
+## [v2.165.6] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #947 from xjanova/claude/chatbot-rental-system-011CV4SMvxMEKqpAWbDN4ss7 (32890cf2)
+- Add Chatbot Rental System menu to Start Menu (6f83f47b)
+- Fix: Replace non-existent column 'total_profit_loss' with 'net_profit' (6e30ff25)
+
+## [v2.165.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Replace shell_exec with Symfony Process for security (1b7557bc)
+### 🔧 Other Changes
+- Merge pull request #946 from xjanova/claude/deployment-final-011CV3dNGQQjHWG4NY7KfZWt (ff243f95)
+- Merge branch 'claude/Main' of http://127.0.0.1:24890/git/xjanova/Thaiprompt-Affiliate into claude/Main (e6bd1437)
+- Merge branch 'claude/review-installation-system-011CV3dNGQQjHWG4NY7KfZWt' into claude/Main (e00828b9)
+
+## [v2.165.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #945 from xjanova/claude/fix-ecommerce-image-upload-011CV4TqGo4rCQHyW9ab89Xx (d974759e)
+- fix: Add error handling for PaymentGateway database query (7aa65a94)
+### 🔧 Other Changes
+
+
+## [v2.165.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #944 from xjanova/claude/fix-bookings-error-011CV58QjpsCVjLa7B3NU5cB (433c0f9e)
+- Fix 404 error on /admin/hotels/bookings route (5a019bc6)
+
+## [v2.165.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #942 from xjanova/claude/thai-language-rules-011CV57iHj7cUsgUy3ye7v1B (54b29fc9)
+- เพิ่ม: กฎการใช้ภาษาไทยสำหรับ Claude Code (7f97fb22)
+
+## [v2.165.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #941 from xjanova/claude/fix-shell-exec-error-011CV4YnSkrDgcUeqbvof2E4 (2ffe509c)
+- Fix shell_exec() undefined function error in DeploymentController (1ad76950)
+
+## [v2.165.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #940 from xjanova/claude/admin-menu-ui-revamp-011CV4JN42KSJCamJZRnmE9P (7be5f3ea)
+- feat: Add comprehensive testing tools for per-user theme preferences (5a954c2f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.164.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #939 from xjanova/claude/fix-component-cache-issue-011CV57ZfwLMdWzvxDCU4jRW (57e8664c)
+- fix: Add missing app-layout component for view caching (39da5389)
+### 🔧 Other Changes
+
+
+## [v2.164.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #938 from xjanova/claude/fix-line-signup-table-missing-011CV57akWCqk5zPAR9tb67A (357a1708)
+- fix: Add missing line_signup_templates table migration (8a306219)
+### 🔧 Other Changes
+
+
+## [v2.164.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #937 from xjanova/claude/admin-menu-ui-revamp-011CV4JN42KSJCamJZRnmE9P (67da0485)
+- fix: Add comprehensive debugging for theme persistence (c76487b5)
+### 🔧 Other Changes
+
+
+## [v2.164.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #936 from xjanova/claude/chatbot-rental-system-011CV4SMvxMEKqpAWbDN4ss7 (4052f4e5)
+- Add Git Hooks system for enforcing coding standards (a1344dbd)
+- Add ChatbotMenuSeeder to DatabaseSeeder (3b483c7a)
+
+## [v2.164.0] - 2025-11-12
+
+### ✨ Features
+- Merge pull request #935 from xjanova/claude/fix-ecommerce-image-upload-011CV4TqGo4rCQHyW9ab89Xx (69ac43f6)
+- feat: Implement complete payment gateway integration for e-commerce (0a595525)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.163.1] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #934 from xjanova/claude/add-admin-deploy-menu-011CV4UgjW2s6miYPm71fpZi (ba59d97c)
+- Add: Deployment Center menu to Classic X theme (9ee44209)
+
+## [v2.163.0] - 2025-11-12
+
+### ✨ Features
+- feat: Add Chatbot Frontend (Controllers, Views, Routes, Menu) (563ffaae)
+- feat: Add AI service interfaces and implementations (1eaafdc1)
+- feat: Add Chatbot Rental System with Hybrid AI (b7f28720)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #933 from xjanova/claude/chatbot-rental-system-011CV4SMvxMEKqpAWbDN4ss7 (aa062fe1)
+- Merge branch 'claude/Main' into claude/chatbot-rental-system (75070f59)
+
+## [v2.162.0] - 2025-11-12
+
+### ✨ Features
+- feat: Complete Trading Bot system with admin menu and CRUD forms (d29368a1)
+- feat: Add comprehensive admin panel views for Trading Bot system (da1eb250)
+- feat: Add comprehensive user-facing Trading Bot views (af021b6e)
+- feat: Add Trading Bot views and navigation integration (b473293e)
+- feat: Add comprehensive Crypto Trading Bot API system (6fb3d72f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #932 from xjanova/claude/crypto-trading-bot-api-011CV4Qdjefuvx3aaSNGNu6B (a538838b)
+- chore: Add cache clearing script and menu check guide (2a973b2d)
+
+## [v2.161.8] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #931 from xjanova/claude/fix-ecommerce-image-upload-011CV4TqGo4rCQHyW9ab89Xx (44674cbf)
+- Fix: E-commerce image upload functionality (917210dc)
+
+## [v2.161.7] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #930 from xjanova/claude/fix-theme-controller-index-011CV4KgEE6ZYSxGXVYvRBvB (9218d2ed)
+- Add: Floating action buttons for Classic X theme (Dark Mode & Scroll to Top) (64c90cf1)
+
+## [v2.161.6] - 2025-11-12
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #929 from xjanova/claude/fix-theme-controller-index-011CV4KgEE6ZYSxGXVYvRBvB (00b8b4c8)
+- Fix: Add Font Awesome and theme switcher menu to Classic X user layout (acb73204)
+
 ## [v2.161.5] - 2025-11-12
 
 ### ✨ Features

@@ -6,19 +6,25 @@ use App\Models\ShoppingCart;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\ShippingAddress;
+use App\Models\Wallet;
 use App\Services\CashbackService;
 use App\Services\WalletService;
+use App\Services\Payment\PaymentService;
+use App\Notifications\NewOrderNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 
 class CheckoutController extends Controller
 {
     protected CashbackService $cashbackService;
+    protected PaymentService $paymentService;
 
     public function __construct()
     {
         $this->middleware('auth');
         $this->cashbackService = new CashbackService(new WalletService());
+        $this->paymentService = new PaymentService();
     }
 
     /**
@@ -54,13 +60,22 @@ class CheckoutController extends Controller
         // Calculate cashback preview
         $cashbackPreview = $this->cashbackService->getCashbackPreview($cartItems, $total);
 
+        // Get available payment methods
+        $paymentMethods = $this->paymentService->getAvailablePaymentMethods();
+
+        // Get user wallet balance for wallet payment
+        $wallet = Wallet::where('user_id', auth()->id())->first();
+        $walletBalance = $wallet ? $wallet->balance : 0;
+
         return view('shop.checkout', compact(
             'cartItems',
             'addresses',
             'subtotal',
             'shippingFee',
             'total',
-            'cashbackPreview'
+            'cashbackPreview',
+            'paymentMethods',
+            'walletBalance'
         ));
     }
 
@@ -71,7 +86,7 @@ class CheckoutController extends Controller
     {
         $request->validate([
             'shipping_address_id' => 'required|exists:shipping_addresses,id',
-            'payment_method' => 'required|in:promptpay,bank_transfer,credit_card,cod',
+            'payment_method' => 'required|in:wallet,promptpay,bank_transfer,credit_card,cash_on_delivery,paysolutions',
             'customer_notes' => 'nullable|string|max:1000',
         ]);
 
@@ -81,6 +96,13 @@ class CheckoutController extends Controller
 
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'ตะกร้าสินค้าของคุณว่างเปล่า');
+        }
+
+        // Check stock availability again
+        foreach ($cartItems as $item) {
+            if (!$item->isAvailable() || !$item->hasEnoughStock()) {
+                return redirect()->route('cart.index')->with('error', 'มีสินค้าบางรายการหมดสต็อกหรือไม่พร้อมจำหน่าย');
+            }
         }
 
         DB::beginTransaction();
@@ -99,7 +121,7 @@ class CheckoutController extends Controller
             // Calculate cashback
             $cashbackAmount = $this->cashbackService->calculateOrderCashback($cartItems, $total);
 
-            // Create order
+            // Create order (don't decrease stock yet - will be done after payment)
             $order = Order::create([
                 'user_id' => auth()->id(),
                 'shipping_address_id' => $request->shipping_address_id,
@@ -140,12 +162,6 @@ class CheckoutController extends Controller
                     'status' => 'pending',
                 ]);
 
-                // Decrease product stock
-                $product->decreaseStock($cartItem->quantity);
-
-                // Update sales count
-                $product->increment('sales_count', $cartItem->quantity);
-
                 $platformCommission += $commissionAmount;
                 $sellerEarning += $itemSellerEarning;
             }
@@ -156,26 +172,158 @@ class CheckoutController extends Controller
                 'seller_earning' => $sellerEarning,
             ]);
 
+            // Create payment transaction
+            $paymentTransaction = $this->paymentService->createOrderPayment(
+                $order,
+                $request->payment_method
+            );
+
             // Clear cart
             ShoppingCart::where('user_id', auth()->id())->delete();
 
-            // Process cashback for non-COD payment methods
-            if ($request->payment_method !== 'cod' && $cashbackAmount > 0) {
+            // Send notification to customer
+            try {
+                $order->user->notify(new NewOrderNotification($order));
+            } catch (\Exception $e) {
+                \Log::error('Failed to send order notification: ' . $e->getMessage());
+            }
+
+            // Send notification to sellers
+            foreach ($order->items->groupBy('seller_id') as $sellerId => $items) {
                 try {
-                    $this->cashbackService->processOrderCashback($order);
+                    $seller = \App\Models\User::find($sellerId);
+                    if ($seller) {
+                        $seller->notify(new NewOrderNotification($order));
+                    }
                 } catch (\Exception $e) {
-                    \Log::error('Failed to process cashback for order ' . $order->id . ': ' . $e->getMessage());
-                    // Continue anyway - cashback can be processed later
+                    \Log::error('Failed to send seller notification: ' . $e->getMessage());
                 }
             }
 
             DB::commit();
 
-            return redirect()->route('checkout.success', $order->id);
+            // Redirect to payment page
+            return redirect()->route('checkout.payment', $order->id);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show payment page
+     */
+    public function payment($orderId)
+    {
+        $order = Order::with(['items.product', 'shippingAddress', 'paymentTransaction'])
+            ->where('id', $orderId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        // Check if order is already paid
+        if ($order->payment_status === 'paid') {
+            return redirect()->route('checkout.success', $order->id);
+        }
+
+        // Get payment transaction
+        $transaction = $order->paymentTransaction;
+
+        if (!$transaction) {
+            return redirect()->route('orders.show', $order->id)
+                ->with('error', 'ไม่พบรายการชำระเงิน');
+        }
+
+        // Check if transaction expired
+        if ($transaction->isExpired()) {
+            return redirect()->route('orders.show', $order->id)
+                ->with('error', 'รายการชำระเงินหมดอายุ กรุณาติดต่อเจ้าหน้าที่');
+        }
+
+        // Get wallet balance if payment method is wallet
+        $walletBalance = 0;
+        if ($order->payment_method === 'wallet') {
+            $wallet = Wallet::where('user_id', auth()->id())->first();
+            $walletBalance = $wallet ? $wallet->balance : 0;
+        }
+
+        return view('shop.payment', compact('order', 'transaction', 'walletBalance'));
+    }
+
+    /**
+     * Process payment
+     */
+    public function processPayment(Request $request, $orderId)
+    {
+        $order = Order::with('paymentTransaction')
+            ->where('id', $orderId)
+            ->where('user_id', auth()->id())
+            ->firstOrFail();
+
+        // Check if order is already paid
+        if ($order->payment_status === 'paid') {
+            return redirect()->route('checkout.success', $order->id);
+        }
+
+        $transaction = $order->paymentTransaction;
+
+        if (!$transaction) {
+            return back()->with('error', 'ไม่พบรายการชำระเงิน');
+        }
+
+        // Process payment based on method
+        try {
+            $result = $this->paymentService->processPayment($transaction, $request->all());
+
+            if ($result['success']) {
+                // If payment completed immediately (e.g., wallet)
+                if ($result['transaction']->status === 'completed') {
+                    // Process cashback
+                    if ($order->cashback_amount > 0) {
+                        try {
+                            $this->cashbackService->processOrderCashback($order);
+                        } catch (\Exception $e) {
+                            \Log::error('Failed to process cashback: ' . $e->getMessage());
+                        }
+                    }
+
+                    return redirect()->route('checkout.success', $order->id)
+                        ->with('success', 'ชำระเงินสำเร็จ');
+                }
+
+                // For async payments (PromptPay, Bank Transfer, etc.)
+                return view('shop.payment-processing', [
+                    'order' => $order,
+                    'transaction' => $result['transaction'],
+                    'paymentData' => $result['data'],
+                ]);
+            }
+
+            return back()->with('error', $result['message'] ?? 'การชำระเงินล้มเหลว');
+
+        } catch (\Exception $e) {
+            \Log::error('Payment processing failed: ' . $e->getMessage());
+            return back()->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Payment callback (for gateway webhooks)
+     */
+    public function paymentCallback(Request $request, $transactionId)
+    {
+        try {
+            $verified = $this->paymentService->verifyPayment($transactionId, $request->all());
+
+            if ($verified) {
+                return response()->json(['success' => true]);
+            }
+
+            return response()->json(['success' => false, 'message' => 'Verification failed'], 400);
+
+        } catch (\Exception $e) {
+            \Log::error('Payment callback failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

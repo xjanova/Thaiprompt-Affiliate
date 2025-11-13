@@ -312,3 +312,81 @@ Route::prefix('webhook/bot')->name('api.webhook.bot.')->group(function () {
     Route::post('twitter', [\App\Http\Controllers\Api\BotWebhookController::class, 'twitter'])->name('twitter');
     Route::post('tiktok', [\App\Http\Controllers\Api\BotWebhookController::class, 'tiktok'])->name('tiktok');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Chatbot Rental System API Routes
+|--------------------------------------------------------------------------
+| ระบบให้เช่าบอทแชทอัจฉริยะแบบไฮบริด
+| - Keyword-based + AI Fallback
+| - Multi-platform Integration
+| - Auto Content Posting
+| - Marketplace
+*/
+
+// Chatbot Rental System (Protected Routes)
+Route::prefix('v1/chatbot')->middleware('auth:sanctum')->name('api.chatbot.')->group(function () {
+
+    // Bot Management
+    Route::prefix('bots')->name('bots.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\Chatbot\BotManagementController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Api\Chatbot\BotManagementController::class, 'store'])->name('store');
+        Route::get('/{id}', [\App\Http\Controllers\Api\Chatbot\BotManagementController::class, 'show'])->name('show');
+        Route::put('/{id}', [\App\Http\Controllers\Api\Chatbot\BotManagementController::class, 'update'])->name('update');
+        Route::delete('/{id}', [\App\Http\Controllers\Api\Chatbot\BotManagementController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/test', [\App\Http\Controllers\Api\Chatbot\BotManagementController::class, 'test'])->name('test');
+        Route::post('/{id}/clone', [\App\Http\Controllers\Api\Chatbot\BotManagementController::class, 'clone'])->name('clone');
+        Route::get('/{id}/stats', [\App\Http\Controllers\Api\Chatbot\BotManagementController::class, 'stats'])->name('stats');
+
+        // Keyword Responses
+        Route::prefix('{botId}/keywords')->name('keywords.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Chatbot\KeywordResponseController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\Chatbot\KeywordResponseController::class, 'store'])->name('store');
+            Route::put('/{id}', [\App\Http\Controllers\Api\Chatbot\KeywordResponseController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\App\Http\Controllers\Api\Chatbot\KeywordResponseController::class, 'destroy'])->name('destroy');
+            Route::post('/update-order', [\App\Http\Controllers\Api\Chatbot\KeywordResponseController::class, 'updateOrder'])->name('update-order');
+            Route::post('/test-match', [\App\Http\Controllers\Api\Chatbot\KeywordResponseController::class, 'testMatch'])->name('test-match');
+        });
+
+        // Platform Integrations
+        Route::prefix('{botId}/integrations')->name('integrations.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Chatbot\PlatformIntegrationController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\Chatbot\PlatformIntegrationController::class, 'store'])->name('store');
+            Route::put('/{id}', [\App\Http\Controllers\Api\Chatbot\PlatformIntegrationController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\App\Http\Controllers\Api\Chatbot\PlatformIntegrationController::class, 'destroy'])->name('destroy');
+            Route::post('/{id}/verify', [\App\Http\Controllers\Api\Chatbot\PlatformIntegrationController::class, 'verify'])->name('verify');
+            Route::get('/{id}/webhook-url', [\App\Http\Controllers\Api\Chatbot\PlatformIntegrationController::class, 'getWebhookUrl'])->name('webhook-url');
+        });
+
+        // Auto Content Posting
+        Route::prefix('{botId}/auto-content')->name('auto-content.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\Chatbot\AutoContentController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\Chatbot\AutoContentController::class, 'store'])->name('store');
+            Route::post('/{id}/generate', [\App\Http\Controllers\Api\Chatbot\AutoContentController::class, 'generate'])->name('generate');
+            Route::post('/{id}/schedule', [\App\Http\Controllers\Api\Chatbot\AutoContentController::class, 'schedule'])->name('schedule');
+            Route::post('/{id}/post-now', [\App\Http\Controllers\Api\Chatbot\AutoContentController::class, 'postNow'])->name('post-now');
+            Route::put('/{id}', [\App\Http\Controllers\Api\Chatbot\AutoContentController::class, 'update'])->name('update');
+            Route::delete('/{id}', [\App\Http\Controllers\Api\Chatbot\AutoContentController::class, 'destroy'])->name('destroy');
+        });
+    });
+
+    // Marketplace
+    Route::prefix('marketplace')->name('marketplace.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Api\Chatbot\MarketplaceController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Api\Chatbot\MarketplaceController::class, 'show'])->name('show');
+        Route::post('/{id}/rent', [\App\Http\Controllers\Api\Chatbot\MarketplaceController::class, 'rent'])->name('rent');
+        Route::get('/my-rentals', [\App\Http\Controllers\Api\Chatbot\MarketplaceController::class, 'myRentals'])->name('my-rentals');
+        Route::get('/my-earnings', [\App\Http\Controllers\Api\Chatbot\MarketplaceController::class, 'myEarnings'])->name('my-earnings');
+        Route::post('/rentals/{rentalId}/cancel', [\App\Http\Controllers\Api\Chatbot\MarketplaceController::class, 'cancelRental'])->name('cancel-rental');
+        Route::post('/rentals/{rentalId}/renew', [\App\Http\Controllers\Api\Chatbot\MarketplaceController::class, 'renewRental'])->name('renew-rental');
+    });
+});
+
+// Chatbot Webhooks (Public - No Auth)
+Route::prefix('webhook/chatbot')->name('api.webhook.chatbot.')->group(function () {
+    Route::post('{platform}/{integration_id}', function ($platform, $integrationId) {
+        // Handle webhook from different platforms
+        // This will be implemented based on each platform's webhook specification
+        return response()->json(['success' => true]);
+    })->name('handle');
+});
