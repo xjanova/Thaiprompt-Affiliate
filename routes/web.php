@@ -22,10 +22,6 @@ Route::get('/demo/loading', function () {
     return view('demo-loading');
 })->name('demo.loading');
 
-Route::get('/demo/3d-navigation', function () {
-    return view('demo-3d-navigation');
-})->name('demo.3d-navigation');
-
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
