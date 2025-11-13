@@ -19,7 +19,7 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                         <p class="text-sm opacity-90 mb-1">กำไร/ขาดทุนรวม</p>
-                        <p class="text-3xl font-bold">฿{{ number_format($performanceData['net_profit'] ?? 0, 2) }}</p>
+                        <p class="text-3xl font-bold">฿{{ number_format($bot->net_profit ?? 0, 2) }}</p>
                         <p class="text-sm mt-1">ROI: {{ number_format($performanceData['roi_percentage'] ?? 0, 2) }}%</p>
                     </div>
                     <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">

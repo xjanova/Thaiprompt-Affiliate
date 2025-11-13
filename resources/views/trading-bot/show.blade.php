@@ -26,6 +26,12 @@
                 <a href="{{ route('trading-bot.analytics', $bot) }}" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg">
                     📊 Analytics
                 </a>
+                <a href="{{ route('trading-bot.advanced-config', $bot) }}" class="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white px-4 py-2 rounded-lg">
+                    📈 Advanced Config
+                </a>
+                <a href="{{ route('trading-bot.pro-analytics', $bot) }}" class="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600 text-white px-4 py-2 rounded-lg">
+                    💎 Pro Analytics
+                </a>
             </div>
         </div>
     </x-slot>

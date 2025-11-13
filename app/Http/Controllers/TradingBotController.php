@@ -325,6 +325,82 @@ class TradingBotController extends Controller
     }
 
     /**
+     * Advanced bot configuration with TradingView charts
+     */
+    public function advancedConfig(TradingBot $bot)
+    {
+        $this->authorize('view', $bot);
+
+        $bot->load(['strategy', 'account.exchange']);
+
+        return view('trading-bot.advanced-config', compact('bot'));
+    }
+
+    /**
+     * Professional analytics dashboard
+     */
+    public function proAnalytics(TradingBot $bot)
+    {
+        $this->authorize('view', $bot);
+
+        $bot->load(['strategy', 'account.exchange']);
+
+        // Get comprehensive performance data
+        $performanceData = $bot->getDetailedPerformance();
+        $trades = $bot->trades()->latest()->get();
+
+        return view('trading-bot.pro-analytics', compact('bot', 'performanceData', 'trades'));
+    }
+
+    /**
+     * Multi-exchange dashboard
+     */
+    public function multiExchange()
+    {
+        $user = Auth::user();
+
+        // Get all user's bots with exchanges
+        $bots = $user->tradingBots()
+            ->with(['account.exchange', 'strategy'])
+            ->get();
+
+        // Get active exchanges
+        $exchanges = TradingExchange::where('is_active', true)->get();
+
+        // Get user's trading accounts
+        $accounts = $user->tradingAccounts()->with('exchange')->get();
+
+        return view('trading-bot.multi-exchange-dashboard', compact('bots', 'exchanges', 'accounts'));
+    }
+
+    /**
+     * Risk management dashboard
+     */
+    public function riskManagement()
+    {
+        $user = Auth::user();
+
+        // Get all user's bots with related data
+        $bots = $user->tradingBots()
+            ->with(['strategy', 'account.exchange'])
+            ->get();
+
+        // Calculate risk metrics
+        $totalCapital = $bots->sum('allocated_capital');
+        $totalProfit = $bots->sum('net_profit');
+        $runningBots = $bots->where('status', 'running');
+
+        $riskMetrics = [
+            'total_capital' => $totalCapital,
+            'total_profit' => $totalProfit,
+            'running_bots' => $runningBots->count(),
+            'bots' => $bots,
+        ];
+
+        return view('trading-bot.risk-management', compact('riskMetrics', 'bots'));
+    }
+
+    /**
      * Manage trading accounts
      */
     public function accounts()

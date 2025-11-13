@@ -49,6 +49,31 @@
     </div>
     @endif
 
+    <!-- Quick Access -->
+    @if($subscription)
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <a href="{{ route('trading-bot.multi-exchange') }}" class="group bg-gradient-to-br from-purple-500 to-blue-600 rounded-2xl shadow-2xl p-6 text-white hover:scale-105 transition-transform duration-300">
+            <div class="flex items-center gap-4">
+                <span class="text-5xl group-hover:scale-110 transition-transform duration-300">🌐</span>
+                <div>
+                    <h3 class="text-xl font-bold mb-1">Multi-Exchange Dashboard</h3>
+                    <p class="text-sm opacity-90">เปรียบเทียบราคาและโอกาสทำกำไรข้ามกระดาน</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="{{ route('trading-bot.risk-management') }}" class="group bg-gradient-to-br from-red-500 to-orange-600 rounded-2xl shadow-2xl p-6 text-white hover:scale-105 transition-transform duration-300">
+            <div class="flex items-center gap-4">
+                <span class="text-5xl group-hover:scale-110 transition-transform duration-300">⚠️</span>
+                <div>
+                    <h3 class="text-xl font-bold mb-1">Risk Management</h3>
+                    <p class="text-sm opacity-90">จัดการความเสี่ยงและติดตามสถานะการลงทุน</p>
+                </div>
+            </div>
+        </a>
+    </div>
+    @endif
+
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div class="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
