@@ -249,15 +249,6 @@
         ]);
     @endphp
 
-    <!-- Debug Info (remove in production) -->
-    @if(config('app.debug'))
-        <div style="position: fixed; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; z-index: 99999; font-size: 12px;">
-            <strong>Theme Debug:</strong><br>
-            User ID: {{ $user->id }}<br>
-            Current Theme: <strong>{{ $userTheme }}</strong><br>
-            Layout: Seller
-        </div>
-    @endif
 
     @if($userTheme === 'classic_x')
         <!-- Classic X Sidebar -->

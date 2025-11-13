@@ -1,5 +1,12 @@
 @props(['items' => []])
 
+@php
+    // Get app information for footer
+    $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
+    $appVersion = \App\Models\Setting::get('app_version', '2.0');
+    $copyrightText = \App\Models\Setting::get('copyright_text', '© 2025 All Rights Reserved');
+@endphp
+
 <div class="flex flex-col h-full">
     <!-- Start Menu Header -->
     <div class="p-6 bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
@@ -89,6 +96,19 @@
                     สมัครสมาชิก
                 </a>
             @endauth
+        </div>
+
+        <!-- App Info Footer -->
+        <div class="mt-3 pt-3 border-t border-white/10 text-center space-y-1">
+            <div class="text-white/60 text-xs font-semibold">
+                {{ $appName }}
+            </div>
+            <div class="text-white/40 text-[10px]">
+                Version {{ $appVersion }}
+            </div>
+            <div class="text-white/30 text-[10px]">
+                {{ $copyrightText }}
+            </div>
         </div>
     </div>
 </div>
