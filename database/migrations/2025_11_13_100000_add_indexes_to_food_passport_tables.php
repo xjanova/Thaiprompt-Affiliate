@@ -24,8 +24,6 @@ return new class extends Migration
             $table->index('product_type', 'idx_food_products_type');
 
             // Performance indexes
-            $table->index('quality_status', 'idx_food_products_quality_status');
-            $table->index('certification_status', 'idx_food_products_cert_status');
             $table->index('carbon_score', 'idx_food_products_carbon_score');
 
             // Blockchain indexes
@@ -38,7 +36,6 @@ return new class extends Migration
 
             // Composite indexes for common queries
             $table->index(['farmer_id', 'product_type'], 'idx_food_products_farmer_type');
-            $table->index(['quality_status', 'certification_status'], 'idx_food_products_status');
         });
 
         // Product Journey Table Indexes
@@ -200,15 +197,12 @@ return new class extends Migration
             $table->dropIndex('idx_food_products_passport_id');
             $table->dropIndex('idx_food_products_farmer_id');
             $table->dropIndex('idx_food_products_type');
-            $table->dropIndex('idx_food_products_quality_status');
-            $table->dropIndex('idx_food_products_cert_status');
             $table->dropIndex('idx_food_products_carbon_score');
             $table->dropIndex('idx_food_products_blockchain');
             $table->dropIndex('idx_food_products_ipfs');
             $table->dropIndex('idx_food_products_harvest_date');
             $table->dropIndex('idx_food_products_created');
             $table->dropIndex('idx_food_products_farmer_type');
-            $table->dropIndex('idx_food_products_status');
         });
 
         // Product Journey
