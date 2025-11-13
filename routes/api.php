@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\TreeController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
+use App\Http\Controllers\Api\NFCCardApiController;
 use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\AiGenController;
 use App\Http\Controllers\Api\AiGenPackageController;
@@ -138,6 +139,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/prices', [CryptoWalletApiController::class, 'getPrices']);
             Route::get('/transaction/{txHash}', [CryptoWalletApiController::class, 'checkTransaction']);
             Route::get('/gas-price', [CryptoWalletApiController::class, 'getGasPrice']);
+        });
+
+        // NFC Card API
+        Route::prefix('nfc')->group(function () {
+            Route::get('/cards', [NFCCardApiController::class, 'index']);
+            Route::get('/cards/{cardId}', [NFCCardApiController::class, 'show']);
+            Route::post('/cards/verify', [NFCCardApiController::class, 'verify']);
+            Route::post('/cards/payment', [NFCCardApiController::class, 'processPayment']);
+            Route::get('/cards/{cardId}/transactions', [NFCCardApiController::class, 'transactions']);
+            Route::get('/cards/{cardId}/balance', [NFCCardApiController::class, 'balance']);
+            Route::get('/readers/nearby', [NFCCardApiController::class, 'nearbyReaders']);
         });
 
         // TPIX Native Blockchain API
