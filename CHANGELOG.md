@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.177.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1008 from xjanova/claude/edit-profile-avatar-011CV5GxjA16yDDD9AQ5M22X (6d7a3d55)
+- Restrict avatar upload to edit mode only (ae657153)
+
 ## [v2.177.2] - 2025-11-13
 
 ### ✨ Features
