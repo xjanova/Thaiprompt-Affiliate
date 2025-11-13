@@ -109,6 +109,16 @@
 @endpush
 
 @push('scripts')
+@php
+$cardsData = $reading->cards->map(function($card) {
+    return [
+        'name' => $card->card->getName(),
+        'image_url' => $card->card->image_url,
+        'position_name' => $card->position_name,
+        'is_reversed' => $card->is_reversed
+    ];
+});
+@endphp
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script type="importmap">
@@ -131,14 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cardDetails = document.getElementById('card-details');
 
     // Card data from Laravel
-    const cardsData = @json($reading->cards->map(function($card) {
-        return [
-            'name' => $card->card->getName(),
-            'image_url' => $card->card->image_url,
-            'position_name' => $card->position_name,
-            'is_reversed' => $card->is_reversed
-        ];
-    }));
+    const cardsData = @json($cardsData);
 
     let scene, camera, renderer, composer;
     let cardMeshes = [];
