@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.183.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1022 from xjanova/claude/fix-missing-route-definition-011CV67GqQsnhzxLYYXVThkR (90fa5776)
+- fix: Add missing demo route definitions for 3d-navigation and space-shooter (d15cb033)
+### 🔧 Other Changes
+
+
 ## [v2.183.0] - 2025-11-13
 
 ### ✨ Features
