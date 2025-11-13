@@ -55,6 +55,7 @@ class DatabaseSeeder extends Seeder
             PaymentGatewaySeeder::class,        // Payment Gateways (PromptPay, Bank, TrueMoney, Omise, Stripe, PayPal, etc.)
             PaySolutionsGatewaySeeder::class,   // PaySolutions Gateway Integration
             CryptoCurrencySeeder::class,        // Cryptocurrency Support (BTC, ETH, USDT, etc.)
+            TPIXCurrencySeeder::class,          // TPIX Native Token (TPIX Network Blockchain)
 
             // 7. MLM & Affiliate System
             MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM ทั่วไป (สร้างข้อมูลเริ่มต้น)
