@@ -403,27 +403,48 @@
          collapsed: localStorage.getItem('classic-x-sidebar-collapsed') === 'true',
          openSubmenus: JSON.parse(localStorage.getItem('classic-x-open-submenus') || '[]'),
          init() {
+             // Initialize sidebar and content area based on collapsed state
+             const contentEl = document.getElementById('classicXContent');
              if (this.collapsed) {
                  this.$el.classList.add('collapsed');
+                 if (contentEl) {
+                     contentEl.classList.add('sidebar-collapsed');
+                 }
+             } else {
+                 this.$el.classList.remove('collapsed');
+                 if (contentEl) {
+                     contentEl.classList.remove('sidebar-collapsed');
+                 }
              }
          },
          toggleSidebar() {
              this.collapsed = !this.collapsed;
-             localStorage.setItem('classic-x-sidebar-collapsed', this.collapsed);
+             localStorage.setItem('classic-x-sidebar-collapsed', this.collapsed ? 'true' : 'false');
+
+             const contentEl = document.getElementById('classicXContent');
              if (this.collapsed) {
                  this.$el.classList.add('collapsed');
-                 document.getElementById('classicXContent')?.classList.add('sidebar-collapsed');
+                 if (contentEl) {
+                     contentEl.classList.add('sidebar-collapsed');
+                 }
              } else {
                  this.$el.classList.remove('collapsed');
-                 document.getElementById('classicXContent')?.classList.remove('sidebar-collapsed');
+                 if (contentEl) {
+                     contentEl.classList.remove('sidebar-collapsed');
+                 }
              }
          }
      }"
      :class="{ 'collapsed': collapsed }">
 
     @if($sidebarCollapsible)
+    @php
+        // Determine chevron directions based on sidebar position
+        $chevronWhenCollapsed = $sidebarPosition === 'left' ? 'fa-chevron-right' : 'fa-chevron-left';
+        $chevronWhenExpanded = $sidebarPosition === 'left' ? 'fa-chevron-left' : 'fa-chevron-right';
+    @endphp
     <button class="classic-x-collapse-btn" @click="toggleSidebar()" title="Toggle Sidebar">
-        <i class="fas" :class="collapsed ? 'fa-chevron-{{ $sidebarPosition === 'left' ? 'right' : 'left' }}' : 'fa-chevron-{{ $sidebarPosition === 'left' ? 'left' : 'right' }}'"></i>
+        <i class="fas" :class="collapsed ? '{{ $chevronWhenCollapsed }}' : '{{ $chevronWhenExpanded }}'"></i>
     </button>
     @endif
 

@@ -383,28 +383,44 @@
     // Auto-expand submenu if it contains the active route
     $activeSubmenus = [];
     $parentMenuHasActive = []; // Track which parent menus have active children
+    $lockedSubmenus = []; // Track which submenus should stay open (contain active items)
     foreach ($menuItems as $index => $item) {
         if (isset($item['submenu'])) {
             foreach ($item['submenu'] as $subitem) {
                 if (isset($subitem['route']) && $currentRoute === $subitem['route']) {
                     $activeSubmenus[] = 'menu-' . $index;
                     $parentMenuHasActive[$index] = true;
+                    $lockedSubmenus[] = 'menu-' . $index; // Lock this submenu open
                     break;
                 }
             }
         }
     }
     $activeSubmenusJson = json_encode($activeSubmenus);
+    $lockedSubmenusJson = json_encode($lockedSubmenus);
 @endphp
 
-<ul class="classic-x-menu" x-data="{ openSubmenus: {{ $activeSubmenusJson }} }">
+<ul class="classic-x-menu" x-data="{
+    openSubmenus: {{ $activeSubmenusJson }},
+    lockedSubmenus: {{ $lockedSubmenusJson }}
+}">
     @foreach($menuItems as $index => $item)
         <li class="classic-x-menu-item" x-data="{ menuId: 'menu-{{ $index }}' }">
             @if(isset($item['submenu']))
                 {{-- Menu item with submenu --}}
                 <a href="{{ $item['url'] }}"
                    class="classic-x-menu-link {{ isset($parentMenuHasActive[$index]) ? 'has-active-child' : '' }}"
-                   @click.prevent="openSubmenus.includes(menuId) ? openSubmenus = openSubmenus.filter(id => id !== menuId) : openSubmenus.push(menuId)">
+                   @click.prevent="
+                       // If this submenu is locked (contains active item), don't allow closing
+                       if (lockedSubmenus.includes(menuId)) {
+                           // Keep it open, do nothing
+                           return;
+                       }
+                       // Otherwise, toggle normally
+                       openSubmenus.includes(menuId)
+                           ? openSubmenus = openSubmenus.filter(id => id !== menuId)
+                           : openSubmenus.push(menuId)
+                   ">
                     <span class="classic-x-menu-icon">
                         <i class="fas {{ $item['icon'] }}"></i>
                     </span>
@@ -412,8 +428,12 @@
                     @if(isset($item['badge']))
                         <span class="classic-x-badge">{{ $item['badge'] }}</span>
                     @endif
-                    <span class="classic-x-submenu-indicator" :class="{ 'open': openSubmenus.includes(menuId) }">
-                        <i class="fas fa-chevron-down"></i>
+                    <span class="classic-x-submenu-indicator"
+                          :class="{
+                              'open': openSubmenus.includes(menuId),
+                              'locked': lockedSubmenus.includes(menuId)
+                          }">
+                        <i class="fas" :class="lockedSubmenus.includes(menuId) ? 'fa-lock' : 'fa-chevron-down'"></i>
                     </span>
                 </a>
 
