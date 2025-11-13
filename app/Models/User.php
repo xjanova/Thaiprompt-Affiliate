@@ -281,6 +281,86 @@ class User extends Authenticatable
     }
 
     /**
+     * TPIX Token System Relationships
+     */
+
+    /**
+     * Get all tokens created by the user
+     */
+    public function createdTokens()
+    {
+        return $this->hasMany(TPIXToken::class, 'creator_id');
+    }
+
+    /**
+     * Get all token balances for the user
+     */
+    public function tokenBalances()
+    {
+        return $this->hasMany(TPIXTokenBalance::class);
+    }
+
+    /**
+     * Get all token transfers (sent and received)
+     */
+    public function tokenTransfers()
+    {
+        return $this->hasMany(TPIXTokenTransfer::class, 'user_id');
+    }
+
+    /**
+     * Get all stakes made by the user
+     */
+    public function stakes()
+    {
+        return $this->hasMany(TPIXStake::class);
+    }
+
+    /**
+     * Get all referral codes used by the user
+     */
+    public function referralUses()
+    {
+        return $this->hasMany(TPIXReferralUse::class);
+    }
+
+    /**
+     * Get all referral rewards earned
+     */
+    public function referralRewards()
+    {
+        return $this->hasMany(TPIXReferralReward::class);
+    }
+
+    /**
+     * TPIX DEX Relationships
+     */
+
+    /**
+     * Get all swaps made by the user
+     */
+    public function swaps()
+    {
+        return $this->hasMany(TPIXSwap::class);
+    }
+
+    /**
+     * Get all liquidity positions of the user
+     */
+    public function liquidityPositions()
+    {
+        return $this->hasMany(TPIXLiquidityPosition::class);
+    }
+
+    /**
+     * Get active liquidity positions only
+     */
+    public function activeLiquidityPositions()
+    {
+        return $this->hasMany(TPIXLiquidityPosition::class)->where('status', 'active');
+    }
+
+    /**
      * Get all notifications for the user
      */
     public function notifications()

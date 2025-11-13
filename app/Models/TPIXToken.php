@@ -138,6 +138,29 @@ class TPIXToken extends Model
     }
 
     /**
+     * DEX Relationships
+     */
+    public function liquidityPoolsAsTokenA()
+    {
+        return $this->hasMany(TPIXLiquidityPool::class, 'token_a_id');
+    }
+
+    public function liquidityPoolsAsTokenB()
+    {
+        return $this->hasMany(TPIXLiquidityPool::class, 'token_b_id');
+    }
+
+    public function swapsAsTokenIn()
+    {
+        return $this->hasMany(TPIXSwap::class, 'token_in_id');
+    }
+
+    public function swapsAsTokenOut()
+    {
+        return $this->hasMany(TPIXSwap::class, 'token_out_id');
+    }
+
+    /**
      * Scopes
      */
     public function scopeActive($query)
