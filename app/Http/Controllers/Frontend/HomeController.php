@@ -267,4 +267,112 @@ class HomeController extends Controller
     {
         return view('frontend.contact');
     }
+
+    /**
+     * Show the 3D Interactive Presentation
+     */
+    public function presentation()
+    {
+        // System data for presentation
+        $systems = [
+            [
+                'id' => 'blockchain',
+                'name' => 'Blockchain & TPIX',
+                'icon' => '🔗',
+                'color' => '#7C3AED',
+                'description' => 'Native Blockchain with Token Ecosystem',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/README.md'
+            ],
+            [
+                'id' => 'foodpassport',
+                'name' => 'Food Passport',
+                'icon' => '🌱',
+                'color' => '#059669',
+                'description' => 'Food Traceability & Carbon Credit System',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md'
+            ],
+            [
+                'id' => 'games',
+                'name' => 'Games & Entertainment',
+                'icon' => '🎮',
+                'color' => '#DC2626',
+                'description' => 'Interactive Gaming Platform',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/DEMO_GAMES.md'
+            ],
+            [
+                'id' => 'mlm',
+                'name' => 'MLM System',
+                'icon' => '💎',
+                'color' => '#8B5CF6',
+                'description' => 'Multi-Level Marketing Platform',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md'
+            ],
+            [
+                'id' => 'ecommerce',
+                'name' => 'E-Commerce',
+                'icon' => '🛒',
+                'color' => '#EC4899',
+                'description' => 'Multi-Vendor Marketplace',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MULTIVENDOR_DESIGN.md'
+            ],
+            [
+                'id' => 'wallet',
+                'name' => 'Digital Wallet',
+                'icon' => '💰',
+                'color' => '#10B981',
+                'description' => 'Crypto & Fiat Payment System',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/WALLET_SYSTEM.md'
+            ],
+            [
+                'id' => 'ai',
+                'name' => 'AI Integration',
+                'icon' => '🤖',
+                'color' => '#F59E0B',
+                'description' => 'AI-Powered Automation',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/LINE_BOT_AI_IMPLEMENTATION.md'
+            ],
+            [
+                'id' => 'investment',
+                'name' => 'Investment & Staking',
+                'icon' => '📈',
+                'color' => '#6366F1',
+                'description' => 'Yield Farming & Staking Pools',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/TPIX_TOKEN_SYSTEM.md'
+            ],
+            [
+                'id' => 'hotel',
+                'name' => 'Hotel Booking',
+                'icon' => '🏨',
+                'color' => '#EF4444',
+                'description' => 'Accommodation Management',
+                'wiki' => '/wiki'
+            ],
+            [
+                'id' => 'academy',
+                'name' => 'Academy & Learning',
+                'icon' => '🎓',
+                'color' => '#14B8A6',
+                'description' => 'Online Education Platform',
+                'wiki' => '/wiki'
+            ],
+            [
+                'id' => 'hrm',
+                'name' => 'HRM System',
+                'icon' => '👥',
+                'color' => '#F97316',
+                'description' => 'Human Resource Management',
+                'wiki' => 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/HRM_SYSTEM_README.md'
+            ],
+            [
+                'id' => 'platform',
+                'name' => 'Platform Overview',
+                'icon' => '🌐',
+                'color' => '#3B82F6',
+                'description' => 'Complete Ecosystem',
+                'wiki' => '/about'
+            ],
+        ];
+
+        return view('frontend.presentation', compact('systems'));
+    }
 }

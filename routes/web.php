@@ -206,6 +206,9 @@ Route::get('/about', [HomeController::class, 'about'])->name('about');
 Route::get('/about-us', [HomeController::class, 'aboutProfessional'])->name('about.professional');
 Route::get('/contact', [HomeController::class, 'contact'])->name('contact');
 
+// 3D Interactive Presentation
+Route::get('/presentation', [HomeController::class, 'presentation'])->name('presentation');
+
 // Wiki Routes (New modular system)
 Route::prefix('wiki')->name('wiki.')->group(function () {
     Route::get('/', [\App\Http\Controllers\Frontend\WikiController::class, 'index'])->name('index');
