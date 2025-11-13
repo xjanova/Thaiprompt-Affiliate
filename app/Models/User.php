@@ -852,6 +852,46 @@ class User extends Authenticatable
     }
 
     /**
+     * Game System Relationships
+     */
+
+    /**
+     * Get user's game progress
+     */
+    public function gameProgress()
+    {
+        return $this->hasMany(UserGameProgress::class);
+    }
+
+    /**
+     * Get user's game skins
+     */
+    public function gameSkins()
+    {
+        return $this->belongsToMany(GameSkin::class, 'user_game_skins', 'user_id', 'skin_id')
+            ->withTimestamps()
+            ->withPivot(['purchase_price', 'purchased_at']);
+    }
+
+    /**
+     * Get user's game achievements
+     */
+    public function achievements()
+    {
+        return $this->belongsToMany(GameAchievement::class, 'user_achievements', 'user_id', 'achievement_id')
+            ->withTimestamps()
+            ->withPivot('unlocked_at');
+    }
+
+    /**
+     * Get user's game transactions
+     */
+    public function gameTransactions()
+    {
+        return $this->hasMany(GameTransaction::class);
+    }
+
+    /**
      * Generate a unique member number
      */
     public static function generateMemberNumber(): string

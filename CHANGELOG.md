@@ -2,6 +2,72 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.176.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1003 from xjanova/claude/food-passport-planning-011CV5uuSkVwEQkW26qgdq1J (b13fe62d)
+- docs: Add comprehensive Food Passport system planning documentation (cdc2b34e)
+
+## [v2.176.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1002 from xjanova/claude/demo-3d-navigation-011CV5pPyn8tcsYFEzZ3qtpa (52652fc7)
+- Merge branch claude/Main into demo-3d-navigation branch (1870c278)
+- Remove 3D navigation demo (f035c0bb)
+
+## [v2.176.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1001 from xjanova/claude/add-tetris-game-011CV5uGgs2T4yMgMTVakq36 (dbfd5751)
+- docs: Add comprehensive Tetris game documentation to Wiki (246d786b)
+- Add Tetris game with top score tracking (d4bc08b5)
+
+## [v2.176.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1000 from xjanova/claude/prompt-to-web-system-011CV5svmKVX2r7dHw1DRAXX (41be7959)
+- feat: Add Prompt to Web AI-powered page generation system (58ab2220)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.175.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #999 from xjanova/claude/add-2d-snooker-game-011CV5tFLneR82fNEZar9pYt (5a8315f3)
+- Add 2D Snooker game with multiple game modes (26cc4b7d)
+
+## [v2.175.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #998 from xjanova/claude/3d-web-typography-011CV5nJc539Q2xvUV7ERZSM (5fc07ce0)
+- Add Power-ups, Tournaments, and Season Leaderboard systems (bc5b6b77)
+- Add engaging Daily Rewards & Missions system (74bc9288)
+- Add complete game economy and multiplayer infrastructure (661e13f0)
+- Add complete Snake.io game with skins and shop system (ee012980)
+- Add complete game system infrastructure (6537ecf4)
+
 ## [v2.175.0] - 2025-11-13
 
 ### ✨ Features

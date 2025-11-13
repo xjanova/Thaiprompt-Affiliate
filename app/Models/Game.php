@@ -11,6 +11,7 @@ class Game extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        // Gallery/Selector fields (for game cards display)
         'title',
         'title_en',
         'description',
@@ -22,14 +23,28 @@ class Game extends Model
         'secondary_color',
         'glow_color',
         'order',
-        'is_active',
         'card_style',
+
+        // Playable game fields (for actual games)
+        'slug',
+        'name',
+        'thumbnail',
+        'category',
+        'min_level_required',
+        'requires_auth',
+        'settings',
+
+        // Common fields
+        'is_active',
         'meta_data',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'requires_auth' => 'boolean',
         'order' => 'integer',
+        'min_level_required' => 'integer',
+        'settings' => 'array',
         'meta_data' => 'array',
     ];
 
@@ -76,5 +91,42 @@ class Game extends Model
             return asset($this->image);
         }
         return null;
+    }
+
+    /**
+     * User progress relationship (for playable games)
+     */
+    public function userProgress()
+    {
+        return $this->hasMany(UserGameProgress::class);
+    }
+
+    /**
+     * Leaderboard relationship (for playable games)
+     */
+    public function leaderboard()
+    {
+        return $this->hasMany(GameLeaderboard::class)
+            ->orderBy('score', 'desc')
+            ->limit(100);
+    }
+
+    /**
+     * Achievements relationship (for playable games)
+     */
+    public function achievements()
+    {
+        return $this->hasMany(GameAchievement::class);
+    }
+
+    /**
+     * Get top scores (for playable games)
+     */
+    public function getTopScores($limit = 10)
+    {
+        return $this->leaderboard()
+            ->with('user:id,name,profile_picture')
+            ->limit($limit)
+            ->get();
     }
 }
