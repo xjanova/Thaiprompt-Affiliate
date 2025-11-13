@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.167.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Add Font Awesome to all layouts for Classic X theme icons (e7e71ecd)
+- fix: Add theme switching support to homepage and app layouts (085d41d9)
+### 🔧 Other Changes
+- Merge pull request #951 from xjanova/claude/admin-menu-ui-revamp-011CV4JN42KSJCamJZRnmE9P (1f2a628f)
+
 ## [v2.167.0] - 2025-11-13
 
 ### ✨ Features
