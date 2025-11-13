@@ -534,6 +534,50 @@
     </div>
 </section>
 
+<!-- MLM Organization Chart Section -->
+<section class="section">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="section-title">ผังสายงาน MLM</h2>
+        <p class="section-subtitle">โครงสร้างองค์กร Multi-Level Marketing แบบเรียลไทม์</p>
+
+        <!-- Stats Cards -->
+        <div class="stats-grid max-w-4xl mx-auto mb-8" style="animation: none;">
+            <div class="stat-card bg-gradient-to-br from-purple-500 to-purple-700 border-0">
+                <div class="stat-number">{{ number_format($mlmOrgStats['total_members']) }}</div>
+                <div class="stat-label">สมาชิกทั้งหมด</div>
+            </div>
+            <div class="stat-card bg-gradient-to-br from-green-500 to-green-700 border-0">
+                <div class="stat-number">{{ number_format($mlmOrgStats['active_members']) }}</div>
+                <div class="stat-label">สมาชิกที่ Active</div>
+            </div>
+            <div class="stat-card bg-gradient-to-br from-blue-500 to-blue-700 border-0">
+                <div class="stat-number">{{ $mlmOrgStats['total_levels'] }}</div>
+                <div class="stat-label">จำนวนระดับ</div>
+            </div>
+            <div class="stat-card bg-gradient-to-br from-orange-500 to-orange-700 border-0">
+                <div class="stat-number">+{{ number_format($mlmOrgStats['monthly_growth']) }}</div>
+                <div class="stat-label">เติบโตเดือนนี้</div>
+            </div>
+        </div>
+
+        <div class="mindmap-controls">
+            <button class="mindmap-btn" onclick="resetMlmOrg()">🔄 รีเซ็ต</button>
+            <button class="mindmap-btn" onclick="zoomInMlmOrg()">🔍 ซูมเข้า</button>
+            <button class="mindmap-btn" onclick="zoomOutMlmOrg()">🔎 ซูมออก</button>
+            <button class="mindmap-btn" onclick="fitMlmOrg()">📐 ปรับให้พอดี</button>
+            <button class="mindmap-btn" onclick="toggleMlmOrgLayout()">🔀 เปลี่ยนมุมมอง</button>
+        </div>
+
+        <div id="mlm-org-container" style="width: 100%; height: 700px; border: 2px solid #e5e7eb; border-radius: 20px; background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%); box-shadow: 0 4px 20px rgba(0,0,0,0.08);"></div>
+
+        <div class="mt-6 text-center">
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                💡 <strong>คำแนะนำ:</strong> คลิกที่โหนดเพื่อดูรายละเอียด | ลากเพื่อเลื่อนดู | ใช้ล้อเมาส์เพื่อซูม
+            </p>
+        </div>
+    </div>
+</section>
+
 <!-- Timeline Section -->
 <section class="section">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -806,6 +850,381 @@ function fitNetwork() {
             easingFunction: 'easeInOutQuad'
         }
     });
+}
+
+// ============================================
+// MLM Organization Chart Visualization
+// ============================================
+let mlmOrgNetwork;
+let mlmOrgNodes;
+let mlmOrgEdges;
+let mlmOrgLayoutMode = 'hierarchical'; // 'hierarchical' or 'physics'
+
+// Initialize MLM Organization Chart when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    initMlmOrgChart();
+});
+
+function initMlmOrgChart() {
+    // Sample MLM organization data (in production, this would come from API)
+    // Creating a realistic MLM tree structure
+    mlmOrgNodes = new vis.DataSet([
+        // Level 0 - Root/Founder
+        {
+            id: 1,
+            label: 'CEO/Founder\nรหัส: ML001',
+            level: 0,
+            color: { background: '#7C3AED', border: '#5B21B6' },
+            font: { color: '#FFFFFF', size: 14, bold: true },
+            title: 'CEO/Founder<br>รหัส: ML001<br>PV: 25,000<br>สมาชิกในสาย: 150<br>สถานะ: Diamond',
+            shape: 'box',
+            margin: 12
+        },
+
+        // Level 1 - Direct Team (3 members)
+        {
+            id: 2,
+            label: 'ผู้จัดการเขต ภาคกลาง\nรหัส: ML002',
+            level: 1,
+            color: { background: '#8B5CF6', border: '#7C3AED' },
+            font: { color: '#FFFFFF', size: 12 },
+            title: 'ผู้จัดการเขต ภาคกลาง<br>รหัส: ML002<br>PV: 12,500<br>สมาชิกในสาย: 65<br>สถานะ: Platinum',
+            shape: 'box'
+        },
+        {
+            id: 3,
+            label: 'ผู้จัดการเขต ภาคเหนือ\nรหัส: ML003',
+            level: 1,
+            color: { background: '#8B5CF6', border: '#7C3AED' },
+            font: { color: '#FFFFFF', size: 12 },
+            title: 'ผู้จัดการเขต ภาคเหนือ<br>รหัส: ML003<br>PV: 8,900<br>สมาชิกในสาย: 45<br>สถานะ: Gold',
+            shape: 'box'
+        },
+        {
+            id: 4,
+            label: 'ผู้จัดการเขต ภาคใต้\nรหัส: ML004',
+            level: 1,
+            color: { background: '#8B5CF6', border: '#7C3AED' },
+            font: { color: '#FFFFFF', size: 12 },
+            title: 'ผู้จัดการเขต ภาคใต้<br>รหัส: ML004<br>PV: 10,200<br>สมาชิกในสาย: 40<br>สถานะ: Gold',
+            shape: 'box'
+        },
+
+        // Level 2 - Team Leaders under ML002 (3 members)
+        {
+            id: 5,
+            label: 'ผู้นำทีม กรุงเทพ A\nรหัส: ML005',
+            level: 2,
+            color: { background: '#A78BFA', border: '#8B5CF6' },
+            font: { size: 11 },
+            title: 'ผู้นำทีม กรุงเทพ A<br>รหัส: ML005<br>PV: 4,500<br>สมาชิกในสาย: 22<br>สถานะ: Silver',
+            shape: 'box'
+        },
+        {
+            id: 6,
+            label: 'ผู้นำทีม กรุงเทพ B\nรหัส: ML006',
+            level: 2,
+            color: { background: '#A78BFA', border: '#8B5CF6' },
+            font: { size: 11 },
+            title: 'ผู้นำทีม กรุงเทพ B<br>รหัส: ML006<br>PV: 3,800<br>สมาชิกในสาย: 18<br>สถานะ: Silver',
+            shape: 'box'
+        },
+        {
+            id: 7,
+            label: 'ผู้นำทีม ปริมณฑล\nรหัส: ML007',
+            level: 2,
+            color: { background: '#A78BFA', border: '#8B5CF6' },
+            font: { size: 11 },
+            title: 'ผู้นำทีม ปริมณฑล<br>รหัส: ML007<br>PV: 4,200<br>สมาชิกในสาย: 25<br>สถานะ: Silver',
+            shape: 'box'
+        },
+
+        // Level 2 - Team Leaders under ML003 (2 members)
+        {
+            id: 8,
+            label: 'ผู้นำทีม เชียงใหม่\nรหัส: ML008',
+            level: 2,
+            color: { background: '#A78BFA', border: '#8B5CF6' },
+            font: { size: 11 },
+            title: 'ผู้นำทีม เชียงใหม่<br>รหัส: ML008<br>PV: 4,900<br>สมาชิกในสาย: 23<br>สถานะ: Silver',
+            shape: 'box'
+        },
+        {
+            id: 9,
+            label: 'ผู้นำทีม เชียงราย\nรหัส: ML009',
+            level: 2,
+            color: { background: '#A78BFA', border: '#8B5CF6' },
+            font: { size: 11 },
+            title: 'ผู้นำทีม เชียงราย<br>รหัส: ML009<br>PV: 4,000<br>สมาชิกในสาย: 22<br>สถานะ: Bronze',
+            shape: 'box'
+        },
+
+        // Level 2 - Team Leaders under ML004 (2 members)
+        {
+            id: 10,
+            label: 'ผู้นำทีม ภูเก็ต\nรหัส: ML010',
+            level: 2,
+            color: { background: '#A78BFA', border: '#8B5CF6' },
+            font: { size: 11 },
+            title: 'ผู้นำทีม ภูเก็ต<br>รหัส: ML010<br>PV: 5,200<br>สมาชิกในสาย: 20<br>สถานะ: Silver',
+            shape: 'box'
+        },
+        {
+            id: 11,
+            label: 'ผู้นำทีม สงขลา\nรหัส: ML011',
+            level: 2,
+            color: { background: '#A78BFA', border: '#8B5CF6' },
+            font: { size: 11 },
+            title: 'ผู้นำทีม สงขลา<br>รหัส: ML011<br>PV: 5,000<br>สมาชิกในสาย: 20<br>สถานะ: Silver',
+            shape: 'box'
+        },
+
+        // Level 3 - Active Members (distributed under team leaders)
+        { id: 12, label: 'สมาชิก ML012\nPV: 850', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 13, label: 'สมาชิก ML013\nPV: 720', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 14, label: 'สมาชิก ML014\nPV: 920', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 15, label: 'สมาชิก ML015\nPV: 680', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 16, label: 'สมาชิก ML016\nPV: 790', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 17, label: 'สมาชิก ML017\nPV: 850', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 18, label: 'สมาชิก ML018\nPV: 640', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 19, label: 'สมาชิก ML019\nPV: 910', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 20, label: 'สมาชิก ML020\nPV: 770', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 21, label: 'สมาชิก ML021\nPV: 830', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 22, label: 'สมาชิก ML022\nPV: 700', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 23, label: 'สมาชิก ML023\nPV: 890', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 24, label: 'สมาชิก ML024\nPV: 750', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+        { id: 25, label: 'สมาชิก ML025\nPV: 820', level: 3, color: { background: '#C4B5FD', border: '#A78BFA' }, font: { size: 10 }, shape: 'box' },
+    ]);
+
+    // Define edges (connections)
+    mlmOrgEdges = new vis.DataSet([
+        // Level 0 to Level 1
+        { from: 1, to: 2, width: 3, color: { color: '#8B5CF6' }, arrows: 'to' },
+        { from: 1, to: 3, width: 3, color: { color: '#8B5CF6' }, arrows: 'to' },
+        { from: 1, to: 4, width: 3, color: { color: '#8B5CF6' }, arrows: 'to' },
+
+        // Level 1 to Level 2
+        { from: 2, to: 5, width: 2, color: { color: '#A78BFA' }, arrows: 'to' },
+        { from: 2, to: 6, width: 2, color: { color: '#A78BFA' }, arrows: 'to' },
+        { from: 2, to: 7, width: 2, color: { color: '#A78BFA' }, arrows: 'to' },
+        { from: 3, to: 8, width: 2, color: { color: '#A78BFA' }, arrows: 'to' },
+        { from: 3, to: 9, width: 2, color: { color: '#A78BFA' }, arrows: 'to' },
+        { from: 4, to: 10, width: 2, color: { color: '#A78BFA' }, arrows: 'to' },
+        { from: 4, to: 11, width: 2, color: { color: '#A78BFA' }, arrows: 'to' },
+
+        // Level 2 to Level 3 (distributed members)
+        { from: 5, to: 12, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 5, to: 13, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 6, to: 14, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 6, to: 15, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 7, to: 16, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 7, to: 17, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 8, to: 18, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 8, to: 19, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 9, to: 20, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 9, to: 21, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 10, to: 22, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 10, to: 23, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 11, to: 24, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+        { from: 11, to: 25, width: 1, color: { color: '#C4B5FD' }, arrows: 'to' },
+    ]);
+
+    // Create network
+    const container = document.getElementById('mlm-org-container');
+    const data = { nodes: mlmOrgNodes, edges: mlmOrgEdges };
+    const options = {
+        layout: {
+            hierarchical: {
+                enabled: true,
+                direction: 'UD', // Up-Down
+                sortMethod: 'directed',
+                levelSeparation: 150,
+                nodeSpacing: 150,
+                treeSpacing: 200
+            }
+        },
+        physics: {
+            enabled: false, // Disable physics for hierarchical layout
+        },
+        nodes: {
+            shape: 'box',
+            margin: 10,
+            widthConstraint: {
+                minimum: 120,
+                maximum: 180
+            },
+            font: {
+                face: 'Arial',
+                multi: true,
+                bold: {
+                    size: 12
+                }
+            },
+            borderWidth: 2,
+            shadow: {
+                enabled: true,
+                color: 'rgba(0,0,0,0.2)',
+                size: 8,
+                x: 3,
+                y: 3
+            }
+        },
+        edges: {
+            smooth: {
+                type: 'cubicBezier',
+                forceDirection: 'vertical',
+                roundness: 0.4
+            },
+            shadow: true,
+            arrows: {
+                to: {
+                    enabled: true,
+                    scaleFactor: 0.8
+                }
+            }
+        },
+        interaction: {
+            hover: true,
+            tooltipDelay: 100,
+            zoomView: true,
+            dragView: true,
+            navigationButtons: true
+        }
+    };
+
+    mlmOrgNetwork = new vis.Network(container, data, options);
+
+    // Add click event for nodes
+    mlmOrgNetwork.on('click', function(params) {
+        if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const node = mlmOrgNodes.get(nodeId);
+
+            // Show node details in alert (in production, use modal)
+            let details = `<div style="text-align: left;">
+                <h3 style="margin-bottom: 10px; color: #7C3AED;">${node.label.replace('\n', ' ')}</h3>
+                <p><strong>ระดับ:</strong> ${node.level}</p>
+            `;
+
+            if (node.title) {
+                details += `<p>${node.title.replace(/<br>/g, '\n')}</p>`;
+            }
+
+            details += `</div>`;
+
+            // Simple alert for now (replace with modal in production)
+            alert(node.title ? node.title.replace(/<br>/g, '\n') : node.label);
+        }
+    });
+
+    // Fit network after initialization
+    setTimeout(() => {
+        mlmOrgNetwork.fit({
+            animation: {
+                duration: 1000,
+                easingFunction: 'easeInOutQuad'
+            }
+        });
+    }, 500);
+}
+
+function resetMlmOrg() {
+    mlmOrgNetwork.fit({
+        animation: {
+            duration: 500,
+            easingFunction: 'easeInOutQuad'
+        }
+    });
+}
+
+function zoomInMlmOrg() {
+    const scale = mlmOrgNetwork.getScale() * 1.2;
+    mlmOrgNetwork.moveTo({ scale: scale, animation: { duration: 300 } });
+}
+
+function zoomOutMlmOrg() {
+    const scale = mlmOrgNetwork.getScale() * 0.8;
+    mlmOrgNetwork.moveTo({ scale: scale, animation: { duration: 300 } });
+}
+
+function fitMlmOrg() {
+    mlmOrgNetwork.fit({
+        animation: {
+            duration: 500,
+            easingFunction: 'easeInOutQuad'
+        }
+    });
+}
+
+function toggleMlmOrgLayout() {
+    if (mlmOrgLayoutMode === 'hierarchical') {
+        // Switch to physics-based layout
+        mlmOrgLayoutMode = 'physics';
+        mlmOrgNetwork.setOptions({
+            layout: {
+                hierarchical: {
+                    enabled: false
+                }
+            },
+            physics: {
+                enabled: true,
+                barnesHut: {
+                    gravitationalConstant: -2000,
+                    centralGravity: 0.3,
+                    springLength: 150,
+                    springConstant: 0.04,
+                    damping: 0.09,
+                    avoidOverlap: 0.5
+                },
+                stabilization: {
+                    iterations: 200
+                }
+            }
+        });
+
+        // Stabilize and fit
+        mlmOrgNetwork.once('stabilizationIterationsDone', function() {
+            mlmOrgNetwork.fit({
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+        });
+
+        // Stop physics after stabilization
+        setTimeout(() => {
+            mlmOrgNetwork.setOptions({ physics: { enabled: false } });
+        }, 3000);
+
+    } else {
+        // Switch back to hierarchical layout
+        mlmOrgLayoutMode = 'hierarchical';
+        mlmOrgNetwork.setOptions({
+            layout: {
+                hierarchical: {
+                    enabled: true,
+                    direction: 'UD',
+                    sortMethod: 'directed',
+                    levelSeparation: 150,
+                    nodeSpacing: 150,
+                    treeSpacing: 200
+                }
+            },
+            physics: {
+                enabled: false
+            }
+        });
+
+        setTimeout(() => {
+            mlmOrgNetwork.fit({
+                animation: {
+                    duration: 1000,
+                    easingFunction: 'easeInOutQuad'
+                }
+            });
+        }, 500);
+    }
 }
 </script>
 @endpush
