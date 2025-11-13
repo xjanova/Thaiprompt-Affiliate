@@ -1176,6 +1176,17 @@
                                             </h4>
                                             <div class="space-y-3">
                                                 <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                        <i class="fas fa-arrows-alt-h mr-2 text-purple-600"></i>ตำแหน่งปุ่ม Start บน Taskbar
+                                                    </label>
+                                                    <select name="windows_start_button_position" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-pink-500">
+                                                        <option value="left" {{ \App\Models\WindowsUiSetting::get('windows_start_button_position', 'center') === 'left' ? 'selected' : '' }}>⬅️ ซ้าย (Left)</option>
+                                                        <option value="center" {{ \App\Models\WindowsUiSetting::get('windows_start_button_position', 'center') === 'center' ? 'selected' : '' }}>◾ กลาง (Center)</option>
+                                                        <option value="right" {{ \App\Models\WindowsUiSetting::get('windows_start_button_position', 'center') === 'right' ? 'selected' : '' }}>➡️ ขวา (Right)</option>
+                                                    </select>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เลือกตำแหน่งที่ต้องการให้ปุ่ม Start แสดงบน Taskbar</p>
+                                                </div>
+                                                <div>
                                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">สไตล์ปุ่ม</label>
                                                     <select name="millennium_start_button_style" class="w-full px-4 py-2 border-2 border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:border-pink-500">
                                                         <option value="gradient" {{ \App\Models\WindowsUiSetting::get('millennium_start_button_style', 'gradient') === 'gradient' ? 'selected' : '' }}>🌈 Gradient (ไล่สี)</option>
