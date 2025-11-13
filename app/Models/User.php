@@ -92,14 +92,35 @@ class User extends Authenticatable
 
     /**
      * Get profile picture URL or default avatar
+     * Priority: LINE picture > Uploaded picture > Default avatar
      */
     public function getProfilePictureUrlAttribute(): string
     {
-        if ($this->profile_picture && file_exists(public_path($this->profile_picture))) {
-            return asset($this->profile_picture);
+        // Priority 1: Use LINE profile picture if available
+        if ($this->line_picture_url) {
+            return $this->line_picture_url;
         }
 
-        // Return default avatar based on first letter of name
+        // Priority 2: Use uploaded profile picture with cache busting
+        if ($this->profile_picture) {
+            $path = $this->profile_picture;
+
+            // Check if file exists
+            if (file_exists(public_path($path))) {
+                // Add cache busting using file modification time
+                $timestamp = filemtime(public_path($path));
+                return asset($path) . '?v=' . $timestamp;
+            }
+
+            // If path doesn't work, try with storage prefix
+            $storagePath = 'storage/' . $path;
+            if (file_exists(public_path($storagePath))) {
+                $timestamp = filemtime(public_path($storagePath));
+                return asset($storagePath) . '?v=' . $timestamp;
+            }
+        }
+
+        // Priority 3: Return default avatar based on first letter of name
         $initial = strtoupper(substr($this->name, 0, 1));
         return "https://ui-avatars.com/api/?name={$initial}&background=random&color=fff&size=200";
     }

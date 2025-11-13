@@ -49,15 +49,9 @@
                         <!-- Rank Frame -->
                         <div class="absolute inset-0 bg-gradient-to-br {{ $frameColors[$rankColor] ?? 'from-gray-400 to-gray-600' }} rounded-full p-1.5 shadow-2xl animate-pulse-slow">
                             <div class="w-full h-full bg-white rounded-full p-1">
-                                @if($user->line_picture_url || $user->profile_picture)
-                                    <img src="{{ $user->line_picture_url ?? asset($user->profile_picture) }}"
-                                         alt="{{ $user->name }}"
-                                         class="w-full h-full object-cover rounded-full">
-                                @else
-                                    <div class="w-full h-full rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold">
-                                        {{ strtoupper(substr($user->name, 0, 1)) }}
-                                    </div>
-                                @endif
+                                <img src="{{ $user->profile_picture_url }}"
+                                     alt="{{ $user->name }}"
+                                     class="w-full h-full object-cover rounded-full">
                             </div>
                         </div>
 
