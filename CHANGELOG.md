@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.164.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #939 from xjanova/claude/fix-component-cache-issue-011CV57ZfwLMdWzvxDCU4jRW (57e8664c)
+- fix: Add missing app-layout component for view caching (39da5389)
+### 🔧 Other Changes
+
+
 ## [v2.164.3] - 2025-11-13
 
 ### ✨ Features
