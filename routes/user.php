@@ -177,6 +177,44 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
         ->name('send.process');
 });
 
+// TPIX Token Marketplace & Management (User)
+Route::prefix('tokens')->name('tokens.')->group(function () {
+    // Token Marketplace
+    Route::get('/', [\App\Http\Controllers\User\TokenController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\User\TokenController::class, 'show'])->name('show');
+
+    // My Tokens (Creator View)
+    Route::get('/my/tokens', [\App\Http\Controllers\User\TokenController::class, 'myTokens'])->name('my-tokens');
+    Route::get('/my/balances', [\App\Http\Controllers\User\TokenController::class, 'myBalances'])->name('my-balances');
+    Route::get('/my/portfolio', [\App\Http\Controllers\User\TokenController::class, 'portfolio'])->name('portfolio');
+
+    // Create Token
+    Route::get('/create', [\App\Http\Controllers\User\TokenController::class, 'create'])->name('create');
+    Route::post('/create', [\App\Http\Controllers\User\TokenController::class, 'store'])->name('store');
+
+    // Deploy Token
+    Route::post('/{id}/deploy', [\App\Http\Controllers\User\TokenController::class, 'deploy'])->name('deploy');
+
+    // Token Transfer
+    Route::get('/{id}/transfer', [\App\Http\Controllers\User\TokenController::class, 'showTransfer'])->name('show-transfer');
+    Route::post('/{id}/transfer', [\App\Http\Controllers\User\TokenController::class, 'transfer'])
+        ->middleware('two-factor:transfer')
+        ->name('transfer');
+
+    // Buy/Sell Tokens
+    Route::post('/{id}/buy', [\App\Http\Controllers\User\TokenController::class, 'buy'])->name('buy');
+    Route::post('/{id}/sell', [\App\Http\Controllers\User\TokenController::class, 'sell'])->name('sell');
+
+    // Referrals
+    Route::get('/referrals', [\App\Http\Controllers\User\TokenController::class, 'referrals'])->name('referrals');
+    Route::post('/referrals/use', [\App\Http\Controllers\User\TokenController::class, 'useReferralCode'])->name('referrals.use');
+    Route::post('/referrals/verify', [\App\Http\Controllers\User\TokenController::class, 'verifyReferralCode'])->name('referrals.verify');
+    Route::get('/referrals/my-codes', [\App\Http\Controllers\User\TokenController::class, 'myReferralCodes'])->name('referrals.my-codes');
+
+    // Token Transactions History
+    Route::get('/{id}/transactions', [\App\Http\Controllers\User\TokenController::class, 'transactions'])->name('transactions');
+});
+
 // Notifications
 Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('index');
