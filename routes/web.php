@@ -26,9 +26,63 @@ Route::get('/demo/3d-navigation', function () {
     return view('demo-3d-navigation');
 })->name('demo.3d-navigation');
 
-Route::get('/demo/space-shooter', function () {
-    return view('demo-space-shooter');
-})->name('demo.space-shooter');
+// Tournament Routes
+Route::prefix('tournaments')->name('tournaments.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\TournamentController::class, 'index'])->name('index');
+    Route::get('/{slug}', [\App\Http\Controllers\TournamentController::class, 'show'])->name('show');
+    Route::get('/{slug}/leaderboard', [\App\Http\Controllers\TournamentController::class, 'leaderboard'])->name('leaderboard');
+
+    // Authenticated routes
+    Route::middleware('auth')->group(function () {
+        Route::post('/{slug}/register', [\App\Http\Controllers\TournamentController::class, 'register'])->name('register');
+        Route::post('/{slug}/submit-score', [\App\Http\Controllers\TournamentController::class, 'submitScore'])->name('submit-score');
+    });
+});
+
+// Rewards & Missions Routes (Authenticated)
+Route::middleware('auth')->prefix('rewards')->name('rewards.')->group(function () {
+    Route::get('/daily', [\App\Http\Controllers\RewardController::class, 'daily'])->name('daily');
+    Route::post('/daily/claim', [\App\Http\Controllers\RewardController::class, 'claimDaily'])->name('daily.claim');
+
+    Route::get('/missions', [\App\Http\Controllers\RewardController::class, 'missions'])->name('missions');
+    Route::post('/missions/{missionId}/claim', [\App\Http\Controllers\RewardController::class, 'claimMission'])->name('missions.claim');
+    Route::get('/missions/progress', [\App\Http\Controllers\RewardController::class, 'getMissionsProgress'])->name('missions.progress');
+});
+
+// Games Routes
+Route::prefix('games')->name('games.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\GameController::class, 'index'])->name('index');
+    Route::get('/{slug}', [\App\Http\Controllers\GameController::class, 'show'])->name('show');
+
+    // API Routes for game progress
+    Route::middleware('auth')->group(function () {
+        Route::post('/{slug}/save-progress', [\App\Http\Controllers\GameController::class, 'saveProgress'])->name('save-progress');
+        Route::post('/{slug}/change-loadout', [\App\Http\Controllers\GameController::class, 'changeLoadout'])->name('change-loadout');
+
+        // Game Shop Routes
+        Route::prefix('{slug}/shop')->name('shop.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\GameShopController::class, 'index'])->name('index');
+            Route::post('/purchase/{skinId}', [\App\Http\Controllers\GameShopController::class, 'purchaseSkin'])->name('purchase');
+            Route::get('/owned', [\App\Http\Controllers\GameShopController::class, 'getOwnedSkins'])->name('owned');
+        });
+
+        // Game Achievements Routes
+        Route::get('/{slug}/achievements', [\App\Http\Controllers\GameController::class, 'achievements'])->name('achievements');
+
+        // Multiplayer API Routes
+        Route::prefix('{slug}/multiplayer')->name('multiplayer.')->group(function () {
+            Route::post('/create-room', [\App\Http\Controllers\MultiplayerController::class, 'createRoom'])->name('create-room');
+            Route::get('/rooms', [\App\Http\Controllers\MultiplayerController::class, 'listRooms'])->name('rooms');
+            Route::post('/join/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'joinRoom'])->name('join');
+            Route::post('/leave/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'leaveRoom'])->name('leave');
+            Route::post('/update/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'updatePosition'])->name('update');
+            Route::get('/state/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'getRoomState'])->name('state');
+            Route::post('/death/{roomCode}', [\App\Http\Controllers\MultiplayerController::class, 'reportDeath'])->name('death');
+        });
+    });
+
+    Route::get('/{slug}/leaderboard', [\App\Http\Controllers\GameController::class, 'leaderboard'])->name('leaderboard');
+});
 
 Route::get('/demo/audio-spectrum', function () {
     return view('demo-audio-spectrum');
