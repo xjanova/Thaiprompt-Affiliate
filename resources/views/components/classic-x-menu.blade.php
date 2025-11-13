@@ -355,6 +355,7 @@
                 ]
             ],
             ['icon' => 'fa-ticket', 'label' => 'Ticket Support', 'url' => safeRoute('user.tickets.index'), 'route' => 'user.tickets.index'],
+            ['icon' => 'fa-qrcode', 'label' => 'สร้าง QR & Barcode', 'url' => safeRoute('qr-barcode.index'), 'route' => 'qr-barcode.index'],
             [
                 'icon' => 'fa-wallet',
                 'label' => 'กระเป๋าเงิน THB',
