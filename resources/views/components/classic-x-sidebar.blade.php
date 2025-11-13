@@ -610,6 +610,7 @@
         cursor: pointer;
         color: #fff;
         font-size: 12px;
+        z-index: 1000; /* Ensure button is above logo and other elements */
         @if($enableShadows)
         box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         @endif
