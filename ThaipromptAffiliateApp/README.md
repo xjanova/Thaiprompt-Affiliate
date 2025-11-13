@@ -1,10 +1,20 @@
-# Thaiprompt Affiliate Control App
+# 🏆 Thaiprompt Affiliate Control App - Premium Edition
 
 แอปพลิเคชัน Mobile สำหรับจัดการระบบ Affiliate Marketing ของ Thai Prompt ที่พัฒนาด้วย .NET MAUI
 
 ## 📱 ภาพรวม
 
-แอปพลิเคชันนี้เป็น Control App สำหรับผู้ใช้งานระบบ Thai Prompt Affiliate ที่สามารถ:
+แอปพลิเคชันนี้เป็น **Premium Control App** สำหรับผู้ใช้งานระบบ Thai Prompt Affiliate ที่สามารถ:
+
+### 🎨 Premium Features
+- ✨ **Dynamic Configuration** - ตั้งค่าทั้งแอพจาก Control Panel
+- 🌐 **WebView Integration** - หน้าแรกแสดงเว็บไซต์ของคุณ
+- 🎨 **Dynamic Theme** - เปลี่ยนสีทั้งแอพได้ (ทอง, แดง, ดำ)
+- 📱 **Dynamic Menu** - เมนูตั้งค่าได้จาก Backend
+- 🖼️ **Logo Management** - เปลี่ยนโลโก้ได้ทันที
+- ⚡ **Zero Configuration** - ไม่ต้อง Build ใหม่เมื่อเปลี่ยนการตั้งค่า
+
+### 📊 Core Features
 - ✅ เข้าสู่ระบบและจัดการบัญชี
 - 💰 ดูข้อมูลคอมมิชชั่นและรายได้
 - 👥 จัดการผู้แนะนำ (Referrals)
@@ -112,27 +122,37 @@ ThaipromptAffiliateApp/
 │   ├── Dashboard.cs
 │   ├── Commission.cs
 │   ├── Referral.cs
+│   ├── AppConfiguration.cs  # 🆕 Dynamic Configuration Model
 │   └── ThemeConfig.cs
 ├── Services/              # Business Logic Services
 │   ├── ApiService.cs     # HTTP API Client
+│   ├── ConfigurationService.cs  # 🆕 Configuration Management
 │   └── ThemeService.cs   # Theme Management
 ├── ViewModels/           # MVVM ViewModels
 │   ├── BaseViewModel.cs
 │   ├── LoginViewModel.cs
+│   ├── WebViewViewModel.cs      # 🆕 WebView Homepage
 │   ├── DashboardViewModel.cs
 │   ├── CommissionsViewModel.cs
 │   ├── ReferralsViewModel.cs
 │   └── ProfileViewModel.cs
 ├── Views/                # UI Pages (XAML)
+│   ├── SplashPage.xaml         # 🆕 Premium Splash Screen
+│   ├── WebViewPage.xaml        # 🆕 WebView Homepage
 │   ├── LoginPage.xaml
 │   ├── DashboardPage.xaml
 │   ├── CommissionsPage.xaml
 │   ├── ReferralsPage.xaml
 │   └── ProfilePage.xaml
 ├── Helpers/              # Utility Classes
-│   └── Constants.cs
+│   ├── Constants.cs
+│   ├── AppHelpers.cs           # 🆕 Validation, Format, Navigation
+│   └── ValueConverters.cs      # 🆕 XAML Value Converters
 ├── Resources/            # App Resources
-│   ├── Styles/          # XAML Styles
+│   ├── Styles/
+│   │   ├── Colors.xaml
+│   │   ├── PremiumColors.xaml  # 🆕 Gold/Red/Black Theme
+│   │   └── Styles.xaml
 │   ├── Images/          # Images
 │   └── Fonts/           # Custom Fonts
 ├── Platforms/            # Platform-specific code
@@ -141,37 +161,82 @@ ThaipromptAffiliateApp/
 │   └── Windows/
 ├── App.xaml             # Application Definition
 ├── AppShell.xaml        # Navigation Shell
-└── MauiProgram.cs       # App Entry Point
+├── MauiProgram.cs       # App Entry Point
+├── README.md            # This file
+├── PREMIUM-FEATURES.md  # 🆕 Premium Features Documentation
+├── QUICKSTART.md        # Quick Start Guide
+└── DEVELOPMENT.md       # Development Guide
 ```
 
 ## 🎨 Features
 
-### 1. Authentication
+### 💎 Premium Features
+
+#### 1. Dynamic Configuration System
+- **ตั้งค่าจาก Control Panel** - เปลี่ยนการตั้งค่าทั้งแอพจาก Backend
+- **ชื่อแอพ** - เปลี่ยนชื่อแอพได้ทันที
+- **URL หน้าแรก** - เปลี่ยน URL ของเว็บไซต์
+- **Logo/Images** - อัพโหลดโลโก้ใหม่ได้ตลอดเวลา
+- **สีธีม** - ปรับสีทั้งแอพ (ทอง, แดง, ดำ)
+- **เมนู Navigation** - เพิ่ม/ลด/แก้ไขเมนู
+- **ฟีเจอร์เปิด/ปิด** - เปิด/ปิดฟีเจอร์ต่างๆ
+- **Cache 60 นาที** - ลดการโหลดจาก API
+
+#### 2. WebView Homepage
+- **แสดงเว็บไซต์** - หน้าแรกแสดงเว็บเต็มจอ
+- **Navigation Controls** - ปุ่ม Back, Forward, Refresh, Home
+- **Loading Indicator** - แสดงสถานะการโหลด
+- **Quick Links Bar** - ปุ่มลัดด้านล่าง (Wiki, Dashboard, etc.)
+- **Configurable** - ตั้งค่าได้จาก API
+
+#### 3. Premium Theme System
+- **สีทอง (Gold)** - #D4AF37 - สื่อถึงความหรูหรา
+- **สีแดง (Crimson)** - #DC143C - พลังและความมุ่งมั่น
+- **สีดำ (Deep Black)** - #0A0A0A - ความทันสมัย
+- **Gradient Effects** - Gradient สวยงามทั่วแอพ
+- **Dynamic Colors** - เปลี่ยนสีได้จาก API
+
+#### 4. Dynamic Navigation Menu
+- **Menu จาก API** - โหลดเมนูจาก Backend
+- **3 ประเภท** - Web, Native, External
+- **Icon Support** - รองรับ Icon/Emoji
+- **Order & Badge** - จัดลำดับและแสดง Badge
+- **Active/Inactive** - เปิด/ปิดเมนูได้
+
+#### 5. Premium Splash Screen
+- **Logo กลางจอ** - พร้อม Glow effect
+- **Animation นุ่มนวล** - แอนิเมชั่นสวยงาม
+- **โหลด Config** - โหลดการตั้งค่าตอนเริ่มต้น
+- **Gradient Background** - พื้นหลัง Gradient
+
+### 📱 Core Features
+
+#### 1. Authentication
 - เข้าสู่ระบบด้วย Email/Password
 - จัดเก็บ Token อย่างปลอดภัยด้วย SecureStorage
 - Auto-login เมื่อเปิดแอพ
 
-### 2. Dashboard
+#### 2. Dashboard
 - แสดงสถิติรายได้ทั้งหมด
 - แสดงคอมมิชชั่นที่รออนุมัติ
 - แสดงจำนวนผู้แนะนำ
 - รายการคอมมิชชั่นล่าสุด
 - รองรับ Pull-to-Refresh
 
-### 3. Commissions
+#### 3. Commissions
 - รายการคอมมิชชั่นทั้งหมด
 - กรองตามสถานะ (อนุมัติ/รออนุมัติ/ปฏิเสธ)
 - Infinite Scroll (โหลดเพิ่มเติม)
 - แสดงรายละเอียดคอมมิชชั่น
 
-### 4. Referrals
+#### 4. Referrals
 - แสดงลิงก์แนะนำ
 - คัดลอกลิงก์ไปคลิปบอร์ด
 - แชร์ลิงก์ผ่าน Native Share
 - รายการผู้ที่แนะนำ
 - สถิติผู้แนะนำ
 
-### 5. Profile
+#### 5. Profile
 - แสดงข้อมูลโปรไฟล์
 - แก้ไขโปรไฟล์
 - เปลี่ยนรหัสผ่าน
@@ -189,21 +254,38 @@ ThaipromptAffiliateApp/
 
 ## 🎨 UI/UX Design
 
-- **Modern Gradient Design** - ใช้ Gradient สีสวยงาม
+- **Premium Gradient Design** - Gradient สีทอง-แดง-ดำ สุดหรู
 - **Card-based Layout** - ใช้ Card components ที่ทันสมัย
 - **Smooth Animations** - มีแอนิเมชั่นที่ลื่นไหล
 - **Responsive Design** - รองรับทุกขนาดหน้าจอ
 - **Thai Language** - UI เป็นภาษาไทยทั้งหมด
 - **Icon & Emoji** - ใช้ Icon และ Emoji ประกอบ
+- **Dynamic Theme** - เปลี่ยนสีได้จาก Control Panel
 
-### Color Scheme
+### Premium Color Scheme
 
-- **Primary**: Blue (#3B82F6 → #1D4ED8)
-- **Secondary**: Green (#10B981 → #059669)
-- **Accent**: Purple (#8B5CF6 → #6D28D9)
-- **Success**: Green (#10B981)
-- **Warning**: Orange (#F59E0B)
-- **Error**: Red (#EF4444)
+#### Primary - Luxurious Gold
+- **Gold Light**: #F1D95C
+- **Gold**: #D4AF37 ⭐ (Primary)
+- **Gold Dark**: #B8941E
+
+#### Secondary - Crimson Red
+- **Red Light**: #FF3D5C
+- **Red**: #DC143C 🔥 (Secondary)
+- **Red Dark**: #A01028
+
+#### Accent - Deep Black
+- **Light**: #2A2A2A
+- **Dark**: #1A1A1A
+- **Deep Black**: #0A0A0A 🖤 (Background)
+
+#### Premium Gradients
+- **Main Gradient**: Gold → Red (#D4AF37 → #DC143C)
+- **Gold Gradient**: Light → Dark Gold
+- **Red-Black Gradient**: Red → Black
+- **Gold Glow**: Radial gradient for effects
+
+> 💡 **Note**: ทุกสีสามารถเปลี่ยนได้จาก Control Panel API
 
 ## 🔧 Configuration
 
@@ -221,6 +303,49 @@ ThaipromptAffiliateApp/
     public const string ApiBaseUrl = "https://your-domain.com/api/v1";
 #endif
 ```
+
+### Dynamic Configuration API
+
+แอพจะโหลดการตั้งค่าจาก Backend API endpoint:
+
+```http
+GET /api/v1/app/configuration
+Authorization: Bearer {token}
+```
+
+**Response Example:**
+```json
+{
+  "success": true,
+  "data": {
+    "app_name": "Thaiprompt Affiliate",
+    "home_url": "https://thaiprompt.com",
+    "logo_url": "https://cdn.thaiprompt.com/logo.png",
+    "theme": {
+      "primary_color": "#D4AF37",
+      "secondary_color": "#DC143C",
+      "background_color": "#0A0A0A",
+      "gradient_start": "#D4AF37",
+      "gradient_end": "#DC143C"
+    },
+    "menu_items": [
+      {
+        "title": "หน้าแรก",
+        "icon": "🏠",
+        "url": "https://thaiprompt.com",
+        "type": "web",
+        "order": 1
+      }
+    ],
+    "features": {
+      "enable_webview": true,
+      "cache_duration_minutes": 60
+    }
+  }
+}
+```
+
+> 📘 **ดูข้อมูลเพิ่มเติม**: [PREMIUM-FEATURES.md](PREMIUM-FEATURES.md)
 
 ### App Configuration
 
@@ -316,6 +441,12 @@ dotnet build
 
 ## 📚 เอกสารเพิ่มเติม
 
+### Project Documentation
+- **[PREMIUM-FEATURES.md](PREMIUM-FEATURES.md)** - 🆕 Premium Features Guide
+- **[QUICKSTART.md](QUICKSTART.md)** - Quick Start Guide
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** - Development Guide
+
+### External Documentation
 - [.NET MAUI Documentation](https://docs.microsoft.com/dotnet/maui/)
 - [API Documentation](../MOBILE-APP-API.md)
 - [Visual Studio Setup Guide](../MOBILE-APP-VISUAL-STUDIO-SETUP.md)
@@ -331,15 +462,27 @@ Copyright © 2025 Thai Prompt. All rights reserved.
 
 ## 🔄 Version History
 
-### Version 1.0.0 (2025-01-13)
-- ✨ Initial Release
-- 🎨 Modern UI with Gradient Design
-- 🔐 Secure Authentication
-- 💰 Commission Management
-- 👥 Referral System
-- 📊 Dashboard & Statistics
-- ⚙️ Profile & Settings
+### Version 1.0.0 Premium Edition (2025-01-13)
+- ✨ **Premium Features Launch**
+  - 🎨 Dynamic Configuration System
+  - 🌐 WebView Homepage Integration
+  - 💎 Premium Gold/Red/Black Theme
+  - 📱 Dynamic Navigation Menu
+  - 🖼️ Image/Logo Management
+  - ⚡ Zero Configuration Deployment
+
+- 🎨 **Modern UI**
+  - Premium Gradient Design
+  - Smooth Animations
+  - Responsive Layout
+
+- 📱 **Core Features**
+  - 🔐 Secure Authentication
+  - 💰 Commission Management
+  - 👥 Referral System
+  - 📊 Dashboard & Statistics
+  - ⚙️ Profile & Settings
 
 ---
 
-**พัฒนาด้วย ❤️ โดย Thai Prompt Team**
+**🏆 Premium Edition - พัฒนาด้วย ❤️ โดย Thai Prompt Team**
