@@ -29,20 +29,95 @@
     @endif
 
     <!-- Profile Information -->
-    <div class="bg-white rounded-xl shadow-md p-6" x-data="{ editMode: false }">
+    <div class="bg-white rounded-xl shadow-md p-6" x-data="{
+        editMode: false,
+        avatarPreview: null,
+        avatarFile: null,
+        handleAvatarClick() {
+            // Click the form's file input
+            if (this.$refs.profilePictureInput) {
+                this.$refs.profilePictureInput.click();
+            }
+        },
+        handleAvatarChange(event) {
+            const file = event.target.files[0];
+            if (file) {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
+                    event.target.value = '';
+                    return;
+                }
+
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('ขนาดไฟล์ต้องไม่เกิน 5MB');
+                    event.target.value = '';
+                    return;
+                }
+
+                this.avatarFile = file;
+
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.avatarPreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        },
+        clearAvatar() {
+            this.avatarPreview = null;
+            this.avatarFile = null;
+            if (this.$refs.profilePictureInput) {
+                this.$refs.profilePictureInput.value = '';
+            }
+        }
+    }">
         <div class="flex items-center gap-6 mb-6">
-            <div class="w-24 h-24 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-white text-4xl font-bold">
-                @if($user->line_picture_url || $user->profile_picture)
-                    <img src="{{ $user->line_picture_url ?? asset($user->profile_picture) }}"
-                         alt="{{ $user->name }}"
-                         class="w-full h-full object-cover">
-                @else
-                    {{ strtoupper(substr($user->name, 0, 1)) }}
-                @endif
+            <div class="relative group">
+                <div class="w-24 h-24 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-white text-4xl font-bold cursor-pointer transition-all hover:ring-4 hover:ring-indigo-300"
+                     @click="handleAvatarClick()"
+                     title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
+                    <!-- Show preview if new image selected -->
+                    <template x-if="avatarPreview">
+                        <img :src="avatarPreview"
+                             alt="Preview"
+                             class="w-full h-full object-cover">
+                    </template>
+                    <!-- Show existing avatar if no preview -->
+                    <template x-if="!avatarPreview">
+                        <div class="w-full h-full flex items-center justify-center">
+                            @if($user->line_picture_url || $user->profile_picture)
+                                <img src="{{ $user->line_picture_url ?? asset('storage/' . $user->profile_picture) }}"
+                                     alt="{{ $user->name }}"
+                                     class="w-full h-full object-cover">
+                            @else
+                                <span>{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                            @endif
+                        </div>
+                    </template>
+                </div>
+                <!-- Camera overlay icon -->
+                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full cursor-pointer"
+                     @click="handleAvatarClick()">
+                    <i class="fas fa-camera text-white text-2xl"></i>
+                </div>
+                <!-- Clear button when preview is shown -->
+                <button type="button"
+                        x-show="avatarPreview"
+                        @click.stop="clearAvatar()"
+                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition shadow-lg"
+                        title="ยกเลิก">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="flex-1">
                 <h2 class="text-2xl font-bold text-gray-900">{{ $user->name }}</h2>
                 <p class="text-gray-600">{{ $user->email }}</p>
+                <p class="text-xs text-gray-500 mt-1">
+                    <i class="fas fa-info-circle mr-1"></i>คลิกที่รูปโปรไฟล์เพื่อเปลี่ยนรูป
+                </p>
                 <div class="flex gap-2 mt-2 flex-wrap">
                     <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
                         {{ ucfirst($user->role) }}
@@ -66,9 +141,17 @@
             </button>
         </div>
 
-        <form method="POST" action="{{ route('user.profile.update') }}" x-show="editMode" style="display: none;">
+        <form method="POST" action="{{ route('user.profile.update') }}" enctype="multipart/form-data" x-show="editMode" style="display: none;">
             @csrf
             @method('PUT')
+
+            <!-- Hidden input for avatar file -->
+            <input type="file"
+                   name="profile_picture"
+                   x-ref="profilePictureInput"
+                   accept="image/jpeg,image/png,image/gif,image/webp"
+                   class="hidden"
+                   @change="handleAvatarChange($event)">
 
             <div class="space-y-6">
                 <!-- Basic Information -->
