@@ -30,6 +30,10 @@ Route::get('/demo/space-shooter', function () {
     return view('demo-space-shooter');
 })->name('demo.space-shooter');
 
+Route::get('/demo/game-selector', function () {
+    return view('demo-game-selector');
+})->name('demo.game-selector');
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
