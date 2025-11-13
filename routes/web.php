@@ -30,6 +30,10 @@ Route::get('/demo/space-shooter', function () {
     return view('demo-space-shooter');
 })->name('demo.space-shooter');
 
+Route::get('/demo/audio-spectrum', function () {
+    return view('demo-audio-spectrum');
+})->name('demo.audio-spectrum');
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
