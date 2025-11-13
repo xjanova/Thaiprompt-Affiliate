@@ -372,14 +372,13 @@
     }
 
     // Get app information for footer
-    use App\Models\Setting;
-    $appName = Setting::get('app_name', 'TP-Affiliate');
+    $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
 
     // Get version from package.json
     $packageJson = json_decode(file_get_contents(base_path('package.json')), true);
     $appVersion = $packageJson['version'] ?? '2.169.1';
 
-    $copyrightText = Setting::get('copyright_text', '© 2025 All Rights Reserved');
+    $copyrightText = \App\Models\Setting::get('copyright_text', '© 2025 All Rights Reserved');
 
     // Auto-expand submenu if it contains the active route
     $activeSubmenus = [];
