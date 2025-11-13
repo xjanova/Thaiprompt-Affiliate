@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.180.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1015 from xjanova/claude/upgrade-wealth-guide-011CV5t65UeodPCMdoZH1Sfm (ab6d8f33)
+- feat: Add Wealth Guide Pro with 3D visualizations (86acc59b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.179.0] - 2025-11-13
 
 ### ✨ Features
