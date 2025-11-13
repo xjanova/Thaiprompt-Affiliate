@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.191.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1032 from xjanova/claude/refactor-mindmap-system-011CV6DA52BRDz3qsfgQeiHA (737d8aba)
+- feat: Refactor comprehensive Mind map with complete system coverage (2cd5aa9b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.190.0] - 2025-11-13
 
 ### ✨ Features
