@@ -15,7 +15,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">📝 Ticket Creation & Channels</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 25px rgba(var(--primary-rgb), 0.15)'; this.style.transform='translateY(-5px)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)';"
@@ -75,7 +75,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🎯 Priority & Status Management</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border); font-weight: 700;">Priority Level</th>
@@ -168,7 +168,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">📨 Communication Features</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem;">
                     <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">🔒 Internal Notes</h4>
                     <ul style="list-style: none; padding: 0; line-height: 2;">
@@ -205,7 +205,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">📚 Knowledge Base & Self-Service</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden;">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border); font-weight: 700;">Feature</th>
@@ -280,7 +280,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">👥 Team Collaboration</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-4">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='scale(1.05)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='scale(1)';"
@@ -339,7 +339,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">📈 Key Performance Metrics</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); border: 2px solid rgb(var(--primary-rgb)); border-radius: 12px; padding: 2rem; text-align: center;">
                     <div style="font-size: 2.5rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin-bottom: 0.5rem;">4.2 min</div>
                     <div style="font-weight: 600; color: var(--wiki-text-secondary);">Avg First Response</div>
@@ -379,7 +379,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">👨‍💼 Agent Performance Dashboard</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border); font-weight: 700;">Agent Name</th>
@@ -532,7 +532,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">📋 Custom Reports Available</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-4">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 25px rgba(var(--primary-rgb), 0.15)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none';"
@@ -609,7 +609,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🎯 Smart Automation Features</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 25px rgba(var(--primary-rgb), 0.15)'; this.style.transform='translateY(-5px)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)';"
@@ -669,7 +669,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">💬 AI Chatbot Integration</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border); font-weight: 700;">Chatbot Capability</th>
@@ -765,7 +765,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🎓 AI-Suggested Responses</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05) 0%, rgba(var(--secondary-rgb), 0.02) 100%); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem;">
                     <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">🧠 Context-Aware Suggestions</h4>
                     <ul style="line-height: 2; margin: 0;">
@@ -799,7 +799,7 @@
 
             <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
                 <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">🚀 Automation Impact Statistics</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                <div class="wiki-grid wiki-grid-3">
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb));">38%</div>
                         <div style="font-weight: 600;">Self-Service Rate</div>

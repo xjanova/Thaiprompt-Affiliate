@@ -35,7 +35,7 @@
             <span>🔐</span> Authentication Methods
         </h2>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
                  onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--primary-rgb), 0.15)'"
                  onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
@@ -109,8 +109,8 @@
             👥 Role-Based Access Control (RBAC)
         </h3>
 
-        <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-            <thead style="background: var(--wiki-card-bg);">
+        <table class="wiki-table">
+            <thead>
                 <tr>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Role</th>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Description</th>
@@ -227,7 +227,7 @@
             <span>🛡️</span> Multi-Layer Security Protection
         </h2>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
                 <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">
                     🔥 Web Application Firewall (WAF)
@@ -281,8 +281,8 @@
             🔒 Data Encryption
         </h3>
 
-        <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-            <thead style="background: var(--wiki-card-bg);">
+        <table class="wiki-table">
+            <thead>
                 <tr>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Layer</th>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Encryption Method</th>
@@ -387,7 +387,7 @@
             <span>✅</span> Regulatory Compliance
         </h2>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
                  onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--primary-rgb), 0.15)'"
                  onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
@@ -453,8 +453,8 @@
             📝 Audit Logging System
         </h3>
 
-        <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-            <thead style="background: var(--wiki-card-bg);">
+        <table class="wiki-table">
+            <thead>
                 <tr>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Event Type</th>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">What's Logged</th>
@@ -572,7 +572,7 @@
             <span>📊</span> 24/7 Security Operations Center (SOC)
         </h2>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); padding: 2rem; border-radius: 16px; border-left: 4px solid rgb(var(--primary-rgb));">
                 <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">👁️</div>
                 <h4 style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Monitored Events/Day</h4>
@@ -606,8 +606,8 @@
             🎯 Security Alert Categories
         </h3>
 
-        <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-            <thead style="background: var(--wiki-card-bg);">
+        <table class="wiki-table">
+            <thead>
                 <tr>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Severity</th>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Examples</th>
@@ -647,7 +647,7 @@
             🔍 Security Monitoring Tools
         </h3>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
                 <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">
                     📊 SIEM (Security Information & Event Management)
@@ -744,7 +744,7 @@
 
         <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
             <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📊 Security Metrics Dashboard</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center;">
                     <div style="font-size: 2rem; margin-bottom: 0.5rem; color: rgb(var(--primary-rgb));">99.97%</div>
                     <div style="font-size: 0.9rem; color: var(--wiki-text-secondary);">System Uptime (Last 30 days)</div>

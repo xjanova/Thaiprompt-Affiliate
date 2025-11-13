@@ -35,7 +35,7 @@
             <span>📦</span> Software Product Catalog
         </h2>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
                  onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--primary-rgb), 0.15)'"
                  onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
@@ -105,8 +105,8 @@
             💳 License Types & Pricing Models
         </h3>
 
-        <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-            <thead style="background: var(--wiki-card-bg);">
+        <table class="wiki-table">
+            <thead>
                 <tr>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">License Type</th>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Pricing Model</th>
@@ -218,7 +218,7 @@
             <span>📄</span> Auto Quotation Generation
         </h2>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
                 <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">
                     🎨 Custom Templates
@@ -276,7 +276,7 @@
         </h3>
 
         <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--accent-rgb), 0.1) 100%); padding: 2.5rem; border-radius: 16px; margin-bottom: 2rem;">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: white; padding: 1.5rem; border-radius: 12px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
                     <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">🎯</div>
                     <h5 style="font-weight: 700; margin-bottom: 0.5rem; color: rgb(var(--primary-rgb));">Lead</h5>
@@ -319,8 +319,8 @@
             💰 Pricing Tiers Example
         </h3>
 
-        <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-            <thead style="background: var(--wiki-card-bg);">
+        <table class="wiki-table">
+            <thead>
                 <tr>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Product</th>
                     <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Starter</th>
@@ -379,7 +379,7 @@
 
         <div style="background: var(--wiki-hover-bg); padding: 2rem; border-radius: 12px; margin-bottom: 2rem;">
             <h4 style="font-weight: 700; margin-bottom: 1.5rem;">📈 Quotation Conversion Tips</h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div>
                     <h5 style="font-weight: 700; color: rgb(var(--primary-rgb)); margin-bottom: 0.5rem;">⏱️ Time Pressure</h5>
                     <p style="color: var(--wiki-text-secondary); line-height: 1.6; font-size: 0.95rem;">
@@ -427,7 +427,7 @@
             <span>👤</span> Customer Self-Service Portal
         </h2>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border); transition: all 0.3s ease;"
                  onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 40px rgba(var(--primary-rgb), 0.15)'"
                  onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='translateY(0)'; this.style.boxShadow='none'">
@@ -631,7 +631,7 @@
             <span>📊</span> Sales Analytics & Revenue Metrics
         </h2>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); padding: 2rem; border-radius: 16px; border-left: 4px solid rgb(var(--primary-rgb));">
                 <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">💰</div>
                 <h4 style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Monthly Recurring Revenue</h4>
@@ -679,8 +679,8 @@
             📈 Sales Reports & Insights
         </h3>
 
-        <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-            <thead style="background: var(--wiki-card-bg);">
+        <table class="wiki-table">
+            <thead>
                 <tr>
                     <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Product Line</th>
                     <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Active Licenses</th>
@@ -732,7 +732,7 @@
             🔄 Renewal Forecasting & Automation
         </h3>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="wiki-grid wiki-grid-3">
             <div style="background: var(--wiki-card-bg); padding: 2rem; border-radius: 16px; border: 2px solid var(--wiki-border);">
                 <h4 style="font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">
                     📅 Upcoming Renewals

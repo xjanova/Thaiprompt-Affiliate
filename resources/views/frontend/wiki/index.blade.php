@@ -470,6 +470,243 @@
 .dark .info-box.tip {
     background: linear-gradient(135deg, #831843 0%, #9f1239 100%);
 }
+
+/* Wiki Tables - Professional Styling */
+.wiki-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px var(--wiki-shadow);
+}
+
+.wiki-table thead {
+    background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)));
+    color: white;
+}
+
+.wiki-table thead th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wiki-table tbody tr {
+    border-bottom: 1px solid var(--wiki-border);
+    transition: all 0.2s ease;
+}
+
+.wiki-table tbody tr:hover {
+    background: var(--wiki-hover-bg);
+    transform: scale(1.01);
+}
+
+.wiki-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.wiki-table tbody td {
+    padding: 1rem;
+    color: var(--wiki-text-secondary);
+}
+
+.wiki-table tbody td strong {
+    color: var(--wiki-text-primary);
+    font-weight: 600;
+}
+
+/* Wiki Cards - Enhanced with Hover */
+.wiki-card {
+    background: var(--wiki-card-bg);
+    border: 2px solid var(--wiki-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.wiki-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.05), rgba(var(--secondary-rgb), 0.05));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+}
+
+.wiki-card:hover::before {
+    opacity: 1;
+}
+
+.wiki-card:hover {
+    border-color: rgb(var(--primary-rgb));
+    box-shadow: 0 12px 32px rgba(var(--primary-rgb), 0.2);
+    transform: translateY(-4px) scale(1.02);
+}
+
+.wiki-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+/* Feature Icons */
+.feature-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)));
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+    transition: all 0.3s ease;
+}
+
+.wiki-card:hover .feature-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.4);
+}
+
+/* Step Indicators */
+.step-indicator {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb)));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 auto 0.5rem;
+    box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);
+    transition: all 0.3s ease;
+}
+
+.step-indicator:hover {
+    transform: scale(1.15);
+    box-shadow: 0 8px 24px rgba(var(--primary-rgb), 0.5);
+}
+
+/* Grid Layouts */
+.wiki-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.wiki-grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.wiki-grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.wiki-grid-4 {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* Typography Improvements */
+.wiki-section h2 {
+    font-size: 1.875rem;
+    font-weight: 800;
+    margin-bottom: 1.5rem;
+    color: var(--wiki-text-primary);
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid transparent;
+    border-image: linear-gradient(90deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))) 1;
+}
+
+.wiki-section h3 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 2rem 0 1rem;
+    color: var(--wiki-text-primary);
+}
+
+.wiki-section h4 {
+    font-size: 1.125rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    color: var(--wiki-text-primary);
+}
+
+.wiki-section p {
+    line-height: 1.8;
+    color: var(--wiki-text-secondary);
+    margin-bottom: 1rem;
+}
+
+.wiki-section ul, .wiki-section ol {
+    line-height: 1.8;
+    margin-bottom: 1rem;
+    padding-left: 1.5rem;
+}
+
+.wiki-section ul li, .wiki-section ol li {
+    color: var(--wiki-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+/* Code Blocks */
+.wiki-code {
+    background: var(--wiki-hover-bg);
+    border: 1px solid var(--wiki-border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.8;
+    overflow-x: auto;
+}
+
+/* Highlight Boxes */
+.wiki-highlight {
+    background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--accent-rgb), 0.05));
+    border-left: 4px solid rgb(var(--primary-rgb));
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin: 1.5rem 0;
+}
+
+.wiki-highlight h4 {
+    color: rgb(var(--primary-rgb));
+    margin-bottom: 0.75rem;
+}
+
+/* Responsive Improvements */
+@media (max-width: 768px) {
+    .wiki-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .wiki-section h2 {
+        font-size: 1.5rem;
+    }
+
+    .wiki-section h3 {
+        font-size: 1.25rem;
+    }
+
+    .wiki-card {
+        padding: 1rem;
+    }
+}
 </style>
 @endpush
 

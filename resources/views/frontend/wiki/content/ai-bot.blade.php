@@ -20,10 +20,8 @@
             </div>
 
             <h3>🎯 AI Providers ที่รองรับ</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
-                <div class="feature-card" style="border: 2px solid var(--wiki-border); transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+            <div class="wiki-grid wiki-grid-3">
+                <div class="wiki-card">
                     <div class="feature-icon">🧠</div>
                     <h4>OpenAI GPT-4</h4>
                     <ul style="font-size: 0.95rem; line-height: 1.8;">
@@ -34,9 +32,7 @@
                     </ul>
                 </div>
 
-                <div class="feature-card" style="border: 2px solid var(--wiki-border); transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div class="feature-icon">🎨</div>
                     <h4>Anthropic Claude</h4>
                     <ul style="font-size: 0.95rem; line-height: 1.8;">
@@ -47,9 +43,7 @@
                     </ul>
                 </div>
 
-                <div class="feature-card" style="border: 2px solid var(--wiki-border); transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div class="feature-icon">🌟</div>
                     <h4>Google Gemini</h4>
                     <ul style="font-size: 0.95rem; line-height: 1.8;">
@@ -60,9 +54,7 @@
                     </ul>
                 </div>
 
-                <div class="feature-card" style="border: 2px solid var(--wiki-border); transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div class="feature-icon">💻</div>
                     <h4>Local AI (Self-Hosted)</h4>
                     <ul style="font-size: 0.95rem; line-height: 1.8;">
@@ -75,7 +67,7 @@
             </div>
 
             <h3>⚙️ ความสามารถหลัก</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="feature-card">
                     <div class="feature-icon">💬</div>
                     <h4>Conversation Management</h4>
@@ -134,10 +126,8 @@
 
             <h3>🖼️ AI Image Generation Providers</h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+            <div class="wiki-grid wiki-grid-3">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🎨</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">DALL-E 3</h4>
                     <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">OpenAI's Image Generator</p>
@@ -149,9 +139,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🌌</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Midjourney</h4>
                     <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Artistic & Creative</p>
@@ -163,9 +151,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Stable Diffusion</h4>
                     <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Open Source & Customizable</p>
@@ -177,9 +163,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🎭</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Leonardo.ai</h4>
                     <p style="font-size: 0.9rem; color: var(--wiki-text-secondary); margin-bottom: 1rem;">Game Assets & Characters</p>
@@ -194,7 +178,7 @@
 
             <h3>🎬 AI Video Generation</h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="feature-card">
                     <div class="feature-icon">🎥</div>
                     <h4>Runway Gen-2</h4>
@@ -305,7 +289,7 @@
 
             <h3>🎯 Use Cases</h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="info-box">
                     <h4>📱 Social Media Content</h4>
                     <p>สร้างภาพโพสต์ Instagram, Facebook, TikTok อัตโนมัติ</p>
@@ -343,7 +327,7 @@
             </div>
 
             <h3>✨ ฟีเจอร์หลัก</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="feature-card">
                     <div class="feature-icon">📋</div>
                     <h4>Rich Menu Builder</h4>
@@ -394,7 +378,7 @@
             </div>
 
             <h3>🤖 LINE AI Features</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="padding: 1.5rem; background: linear-gradient(135deg, rgb(var(--primary-rgb)), rgb(var(--secondary-rgb))); color: white; border-radius: 12px; text-align: center;">
                     <div style="font-size: 2rem; margin-bottom: 0.5rem;">🎯</div>
                     <h4>Auto Reply</h4>
@@ -436,7 +420,7 @@
             </div>
 
             <h3>📄 รองรับไฟล์หลายประเภท</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="text-align: center; padding: 1.5rem; background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px;">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">📝</div>
                     <h4>Text Files</h4>
@@ -570,7 +554,7 @@
             </div>
 
             <h3>📊 ระบบจัดการ Bot Rental</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="padding: 1.5rem; background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; text-align: center;">
                     <div style="font-size: 2rem; margin-bottom: 0.5rem;">📈</div>
                     <h4>Usage Tracking</h4>

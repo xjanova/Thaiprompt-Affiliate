@@ -16,10 +16,8 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">🏨 Room Types</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+            <div class="wiki-grid wiki-grid-3">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🛏️</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Standard Room</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -32,9 +30,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🌟</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Deluxe Room</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -47,9 +43,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">👑</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Suite</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -64,8 +58,8 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">💰 Dynamic Pricing Engine</h3>
-            <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-                <thead style="background: var(--wiki-card-bg);">
+            <table class="wiki-table">
+                <thead>
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Season / Event</th>
                         <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Occupancy Target</th>
@@ -108,7 +102,7 @@
             </table>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">📅 Availability Calendar</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border: 2px solid rgb(var(--primary-rgb)); border-radius: 12px; padding: 1.5rem;">
                     <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">Real-time Sync</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -170,31 +164,31 @@
             <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 2rem; margin-bottom: 2rem;">
                 <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; justify-content: center;">
                     <div style="text-align: center; flex: 1; min-width: 140px;">
-                        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--primary-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">1</div>
+                        <div class="step-indicator">1</div>
                         <div style="font-weight: 700; margin-bottom: 0.25rem;">🔍 Search</div>
                         <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">วันที่ + จำนวนคน</div>
                     </div>
                     <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
                     <div style="text-align: center; flex: 1; min-width: 140px;">
-                        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--secondary-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">2</div>
+                        <div class="step-indicator">2</div>
                         <div style="font-weight: 700; margin-bottom: 0.25rem;">🛏️ Select Room</div>
                         <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">เลือกห้องพัก</div>
                     </div>
                     <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
                     <div style="text-align: center; flex: 1; min-width: 140px;">
-                        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--accent-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">3</div>
+                        <div class="step-indicator">3</div>
                         <div style="font-weight: 700; margin-bottom: 0.25rem;">📝 Guest Info</div>
                         <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">กรอกข้อมูล</div>
                     </div>
                     <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
                     <div style="text-align: center; flex: 1; min-width: 140px;">
-                        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--primary-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">4</div>
+                        <div class="step-indicator">4</div>
                         <div style="font-weight: 700; margin-bottom: 0.25rem;">💳 Payment</div>
                         <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ชำระเงิน</div>
                     </div>
                     <div style="font-size: 1.5rem; color: var(--wiki-text-muted);">→</div>
                     <div style="text-align: center; flex: 1; min-width: 140px;">
-                        <div style="width: 60px; height: 60px; border-radius: 50%; background: rgb(var(--secondary-rgb)); color: white; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: 800; margin: 0 auto 0.5rem;">5</div>
+                        <div class="step-indicator">5</div>
                         <div style="font-weight: 700; margin-bottom: 0.25rem;">✅ Confirm</div>
                         <div style="font-size: 0.85rem; color: var(--wiki-text-secondary);">ส่งอีเมล</div>
                     </div>
@@ -202,10 +196,8 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">💳 Payment Options</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+            <div class="wiki-grid wiki-grid-3">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">💳</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Credit/Debit Card</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -217,9 +209,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🏦</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Bank Transfer</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -231,9 +221,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🏨</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Pay at Hotel</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -247,8 +235,8 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">📋 Cancellation Policies</h3>
-            <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-                <thead style="background: var(--wiki-card-bg);">
+            <table class="wiki-table">
+                <thead>
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Policy Type</th>
                         <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Free Cancellation</th>
@@ -285,7 +273,7 @@
             </table>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">✉️ Automated Communications</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 1px solid var(--wiki-border); border-radius: 8px; padding: 1rem;">
                     <h5 style="font-weight: 700; margin-bottom: 0.5rem;">📧 Booking Confirmation</h5>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin: 0;">ทันทีหลังจองเสร็จ + QR Code</p>
@@ -336,10 +324,8 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">🏨 Connected Channels</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+            <div class="wiki-grid wiki-grid-3">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🌐</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Booking.com</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -351,9 +337,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">✈️</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Agoda</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -365,9 +349,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🏖️</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Expedia Group</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -379,9 +361,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">✈️</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Airbnb</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -393,9 +373,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">🌐</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Direct Website</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -407,9 +385,7 @@
                     </ul>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; transition: all 0.3s;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.2)'; this.style.transform='translateY(-4px)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 1rem;">✈️</div>
                     <h4 style="font-weight: 700; margin-bottom: 1rem;">Metasearch (Google, Trivago)</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -423,8 +399,8 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">📊 Channel Performance Analytics</h3>
-            <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-                <thead style="background: var(--wiki-card-bg);">
+            <table class="wiki-table">
+                <thead>
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Channel</th>
                         <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Bookings</th>
@@ -510,7 +486,7 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">🗺️ Guest Journey Touchpoints</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border: 2px solid rgb(var(--primary-rgb)); border-radius: 12px; padding: 1.5rem;">
                     <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">1️⃣ Pre-arrival</h4>
                     <ul style="list-style: none; padding-left: 0; font-size: 0.9rem; line-height: 1.8;">
@@ -557,7 +533,7 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">⭐ Review Management</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border-left: 4px solid rgb(var(--primary-rgb)); padding: 1.5rem; border-radius: 8px;">
                     <div style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.5rem;">Overall Rating</div>
                     <h4 style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb)); margin: 0;">8.9/10</h4>
@@ -584,8 +560,8 @@
             </div>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">📊 Review Breakdown</h3>
-            <table class="wiki-table" style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
-                <thead style="background: var(--wiki-card-bg);">
+            <table class="wiki-table">
+                <thead>
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border);">Category</th>
                         <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border);">Score</th>
@@ -627,7 +603,7 @@
             </table>
 
             <h3 style="font-size: 1.35rem; font-weight: 700; margin: 2rem 0 1rem; color: var(--wiki-text);">🛎️ Guest Services & Amenities</h3>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 1px solid var(--wiki-border); border-radius: 8px; padding: 1rem;">
                     <h5 style="font-weight: 700; margin-bottom: 0.5rem;">🏊 Pool & Spa</h5>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin: 0;">Infinity pool, jacuzzi, massage</p>

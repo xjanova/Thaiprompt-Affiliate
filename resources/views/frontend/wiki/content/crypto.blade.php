@@ -76,7 +76,7 @@
 
             <h3>🏗️ สถาปัตยกรรม Wallet System</h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="feature-card">
                     <div class="feature-icon">💵</div>
                     <h4>Balance Management</h4>
@@ -153,7 +153,7 @@
 
             <div class="info-box">
                 <h4>🔐 Non-Custodial vs Custodial Wallet</h4>
-                <table class="wiki-table" style="margin-top: 1rem;">
+                <table class="wiki-table">
                     <thead>
                         <tr>
                             <th>ประเภท</th>
@@ -186,72 +186,56 @@
             <p style="margin-bottom: 2rem;">รองรับ <strong>20+ สกุลเงินดิจิทัล</strong> ชั้นนำทั่วโลก</p>
 
             <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.15)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">₿</div>
                     <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Bitcoin (BTC)</h4>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">King of Crypto</p>
                     <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">Bitcoin Mainnet</div>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease;"
-                     onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.15)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">Ξ</div>
                     <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Ethereum (ETH)</h4>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Smart Contracts</p>
                     <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">ERC-20</div>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease;"
-                     onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.15)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">₮</div>
                     <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Tether (USDT)</h4>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Stablecoin</p>
                     <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">TRC-20 / ERC-20</div>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.15)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">🪙</div>
                     <h4 style="font-weight: 700; margin-bottom: 0.5rem;">USDC</h4>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">USD Coin</p>
                     <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">ERC-20</div>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease;"
-                     onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.15)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">🅱</div>
                     <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Binance Coin (BNB)</h4>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Binance Ecosystem</p>
                     <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">BEP-20</div>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease;"
-                     onmouseover="this.style.borderColor='rgb(var(--accent-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--accent-rgb), 0.15)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">◎</div>
                     <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Solana (SOL)</h4>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">High Performance</p>
                     <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">Solana Mainnet</div>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease;"
-                     onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--primary-rgb), 0.15)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">🔷</div>
                     <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Polygon (MATIC)</h4>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Layer 2 Solution</p>
                     <div style="font-size: 0.75rem; color: var(--wiki-text-muted);">Polygon Mainnet</div>
                 </div>
 
-                <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center; transition: all 0.3s ease;"
-                     onmouseover="this.style.borderColor='rgb(var(--secondary-rgb))'; this.style.boxShadow='0 8px 24px rgba(var(--secondary-rgb), 0.15)'"
-                     onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'">
+                <div class="wiki-card">
                     <div style="font-size: 3rem; margin-bottom: 0.5rem;">🌊</div>
                     <h4 style="font-weight: 700; margin-bottom: 0.5rem;">Ripple (XRP)</h4>
                     <p style="font-size: 0.85rem; color: var(--wiki-text-secondary); margin-bottom: 0.75rem;">Fast Payments</p>
@@ -376,7 +360,7 @@
 
             <h3>📈 Trading Bot & Signals</h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="feature-card">
                     <div class="feature-icon">🤖</div>
                     <h4>Auto Trading Bot</h4>
@@ -424,7 +408,7 @@
 
             <h3>💎 Staking Plans</h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1), rgba(var(--primary-rgb), 0.05)); border: 2px solid rgb(var(--primary-rgb)); border-radius: 16px; padding: 2rem;">
                     <div style="text-align: center; margin-bottom: 1.5rem;">
                         <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🥉</div>
@@ -483,7 +467,7 @@
 
             <h3>💼 Portfolio Management</h3>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-4">
                 <div class="feature-card">
                     <div class="feature-icon">📊</div>
                     <h4>Asset Allocation</h4>
@@ -539,7 +523,7 @@
 
             <h3>🛡️ ระบบรักษาความปลอดภัย Wallet</h3>
 
-            <table class="wiki-table" style="margin: 2rem 0;">
+            <table class="wiki-table">
                 <thead>
                     <tr>
                         <th style="width: 30%;">Security Layer</th>
@@ -578,7 +562,7 @@
 
             <h3>🔒 Crypto Security</h3>
 
-            <table class="wiki-table" style="margin: 2rem 0;">
+            <table class="wiki-table">
                 <thead>
                     <tr>
                         <th>Security Feature</th>
@@ -613,7 +597,7 @@
                 </tbody>
             </table>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin: 2rem 0;">
+            <div class="wiki-grid wiki-grid-3">
                 <div class="info-box success">
                     <h4>✅ Best Practices</h4>
                     <ul style="line-height: 2;">

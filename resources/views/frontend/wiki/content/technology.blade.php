@@ -15,7 +15,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🔧 Core Technology Stack</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 25px rgba(var(--primary-rgb), 0.15)'; this.style.transform='translateY(-5px)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)';"
@@ -79,7 +79,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">📊 System Statistics & Metrics</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border); font-weight: 700;">Component</th>
@@ -130,7 +130,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🔌 Third-Party Integrations</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-4">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='scale(1.05)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='scale(1)';"
@@ -189,7 +189,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🎯 Core Architecture Patterns</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 25px rgba(var(--primary-rgb), 0.15)'; this.style.transform='translateY(-5px)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)';"
@@ -301,7 +301,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🔄 Request Lifecycle</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: center; border: 1px solid var(--wiki-border); font-weight: 700;">Step</th>
@@ -364,7 +364,7 @@
 
             <div style="background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.1) 0%, rgba(var(--primary-rgb), 0.05) 100%); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--accent-rgb));">
                 <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--accent-rgb));">🎯 Architecture Benefits</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem;">
+                <div class="wiki-grid wiki-grid-3">
                     <div>
                         <strong style="color: rgb(var(--primary-rgb));">✅ Maintainability</strong>
                         <p style="margin: 0.5rem 0 0 0; line-height: 1.6;">Clean separation makes code easy to understand and modify</p>
@@ -394,7 +394,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🖥️ Server Requirements</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border); font-weight: 700;">Component</th>
@@ -441,7 +441,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">☁️ Cloud Hosting Options</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.boxShadow='0 8px 25px rgba(var(--primary-rgb), 0.15)'; this.style.transform='translateY(-5px)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.boxShadow='none'; this.style.transform='translateY(0)';"
@@ -516,7 +516,7 @@
                         </p>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                    <div class="wiki-grid wiki-grid-3">
                         <div style="background: white; padding: 1rem; border-radius: 10px; border-left: 4px solid #28a745;">
                             <strong style="color: var(--wiki-success);">🖥️ App Server 1</strong>
                             <p style="margin: 0.5rem 0 0 0; color: var(--wiki-text-muted); font-size: 0.9rem;">Primary instance</p>
@@ -557,7 +557,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🔄 Backup & Disaster Recovery</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden;">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border); font-weight: 700;">Backup Type</th>
@@ -596,7 +596,7 @@
 
             <div style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%); padding: 2rem; border-radius: 12px; border-left: 4px solid rgb(var(--primary-rgb));">
                 <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">🎯 Disaster Recovery Metrics</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-top: 1.5rem;">
+                <div class="wiki-grid wiki-grid-3">
                     <div style="text-align: center;">
                         <div style="font-size: 2rem; font-weight: 800; color: rgb(var(--primary-rgb));">4 hours</div>
                         <div style="font-weight: 600;">RTO (Recovery Time Objective)</div>
@@ -625,7 +625,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">📝 Coding Standards</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-3">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem;">
                     <h4 style="font-weight: 700; margin-bottom: 1rem; color: rgb(var(--primary-rgb));">🐘 PHP Standards</h4>
                     <ul style="list-style: none; padding: 0; line-height: 2;">
@@ -662,7 +662,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🧪 Testing Strategy</h2>
 
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; background: var(--wiki-card-bg); border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <table class="wiki-table">
                 <thead style="background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.1) 0%, rgba(var(--secondary-rgb), 0.05) 100%);">
                     <tr>
                         <th style="padding: 1rem; text-align: left; border: 1px solid var(--wiki-border); font-weight: 700;">Test Type</th>
@@ -792,7 +792,7 @@
 
             <h2 style="font-weight: 700; margin-bottom: 1.5rem; color: var(--wiki-text-primary);">🌿 Git Workflow (Git Flow)</h2>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="wiki-grid wiki-grid-4">
                 <div style="background: var(--wiki-card-bg); border: 2px solid var(--wiki-border); border-radius: 12px; padding: 1.5rem; text-align: center;"
                      onmouseover="this.style.borderColor='rgb(var(--primary-rgb))'; this.style.transform='scale(1.05)';"
                      onmouseout="this.style.borderColor='var(--wiki-border)'; this.style.transform='scale(1)';"
