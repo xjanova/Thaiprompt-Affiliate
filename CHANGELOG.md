@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.200.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Complete Staking API System (a74d97a0)
+- feat: Add Complete UI Views & Middleware Registration (de535088)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1048 from xjanova/claude/resolve-bootstrap-conflicts-01BrDTqFJwZEA8PGkMEPUxQQ (2231b189)
+
 ## [v2.199.1] - 2025-11-13
 
 ### ✨ Features
