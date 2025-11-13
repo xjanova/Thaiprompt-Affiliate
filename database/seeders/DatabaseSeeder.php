@@ -93,6 +93,10 @@ class DatabaseSeeder extends Seeder
             TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
             VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
             VideoRewardMenuSeeder::class,       // เมนูระบบ Video Rewards
+            GameSeeder::class,                  // ระบบเกม (Game System)
+            GamesSeeder::class,                 // ข้อมูลเกมต่างๆ (Games Data)
+            MissionsSeeder::class,              // ระบบภารกิจ (Missions System)
+            GameMenuItemSeeder::class,          // เมนูสำหรับระบบเกม (Game Menu Items)
 
             // 13. Support & Ticket System
             TicketCannedResponseSeeder::class,  // Canned Responses สำหรับ Ticket Support (เทมเพลตตอบกลับอัตโนมัติ)
