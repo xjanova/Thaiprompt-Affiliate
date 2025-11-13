@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.165.6] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #947 from xjanova/claude/chatbot-rental-system-011CV4SMvxMEKqpAWbDN4ss7 (32890cf2)
+- Add Chatbot Rental System menu to Start Menu (6f83f47b)
+- Fix: Replace non-existent column 'total_profit_loss' with 'net_profit' (6e30ff25)
+
 ## [v2.165.5] - 2025-11-13
 
 ### ✨ Features
