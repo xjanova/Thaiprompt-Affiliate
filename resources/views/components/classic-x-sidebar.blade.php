@@ -400,7 +400,6 @@
 <div class="classic-x-sidebar"
      id="classicXSidebar"
      x-data="sidebarData()"
-     x-init="init()"
      :class="{ 'collapsed': collapsed }">
 
     @if($sidebarCollapsible)

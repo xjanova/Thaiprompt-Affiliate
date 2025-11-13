@@ -384,10 +384,35 @@
     $activeSubmenus = [];
     $parentMenuHasActive = []; // Track which parent menus have active children
     $lockedSubmenus = []; // Track which submenus should stay open (contain active items)
+    $currentUrl = request()->url(); // Get current full URL
+    $currentPath = request()->path(); // Get current path
+
     foreach ($menuItems as $index => $item) {
         if (isset($item['submenu'])) {
             foreach ($item['submenu'] as $subitem) {
+                $isActive = false;
+
+                // Check by route name first
                 if (isset($subitem['route']) && $currentRoute === $subitem['route']) {
+                    $isActive = true;
+                }
+                // Fallback: check by URL matching
+                elseif (isset($subitem['url']) && $subitem['url'] !== '#') {
+                    // Normalize URLs for comparison
+                    $submenuUrl = $subitem['url'];
+                    if (strpos($submenuUrl, url('/')) === 0) {
+                        $submenuUrl = str_replace(url('/'), '', $submenuUrl);
+                    }
+                    $submenuUrl = ltrim($submenuUrl, '/');
+                    $currentPath = ltrim($currentPath, '/');
+
+                    // Check if current path matches submenu URL
+                    if ($submenuUrl === $currentPath || url($submenuUrl) === $currentUrl) {
+                        $isActive = true;
+                    }
+                }
+
+                if ($isActive) {
                     $activeSubmenus[] = 'menu-' . $index;
                     $parentMenuHasActive[$index] = true;
                     $lockedSubmenus[] = 'menu-' . $index; // Lock this submenu open
