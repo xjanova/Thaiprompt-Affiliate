@@ -101,8 +101,8 @@
                         <h4 class="font-semibold text-gray-700 dark:text-gray-300 text-lg">📈 ผลงาน</h4>
                         <div class="space-y-2 text-sm">
                             <p><span class="font-medium">กำไร/ขาดทุน:</span>
-                                <span class="{{ $bot->total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600' }} font-bold">
-                                    ฿{{ number_format($bot->total_profit_loss, 2) }}
+                                <span class="{{ $bot->net_profit >= 0 ? 'text-green-600' : 'text-red-600' }} font-bold">
+                                    ฿{{ number_format($bot->net_profit, 2) }}
                                 </span>
                             </p>
                             <p><span class="font-medium">ROI:</span>

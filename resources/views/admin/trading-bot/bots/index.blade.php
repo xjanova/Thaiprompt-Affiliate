@@ -46,8 +46,8 @@
                             </td>
                             <td class="px-6 py-4 text-sm">{{ $bot->trading_pair }}</td>
                             <td class="px-6 py-4">
-                                <span class="{{ $bot->total_profit_loss >= 0 ? 'text-green-600' : 'text-red-600' }} font-semibold">
-                                    ฿{{ number_format($bot->total_profit_loss, 2) }}
+                                <span class="{{ $bot->net_profit >= 0 ? 'text-green-600' : 'text-red-600' }} font-semibold">
+                                    ฿{{ number_format($bot->net_profit, 2) }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">

@@ -48,7 +48,7 @@ class TradingBotController extends Controller
         $stats = [
             'total_bots' => $bots->count(),
             'running_bots' => $bots->where('status', 'running')->count(),
-            'total_profit' => $bots->sum('total_profit_loss'),
+            'total_profit' => $bots->sum('net_profit'),
             'total_trades' => $user->tradingTrades()->count(),
         ];
 
