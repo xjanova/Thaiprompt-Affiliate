@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.181.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1019 from xjanova/claude/add-card-payment-system-011CV5yHLrzedUT9ySCnDcmM (ba3055b7)
+- docs: เพิ่มเอกสาร Wiki ระบบ NFC Card Payment แบบครบวงจร (0ff41c40)
+
 ## [v2.181.2] - 2025-11-13
 
 ### ✨ Features
