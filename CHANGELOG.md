@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.172.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #968 from xjanova/claude/setup-control-app-011CV5HkqyJQo7cRgeTrwyBA (f84ea082)
+- refactor: Replace WebView with Premium Hero Homepage for offline support (7e0a5c45)
+
 ## [v2.172.2] - 2025-11-13
 
 ### ✨ Features
