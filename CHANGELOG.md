@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.193.0] - 2025-11-13
+
+### ✨ Features
+- feat: Implement Food Passport Phase 3 - Complete Backend System (7908f617)
+### 🐛 Bug Fixes
+- fix: Resolve API route conflicts between TPIX and Food Passport systems (a69c68e1)
+### 🔧 Other Changes
+- Merge pull request #1034 from xjanova/claude/resolve-api-conflicts-011CV6DhXxnSCEJqMSwNaqsL (c173d597)
+
 ## [v2.192.0] - 2025-11-13
 
 ### ✨ Features
