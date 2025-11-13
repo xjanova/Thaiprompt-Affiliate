@@ -61,18 +61,42 @@
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
-    <div class="min-h-screen">
-        <!-- Millennium Taskbar (Replaces Navigation) -->
+    @php
+        // Get user theme preference (use millennium as default for guests)
+        $userTheme = auth()->check() ? (auth()->user()->menu_theme_preference ?? 'millennium') : 'millennium';
+    @endphp
+
+    @if($userTheme === 'classic_x')
+        <!-- Classic X Sidebar -->
+        <x-classic-x-sidebar type="user" />
+
+        <!-- Classic X Content Wrapper -->
+        <div class="classic-x-content" id="classicXContent">
+            <!-- Page Content -->
+            <main>
+                @yield('content')
+            </main>
+
+            <!-- Footer -->
+            @include('layouts.footer')
+        </div>
+
+        <!-- Floating Action Buttons for Classic X Theme -->
+        <x-classic-x-floating-buttons />
+    @else
+        <!-- Millennium Taskbar -->
         <x-millennium-taskbar type="user" />
 
-        <!-- Page Content -->
-        <main>
-            @yield('content')
-        </main>
+        <div class="min-h-screen">
+            <!-- Page Content -->
+            <main>
+                @yield('content')
+            </main>
 
-        <!-- Footer -->
-        @include('layouts.footer')
-    </div>
+            <!-- Footer -->
+            @include('layouts.footer')
+        </div>
+    @endif
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
