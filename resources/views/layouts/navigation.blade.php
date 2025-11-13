@@ -276,6 +276,14 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                         <span class="group-hover:translate-x-0.5 transition-transform duration-300">Platform Wiki</span>
                         <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 group-hover:w-full transition-all duration-300"></span>
                     </a>
+                    <a href="{{ route('demo.audio-spectrum') }}"
+                       class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-pink-50 hover:to-violet-50 dark:hover:from-pink-900/30 dark:hover:to-violet-900/30"
+                       style="color: {{ $headerTextColor }};"
+                       title="Audio Spectrum Visualizer">
+                        <span class="text-lg group-hover:scale-110 transition-transform duration-300">🎵</span>
+                        <span class="group-hover:translate-x-0.5 transition-transform duration-300">Audio Spectrum</span>
+                        <span class="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-pink-600 to-violet-600 group-hover:w-full transition-all duration-300"></span>
+                    </a>
                     <a href="{{ route('contact') }}"
                        class="nav-link-premium group relative inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300 hover:bg-gradient-to-r hover:from-sky-50 hover:to-blue-50 dark:hover:from-sky-900/30 dark:hover:to-blue-900/30"
                        style="color: {{ $headerTextColor }};">
@@ -453,6 +461,11 @@ $menuItems = \App\Models\MenuItem::getForLocation('header');
                    class="block mx-3 my-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg text-base font-bold text-center shadow-lg"
                    style="border: none;">
                     📚 Platform Wiki - สารานุกรมความรู้
+                </a>
+                <a href="{{ route('demo.audio-spectrum') }}"
+                   class="block mx-3 my-2 px-4 py-3 bg-gradient-to-r from-pink-600 to-violet-600 text-white rounded-lg text-base font-bold text-center shadow-lg"
+                   style="border: none;">
+                    🎵 Audio Spectrum Visualizer
                 </a>
                 <a href="{{ route('contact') }}"
                    class="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium transition duration-150 ease-in-out"
