@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.173.11] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #981 from xjanova/claude/create-404-landing-page-011CV5eTPuNvDaKtnF6GQ3qr (ecd22099)
+- Fix Alpine.js scope issues in Classic X menu and sidebar (261cc8c1)
+
 ## [v2.173.10] - 2025-11-13
 
 ### ✨ Features
