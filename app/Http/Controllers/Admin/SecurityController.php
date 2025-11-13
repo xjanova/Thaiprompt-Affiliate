@@ -552,15 +552,54 @@ class SecurityController extends Controller
     /**
      * Threat Intelligence Dashboard
      */
-    public function threatIntelligence(ThreatIntelligenceService $service)
+    public function threatIntelligence(Request $request, ThreatIntelligenceService $service)
     {
         $stats = $service->getStatistics();
 
-        // Get recent threats
-        $recentThreats = ThreatIp::active()
-            ->orderBy('last_seen', 'desc')
-            ->limit(100)
-            ->get();
+        // Build query with filters
+        $query = ThreatIp::active();
+
+        // Apply filters
+        if ($request->filled('ip_address')) {
+            $query->where('ip_address', 'like', '%' . $request->ip_address . '%');
+        }
+
+        if ($request->filled('threat_type')) {
+            $query->where('threat_type', $request->threat_type);
+        }
+
+        if ($request->filled('source')) {
+            $query->where('source', $request->source);
+        }
+
+        if ($request->filled('confidence_min')) {
+            $query->where('confidence_score', '>=', $request->confidence_min);
+        }
+
+        if ($request->filled('confidence_max')) {
+            $query->where('confidence_score', '<=', $request->confidence_max);
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('last_seen', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_to')) {
+            $query->whereDate('last_seen', '<=', $request->date_to);
+        }
+
+        // Sorting
+        $sortBy = $request->input('sort_by', 'last_seen');
+        $sortOrder = $request->input('sort_order', 'desc');
+
+        $allowedSortFields = ['ip_address', 'threat_type', 'source', 'confidence_score', 'last_seen', 'expires_at'];
+        if (in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortOrder);
+        }
+
+        // Get recent threats with pagination
+        $recentThreats = $query->paginate($request->input('per_page', 20))
+            ->appends($request->except('page'));
 
         // Get threat distribution
         $threatsByType = ThreatIp::active()
@@ -575,11 +614,28 @@ class SecurityController extends Controller
             ->orderBy('count', 'desc')
             ->get();
 
+        // Get unique values for filters
+        $threatTypes = ThreatIp::active()
+            ->distinct()
+            ->pluck('threat_type')
+            ->filter()
+            ->sort()
+            ->values();
+
+        $sources = ThreatIp::active()
+            ->distinct()
+            ->pluck('source')
+            ->filter()
+            ->sort()
+            ->values();
+
         return view('admin.security.threat-intelligence', compact(
             'stats',
             'recentThreats',
             'threatsByType',
-            'threatsBySource'
+            'threatsBySource',
+            'threatTypes',
+            'sources'
         ));
     }
 
