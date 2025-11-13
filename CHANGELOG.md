@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.166.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add navigation and quick access for enterprise Trading Bot features (87abad1c)
+- feat: Add routes and controller methods for enterprise-level Trading Bot features (b131c08f)
+- feat: Add enterprise-level Trading Bot features with professional UI (aba8f826)
+### 🐛 Bug Fixes
+- fix: Replace total_profit_loss with net_profit column (cafad446)
+### 🔧 Other Changes
+- Merge pull request #949 from xjanova/claude/crypto-trading-bot-api-011CV4Qdjefuvx3aaSNGNu6B (512dd770)
+- Merge branch 'claude/Main' into claude/crypto-trading-bot-api-011CV4Qdjefuvx3aaSNGNu6B (9d2ae324)
+
 ## [v2.165.7] - 2025-11-13
 
 ### ✨ Features
