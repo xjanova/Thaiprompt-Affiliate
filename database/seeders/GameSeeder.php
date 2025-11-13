@@ -65,7 +65,10 @@ class GameSeeder extends Seeder
         ];
 
         foreach ($games as $gameData) {
-            Game::create($gameData);
+            Game::updateOrCreate(
+                ['slug' => $gameData['slug']],
+                $gameData
+            );
         }
 
         $this->command->info('✅ Game seeder completed successfully!');
