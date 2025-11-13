@@ -30,6 +30,20 @@ Route::get('/demo/space-shooter', function () {
     return view('demo-space-shooter');
 })->name('demo.space-shooter');
 
+// Games Routes
+Route::prefix('games')->name('games.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\GameController::class, 'index'])->name('index');
+    Route::get('/{slug}', [\App\Http\Controllers\GameController::class, 'show'])->name('show');
+
+    // API Routes for game progress
+    Route::middleware('auth')->group(function () {
+        Route::post('/{slug}/save-progress', [\App\Http\Controllers\GameController::class, 'saveProgress'])->name('save-progress');
+        Route::post('/{slug}/change-loadout', [\App\Http\Controllers\GameController::class, 'changeLoadout'])->name('change-loadout');
+    });
+
+    Route::get('/{slug}/leaderboard', [\App\Http\Controllers\GameController::class, 'leaderboard'])->name('leaderboard');
+});
+
 // Sitemap
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
