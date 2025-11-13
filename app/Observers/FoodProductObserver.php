@@ -4,9 +4,9 @@ namespace App\Observers;
 
 use App\Models\FoodProduct;
 use App\Services\BlockchainRecordService;
-use App\Jobs\GenerateProductQRCodeJob;
-use App\Jobs\RecordProductOnBlockchainJob;
-use App\Jobs\SendFarmerNotificationJob;
+use App\Jobs\FoodPassport\GenerateProductQRCodeJob;
+use App\Jobs\FoodPassport\RecordProductOnBlockchainJob;
+use App\Jobs\FoodPassport\SendFoodPassportNotificationJob;
 use Illuminate\Support\Facades\Log;
 
 class FoodProductObserver
@@ -37,7 +37,7 @@ class FoodProductObserver
 
         // Notify farmer
         if ($product->farmer_id) {
-            SendFarmerNotificationJob::dispatch(
+            SendFoodPassportNotificationJob::dispatch(
                 $product->farmer_id,
                 'product_created',
                 [

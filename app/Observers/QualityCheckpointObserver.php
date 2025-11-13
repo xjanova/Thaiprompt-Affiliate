@@ -4,9 +4,9 @@ namespace App\Observers;
 
 use App\Models\QualityCheckpoint;
 use App\Services\BlockchainRecordService;
-use App\Jobs\SendQualityAlertJob;
-use App\Jobs\IssueCertificationJob;
-use App\Jobs\RecordQualityOnBlockchainJob;
+use App\Jobs\FoodPassport\SendQualityAlertJob;
+use App\Jobs\FoodPassport\IssueCertificationJob;
+use App\Jobs\FoodPassport\RecordQualityOnBlockchainJob;
 use Illuminate\Support\Facades\Log;
 
 class QualityCheckpointObserver
