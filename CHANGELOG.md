@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.199.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1047 from xjanova/claude/fix-migration-timestamp-errors-011CV6J24Ff6cU3RdksdnUBm (ddd112b8)
+- fix: resolve migration timestamp and missing column errors (b30dfb38)
+### 🔧 Other Changes
+
+
 ## [v2.199.0] - 2025-11-13
 
 ### ✨ Features
