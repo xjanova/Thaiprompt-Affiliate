@@ -5,11 +5,20 @@ namespace App\Services;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\Laravel\Facades\Image;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use Exception;
 
 class ImageUploadService
 {
+    protected ImageManager $manager;
+
+    public function __construct()
+    {
+        // Initialize ImageManager with GD driver (Intervention Image v3)
+        $this->manager = new ImageManager(new Driver());
+    }
+
     /**
      * Upload and optimize image (saves as WebP for better performance)
      */
@@ -25,20 +34,18 @@ class ImageUploadService
             $filename = Str::random(40) . '.webp';
             $path = "{$directory}/{$filename}";
 
-            // Get image dimensions
-            $image = Image::make($file);
+            // Read and process image with Intervention Image v3
+            $image = $this->manager->read($file->getPathname());
 
-            // Resize if larger than max dimensions
+            // Resize if larger than max dimensions while maintaining aspect ratio
             if ($image->width() > $maxWidth || $image->height() > $maxHeight) {
-                $image->resize($maxWidth, $maxHeight, function ($constraint) {
-                    $constraint->aspectRatio();
-                    $constraint->upsize();
-                });
+                // Use scaleDown to resize proportionally
+                $image->scaleDown(width: $maxWidth, height: $maxHeight);
             }
 
             // Encode as WebP and save
-            $webp = $image->encode('webp', $quality);
-            Storage::disk('public')->put($path, (string) $webp);
+            $encoded = $image->toWebp(quality: $quality);
+            Storage::disk('public')->put($path, (string) $encoded);
 
             return $path;
         } catch (Exception $e) {
@@ -112,17 +119,19 @@ class ImageUploadService
         int $height = 300
     ): string {
         try {
-            $image = Image::make(Storage::disk('public')->get($sourcePath));
+            $imageData = Storage::disk('public')->get($sourcePath);
+            $image = $this->manager->read($imageData);
 
-            // Create thumbnail with crop
-            $image->fit($width, $height);
+            // Create thumbnail with crop (cover maintains aspect ratio and crops)
+            $image->cover($width, $height);
 
             // Generate thumbnail path
             $pathInfo = pathinfo($sourcePath);
             $thumbnailPath = $pathInfo['dirname'] . '/thumb_' . $pathInfo['basename'];
 
             // Save thumbnail
-            Storage::disk('public')->put($thumbnailPath, (string) $image->encode());
+            $encoded = $image->toWebp(quality: 85);
+            Storage::disk('public')->put($thumbnailPath, (string) $encoded);
 
             return $thumbnailPath;
         } catch (Exception $e) {
@@ -162,7 +171,7 @@ class ImageUploadService
 
         // Check image dimensions
         try {
-            $image = Image::make($file);
+            $image = $this->manager->read($file->getPathname());
             if ($image->width() < 100 || $image->height() < 100) {
                 $errors[] = 'ขนาดรูปภาพต้องมีขนาดอย่างน้อย 100x100 พิกเซล';
             }
@@ -179,15 +188,16 @@ class ImageUploadService
     public function convertToWebP(string $sourcePath): string
     {
         try {
-            $image = Image::make(Storage::disk('public')->get($sourcePath));
+            $imageData = Storage::disk('public')->get($sourcePath);
+            $image = $this->manager->read($imageData);
 
             // Generate WebP path
             $pathInfo = pathinfo($sourcePath);
             $webpPath = $pathInfo['dirname'] . '/' . $pathInfo['filename'] . '.webp';
 
             // Convert and save as WebP
-            $webp = $image->encode('webp', 85);
-            Storage::disk('public')->put($webpPath, (string) $webp);
+            $encoded = $image->toWebp(quality: 85);
+            Storage::disk('public')->put($webpPath, (string) $encoded);
 
             return $webpPath;
         } catch (Exception $e) {

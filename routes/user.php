@@ -10,6 +10,7 @@ use App\Http\Controllers\User\KycController;
 use App\Http\Controllers\User\TwoFactorController;
 use App\Http\Controllers\User\TicketController;
 use App\Http\Controllers\User\InvestmentController;
+use App\Http\Controllers\User\MarketplaceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -152,6 +153,69 @@ Route::prefix('crypto-wallet')->name('crypto-wallet.')->group(function () {
     Route::get('/price/{currency}', [CryptoWalletController::class, 'getPrice'])->name('price');
 });
 
+// TPIX Native Blockchain Wallet (User)
+Route::prefix('tpix')->name('tpix.')->group(function () {
+    // Wallet Dashboard
+    Route::get('/wallet', [\App\Http\Controllers\TPIXWalletController::class, 'index'])->name('wallet');
+
+    // Deposit
+    Route::get('/deposit', [\App\Http\Controllers\TPIXWalletController::class, 'deposit'])->name('deposit');
+
+    // Withdrawal
+    Route::get('/withdrawal', [\App\Http\Controllers\TPIXWalletController::class, 'withdrawal'])->name('withdrawal');
+    Route::post('/withdrawal', [\App\Http\Controllers\TPIXWalletController::class, 'processWithdrawal'])
+        ->middleware(['turnstile:tpix_withdrawal', 'two-factor:withdrawal'])
+        ->name('withdrawal.process');
+
+    // Transactions
+    Route::get('/transactions', [\App\Http\Controllers\TPIXWalletController::class, 'transactions'])->name('transactions');
+    Route::get('/transactions/{id}', [\App\Http\Controllers\TPIXWalletController::class, 'transactionDetails'])->name('transactions.details');
+
+    // Send TPIX (P2P transfer)
+    Route::get('/send', [\App\Http\Controllers\TPIXWalletController::class, 'send'])->name('send');
+    Route::post('/send', [\App\Http\Controllers\TPIXWalletController::class, 'processSend'])
+        ->middleware('two-factor:transfer')
+        ->name('send.process');
+});
+
+// TPIX Token Marketplace & Management (User)
+Route::prefix('tokens')->name('tokens.')->group(function () {
+    // Token Marketplace
+    Route::get('/', [\App\Http\Controllers\User\TokenController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\User\TokenController::class, 'show'])->name('show');
+
+    // My Tokens (Creator View)
+    Route::get('/my/tokens', [\App\Http\Controllers\User\TokenController::class, 'myTokens'])->name('my-tokens');
+    Route::get('/my/balances', [\App\Http\Controllers\User\TokenController::class, 'myBalances'])->name('my-balances');
+    Route::get('/my/portfolio', [\App\Http\Controllers\User\TokenController::class, 'portfolio'])->name('portfolio');
+
+    // Create Token
+    Route::get('/create', [\App\Http\Controllers\User\TokenController::class, 'create'])->name('create');
+    Route::post('/create', [\App\Http\Controllers\User\TokenController::class, 'store'])->name('store');
+
+    // Deploy Token
+    Route::post('/{id}/deploy', [\App\Http\Controllers\User\TokenController::class, 'deploy'])->name('deploy');
+
+    // Token Transfer
+    Route::get('/{id}/transfer', [\App\Http\Controllers\User\TokenController::class, 'showTransfer'])->name('show-transfer');
+    Route::post('/{id}/transfer', [\App\Http\Controllers\User\TokenController::class, 'transfer'])
+        ->middleware('two-factor:transfer')
+        ->name('transfer');
+
+    // Buy/Sell Tokens
+    Route::post('/{id}/buy', [\App\Http\Controllers\User\TokenController::class, 'buy'])->name('buy');
+    Route::post('/{id}/sell', [\App\Http\Controllers\User\TokenController::class, 'sell'])->name('sell');
+
+    // Referrals
+    Route::get('/referrals', [\App\Http\Controllers\User\TokenController::class, 'referrals'])->name('referrals');
+    Route::post('/referrals/use', [\App\Http\Controllers\User\TokenController::class, 'useReferralCode'])->name('referrals.use');
+    Route::post('/referrals/verify', [\App\Http\Controllers\User\TokenController::class, 'verifyReferralCode'])->name('referrals.verify');
+    Route::get('/referrals/my-codes', [\App\Http\Controllers\User\TokenController::class, 'myReferralCodes'])->name('referrals.my-codes');
+
+    // Token Transactions History
+    Route::get('/{id}/transactions', [\App\Http\Controllers\User\TokenController::class, 'transactions'])->name('transactions');
+});
+
 // Notifications
 Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/', [NotificationController::class, 'index'])->name('index');
@@ -235,6 +299,16 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
 Route::get('/wealth-guide', function () {
     return view('user.wealth-guide');
 })->name('wealth-guide');
+
+// Wealth Guide Pro - Enhanced version with 3D visualizations
+Route::get('/wealth-guide-pro', function () {
+    return view('user.wealth-guide-pro');
+})->name('wealth-guide-pro');
+
+// Marketplace Affiliate System (User)
+Route::prefix('marketplace')->name('marketplace.')->group(function () {
+    Route::get('/products', [MarketplaceController::class, 'products'])->name('products');
+});
 
 // Investment & Staking System (User)
 Route::prefix('investments')->name('investments.')->group(function () {

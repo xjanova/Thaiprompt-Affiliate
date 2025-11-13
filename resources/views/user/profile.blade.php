@@ -34,8 +34,8 @@
         avatarPreview: null,
         avatarFile: null,
         handleAvatarClick() {
-            // Click the form's file input
-            if (this.$refs.profilePictureInput) {
+            // Click the form's file input (only in edit mode)
+            if (this.editMode && this.$refs.profilePictureInput) {
                 this.$refs.profilePictureInput.click();
             }
         },
@@ -72,13 +72,21 @@
             if (this.$refs.profilePictureInput) {
                 this.$refs.profilePictureInput.value = '';
             }
+        },
+        toggleEditMode() {
+            this.editMode = !this.editMode;
+            // Clear avatar preview when exiting edit mode
+            if (!this.editMode) {
+                this.clearAvatar();
+            }
         }
     }">
         <div class="flex items-center gap-6 mb-6">
             <div class="relative group">
-                <div class="w-24 h-24 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-white text-4xl font-bold cursor-pointer transition-all hover:ring-4 hover:ring-indigo-300"
-                     @click="handleAvatarClick()"
-                     title="คลิกเพื่อเปลี่ยนรูปโปรไฟล์">
+                <div class="w-24 h-24 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-white text-4xl font-bold transition-all"
+                     :class="editMode ? 'cursor-pointer hover:ring-4 hover:ring-indigo-300' : ''"
+                     @click="editMode && handleAvatarClick()"
+                     :title="editMode ? 'คลิกเพื่อเปลี่ยนรูปโปรไฟล์' : ''">
                     <!-- Show preview if new image selected -->
                     <template x-if="avatarPreview">
                         <img :src="avatarPreview"
@@ -88,24 +96,21 @@
                     <!-- Show existing avatar if no preview -->
                     <template x-if="!avatarPreview">
                         <div class="w-full h-full flex items-center justify-center">
-                            @if($user->line_picture_url || $user->profile_picture)
-                                <img src="{{ $user->line_picture_url ?? asset('storage/' . $user->profile_picture) }}"
-                                     alt="{{ $user->name }}"
-                                     class="w-full h-full object-cover">
-                            @else
-                                <span>{{ strtoupper(substr($user->name, 0, 1)) }}</span>
-                            @endif
+                            <img src="{{ $user->profile_picture_url }}"
+                                 alt="{{ $user->name }}"
+                                 class="w-full h-full object-cover">
                         </div>
                     </template>
                 </div>
-                <!-- Camera overlay icon -->
-                <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full cursor-pointer"
+                <!-- Camera overlay icon (only in edit mode) -->
+                <div x-show="editMode"
+                     class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full cursor-pointer"
                      @click="handleAvatarClick()">
                     <i class="fas fa-camera text-white text-2xl"></i>
                 </div>
-                <!-- Clear button when preview is shown -->
+                <!-- Clear button when preview is shown (only in edit mode) -->
                 <button type="button"
-                        x-show="avatarPreview"
+                        x-show="avatarPreview && editMode"
                         @click.stop="clearAvatar()"
                         class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition shadow-lg"
                         title="ยกเลิก">
@@ -115,7 +120,7 @@
             <div class="flex-1">
                 <h2 class="text-2xl font-bold text-gray-900">{{ $user->name }}</h2>
                 <p class="text-gray-600">{{ $user->email }}</p>
-                <p class="text-xs text-gray-500 mt-1">
+                <p class="text-xs text-gray-500 mt-1" x-show="editMode">
                     <i class="fas fa-info-circle mr-1"></i>คลิกที่รูปโปรไฟล์เพื่อเปลี่ยนรูป
                 </p>
                 <div class="flex gap-2 mt-2 flex-wrap">
@@ -134,7 +139,7 @@
                     @endif
                 </div>
             </div>
-            <button @click="editMode = !editMode"
+            <button @click="toggleEditMode()"
                     class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
                 <span x-show="!editMode"><i class="fas fa-edit mr-2"></i>แก้ไขโปรไฟล์</span>
                 <span x-show="editMode"><i class="fas fa-times mr-2"></i>ยกเลิก</span>
@@ -313,7 +318,7 @@
                             class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
                         <i class="fas fa-save mr-2"></i>บันทึกข้อมูล
                     </button>
-                    <button type="button" @click="editMode = false"
+                    <button type="button" @click="toggleEditMode()"
                             class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium">
                         ยกเลิก
                     </button>

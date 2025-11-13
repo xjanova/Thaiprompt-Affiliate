@@ -2,6 +2,481 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.196.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1039 from xjanova/claude/add-tpix-currency-seeder-011CV6A9WPnYH2hoiZjNoGTR (a72cfd38)
+- fix: Add missing name field to GameSeeder (ceeb024a)
+### 🔧 Other Changes
+
+
+## [v2.196.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Complete DEX Smart Contracts (Uniswap V2 Style) (f2bf03f7)
+- feat: Add Complete TPIX Configuration & Storage Infrastructure (d7e4d874)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1038 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (bc38eac0)
+
+## [v2.195.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1037 from xjanova/claude/fix-migration-syntax-errors-011CV6FAZMk52Cj7XHF9mAwH (4743c806)
+- fix: correct migration syntax errors (44435f1f)
+### 🔧 Other Changes
+
+
+## [v2.195.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1031 from xjanova/claude/food-passport-planning-011CV5uuSkVwEQkW26qgdq1J (4427b147)
+- feat: Complete Food Passport Phase 4 - Optimization & TPIX Excellence (70562151)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.194.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1036 from xjanova/claude/refactor-mindmap-system-011CV6DA52BRDz3qsfgQeiHA (59e112a0)
+- feat: Add stunning 3D Interactive Presentation System 🚀 (d098a152)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.193.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1035 from xjanova/claude/add-card-payment-system-011CV5yHLrzedUT9ySCnDcmM (053df372)
+- docs: เพิ่มเอกสารรายการส่วนประกอบที่ยังขาดของระบบ NFC (5bbba01e)
+
+## [v2.193.0] - 2025-11-13
+
+### ✨ Features
+- feat: Implement Food Passport Phase 3 - Complete Backend System (7908f617)
+### 🐛 Bug Fixes
+- fix: Resolve API route conflicts between TPIX and Food Passport systems (a69c68e1)
+### 🔧 Other Changes
+- Merge pull request #1034 from xjanova/claude/resolve-api-conflicts-011CV6DhXxnSCEJqMSwNaqsL (c173d597)
+
+## [v2.192.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1033 from xjanova/claude/refactor-mindmap-system-011CV6DA52BRDz3qsfgQeiHA (7bc746c4)
+- feat: Add comprehensive Share functionality for Mind map (d8345ba0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.191.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1032 from xjanova/claude/refactor-mindmap-system-011CV6DA52BRDz3qsfgQeiHA (737d8aba)
+- feat: Refactor comprehensive Mind map with complete system coverage (2cd5aa9b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.190.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Complete DEX REST API with 10 Endpoints (37e6aaa2)
+- feat: Add Complete DEX Database Infrastructure & Models (19cfe0da)
+- feat: Add Critical Blockchain Infrastructure - Web3, Compiler & DEX (6fc96a71)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1030 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (10f441cb)
+- docs: Update TPIX Token System Documentation for DEX (77f2dda1)
+
+## [v2.189.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Caching Layer & Complete Documentation (5f9021e1)
+- feat: Add Complete REST API for TPIX Token System (916a4b10)
+- feat: Add Beautiful Token Management UI (Admin & User Views) (350bd9ef)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1029 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (d4f66851)
+
+## [v2.188.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1028 from xjanova/claude/food-passport-planning-011CV5uuSkVwEQkW26qgdq1J (3437c6bd)
+- feat: Implement Food Passport Phase 2 - API Controllers, IoT & Google Maps (88b2010e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.187.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1027 from xjanova/claude/food-passport-planning-011CV5uuSkVwEQkW26qgdq1J (ee0ff074)
+- feat: Implement Food Passport Phase 1 - Foundation (c6d52b4f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.186.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Admin Token Management Index View (5ac69997)
+- feat: Add TPIX Core Infrastructure - Validation, Jobs, Events & Policies (4edc7baf)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1026 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (a43062d9)
+
+## [v2.185.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Fix syntax error in tpix_staking migration (b2226cd2)
+- fix: Add missing slug field to GameSeeder (85cd3530)
+### 🔧 Other Changes
+- Merge pull request #1025 from xjanova/claude/add-tpix-currency-seeder-011CV6A9WPnYH2hoiZjNoGTR (640e02fc)
+
+## [v2.185.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1024 from xjanova/claude/add-tpix-currency-seeder-011CV6A9WPnYH2hoiZjNoGTR (1abaecdb)
+- feat: Add TPIXCurrencySeeder to DatabaseSeeder (08f9e411)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.184.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1023 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (dd912c65)
+- feat: Complete TPIX Token Ecosystem - Models, Controllers & Routes (9aee39ab)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.183.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1022 from xjanova/claude/fix-missing-route-definition-011CV67GqQsnhzxLYYXVThkR (90fa5776)
+- fix: Add missing demo route definitions for 3d-navigation and space-shooter (d15cb033)
+### 🔧 Other Changes
+
+
+## [v2.183.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Advanced TPIX Token System with Professional Features (bec52729)
+- feat: Add TPIX Wallet Management System (e33ad3df)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1021 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (ab231b63)
+
+## [v2.182.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1020 from xjanova/claude/update-profile-picture-011CV64RYZWZ8yRVdfQ4evUm (fc56e49a)
+- feat: Implement instant profile picture updates with cache busting (089bc3da)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.181.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1019 from xjanova/claude/add-card-payment-system-011CV5yHLrzedUT9ySCnDcmM (ba3055b7)
+- docs: เพิ่มเอกสาร Wiki ระบบ NFC Card Payment แบบครบวงจร (0ff41c40)
+
+## [v2.181.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1018 from xjanova/claude/audio-spectrum-visualizer-011CV5sjNLpkzVxApxCu8RGs (fbb9583b)
+- Add Audio Spectrum Visualizer to user dropdown menu (f51ec5e7)
+
+## [v2.181.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1017 from xjanova/claude/fix-missing-marketplace-route-011CV64MjfdqBN3pH8p5pcfA (edf14aeb)
+- fix: Add missing user.marketplace.products route and implementation (61e155bf)
+### 🔧 Other Changes
+
+
+## [v2.181.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1016 from xjanova/claude/update-api-011CV632cbr9WHgD4tAuwvnE (fd6e1865)
+- feat: Update API endpoint seeder with all 123 current endpoints (9bdf918b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.180.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1015 from xjanova/claude/upgrade-wealth-guide-011CV5t65UeodPCMdoZH1Sfm (ab6d8f33)
+- feat: Add Wealth Guide Pro with 3D visualizations (86acc59b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.179.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1014 from xjanova/claude/prompt-to-web-system-011CV5svmKVX2r7dHw1DRAXX (2e883678)
+- feat: Improve Prompt to Web with inline preview and complexity check (94908d7f)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.178.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1013 from xjanova/claude/qrcode-barcode-generator-011CV5soSfeBW39LqMvx2j5C (7c114db7)
+- Fix: QR Code not displaying - inline JavaScript (4bc14ecd)
+
+## [v2.178.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1012 from xjanova/claude/audio-spectrum-visualizer-011CV5sjNLpkzVxApxCu8RGs (2bf0839c)
+- Add Platform Wiki link to user dropdown menu (aafab1a8)
+- Add Audio Spectrum Visualizer link to navigation menu (3d117679)
+
+## [v2.178.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1011 from xjanova/claude/add-card-payment-system-011CV5yHLrzedUT9ySCnDcmM (0a562d91)
+- feat: เพิ่มระบบชำระเงินด้วยบัตร NFC แบบครบวงจร (a9dab528)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.177.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1010 from xjanova/claude/fix-blade-syntax-error-011CV5zhbqh9sNwbhtt99fA8 (65b38ea2)
+- Fix Blade syntax error in tarot reading view (0a279187)
+
+## [v2.177.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1009 from xjanova/claude/add-missing-seeders-011CV5zGPFhVdUW3Evj4z3Zh (d5481070)
+- Add missing seeders to DatabaseSeeder (e61ad1b3)
+
+## [v2.177.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1008 from xjanova/claude/edit-profile-avatar-011CV5GxjA16yDDD9AQ5M22X (6d7a3d55)
+- Restrict avatar upload to edit mode only (ae657153)
+
+## [v2.177.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1007 from xjanova/claude/edit-profile-avatar-011CV5GxjA16yDDD9AQ5M22X (d04da2ef)
+- Fix ImageUploadService for Intervention Image v3 compatibility (6c72d543)
+
+## [v2.177.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1006 from xjanova/claude/pos-fullscreen-mode-011CV5XBpro1uQ2n7UMXWfHZ (63028943)
+- fix: Improve fullscreen button visibility (77d0a65a)
+### 🔧 Other Changes
+
+
+## [v2.177.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1005 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (7f785b71)
+- feat: Add TPIX Native Blockchain System (551276bd)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.176.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1004 from xjanova/claude/upgrade-tarot-3d-system-011CV5ta9r7KGcE4weUY4w69 (e3987d50)
+- docs: Add comprehensive 3D WebGL Tarot system documentation (537907e5)
+
+## [v2.176.4] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #997 from xjanova/claude/game-category-update-011CV5repfM2vwdh9JPzteqt (40e16d7c)
+- Merge branch 'claude/Main' into claude/game-category-update-011CV5repfM2vwdh9JPzteqt (a53a22d2)
+- Merge branch 'claude/Main' into claude/game-category-update-011CV5repfM2vwdh9JPzteqt (fc93b517)
+- Add missing views and links for Game Management System (5cd68fa7)
+- Add dynamic Game Management System with Admin Panel (170cf35e)
+- Add 3D OpenGL Game Selector page with stunning visual effects (5d04d1fd)
+
+## [v2.176.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1003 from xjanova/claude/food-passport-planning-011CV5uuSkVwEQkW26qgdq1J (b13fe62d)
+- docs: Add comprehensive Food Passport system planning documentation (cdc2b34e)
+
+## [v2.176.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1002 from xjanova/claude/demo-3d-navigation-011CV5pPyn8tcsYFEzZ3qtpa (52652fc7)
+- Merge branch claude/Main into demo-3d-navigation branch (1870c278)
+- Remove 3D navigation demo (f035c0bb)
+
+## [v2.176.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1001 from xjanova/claude/add-tetris-game-011CV5uGgs2T4yMgMTVakq36 (dbfd5751)
+- docs: Add comprehensive Tetris game documentation to Wiki (246d786b)
+- Add Tetris game with top score tracking (d4bc08b5)
+
+## [v2.176.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1000 from xjanova/claude/prompt-to-web-system-011CV5svmKVX2r7dHw1DRAXX (41be7959)
+- feat: Add Prompt to Web AI-powered page generation system (58ab2220)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v2.175.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #999 from xjanova/claude/add-2d-snooker-game-011CV5tFLneR82fNEZar9pYt (5a8315f3)
+- Add 2D Snooker game with multiple game modes (26cc4b7d)
+
+## [v2.175.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #998 from xjanova/claude/3d-web-typography-011CV5nJc539Q2xvUV7ERZSM (5fc07ce0)
+- Add Power-ups, Tournaments, and Season Leaderboard systems (bc5b6b77)
+- Add engaging Daily Rewards & Missions system (74bc9288)
+- Add complete game economy and multiplayer infrastructure (661e13f0)
+- Add complete Snake.io game with skins and shop system (ee012980)
+- Add complete game system infrastructure (6537ecf4)
+
+## [v2.175.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #996 from xjanova/claude/upgrade-tarot-3d-system-011CV5ta9r7KGcE4weUY4w69 (7452a9da)
+- feat: Upgrade Tarot system to 3D WebGL with Three.js (52bf9595)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge branch 'claude/Main' into claude/upgrade-tarot-3d-system-011CV5ta9r7KGcE4weUY4w69 (46e7f26d)
+
+## [v2.174.6] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #995 from xjanova/claude/qrcode-barcode-generator-011CV5soSfeBW39LqMvx2j5C (fe5cde6b)
+- Upgrade QR Code & Barcode Generator to Pro Level 🚀 (5cd3ad43)
+- Add QR Code & Barcode Generator feature (cab78736)
+
+## [v2.174.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #994 from xjanova/claude/audio-spectrum-visualizer-011CV5sjNLpkzVxApxCu8RGs (e7fc3c60)
+- Enhance Audio Spectrum Visualizer with 15+ new features (14a01bfc)
+- Add comprehensive Audio Spectrum Visualizer with 2D and 3D modes (210f0f17)
+
 ## [v2.174.4] - 2025-11-13
 
 ### ✨ Features

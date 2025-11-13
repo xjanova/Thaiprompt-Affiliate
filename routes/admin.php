@@ -72,6 +72,9 @@ use App\Http\Controllers\Admin\PageBuilderSectionController;
 use App\Http\Controllers\Admin\SystemResetController;
 use App\Http\Controllers\Admin\ApiEndpointController;
 use App\Http\Controllers\Admin\ApiKeyController;
+use App\Http\Controllers\Admin\NFCCardController;
+use App\Http\Controllers\Admin\NFCReaderController;
+use App\Http\Controllers\Admin\NFCTransactionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -302,6 +305,53 @@ Route::prefix('payment-gateways')->name('payment-gateways.')->group(function () 
     Route::post('/{paymentGateway}/toggle', [PaymentGatewayController::class, 'toggle'])->name('toggle');
     Route::post('/{paymentGateway}/test', [PaymentGatewayController::class, 'testConnection'])->name('test');
     Route::post('/update-order', [PaymentGatewayController::class, 'updateOrder'])->name('update-order');
+});
+
+// NFC Card Management
+Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
+    Route::get('/', [NFCCardController::class, 'index'])->name('index');
+    Route::get('/create', [NFCCardController::class, 'create'])->name('create');
+    Route::post('/', [NFCCardController::class, 'store'])->name('store');
+    Route::get('/{nfcCard}', [NFCCardController::class, 'show'])->name('show');
+    Route::get('/{nfcCard}/edit', [NFCCardController::class, 'edit'])->name('edit');
+    Route::put('/{nfcCard}', [NFCCardController::class, 'update'])->name('update');
+    Route::delete('/{nfcCard}', [NFCCardController::class, 'destroy'])->name('destroy');
+    Route::get('/{nfcCard}/pair', [NFCCardController::class, 'pairForm'])->name('pair-form');
+    Route::post('/{nfcCard}/pair', [NFCCardController::class, 'pair'])->name('pair');
+    Route::post('/{nfcCard}/unpair', [NFCCardController::class, 'unpair'])->name('unpair');
+    Route::post('/{nfcCard}/activate', [NFCCardController::class, 'activate'])->name('activate');
+    Route::post('/{nfcCard}/deactivate', [NFCCardController::class, 'deactivate'])->name('deactivate');
+    Route::post('/{nfcCard}/block', [NFCCardController::class, 'block'])->name('block');
+    Route::post('/{nfcCard}/unblock', [NFCCardController::class, 'unblock'])->name('unblock');
+    Route::get('/{nfcCard}/topup', [NFCCardController::class, 'topUpForm'])->name('topup-form');
+    Route::post('/{nfcCard}/topup', [NFCCardController::class, 'topUp'])->name('topup');
+    Route::post('/read', [NFCCardController::class, 'read'])->name('read');
+    Route::get('/export', [NFCCardController::class, 'export'])->name('export');
+});
+
+// NFC Reader Management
+Route::prefix('nfc-readers')->name('nfc-readers.')->group(function () {
+    Route::get('/', [NFCReaderController::class, 'index'])->name('index');
+    Route::get('/create', [NFCReaderController::class, 'create'])->name('create');
+    Route::post('/', [NFCReaderController::class, 'store'])->name('store');
+    Route::get('/{nfcReader}', [NFCReaderController::class, 'show'])->name('show');
+    Route::get('/{nfcReader}/edit', [NFCReaderController::class, 'edit'])->name('edit');
+    Route::put('/{nfcReader}', [NFCReaderController::class, 'update'])->name('update');
+    Route::delete('/{nfcReader}', [NFCReaderController::class, 'destroy'])->name('destroy');
+    Route::post('/{nfcReader}/activate', [NFCReaderController::class, 'activate'])->name('activate');
+    Route::post('/{nfcReader}/deactivate', [NFCReaderController::class, 'deactivate'])->name('deactivate');
+    Route::post('/{nfcReader}/maintenance', [NFCReaderController::class, 'maintenance'])->name('maintenance');
+    Route::post('/{nfcReader}/heartbeat', [NFCReaderController::class, 'heartbeat'])->name('heartbeat');
+    Route::get('/{nfcReader}/status', [NFCReaderController::class, 'status'])->name('status');
+});
+
+// NFC Transaction Management
+Route::prefix('nfc-transactions')->name('nfc-transactions.')->group(function () {
+    Route::get('/', [NFCTransactionController::class, 'index'])->name('index');
+    Route::get('/{nfcTransaction}', [NFCTransactionController::class, 'show'])->name('show');
+    Route::get('/export', [NFCTransactionController::class, 'export'])->name('export');
+    Route::get('/statistics/chart', [NFCTransactionController::class, 'statistics'])->name('statistics');
+    Route::get('/feed/realtime', [NFCTransactionController::class, 'feed'])->name('feed');
 });
 
 // Language Settings
@@ -1366,6 +1416,67 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateSettings'])->name('settings.update');
 
+    // TPIX Native Blockchain Management
+    Route::prefix('tpix')->name('tpix.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [\App\Http\Controllers\Admin\TPIXController::class, 'dashboard'])->name('dashboard');
+
+        // Network Status
+        Route::get('/network-status', [\App\Http\Controllers\Admin\TPIXController::class, 'networkStatus'])->name('network-status');
+
+        // Wallets
+        Route::get('/wallets', [\App\Http\Controllers\Admin\TPIXController::class, 'wallets'])->name('wallets');
+
+        // Transactions
+        Route::get('/transactions', [\App\Http\Controllers\Admin\TPIXController::class, 'transactions'])->name('transactions');
+        Route::get('/transactions/{id}', [\App\Http\Controllers\Admin\TPIXController::class, 'transactionDetails'])->name('transactions.details');
+
+        // Settings
+        Route::get('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'settings'])->name('settings');
+        Route::post('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'updateSettings'])->name('settings.update');
+
+        // API endpoint for checking blockchain connection
+        Route::get('/check-connection', [\App\Http\Controllers\Admin\TPIXController::class, 'checkConnection'])->name('check-connection');
+    });
+
+    // TPIX Token Management
+    Route::prefix('tokens')->name('tokens.')->group(function () {
+        // Token List & Overview
+        Route::get('/', [\App\Http\Controllers\Admin\TokenManagementController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\TokenManagementController::class, 'show'])->name('show');
+
+        // Token Approval & Verification
+        Route::post('/{id}/approve', [\App\Http\Controllers\Admin\TokenManagementController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [\App\Http\Controllers\Admin\TokenManagementController::class, 'reject'])->name('reject');
+        Route::post('/{id}/verify', [\App\Http\Controllers\Admin\TokenManagementController::class, 'verify'])->name('verify');
+        Route::post('/{id}/feature', [\App\Http\Controllers\Admin\TokenManagementController::class, 'feature'])->name('feature');
+        Route::post('/{id}/unfeature', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unfeature'])->name('unfeature');
+
+        // Coin Control Operations
+        Route::post('/{id}/mint', [\App\Http\Controllers\Admin\TokenManagementController::class, 'mint'])->name('mint');
+        Route::post('/{id}/burn', [\App\Http\Controllers\Admin\TokenManagementController::class, 'burn'])->name('burn');
+        Route::post('/{id}/freeze-address', [\App\Http\Controllers\Admin\TokenManagementController::class, 'freezeAddress'])->name('freeze-address');
+        Route::post('/{id}/unfreeze-address', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unfreezeAddress'])->name('unfreeze-address');
+        Route::post('/{id}/pause', [\App\Http\Controllers\Admin\TokenManagementController::class, 'pause'])->name('pause');
+        Route::post('/{id}/unpause', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unpause'])->name('unpause');
+
+        // CoinMarketCap Integration
+        Route::post('/{id}/sync-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'syncWithCMC'])->name('sync-cmc');
+        Route::post('/{id}/link-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'linkCMC'])->name('link-cmc');
+        Route::get('/{id}/cmc-logs', [\App\Http\Controllers\Admin\TokenManagementController::class, 'cmcLogs'])->name('cmc-logs');
+
+        // Import from CoinMarketCap
+        Route::get('/import-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'showImportCMC'])->name('import-cmc');
+        Route::post('/import-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'importFromCMC'])->name('import-cmc.store');
+
+        // Control Actions History
+        Route::get('/{id}/control-actions', [\App\Http\Controllers\Admin\TokenManagementController::class, 'controlActions'])->name('control-actions');
+
+        // Token Settings
+        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TokenManagementController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\Admin\TokenManagementController::class, 'update'])->name('update');
+    });
+
     // HD Wallet Management (Hierarchical Deterministic Wallets)
     Route::prefix('hd-wallets')->name('hd-wallets.')->group(function () {
         // Overview
@@ -1683,6 +1794,19 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
 
     // Usage Logs & Analytics
     Route::get('/usage-logs', [AiGenAdminController::class, 'usageLogs'])->name('usage-logs');
+});
+
+// Game Management Routes
+Route::prefix('games')->name('games.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\GameController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Admin\GameController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Admin\GameController::class, 'store'])->name('store');
+    Route::get('/{game}', [App\Http\Controllers\Admin\GameController::class, 'show'])->name('show');
+    Route::get('/{game}/edit', [App\Http\Controllers\Admin\GameController::class, 'edit'])->name('edit');
+    Route::put('/{game}', [App\Http\Controllers\Admin\GameController::class, 'update'])->name('update');
+    Route::delete('/{game}', [App\Http\Controllers\Admin\GameController::class, 'destroy'])->name('destroy');
+    Route::patch('/{game}/toggle-active', [App\Http\Controllers\Admin\GameController::class, 'toggleActive'])->name('toggle-active');
+    Route::post('/update-order', [App\Http\Controllers\Admin\GameController::class, 'updateOrder'])->name('update-order');
 });
 
 // Bot Automation System Routes

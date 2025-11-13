@@ -136,6 +136,17 @@
                         @endguest
                     </div>
 
+                    <!-- 3D Presentation CTA -->
+                    <div class="flex justify-center mb-8">
+                        <a href="{{ route('presentation') }}" class="group relative inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 text-white font-bold text-base rounded-xl shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 transform hover:scale-105 overflow-hidden">
+                            <div class="absolute inset-0 bg-gradient-to-r from-purple-500 via-blue-500 to-cyan-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <span class="relative z-10">🎮 สำรวจด้วย 3D Interactive Presentation</span>
+                            <svg class="w-5 h-5 ml-2 relative z-10 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                            </svg>
+                        </a>
+                    </div>
+
                     <!-- Trust Badges -->
                     <div class="flex flex-wrap items-center justify-center gap-8 text-white/90">
                         <div class="flex items-center gap-3 bg-white/10 backdrop-blur-sm px-5 py-3 rounded-full border border-white/20">

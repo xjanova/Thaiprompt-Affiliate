@@ -8,6 +8,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/crypto/app.js',
+                'resources/js/wealth-guide-pro.js',
             ],
             refresh: true,
         }),
@@ -19,11 +20,12 @@ export default defineConfig({
                     'crypto': ['ethers'],
                     'charts': ['chart.js'],
                     'animations': ['gsap'],
+                    'threejs': ['three'],
                 }
             }
         }
     },
     optimizeDeps: {
-        include: ['ethers', 'chart.js', 'gsap'],
+        include: ['ethers', 'chart.js', 'gsap', 'three'],
     },
 });

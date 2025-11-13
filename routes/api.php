@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\TreeController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
+use App\Http\Controllers\Api\NFCCardApiController;
 use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\AiGenController;
 use App\Http\Controllers\Api\AiGenPackageController;
@@ -15,6 +16,11 @@ use App\Http\Controllers\Api\VideoRewardController;
 use App\Http\Controllers\Api\VideoWatchController;
 use App\Http\Controllers\Api\VideoQuestController;
 use App\Http\Controllers\Api\CoinExchangeController;
+use App\Http\Controllers\Api\FoodPassportController;
+use App\Http\Controllers\Api\TraceabilityController;
+use App\Http\Controllers\Api\QualityController;
+use App\Http\Controllers\Api\CarbonCreditController;
+use App\Http\Controllers\Api\CertificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -138,6 +144,33 @@ Route::prefix('v1')->group(function () {
             Route::get('/prices', [CryptoWalletApiController::class, 'getPrices']);
             Route::get('/transaction/{txHash}', [CryptoWalletApiController::class, 'checkTransaction']);
             Route::get('/gas-price', [CryptoWalletApiController::class, 'getGasPrice']);
+        });
+
+        // NFC Card API
+        Route::prefix('nfc')->group(function () {
+            Route::get('/cards', [NFCCardApiController::class, 'index']);
+            Route::get('/cards/{cardId}', [NFCCardApiController::class, 'show']);
+            Route::post('/cards/verify', [NFCCardApiController::class, 'verify']);
+            Route::post('/cards/payment', [NFCCardApiController::class, 'processPayment']);
+            Route::get('/cards/{cardId}/transactions', [NFCCardApiController::class, 'transactions']);
+            Route::get('/cards/{cardId}/balance', [NFCCardApiController::class, 'balance']);
+            Route::get('/readers/nearby', [NFCCardApiController::class, 'nearbyReaders']);
+        });
+
+        // TPIX Native Blockchain API
+        Route::prefix('tpix')->group(function () {
+            Route::get('/network-info', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getNetworkInfo']);
+            Route::get('/balance', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getBalance']);
+            Route::get('/block-number', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getBlockNumber']);
+            Route::get('/transaction', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getTransaction']);
+            Route::get('/transaction-receipt', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getTransactionReceipt']);
+            Route::post('/send-raw-transaction', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'sendRawTransaction']);
+            Route::post('/estimate-gas', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'estimateGas']);
+            Route::get('/gas-price', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getGasPrice']);
+            Route::get('/transaction-count', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'getTransactionCount']);
+            Route::post('/validate-address', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'validateAddress']);
+            Route::post('/to-wei', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'toWei']);
+            Route::post('/from-wei', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'fromWei']);
         });
 
         // App Configuration (protected)
@@ -393,6 +426,87 @@ Route::prefix('webhook/chatbot')->name('api.webhook.chatbot.')->group(function (
 
 /*
 |--------------------------------------------------------------------------
+| TPIX Token System API Routes
+|--------------------------------------------------------------------------
+| Complete REST API for TPIX Token Management
+| - Token marketplace
+| - Token creation & deployment
+| - Trading (buy/sell)
+| - Portfolio management
+| - Staking
+| - Referrals
+*/
+
+Route::prefix('v1/tpix')->name('api.tpix.')->group(function () {
+
+    // Public endpoints
+    Route::get('/tokens', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'index'])->name('tokens.index');
+    Route::get('/tokens/{id}', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'show'])->name('tokens.show');
+    Route::get('/tokens/{id}/transactions', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'transactions'])->name('tokens.transactions');
+
+    // Protected endpoints
+    Route::middleware('auth:sanctum')->group(function () {
+
+        // Token Management
+        Route::post('/tokens', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'store'])
+            ->middleware('rate_limit_token_operations:create')
+            ->name('tokens.store');
+        Route::post('/tokens/{id}/deploy', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'deploy'])
+            ->middleware(['check_token_ownership', 'rate_limit_token_operations:deploy'])
+            ->name('tokens.deploy');
+
+        // Token Trading
+        Route::post('/tokens/{id}/transfer', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'transfer'])
+            ->middleware(['verify_token_deployment', 'rate_limit_token_operations:transfer'])
+            ->name('tokens.transfer');
+        Route::post('/tokens/{id}/buy', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'buy'])
+            ->middleware(['verify_token_deployment', 'rate_limit_token_operations:trade'])
+            ->name('tokens.buy');
+        Route::post('/tokens/{id}/sell', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'sell'])
+            ->middleware(['verify_token_deployment', 'rate_limit_token_operations:trade'])
+            ->name('tokens.sell');
+
+        // Portfolio
+        Route::get('/portfolio', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'portfolio'])->name('portfolio');
+        Route::get('/balances', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'balances'])->name('balances');
+    });
+
+    // DEX Routes
+    Route::prefix('dex')->name('dex.')->group(function () {
+        // Public endpoints
+        Route::get('/pools', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'pools'])->name('pools');
+        Route::get('/pools/{id}', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'poolDetails'])->name('pools.show');
+        Route::get('/statistics', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'statistics'])->name('statistics');
+
+        // Protected endpoints (requires authentication)
+        Route::middleware('auth:sanctum')->group(function () {
+            // Quote
+            Route::post('/quote', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'quote'])
+                ->name('quote');
+
+            // Swap
+            Route::post('/swap', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'swap'])
+                ->middleware('rate_limit_token_operations:trade')
+                ->name('swap');
+
+            // Liquidity
+            Route::post('/liquidity/add', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'addLiquidity'])
+                ->middleware('rate_limit_token_operations:trade')
+                ->name('liquidity.add');
+
+            Route::post('/liquidity/remove', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'removeLiquidity'])
+                ->middleware('rate_limit_token_operations:trade')
+                ->name('liquidity.remove');
+
+            // User positions & history
+            Route::get('/my/positions', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'myPositions'])->name('my.positions');
+            Route::get('/my/swaps', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'mySwaps'])->name('my.swaps');
+        });
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
 | Food Passport API Routes
 |--------------------------------------------------------------------------
 | ระบบ Food Passport - ตรวจสอบคุณภาพและความปลอดภัยอาหาร
@@ -403,12 +517,6 @@ Route::prefix('webhook/chatbot')->name('api.webhook.chatbot.')->group(function (
 | - Google Maps Integration
 | - Blockchain Verification
 */
-
-use App\Http\Controllers\Api\FoodPassportController;
-use App\Http\Controllers\Api\TraceabilityController;
-use App\Http\Controllers\Api\QualityController;
-use App\Http\Controllers\Api\CarbonCreditController;
-use App\Http\Controllers\Api\CertificationController;
 
 // Public Food Passport Routes (No Auth)
 Route::prefix('v1/food-passport')->name('api.food-passport.')->group(function () {

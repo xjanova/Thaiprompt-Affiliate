@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>3D Navigation Demo - Thai Prompt</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <style>
         * {
@@ -15,325 +16,224 @@
 
         body {
             font-family: 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: white;
+            overflow: hidden;
             min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 1200px;
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            margin: 0 auto;
+            height: 100%;
+            z-index: 1;
         }
 
-        .title {
+        .ui-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .header {
             text-align: center;
-            color: white;
-            margin-bottom: 50px;
-            animation: fadeInDown 1s ease-out;
-        }
-
-        .title h1 {
-            font-size: 3rem;
-            font-weight: 900;
-            margin-bottom: 10px;
-            text-shadow: 2px 2px 10px rgba(0,0,0,0.3);
-        }
-
-        .title p {
-            font-size: 1.2rem;
-            opacity: 0.9;
-        }
-
-        .blocks-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 40px;
-            perspective: 1500px;
+            margin: 20px;
             padding: 20px;
-        }
-
-        .block-3d {
-            position: relative;
-            width: 100%;
-            height: 250px;
-            transform-style: preserve-3d;
-            transition: transform 0.5s ease;
-            animation: floatIn 1s ease-out forwards;
-            cursor: pointer;
-            text-decoration: none;
-            opacity: 1;
-        }
-
-        .block-3d:nth-child(1) { animation-delay: 0.1s; }
-        .block-3d:nth-child(2) { animation-delay: 0.2s; }
-        .block-3d:nth-child(3) { animation-delay: 0.3s; }
-        .block-3d:nth-child(4) { animation-delay: 0.4s; }
-        .block-3d:nth-child(5) { animation-delay: 0.5s; }
-        .block-3d:nth-child(6) { animation-delay: 0.6s; }
-
-        .block-3d:hover {
-            transform: translateY(-20px) rotateX(10deg) rotateY(10deg) scale(1.05) !important;
-        }
-
-        .block-inner {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            transform-style: preserve-3d;
-            transform: translateZ(30px);
-        }
-
-        .block-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
             border-radius: 20px;
-            padding: 30px;
-            color: white;
-            font-weight: bold;
-            backface-visibility: hidden;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: auto;
         }
 
-        .block-front {
-            transform: translateZ(30px);
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
         }
 
-        .block-top {
-            transform: rotateX(90deg) translateZ(30px);
-            opacity: 0.8;
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 15px 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: auto;
         }
 
-        .block-right {
-            transform: rotateY(90deg) translateZ(280px);
-            opacity: 0.6;
+        .controls p {
+            margin: 5px 0;
+            font-size: 0.9rem;
         }
-
-        .block-icon {
-            font-size: 4rem;
-            margin-bottom: 15px;
-            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.3));
-        }
-
-        .block-title {
-            font-size: 1.8rem;
-            margin-bottom: 8px;
-            text-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-        }
-
-        .block-subtitle {
-            font-size: 1rem;
-            opacity: 0.9;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
-        }
-
-        /* Colors */
-        .bg-purple { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .bg-blue { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-        .bg-pink { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-        .bg-orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-        .bg-green { background: linear-gradient(135deg, #30cfd0 0%, #330867 100%); }
-        .bg-red { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); }
 
         .back-button {
-            margin-top: 50px;
-            text-align: center;
-        }
-
-        .back-button a {
-            display: inline-block;
-            padding: 15px 40px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 1.1rem;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
             transition: all 0.3s ease;
+            pointer-events: auto;
+            z-index: 20;
         }
 
-        .back-button a:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: scale(1.05);
-        }
-
-        @keyframes fadeInDown {
-            from {
-                opacity: 0;
-                transform: translateY(-50px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes floatIn {
-            from {
-                opacity: 0;
-                transform: translateY(100px) scale(0.5);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .title h1 {
-                font-size: 2rem;
-            }
-            .blocks-grid {
-                grid-template-columns: 1fr;
-                gap: 30px;
-            }
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
     </style>
 </head>
 <body>
+    <div id="canvas-container"></div>
 
-    <div class="container">
-        <!-- Title -->
-        <div class="title">
-            <h1>🎮 3D Navigation Demo</h1>
-            <p>คลิกที่ก้อน 3D เพื่อไปยังหน้าต่างๆ</p>
+    <div class="ui-overlay">
+        <a href="{{ route('demo.game-selector') }}" class="back-button">← กลับ</a>
+
+        <div class="header">
+            <h1>🧭 3D Navigation Demo</h1>
+            <p>สำรวจโลก 3D ด้วยระบบนำทางที่ทันสมัย</p>
         </div>
 
-        <!-- 3D Blocks Grid -->
-        <div class="blocks-grid">
-
-            <!-- Block 1: Dashboard -->
-            <a href="/user/dashboard" class="block-3d">
-                <div class="block-inner">
-                    <div class="block-face block-front bg-purple">
-                        <div class="block-icon">🏠</div>
-                        <div class="block-title">Dashboard</div>
-                        <div class="block-subtitle">แดชบอร์ด</div>
-                    </div>
-                    <div class="block-face block-top bg-purple"></div>
-                    <div class="block-face block-right bg-purple"></div>
-                </div>
-            </a>
-
-            <!-- Block 2: Shop -->
-            <a href="/shop" class="block-3d">
-                <div class="block-inner">
-                    <div class="block-face block-front bg-blue">
-                        <div class="block-icon">🛍️</div>
-                        <div class="block-title">Shop</div>
-                        <div class="block-subtitle">ร้านค้า</div>
-                    </div>
-                    <div class="block-face block-top bg-blue"></div>
-                    <div class="block-face block-right bg-blue"></div>
-                </div>
-            </a>
-
-            <!-- Block 3: Organization -->
-            <a href="/user/organization" class="block-3d">
-                <div class="block-inner">
-                    <div class="block-face block-front bg-pink">
-                        <div class="block-icon">👥</div>
-                        <div class="block-title">Organization</div>
-                        <div class="block-subtitle">องค์กร</div>
-                    </div>
-                    <div class="block-face block-top bg-pink"></div>
-                    <div class="block-face block-right bg-pink"></div>
-                </div>
-            </a>
-
-            <!-- Block 4: Hotels -->
-            <a href="/hotels" class="block-3d">
-                <div class="block-inner">
-                    <div class="block-face block-front bg-orange">
-                        <div class="block-icon">🏨</div>
-                        <div class="block-title">Hotels</div>
-                        <div class="block-subtitle">โรงแรม</div>
-                    </div>
-                    <div class="block-face block-top bg-orange"></div>
-                    <div class="block-face block-right bg-orange"></div>
-                </div>
-            </a>
-
-            <!-- Block 5: Trading Bot -->
-            <a href="/trading-bot" class="block-3d">
-                <div class="block-inner">
-                    <div class="block-face block-front bg-green">
-                        <div class="block-icon">📈</div>
-                        <div class="block-title">Trading Bot</div>
-                        <div class="block-subtitle">บอทเทรด</div>
-                    </div>
-                    <div class="block-face block-top bg-green"></div>
-                    <div class="block-face block-right bg-green"></div>
-                </div>
-            </a>
-
-            <!-- Block 6: Marketplace -->
-            <a href="/marketplace" class="block-3d">
-                <div class="block-inner">
-                    <div class="block-face block-front bg-red">
-                        <div class="block-icon">🛒</div>
-                        <div class="block-title">Marketplace</div>
-                        <div class="block-subtitle">ตลาดกลาง</div>
-                    </div>
-                    <div class="block-face block-top bg-red"></div>
-                    <div class="block-face block-right bg-red"></div>
-                </div>
-            </a>
-
-        </div>
-
-        <!-- Back Button -->
-        <div class="back-button">
-            <a href="/">← กลับหน้าหลัก</a>
+        <div class="controls">
+            <p>🖱️ ลากเมาส์เพื่อหมุนกล้อง</p>
+            <p>⌨️ ใช้ WASD หรือลูกศรเพื่อเคลื่อนที่</p>
+            <p>🔍 Scroll เพื่อซูมเข้า-ออก</p>
         </div>
     </div>
 
     <script>
-        // Wait for page to fully load
-        window.addEventListener('load', function() {
-            // Simple mouse parallax effect (only after animations complete)
-            setTimeout(() => {
-                document.addEventListener('mousemove', (e) => {
-                    const blocks = document.querySelectorAll('.block-3d');
-                    const mouseX = (e.clientX / window.innerWidth) - 0.5;
-                    const mouseY = (e.clientY / window.innerHeight) - 0.5;
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+        scene.fog = new THREE.Fog(0x0a0a1a, 10, 50);
 
-                    blocks.forEach((block, index) => {
-                        if (!block.matches(':hover')) {
-                            const depth = (index + 1) * 5;
-                            const moveX = mouseX * depth;
-                            const moveY = mouseY * depth;
-                            block.style.transform = `translateX(${moveX}px) translateY(${moveY}px)`;
-                        }
-                    });
-                });
-            }, 1500); // Wait for all animations to complete
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 2, 5);
 
-            // Click animation
-            document.querySelectorAll('.block-3d').forEach(block => {
-                block.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    this.style.transform = 'scale(0.9)';
-                    this.style.opacity = '0.5';
-                    setTimeout(() => {
-                        window.location.href = this.href;
-                    }, 300);
-                });
-            });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        // Ground
+        const groundGeometry = new THREE.PlaneGeometry(50, 50);
+        const groundMaterial = new THREE.MeshStandardMaterial({
+            color: 0x1a1a2e,
+            roughness: 0.8,
+            metalness: 0.2
         });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Create grid
+        const gridHelper = new THREE.GridHelper(50, 50, 0x667eea, 0x333344);
+        scene.add(gridHelper);
+
+        // Create some 3D objects
+        const objects = [];
+        for (let i = 0; i < 10; i++) {
+            const geometry = new THREE.BoxGeometry(1, 2, 1);
+            const material = new THREE.MeshStandardMaterial({
+                color: Math.random() * 0xffffff,
+                roughness: 0.5,
+                metalness: 0.5
+            });
+            const cube = new THREE.Mesh(geometry, material);
+
+            cube.position.x = (Math.random() - 0.5) * 20;
+            cube.position.y = 1;
+            cube.position.z = (Math.random() - 0.5) * 20;
+
+            cube.castShadow = true;
+            cube.receiveShadow = true;
+
+            scene.add(cube);
+            objects.push(cube);
+        }
+
+        // Camera controls
+        let mouseX = 0, mouseY = 0;
+        let targetX = 0, targetY = 0;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        });
+
+        // Keyboard controls
+        const keys = {};
+        const moveSpeed = 0.1;
+
+        document.addEventListener('keydown', (e) => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', (e) => keys[e.key.toLowerCase()] = false);
+
+        function updateCameraPosition() {
+            if (keys['w'] || keys['arrowup']) camera.position.z -= moveSpeed;
+            if (keys['s'] || keys['arrowdown']) camera.position.z += moveSpeed;
+            if (keys['a'] || keys['arrowleft']) camera.position.x -= moveSpeed;
+            if (keys['d'] || keys['arrowright']) camera.position.x += moveSpeed;
+
+            camera.position.y = Math.max(camera.position.y, 1);
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate objects
+            objects.forEach((obj, index) => {
+                obj.rotation.y += 0.01;
+                obj.position.y = 1 + Math.sin(Date.now() * 0.001 + index) * 0.3;
+            });
+
+            // Update camera
+            updateCameraPosition();
+            targetX = mouseX * 0.3;
+            targetY = mouseY * 0.3;
+            camera.rotation.y += (targetX - camera.rotation.y) * 0.05;
+            camera.rotation.x += (targetY - camera.rotation.x) * 0.05;
+
+            renderer.render(scene, camera);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
     </script>
 </body>
 </html>

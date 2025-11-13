@@ -92,14 +92,35 @@ class User extends Authenticatable
 
     /**
      * Get profile picture URL or default avatar
+     * Priority: LINE picture > Uploaded picture > Default avatar
      */
     public function getProfilePictureUrlAttribute(): string
     {
-        if ($this->profile_picture && file_exists(public_path($this->profile_picture))) {
-            return asset($this->profile_picture);
+        // Priority 1: Use LINE profile picture if available
+        if ($this->line_picture_url) {
+            return $this->line_picture_url;
         }
 
-        // Return default avatar based on first letter of name
+        // Priority 2: Use uploaded profile picture with cache busting
+        if ($this->profile_picture) {
+            $path = $this->profile_picture;
+
+            // Check if file exists
+            if (file_exists(public_path($path))) {
+                // Add cache busting using file modification time
+                $timestamp = filemtime(public_path($path));
+                return asset($path) . '?v=' . $timestamp;
+            }
+
+            // If path doesn't work, try with storage prefix
+            $storagePath = 'storage/' . $path;
+            if (file_exists(public_path($storagePath))) {
+                $timestamp = filemtime(public_path($storagePath));
+                return asset($storagePath) . '?v=' . $timestamp;
+            }
+        }
+
+        // Priority 3: Return default avatar based on first letter of name
         $initial = strtoupper(substr($this->name, 0, 1));
         return "https://ui-avatars.com/api/?name={$initial}&background=random&color=fff&size=200";
     }
@@ -278,6 +299,86 @@ class User extends Authenticatable
     public function cryptoDepositAddresses()
     {
         return $this->hasMany(CryptoDepositAddress::class);
+    }
+
+    /**
+     * TPIX Token System Relationships
+     */
+
+    /**
+     * Get all tokens created by the user
+     */
+    public function createdTokens()
+    {
+        return $this->hasMany(TPIXToken::class, 'creator_id');
+    }
+
+    /**
+     * Get all token balances for the user
+     */
+    public function tokenBalances()
+    {
+        return $this->hasMany(TPIXTokenBalance::class);
+    }
+
+    /**
+     * Get all token transfers (sent and received)
+     */
+    public function tokenTransfers()
+    {
+        return $this->hasMany(TPIXTokenTransfer::class, 'user_id');
+    }
+
+    /**
+     * Get all stakes made by the user
+     */
+    public function stakes()
+    {
+        return $this->hasMany(TPIXStake::class);
+    }
+
+    /**
+     * Get all referral codes used by the user
+     */
+    public function referralUses()
+    {
+        return $this->hasMany(TPIXReferralUse::class);
+    }
+
+    /**
+     * Get all referral rewards earned
+     */
+    public function referralRewards()
+    {
+        return $this->hasMany(TPIXReferralReward::class);
+    }
+
+    /**
+     * TPIX DEX Relationships
+     */
+
+    /**
+     * Get all swaps made by the user
+     */
+    public function swaps()
+    {
+        return $this->hasMany(TPIXSwap::class);
+    }
+
+    /**
+     * Get all liquidity positions of the user
+     */
+    public function liquidityPositions()
+    {
+        return $this->hasMany(TPIXLiquidityPosition::class);
+    }
+
+    /**
+     * Get active liquidity positions only
+     */
+    public function activeLiquidityPositions()
+    {
+        return $this->hasMany(TPIXLiquidityPosition::class)->where('status', 'active');
     }
 
     /**
@@ -849,6 +950,46 @@ class User extends Authenticatable
     public function scopeVerified($query)
     {
         return $query->whereNotNull('email_verified_at');
+    }
+
+    /**
+     * Game System Relationships
+     */
+
+    /**
+     * Get user's game progress
+     */
+    public function gameProgress()
+    {
+        return $this->hasMany(UserGameProgress::class);
+    }
+
+    /**
+     * Get user's game skins
+     */
+    public function gameSkins()
+    {
+        return $this->belongsToMany(GameSkin::class, 'user_game_skins', 'user_id', 'skin_id')
+            ->withTimestamps()
+            ->withPivot(['purchase_price', 'purchased_at']);
+    }
+
+    /**
+     * Get user's game achievements
+     */
+    public function achievements()
+    {
+        return $this->belongsToMany(GameAchievement::class, 'user_achievements', 'user_id', 'achievement_id')
+            ->withTimestamps()
+            ->withPivot('unlocked_at');
+    }
+
+    /**
+     * Get user's game transactions
+     */
+    public function gameTransactions()
+    {
+        return $this->hasMany(GameTransaction::class);
     }
 
     /**

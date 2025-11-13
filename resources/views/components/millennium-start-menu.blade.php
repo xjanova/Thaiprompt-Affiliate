@@ -696,6 +696,7 @@
                 'url' => '#',
                 'order' => 13,
                 'submenu' => [
+                    ['label' => 'สร้าง QR Code & Barcode', 'url' => safeRoute('qr-barcode.index')],
                     ['label' => 'จำลองรายได้', 'url' => safeRoute('user.mlm.income-simulator')],
                     ['label' => 'จำลองเงินปันผล', 'url' => safeRoute('user.mlm.dividend-simulator')],
                 ]

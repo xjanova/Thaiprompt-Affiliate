@@ -261,12 +261,320 @@
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .mindmap-btn:hover {
     background: var(--primary);
     color: white;
     transform: scale(1.05);
+}
+
+.mindmap-btn-share {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+    color: white;
+    border: none;
+}
+
+.mindmap-btn-share:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+/* Share Modal Styles */
+.share-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.share-modal-content {
+    background: white;
+    border-radius: 24px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.dark .share-modal-content {
+    background: #1f2937;
+}
+
+.share-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.dark .share-modal-header {
+    border-bottom-color: #374151;
+}
+
+.share-modal-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #111827;
+    display: flex;
+    align-items: center;
+}
+
+.dark .share-modal-title {
+    color: #f9fafb;
+}
+
+.share-modal-close {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #f3f4f6;
+    color: #6b7280;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.share-modal-close:hover {
+    background: #e5e7eb;
+    color: #111827;
+    transform: rotate(90deg);
+}
+
+.dark .share-modal-close {
+    background: #374151;
+    color: #9ca3af;
+}
+
+.dark .share-modal-close:hover {
+    background: #4b5563;
+    color: #f9fafb;
+}
+
+.share-modal-body {
+    padding: 2rem;
+}
+
+.share-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.share-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1.5rem 1rem;
+    border-radius: 16px;
+    border: 2px solid #e5e7eb;
+    background: white;
+    color: #374151;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.share-button:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.dark .share-button {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+
+.share-facebook {
+    border-color: #1877f2;
+    color: #1877f2;
+}
+
+.share-facebook:hover {
+    background: #1877f2;
+    color: white;
+}
+
+.share-twitter {
+    border-color: #1da1f2;
+    color: #1da1f2;
+}
+
+.share-twitter:hover {
+    background: #1da1f2;
+    color: white;
+}
+
+.share-line {
+    border-color: #00b900;
+    color: #00b900;
+}
+
+.share-line:hover {
+    background: #00b900;
+    color: white;
+}
+
+.share-link {
+    border-color: #6366f1;
+    color: #6366f1;
+}
+
+.share-link:hover {
+    background: #6366f1;
+    color: white;
+}
+
+.share-download {
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.share-download:hover {
+    background: #10b981;
+    color: white;
+}
+
+.share-email {
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.share-email:hover {
+    background: #f59e0b;
+    color: white;
+}
+
+.share-url-container {
+    position: relative;
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.share-url-input {
+    flex: 1;
+    padding: 1rem 1.5rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    background: #f9fafb;
+    color: #374151;
+    font-family: 'Courier New', monospace;
+}
+
+.dark .share-url-input {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+}
+
+.share-url-copy-btn {
+    padding: 1rem;
+    border: 2px solid var(--primary);
+    border-radius: 12px;
+    background: white;
+    color: var(--primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.share-url-copy-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.dark .share-url-copy-btn {
+    background: #111827;
+}
+
+.dark .share-url-copy-btn:hover {
+    background: var(--primary);
+}
+
+.copy-success-message {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #065f46;
+    border-radius: 12px;
+    font-weight: 600;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.dark .copy-success-message {
+    background: linear-gradient(135deg, #065f46 0%, #047857 100%);
+    color: #d1fae5;
+}
+
+@media (max-width: 640px) {
+    .share-buttons-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .share-modal-content {
+        border-radius: 16px;
+    }
+
+    .share-modal-header,
+    .share-modal-body {
+        padding: 1.5rem;
+    }
 }
 
 /* Timeline */
@@ -528,9 +836,114 @@
             <button class="mindmap-btn" onclick="zoomIn()">🔍 ซูมเข้า</button>
             <button class="mindmap-btn" onclick="zoomOut()">🔎 ซูมออก</button>
             <button class="mindmap-btn" onclick="fitNetwork()">📐 ปรับให้พอดี</button>
+            <button class="mindmap-btn mindmap-btn-share" onclick="openShareModal()">
+                <svg class="inline-block w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                </svg>
+                แชร์
+            </button>
         </div>
 
         <div id="mindmap-container"></div>
+
+        <!-- Share Modal -->
+        <div id="shareModal" class="share-modal" style="display: none;">
+            <div class="share-modal-content">
+                <div class="share-modal-header">
+                    <h3 class="share-modal-title">
+                        <svg class="inline-block w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+                        </svg>
+                        แชร์ Mind Map
+                    </h3>
+                    <button class="share-modal-close" onclick="closeShareModal()">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="share-modal-body">
+                    <p class="text-gray-600 dark:text-gray-400 mb-6 text-center">
+                        แชร์ผังความคิดระบบแพลตฟอร์มนี้ให้เพื่อนๆ ของคุณ
+                    </p>
+
+                    <div class="share-buttons-grid">
+                        <!-- Facebook -->
+                        <button class="share-button share-facebook" onclick="shareToFacebook()">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                            </svg>
+                            <span>Facebook</span>
+                        </button>
+
+                        <!-- Twitter/X -->
+                        <button class="share-button share-twitter" onclick="shareToTwitter()">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                            </svg>
+                            <span>Twitter</span>
+                        </button>
+
+                        <!-- LINE -->
+                        <button class="share-button share-line" onclick="shareToLine()">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
+                            </svg>
+                            <span>LINE</span>
+                        </button>
+
+                        <!-- Copy Link -->
+                        <button class="share-button share-link" onclick="copyShareLink()">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            <span>Copy Link</span>
+                        </button>
+
+                        <!-- Download Image -->
+                        <button class="share-button share-download" onclick="downloadMindmapImage()">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span>ดาวน์โหลดรูป</span>
+                        </button>
+
+                        <!-- Email -->
+                        <button class="share-button share-email" onclick="shareViaEmail()">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                            <span>Email</span>
+                        </button>
+                    </div>
+
+                    <!-- Share URL Input -->
+                    <div class="share-url-container">
+                        <input
+                            type="text"
+                            id="shareUrlInput"
+                            readonly
+                            value=""
+                            class="share-url-input"
+                            onclick="this.select()"
+                        />
+                        <button class="share-url-copy-btn" onclick="copyShareLink()">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div id="copySuccessMessage" class="copy-success-message" style="display: none;">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        คัดลอกลิงก์สำเร็จ!
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -686,75 +1099,423 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initMindmap() {
-    // Define nodes
+    // Define nodes with Wiki links
     nodes = new vis.DataSet([
         // Center
-        { id: 1, label: 'Thaiprompt\nAffiliate', level: 0, color: { background: '#3B82F6', border: '#1E40AF' }, font: { color: '#FFFFFF', size: 20, bold: true } },
+        {
+            id: 1,
+            label: 'Thaiprompt\nAffiliate',
+            level: 0,
+            color: { background: '#3B82F6', border: '#1E40AF' },
+            font: { color: '#FFFFFF', size: 20, bold: true },
+            wikiUrl: '/wiki',
+            title: 'คลิกเพื่อดูเอกสารทั้งหมด'
+        },
 
-        // Main Features - Level 1
-        { id: 2, label: 'MLM System', level: 1, color: { background: '#8B5CF6', border: '#6D28D9' }, font: { color: '#FFFFFF', size: 16 } },
-        { id: 3, label: 'E-Commerce', level: 1, color: { background: '#EC4899', border: '#BE185D' }, font: { color: '#FFFFFF', size: 16 } },
-        { id: 4, label: 'Wallet & Crypto', level: 1, color: { background: '#10B981', border: '#047857' }, font: { color: '#FFFFFF', size: 16 } },
-        { id: 5, label: 'AI Integration', level: 1, color: { background: '#F59E0B', border: '#D97706' }, font: { color: '#FFFFFF', size: 16 } },
+        // 🔗 Blockchain & TPIX - Level 1 (NEW!)
+        {
+            id: 2,
+            label: '🔗 Blockchain\n& TPIX',
+            level: 1,
+            color: { background: '#7C3AED', border: '#5B21B6' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/README.md',
+            title: 'Native Blockchain & Token Ecosystem\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // MLM Sub-features
-        { id: 6, label: 'Unilevel Plan', level: 2, color: { background: '#A78BFA', border: '#7C3AED' }, font: { size: 12 } },
-        { id: 7, label: 'Binary Plan', level: 2, color: { background: '#A78BFA', border: '#7C3AED' }, font: { size: 12 } },
-        { id: 8, label: 'Commission\nEngine', level: 2, color: { background: '#A78BFA', border: '#7C3AED' }, font: { size: 12 } },
+        // 🌱 Food Passport - Level 1 (NEW!)
+        {
+            id: 3,
+            label: '🌱 Food\nPassport',
+            level: 1,
+            color: { background: '#059669', border: '#047857' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md',
+            title: 'Food Traceability & Carbon Credit\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // E-Commerce Sub-features
-        { id: 9, label: 'Multi-Vendor', level: 2, color: { background: '#F472B6', border: '#DB2777' }, font: { size: 12 } },
-        { id: 10, label: 'Product\nManagement', level: 2, color: { background: '#F472B6', border: '#DB2777' }, font: { size: 12 } },
-        { id: 11, label: 'Payment\nGateway', level: 2, color: { background: '#F472B6', border: '#DB2777' }, font: { size: 12 } },
+        // 🎮 Games - Level 1 (NEW!)
+        {
+            id: 4,
+            label: '🎮 Games &\nEntertainment',
+            level: 1,
+            color: { background: '#DC2626', border: '#991B1B' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/DEMO_GAMES.md',
+            title: 'Tetris, Space Shooter, 3D Navigation\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // Wallet Sub-features
-        { id: 12, label: 'THB Wallet', level: 2, color: { background: '#34D399', border: '#059669' }, font: { size: 12 } },
-        { id: 13, label: 'Crypto\nExchange', level: 2, color: { background: '#34D399', border: '#059669' }, font: { size: 12 } },
-        { id: 14, label: 'Withdrawal\nSystem', level: 2, color: { background: '#34D399', border: '#059669' }, font: { size: 12 } },
+        // 💎 MLM System - Level 1
+        {
+            id: 5,
+            label: '💎 MLM\nSystem',
+            level: 1,
+            color: { background: '#8B5CF6', border: '#6D28D9' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md',
+            title: 'Multi-Level Marketing System\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // AI Sub-features
-        { id: 15, label: 'OpenAI GPT', level: 2, color: { background: '#FBBF24', border: '#F59E0B' }, font: { size: 12 } },
-        { id: 16, label: 'Claude AI', level: 2, color: { background: '#FBBF24', border: '#F59E0B' }, font: { size: 12 } },
-        { id: 17, label: 'LINE Bot', level: 2, color: { background: '#FBBF24', border: '#F59E0B' }, font: { size: 12 } },
+        // 🛒 E-Commerce - Level 1
+        {
+            id: 6,
+            label: '🛒 E-Commerce\nMulti-Vendor',
+            level: 1,
+            color: { background: '#EC4899', border: '#BE185D' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MULTIVENDOR_DESIGN.md',
+            title: 'Multi-Vendor Marketplace\nคลิกเพื่ออ่านเอกสาร'
+        },
 
-        // Additional Features
-        { id: 18, label: 'Investment\n& Staking', level: 1, color: { background: '#6366F1', border: '#4338CA' }, font: { color: '#FFFFFF', size: 14 } },
-        { id: 19, label: 'Hotel\nBooking', level: 1, color: { background: '#EF4444', border: '#DC2626' }, font: { color: '#FFFFFF', size: 14 } },
-        { id: 20, label: 'Academy\nLearning', level: 1, color: { background: '#14B8A6', border: '#0D9488' }, font: { color: '#FFFFFF', size: 14 } },
-        { id: 21, label: 'HRM\nSystem', level: 1, color: { background: '#F97316', border: '#EA580C' }, font: { color: '#FFFFFF', size: 14 } },
+        // 💰 Wallet - Level 1
+        {
+            id: 7,
+            label: '💰 Digital\nWallet',
+            level: 1,
+            color: { background: '#10B981', border: '#047857' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/WALLET_SYSTEM.md',
+            title: 'Digital Wallet & Crypto Exchange\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 🤖 AI - Level 1
+        {
+            id: 8,
+            label: '🤖 AI\nIntegration',
+            level: 1,
+            color: { background: '#F59E0B', border: '#D97706' },
+            font: { color: '#FFFFFF', size: 16 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/LINE_BOT_AI_IMPLEMENTATION.md',
+            title: 'AI Chatbot & Automation\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 📈 Investment - Level 1
+        {
+            id: 9,
+            label: '📈 Investment\n& Staking',
+            level: 1,
+            color: { background: '#6366F1', border: '#4338CA' },
+            font: { color: '#FFFFFF', size: 14 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/TPIX_TOKEN_SYSTEM.md#-staking-pools',
+            title: 'Investment & Staking Pools\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 🏨 Hotel - Level 1
+        {
+            id: 10,
+            label: '🏨 Hotel\nBooking',
+            level: 1,
+            color: { background: '#EF4444', border: '#DC2626' },
+            font: { color: '#FFFFFF', size: 14 },
+            wikiUrl: '/wiki',
+            title: 'Hotel Booking System\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 🎓 Academy - Level 1
+        {
+            id: 11,
+            label: '🎓 Academy\n& Learning',
+            level: 1,
+            color: { background: '#14B8A6', border: '#0D9488' },
+            font: { color: '#FFFFFF', size: 14 },
+            wikiUrl: '/wiki',
+            title: 'Online Learning Platform\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // 👥 HRM - Level 1
+        {
+            id: 12,
+            label: '👥 HRM\nSystem',
+            level: 1,
+            color: { background: '#F97316', border: '#EA580C' },
+            font: { color: '#FFFFFF', size: 14 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/HRM_SYSTEM_README.md',
+            title: 'Human Resource Management\nคลิกเพื่ออ่านเอกสาร'
+        },
+
+        // ===== BLOCKCHAIN SUB-FEATURES (Level 2) =====
+        {
+            id: 20,
+            label: 'TPIX Coin\n(Native)',
+            level: 2,
+            color: { background: '#A78BFA', border: '#7C3AED' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/README.md#-specifications',
+            title: '7B Total Supply | 2s Block Time'
+        },
+        {
+            id: 21,
+            label: 'Smart\nContracts',
+            level: 2,
+            color: { background: '#A78BFA', border: '#7C3AED' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/docs/SMART_CONTRACTS.md',
+            title: 'EVM-Compatible | Solidity ^0.8.20'
+        },
+        {
+            id: 22,
+            label: 'Token\nFactory',
+            level: 2,
+            color: { background: '#A78BFA', border: '#7C3AED' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/TPIX_TOKEN_SYSTEM.md#1-token-management',
+            title: 'Create & Deploy Custom Tokens'
+        },
+        {
+            id: 23,
+            label: 'Block\nExplorer',
+            level: 2,
+            color: { background: '#A78BFA', border: '#7C3AED' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/tpix-blockchain/README.md#access-services',
+            title: 'Blockscout Explorer'
+        },
+
+        // ===== FOOD PASSPORT SUB-FEATURES (Level 2) =====
+        {
+            id: 30,
+            label: 'Farm to Fork\nTraceability',
+            level: 2,
+            color: { background: '#34D399', border: '#059669' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md#1--traceability-system',
+            title: 'Track Food Journey'
+        },
+        {
+            id: 31,
+            label: 'Quality\nControl',
+            level: 2,
+            color: { background: '#34D399', border: '#059669' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md#2--quality-control',
+            title: 'Quality Checkpoints & Certifications'
+        },
+        {
+            id: 32,
+            label: 'Carbon\nFootprint',
+            level: 2,
+            color: { background: '#34D399', border: '#059669' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md#3--carbon-footprint-tracking',
+            title: 'Calculate & Track Carbon Emissions'
+        },
+        {
+            id: 33,
+            label: 'Carbon\nCredit',
+            level: 2,
+            color: { background: '#34D399', border: '#059669' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/FOOD_PASSPORT_README.md#4--carbon-credit-system',
+            title: 'Earn & Trade Carbon Credits'
+        },
+
+        // ===== GAMES SUB-FEATURES (Level 2) =====
+        {
+            id: 40,
+            label: 'Tetris\nGame',
+            level: 2,
+            color: { background: '#F87171', border: '#DC2626' },
+            font: { size: 12 },
+            wikiUrl: '/demo/tetris',
+            title: 'Play Tetris with Top Scores'
+        },
+        {
+            id: 41,
+            label: 'Space\nShooter',
+            level: 2,
+            color: { background: '#F87171', border: '#DC2626' },
+            font: { size: 12 },
+            wikiUrl: '/demo/space-shooter',
+            title: '3D Space Shooting Game'
+        },
+        {
+            id: 42,
+            label: '3D\nNavigation',
+            level: 2,
+            color: { background: '#F87171', border: '#DC2626' },
+            font: { size: 12 },
+            wikiUrl: '/demo/3d-navigation',
+            title: 'Interactive 3D Environment'
+        },
+        {
+            id: 43,
+            label: 'Tarot\n3D WebGL',
+            level: 2,
+            color: { background: '#F87171', border: '#DC2626' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/TAROT_3D_WEBGL_SYSTEM.md',
+            title: '3D Tarot Card System'
+        },
+
+        // ===== MLM SUB-FEATURES (Level 2) =====
+        {
+            id: 50,
+            label: 'Unilevel\nPlan',
+            level: 2,
+            color: { background: '#C4B5FD', border: '#8B5CF6' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md#unilevel-plan',
+            title: 'Multi-Level Commission Structure'
+        },
+        {
+            id: 51,
+            label: 'Binary\nPlan',
+            level: 2,
+            color: { background: '#C4B5FD', border: '#8B5CF6' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md#binary-plan',
+            title: 'Binary Tree Matching Bonus'
+        },
+        {
+            id: 52,
+            label: 'Commission\nEngine',
+            level: 2,
+            color: { background: '#C4B5FD', border: '#8B5CF6' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MLM_SYSTEM_DOCUMENTATION.md#commission-calculation',
+            title: 'Real-time Commission Calculation'
+        },
+
+        // ===== E-COMMERCE SUB-FEATURES (Level 2) =====
+        {
+            id: 60,
+            label: 'Multi-Vendor\nMarketplace',
+            level: 2,
+            color: { background: '#F9A8D4', border: '#EC4899' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/MULTIVENDOR_SETUP.md',
+            title: 'Multiple Sellers Platform'
+        },
+        {
+            id: 61,
+            label: 'Product\nManagement',
+            level: 2,
+            color: { background: '#F9A8D4', border: '#EC4899' },
+            font: { size: 12 },
+            wikiUrl: '/wiki',
+            title: 'Inventory & Catalog Management'
+        },
+        {
+            id: 62,
+            label: 'Payment\nGateway',
+            level: 2,
+            color: { background: '#F9A8D4', border: '#EC4899' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/CRYPTO_GATEWAY_README.md',
+            title: 'PromptPay, Credit Card, Crypto'
+        },
+
+        // ===== WALLET SUB-FEATURES (Level 2) =====
+        {
+            id: 70,
+            label: 'THB\nWallet',
+            level: 2,
+            color: { background: '#6EE7B7', border: '#10B981' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/WALLET_SYSTEM.md#thb-wallet',
+            title: 'Thai Baht Digital Wallet'
+        },
+        {
+            id: 71,
+            label: 'Crypto\nExchange',
+            level: 2,
+            color: { background: '#6EE7B7', border: '#10B981' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/CRYPTO_GATEWAY_README.md',
+            title: '20+ Cryptocurrencies Supported'
+        },
+        {
+            id: 72,
+            label: 'Withdrawal\nSystem',
+            level: 2,
+            color: { background: '#6EE7B7', border: '#10B981' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/WALLET_SYSTEM.md#withdrawal-system',
+            title: 'Fast & Secure Withdrawals'
+        },
+
+        // ===== AI SUB-FEATURES (Level 2) =====
+        {
+            id: 80,
+            label: 'OpenAI\nGPT-4',
+            level: 2,
+            color: { background: '#FCD34D', border: '#F59E0B' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/AI_GEN_SYSTEM.md',
+            title: 'GPT-4 Integration'
+        },
+        {
+            id: 81,
+            label: 'Claude\nAI',
+            level: 2,
+            color: { background: '#FCD34D', border: '#F59E0B' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/docs/AI_GEN_SYSTEM.md',
+            title: 'Claude AI Integration'
+        },
+        {
+            id: 82,
+            label: 'LINE\nBot AI',
+            level: 2,
+            color: { background: '#FCD34D', border: '#F59E0B' },
+            font: { size: 12 },
+            wikiUrl: 'https://github.com/xjanova/Thaiprompt-Affiliate/blob/main/LINE_BOT_AI_IMPLEMENTATION.md',
+            title: 'AI-Powered LINE Official Account'
+        },
     ]);
 
-    // Define edges
+    // Define edges (connections between nodes)
     edges = new vis.DataSet([
-        // Main connections
-        { from: 1, to: 2, width: 3, color: { color: '#8B5CF6' } },
-        { from: 1, to: 3, width: 3, color: { color: '#EC4899' } },
-        { from: 1, to: 4, width: 3, color: { color: '#10B981' } },
-        { from: 1, to: 5, width: 3, color: { color: '#F59E0B' } },
-        { from: 1, to: 18, width: 2, color: { color: '#6366F1' } },
-        { from: 1, to: 19, width: 2, color: { color: '#EF4444' } },
-        { from: 1, to: 20, width: 2, color: { color: '#14B8A6' } },
-        { from: 1, to: 21, width: 2, color: { color: '#F97316' } },
+        // Main Level 1 connections from center
+        { from: 1, to: 2, width: 3, color: { color: '#7C3AED' } },  // Blockchain
+        { from: 1, to: 3, width: 3, color: { color: '#059669' } },  // Food Passport
+        { from: 1, to: 4, width: 3, color: { color: '#DC2626' } },  // Games
+        { from: 1, to: 5, width: 3, color: { color: '#8B5CF6' } },  // MLM
+        { from: 1, to: 6, width: 3, color: { color: '#EC4899' } },  // E-Commerce
+        { from: 1, to: 7, width: 3, color: { color: '#10B981' } },  // Wallet
+        { from: 1, to: 8, width: 3, color: { color: '#F59E0B' } },  // AI
+        { from: 1, to: 9, width: 2, color: { color: '#6366F1' } },  // Investment
+        { from: 1, to: 10, width: 2, color: { color: '#EF4444' } }, // Hotel
+        { from: 1, to: 11, width: 2, color: { color: '#14B8A6' } }, // Academy
+        { from: 1, to: 12, width: 2, color: { color: '#F97316' } }, // HRM
 
-        // MLM connections
-        { from: 2, to: 6, width: 2, color: { color: '#A78BFA' } },
-        { from: 2, to: 7, width: 2, color: { color: '#A78BFA' } },
-        { from: 2, to: 8, width: 2, color: { color: '#A78BFA' } },
+        // Blockchain sub-features
+        { from: 2, to: 20, width: 2, color: { color: '#A78BFA' } }, // TPIX Coin
+        { from: 2, to: 21, width: 2, color: { color: '#A78BFA' } }, // Smart Contracts
+        { from: 2, to: 22, width: 2, color: { color: '#A78BFA' } }, // Token Factory
+        { from: 2, to: 23, width: 2, color: { color: '#A78BFA' } }, // Block Explorer
 
-        // E-Commerce connections
-        { from: 3, to: 9, width: 2, color: { color: '#F472B6' } },
-        { from: 3, to: 10, width: 2, color: { color: '#F472B6' } },
-        { from: 3, to: 11, width: 2, color: { color: '#F472B6' } },
+        // Food Passport sub-features
+        { from: 3, to: 30, width: 2, color: { color: '#34D399' } }, // Traceability
+        { from: 3, to: 31, width: 2, color: { color: '#34D399' } }, // Quality Control
+        { from: 3, to: 32, width: 2, color: { color: '#34D399' } }, // Carbon Footprint
+        { from: 3, to: 33, width: 2, color: { color: '#34D399' } }, // Carbon Credit
 
-        // Wallet connections
-        { from: 4, to: 12, width: 2, color: { color: '#34D399' } },
-        { from: 4, to: 13, width: 2, color: { color: '#34D399' } },
-        { from: 4, to: 14, width: 2, color: { color: '#34D399' } },
+        // Games sub-features
+        { from: 4, to: 40, width: 2, color: { color: '#F87171' } }, // Tetris
+        { from: 4, to: 41, width: 2, color: { color: '#F87171' } }, // Space Shooter
+        { from: 4, to: 42, width: 2, color: { color: '#F87171' } }, // 3D Navigation
+        { from: 4, to: 43, width: 2, color: { color: '#F87171' } }, // Tarot 3D
 
-        // AI connections
-        { from: 5, to: 15, width: 2, color: { color: '#FBBF24' } },
-        { from: 5, to: 16, width: 2, color: { color: '#FBBF24' } },
-        { from: 5, to: 17, width: 2, color: { color: '#FBBF24' } },
+        // MLM sub-features
+        { from: 5, to: 50, width: 2, color: { color: '#C4B5FD' } }, // Unilevel
+        { from: 5, to: 51, width: 2, color: { color: '#C4B5FD' } }, // Binary
+        { from: 5, to: 52, width: 2, color: { color: '#C4B5FD' } }, // Commission
+
+        // E-Commerce sub-features
+        { from: 6, to: 60, width: 2, color: { color: '#F9A8D4' } }, // Multi-Vendor
+        { from: 6, to: 61, width: 2, color: { color: '#F9A8D4' } }, // Product Mgmt
+        { from: 6, to: 62, width: 2, color: { color: '#F9A8D4' } }, // Payment
+
+        // Wallet sub-features
+        { from: 7, to: 70, width: 2, color: { color: '#6EE7B7' } }, // THB Wallet
+        { from: 7, to: 71, width: 2, color: { color: '#6EE7B7' } }, // Crypto Exchange
+        { from: 7, to: 72, width: 2, color: { color: '#6EE7B7' } }, // Withdrawal
+
+        // AI sub-features
+        { from: 8, to: 80, width: 2, color: { color: '#FCD34D' } }, // OpenAI
+        { from: 8, to: 81, width: 2, color: { color: '#FCD34D' } }, // Claude
+        { from: 8, to: 82, width: 2, color: { color: '#FCD34D' } }, // LINE Bot
     ]);
 
     // Create network
@@ -813,6 +1574,28 @@ function initMindmap() {
 
     network = new vis.Network(container, data, options);
 
+    // Add click event to open Wiki/Documentation
+    network.on('click', function(params) {
+        if (params.nodes.length > 0) {
+            const nodeId = params.nodes[0];
+            const node = nodes.get(nodeId);
+
+            if (node && node.wikiUrl) {
+                // Open Wiki/Documentation in new tab
+                window.open(node.wikiUrl, '_blank');
+            }
+        }
+    });
+
+    // Add hover effect to show cursor pointer
+    network.on('hoverNode', function() {
+        document.getElementById('mindmap-container').style.cursor = 'pointer';
+    });
+
+    network.on('blurNode', function() {
+        document.getElementById('mindmap-container').style.cursor = 'default';
+    });
+
     // Stabilize and then fit
     network.once('stabilizationIterationsDone', function() {
         network.fit({
@@ -850,6 +1633,167 @@ function fitNetwork() {
             easingFunction: 'easeInOutQuad'
         }
     });
+}
+
+// ============================================
+// Share Functionality
+// ============================================
+
+// Get current page URL
+function getShareUrl() {
+    return window.location.origin + window.location.pathname + '#mindmap';
+}
+
+// Get share text
+function getShareText() {
+    return 'ดูผังความคิดระบบแพลตฟอร์ม Thaiprompt Affiliate - ครอบคลุม Blockchain, TPIX, Food Passport, Games และอีกมากมาย!';
+}
+
+// Open Share Modal
+function openShareModal() {
+    const modal = document.getElementById('shareModal');
+    const urlInput = document.getElementById('shareUrlInput');
+
+    modal.style.display = 'flex';
+    urlInput.value = getShareUrl();
+
+    // Add escape key handler
+    document.addEventListener('keydown', closeShareModalOnEscape);
+}
+
+// Close Share Modal
+function closeShareModal() {
+    const modal = document.getElementById('shareModal');
+    modal.style.display = 'none';
+
+    // Hide success message
+    document.getElementById('copySuccessMessage').style.display = 'none';
+
+    // Remove escape key handler
+    document.removeEventListener('keydown', closeShareModalOnEscape);
+}
+
+// Close modal on Escape key
+function closeShareModalOnEscape(e) {
+    if (e.key === 'Escape') {
+        closeShareModal();
+    }
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('shareModal');
+    if (e.target === modal) {
+        closeShareModal();
+    }
+});
+
+// Share to Facebook
+function shareToFacebook() {
+    const url = encodeURIComponent(getShareUrl());
+    const shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+}
+
+// Share to Twitter
+function shareToTwitter() {
+    const url = encodeURIComponent(getShareUrl());
+    const text = encodeURIComponent(getShareText());
+    const shareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${text}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+}
+
+// Share to LINE
+function shareToLine() {
+    const url = encodeURIComponent(getShareUrl());
+    const text = encodeURIComponent(getShareText());
+    const shareUrl = `https://social-plugins.line.me/lineit/share?url=${url}&text=${text}`;
+    window.open(shareUrl, '_blank', 'width=600,height=400');
+}
+
+// Copy Link to Clipboard
+function copyShareLink() {
+    const urlInput = document.getElementById('shareUrlInput');
+    urlInput.select();
+    urlInput.setSelectionRange(0, 99999); // For mobile devices
+
+    try {
+        document.execCommand('copy');
+        showCopySuccess();
+    } catch (err) {
+        // Fallback for modern browsers
+        navigator.clipboard.writeText(getShareUrl()).then(function() {
+            showCopySuccess();
+        }).catch(function(err) {
+            alert('ไม่สามารถคัดลอกลิงก์ได้: ' + err);
+        });
+    }
+}
+
+// Show copy success message
+function showCopySuccess() {
+    const successMsg = document.getElementById('copySuccessMessage');
+    successMsg.style.display = 'flex';
+
+    setTimeout(function() {
+        successMsg.style.display = 'none';
+    }, 3000);
+}
+
+// Share via Email
+function shareViaEmail() {
+    const subject = encodeURIComponent('ผังความคิดระบบ Thaiprompt Affiliate');
+    const body = encodeURIComponent(getShareText() + '\n\n' + getShareUrl());
+    const mailtoUrl = `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = mailtoUrl;
+}
+
+// Download Mind map as Image
+function downloadMindmapImage() {
+    const container = document.getElementById('mindmap-container');
+    const canvas = container.querySelector('canvas');
+
+    if (canvas) {
+        try {
+            // Create a link element
+            const link = document.createElement('a');
+            link.download = 'thaiprompt-affiliate-mindmap.png';
+
+            // Convert canvas to blob and download
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+            });
+
+            // Show success message
+            showDownloadSuccess();
+        } catch (err) {
+            alert('ไม่สามารถดาวน์โหลดรูปภาพได้: ' + err.message);
+        }
+    } else {
+        alert('ไม่พบ Mind map กรุณารอให้โหลดเสร็จก่อน');
+    }
+}
+
+// Show download success message
+function showDownloadSuccess() {
+    const successMsg = document.getElementById('copySuccessMessage');
+    const originalText = successMsg.innerHTML;
+
+    successMsg.innerHTML = `
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+        </svg>
+        ดาวน์โหลดรูปภาพสำเร็จ!
+    `;
+    successMsg.style.display = 'flex';
+
+    setTimeout(function() {
+        successMsg.style.display = 'none';
+        successMsg.innerHTML = originalText;
+    }, 3000);
 }
 
 // ============================================
