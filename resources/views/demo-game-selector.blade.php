@@ -45,6 +45,34 @@
             pointer-events: none;
         }
 
+        .back-button {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(0, 255, 255, 0.5);
+            border-radius: 50px;
+            padding: 12px 24px;
+            color: #00ffff;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            pointer-events: auto;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .back-button:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: #00ffff;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.6);
+            transform: translateX(-5px);
+        }
+
         .header h1 {
             font-size: 3.5rem;
             font-weight: 900;
@@ -422,6 +450,11 @@
 
         <!-- Canvas -->
         <canvas id="game-canvas"></canvas>
+
+        <!-- Back Button -->
+        <a href="/" class="back-button">
+            ← กลับหน้าหลัก
+        </a>
 
         <!-- Header -->
         <div class="header">

@@ -96,6 +96,9 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <div class="flex gap-2">
+                                    <a href="{{ route('admin.games.show', $game) }}" class="text-gray-600 hover:text-gray-900 dark:text-gray-400">
+                                        👁️ ดู
+                                    </a>
                                     <a href="{{ route('admin.games.edit', $game) }}" class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400">
                                         ✏️ แก้ไข
                                     </a>
