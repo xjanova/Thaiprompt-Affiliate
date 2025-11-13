@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.196.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1041 from xjanova/claude/fix-mlm-genealogy-column-011CV6GyzbDWLfNpQL4JLwG7 (bbfb5695)
+- fix: Change mlm_genealogy 'level' column reference to 'depth' (73183857)
+### 🔧 Other Changes
+
+
 ## [v2.196.2] - 2025-11-13
 
 ### ✨ Features
