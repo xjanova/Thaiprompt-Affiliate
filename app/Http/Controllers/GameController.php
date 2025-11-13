@@ -6,6 +6,7 @@ use App\Models\Game;
 use App\Models\UserGameProgress;
 use App\Models\GameLeaderboard;
 use App\Models\GameAchievement;
+use App\Models\LeaderboardSeason;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -118,10 +119,16 @@ class GameController extends Controller
         // Update stats
         $progress->updateStats($validated);
 
+        // Get active season
+        $activeSeason = LeaderboardSeason::where('game_id', $game->id)
+            ->where('status', 'active')
+            ->first();
+
         // Save to leaderboard if score is good
         GameLeaderboard::create([
             'user_id' => Auth::id(),
             'game_id' => $game->id,
+            'season_id' => $activeSeason?->id,
             'score' => $validated['score'],
             'wave_reached' => $validated['wave'],
             'ship_used' => $validated['ship_used'] ?? 'basic',
