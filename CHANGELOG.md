@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.175.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #999 from xjanova/claude/add-2d-snooker-game-011CV5tFLneR82fNEZar9pYt (5a8315f3)
+- Add 2D Snooker game with multiple game modes (26cc4b7d)
+
 ## [v2.175.1] - 2025-11-13
 
 ### ✨ Features
