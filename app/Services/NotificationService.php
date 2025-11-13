@@ -259,10 +259,273 @@ class NotificationService
                 'ดูและอนุมัติ',
                 'high',
                 true,
+                true, // Show immediately
                 '🔔',
                 'orange'
             );
         }
+    }
+
+    /**
+     * Notify admin about new commission pending approval
+     */
+    public function notifyAdminNewCommission($commission): void
+    {
+        // Get all admins with commission approval permission
+        $admins = User::where('is_super_admin', true)
+            ->orWhere('is_admin', true)
+            ->orWhereJsonContains('permissions', 'approve_commissions')
+            ->get();
+
+        foreach ($admins as $admin) {
+            $this->createForModel(
+                $admin,
+                $commission,
+                'commission',
+                'คอมมิชชันรออนุมัติ',
+                "มีคอมมิชชันใหม่รออนุมัติจาก {$commission->user->name} จำนวน " . number_format($commission->amount, 2) . " บาท",
+                [
+                    'user_name' => $commission->user->name,
+                    'amount' => $commission->amount,
+                    'type' => $commission->type,
+                ],
+                route('admin.commissions.show', $commission->id),
+                'ดูและอนุมัติ',
+                'high',
+                true,
+                true, // Show immediately
+                '💰',
+                'green'
+            );
+        }
+    }
+
+    /**
+     * Notify admin about new KYC verification request
+     */
+    public function notifyAdminNewKyc($kycVerification): void
+    {
+        // Get all admins with KYC approval permission
+        $admins = User::where('is_super_admin', true)
+            ->orWhere('is_admin', true)
+            ->orWhereJsonContains('permissions', 'approve_kyc')
+            ->get();
+
+        foreach ($admins as $admin) {
+            $this->createForModel(
+                $admin,
+                $kycVerification,
+                'kyc',
+                'ยืนยันตัวตนใหม่รออนุมัติ',
+                "มีคำขอยืนยันตัวตนใหม่จาก {$kycVerification->user->name}",
+                [
+                    'user_name' => $kycVerification->user->name,
+                    'type' => $kycVerification->verification_type ?? 'standard',
+                ],
+                route('admin.kyc.show', $kycVerification->id),
+                'ดูและอนุมัติ',
+                'high',
+                true,
+                true, // Show immediately
+                '🆔',
+                'blue'
+            );
+        }
+    }
+
+    /**
+     * Notify admin about new support ticket
+     */
+    public function notifyAdminNewTicket($ticket): void
+    {
+        // Get all admins and support staff
+        $admins = User::where('is_super_admin', true)
+            ->orWhere('is_admin', true)
+            ->orWhereJsonContains('permissions', 'manage_tickets')
+            ->orWhere('role', 'moderator')
+            ->get();
+
+        foreach ($admins as $admin) {
+            $this->createForModel(
+                $admin,
+                $ticket,
+                'ticket',
+                'ตั๋วซัพพอร์ตใหม่',
+                "มีตั๋วซัพพอร์ตใหม่จาก {$ticket->user->name}: {$ticket->subject}",
+                [
+                    'user_name' => $ticket->user->name,
+                    'subject' => $ticket->subject,
+                    'category' => $ticket->category,
+                    'priority' => $ticket->priority,
+                ],
+                route('admin.tickets.show', $ticket->id),
+                'ดูและตอบ',
+                $ticket->priority === 'critical' || $ticket->priority === 'high' ? 'urgent' : 'normal',
+                $ticket->priority === 'critical' || $ticket->priority === 'high',
+                $ticket->priority === 'critical' || $ticket->priority === 'high', // Show immediately for high/critical
+                '🎫',
+                $ticket->priority === 'critical' ? 'red' : ($ticket->priority === 'high' ? 'orange' : 'blue')
+            );
+        }
+    }
+
+    /**
+     * Notify admin about unassigned high priority ticket
+     */
+    public function notifyAdminUnassignedTicket($ticket): void
+    {
+        // Get all admins
+        $admins = User::where('is_super_admin', true)
+            ->orWhere('is_admin', true)
+            ->get();
+
+        foreach ($admins as $admin) {
+            $this->createForModel(
+                $admin,
+                $ticket,
+                'ticket',
+                'ตั๋วยังไม่มีผู้รับผิดชอบ',
+                "ตั๋วลำดับความสำคัญสูง #{$ticket->ticket_number} ยังไม่มีผู้รับผิดชอบ",
+                [
+                    'ticket_number' => $ticket->ticket_number,
+                    'subject' => $ticket->subject,
+                    'priority' => $ticket->priority,
+                ],
+                route('admin.tickets.show', $ticket->id),
+                'มอบหมายงาน',
+                'urgent',
+                true,
+                true,
+                '⚠️',
+                'red'
+            );
+        }
+    }
+
+    /**
+     * Notify user about commission approved
+     */
+    public function notifyCommissionApproved(User $user, $commission): Notification
+    {
+        return $this->createForModel(
+            $user,
+            $commission,
+            'commission',
+            'คอมมิชชันได้รับการอนุมัติ',
+            "คอมมิชชันของคุณจำนวน " . number_format($commission->amount, 2) . " บาท ได้รับการอนุมัติแล้ว",
+            [
+                'amount' => $commission->amount,
+                'type' => $commission->type,
+            ],
+            route('user.commissions.index'),
+            'ดูคอมมิชชัน',
+            'high',
+            true,
+            true,
+            '✅',
+            'green'
+        );
+    }
+
+    /**
+     * Notify user about commission rejected
+     */
+    public function notifyCommissionRejected(User $user, $commission, string $reason): Notification
+    {
+        return $this->createForModel(
+            $user,
+            $commission,
+            'commission',
+            'คอมมิชชันถูกปฏิเสธ',
+            "คอมมิชชันของคุณถูกปฏิเสธ เหตุผล: $reason",
+            [
+                'amount' => $commission->amount,
+                'reason' => $reason,
+            ],
+            route('user.commissions.index'),
+            'ดูรายละเอียด',
+            'high',
+            true,
+            true,
+            '❌',
+            'red'
+        );
+    }
+
+    /**
+     * Notify user about KYC approved
+     */
+    public function notifyKycApproved(User $user, $kycVerification): Notification
+    {
+        return $this->createForModel(
+            $user,
+            $kycVerification,
+            'kyc',
+            'การยืนยันตัวตนสำเร็จ',
+            "การยืนยันตัวตนของคุณได้รับการอนุมัติแล้ว บัญชีของคุณได้รับการยืนยันแล้ว",
+            [
+                'verification_type' => $kycVerification->verification_type ?? 'standard',
+            ],
+            route('user.profile.index'),
+            'ดูโปรไฟล์',
+            'urgent',
+            true,
+            true,
+            '✅',
+            'green'
+        );
+    }
+
+    /**
+     * Notify user about KYC rejected
+     */
+    public function notifyKycRejected(User $user, $kycVerification, string $reason): Notification
+    {
+        return $this->createForModel(
+            $user,
+            $kycVerification,
+            'kyc',
+            'การยืนยันตัวตนถูกปฏิเสธ',
+            "การยืนยันตัวตนของคุณถูกปฏิเสธ เหตุผล: $reason กรุณาอัพโหลดเอกสารใหม่",
+            [
+                'reason' => $reason,
+            ],
+            route('user.kyc.create'),
+            'ยืนยันตัวตนใหม่',
+            'urgent',
+            true,
+            true,
+            '❌',
+            'red'
+        );
+    }
+
+    /**
+     * Notify user about ticket reply
+     */
+    public function notifyTicketReply(User $user, $ticket, $reply): Notification
+    {
+        $isFromAdmin = $reply->user && ($reply->user->is_admin || $reply->user->is_super_admin);
+
+        return $this->createForModel(
+            $user,
+            $ticket,
+            'ticket',
+            $isFromAdmin ? 'แอดมินตอบกลับตั๋วซัพพอร์ตของคุณ' : 'มีการตอบกลับในตั๋วซัพพอร์ต',
+            "มีการตอบกลับใหม่ในตั๋ว: {$ticket->subject}",
+            [
+                'ticket_number' => $ticket->ticket_number,
+                'subject' => $ticket->subject,
+                'reply_preview' => substr(strip_tags($reply->message), 0, 100),
+            ],
+            route('user.tickets.show', $ticket->id),
+            'ดูการตอบกลับ',
+            'high',
+            true,
+            $isFromAdmin, // Show immediately if from admin
+            '💬',
+            'blue'
+        );
     }
 
     /**
