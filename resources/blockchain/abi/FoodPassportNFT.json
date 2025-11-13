@@ -1,0 +1,55 @@
+[
+  {
+    "inputs": [
+      {"name": "_to", "type": "address"},
+      {"name": "_passportId", "type": "string"},
+      {"name": "_metadataURI", "type": "string"}
+    ],
+    "name": "mint",
+    "outputs": [{"name": "tokenId", "type": "uint256"}],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "_tokenId", "type": "uint256"}],
+    "name": "tokenURI",
+    "outputs": [{"name": "", "type": "string"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "_passportId", "type": "string"}],
+    "name": "getTokenIdByPassportId",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "_tokenId", "type": "uint256"}],
+    "name": "ownerOf",
+    "outputs": [{"name": "", "type": "address"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {"name": "_from", "type": "address"},
+      {"name": "_to", "type": "address"},
+      {"name": "_tokenId", "type": "uint256"}
+    ],
+    "name": "transferFrom",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {"indexed": true, "name": "to", "type": "address"},
+      {"indexed": false, "name": "tokenId", "type": "uint256"},
+      {"indexed": false, "name": "passportId", "type": "string"}
+    ],
+    "name": "FoodPassportMinted",
+    "type": "event"
+  }
+]

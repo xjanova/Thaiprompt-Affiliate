@@ -1,0 +1,54 @@
+[
+  {
+    "inputs": [
+      {"name": "_passportId", "type": "string"},
+      {"name": "_stage", "type": "string"},
+      {"name": "_location", "type": "string"},
+      {"name": "_coordinates", "type": "string"},
+      {"name": "_arrivedAt", "type": "uint256"},
+      {"name": "_departedAt", "type": "uint256"}
+    ],
+    "name": "addStage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "_passportId", "type": "string"}],
+    "name": "getJourneyStages",
+    "outputs": [
+      {
+        "components": [
+          {"name": "stage", "type": "string"},
+          {"name": "location", "type": "string"},
+          {"name": "coordinates", "type": "string"},
+          {"name": "arrivedAt", "type": "uint256"},
+          {"name": "departedAt", "type": "uint256"},
+          {"name": "timestamp", "type": "uint256"}
+        ],
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{"name": "_passportId", "type": "string"}],
+    "name": "getStageCount",
+    "outputs": [{"name": "", "type": "uint256"}],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {"indexed": false, "name": "passportId", "type": "string"},
+      {"indexed": false, "name": "stage", "type": "string"},
+      {"indexed": false, "name": "location", "type": "string"},
+      {"indexed": false, "name": "timestamp", "type": "uint256"}
+    ],
+    "name": "JourneyStageAdded",
+    "type": "event"
+  }
+]
