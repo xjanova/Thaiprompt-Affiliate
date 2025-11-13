@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.174.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #989 from xjanova/claude/mindmap-technology-update-011CV5mpz1sNswqEDuE4U2CD (acc12f30)
+- feat: Add MLM organization chart visualization to About page (a8c965e7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.173.18] - 2025-11-13
 
 ### ✨ Features
