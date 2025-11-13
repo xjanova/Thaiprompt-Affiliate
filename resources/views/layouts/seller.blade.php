@@ -300,7 +300,7 @@
             </main>
         </div>
 
-        <!-- Floating Action Buttons for Classic X Theme -->
+        <!-- Floating Action Buttons for Classic X Theme Only -->
         <x-classic-x-floating-buttons />
     @else
         <!-- Millennium Taskbar -->
@@ -353,9 +353,6 @@
                 @yield('content')
             </main>
         </div>
-
-        <!-- Floating Action Buttons for Millennium Theme -->
-        <x-classic-x-floating-buttons />
     @endif
 
     <!-- Fixed Floating Toast Notifications -->
