@@ -15,16 +15,18 @@ class GamesSeeder extends Seeder
     public function run(): void
     {
         // Create Snake.io Game
-        $snakeIo = Game::create([
-            'slug' => 'snake-io',
-            'name' => 'Snake.io',
-            'description' => 'เกมหนอนออนไลน์สุดมันส์! กินอาหาร โตขึ้น และหลีกเลี่ยงการชน - เล่นได้ทุกคน แต่สมาชิกจะมี skins พิเศษและบันทึกสกอร์!',
-            'category' => 'io',
-            'min_level_required' => 1,
-            'is_active' => true,
-            'requires_auth' => false,
-            'settings' => ['world_size' => 200, 'food_count' => 100, 'bot_count' => 10],
-        ]);
+        $snakeIo = Game::updateOrCreate(
+            ['slug' => 'snake-io'],
+            [
+                'name' => 'Snake.io',
+                'description' => 'เกมหนอนออนไลน์สุดมันส์! กินอาหาร โตขึ้น และหลีกเลี่ยงการชน - เล่นได้ทุกคน แต่สมาชิกจะมี skins พิเศษและบันทึกสกอร์!',
+                'category' => 'io',
+                'min_level_required' => 1,
+                'is_active' => true,
+                'requires_auth' => false,
+                'settings' => ['world_size' => 200, 'food_count' => 100, 'bot_count' => 10],
+            ]
+        );
 
         // Skins for Snake.io
         $skins = [
@@ -36,19 +38,23 @@ class GamesSeeder extends Seeder
         ];
 
         foreach ($skins as $skin) {
-            GameSkin::create(array_merge(['game_id' => $snakeIo->id, 'is_active' => true], $skin));
+            GameSkin::updateOrCreate(
+                ['game_id' => $snakeIo->id, 'slug' => $skin['slug']],
+                array_merge(['is_active' => true], $skin)
+            );
         }
 
         // Create Space Shooter Game (Future)
-        $spaceShooter = Game::create([
-            'slug' => 'space-shooter',
-            'name' => 'Space Shooter 3D Ultimate',
-            'description' => 'เกมยานอวกาศแนว 3D ที่มีระบบปลดล็อคยาน อาวุธพิเศษ และ Boss Fights! ยิงศัตรู ปลดล็อคยานเจ๋งๆ และเป็นที่ 1 ใน Leaderboard!',
-            'category' => 'action',
-            'min_level_required' => 1,
-            'is_active' => true,
-            'requires_auth' => true,
-            'settings' => [
+        $spaceShooter = Game::updateOrCreate(
+            ['slug' => 'space-shooter'],
+            [
+                'name' => 'Space Shooter 3D Ultimate',
+                'description' => 'เกมยานอวกาศแนว 3D ที่มีระบบปลดล็อคยาน อาวุธพิเศษ และ Boss Fights! ยิงศัตรู ปลดล็อคยานเจ๋งๆ และเป็นที่ 1 ใน Leaderboard!',
+                'category' => 'action',
+                'min_level_required' => 1,
+                'is_active' => true,
+                'requires_auth' => true,
+                'settings' => [
                 'ships' => [
                     'basic' => [
                         'name' => 'Basic Fighter',
@@ -107,8 +113,8 @@ class GamesSeeder extends Seeder
                         'fire_rate' => 0.6,
                     ],
                 ],
-            ],
-        ]);
+            ]
+        );
 
         // Create Achievements
         $achievements = [
@@ -151,7 +157,10 @@ class GamesSeeder extends Seeder
         ];
 
         foreach ($achievements as $achievement) {
-            GameAchievement::create($achievement);
+            GameAchievement::updateOrCreate(
+                ['game_id' => $achievement['game_id'], 'slug' => $achievement['slug']],
+                $achievement
+            );
         }
     }
 }
