@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.169.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #956 from xjanova/claude/improve-threat-intelligence-ui-011CV5DWxzNm5tM5pBtG8Ncr (e90b1360)
+- feat: improve Threat Intelligence UI with filters and pagination (bbbfb68d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.168.1] - 2025-11-13
 
 ### ✨ Features
