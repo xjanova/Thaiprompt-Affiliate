@@ -344,6 +344,17 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
     });
 });
 
+// QR Code & Barcode Generator Routes (Public)
+Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\QrBarcodeController::class, 'index'])->name('index');
+    Route::post('/generate', [\App\Http\Controllers\QrBarcodeController::class, 'generate'])->name('generate');
+
+    // Authenticated routes
+    Route::middleware('auth')->group(function () {
+        Route::get('/history', [\App\Http\Controllers\QrBarcodeController::class, 'history'])->name('history');
+    });
+});
+
 // ========================================
 // SOFTWARE SALES SYSTEM ROUTES
 // ========================================
