@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.171.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #963 from xjanova/claude/install-guide-documentation-011CV5L3mFVq82BMce4b3WFn (628a0e81)
+- docs: Add comprehensive installation guide (INSTALL_GUIDE_COMPLETE.md) (8166409d)
+
 ## [v2.171.0] - 2025-11-13
 
 ### ✨ Features
