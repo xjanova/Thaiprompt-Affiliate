@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.181.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1016 from xjanova/claude/update-api-011CV632cbr9WHgD4tAuwvnE (fd6e1865)
+- feat: Update API endpoint seeder with all 123 current endpoints (9bdf918b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.180.0] - 2025-11-13
 
 ### ✨ Features
