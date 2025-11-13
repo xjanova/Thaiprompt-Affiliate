@@ -16,6 +16,7 @@ class GameSeeder extends Seeder
         $games = [
             [
                 'slug' => '3d-navigation',
+                'name' => '3D Navigation',
                 'title' => '3D Navigation',
                 'title_en' => '3D Navigation',
                 'description' => 'สำรวจโลก 3D ที่สวยงาม' . "\n" . 'ด้วยระบบนำทางที่ทันสมัย',
@@ -31,6 +32,7 @@ class GameSeeder extends Seeder
             ],
             [
                 'slug' => 'space-shooter',
+                'name' => 'Space Shooter',
                 'title' => 'Space Shooter',
                 'title_en' => 'Space Shooter',
                 'description' => 'ยิงยานอวกาศศัตรู' . "\n" . 'ในสงครามอวกาศที่ตื่นเต้น',
@@ -46,6 +48,7 @@ class GameSeeder extends Seeder
             ],
             [
                 'slug' => 'loading-demo',
+                'name' => 'Loading Demo',
                 'title' => 'Loading Demo',
                 'title_en' => 'Loading Demo',
                 'description' => 'ชมเอฟเฟกต์การโหลด' . "\n" . 'ที่สวยงามและทันสมัย',
