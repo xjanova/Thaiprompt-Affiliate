@@ -5,9 +5,9 @@ namespace App\Observers;
 use App\Models\ProductJourney;
 use App\Services\CarbonCreditService;
 use App\Services\BlockchainRecordService;
-use App\Jobs\CalculateJourneyCarbonJob;
-use App\Jobs\UpdateProductLocationJob;
-use App\Jobs\SendStageCompletionNotificationJob;
+use App\Jobs\FoodPassport\CalculateJourneyCarbonJob;
+use App\Jobs\FoodPassport\UpdateProductLocationJob;
+use App\Jobs\FoodPassport\SendFoodPassportNotificationJob;
 use Illuminate\Support\Facades\Log;
 
 class ProductJourneyObserver
@@ -96,7 +96,15 @@ class ProductJourneyObserver
         $this->updateProductCarbonFootprint($journey);
 
         // Send notifications to stakeholders
-        SendStageCompletionNotificationJob::dispatch($journey);
+        SendFoodPassportNotificationJob::dispatch(
+            $journey->foodProduct->farmer_id,
+            'stage_completed',
+            [
+                'journey_id' => $journey->id,
+                'stage' => $journey->stage,
+                'duration_hours' => $journey->duration_hours,
+            ]
+        );
 
         // Record completion on blockchain
         if (config('food-passport.blockchain.auto_record', true)) {

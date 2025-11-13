@@ -4,9 +4,9 @@ namespace App\Observers;
 
 use App\Models\CarbonCredit;
 use App\Services\BlockchainRecordService;
-use App\Jobs\RecordCarbonCreditOnBlockchainJob;
-use App\Jobs\SendCarbonCreditNotificationJob;
-use App\Jobs\ProcessCommissionJob;
+use App\Jobs\FoodPassport\RecordCarbonCreditOnBlockchainJob;
+use App\Jobs\FoodPassport\SendCarbonCreditNotificationJob;
+use App\Jobs\FoodPassport\ProcessCarbonCreditCommissionJob;
 use Illuminate\Support\Facades\Log;
 
 class CarbonCreditObserver
@@ -115,7 +115,7 @@ class CarbonCreditObserver
 
         // Process platform commission (5%)
         $commission = $credit->trade_price * 0.05;
-        ProcessCommissionJob::dispatch($credit, $commission);
+        ProcessCarbonCreditCommissionJob::dispatch($credit, $commission);
 
         // Notify seller
         SendCarbonCreditNotificationJob::dispatch(
