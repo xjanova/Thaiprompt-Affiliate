@@ -27,7 +27,7 @@
     // Define menu items based on type
     if ($type === 'admin') {
         $menuItems = [
-            ['icon' => 'fa-dashboard', 'label' => 'แดชบอร์ด', 'url' => safeRoute('admin.dashboard')],
+            ['icon' => 'fa-dashboard', 'label' => 'แดชบอร์ด', 'url' => safeRoute('admin.dashboard'), 'route' => 'admin.dashboard'],
             [
                 'icon' => 'fa-users',
                 'label' => 'ผู้ใช้งาน',
@@ -37,8 +37,8 @@
                     ['label' => 'บทบาท (Roles)', 'url' => safeRoute('admin.roles.index')],
                 ]
             ],
-            ['icon' => 'fa-id-card', 'label' => 'ยืนยันตัวตน KYC', 'url' => safeRoute('admin.kyc.index')],
-            ['icon' => 'fa-ticket', 'label' => 'Ticket Support', 'url' => safeRoute('admin.tickets.index')],
+            ['icon' => 'fa-id-card', 'label' => 'ยืนยันตัวตน KYC', 'url' => safeRoute('admin.kyc.index'), 'route' => 'admin.kyc.index'],
+            ['icon' => 'fa-ticket', 'label' => 'Ticket Support', 'url' => safeRoute('admin.tickets.index'), 'route' => 'admin.tickets.index'],
             [
                 'icon' => 'fa-robot',
                 'label' => 'AI Bots & ผู้ช่วย',
@@ -288,8 +288,8 @@
         ];
     } elseif ($type === 'seller') {
         $menuItems = [
-            ['icon' => 'fa-dashboard', 'label' => 'แดชบอร์ด', 'url' => safeRoute('seller.dashboard')],
-            ['icon' => 'fa-bullhorn', 'label' => 'การตลาด', 'url' => safeRoute('seller.marketing')],
+            ['icon' => 'fa-dashboard', 'label' => 'แดชบอร์ด', 'url' => safeRoute('seller.dashboard'), 'route' => 'seller.dashboard'],
+            ['icon' => 'fa-bullhorn', 'label' => 'การตลาด', 'url' => safeRoute('seller.marketing'), 'route' => 'seller.marketing'],
             [
                 'icon' => 'fa-box',
                 'label' => 'สินค้า',
@@ -327,16 +327,16 @@
                     ['label' => 'ถอนเงิน', 'url' => safeRoute('seller.wallet.withdraw')],
                 ]
             ],
-            ['icon' => 'fa-money-bill', 'label' => 'คอมมิชชั่น', 'url' => safeRoute('seller.commissions')],
-            ['icon' => 'fa-cog', 'label' => 'ตั้งค่าร้าน', 'url' => safeRoute('seller.settings')],
-            ['icon' => 'fa-user', 'label' => 'โปรไฟล์', 'url' => safeRoute('seller.profile')],
+            ['icon' => 'fa-money-bill', 'label' => 'คอมมิชชั่น', 'url' => safeRoute('seller.commissions'), 'route' => 'seller.commissions'],
+            ['icon' => 'fa-cog', 'label' => 'ตั้งค่าร้าน', 'url' => safeRoute('seller.settings'), 'route' => 'seller.settings'],
+            ['icon' => 'fa-user', 'label' => 'โปรไฟล์', 'url' => safeRoute('seller.profile'), 'route' => 'seller.profile'],
         ];
     } else { // user
         $menuItems = [
-            ['icon' => 'fa-dashboard', 'label' => 'แดชบอร์ด', 'url' => safeRoute('user.dashboard')],
-            ['icon' => 'fa-user', 'label' => 'โปรไฟล์', 'url' => safeRoute('user.profile')],
-            ['icon' => 'fa-id-card', 'label' => 'ยืนยันตัวตน KYC', 'url' => safeRoute('user.kyc.index')],
-            ['icon' => 'fa-money-bill', 'label' => 'คอมมิชชั่น', 'url' => safeRoute('user.commissions')],
+            ['icon' => 'fa-dashboard', 'label' => 'แดชบอร์ด', 'url' => safeRoute('user.dashboard'), 'route' => 'user.dashboard'],
+            ['icon' => 'fa-user', 'label' => 'โปรไฟล์', 'url' => safeRoute('user.profile'), 'route' => 'user.profile'],
+            ['icon' => 'fa-id-card', 'label' => 'ยืนยันตัวตน KYC', 'url' => safeRoute('user.kyc.index'), 'route' => 'user.kyc.index'],
+            ['icon' => 'fa-money-bill', 'label' => 'คอมมิชชั่น', 'url' => safeRoute('user.commissions'), 'route' => 'user.commissions'],
             [
                 'icon' => 'fa-shopping-cart',
                 'label' => 'ช๊อปปิ้ง',
