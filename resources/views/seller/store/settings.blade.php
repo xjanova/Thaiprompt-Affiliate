@@ -71,14 +71,22 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         โลโก้ร้านค้า
                     </label>
-                    @if($store->store_logo)
-                        <div class="mb-3">
-                            <img src="{{ $store->logo_url }}" alt="Store Logo" class="w-32 h-32 rounded-lg object-cover shadow-md">
+                    <div class="mb-3">
+                        <div id="logo-preview-container" class="relative inline-block">
+                            <img id="logo-preview"
+                                 src="{{ $store->logo_url ?? 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'128\' height=\'128\'%3E%3Crect fill=\'%23e5e7eb\' width=\'128\' height=\'128\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E' }}"
+                                 alt="Store Logo Preview"
+                                 class="w-32 h-32 rounded-lg object-cover shadow-md border-2 border-gray-200">
+                            <button type="button" id="remove-logo"
+                                    class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition {{ $store->store_logo ? '' : 'hidden' }}"
+                                    onclick="removeLogo()">
+                                ✕
+                            </button>
                         </div>
-                    @endif
+                    </div>
                     <input type="file" name="store_logo" id="store_logo" accept="image/*"
                            class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_logo') border-red-500 @enderror">
-                    <p class="mt-1 text-xs text-gray-500">รองรับไฟล์: JPG, PNG, GIF (สูงสุด 2MB)</p>
+                    <p class="mt-1 text-xs text-gray-500">รองรับไฟล์: JPG, PNG, GIF (จะถูกแปลงเป็น WebP อัตโนมัติ, สูงสุด 2MB)</p>
                     @error('store_logo')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -89,14 +97,36 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">
                         แบนเนอร์ร้านค้า
                     </label>
-                    @if($store->store_banner)
-                        <div class="mb-3">
-                            <img src="{{ $store->banner_url }}" alt="Store Banner" class="w-full h-32 rounded-lg object-cover shadow-md">
+                    <div class="mb-3 relative">
+                        <div id="banner-preview-container" class="relative overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-100" style="height: 200px;">
+                            <img id="banner-preview"
+                                 src="{{ $store->banner_url ?? 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'200\'%3E%3Crect fill=\'%23e5e7eb\' width=\'800\' height=\'200\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Banner Image%3C/text%3E%3C/svg%3E' }}"
+                                 alt="Store Banner Preview"
+                                 class="absolute cursor-move select-none"
+                                 style="width: 100%; transition: transform 0.1s ease;"
+                                 draggable="false"
+                                 id="draggable-banner">
+                            <button type="button" id="remove-banner"
+                                    class="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg transition z-10 {{ $store->store_banner ? '' : 'hidden' }}"
+                                    onclick="removeBanner()">
+                                ✕
+                            </button>
+                            <div id="banner-drag-hint" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-0 hover:bg-opacity-10 transition pointer-events-none">
+                                <span class="text-white opacity-0 hover:opacity-100 transition bg-black bg-opacity-50 px-4 py-2 rounded-lg text-sm font-semibold">
+                                    ลากเพื่อปรับตำแหน่ง
+                                </span>
+                            </div>
                         </div>
-                    @endif
+                        <div class="mt-2 flex gap-2 items-center justify-center">
+                            <button type="button" onclick="resetBannerPosition()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">
+                                รีเซ็ตตำแหน่ง
+                            </button>
+                        </div>
+                    </div>
                     <input type="file" name="store_banner" id="store_banner" accept="image/*"
                            class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_banner') border-red-500 @enderror">
-                    <p class="mt-1 text-xs text-gray-500">รองรับไฟล์: JPG, PNG, GIF (สูงสุด 4MB)</p>
+                    <input type="hidden" name="banner_position_y" id="banner_position_y" value="{{ old('banner_position_y', $store->banner_position_y ?? 0) }}">
+                    <p class="mt-1 text-xs text-gray-500">รองรับไฟล์: JPG, PNG, GIF (จะถูกแปลงเป็น WebP อัตโนมัติ, สูงสุด 4MB)</p>
                     @error('store_banner')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -459,6 +489,135 @@
 
     document.getElementById('secondary_color').addEventListener('input', function(e) {
         this.nextElementSibling.value = e.target.value;
+    });
+
+    // === Logo Preview Functionality ===
+    const logoInput = document.getElementById('store_logo');
+    const logoPreview = document.getElementById('logo-preview');
+    const removeLogoBtn = document.getElementById('remove-logo');
+    let logoFile = null;
+
+    logoInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            logoFile = file;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                logoPreview.src = event.target.result;
+                removeLogoBtn.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    function removeLogo() {
+        logoPreview.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'128\' height=\'128\'%3E%3Crect fill=\'%23e5e7eb\' width=\'128\' height=\'128\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E';
+        logoInput.value = '';
+        logoFile = null;
+        removeLogoBtn.classList.add('hidden');
+    }
+
+    // === Banner Preview & Drag Functionality ===
+    const bannerInput = document.getElementById('store_banner');
+    const bannerPreview = document.getElementById('banner-preview');
+    const draggableBanner = document.getElementById('draggable-banner');
+    const removeBannerBtn = document.getElementById('remove-banner');
+    const bannerContainer = document.getElementById('banner-preview-container');
+    const bannerPositionInput = document.getElementById('banner_position_y');
+    let bannerFile = null;
+    let isDragging = false;
+    let startY = 0;
+    let currentY = {{ old('banner_position_y', $store->banner_position_y ?? 0) }};
+
+    // Initialize banner position
+    if (currentY !== 0) {
+        draggableBanner.style.transform = `translateY(${currentY}px)`;
+    }
+
+    bannerInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            bannerFile = file;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                bannerPreview.src = event.target.result;
+                removeBannerBtn.classList.remove('hidden');
+                // Reset position on new image
+                currentY = 0;
+                draggableBanner.style.transform = 'translateY(0px)';
+                bannerPositionInput.value = 0;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    function removeBanner() {
+        bannerPreview.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'200\'%3E%3Crect fill=\'%23e5e7eb\' width=\'800\' height=\'200\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Banner Image%3C/text%3E%3C/svg%3E';
+        bannerInput.value = '';
+        bannerFile = null;
+        removeBannerBtn.classList.add('hidden');
+        resetBannerPosition();
+    }
+
+    function resetBannerPosition() {
+        currentY = 0;
+        draggableBanner.style.transform = 'translateY(0px)';
+        bannerPositionInput.value = 0;
+    }
+
+    // Drag functionality for banner positioning
+    draggableBanner.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startY = e.clientY - currentY;
+        draggableBanner.style.cursor = 'grabbing';
+        e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(e) {
+        if (!isDragging) return;
+
+        const newY = e.clientY - startY;
+        const containerHeight = bannerContainer.offsetHeight;
+        const imageHeight = draggableBanner.offsetHeight;
+        const maxY = 0;
+        const minY = containerHeight - imageHeight;
+
+        // Constrain the movement
+        currentY = Math.max(minY, Math.min(maxY, newY));
+        draggableBanner.style.transform = `translateY(${currentY}px)`;
+        bannerPositionInput.value = currentY;
+    });
+
+    document.addEventListener('mouseup', function() {
+        if (isDragging) {
+            isDragging = false;
+            draggableBanner.style.cursor = 'move';
+        }
+    });
+
+    // Touch support for mobile
+    draggableBanner.addEventListener('touchstart', function(e) {
+        isDragging = true;
+        startY = e.touches[0].clientY - currentY;
+        e.preventDefault();
+    });
+
+    document.addEventListener('touchmove', function(e) {
+        if (!isDragging) return;
+
+        const newY = e.touches[0].clientY - startY;
+        const containerHeight = bannerContainer.offsetHeight;
+        const imageHeight = draggableBanner.offsetHeight;
+        const maxY = 0;
+        const minY = containerHeight - imageHeight;
+
+        currentY = Math.max(minY, Math.min(maxY, newY));
+        draggableBanner.style.transform = `translateY(${currentY}px)`;
+        bannerPositionInput.value = currentY;
+    });
+
+    document.addEventListener('touchend', function() {
+        isDragging = false;
     });
 </script>
 @endpush
