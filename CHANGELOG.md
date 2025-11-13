@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.176.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1002 from xjanova/claude/demo-3d-navigation-011CV5pPyn8tcsYFEzZ3qtpa (52652fc7)
+- Merge branch claude/Main into demo-3d-navigation branch (1870c278)
+- Remove 3D navigation demo (f035c0bb)
+
 ## [v2.176.1] - 2025-11-13
 
 ### ✨ Features
