@@ -108,7 +108,11 @@
 
     // Get app information for footer
     $footerAppName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
-    $footerAppVersion = \App\Models\Setting::get('app_version', '2.0');
+
+    // Get version from package.json
+    $packageJson = json_decode(file_get_contents(base_path('package.json')), true);
+    $footerAppVersion = $packageJson['version'] ?? '2.169.1';
+
     $footerCopyright = \App\Models\Setting::get('copyright_text', '© 2025 All Rights Reserved');
 
     // Calculate font weight CSS value

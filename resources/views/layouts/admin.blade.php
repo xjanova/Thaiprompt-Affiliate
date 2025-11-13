@@ -166,6 +166,9 @@
                 @yield('content')
             </main>
         </div>
+
+        <!-- Floating Action Buttons for Classic X Theme -->
+        <x-classic-x-floating-buttons />
     @else
         <!-- Millennium Taskbar -->
         <x-millennium-taskbar type="admin" />
@@ -208,6 +211,9 @@
                 @yield('content')
             </main>
         </div>
+
+        <!-- Floating Action Buttons for Millennium Theme -->
+        <x-classic-x-floating-buttons />
     @endif
 
     <!-- Fixed Floating Toast Notifications -->
