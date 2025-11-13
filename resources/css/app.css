@@ -1,0 +1,8 @@
+/* Thaiprompt Affiliate - Main Application CSS */
+
+/* Tailwind CSS will be processed here if configured */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for the application */

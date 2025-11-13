@@ -236,6 +236,11 @@ Route::get('/wealth-guide', function () {
     return view('user.wealth-guide');
 })->name('wealth-guide');
 
+// Wealth Guide Pro - Enhanced version with 3D visualizations
+Route::get('/wealth-guide-pro', function () {
+    return view('user.wealth-guide-pro');
+})->name('wealth-guide-pro');
+
 // Investment & Staking System (User)
 Route::prefix('investments')->name('investments.')->group(function () {
     Route::get('/', [InvestmentController::class, 'index'])->name('index');
