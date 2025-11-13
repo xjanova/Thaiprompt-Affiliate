@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.202.0] - 2025-11-13
+
+### ✨ Features
+- feat: add 16-bit sound effects and fix mouse movement in Snake.io (2162fc81)
+- feat: improve Snake.io collision system for proper .io game mechanics (c4d4bc3d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1053 from xjanova/claude/snak-o-game-01GVRjYkMBpjPvZVmug7cRtM (cbc707b4)
+
 ## [v2.201.2] - 2025-11-13
 
 ### ✨ Features
