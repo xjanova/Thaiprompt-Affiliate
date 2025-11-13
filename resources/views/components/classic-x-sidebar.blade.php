@@ -786,10 +786,10 @@ function sidebarData() {
                 }
             }
 
-            // Auto-scroll to active menu item after a short delay
+            // Auto-scroll to active menu item after submenu expansion
             setTimeout(() => {
                 this.scrollToActiveItem();
-            }, 300);
+            }, 600);
         },
 
         scrollToActiveItem() {
@@ -808,28 +808,22 @@ function sidebarData() {
                 const scrollableContainer = this.$el.querySelector('.classic-x-sidebar-scrollable');
 
                 if (scrollableContainer) {
-                    // Get positions
-                    const containerRect = scrollableContainer.getBoundingClientRect();
-                    const itemRect = activeItem.getBoundingClientRect();
+                    // Calculate the scroll position to center the active item
+                    // Get the active item's position relative to the scrollable container
+                    const itemOffsetTop = activeItem.offsetTop;
+                    const containerHeight = scrollableContainer.clientHeight;
+                    const itemHeight = activeItem.offsetHeight;
 
-                    // Calculate if item is outside viewport
-                    const isAbove = itemRect.top < containerRect.top;
-                    const isBelow = itemRect.bottom > containerRect.bottom;
+                    // Center the active item in the viewport
+                    const scrollTop = itemOffsetTop - (containerHeight / 2) + (itemHeight / 2);
 
-                    if (isAbove || isBelow) {
-                        // Calculate scroll position to center the active item
-                        const scrollTop = activeItem.offsetTop - scrollableContainer.offsetTop - (containerRect.height / 2) + (itemRect.height / 2);
+                    // Smooth scroll to active item
+                    scrollableContainer.scrollTo({
+                        top: Math.max(0, scrollTop), // Ensure we don't scroll to negative position
+                        behavior: 'smooth'
+                    });
 
-                        // Smooth scroll to active item
-                        scrollableContainer.scrollTo({
-                            top: scrollTop,
-                            behavior: 'smooth'
-                        });
-
-                        console.log('Scrolled to active item');
-                    } else {
-                        console.log('Active item already visible');
-                    }
+                    console.log('Scrolled to active item at position:', scrollTop);
                 }
             } else {
                 console.log('No active menu item found');
