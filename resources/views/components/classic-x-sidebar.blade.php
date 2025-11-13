@@ -720,6 +720,48 @@ function sidebarData() {
                     contentEl.classList.remove('sidebar-collapsed');
                 }
             }
+
+            // Auto-scroll to active menu item after a short delay
+            setTimeout(() => {
+                this.scrollToActiveItem();
+            }, 300);
+        },
+
+        scrollToActiveItem() {
+            // Find active submenu item
+            const activeItem = this.$el.querySelector('.classic-x-submenu-link.active');
+
+            if (activeItem) {
+                console.log('Found active menu item, scrolling to it...');
+
+                // Get the scrollable container
+                const scrollableContainer = this.$el.querySelector('.classic-x-sidebar-scrollable');
+
+                if (scrollableContainer) {
+                    // Get positions
+                    const containerRect = scrollableContainer.getBoundingClientRect();
+                    const itemRect = activeItem.getBoundingClientRect();
+
+                    // Calculate if item is outside viewport
+                    const isAbove = itemRect.top < containerRect.top;
+                    const isBelow = itemRect.bottom > containerRect.bottom;
+
+                    if (isAbove || isBelow) {
+                        // Calculate scroll position to center the active item
+                        const scrollTop = activeItem.offsetTop - scrollableContainer.offsetTop - (containerRect.height / 2) + (itemRect.height / 2);
+
+                        // Smooth scroll to active item
+                        scrollableContainer.scrollTo({
+                            top: scrollTop,
+                            behavior: 'smooth'
+                        });
+
+                        console.log('Scrolled to active item');
+                    } else {
+                        console.log('Active item already visible');
+                    }
+                }
+            }
         },
 
         toggleSidebar() {
