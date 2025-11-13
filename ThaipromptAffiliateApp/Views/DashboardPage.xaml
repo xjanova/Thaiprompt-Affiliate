@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ThaipromptAffiliateApp.ViewModels"
+             x:Class="ThaipromptAffiliateApp.Views.DashboardPage"
+             x:DataType="vm:DashboardViewModel"
+             Title="แดชบอร์ด"
+             BackgroundColor="{StaticResource BackgroundSecondary}">
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                 Command="{Binding RefreshCommand}">
+
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="20">
+
+                <!-- Welcome Card with Gradient -->
+                <Frame Style="{StaticResource CardFrameGradient}"
+                       Background="{StaticResource PrimaryGradient}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="{Binding WelcomeMessage}"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="White"/>
+
+                        <Label Text="{Binding CurrentDate}"
+                               FontSize="14"
+                               TextColor="White"
+                               Opacity="0.9"/>
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Stats Grid -->
+                <Grid ColumnDefinitions="*,*"
+                      RowDefinitions="Auto,Auto"
+                      ColumnSpacing="15"
+                      RowSpacing="15">
+
+                    <!-- Total Earnings -->
+                    <Frame Grid.Row="0" Grid.Column="0"
+                           Style="{StaticResource CardFrame}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="💰" FontSize="32"/>
+                            <Label Text="รายได้ทั้งหมด"
+                                   Style="{StaticResource LabelCaption}"
+                                   TextColor="{StaticResource Gray600}"/>
+                            <Label Text="{Binding TotalEarnings, StringFormat='฿{0:N2}'}"
+                                   FontSize="24"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Success}"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- Pending Earnings -->
+                    <Frame Grid.Row="0" Grid.Column="1"
+                           Style="{StaticResource CardFrame}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="⏳" FontSize="32"/>
+                            <Label Text="รออนุมัติ"
+                                   Style="{StaticResource LabelCaption}"
+                                   TextColor="{StaticResource Gray600}"/>
+                            <Label Text="{Binding PendingEarnings, StringFormat='฿{0:N2}'}"
+                                   FontSize="24"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Warning}"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- Total Referrals -->
+                    <Frame Grid.Row="1" Grid.Column="0"
+                           Style="{StaticResource CardFrame}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="👥" FontSize="32"/>
+                            <Label Text="ผู้แนะนำ"
+                                   Style="{StaticResource LabelCaption}"
+                                   TextColor="{StaticResource Gray600}"/>
+                            <Label Text="{Binding TotalReferrals}"
+                                   FontSize="24"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Info}"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <!-- This Month Earnings -->
+                    <Frame Grid.Row="1" Grid.Column="1"
+                           Style="{StaticResource CardFrame}">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="📈" FontSize="32"/>
+                            <Label Text="เดือนนี้"
+                                   Style="{StaticResource LabelCaption}"
+                                   TextColor="{StaticResource Gray600}"/>
+                            <Label Text="{Binding MonthEarnings, StringFormat='฿{0:N2}'}"
+                                   FontSize="24"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                </Grid>
+
+                <!-- Recent Commissions -->
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="คอมมิชชั่นล่าสุด"
+                           Style="{StaticResource LabelHeadline}"/>
+
+                    <!-- Commissions List -->
+                    <CollectionView ItemsSource="{Binding RecentCommissions}"
+                                  EmptyView="ยังไม่มีข้อมูลคอมมิชชั่น">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Frame Style="{StaticResource CardFrame}"
+                                       Padding="16"
+                                       Margin="0,0,0,10">
+                                    <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+
+                                        <!-- Commission Info -->
+                                        <Label Grid.Row="0" Grid.Column="0"
+                                               Text="{Binding Description}"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource TextPrimary}"/>
+
+                                        <Label Grid.Row="1" Grid.Column="0"
+                                               Text="{Binding CreatedAt, StringFormat='{0:dd/MM/yyyy HH:mm}'}"
+                                               FontSize="12"
+                                               TextColor="{StaticResource Gray500}"
+                                               Margin="0,5,0,0"/>
+
+                                        <!-- Amount -->
+                                        <VerticalStackLayout Grid.Row="0" Grid.RowSpan="2" Grid.Column="1"
+                                                           VerticalOptions="Center"
+                                                           HorizontalOptions="End">
+                                            <Label Text="{Binding Amount, StringFormat='฿{0:N2}'}"
+                                                   FontSize="18"
+                                                   FontAttributes="Bold"
+                                                   TextColor="{StaticResource Success}"
+                                                   HorizontalOptions="End"/>
+
+                                            <Frame BackgroundColor="{Binding StatusColor}"
+                                                   Padding="8,4"
+                                                   CornerRadius="6"
+                                                   HasShadow="False"
+                                                   Margin="0,5,0,0">
+                                                <Label Text="{Binding StatusText}"
+                                                       FontSize="10"
+                                                       TextColor="White"
+                                                       FontAttributes="Bold"/>
+                                            </Frame>
+                                        </VerticalStackLayout>
+
+                                    </Grid>
+                                </Frame>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+
+                    <!-- View All Button -->
+                    <Button Text="ดูคอมมิชชั่นทั้งหมด"
+                            Style="{StaticResource ButtonOutline}"
+                            Command="{Binding ViewAllCommissionsCommand}"/>
+
+                </VerticalStackLayout>
+
+                <!-- Loading Indicator -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                 IsVisible="{Binding IsBusy}"
+                                 HorizontalOptions="Center"
+                                 Margin="0,30,0,0"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </RefreshView>
+
+</ContentPage>

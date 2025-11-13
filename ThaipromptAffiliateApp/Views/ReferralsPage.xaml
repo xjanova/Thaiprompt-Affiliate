@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:ThaipromptAffiliateApp.ViewModels"
+             x:Class="ThaipromptAffiliateApp.Views.ReferralsPage"
+             x:DataType="vm:ReferralsViewModel"
+             Title="ผู้แนะนำ"
+             BackgroundColor="{StaticResource BackgroundSecondary}">
+
+    <RefreshView IsRefreshing="{Binding IsRefreshing}"
+                 Command="{Binding RefreshCommand}">
+
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="20">
+
+                <!-- Referral Link Card -->
+                <Frame Style="{StaticResource CardFrameGradient}"
+                       Background="{StaticResource SecondaryGradient}">
+                    <VerticalStackLayout Spacing="15">
+
+                        <Label Text="🔗 ลิงก์แนะนำของคุณ"
+                               FontSize="20"
+                               FontAttributes="Bold"
+                               TextColor="White"/>
+
+                        <Frame BackgroundColor="{StaticResource White}"
+                               Padding="15"
+                               CornerRadius="10"
+                               HasShadow="False">
+                            <VerticalStackLayout Spacing="10">
+                                <Label Text="{Binding ReferralLink}"
+                                       FontSize="14"
+                                       TextColor="{StaticResource Primary}"
+                                       LineBreakMode="WordWrap"/>
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button Grid.Column="0"
+                                            Text="คัดลอก"
+                                            Command="{Binding CopyLinkCommand}"
+                                            Style="{StaticResource ButtonPrimary}"
+                                            FontSize="14"/>
+
+                                    <Button Grid.Column="1"
+                                            Text="แชร์"
+                                            Command="{Binding ShareLinkCommand}"
+                                            Style="{StaticResource ButtonSecondary}"
+                                            FontSize="14"/>
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Frame>
+
+                        <!-- Referral Code -->
+                        <HorizontalStackLayout Spacing="10" HorizontalOptions="Center">
+                            <Label Text="รหัสแนะนำ:"
+                                   TextColor="White"
+                                   FontSize="14"
+                                   Opacity="0.9"/>
+                            <Label Text="{Binding ReferralCode}"
+                                   TextColor="White"
+                                   FontSize="16"
+                                   FontAttributes="Bold"/>
+                        </HorizontalStackLayout>
+
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Statistics -->
+                <Grid ColumnDefinitions="*,*,*"
+                      ColumnSpacing="10">
+
+                    <Frame Grid.Column="0" Style="{StaticResource CardFrame}">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="👥"
+                                   FontSize="24"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="{Binding TotalReferrals}"
+                                   FontSize="22"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Primary}"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="ทั้งหมด"
+                                   FontSize="11"
+                                   TextColor="{StaticResource Gray500}"
+                                   HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <Frame Grid.Column="1" Style="{StaticResource CardFrame}">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="✅"
+                                   FontSize="24"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="{Binding ActiveReferrals}"
+                                   FontSize="22"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Success}"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="ใช้งาน"
+                                   FontSize="11"
+                                   TextColor="{StaticResource Gray500}"
+                                   HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                    <Frame Grid.Column="2" Style="{StaticResource CardFrame}">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="💰"
+                                   FontSize="24"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="{Binding TotalEarnings, StringFormat='฿{0:N0}'}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="{StaticResource Success}"
+                                   HorizontalOptions="Center"/>
+                            <Label Text="รายได้"
+                                   FontSize="11"
+                                   TextColor="{StaticResource Gray500}"
+                                   HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Frame>
+
+                </Grid>
+
+                <!-- Referrals List Header -->
+                <Label Text="รายการผู้แนะนำ"
+                       Style="{StaticResource LabelHeadline}"/>
+
+                <!-- Referrals List -->
+                <CollectionView ItemsSource="{Binding Referrals}"
+                              EmptyView="ยังไม่มีผู้แนะนำ">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Frame Style="{StaticResource CardFrame}"
+                                   Padding="16"
+                                   Margin="0,0,0,10">
+                                <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="15">
+
+                                    <!-- Avatar -->
+                                    <Frame Grid.Column="0"
+                                           WidthRequest="50"
+                                           HeightRequest="50"
+                                           CornerRadius="25"
+                                           Padding="0"
+                                           HasShadow="False"
+                                           Background="{StaticResource PrimaryGradient}">
+                                        <Label Text="{Binding InitialName}"
+                                               FontSize="20"
+                                               FontAttributes="Bold"
+                                               TextColor="White"
+                                               HorizontalOptions="Center"
+                                               VerticalOptions="Center"/>
+                                    </Frame>
+
+                                    <!-- User Info -->
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="5">
+                                        <Label Text="{Binding Name}"
+                                               FontSize="16"
+                                               FontAttributes="Bold"
+                                               TextColor="{StaticResource TextPrimary}"/>
+
+                                        <Label Text="{Binding Email}"
+                                               FontSize="13"
+                                               TextColor="{StaticResource Gray500}"/>
+
+                                        <Label Text="{Binding JoinedDate, StringFormat='เข้าร่วม: {0:dd/MM/yyyy}'}"
+                                               FontSize="11"
+                                               TextColor="{StaticResource Gray400}"/>
+                                    </VerticalStackLayout>
+
+                                    <!-- Status Badge -->
+                                    <Frame Grid.Column="2"
+                                           BackgroundColor="{Binding StatusColor}"
+                                           Padding="10,5"
+                                           CornerRadius="8"
+                                           HasShadow="False"
+                                           VerticalOptions="Center">
+                                        <Label Text="{Binding StatusText}"
+                                               FontSize="11"
+                                               TextColor="White"
+                                               FontAttributes="Bold"/>
+                                    </Frame>
+
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+
+                <!-- Loading Indicator -->
+                <ActivityIndicator IsRunning="{Binding IsBusy}"
+                                 IsVisible="{Binding IsBusy}"
+                                 Margin="0,20,0,0"/>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+    </RefreshView>
+
+</ContentPage>
