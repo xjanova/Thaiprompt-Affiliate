@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.201.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1051 from xjanova/claude/fix-duplicate-game-slug-01EgKPpivqfDpWrhjfGqTeb6 (ac29fd44)
+- fix: prevent duplicate entry error in GameSeeder (363598c6)
+### 🔧 Other Changes
+
+
 ## [v2.201.1] - 2025-11-13
 
 ### ✨ Features
