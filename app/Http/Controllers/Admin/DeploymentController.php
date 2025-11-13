@@ -13,15 +13,42 @@ use Symfony\Component\Process\Process as SymfonyProcess;
 class DeploymentController extends Controller
 {
     /**
+     * Execute git command safely
+     */
+    private function execGit($command, $default = 'unknown')
+    {
+        try {
+            $process = new SymfonyProcess(
+                array_merge(['git'], $command),
+                base_path(),
+                null,
+                null,
+                10 // 10 seconds timeout
+            );
+
+            $process->run();
+
+            if ($process->isSuccessful()) {
+                return trim($process->getOutput());
+            }
+
+            return $default;
+        } catch (\Exception $e) {
+            Log::warning('Git command failed: ' . implode(' ', $command), ['error' => $e->getMessage()]);
+            return $default;
+        }
+    }
+
+    /**
      * Show deployment center
      */
     public function index()
     {
         // Get current git info
-        $currentBranch = trim(shell_exec('git rev-parse --abbrev-ref HEAD 2>/dev/null') ?? 'unknown');
-        $currentCommit = trim(shell_exec('git rev-parse HEAD 2>/dev/null') ?? 'unknown');
+        $currentBranch = $this->execGit(['rev-parse', '--abbrev-ref', 'HEAD'], 'unknown');
+        $currentCommit = $this->execGit(['rev-parse', 'HEAD'], 'unknown');
         $currentCommitShort = substr($currentCommit, 0, 8);
-        $currentCommitMessage = trim(shell_exec('git log -1 --pretty=%B 2>/dev/null') ?? '');
+        $currentCommitMessage = $this->execGit(['log', '-1', '--pretty=%B'], '');
 
         // Get recent deployments
         $recentDeployments = Deployment::with('startedBy')
@@ -61,21 +88,21 @@ class DeploymentController extends Controller
     public function checkUpdates(Request $request)
     {
         try {
-            $branch = $request->get('branch', trim(shell_exec('git rev-parse --abbrev-ref HEAD 2>/dev/null') ?? 'main'));
+            $branch = $request->get('branch', $this->execGit(['rev-parse', '--abbrev-ref', 'HEAD'], 'main'));
 
             // Fetch latest from remote
-            shell_exec('git fetch origin ' . escapeshellarg($branch) . ' 2>&1');
+            $this->execGit(['fetch', 'origin', $branch]);
 
             // Get local and remote commits
-            $localCommit = trim(shell_exec('git rev-parse HEAD 2>/dev/null') ?? '');
-            $remoteCommit = trim(shell_exec('git rev-parse origin/' . escapeshellarg($branch) . ' 2>/dev/null') ?? '');
+            $localCommit = $this->execGit(['rev-parse', 'HEAD'], '');
+            $remoteCommit = $this->execGit(['rev-parse', 'origin/' . $branch], '');
 
-            $hasUpdates = $localCommit !== $remoteCommit;
+            $hasUpdates = $localCommit !== $remoteCommit && !empty($localCommit) && !empty($remoteCommit);
 
             // Get commit log if there are updates
             $commits = [];
             if ($hasUpdates) {
-                $commitLog = shell_exec('git log --oneline HEAD..origin/' . escapeshellarg($branch) . ' 2>/dev/null');
+                $commitLog = $this->execGit(['log', '--oneline', 'HEAD..origin/' . $branch], '');
                 if ($commitLog) {
                     $lines = explode("\n", trim($commitLog));
                     foreach ($lines as $line) {
@@ -118,10 +145,10 @@ class DeploymentController extends Controller
         }
 
         // Get branch
-        $branch = $request->get('branch', trim(shell_exec('git rev-parse --abbrev-ref HEAD 2>/dev/null') ?? 'main'));
+        $branch = $request->get('branch', $this->execGit(['rev-parse', '--abbrev-ref', 'HEAD'], 'main'));
 
         // Get current commit for rollback
-        $currentCommit = trim(shell_exec('git rev-parse HEAD 2>/dev/null') ?? '');
+        $currentCommit = $this->execGit(['rev-parse', 'HEAD'], '');
 
         // Create deployment record
         $deployment = Deployment::create([
@@ -206,8 +233,8 @@ class DeploymentController extends Controller
                 $exitCode = $process->wait();
 
                 // Get final commit info
-                $newCommit = trim(shell_exec('git rev-parse HEAD 2>/dev/null') ?? '');
-                $newCommitMessage = trim(shell_exec('git log -1 --pretty=%B 2>/dev/null') ?? '');
+                $newCommit = $this->execGit(['rev-parse', 'HEAD'], '');
+                $newCommitMessage = $this->execGit(['log', '-1', '--pretty=%B'], '');
 
                 $duration = time() - $startTime;
 
