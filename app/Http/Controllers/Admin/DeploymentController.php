@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\GitHelper;
 use App\Models\Deployment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\Process\Process as SymfonyProcess;
 
@@ -17,25 +17,11 @@ class DeploymentController extends Controller
      */
     public function index()
     {
-        // Get current git info
-        $currentBranch = 'unknown';
-        exec('git rev-parse --abbrev-ref HEAD 2>/dev/null', $branchOutput, $branchCode);
-        if ($branchCode === 0 && !empty($branchOutput)) {
-            $currentBranch = trim($branchOutput[0]);
-        }
-
-        $currentCommit = 'unknown';
-        exec('git rev-parse HEAD 2>/dev/null', $commitOutput, $commitCode);
-        if ($commitCode === 0 && !empty($commitOutput)) {
-            $currentCommit = trim($commitOutput[0]);
-        }
+        // Get current git info using GitHelper (no shell exec needed)
+        $currentBranch = GitHelper::getCurrentBranch();
+        $currentCommit = GitHelper::getCommitHash();
         $currentCommitShort = substr($currentCommit, 0, 8);
-
-        $currentCommitMessage = '';
-        exec('git log -1 --pretty=%B 2>/dev/null', $messageOutput, $messageCode);
-        if ($messageCode === 0 && !empty($messageOutput)) {
-            $currentCommitMessage = trim(implode("\n", $messageOutput));
-        }
+        $currentCommitMessage = GitHelper::getCommitMessage($currentCommit);
 
         // Get recent deployments
         $recentDeployments = Deployment::with('startedBy')
@@ -75,37 +61,20 @@ class DeploymentController extends Controller
     public function checkUpdates(Request $request)
     {
         try {
-            $branch = 'main';
-            exec('git rev-parse --abbrev-ref HEAD 2>/dev/null', $branchOutput, $branchCode);
-            if ($branchCode === 0 && !empty($branchOutput)) {
-                $branch = trim($branchOutput[0]);
-            }
-            $branch = $request->get('branch', $branch);
+            $branch = $request->get('branch', GitHelper::getCurrentBranch());
 
-            // Fetch latest from remote
-            exec('git fetch origin ' . escapeshellarg($branch) . ' 2>&1', $fetchOutput, $fetchCode);
+            // Get local and remote commits using GitHelper
+            $localCommit = GitHelper::getCommitHash($branch);
+            $remoteCommit = GitHelper::getRemoteCommitHash($branch, 'origin');
 
-            // Get local and remote commits
-            $localCommit = '';
-            exec('git rev-parse HEAD 2>/dev/null', $localOutput, $localCode);
-            if ($localCode === 0 && !empty($localOutput)) {
-                $localCommit = trim($localOutput[0]);
-            }
-
-            $remoteCommit = '';
-            exec('git rev-parse origin/' . escapeshellarg($branch) . ' 2>/dev/null', $remoteOutput, $remoteCode);
-            if ($remoteCode === 0 && !empty($remoteOutput)) {
-                $remoteCommit = trim($remoteOutput[0]);
-            }
-
-            $hasUpdates = $localCommit !== $remoteCommit && $localCommit !== '' && $remoteCommit !== '';
+            $hasUpdates = $localCommit !== $remoteCommit && $localCommit !== '' && $localCommit !== 'unknown' && $remoteCommit !== '';
 
             // Get commit log if there are updates
             $commits = [];
             if ($hasUpdates) {
-                $commitLogOutput = [];
-                exec('git log --oneline HEAD..origin/' . escapeshellarg($branch) . ' 2>/dev/null', $commitLogOutput, $logCode);
-                $commitLog = ($logCode === 0) ? implode("\n", $commitLogOutput) : '';
+                // Note: Getting commit list requires shell exec or complex git object parsing
+                // For now, we just indicate there are updates
+                $commitLog = '';
                 if ($commitLog) {
                     $lines = explode("\n", trim($commitLog));
                     foreach ($lines as $line) {
@@ -147,20 +116,9 @@ class DeploymentController extends Controller
             ], 422);
         }
 
-        // Get branch
-        $branch = 'main';
-        exec('git rev-parse --abbrev-ref HEAD 2>/dev/null', $branchOutput, $branchCode);
-        if ($branchCode === 0 && !empty($branchOutput)) {
-            $branch = trim($branchOutput[0]);
-        }
-        $branch = $request->get('branch', $branch);
-
-        // Get current commit for rollback
-        $currentCommit = '';
-        exec('git rev-parse HEAD 2>/dev/null', $commitOutput, $commitCode);
-        if ($commitCode === 0 && !empty($commitOutput)) {
-            $currentCommit = trim($commitOutput[0]);
-        }
+        // Get branch and current commit using GitHelper
+        $branch = $request->get('branch', GitHelper::getCurrentBranch());
+        $currentCommit = GitHelper::getCommitHash();
 
         // Create deployment record
         $deployment = Deployment::create([
@@ -244,18 +202,9 @@ class DeploymentController extends Controller
                 // Wait for process to finish
                 $exitCode = $process->wait();
 
-                // Get final commit info
-                $newCommit = '';
-                exec('git rev-parse HEAD 2>/dev/null', $newCommitOutput, $newCommitCode);
-                if ($newCommitCode === 0 && !empty($newCommitOutput)) {
-                    $newCommit = trim($newCommitOutput[0]);
-                }
-
-                $newCommitMessage = '';
-                exec('git log -1 --pretty=%B 2>/dev/null', $newMessageOutput, $newMessageCode);
-                if ($newMessageCode === 0 && !empty($newMessageOutput)) {
-                    $newCommitMessage = trim(implode("\n", $newMessageOutput));
-                }
+                // Get final commit info using GitHelper
+                $newCommit = GitHelper::getCommitHash();
+                $newCommitMessage = GitHelper::getCommitMessage($newCommit);
 
                 $duration = time() - $startTime;
 
