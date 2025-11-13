@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.176.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1000 from xjanova/claude/prompt-to-web-system-011CV5svmKVX2r7dHw1DRAXX (41be7959)
+- feat: Add Prompt to Web AI-powered page generation system (58ab2220)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.175.2] - 2025-11-13
 
 ### ✨ Features
