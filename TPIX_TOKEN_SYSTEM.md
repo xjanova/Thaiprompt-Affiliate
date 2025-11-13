@@ -19,11 +19,13 @@
 TPIX Token Ecosystem is a comprehensive blockchain-based token management system built on Laravel 11. It provides a complete platform for creating, managing, and trading custom ERC20-compatible tokens on the TPIX native blockchain.
 
 ### Key Statistics
-- **70+ Files** created
-- **7,500+ Lines** of production-ready code
+- **80+ Files** created
+- **10,000+ Lines** of production-ready code
 - **100% Feature Complete** system
-- **Mobile-Ready** REST API
+- **Mobile-Ready** REST API with 19 endpoints
 - **Modern UI** with beautiful design
+- **Full DEX** with AMM functionality
+- **Real Blockchain** integration (Web3)
 
 ---
 
@@ -34,7 +36,7 @@ TPIX Token Ecosystem is a comprehensive blockchain-based token management system
 #### 1. Backend Layer
 ```
 app/
-├── Models/               (11 models)
+├── Models/               (14 models)
 │   ├── TPIXToken
 │   ├── TPIXTokenBalance
 │   ├── TPIXTokenTransfer
@@ -45,21 +47,28 @@ app/
 │   ├── CMCSyncLog
 │   ├── CoinControlRule
 │   ├── CoinControlAction
-│   └── TPIXStakingPool/TPIXStake
+│   ├── TPIXStakingPool/TPIXStake
+│   ├── TPIXLiquidityPool (DEX)
+│   ├── TPIXSwap (DEX)
+│   └── TPIXLiquidityPosition (DEX)
 │
-├── Services/TPIX/        (6 services)
+├── Services/TPIX/        (9 services)
 │   ├── TokenFactoryService
 │   ├── CoinControlService
 │   ├── CMCIntegrationService
 │   ├── ReferralService
 │   ├── TokenWalletIntegrationService
-│   └── TokenCacheService
+│   ├── TokenCacheService
+│   ├── DEXService (AMM)
+│   ├── Web3Service (Blockchain)
+│   └── SmartContractCompilerService
 │
 ├── Http/
 │   ├── Controllers/
 │   │   ├── Admin/TokenManagementController
 │   │   ├── User/TokenController
-│   │   └── Api/V1/TokenApiController
+│   │   ├── Api/V1/TokenApiController
+│   │   └── Api/V1/DEXApiController
 │   ├── Requests/TPIX/    (15 validators)
 │   └── Middleware/       (4 middleware)
 │
@@ -92,7 +101,17 @@ routes/api.php
     ├── POST   /tokens/{id}/buy
     ├── POST   /tokens/{id}/sell
     ├── GET    /portfolio
-    └── GET    /balances
+    ├── GET    /balances
+    └── DEX Routes
+        ├── GET    /dex/pools              (List pools)
+        ├── GET    /dex/pools/{id}         (Pool details)
+        ├── GET    /dex/statistics         (DEX stats)
+        ├── POST   /dex/quote              (Get swap quote)
+        ├── POST   /dex/swap               (Execute swap)
+        ├── POST   /dex/liquidity/add      (Add liquidity)
+        ├── POST   /dex/liquidity/remove   (Remove liquidity)
+        ├── GET    /dex/my/positions       (User's LP positions)
+        └── GET    /dex/my/swaps           (User's swap history)
 ```
 
 ---
@@ -117,20 +136,33 @@ routes/api.php
 - ✅ 24h volume tracking
 - ✅ Market cap calculation
 
-### 3. CoinMarketCap Integration
+### 3. Decentralized Exchange (DEX)
+- ✅ Automated Market Maker (AMM)
+- ✅ Token swaps with constant product formula
+- ✅ Liquidity pools management
+- ✅ Add/Remove liquidity
+- ✅ LP token minting and burning
+- ✅ Price impact calculation
+- ✅ Slippage protection
+- ✅ Fee distribution (0.3% to LPs)
+- ✅ Impermanent loss tracking
+- ✅ Pool APY calculation
+- ✅ TVL (Total Value Locked) tracking
+
+### 4. CoinMarketCap Integration
 - ✅ Manual token import
 - ✅ Automatic price sync
 - ✅ Market data integration
 - ✅ Sync history logs
 
-### 4. Referral System
+### 5. Referral System
 - ✅ Unique referral codes
 - ✅ Email/SMS verification
 - ✅ Dual reward system (referrer + referee)
 - ✅ Reward tracking
 - ✅ Auto distribution
 
-### 5. Staking Pools
+### 6. Staking Pools
 - ✅ Create staking pools
 - ✅ Configurable APY
 - ✅ Lock periods
@@ -138,7 +170,7 @@ routes/api.php
 - ✅ Auto-compound
 - ✅ Unstake functionality
 
-### 6. Admin Controls
+### 7. Admin Controls
 - ✅ Token approval workflow
 - ✅ Coin control (mint/burn)
 - ✅ Address freezing
@@ -146,14 +178,14 @@ routes/api.php
 - ✅ Statistics dashboard
 - ✅ Transaction monitoring
 
-### 7. Performance & Caching
+### 8. Performance & Caching
 - ✅ Redis caching layer
 - ✅ Query optimization
 - ✅ Eager loading
 - ✅ Cache warming
 - ✅ Rate limiting
 
-### 8. Security
+### 9. Security
 - ✅ Form request validation
 - ✅ Policy-based authorization
 - ✅ Rate limiting (5-50 req/hr)
@@ -338,10 +370,122 @@ Response:
 }
 ```
 
+#### 5. DEX - Get Swap Quote
+```http
+POST /api/v1/tpix/dex/quote
+{
+  "token_in_id": 1,
+  "token_out_id": 2,
+  "amount_in": "100"
+}
+
+Response:
+{
+  "data": {
+    "token_in": {
+      "id": 1,
+      "symbol": "TPIX"
+    },
+    "token_out": {
+      "id": 2,
+      "symbol": "MTK"
+    },
+    "amount_in": "100",
+    "amount_out": "9850.5",
+    "price_impact": "0.15",
+    "fee": "29.55",
+    "price": "98.505",
+    "minimum_received": "9801.2475"
+  }
+}
+```
+
+#### 6. DEX - Execute Swap
+```http
+POST /api/v1/tpix/dex/swap
+{
+  "token_in_id": 1,
+  "token_out_id": 2,
+  "amount_in": "100",
+  "min_amount_out": "9800",
+  "slippage_tolerance": 0.5
+}
+
+Response:
+{
+  "message": "Swap executed successfully",
+  "data": {
+    "success": true,
+    "swap_id": 123,
+    "amount_in": "100",
+    "amount_out": "9850.5",
+    "fee": "29.55",
+    "price_impact": "0.15",
+    "tx_hash": "0xabc..."
+  }
+}
+```
+
+#### 7. DEX - Add Liquidity
+```http
+POST /api/v1/tpix/dex/liquidity/add
+{
+  "token_a_id": 1,
+  "token_b_id": 2,
+  "amount_a": "1000",
+  "amount_b": "10000"
+}
+
+Response:
+{
+  "message": "Liquidity added successfully",
+  "data": {
+    "success": true,
+    "lp_tokens": "3162.27766017",
+    "position_id": 456
+  }
+}
+```
+
+#### 8. DEX - Get User's LP Positions
+```http
+GET /api/v1/tpix/dex/my/positions
+
+Response:
+{
+  "data": [
+    {
+      "id": 456,
+      "pool": {
+        "id": 1,
+        "pair": "TPIX/MTK"
+      },
+      "token_a": {
+        "symbol": "TPIX",
+        "amount": "1000"
+      },
+      "token_b": {
+        "symbol": "MTK",
+        "amount": "10000"
+      },
+      "lp_tokens": "3162.27766017",
+      "share_percentage": "15.5",
+      "current_value_tpix": "2100",
+      "fees_earned": "15.50",
+      "unclaimed_fees": "15.50",
+      "roi": "7.5",
+      "duration_days": 30
+    }
+  ]
+}
+```
+
 ### Rate Limits
 - Token Creation: **5 per hour**
 - Token Transfer: **20 per hour**
 - Buy/Sell: **50 per hour**
+- DEX Swaps: **50 per hour**
+- DEX Liquidity Operations: **50 per hour**
 
 Headers returned:
 ```http
