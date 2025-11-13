@@ -27,6 +27,9 @@
     <!-- Fonts -->
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -60,18 +63,42 @@
     <!-- Spaceship Background -->
     <x-spaceship-background />
 
-    <div class="min-h-screen">
-        <!-- Millennium Taskbar (Replaces Navigation) -->
+    @php
+        // Get user theme preference (use millennium as default for guests)
+        $userTheme = auth()->check() ? (auth()->user()->menu_theme_preference ?? 'millennium') : 'millennium';
+    @endphp
+
+    @if($userTheme === 'classic_x')
+        <!-- Classic X Sidebar -->
+        <x-classic-x-sidebar type="user" />
+
+        <!-- Classic X Content Wrapper -->
+        <div class="classic-x-content" id="classicXContent">
+            <!-- Page Content -->
+            <main>
+                @yield('content')
+            </main>
+
+            <!-- Footer -->
+            @include('layouts.footer')
+        </div>
+
+        <!-- Floating Action Buttons for Classic X Theme -->
+        <x-classic-x-floating-buttons />
+    @else
+        <!-- Millennium Taskbar -->
         <x-millennium-taskbar type="user" />
 
-        <!-- Page Content -->
-        <main>
-            @yield('content')
-        </main>
+        <div class="min-h-screen">
+            <!-- Page Content -->
+            <main>
+                @yield('content')
+            </main>
 
-        <!-- Footer -->
-        @include('layouts.footer')
-    </div>
+            <!-- Footer -->
+            @include('layouts.footer')
+        </div>
+    @endif
 
     {{-- Google Translate Widget (Like WordPress Plugins) --}}
 
