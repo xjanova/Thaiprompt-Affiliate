@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.165.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: Replace shell_exec with Symfony Process for security (1b7557bc)
+### 🔧 Other Changes
+- Merge pull request #946 from xjanova/claude/deployment-final-011CV3dNGQQjHWG4NY7KfZWt (ff243f95)
+- Merge branch 'claude/Main' of http://127.0.0.1:24890/git/xjanova/Thaiprompt-Affiliate into claude/Main (e6bd1437)
+- Merge branch 'claude/review-installation-system-011CV3dNGQQjHWG4NY7KfZWt' into claude/Main (e00828b9)
+
 ## [v2.165.4] - 2025-11-13
 
 ### ✨ Features
