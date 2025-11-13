@@ -346,12 +346,24 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
 
 // QR Code & Barcode Generator Routes (Public)
 Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {
+    // Public routes
     Route::get('/', [\App\Http\Controllers\QrBarcodeController::class, 'index'])->name('index');
-    Route::post('/generate', [\App\Http\Controllers\QrBarcodeController::class, 'generate'])->name('generate');
+    Route::get('/scanner', [\App\Http\Controllers\QrBarcodeController::class, 'scanner'])->name('scanner');
+    Route::post('/decode', [\App\Http\Controllers\QrBarcodeController::class, 'decode'])->name('decode');
+    Route::get('/templates', [\App\Http\Controllers\QrBarcodeController::class, 'templates'])->name('templates');
+    Route::get('/gallery', [\App\Http\Controllers\QrBarcodeController::class, 'gallery'])->name('gallery');
+    Route::get('/show/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'show'])->name('show');
+    Route::get('/r/{shortUrl}', [\App\Http\Controllers\QrBarcodeController::class, 'redirect'])->name('redirect');
 
     // Authenticated routes
     Route::middleware('auth')->group(function () {
+        Route::post('/store', [\App\Http\Controllers\QrBarcodeController::class, 'store'])->name('store');
         Route::get('/history', [\App\Http\Controllers\QrBarcodeController::class, 'history'])->name('history');
+        Route::get('/analytics', [\App\Http\Controllers\QrBarcodeController::class, 'analytics'])->name('analytics');
+        Route::put('/update/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'destroy'])->name('destroy');
+        Route::post('/favorite/{id}', [\App\Http\Controllers\QrBarcodeController::class, 'toggleFavorite'])->name('favorite');
+        Route::post('/batch-generate', [\App\Http\Controllers\QrBarcodeController::class, 'batchGenerate'])->name('batch-generate');
     });
 });
 
