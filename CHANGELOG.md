@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.198.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1044 from xjanova/claude/fix-vite-manifest-missing-011CV6GBRoE3voMhH3xvC4ie (1ff8da55)
+- fix: Add Vite build assets to fix ViteManifestNotFoundException (d17ee2d9)
+### 🔧 Other Changes
+
+
 ## [v2.198.0] - 2025-11-13
 
 ### ✨ Features
