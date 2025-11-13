@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.176.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1004 from xjanova/claude/upgrade-tarot-3d-system-011CV5ta9r7KGcE4weUY4w69 (e3987d50)
+- docs: Add comprehensive 3D WebGL Tarot system documentation (537907e5)
+
 ## [v2.176.4] - 2025-11-13
 
 ### ✨ Features
