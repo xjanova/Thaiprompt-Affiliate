@@ -336,6 +336,79 @@
         max-height: 1000px;
     }
 
+    /* RGB Border for submenu container with active item */
+    .classic-x-submenu:has(.active) {
+        position: relative;
+        border-radius: 8px;
+        margin: 4px 8px;
+        padding: 8px 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.06));
+
+        /* Medium RGB Border for submenu group */
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        animation: rgbBorderGlowMedium 3.5s linear infinite;
+    }
+
+    .classic-x-submenu:has(.active)::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 8px;
+        padding: 2px;
+        background: linear-gradient(90deg,
+            rgba(255, 0, 0, 0.5), rgba(255, 127, 0, 0.5),
+            rgba(255, 255, 0, 0.5), rgba(0, 255, 0, 0.5),
+            rgba(0, 0, 255, 0.5), rgba(75, 0, 130, 0.5),
+            rgba(148, 0, 211, 0.5), rgba(255, 0, 0, 0.5));
+        background-size: 300% 100%;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: rgbRotate 4.5s linear infinite;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    @keyframes rgbBorderGlowMedium {
+        0%, 100% {
+            box-shadow:
+                0 0 12px rgba(255, 0, 0, 0.4),
+                0 0 24px rgba(255, 0, 0, 0.25),
+                inset 0 0 8px rgba(255, 255, 255, 0.05);
+        }
+        16.66% {
+            box-shadow:
+                0 0 12px rgba(255, 255, 0, 0.4),
+                0 0 24px rgba(255, 255, 0, 0.25),
+                inset 0 0 8px rgba(255, 255, 255, 0.05);
+        }
+        33.33% {
+            box-shadow:
+                0 0 12px rgba(0, 255, 0, 0.4),
+                0 0 24px rgba(0, 255, 0, 0.25),
+                inset 0 0 8px rgba(255, 255, 255, 0.05);
+        }
+        50% {
+            box-shadow:
+                0 0 12px rgba(0, 255, 255, 0.4),
+                0 0 24px rgba(0, 255, 255, 0.25),
+                inset 0 0 8px rgba(255, 255, 255, 0.05);
+        }
+        66.66% {
+            box-shadow:
+                0 0 12px rgba(0, 0, 255, 0.4),
+                0 0 24px rgba(0, 0, 255, 0.25),
+                inset 0 0 8px rgba(255, 255, 255, 0.05);
+        }
+        83.33% {
+            box-shadow:
+                0 0 12px rgba(255, 0, 255, 0.4),
+                0 0 24px rgba(255, 0, 255, 0.25),
+                inset 0 0 8px rgba(255, 255, 255, 0.05);
+        }
+    }
+
     .classic-x-submenu-link {
         display: flex;
         align-items: center;
