@@ -96,13 +96,9 @@
                     <!-- Show existing avatar if no preview -->
                     <template x-if="!avatarPreview">
                         <div class="w-full h-full flex items-center justify-center">
-                            @if($user->line_picture_url || $user->profile_picture)
-                                <img src="{{ $user->line_picture_url ?? asset('storage/' . $user->profile_picture) }}"
-                                     alt="{{ $user->name }}"
-                                     class="w-full h-full object-cover">
-                            @else
-                                <span>{{ strtoupper(substr($user->name, 0, 1)) }}</span>
-                            @endif
+                            <img src="{{ $user->profile_picture_url }}"
+                                 alt="{{ $user->name }}"
+                                 class="w-full h-full object-cover">
                         </div>
                     </template>
                 </div>
