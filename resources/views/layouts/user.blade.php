@@ -321,10 +321,7 @@
     @if($userTheme === 'classic_x')
         </div> <!-- Close classic-x-content wrapper -->
 
-        <!-- Floating Action Buttons for Classic X Theme -->
-        <x-classic-x-floating-buttons />
-    @else
-        <!-- Floating Action Buttons for Millennium Theme -->
+        <!-- Floating Action Buttons for Classic X Theme Only -->
         <x-classic-x-floating-buttons />
     @endif
 

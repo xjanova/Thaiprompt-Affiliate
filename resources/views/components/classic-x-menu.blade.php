@@ -382,11 +382,13 @@
 
     // Auto-expand submenu if it contains the active route
     $activeSubmenus = [];
+    $parentMenuHasActive = []; // Track which parent menus have active children
     foreach ($menuItems as $index => $item) {
         if (isset($item['submenu'])) {
             foreach ($item['submenu'] as $subitem) {
                 if (isset($subitem['route']) && $currentRoute === $subitem['route']) {
                     $activeSubmenus[] = 'menu-' . $index;
+                    $parentMenuHasActive[$index] = true;
                     break;
                 }
             }
@@ -401,7 +403,7 @@
             @if(isset($item['submenu']))
                 {{-- Menu item with submenu --}}
                 <a href="{{ $item['url'] }}"
-                   class="classic-x-menu-link"
+                   class="classic-x-menu-link {{ isset($parentMenuHasActive[$index]) ? 'has-active-child' : '' }}"
                    @click.prevent="openSubmenus.includes(menuId) ? openSubmenus = openSubmenus.filter(id => id !== menuId) : openSubmenus.push(menuId)">
                     <span class="classic-x-menu-icon">
                         <i class="fas {{ $item['icon'] }}"></i>

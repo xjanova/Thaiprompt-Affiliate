@@ -123,6 +123,7 @@
         flex: 1;
         overflow-y: auto;
         overflow-x: hidden;
+        padding-bottom: 20px; /* Add padding to ensure last submenu is visible */
     }
 
     .classic-x-sidebar.collapsed {
@@ -152,11 +153,20 @@
         @if($enableAnimations)
         transition: all var(--classic-x-animation-speed);
         @endif
+        perspective: 1000px;
     }
 
     .classic-x-logo {
         max-height: {{ $logoHeight }}px;
         width: auto;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3))
+                drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+        transform: translateZ(10px);
+        transition: transform 0.3s ease;
+    }
+
+    .classic-x-logo:hover {
+        transform: translateZ(20px) scale(1.05);
     }
 
     .classic-x-menu {
@@ -207,6 +217,13 @@
         @if($enableShadows)
         box-shadow: inset 4px 0 0 0 var(--classic-x-primary-color);
         @endif
+    }
+
+    /* Highlight parent menu when child is active */
+    .classic-x-menu-link.has-active-child {
+        background: rgba(255, 255, 255, 0.08);
+        border-left: 3px solid var(--classic-x-primary-color);
+        font-weight: 500;
     }
 
     .classic-x-menu-icon {
@@ -278,7 +295,18 @@
 
     .classic-x-submenu-link.active {
         color: var(--classic-x-primary-color);
-        font-weight: 500;
+        font-weight: 600;
+        background: rgba(255, 255, 255, 0.1);
+        border-left: 3px solid var(--classic-x-primary-color);
+        position: relative;
+    }
+
+    .classic-x-submenu-link.active::before {
+        content: '●';
+        position: absolute;
+        left: 40px;
+        color: var(--classic-x-primary-color);
+        font-size: 8px;
     }
 
     .classic-x-badge {
@@ -423,20 +451,50 @@
         $copyrightText = \App\Models\Setting::get('copyright_text', '© 2025 All Rights Reserved');
     @endphp
     <div class="classic-x-menu-footer" style="
-        padding: 16px 20px;
+        padding: 12px 16px;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
-        font-size: 11px;
-        color: rgba(255, 255, 255, 0.5);
-        line-height: 1.6;
+        font-size: 9px;
+        line-height: 1.5;
+        perspective: 500px;
+        transform-style: preserve-3d;
     ">
-        <div style="text-align: center;">
-            <div style="font-weight: 600; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">
+        <div style="
+            text-align: center;
+            transform: translateZ(5px);
+            background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.08));
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow:
+                0 2px 4px rgba(0,0,0,0.2),
+                inset 0 1px 0 rgba(255,255,255,0.1),
+                inset 0 -1px 0 rgba(0,0,0,0.2);
+        ">
+            <div style="
+                font-weight: 700;
+                font-size: 10px;
+                background: linear-gradient(135deg, #ffffff 0%, rgba(255,255,255,0.7) 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+                margin-bottom: 3px;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+                letter-spacing: 0.5px;
+            ">
                 {{ $appName }}
             </div>
-            <div style="margin-bottom: 4px;">
+            <div style="
+                font-size: 8px;
+                color: rgba(255, 255, 255, 0.4);
+                margin-bottom: 2px;
+                text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+            ">
                 Version {{ $appVersion }}
             </div>
-            <div style="font-size: 10px;">
+            <div style="
+                font-size: 7px;
+                color: rgba(255, 255, 255, 0.3);
+                text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+            ">
                 {{ $copyrightText }}
             </div>
         </div>
