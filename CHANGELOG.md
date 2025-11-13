@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.178.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1013 from xjanova/claude/qrcode-barcode-generator-011CV5soSfeBW39LqMvx2j5C (7c114db7)
+- Fix: QR Code not displaying - inline JavaScript (4bc14ecd)
+
 ## [v2.178.1] - 2025-11-13
 
 ### ✨ Features
