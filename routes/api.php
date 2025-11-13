@@ -453,4 +453,37 @@ Route::prefix('v1/tpix')->name('api.tpix.')->group(function () {
         Route::get('/portfolio', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'portfolio'])->name('portfolio');
         Route::get('/balances', [\App\Http\Controllers\Api\V1\TokenApiController::class, 'balances'])->name('balances');
     });
+
+    // DEX Routes
+    Route::prefix('dex')->name('dex.')->group(function () {
+        // Public endpoints
+        Route::get('/pools', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'pools'])->name('pools');
+        Route::get('/pools/{id}', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'poolDetails'])->name('pools.show');
+        Route::get('/statistics', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'statistics'])->name('statistics');
+
+        // Protected endpoints (requires authentication)
+        Route::middleware('auth:sanctum')->group(function () {
+            // Quote
+            Route::post('/quote', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'quote'])
+                ->name('quote');
+
+            // Swap
+            Route::post('/swap', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'swap'])
+                ->middleware('rate_limit_token_operations:trade')
+                ->name('swap');
+
+            // Liquidity
+            Route::post('/liquidity/add', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'addLiquidity'])
+                ->middleware('rate_limit_token_operations:trade')
+                ->name('liquidity.add');
+
+            Route::post('/liquidity/remove', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'removeLiquidity'])
+                ->middleware('rate_limit_token_operations:trade')
+                ->name('liquidity.remove');
+
+            // User positions & history
+            Route::get('/my/positions', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'myPositions'])->name('my.positions');
+            Route::get('/my/swaps', [\App\Http\Controllers\Api\V1\DEXApiController::class, 'mySwaps'])->name('my.swaps');
+        });
+    });
 });
