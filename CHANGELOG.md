@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.169.1] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #957 from xjanova/claude/fix-shell-exec-error-011CV4YnSkrDgcUeqbvof2E4 (9ee5918e)
+- Remove deployment center feature entirely (49fc3291)
+
 ## [v2.169.0] - 2025-11-13
 
 ### ✨ Features
