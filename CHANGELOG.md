@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.194.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1036 from xjanova/claude/refactor-mindmap-system-011CV6DA52BRDz3qsfgQeiHA (59e112a0)
+- feat: Add stunning 3D Interactive Presentation System 🚀 (d098a152)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.193.1] - 2025-11-13
 
 ### ✨ Features
