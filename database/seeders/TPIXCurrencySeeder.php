@@ -24,7 +24,7 @@ class TPIXCurrencySeeder extends Seeder
             DB::table('crypto_currencies')
                 ->where('code', 'TPIX')
                 ->update([
-                    'name' => 'TPIX',
+                    'name' => 'Thaiprompt Index',
                     'symbol' => 'TPIX',
                     'network' => 'tpix',
                     'contract_address' => null, // Native coin, no contract
@@ -58,7 +58,7 @@ class TPIXCurrencySeeder extends Seeder
                     'exchange_enabled' => true,
                     'payment_gateway_enabled' => true, // Enable as payment gateway
                     'sort_order' => 1, // Show first in lists
-                    'description' => 'TPIX is the native cryptocurrency of the TPIX Network blockchain. It is used for transaction fees and as a medium of exchange within the Thaiprompt Affiliate ecosystem.',
+                    'description' => 'Thaiprompt Index (TPIX) is the native cryptocurrency of the TPIX Network blockchain. It is used for transaction fees and as a medium of exchange within the Thaiprompt Affiliate ecosystem.',
                     'metadata' => json_encode([
                         'total_supply' => '7000000000',
                         'circulating_supply' => '7000000000',
@@ -85,7 +85,7 @@ class TPIXCurrencySeeder extends Seeder
 
             DB::table('crypto_currencies')->insert([
                 'code' => 'TPIX',
-                'name' => 'TPIX',
+                'name' => 'Thaiprompt Index',
                 'symbol' => 'TPIX',
                 'network' => 'tpix',
                 'contract_address' => null, // Native coin, no contract
@@ -119,7 +119,7 @@ class TPIXCurrencySeeder extends Seeder
                 'exchange_enabled' => true,
                 'payment_gateway_enabled' => true, // Enable as payment gateway
                 'sort_order' => 1, // Show first in lists
-                'description' => 'TPIX is the native cryptocurrency of the TPIX Network blockchain. It is used for transaction fees and as a medium of exchange within the Thaiprompt Affiliate ecosystem.',
+                'description' => 'Thaiprompt Index (TPIX) is the native cryptocurrency of the TPIX Network blockchain. It is used for transaction fees and as a medium of exchange within the Thaiprompt Affiliate ecosystem.',
                 'metadata' => json_encode([
                     'total_supply' => '7000000000',
                     'circulating_supply' => '7000000000',
