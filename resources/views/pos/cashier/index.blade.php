@@ -51,11 +51,11 @@
             position: fixed;
             bottom: 20px;
             right: 20px;
-            width: 50px;
-            height: 50px;
-            background: rgba(34, 197, 94, 0.9);
+            width: 60px;
+            height: 60px;
+            background: #22c55e;
             color: white;
-            border: none;
+            border: 3px solid white;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
@@ -63,15 +63,14 @@
             justify-content: center;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             transition: all 0.3s ease;
-            z-index: 9999;
-            opacity: 1;
-            pointer-events: auto;
+            z-index: 99999;
+            font-size: 24px;
         }
 
         .fullscreen-exit-btn:hover {
-            background: rgba(34, 197, 94, 1);
-            transform: scale(1.1);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            background: #16a34a;
+            transform: scale(1.15);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
         }
 
         /* Hide header in fullscreen */
@@ -338,9 +337,9 @@
         <!-- Fullscreen Toggle Button (Bottom Corner) -->
         <button @click="toggleFullscreen()"
                 class="fullscreen-exit-btn no-print"
+                x-init="$watch('isFullscreen', value => { console.log('Fullscreen state:', value); })"
                 :title="isFullscreen ? 'ออกจากโหมดเต็มหน้าจอ' : 'ขยายเต็มหน้าจอ'">
-            <i class="fas fa-expand text-xl" x-show="!isFullscreen"></i>
-            <i class="fas fa-compress text-xl" x-show="isFullscreen"></i>
+            <i :class="isFullscreen ? 'fas fa-compress' : 'fas fa-expand'" class="text-xl"></i>
         </button>
     </div>
 
