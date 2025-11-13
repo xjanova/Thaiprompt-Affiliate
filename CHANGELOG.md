@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.177.5] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1010 from xjanova/claude/fix-blade-syntax-error-011CV5zhbqh9sNwbhtt99fA8 (65b38ea2)
+- Fix Blade syntax error in tarot reading view (0a279187)
+
 ## [v2.177.4] - 2025-11-13
 
 ### ✨ Features
