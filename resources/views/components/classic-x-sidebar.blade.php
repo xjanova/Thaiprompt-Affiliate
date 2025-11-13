@@ -211,12 +211,76 @@
         background: var(--classic-x-sidebar-active-bg);
         color: var(--classic-x-sidebar-active-text);
         font-weight: 600;
+        position: relative;
+        border-radius: 8px;
+        margin: 4px 8px;
+
+        /* Full RGB Border for active main menu */
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        animation: rgbBorderGlowMain 3s linear infinite;
+
         @if($enableGradients)
         background: linear-gradient(135deg, var(--classic-x-sidebar-active-bg) 0%, var(--classic-x-primary-color) 100%);
+        background-clip: padding-box;
         @endif
-        @if($enableShadows)
-        box-shadow: inset 4px 0 0 0 var(--classic-x-primary-color);
-        @endif
+    }
+
+    .classic-x-menu-link.active::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: 8px;
+        padding: 2px;
+        background: linear-gradient(90deg,
+            #ff0000, #ff7f00, #ffff00, #00ff00,
+            #0000ff, #4b0082, #9400d3, #ff0000);
+        background-size: 300% 100%;
+        -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        animation: rgbRotate 4s linear infinite;
+        z-index: -1;
+        pointer-events: none;
+    }
+
+    @keyframes rgbBorderGlowMain {
+        0%, 100% {
+            box-shadow:
+                0 0 15px rgba(255, 0, 0, 0.6),
+                0 0 30px rgba(255, 0, 0, 0.4),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        16.66% {
+            box-shadow:
+                0 0 15px rgba(255, 255, 0, 0.6),
+                0 0 30px rgba(255, 255, 0, 0.4),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        33.33% {
+            box-shadow:
+                0 0 15px rgba(0, 255, 0, 0.6),
+                0 0 30px rgba(0, 255, 0, 0.4),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        50% {
+            box-shadow:
+                0 0 15px rgba(0, 255, 255, 0.6),
+                0 0 30px rgba(0, 255, 255, 0.4),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        66.66% {
+            box-shadow:
+                0 0 15px rgba(0, 0, 255, 0.6),
+                0 0 30px rgba(0, 0, 255, 0.4),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
+        83.33% {
+            box-shadow:
+                0 0 15px rgba(255, 0, 255, 0.6),
+                0 0 30px rgba(255, 0, 255, 0.4),
+                inset 0 0 10px rgba(255, 255, 255, 0.1);
+        }
     }
 
     /* Highlight parent menu when child is active */
@@ -728,11 +792,16 @@ function sidebarData() {
         },
 
         scrollToActiveItem() {
-            // Find active submenu item
-            const activeItem = this.$el.querySelector('.classic-x-submenu-link.active');
+            // Find active item - try submenu first, then main menu
+            let activeItem = this.$el.querySelector('.classic-x-submenu-link.active');
+
+            if (!activeItem) {
+                // If no active submenu, check for active main menu item
+                activeItem = this.$el.querySelector('.classic-x-menu-link.active:not(.has-active-child)');
+            }
 
             if (activeItem) {
-                console.log('Found active menu item, scrolling to it...');
+                console.log('Found active menu item, scrolling to it...', activeItem);
 
                 // Get the scrollable container
                 const scrollableContainer = this.$el.querySelector('.classic-x-sidebar-scrollable');
@@ -761,6 +830,8 @@ function sidebarData() {
                         console.log('Active item already visible');
                     }
                 }
+            } else {
+                console.log('No active menu item found');
             }
         },
 
