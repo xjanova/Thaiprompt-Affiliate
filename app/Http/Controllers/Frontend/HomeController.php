@@ -179,7 +179,15 @@ class HomeController extends Controller
             'api_endpoints' => 20,
         ];
 
-        return view('frontend.about', compact('stats'));
+        // Get MLM organization stats for visualization
+        $mlmOrgStats = [
+            'total_members' => \App\Models\MlmMember::count(),
+            'active_members' => \App\Models\MlmMember::where('status', 'active')->count(),
+            'total_levels' => \DB::table('mlm_genealogy')->max('level') ?? 0,
+            'monthly_growth' => \App\Models\MlmMember::whereMonth('created_at', date('m'))->count(),
+        ];
+
+        return view('frontend.about', compact('stats', 'mlmOrgStats'));
     }
 
     /**
