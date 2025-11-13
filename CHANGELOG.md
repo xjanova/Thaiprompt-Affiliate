@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.177.0] - 2025-11-13
+
+### ✨ Features
+- Merge pull request #1005 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (7f785b71)
+- feat: Add TPIX Native Blockchain System (551276bd)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.176.5] - 2025-11-13
 
 ### ✨ Features
