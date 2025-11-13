@@ -336,6 +336,13 @@
             ['icon' => 'fa-dashboard', 'label' => 'แดชบอร์ด', 'url' => safeRoute('user.dashboard'), 'route' => 'user.dashboard'],
             ['icon' => 'fa-user', 'label' => 'โปรไฟล์', 'url' => safeRoute('user.profile'), 'route' => 'user.profile'],
             ['icon' => 'fa-id-card', 'label' => 'ยืนยันตัวตน KYC', 'url' => safeRoute('user.kyc.index'), 'route' => 'user.kyc.index'],
+            [
+                'icon' => 'fa-gem',
+                'label' => 'คู่มือเสริมทางเศรษฐี',
+                'url' => safeRoute('user.wealth-guide-pro'),
+                'route' => 'user.wealth-guide-pro',
+                'badge' => 'PRO'
+            ],
             ['icon' => 'fa-money-bill', 'label' => 'คอมมิชชั่น', 'url' => safeRoute('user.commissions'), 'route' => 'user.commissions'],
             [
                 'icon' => 'fa-shopping-cart',
