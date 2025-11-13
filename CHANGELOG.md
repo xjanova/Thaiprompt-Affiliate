@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.165.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #942 from xjanova/claude/thai-language-rules-011CV57iHj7cUsgUy3ye7v1B (54b29fc9)
+- เพิ่ม: กฎการใช้ภาษาไทยสำหรับ Claude Code (7f97fb22)
+
 ## [v2.165.1] - 2025-11-13
 
 ### ✨ Features
