@@ -98,17 +98,17 @@
                         แบนเนอร์ร้านค้า
                     </label>
                     <div class="mb-3 relative">
-                        <div id="banner-preview-container" class="relative overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-100" style="height: 300px;">
+                        <div id="banner-preview-container" class="relative overflow-hidden rounded-lg border-2 border-gray-200 bg-gray-100" style="height: 300px; cursor: grab;">
                             <div class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm pointer-events-none z-10" id="banner-drag-hint">
                                 <div class="bg-white bg-opacity-90 px-4 py-2 rounded-lg shadow-md">
                                     📸 คลิกและลากขึ้น-ลง เพื่อปรับตำแหน่งแบนเนอร์
                                 </div>
                             </div>
                             <img id="banner-preview"
-                                 src="{{ $store->banner_url ?? 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'300\'%3E%3Crect fill=\'%23e5e7eb\' width=\'800\' height=\'300\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Banner Image%3C/text%3E%3C/svg%3E' }}"
+                                 src="{{ $store->banner_url ?? 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'%3E%3Crect fill=\'%23e5e7eb\' width=\'800\' height=\'600\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Banner Image%3C/text%3E%3C/svg%3E' }}"
                                  alt="Store Banner Preview"
-                                 class="absolute cursor-grab select-none"
-                                 style="min-height: 100%; width: auto; min-width: 100%; left: 50%; transform: translateX(-50%); user-select: none; -webkit-user-drag: none; object-fit: cover;"
+                                 class="select-none"
+                                 style="width: 100%; height: auto; position: absolute; top: 0; left: 0; user-select: none; -webkit-user-drag: none; pointer-events: none;"
                                  draggable="false"
                                  id="draggable-banner">
                             <button type="button" id="remove-banner"
@@ -123,7 +123,7 @@
                                 รีเซ็ตตำแหน่ง
                             </button>
                         </div>
-                        <p class="mt-1 text-xs text-gray-500">💡 เคล็ดลับ: รูปแบนเนอร์จะแสดงแบบเต็มความกว้าง คุณสามารถลากปรับตำแหน่งแนวตั้งได้</p>
+                        <p class="mt-1 text-xs text-gray-500">💡 เคล็ดลับ: ลากในกรอบสีเทาเพื่อปรับตำแหน่งแบนเนอร์แนวตั้ง</p>
                     </div>
                     <input type="file" name="store_banner" id="store_banner" accept="image/*"
                            class="w-full px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition @error('store_banner') border-red-500 @enderror">
@@ -533,12 +533,10 @@
     let startY = 0;
     let startPosY = 0;
     let currentY = {{ old('banner_position_y', $store->banner_position_y ?? 0) }};
-    let imageLoaded = false;
 
     // Check if there's an existing banner
     @if($store->store_banner)
         bannerDragHint.style.display = 'none';
-        imageLoaded = true; // Assume existing image is loaded
     @endif
 
     // Update position display
@@ -546,14 +544,14 @@
         positionValue.textContent = Math.round(value) + 'px';
     }
 
-    // Apply transform with both X and Y
+    // Apply transform - simple translateY only
     function applyBannerTransform(yPos) {
-        draggableBanner.style.transform = `translate(-50%, ${yPos}px)`;
+        draggableBanner.style.transform = `translateY(${yPos}px)`;
     }
 
     // Initialize banner position on image load
     bannerPreview.addEventListener('load', function() {
-        imageLoaded = true;
+        console.log('Banner image loaded');
         if (currentY !== 0) {
             applyBannerTransform(currentY);
             updatePositionDisplay(currentY);
@@ -570,7 +568,6 @@
             bannerFile = file;
             const reader = new FileReader();
             reader.onload = function(event) {
-                imageLoaded = false;
                 bannerPreview.src = event.target.result;
                 removeBannerBtn.classList.remove('hidden');
                 bannerDragHint.style.display = 'none';
@@ -589,12 +586,11 @@
             event.stopPropagation();
             event.preventDefault();
         }
-        bannerPreview.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'300\'%3E%3Crect fill=\'%23e5e7eb\' width=\'800\' height=\'300\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Banner Image%3C/text%3E%3C/svg%3E';
+        bannerPreview.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'600\'%3E%3Crect fill=\'%23e5e7eb\' width=\'800\' height=\'600\'/%3E%3Ctext fill=\'%239ca3af\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Banner Image%3C/text%3E%3C/svg%3E';
         bannerInput.value = '';
         bannerFile = null;
         removeBannerBtn.classList.add('hidden');
         bannerDragHint.style.display = 'flex';
-        imageLoaded = false;
         resetBannerPosition();
     }
 
@@ -605,23 +601,17 @@
         updatePositionDisplay(0);
     }
 
-    // Drag functionality for banner positioning
-    draggableBanner.addEventListener('mousedown', function(e) {
+    // Drag functionality - Listen on container instead of image
+    bannerContainer.addEventListener('mousedown', function(e) {
         // Don't start dragging if clicking on remove button
         if (e.target.closest('#remove-banner')) {
-            return;
-        }
-
-        if (!imageLoaded) {
-            console.log('Image not loaded yet, cannot drag');
             return;
         }
 
         isDragging = true;
         startY = e.clientY;
         startPosY = currentY;
-        draggableBanner.style.cursor = 'grabbing';
-        draggableBanner.style.transition = 'none';
+        bannerContainer.style.cursor = 'grabbing';
         e.preventDefault();
         console.log('Started dragging from Y:', startY, 'Current position:', currentY);
     });
@@ -635,11 +625,13 @@
         const containerHeight = bannerContainer.offsetHeight;
         const imageHeight = draggableBanner.offsetHeight;
 
-        // Calculate bounds - รูปสามารถเคลื่อนที่ได้ภายในขอบเขต
+        console.log('Container height:', containerHeight, 'Image height:', imageHeight);
+
+        // Calculate bounds
         const maxY = 0;
         const minY = Math.min(0, containerHeight - imageHeight);
 
-        // Allow dragging always (เอาเงื่อนไข imageHeight > containerHeight ออก)
+        // Constrain the movement
         currentY = Math.max(minY, Math.min(maxY, newY));
         applyBannerTransform(currentY);
         bannerPositionInput.value = Math.round(currentY);
@@ -649,26 +641,20 @@
     document.addEventListener('mouseup', function() {
         if (isDragging) {
             isDragging = false;
-            draggableBanner.style.cursor = 'grab';
-            draggableBanner.style.transition = 'transform 0.1s ease';
+            bannerContainer.style.cursor = 'grab';
             console.log('Stopped dragging at position:', currentY);
         }
     });
 
     // Touch support for mobile
-    draggableBanner.addEventListener('touchstart', function(e) {
+    bannerContainer.addEventListener('touchstart', function(e) {
         if (e.target.closest('#remove-banner')) {
-            return;
-        }
-
-        if (!imageLoaded) {
             return;
         }
 
         isDragging = true;
         startY = e.touches[0].clientY;
         startPosY = currentY;
-        draggableBanner.style.transition = 'none';
         e.preventDefault();
     });
 
@@ -693,7 +679,6 @@
     document.addEventListener('touchend', function() {
         if (isDragging) {
             isDragging = false;
-            draggableBanner.style.transition = 'transform 0.1s ease';
         }
     });
 
