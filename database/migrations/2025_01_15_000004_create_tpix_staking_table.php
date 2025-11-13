@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('tpix_staking_pools', function (Blueprint $table) {
+        if (!Schema::hasTable('tpix_staking_pools')) {
+            Schema::create('tpix_staking_pools', function (Blueprint $table) {
             $table->id();
             $table->foreignId('token_id')->constrained('tpix_tokens')->onDelete('cascade');
             $table->foreignId('creator_id')->constrained('users');
@@ -48,8 +49,10 @@ return new class extends Migration
             $table->index(['token_id', 'status']);
             $table->index('status');
         });
+        }
 
-        Schema::create('tpix_stakes', function (Blueprint $table) {
+        if (!Schema::hasTable('tpix_stakes')) {
+            Schema::create('tpix_stakes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('pool_id')->constrained('tpix_staking_pools')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -81,6 +84,7 @@ return new class extends Migration
             $table->index(['pool_id', 'status']);
             $table->index('unlock_at');
         });
+        }
     }
 
     public function down(): void
