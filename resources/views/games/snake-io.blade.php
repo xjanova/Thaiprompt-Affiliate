@@ -589,14 +589,8 @@
             }
 
             checkSelfCollision() {
-                const head = this.segments[0].position;
-
-                for (let i = 3; i < this.segments.length; i++) {
-                    const distance = head.distanceTo(this.segments[i].position);
-                    if (distance < CONFIG.COLLISION_DISTANCE) {
-                        return true;
-                    }
-                }
+                // Self collision is disabled in .io games
+                // Players should not die when hitting their own body
                 return false;
             }
 
@@ -743,6 +737,101 @@
             bots.push(bot);
         }
 
+        /**
+         * Check collision between two snakes
+         * Returns the snake that should die, or null if no collision
+         */
+        function checkSnakeCollision(snake1, snake2) {
+            if (!snake1.alive || !snake2.alive) return null;
+
+            const head1 = snake1.segments[0].position;
+            const head2 = snake2.segments[0].position;
+
+            // Check head-to-head collision
+            const headToHeadDistance = head1.distanceTo(head2);
+            if (headToHeadDistance < CONFIG.COLLISION_DISTANCE * 1.5) {
+                // Head-to-head collision
+                // Determine winner based on:
+                // 1. Size (longer snake wins)
+                // 2. If same size, boosting snake wins
+                // 3. If both boosting or both not, both die (return both)
+
+                if (snake1.length > snake2.length) {
+                    return snake2; // snake1 wins
+                } else if (snake2.length > snake1.length) {
+                    return snake1; // snake2 wins
+                } else {
+                    // Same length - check boost
+                    if (snake1.isBoosting && !snake2.isBoosting) {
+                        return snake2; // boosting snake wins
+                    } else if (snake2.isBoosting && !snake1.isBoosting) {
+                        return snake1; // boosting snake wins
+                    } else {
+                        // Both equal - smaller one dies (or random)
+                        return snake1.score <= snake2.score ? snake1 : snake2;
+                    }
+                }
+            }
+
+            // Check if snake1's head hits snake2's body
+            for (let i = 1; i < snake2.segments.length; i++) {
+                const distance = head1.distanceTo(snake2.segments[i].position);
+                if (distance < CONFIG.COLLISION_DISTANCE) {
+                    return snake1; // snake1 dies (hit snake2's body)
+                }
+            }
+
+            // Check if snake2's head hits snake1's body
+            for (let i = 1; i < snake1.segments.length; i++) {
+                const distance = head2.distanceTo(snake1.segments[i].position);
+                if (distance < CONFIG.COLLISION_DISTANCE) {
+                    return snake2; // snake2 dies (hit snake1's body)
+                }
+            }
+
+            return null; // No collision
+        }
+
+        /**
+         * Check all snake collisions and handle deaths
+         */
+        function checkAllSnakeCollisions() {
+            if (!player || !player.alive) return;
+
+            // Check player vs all bots
+            for (let i = bots.length - 1; i >= 0; i--) {
+                const bot = bots[i];
+                if (!bot.alive) continue;
+
+                const victim = checkSnakeCollision(player, bot);
+                if (victim) {
+                    victim.die();
+                    if (victim === bot) {
+                        createBot(); // Respawn bot
+                    }
+                    return; // Only one death per frame
+                }
+            }
+
+            // Check bot vs bot collisions
+            for (let i = bots.length - 1; i >= 0; i--) {
+                const bot1 = bots[i];
+                if (!bot1.alive) continue;
+
+                for (let j = i - 1; j >= 0; j--) {
+                    const bot2 = bots[j];
+                    if (!bot2.alive) continue;
+
+                    const victim = checkSnakeCollision(bot1, bot2);
+                    if (victim) {
+                        victim.die();
+                        createBot(); // Respawn
+                        return; // Only one death per frame
+                    }
+                }
+            }
+        }
+
         function startGame() {
             playerName = document.getElementById('player-name').value.trim() ||
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
@@ -858,13 +947,6 @@
 
                 bot.update();
 
-                // Check collisions
-                if (bot.checkSelfCollision()) {
-                    bot.die();
-                    createBot(); // Respawn
-                    return;
-                }
-
                 // Check food collision
                 for (let i = foods.length - 1; i >= 0; i--) {
                     const food = foods[i];
@@ -908,14 +990,13 @@
                         break;
                     }
                 }
-
-                // Check self collision
-                if (player.checkSelfCollision()) {
-                    player.die();
-                }
             }
 
             updateBots();
+
+            // Check all snake-to-snake collisions
+            checkAllSnakeCollisions();
+
             updateLeaderboard();
 
             // Maintain food count
