@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.190.0] - 2025-11-13
+
+### ✨ Features
+- feat: Add Complete DEX REST API with 10 Endpoints (37e6aaa2)
+- feat: Add Complete DEX Database Infrastructure & Models (19cfe0da)
+- feat: Add Critical Blockchain Infrastructure - Web3, Compiler & DEX (6fc96a71)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1030 from xjanova/claude/create-custom-crypto-coin-011CV5uo5NDNYWpZRLiMExVe (10f441cb)
+- docs: Update TPIX Token System Documentation for DEX (77f2dda1)
+
 ## [v2.189.0] - 2025-11-13
 
 ### ✨ Features
