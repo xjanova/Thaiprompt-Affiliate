@@ -30,6 +30,7 @@ class PaymentService
         $this->providers['bank_transfer'] = new BankTransferProvider();
         $this->providers['cash_on_delivery'] = new CashOnDeliveryProvider();
         $this->providers['paysolutions'] = new PaySolutionsProvider();
+        $this->providers['nfc_card'] = app(NFCCardProvider::class);
     }
 
     /**
