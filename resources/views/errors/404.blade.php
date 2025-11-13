@@ -207,7 +207,15 @@
                 </a>
 
                 <!-- Dashboard -->
-                <a href="{{ auth()->check() ? route('user.dashboard') : route('login') }}" class="menu-item hover-lift bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg text-center group">
+                @php
+                    $dashboardUrl = '#';
+                    if (auth()->check() && Route::has('user.dashboard')) {
+                        $dashboardUrl = route('user.dashboard');
+                    } elseif (Route::has('login')) {
+                        $dashboardUrl = route('login');
+                    }
+                @endphp
+                <a href="{{ $dashboardUrl }}" class="menu-item hover-lift bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg text-center group">
                     <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-tachometer-alt text-2xl text-white"></i>
                     </div>
@@ -216,7 +224,7 @@
                 </a>
 
                 <!-- Contact -->
-                <a href="{{ route('frontend.contact') ?? '#' }}" class="menu-item hover-lift bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg text-center group">
+                <a href="{{ Route::has('frontend.contact') ? route('frontend.contact') : (Route::has('contact') ? route('contact') : '#') }}" class="menu-item hover-lift bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg text-center group">
                     <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-envelope text-2xl text-white"></i>
                     </div>
@@ -225,7 +233,7 @@
                 </a>
 
                 <!-- Help -->
-                <a href="{{ route('user.tickets.index') ?? '#' }}" class="menu-item hover-lift bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg text-center group">
+                <a href="{{ Route::has('user.tickets.index') ? route('user.tickets.index') : '#' }}" class="menu-item hover-lift bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg text-center group">
                     <div class="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                         <i class="fas fa-question-circle text-2xl text-white"></i>
                     </div>
@@ -261,29 +269,43 @@
                 <h3 class="text-lg font-semibold text-white mb-4">ลิงก์ยอดนิยม</h3>
                 <div class="flex flex-wrap justify-center gap-3">
                     @auth
-                        <a href="{{ route('user.dashboard') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
-                            <i class="fas fa-chart-line mr-2"></i>Dashboard
-                        </a>
-                        <a href="{{ route('user.genealogy') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
-                            <i class="fas fa-sitemap mr-2"></i>Genealogy
-                        </a>
-                        <a href="{{ route('user.wallet.index') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
-                            <i class="fas fa-wallet mr-2"></i>Wallet
-                        </a>
-                        <a href="{{ route('user.profile') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
-                            <i class="fas fa-user mr-2"></i>Profile
-                        </a>
+                        @if(Route::has('user.dashboard'))
+                            <a href="{{ route('user.dashboard') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
+                                <i class="fas fa-chart-line mr-2"></i>Dashboard
+                            </a>
+                        @endif
+                        @if(Route::has('user.genealogy'))
+                            <a href="{{ route('user.genealogy') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
+                                <i class="fas fa-sitemap mr-2"></i>Genealogy
+                            </a>
+                        @endif
+                        @if(Route::has('user.wallet.index'))
+                            <a href="{{ route('user.wallet.index') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
+                                <i class="fas fa-wallet mr-2"></i>Wallet
+                            </a>
+                        @endif
+                        @if(Route::has('user.profile'))
+                            <a href="{{ route('user.profile') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
+                                <i class="fas fa-user mr-2"></i>Profile
+                            </a>
+                        @endif
                     @else
-                        <a href="{{ route('login') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
-                            <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ
-                        </a>
-                        <a href="{{ route('register') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
-                            <i class="fas fa-user-plus mr-2"></i>สมัครสมาชิก
-                        </a>
+                        @if(Route::has('login'))
+                            <a href="{{ route('login') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
+                                <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ
+                            </a>
+                        @endif
+                        @if(Route::has('register'))
+                            <a href="{{ route('register') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
+                                <i class="fas fa-user-plus mr-2"></i>สมัครสมาชิก
+                            </a>
+                        @endif
                     @endauth
-                    <a href="{{ route('sitemap') ?? '#' }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
-                        <i class="fas fa-map mr-2"></i>Sitemap
-                    </a>
+                    @if(Route::has('sitemap'))
+                        <a href="{{ route('sitemap') }}" class="px-4 py-2 bg-white/20 hover:bg-white/30 dark:bg-gray-700/50 dark:hover:bg-gray-700/70 text-white rounded-lg text-sm transition-all duration-300 hover:scale-105">
+                            <i class="fas fa-map mr-2"></i>Sitemap
+                        </a>
+                    @endif
                 </div>
             </div>
 
