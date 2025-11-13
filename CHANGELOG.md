@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.165.7] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #948 from xjanova/claude/fix-shell-exec-error-011CV4YnSkrDgcUeqbvof2E4 (3ce64f6a)
+- Replace shell_exec() with Laravel Process facade (605d9140)
+
 ## [v2.165.6] - 2025-11-13
 
 ### ✨ Features
