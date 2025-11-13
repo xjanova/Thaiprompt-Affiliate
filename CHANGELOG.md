@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.173.2] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #972 from xjanova/claude/move-team-info-to-menu-011CV5Gi2C23kvf9t8yJ5Z2o (5fa937be)
+- Lock active submenu open to maintain navigation context (a4553a1f)
+- Fix Classic X sidebar collapse button functionality (5754f6f4)
+
 ## [v2.173.1] - 2025-11-13
 
 ### ✨ Features
