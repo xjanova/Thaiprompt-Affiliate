@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.174.3] - 2025-11-13
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #992 from xjanova/claude/demo-3d-navigation-011CV5pPyn8tcsYFEzZ3qtpa (e7c260ef)
+- Fix 3D navigation demo visibility issues (901befaa)
+
 ## [v2.174.2] - 2025-11-13
 
 ### ✨ Features
