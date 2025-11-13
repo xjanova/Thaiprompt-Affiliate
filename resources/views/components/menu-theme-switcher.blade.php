@@ -243,18 +243,36 @@
                 console.log('Applying theme:', this.currentTheme);
                 this.open = false; // Close modal first
 
-                // Show loading indicator
+                // Show loading indicator with smooth fade-in (prevent FOUC)
                 const loadingDiv = document.createElement('div');
                 loadingDiv.id = 'theme-loading';
+                loadingDiv.style.opacity = '0';
+                loadingDiv.style.transition = 'opacity 0.3s ease-in-out';
                 loadingDiv.innerHTML = `
-                    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 99999;">
-                        <div style="background: white; padding: 30px; border-radius: 15px; text-align: center;">
-                            <i class="fas fa-spinner fa-spin" style="font-size: 48px; color: #6366f1; margin-bottom: 15px;"></i>
-                            <p style="font-size: 18px; font-weight: 600; color: #1f2937;">กำลังเปลี่ยนธีม...</p>
+                    <div style="position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); display: flex; align-items: center; justify-content: center; z-index: 99999;">
+                        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 50px; border-radius: 20px; text-align: center; box-shadow: 0 25px 50px rgba(0,0,0,0.5);">
+                            <div style="position: relative; width: 80px; height: 80px; margin: 0 auto 20px;">
+                                <div style="position: absolute; width: 100%; height: 100%; border: 4px solid rgba(255,255,255,0.2); border-radius: 50%;"></div>
+                                <div style="position: absolute; width: 100%; height: 100%; border: 4px solid transparent; border-top-color: white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                            </div>
+                            <p style="font-size: 20px; font-weight: 700; color: white; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">กำลังเปลี่ยนธีม...</p>
+                            <p style="font-size: 14px; color: rgba(255,255,255,0.8); margin-top: 8px;">โปรดรอสักครู่</p>
                         </div>
                     </div>
+                    <style>
+                        @keyframes spin {
+                            to { transform: rotate(360deg); }
+                        }
+                    </style>
                 `;
                 document.body.appendChild(loadingDiv);
+
+                // Fade in smoothly after a tiny delay (prevent flash)
+                requestAnimationFrame(() => {
+                    setTimeout(() => {
+                        loadingDiv.style.opacity = '1';
+                    }, 10);
+                });
 
                 try {
                     const response = await fetch('{{ route("user.theme.update") }}', {
@@ -274,18 +292,29 @@
 
                     if (response.ok && data.success) {
                         console.log('Theme updated successfully, reloading...', data);
-                        // Small delay to show success
+                        // Smooth transition: Fade out before reload
                         setTimeout(() => {
-                            window.location.reload();
+                            loadingDiv.style.opacity = '0';
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 300);
                         }, 500);
                     } else {
                         console.error('Failed to update theme:', data);
-                        document.getElementById('theme-loading')?.remove();
+                        // Fade out gracefully before removing
+                        loadingDiv.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingDiv.remove();
+                        }, 300);
                         alert('เกิดข้อผิดพลาดในการเปลี่ยนธีม: ' + (data.message || 'Unknown error'));
                     }
                 } catch (error) {
                     console.error('Error updating theme:', error);
-                    document.getElementById('theme-loading')?.remove();
+                    // Fade out gracefully before removing
+                    loadingDiv.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingDiv.remove();
+                    }, 300);
                     alert('เกิดข้อผิดพลาดในการเชื่อมต่อ: ' + error.message);
                 }
             }
