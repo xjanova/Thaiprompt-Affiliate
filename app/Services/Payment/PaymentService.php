@@ -365,22 +365,29 @@ class PaymentService
         ];
 
         // Add PaySolutions if configured and active
-        $paymentGateway = \App\Models\PaymentGateway::findByCode('paysolutions');
-        if ($paymentGateway && $paymentGateway->is_active && $paymentGateway->isConfigured()) {
-            $methods[] = [
-                'id' => 'paysolutions',
-                'name' => 'PaySolutions',
-                'description' => 'ชำระเงินผ่าน PaySolutions (QR, Card, E-Wallet)',
-                'icon' => '💳',
-                'enabled' => true,
-                'submethods' => [
-                    'qr' => 'QR Code Payment',
-                    'card' => 'Credit/Debit Card',
-                    'bank_transfer' => 'Bank Transfer',
-                    'ewallet' => 'E-Wallet',
-                    'installment' => 'Installment',
-                ],
-            ];
+        try {
+            if (class_exists(\App\Models\PaymentGateway::class)) {
+                $paymentGateway = \App\Models\PaymentGateway::findByCode('paysolutions');
+                if ($paymentGateway && $paymentGateway->is_active && $paymentGateway->isConfigured()) {
+                    $methods[] = [
+                        'id' => 'paysolutions',
+                        'name' => 'PaySolutions',
+                        'description' => 'ชำระเงินผ่าน PaySolutions (QR, Card, E-Wallet)',
+                        'icon' => '💳',
+                        'enabled' => true,
+                        'submethods' => [
+                            'qr' => 'QR Code Payment',
+                            'card' => 'Credit/Debit Card',
+                            'bank_transfer' => 'Bank Transfer',
+                            'ewallet' => 'E-Wallet',
+                            'installment' => 'Installment',
+                        ],
+                    ];
+                }
+            }
+        } catch (\Exception $e) {
+            // PaymentGateway model not available or database not ready
+            \Log::warning('Could not load PaySolutions gateway: ' . $e->getMessage());
         }
 
         return $methods;
