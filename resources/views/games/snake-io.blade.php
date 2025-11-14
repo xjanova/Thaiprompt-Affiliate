@@ -528,11 +528,92 @@
             font-weight: 700;
             color: rgba(0, 255, 255, 0.5);
         }
+
+        /* Connection Status Indicator */
+        #connection-status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            padding: 8px 20px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Orbitron', 'Noto Sans Thai', sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+
+        #connection-status.show {
+            display: flex;
+        }
+
+        #connection-status.online {
+            border-color: rgba(0, 255, 0, 0.6);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        #connection-status.offline {
+            border-color: rgba(255, 170, 0, 0.6);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+        }
+
+        #connection-status .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        #connection-status.online .status-dot {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        #connection-status.offline .status-dot {
+            background: #ffaa00;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+
+        #connection-status .status-text {
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.2);
+            }
+        }
+
+        @media (max-width: 768px) {
+            #connection-status {
+                font-size: 11px;
+                padding: 6px 16px;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
+
+        <!-- Connection Status Indicator -->
+        <div id="connection-status">
+            <div class="status-dot"></div>
+            <span class="status-text">CONNECTING...</span>
+        </div>
 
         <!-- HUD -->
         <div id="hud">
@@ -815,6 +896,13 @@
         // Multiplayer Manager
         let multiplayerManager = null;
         let touchInputManager = null;
+
+        // Connection monitoring
+        let connectionMonitorInterval = null;
+        let isOnline = false;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+        const CONNECTION_CHECK_INTERVAL = 5000; // เช็คทุก 5 วินาที
 
         // Power-ups
         let powerups = [];
@@ -1495,6 +1583,152 @@
             }
         }
 
+        /**
+         * อัปเดตสถานะการเชื่อมต่อ
+         */
+        function updateConnectionStatus(status, text) {
+            const statusEl = document.getElementById('connection-status');
+            const statusText = statusEl.querySelector('.status-text');
+
+            statusEl.classList.remove('online', 'offline');
+            statusEl.classList.add(status, 'show');
+            statusText.textContent = text;
+
+            // อัปเดตสถานะ global
+            const wasOnline = isOnline;
+            isOnline = (status === 'online');
+
+            // แจ้งเตือนเมื่อสถานะเปลี่ยน
+            if (wasOnline !== isOnline && gameStarted) {
+                if (isOnline) {
+                    console.log('🟢 [Connection] กลับมา ONLINE แล้ว!');
+                } else {
+                    console.log('🔴 [Connection] หลุดเป็น OFFLINE');
+                }
+            }
+
+            console.log(`[Connection] ${status.toUpperCase()}: ${text}`);
+        }
+
+        /**
+         * เช็คสถานะการเชื่อมต่อ
+         */
+        async function checkConnection() {
+            if (!multiplayerManager) {
+                return false;
+            }
+
+            try {
+                // ลองเช็คว่ายังเชื่อมต่ออยู่หรือไม่
+                const response = await fetch(`${multiplayerManager.apiBaseUrl}/ping`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    signal: AbortSignal.timeout(2000) // timeout 2 วินาที
+                });
+
+                const data = await response.json();
+                return data.success === true;
+            } catch (error) {
+                console.warn('[Connection] Ping failed:', error.message);
+                return false;
+            }
+        }
+
+        /**
+         * พยายามเชื่อมต่อใหม่
+         */
+        async function attemptReconnect() {
+            if (!gameStarted || gameOver) {
+                return;
+            }
+
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                console.warn('[Connection] หมดจำนวนครั้งที่จะ reconnect แล้ว');
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                return;
+            }
+
+            reconnectAttempts++;
+            console.log(`[Connection] พยายาม reconnect ครั้งที่ ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
+
+            updateConnectionStatus('offline', '⚡ RECONNECTING...');
+
+            try {
+                // ปิด connection เดิม
+                if (multiplayerManager) {
+                    multiplayerManager.disconnectWebSocket();
+                }
+
+                // สร้างใหม่
+                multiplayerManager = new SnakeMultiplayerManager();
+
+                // ตั้ง timeout 3 วินาที
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Reconnect timeout')), 3000)
+                );
+
+                const joinResult = await Promise.race([
+                    multiplayerManager.joinGame(playerName, selectedSkin),
+                    timeoutPromise
+                ]);
+
+                console.log('[Connection] Reconnect สำเร็จ! Room:', joinResult.room_code);
+
+                // รีเซ็ตจำนวนครั้งที่ลอง
+                reconnectAttempts = 0;
+
+                // อัปเดตสถานะ
+                updateConnectionStatus('online', '🌐 ONLINE MODE');
+
+                return true;
+            } catch (error) {
+                console.error('[Connection] Reconnect ล้มเหลว:', error.message);
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                return false;
+            }
+        }
+
+        /**
+         * เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
+         */
+        function startConnectionMonitoring() {
+            // หยุด monitor เดิม (ถ้ามี)
+            stopConnectionMonitoring();
+
+            console.log('[Connection] เริ่มตรวจสอบการเชื่อมต่อทุก', CONNECTION_CHECK_INTERVAL / 1000, 'วินาที');
+
+            connectionMonitorInterval = setInterval(async () => {
+                if (!gameStarted || gameOver) {
+                    return;
+                }
+
+                // เช็คว่ายังเชื่อมต่ออยู่หรือไม่
+                const connected = await checkConnection();
+
+                if (connected && !isOnline) {
+                    // เพิ่งกลับมา online
+                    updateConnectionStatus('online', '🌐 ONLINE MODE');
+                } else if (!connected && isOnline) {
+                    // เพิ่งหลุด offline - พยายาม reconnect
+                    console.log('[Connection] หลุดการเชื่อมต่อ กำลัง reconnect...');
+                    await attemptReconnect();
+                }
+            }, CONNECTION_CHECK_INTERVAL);
+        }
+
+        /**
+         * หยุดตรวจสอบการเชื่อมต่อ
+         */
+        function stopConnectionMonitoring() {
+            if (connectionMonitorInterval) {
+                clearInterval(connectionMonitorInterval);
+                connectionMonitorInterval = null;
+                console.log('[Connection] หยุดตรวจสอบการเชื่อมต่อ');
+            }
+        }
+
         async function startGame() {
             console.log('Starting game...');
 
@@ -1505,64 +1739,105 @@
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
             try {
-                // เริ่ม multiplayer manager
-                multiplayerManager = new SnakeMultiplayerManager();
+                // แสดงสถานะกำลังเชื่อมต่อ
+                updateConnectionStatus('offline', 'CONNECTING...');
 
-                // เข้าร่วมเกม (จะหาห้องอัตโนมัติ)
-                const joinResult = await multiplayerManager.joinGame(playerName, selectedSkin);
-                console.log('[Game] เข้าร่วมห้อง:', joinResult.room_code);
+                // พยายามเชื่อมต่อ multiplayer (แต่ไม่บังคับ)
+                try {
+                    console.log('[Multiplayer] กำลังเชื่อมต่อ...');
+                    multiplayerManager = new SnakeMultiplayerManager();
+
+                    // ตั้ง timeout 3 วินาที
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Connection timeout')), 3000)
+                    );
+
+                    const joinResult = await Promise.race([
+                        multiplayerManager.joinGame(playerName, selectedSkin),
+                        timeoutPromise
+                    ]);
+
+                    console.log('[Multiplayer] เข้าร่วมห้อง:', joinResult.room_code);
+
+                    // เชื่อมต่อสำเร็จ!
+                    updateConnectionStatus('online', '🌐 ONLINE MODE');
+                } catch (multiplayerError) {
+                    console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ เล่นแบบ offline:', multiplayerError.message);
+                    multiplayerManager = null; // ปิดการใช้งาน multiplayer
+
+                    // เล่นแบบ offline
+                    updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                }
 
                 // Create player
                 player = new Snake(0, 0, true, playerName, selectedSkin);
                 console.log('Player created:', playerName);
 
-                // Spawn bots (30 บอท แต่จะลดลงเมื่อมีผู้เล่นจริง)
-                const realPlayersCount = 1; // ตัวเราเอง
-                const botsNeeded = Math.max(0, CONFIG.BOT_COUNT - realPlayersCount);
+                // Spawn bots (30 บอท)
+                const botsNeeded = CONFIG.BOT_COUNT;
                 for (let i = 0; i < botsNeeded; i++) {
                     createBot();
                 }
-                console.log('Bots spawned:', botsNeeded, '/ Target:', CONFIG.BOT_COUNT);
+                console.log('Bots spawned:', botsNeeded);
 
                 // เริ่ม optimized touch input
-                if (touchInputManager) {
-                    touchInputManager.destroy();
+                try {
+                    if (touchInputManager) {
+                        touchInputManager.destroy();
+                    }
+
+                    // ตรวจสอบว่า OptimizedTouchInput มีอยู่จริง
+                    if (typeof OptimizedTouchInput !== 'undefined') {
+                        touchInputManager = new OptimizedTouchInput(camera, player.segments[0]);
+                        touchInputManager.init(renderer.domElement);
+
+                        // ตั้งค่า callbacks
+                        touchInputManager.setOnDirectionChange((direction) => {
+                            if (player && player.alive) {
+                                player.targetDirection.copy(direction);
+                            }
+                        });
+
+                        touchInputManager.setOnBoostStart(() => {
+                            if (player && player.alive && !player.isBoosting) {
+                                player.isBoosting = true;
+                                playSound('boost');
+                            }
+                        });
+
+                        touchInputManager.setOnBoostEnd(() => {
+                            if (player) {
+                                player.isBoosting = false;
+                            }
+                        });
+
+                        console.log('[TouchInput] เปิดใช้งาน optimized touch input');
+                    } else {
+                        console.warn('[TouchInput] OptimizedTouchInput ไม่พร้อมใช้งาน ใช้ touch events ธรรมดา');
+                    }
+                } catch (touchError) {
+                    console.warn('[TouchInput] เปิดใช้งานไม่สำเร็จ:', touchError.message);
                 }
-                touchInputManager = new OptimizedTouchInput(camera, player.segments[0]);
-                touchInputManager.init(renderer.domElement);
-
-                // ตั้งค่า callbacks
-                touchInputManager.setOnDirectionChange((direction) => {
-                    if (player && player.alive) {
-                        player.targetDirection.copy(direction);
-                    }
-                });
-
-                touchInputManager.setOnBoostStart(() => {
-                    if (player && player.alive && !player.isBoosting) {
-                        player.isBoosting = true;
-                        playSound('boost');
-                    }
-                });
-
-                touchInputManager.setOnBoostEnd(() => {
-                    if (player) {
-                        player.isBoosting = false;
-                    }
-                });
 
                 gameStarted = true;
                 document.getElementById('start-screen').classList.add('hidden');
-                console.log('Game started successfully!');
+
+                // เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
+                startConnectionMonitoring();
+
+                console.log('✅ Game started successfully!');
             } catch (error) {
                 console.error('[Game] เริ่มเกมล้มเหลว:', error);
-                alert('เกิดข้อผิดพลาด: ' + error.message);
+                alert('เกิดข้อผิดพลาด: ' + error.message + '\n\nกรุณารีเฟรชหน้าใหม่');
             }
         }
 
         async function endGame() {
             gameOver = true;
             gameStarted = false;
+
+            // หยุดตรวจสอบการเชื่อมต่อ
+            stopConnectionMonitoring();
 
             document.getElementById('final-score').textContent = score;
             document.getElementById('final-length').textContent = player.length;
@@ -1656,6 +1931,9 @@
         }
 
         function restartGame() {
+            // หยุดตรวจสอบการเชื่อมต่อ
+            stopConnectionMonitoring();
+
             // Clean up
             if (player) player.die();
             bots.forEach(bot => {
@@ -1666,6 +1944,20 @@
 
             foods.forEach(food => scene.remove(food));
             foods = [];
+
+            // Reset multiplayer
+            if (multiplayerManager) {
+                multiplayerManager.disconnectWebSocket();
+                multiplayerManager = null;
+            }
+
+            // ซ่อนสถานะการเชื่อมต่อ
+            const statusEl = document.getElementById('connection-status');
+            statusEl.classList.remove('show', 'online', 'offline');
+
+            // Reset connection state
+            isOnline = false;
+            reconnectAttempts = 0;
 
             // Reset
             score = 0;
@@ -1809,6 +2101,9 @@
                 player.speed = CONFIG.MOVEMENT_SPEED * speedMultiplier;
 
                 player.update();
+
+                // ดึง head position
+                const head = player.segments[0].position;
 
                 // Update UI
                 score = player.score;
