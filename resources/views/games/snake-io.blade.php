@@ -2471,6 +2471,118 @@
             `).join('');
         }
 
+        /**
+         * ตรวจจับอันตรายข้างหน้าบอท (งูอื่น)
+         *
+         * @param {Snake} bot บอทที่ต้องการตรวจสอบ
+         * @param {THREE.Vector3} direction ทิศทางที่กำลังมุ่งหน้า
+         * @return {Object|null} { snake, distance } ของงูที่อันตราย หรือ null
+         */
+        function detectDangerAhead(bot, direction) {
+            const head = bot.segments[0].position;
+            const lookAheadDistance = 8; // มองไปข้างหน้า 8 หน่วย
+
+            // คำนวณตำแหน่งที่จะไปถึง
+            const futurePos = new THREE.Vector3()
+                .copy(head)
+                .add(direction.clone().multiplyScalar(lookAheadDistance));
+
+            let nearestDanger = null;
+            let nearestDangerDistance = Infinity;
+
+            // ตรวจสอบงูทั้งหมด (ผู้เล่น + บอทอื่น)
+            const allSnakes = player ? [player, ...bots] : bots;
+
+            allSnakes.forEach(snake => {
+                if (snake === bot || !snake.alive) return;
+
+                // ตรวจสอบทุก segment ของงู
+                snake.segments.forEach((segment, index) => {
+                    const distance = futurePos.distanceTo(segment.position);
+
+                    // ถ้าใกล้เกินไป (< 3 หน่วย) = อันตราย!
+                    if (distance < 3 && distance < nearestDangerDistance) {
+                        nearestDangerDistance = distance;
+                        nearestDanger = {
+                            snake: snake,
+                            distance: distance,
+                            segmentIndex: index
+                        };
+                    }
+                });
+            });
+
+            return nearestDanger;
+        }
+
+        /**
+         * ตรวจสอบโอกาสตัดหน้า (เจอเหยื่อที่เล็กกว่า)
+         *
+         * @param {Snake} bot บอทที่ต้องการตรวจสอบ
+         * @return {Snake|null} งูที่สามารถตัดหน้าได้
+         */
+        function findCutoffTarget(bot) {
+            const head = bot.segments[0].position;
+            const cutoffRange = 10; // ระยะที่พิจารณาตัดหน้า
+            let bestTarget = null;
+            let bestScore = -Infinity;
+
+            // หาผู้เล่นหรือบอทที่เล็กกว่า
+            const allSnakes = player ? [player, ...bots] : bots;
+
+            allSnakes.forEach(snake => {
+                if (snake === bot || !snake.alive) return;
+
+                const targetHead = snake.segments[0].position;
+                const distance = head.distanceTo(targetHead);
+
+                // เงื่อนไขตัดหน้า:
+                // 1. อยู่ในระยะ (< 10)
+                // 2. บอทใหญ่กว่าเป้าหมาย (length > target.length)
+                // 3. ยิ่งเป้าหมายเล็ก ยิ่งดี (สำหรับผู้เล่น ให้คะแนนพิเศษ)
+                if (distance < cutoffRange && bot.length > snake.length) {
+                    let score = (bot.length - snake.length) / distance;
+
+                    // ✅ ให้คะแนนพิเศษถ้าเป้าหมายเป็นผู้เล่น (ตัดหน้าผู้เล่นเป็นพิเศษ!)
+                    if (snake.isPlayer) {
+                        score *= 2.5; // เพิ่ม priority ให้ตัดหน้าผู้เล่น
+                    }
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestTarget = snake;
+                    }
+                }
+            });
+
+            return bestTarget;
+        }
+
+        /**
+         * หาทิศทางหลบอันตราย
+         *
+         * @param {THREE.Vector3} currentDirection ทิศทางปัจจุบัน
+         * @param {THREE.Vector3} dangerPosition ตำแหน่งอันตราย
+         * @param {THREE.Vector3} botPosition ตำแหน่งบอท
+         * @return {THREE.Vector3} ทิศทางใหม่ที่หลบ
+         */
+        function getAvoidanceDirection(currentDirection, dangerPosition, botPosition) {
+            // คำนวณทิศทางหนีจากอันตราย
+            const awayFromDanger = new THREE.Vector3()
+                .subVectors(botPosition, dangerPosition)
+                .normalize();
+
+            // ผสมทิศทางเดิมกับทิศทางหนี (70% หนี + 30% เดิม)
+            const blended = new THREE.Vector3()
+                .addVectors(
+                    awayFromDanger.multiplyScalar(0.7),
+                    currentDirection.clone().multiplyScalar(0.3)
+                )
+                .normalize();
+
+            return blended;
+        }
+
         function updateBots() {
             // ✅ อัปเดตเฉพาะบอทที่มีชีวิต และลบบอทที่ตายออกจาก array
             bots = bots.filter(bot => {
@@ -2487,24 +2599,69 @@
 
             // อัปเดตบอทที่ยังมีชีวิต
             bots.forEach(bot => {
-                // Simple AI: move towards nearest food
                 const head = bot.segments[0].position;
-                let nearestFood = null;
-                let nearestDistance = Infinity;
 
-                foods.forEach(food => {
-                    const distance = head.distanceTo(food.position);
-                    if (distance < nearestDistance) {
-                        nearestDistance = distance;
-                        nearestFood = food;
-                    }
-                });
+                // ✅ พฤติกรรม 1: ตรวจสอบโอกาสตัดหน้า (Aggressive AI)
+                const cutoffTarget = findCutoffTarget(bot);
 
-                if (nearestFood) {
-                    const direction = new THREE.Vector3()
-                        .subVectors(nearestFood.position, head)
+                let targetDirection = null;
+
+                if (cutoffTarget) {
+                    // ✅ มีเป้าหมายให้ตัดหน้า - เข้าใส่!
+                    const targetHead = cutoffTarget.segments[0].position;
+
+                    // คำนวณตำแหน่งตัดหน้า (ข้างหน้าเป้าหมายเล็กน้อย)
+                    const targetFuturePos = new THREE.Vector3()
+                        .copy(targetHead)
+                        .add(cutoffTarget.direction.clone().multiplyScalar(3));
+
+                    targetDirection = new THREE.Vector3()
+                        .subVectors(targetFuturePos, head)
                         .normalize();
-                    bot.targetDirection.copy(direction);
+
+                    // ✅ ใช้ boost เพื่อเร่งตัดหน้า!
+                    if (bot.score >= 10) { // ต้องมีแต้มพอ
+                        bot.isBoosting = true;
+                    }
+                } else {
+                    // ไม่มีเป้าหมายตัดหน้า - หยุด boost
+                    bot.isBoosting = false;
+
+                    // ✅ พฤติกรรม 2: หาอาหารใกล้ที่สุด
+                    let nearestFood = null;
+                    let nearestDistance = Infinity;
+
+                    foods.forEach(food => {
+                        const distance = head.distanceTo(food.position);
+                        if (distance < nearestDistance) {
+                            nearestDistance = distance;
+                            nearestFood = food;
+                        }
+                    });
+
+                    if (nearestFood) {
+                        targetDirection = new THREE.Vector3()
+                            .subVectors(nearestFood.position, head)
+                            .normalize();
+                    }
+                }
+
+                // ✅ พฤติกรรม 3: หลบอันตราย (Collision Avoidance) - สำคัญที่สุด!
+                if (targetDirection) {
+                    const danger = detectDangerAhead(bot, targetDirection);
+
+                    if (danger) {
+                        // มีอันตราย! หลบ!
+                        const dangerPos = danger.snake.segments[danger.segmentIndex].position;
+                        targetDirection = getAvoidanceDirection(targetDirection, dangerPos, head);
+
+                        // ✅ ถ้าอันตรายใกล้มาก ให้ใช้ boost หนี!
+                        if (danger.distance < 2 && bot.score >= 5) {
+                            bot.isBoosting = true;
+                        }
+                    }
+
+                    bot.targetDirection.copy(targetDirection);
                 }
 
                 // อัปเดตตำแหน่งบอท
