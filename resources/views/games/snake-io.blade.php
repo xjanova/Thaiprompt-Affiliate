@@ -505,6 +505,29 @@
             border: 2px solid rgba(0, 255, 255, 0.5);
             border-radius: 10px;
         }
+
+        /* Game Version */
+        #game-version {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            font-family: 'Orbitron', 'Noto Sans Thai', sans-serif;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 0 0 5px rgba(0, 0, 0, 0.8);
+            transition: color 0.3s ease;
+        }
+
+        #game-version:hover {
+            color: rgba(0, 255, 255, 0.6);
+        }
+
+        #game-version .version-label {
+            font-weight: 700;
+            color: rgba(0, 255, 255, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -654,6 +677,13 @@
 
         <!-- Sound Toggle -->
         <button id="sound-toggle" title="Toggle Sound">🔊</button>
+
+        <!-- Game Version -->
+        <div id="game-version">
+            <span class="version-label">Snake.io</span> v2.5.0-ws |
+            <span style="color: rgba(255, 170, 0, 0.5);">WebSocket</span> +
+            <span style="color: rgba(0, 255, 100, 0.5);">Anti-cheat</span>
+        </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
