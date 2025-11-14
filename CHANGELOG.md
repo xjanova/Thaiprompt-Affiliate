@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.216.0] - 2025-11-14
+
+### ✨ Features
+- feat: เพิ่ม Stateless Mode สำหรับ Snake.io (ไม่ต้องใช้ database) (77ebe4ca)
+### 🐛 Bug Fixes
+- fix: แก้ไข CheckBlockedIp middleware ให้ทำงานได้ในโหมด testing (23872c0b)
+- fix: เพิ่ม array connection สำหรับ testing environment (990ddd10)
+### 🔧 Other Changes
+- Merge pull request #1091 from xjanova/claude/snake-game-update-01WyqX3Sc5RAi2kVkpxoHKSv (9adb7199)
+
 ## [v2.215.1] - 2025-11-14
 
 ### ✨ Features
