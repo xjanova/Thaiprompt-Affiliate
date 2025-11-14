@@ -62,12 +62,13 @@ class TPIXWalletController extends Controller
         // Get deposit address
         $depositAddress = CryptoAddress::firstOrCreate(
             [
-                'user_id' => $user->id,
-                'currency_id' => $tpixCurrency->id,
+                'crypto_wallet_id' => $wallet->id,
+                'crypto_currency_id' => $tpixCurrency->id,
                 'address_type' => 'deposit'
             ],
             [
-                'status' => 'active'
+                'network' => 'tpix',
+                'is_active' => true
             ]
         );
 
@@ -136,22 +137,31 @@ class TPIXWalletController extends Controller
                 ->with('error', 'TPIX deposits are currently disabled.');
         }
 
-        // Get or create deposit address
-        $depositAddress = CryptoAddress::firstOrCreate(
+        // Get or create wallet first
+        $wallet = CryptoWallet::firstOrCreate(
             [
                 'user_id' => $user->id,
-                'currency_id' => $tpixCurrency->id,
-                'address_type' => 'deposit'
+                'currency_id' => $tpixCurrency->id
             ],
             [
-                'status' => 'active'
+                'balance' => 0,
+                'status' => 'active',
+                'wallet_type' => 'custodial'
             ]
         );
 
-        // Get wallet
-        $wallet = CryptoWallet::where('user_id', $user->id)
-            ->where('currency_id', $tpixCurrency->id)
-            ->first();
+        // Get or create deposit address
+        $depositAddress = CryptoAddress::firstOrCreate(
+            [
+                'crypto_wallet_id' => $wallet->id,
+                'crypto_currency_id' => $tpixCurrency->id,
+                'address_type' => 'deposit'
+            ],
+            [
+                'network' => 'tpix',
+                'is_active' => true
+            ]
+        );
 
         // Recent deposits
         $recentDeposits = CryptoTransaction::where('user_id', $user->id)

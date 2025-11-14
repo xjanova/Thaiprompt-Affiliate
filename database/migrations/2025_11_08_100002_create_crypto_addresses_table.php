@@ -21,7 +21,7 @@ return new class extends Migration
             $table->foreignId('crypto_currency_id')->constrained()->onDelete('cascade');
 
             // Address info
-            $table->string('address')->comment('Blockchain address');
+            $table->string('address')->nullable()->comment('Blockchain address');
             $table->string('network')->comment('ethereum, bsc, polygon, bitcoin, tron');
 
             // For external wallets

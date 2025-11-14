@@ -16,6 +16,7 @@ class CryptoAddress extends Model
         'crypto_currency_id',
         'address',
         'network',
+        'address_type',
         'is_imported',
         'encrypted_private_key',
         'public_key',
