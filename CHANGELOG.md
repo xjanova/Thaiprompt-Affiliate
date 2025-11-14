@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.211.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1078 from xjanova/claude/fix-database-connection-syntax-01Rzp9qw7nNeU2eyuCouVPC5 (a9db2ada)
+- fix: move SnakeGameController import to top of api.php (c3a39d4b)
+### 🔧 Other Changes
+
+
 ## [v2.211.0] - 2025-11-14
 
 ### ✨ Features
