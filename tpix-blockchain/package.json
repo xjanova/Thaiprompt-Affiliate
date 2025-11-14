@@ -1,0 +1,40 @@
+{
+  "name": "tpix-blockchain",
+  "version": "1.0.0",
+  "description": "TPIX Native Blockchain Smart Contracts - EVM Compatible (Polygon Edge)",
+  "main": "index.js",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy-all.js --network localhost",
+    "deploy:testnet": "hardhat run scripts/deploy-all.js --network tpixTestnet",
+    "deploy:mainnet": "hardhat run scripts/deploy-all.js --network tpixMainnet",
+    "verify": "hardhat run scripts/verify-contracts.js --network tpixMainnet",
+    "setup-pools": "hardhat run scripts/setup-pools.js --network tpixMainnet",
+    "test-deployment": "hardhat run scripts/test-deployment.js --network tpixMainnet",
+    "node": "hardhat node --hostname 0.0.0.0 --port 8545"
+  },
+  "keywords": [
+    "blockchain",
+    "ethereum",
+    "smart-contracts",
+    "dex",
+    "defi",
+    "polygon-edge",
+    "tpix"
+  ],
+  "author": "TPIX Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@nomiclabs/hardhat-etherscan": "^3.1.7",
+    "hardhat": "^2.19.4",
+    "hardhat-gas-reporter": "^1.0.9"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.1",
+    "dotenv": "^16.3.1",
+    "ethers": "^5.7.2"
+  }
+}

@@ -117,6 +117,31 @@
                 ]
             ],
             [
+                'icon' => 'fa-link',
+                'label' => 'TPIX Blockchain',
+                'url' => '#',
+                'badge' => 'NEW',
+                'submenu' => [
+                    ['label' => 'Dashboard', 'url' => safeRoute('admin.tpix.dashboard'), 'route' => 'admin.tpix.dashboard'],
+                    ['label' => 'Network Status', 'url' => safeRoute('admin.tpix.network-status'), 'route' => 'admin.tpix.network-status'],
+                    ['label' => 'Wallets', 'url' => safeRoute('admin.tpix.wallets'), 'route' => 'admin.tpix.wallets'],
+                    ['label' => 'Transactions', 'url' => safeRoute('admin.tpix.transactions'), 'route' => 'admin.tpix.transactions'],
+                    ['label' => 'Settings', 'url' => safeRoute('admin.tpix.settings'), 'route' => 'admin.tpix.settings'],
+                ]
+            ],
+            [
+                'icon' => 'fa-coins',
+                'label' => 'Token Management',
+                'url' => '#',
+                'badge' => 'NEW',
+                'submenu' => [
+                    ['label' => 'Token ทั้งหมด', 'url' => safeRoute('admin.tokens.index'), 'route' => 'admin.tokens.index'],
+                    ['label' => 'Approve/Reject', 'url' => safeRoute('admin.tokens.index'), 'route' => 'admin.tokens.index'],
+                    ['label' => 'Verification', 'url' => safeRoute('admin.tokens.index'), 'route' => 'admin.tokens.index'],
+                    ['label' => 'Import from CMC', 'url' => safeRoute('admin.tokens.import-cmc'), 'route' => 'admin.tokens.import-cmc'],
+                ]
+            ],
+            [
                 'icon' => 'fa-money-bill',
                 'label' => 'คอมมิชชั่น',
                 'url' => '#',
@@ -372,6 +397,20 @@
                     ['label' => 'เติมเงิน', 'url' => safeRoute('user.wallet.deposit'), 'route' => 'user.wallet.deposit'],
                     ['label' => 'ถอนเงิน', 'url' => safeRoute('user.wallet.withdraw'), 'route' => 'user.wallet.withdraw'],
                     ['label' => 'ประวัติธุรกรรม', 'url' => safeRoute('user.wallet.transactions'), 'route' => 'user.wallet.transactions'],
+                ]
+            ],
+            [
+                'icon' => 'fa-link',
+                'label' => 'TPIX Blockchain',
+                'url' => '#',
+                'badge' => 'NEW',
+                'submenu' => [
+                    ['label' => '💰 TPIX Wallet', 'url' => safeRoute('user.tpix.wallet'), 'route' => 'user.tpix.wallet'],
+                    ['label' => '🎫 Token Marketplace', 'url' => safeRoute('user.tokens.index'), 'route' => 'user.tokens.index'],
+                    ['label' => '🔄 DEX (Swap)', 'url' => safeRoute('user.dex.swap'), 'route' => 'user.dex.swap'],
+                    ['label' => '💧 Liquidity Pools', 'url' => safeRoute('user.dex.pools'), 'route' => 'user.dex.pools'],
+                    ['label' => '📊 My Positions', 'url' => safeRoute('user.dex.my-positions'), 'route' => 'user.dex.my-positions'],
+                    ['label' => '🔒 Staking', 'url' => safeRoute('user.staking.index'), 'route' => 'user.staking.index'],
                 ]
             ],
             ['icon' => 'fa-palette', 'label' => 'เปลี่ยนธีม', 'url' => safeRoute('user.themes.index'), 'route' => 'user.themes.index'],
