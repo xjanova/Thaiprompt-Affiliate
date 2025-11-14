@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.225.0] - 2025-11-14
+
+### ✨ Features
+- Merge pull request #1115 from xjanova/claude/style-products-tailwind-01JHiXEPsCzGX2F4WmPb55rZ (bef5be48)
+- feat: ปรับปรุง UI หน้าจัดการสินค้า (admin/ecommerce/products) ด้วย Tailwind CSS (f28ac269)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.224.1] - 2025-11-14
 
 ### ✨ Features
