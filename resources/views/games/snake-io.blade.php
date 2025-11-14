@@ -734,19 +734,45 @@
 
             <!-- บันทึกคะแนน -->
             <div id="save-score-section" style="margin-top: 30px; padding: 20px; background: rgba(0, 0, 0, 0.5); border-radius: 10px;">
-                <h3 style="color: #00ffff; margin-bottom: 15px;">💾 บันทึกคะแนนในสถิติเซิร์ฟเวอร์?</h3>
-                <p style="font-size: 14px; color: #ccc; margin-bottom: 10px;">
-                    ค่าบันทึก: <span style="color: #ffff00; font-weight: bold;">1 แต้ม</span>
-                </p>
-                <div id="wallet-status"></div>
-                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn" id="save-score-btn" style="background: linear-gradient(135deg, #00ff00, #00aa00);">
-                        ✅ บันทึกคะแนน (1 แต้ม)
-                    </button>
-                    <button class="btn" id="skip-save-btn" style="background: linear-gradient(135deg, #666, #444);">
-                        ❌ ไม่บันทึก
-                    </button>
+                <!-- สำหรับ Guest -->
+                @guest
+                <div id="guest-save-section">
+                    <h3 style="color: #ffaa00; margin-bottom: 15px;">👤 ผู้เล่นแบบ Guest</h3>
+                    <p style="font-size: 14px; color: #ccc; margin-bottom: 15px;">
+                        คะแนนของคุณจะไม่ถูกบันทึก<br>
+                        กลายเป็นสมาชิกเพื่อบันทึกคะแนนและแข่งขันในลีดเดอร์บอร์ด!
+                    </p>
+                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <a href="{{ route('login') }}" class="btn" style="background: linear-gradient(135deg, #00ff00, #00aa00); text-decoration: none; display: inline-block;">
+                            🔑 เข้าสู่ระบบ
+                        </a>
+                        <a href="{{ route('register') }}" class="btn" style="background: linear-gradient(135deg, #00aaff, #0066ff); text-decoration: none; display: inline-block;">
+                            ✨ สมัครสมาชิก
+                        </a>
+                    </div>
                 </div>
+                @endguest
+
+                <!-- สำหรับ Member -->
+                @auth
+                <div id="member-save-section">
+                    <h3 style="color: #00ffff; margin-bottom: 15px;">💾 บันทึกคะแนนในสถิติเซิร์ฟเวอร์?</h3>
+                    <p style="font-size: 14px; color: #ccc; margin-bottom: 10px;">
+                        ค่าบันทึก: <span style="color: #ffff00; font-weight: bold;">1 แต้ม</span>
+                    </p>
+                    <div id="wallet-status" style="margin: 15px 0; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
+                        <p style="color: #ccc; font-size: 14px;">⏳ กำลังโหลดข้อมูล...</p>
+                    </div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn" id="save-score-btn" style="background: linear-gradient(135deg, #00ff00, #00aa00);">
+                            ✅ บันทึกคะแนน (1 แต้ม)
+                        </button>
+                        <button class="btn" id="skip-save-btn" style="background: linear-gradient(135deg, #666, #444);">
+                            ❌ ไม่บันทึก
+                        </button>
+                    </div>
+                </div>
+                @endauth
             </div>
 
             <div style="margin-top: 20px;">
@@ -1005,7 +1031,19 @@
 
                 this.segments = [];
                 this.segmentPositions = [];
-                this.direction = new THREE.Vector3(1, 0, 0);
+
+                // สุ่ม direction เริ่มต้น (สำหรับบอท)
+                if (!isPlayer) {
+                    const randomAngle = Math.random() * Math.PI * 2;
+                    this.direction = new THREE.Vector3(
+                        Math.cos(randomAngle),
+                        0,
+                        Math.sin(randomAngle)
+                    ).normalize();
+                } else {
+                    this.direction = new THREE.Vector3(1, 0, 0);
+                }
+
                 this.targetDirection = this.direction.clone();
                 this.speed = CONFIG.MOVEMENT_SPEED;
                 this.isBoosting = false;
@@ -1865,75 +1903,135 @@
         }
 
         async function checkWalletStatus() {
+            // สำหรับ Guest ไม่ต้องทำอะไร (UI แสดงอยู่แล้ว)
+            if (!isAuthenticated) {
+                return;
+            }
+
+            // สำหรับ Member - ดึงข้อมูล wallet
             const walletStatusEl = document.getElementById('wallet-status');
             const saveBtnEl = document.getElementById('save-score-btn');
             const skipBtnEl = document.getElementById('skip-save-btn');
 
-            if (!multiplayerManager) {
-                walletStatusEl.innerHTML = '<p style="color: #ff4444;">เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง</p>';
-                saveBtnEl.disabled = true;
+            if (!walletStatusEl || !saveBtnEl) {
+                console.warn('[Wallet] ไม่พบ elements');
                 return;
             }
 
-            const walletData = await multiplayerManager.checkWallet();
+            try {
+                // ดึงข้อมูล wallet จาก API
+                const response = await fetch('/api/user/wallet/balance', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin'
+                });
 
-            if (!walletData.authenticated) {
-                // ไม่ได้ login
-                walletStatusEl.innerHTML = `
-                    <p style="color: #ffaa00; font-size: 14px;">
-                        ⚠️ ต้องเข้าสู่ระบบก่อนบันทึกคะแนน
-                    </p>
-                    <div style="margin-top: 10px;">
-                        <a href="${walletData.login_url}" style="color: #00ffff; text-decoration: underline; margin-right: 10px;">เข้าสู่ระบบ</a>
-                        <a href="${walletData.register_url}" style="color: #00ffff; text-decoration: underline;">สมัครสมาชิก</a>
-                    </div>
-                `;
-                saveBtnEl.disabled = true;
-            } else if (!walletData.can_save_score) {
-                // login แล้วแต่แต้มไม่พอ
+                if (!response.ok) {
+                    throw new Error('ไม่สามารถดึงข้อมูล wallet ได้');
+                }
+
+                const data = await response.json();
+                const balance = parseFloat(data.balance || 0);
+                const requiredPoints = 1;
+
+                console.log('[Wallet] Balance:', balance, 'แต้ม');
+
+                if (balance >= requiredPoints) {
+                    // แต้มพอ - อนุญาตให้บันทึก
+                    walletStatusEl.innerHTML = `
+                        <p style="color: #00ff00; font-size: 14px;">
+                            💰 แต้มคงเหลือ: <span style="font-weight: bold; font-size: 16px;">${balance.toFixed(2)}</span> แต้ม
+                        </p>
+                        <p style="color: #ccc; font-size: 12px; margin-top: 5px;">
+                            หลังบันทึกจะเหลือ: ${(balance - requiredPoints).toFixed(2)} แต้ม
+                        </p>
+                    `;
+                    saveBtnEl.disabled = false;
+                } else {
+                    // แต้มไม่พอ - ต้องเติมเงิน
+                    walletStatusEl.innerHTML = `
+                        <p style="color: #ff4444; font-size: 14px;">
+                            ⚠️ แต้มไม่เพียงพอ!
+                        </p>
+                        <p style="color: #ccc; font-size: 13px; margin: 8px 0;">
+                            แต้มคงเหลือ: <span style="color: #ffaa00; font-weight: bold;">${balance.toFixed(2)}</span> แต้ม<br>
+                            ต้องการ: <span style="color: #ff4444; font-weight: bold;">${requiredPoints}</span> แต้ม
+                        </p>
+                        <a href="/user/wallet/topup" class="btn" style="background: linear-gradient(135deg, #ffaa00, #ff6600); text-decoration: none; display: inline-block; padding: 8px 16px; font-size: 13px; margin-top: 5px;">
+                            💳 เติมเงิน
+                        </a>
+                    `;
+                    saveBtnEl.disabled = true;
+                }
+            } catch (error) {
+                console.error('[Wallet] Error:', error);
                 walletStatusEl.innerHTML = `
                     <p style="color: #ff4444; font-size: 14px;">
-                        ❌ แต้มไม่พอ (ปัจจุบัน: ${walletData.balance} แต้ม)
+                        ⚠️ ไม่สามารถดึงข้อมูล wallet ได้
                     </p>
-                    <div style="margin-top: 10px;">
-                        <a href="${walletData.topup_url}" style="color: #ffff00; text-decoration: underline;">เติมแต้ม</a>
-                    </div>
+                    <p style="color: #ccc; font-size: 12px; margin-top: 5px;">
+                        ${error.message}
+                    </p>
                 `;
                 saveBtnEl.disabled = true;
-            } else {
-                // มีแต้มพอ
-                walletStatusEl.innerHTML = `
-                    <p style="color: #00ff00; font-size: 14px;">
-                        ✅ แต้มคงเหลือ: <span style="font-weight: bold;">${walletData.balance} แต้ม</span>
-                    </p>
-                `;
-                saveBtnEl.disabled = false;
             }
         }
 
         async function handleSaveScore() {
+            if (!isAuthenticated) {
+                alert('กรุณาเข้าสู่ระบบก่อนบันทึกคะแนน');
+                return;
+            }
+
             const saveBtnEl = document.getElementById('save-score-btn');
             const skipBtnEl = document.getElementById('skip-save-btn');
 
             // Disable buttons
             saveBtnEl.disabled = true;
             skipBtnEl.disabled = true;
+            const originalText = saveBtnEl.textContent;
             saveBtnEl.textContent = '⏳ กำลังบันทึก...';
 
             try {
-                const result = await multiplayerManager.saveScore(score, player.length);
+                // บันทึกคะแนนและหัก wallet
+                const response = await fetch('/games/snake-io/save-progress', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        score: score,
+                        length: player.length,
+                        rank: getRank()
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'บันทึกคะแนนล้มเหลว');
+                }
+
+                const result = await response.json();
 
                 if (result.success) {
-                    alert('✅ บันทึกคะแนนสำเร็จ!\n\nแต้มคงเหลือ: ' + result.remaining_balance + ' แต้ม');
+                    alert(`✅ บันทึกคะแนนสำเร็จ!\n\nคะแนน: ${score}\nความยาว: ${player.length}\n\n💰 แต้มคงเหลือ: ${result.remaining_balance} แต้ม`);
                     document.getElementById('save-score-section').style.display = 'none';
                 } else {
                     throw new Error(result.message || 'บันทึกล้มเหลว');
                 }
             } catch (error) {
+                console.error('[Save Score] Error:', error);
                 alert('❌ เกิดข้อผิดพลาด: ' + error.message);
                 saveBtnEl.disabled = false;
                 skipBtnEl.disabled = false;
-                saveBtnEl.textContent = '✅ บันทึกคะแนน (1 แต้ม)';
+                saveBtnEl.textContent = originalText;
             }
         }
 
@@ -2100,10 +2198,11 @@
                 );
             }
 
-            // Render ผู้เล่นคนอื่น
-            if (multiplayerManager) {
+            // Render ผู้เล่นคนอื่น (เฉพาะเมื่อ online)
+            if (multiplayerManager && isOnline) {
                 renderOtherPlayers();
-                renderServerItems();
+                // ปิดการ render server items เพราะทำให้อาหารปลิว
+                // renderServerItems();
             }
 
             if (player && player.alive) {
