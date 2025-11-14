@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.228.0] - 2025-11-14
+
+### ✨ Features
+- Merge pull request #1118 from xjanova/claude/fix-cart-model-not-found-01KpCJNEkuAMn561FA2zoVJK (2039eb79)
+- feat: add Cart and CartItem models to fix wallet topup error (e5b83e05)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.227.0] - 2025-11-14
 
 ### ✨ Features
