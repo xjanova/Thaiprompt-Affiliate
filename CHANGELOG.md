@@ -2,6 +2,23 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.242.0] - 2025-11-14
+
+### ✨ Features
+- feat: add translation support to E-commerce Reports (9/9 files) ✅ (49253702)
+- feat: add translation support to E-commerce Dashboard (8/9 files) (a4243eb9)
+- feat: add translation support to E-commerce Reviews Index (7/9 files) (a9b0c66a)
+- feat: add translation support to E-commerce Categories Index (6/9 files) (42f62ccd)
+- feat: add translation support to E-commerce Orders Show (5/9 files) (fdb6eb5b)
+- feat: add translation support to E-commerce Orders Index (4/9 files) (ad40ba61)
+- feat: add translation support to E-commerce Products Edit (3/9 files) (3b17301a)
+- feat: add translation support to E-commerce Products Show (2/9 files) (0256b05f)
+- feat: add translation support to E-commerce Products Index (1/9 files) (5d797ddc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1143 from xjanova/claude/analyze-project-01WFwCmbXf74FrNYvbCN2ap7 (adfaa53e)
+
 ## [v2.241.0] - 2025-11-14
 
 ### ✨ Features
