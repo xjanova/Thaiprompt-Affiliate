@@ -107,6 +107,63 @@ class TokenManagementController extends Controller
     }
 
     /**
+     * อนุมัติ Token
+     *
+     * อนุมัติ token ที่รอการตรวจสอบ
+     *
+     * @param int $id Token ID
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function approve($id)
+    {
+        $token = TPIXToken::findOrFail($id);
+
+        $token->update([
+            'status' => 'active',
+            'is_verified' => true,
+        ]);
+
+        // บันทึก log
+        activity()
+            ->performedOn($token)
+            ->causedBy(auth()->user())
+            ->log('อนุมัติ token: ' . $token->name);
+
+        return redirect()->back()->with('success', 'อนุมัติ Token สำเร็จ!');
+    }
+
+    /**
+     * ปฏิเสธ Token
+     *
+     * ปฏิเสธ token ที่รอการตรวจสอบ
+     *
+     * @param int $id Token ID
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function reject(Request $request, $id)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $token = TPIXToken::findOrFail($id);
+
+        $token->update([
+            'status' => 'suspended',
+            'is_verified' => false,
+        ]);
+
+        // บันทึก log พร้อมเหตุผล
+        activity()
+            ->performedOn($token)
+            ->causedBy(auth()->user())
+            ->withProperties(['reason' => $request->reason])
+            ->log('ปฏิเสธ token: ' . $token->name . ' (เหตุผล: ' . $request->reason . ')');
+
+        return redirect()->back()->with('success', 'ปฏิเสธ Token สำเร็จ!');
+    }
+
+    /**
      * Approve/Verify Token
      */
     public function verify($id)
@@ -128,10 +185,34 @@ class TokenManagementController extends Controller
     {
         $token = TPIXToken::findOrFail($id);
 
-        $token->update(['is_featured' => !$token->is_featured]);
+        $token->update(['is_featured' => true]);
 
-        $message = $token->is_featured ? 'Token featured!' : 'Token unfeatured!';
-        return redirect()->back()->with('success', $message);
+        activity()
+            ->performedOn($token)
+            ->causedBy(auth()->user())
+            ->log('ตั้งค่า token เป็น Featured: ' . $token->name);
+
+        return redirect()->back()->with('success', 'Token featured!');
+    }
+
+    /**
+     * ยกเลิกการแสดง Token แบบ Featured
+     *
+     * @param int $id Token ID
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function unfeature($id)
+    {
+        $token = TPIXToken::findOrFail($id);
+
+        $token->update(['is_featured' => false]);
+
+        activity()
+            ->performedOn($token)
+            ->causedBy(auth()->user())
+            ->log('ยกเลิก Featured: ' . $token->name);
+
+        return redirect()->back()->with('success', 'Token unfeatured!');
     }
 
     /**
@@ -317,6 +398,23 @@ class TokenManagementController extends Controller
     }
 
     /**
+     * แสดงฟอร์ม Import จาก CoinMarketCap
+     *
+     * @return \Illuminate\View\View
+     */
+    public function showImportCMC()
+    {
+        // ดึงรายการ tokens ที่ import จาก CMC แล้ว
+        $importedTokens = TPIXToken::whereNotNull('cmc_id')
+            ->with('creator')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return view('admin.tokens.import-cmc', compact('importedTokens'));
+    }
+
+    /**
      * Import from CoinMarketCap
      */
     public function importFromCMC(Request $request)
@@ -357,7 +455,7 @@ class TokenManagementController extends Controller
     /**
      * Link Token to CMC
      */
-    public function linkToCMC(Request $request, $id)
+    public function linkCMC(Request $request, $id)
     {
         $request->validate([
             'cmc_id' => 'required|string',
@@ -367,7 +465,118 @@ class TokenManagementController extends Controller
 
         $token->update(['cmc_id' => $request->cmc_id]);
 
+        activity()
+            ->performedOn($token)
+            ->causedBy(auth()->user())
+            ->withProperties(['cmc_id' => $request->cmc_id])
+            ->log('เชื่อมโยง token กับ CMC ID: ' . $request->cmc_id);
+
         return redirect()->back()->with('success', 'Token linked to CMC ID: ' . $request->cmc_id);
+    }
+
+    /**
+     * แสดง CMC Sync Logs
+     *
+     * แสดง logs การ sync ข้อมูลกับ CoinMarketCap
+     *
+     * @param int $id Token ID
+     * @return \Illuminate\View\View
+     */
+    public function cmcLogs($id)
+    {
+        $token = TPIXToken::findOrFail($id);
+
+        // ดึง logs จาก activity log
+        $logs = activity()
+            ->performedOn($token)
+            ->where('description', 'like', '%CMC%')
+            ->orWhere('description', 'like', '%sync%')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('admin.tokens.cmc-logs', compact('token', 'logs'));
+    }
+
+    /**
+     * แสดง Control Actions History
+     *
+     * แสดงประวัติการควบคุม token (mint, burn, freeze, pause)
+     *
+     * @param int $id Token ID
+     * @return \Illuminate\View\View
+     */
+    public function controlActions($id)
+    {
+        $token = TPIXToken::findOrFail($id);
+
+        // ดึง control actions จาก activity log
+        $actions = activity()
+            ->performedOn($token)
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('admin.tokens.control-actions', compact('token', 'actions'));
+    }
+
+    /**
+     * แสดงฟอร์มแก้ไข Token
+     *
+     * แสดงหน้าแก้ไขข้อมูล token
+     *
+     * @param int $id Token ID
+     * @return \Illuminate\View\View
+     */
+    public function edit($id)
+    {
+        $token = TPIXToken::findOrFail($id);
+
+        return view('admin.tokens.edit', compact('token'));
+    }
+
+    /**
+     * อัพเดทข้อมูล Token
+     *
+     * อัพเดทข้อมูลพื้นฐานของ token
+     *
+     * @param Request $request
+     * @param int $id Token ID
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'symbol' => 'required|string|max:10',
+            'description' => 'nullable|string',
+            'website' => 'nullable|url|max:255',
+            'whitepaper_url' => 'nullable|url|max:255',
+            'is_verified' => 'boolean',
+            'is_listed' => 'boolean',
+            'is_featured' => 'boolean',
+            'status' => 'in:draft,deploying,deployed,verified,active,paused,suspended',
+        ]);
+
+        $token = TPIXToken::findOrFail($id);
+
+        $token->update($request->only([
+            'name',
+            'symbol',
+            'description',
+            'website',
+            'whitepaper_url',
+            'is_verified',
+            'is_listed',
+            'is_featured',
+            'status',
+        ]));
+
+        activity()
+            ->performedOn($token)
+            ->causedBy(auth()->user())
+            ->log('อัพเดทข้อมูล token: ' . $token->name);
+
+        return redirect()->route('admin.tokens.show', $token->id)
+            ->with('success', 'อัพเดทข้อมูล Token สำเร็จ!');
     }
 
     /**
