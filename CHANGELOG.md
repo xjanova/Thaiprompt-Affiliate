@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.232.0] - 2025-11-14
+
+### ✨ Features
+- Merge pull request #1129 from xjanova/claude/ui-system-redesign-01TJmnDJzbKtTsyFYyMMBvQr (eb3d02b8)
+- feat: เพิ่ม Language Switcher และ data-translate attributes ใน bot-automation/index.blade.php (15/248 files) (bc29f5f5)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.231.2] - 2025-11-14
 
 ### ✨ Features
