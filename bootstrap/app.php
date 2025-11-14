@@ -13,6 +13,13 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function () {
+            // Admin routes with auth and admin middleware
+            // Note: routes/admin.php already contains /admin in URLs, so we only add name prefix
+            Route::middleware(['web', 'auth', 'admin'])
+                ->name('admin.')
+                ->group(base_path('routes/admin.php'));
+
+            // Hotel admin routes
             Route::middleware('web')->group(base_path('routes/hotel-admin.php'));
         },
     )
