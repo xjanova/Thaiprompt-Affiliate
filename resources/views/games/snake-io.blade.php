@@ -1092,6 +1092,10 @@
                 // ✅ ระบบคะแนนแปรผัน: คะแนนที่ต้องการต่อปล้อง
                 this.nextGrowthScore = this.calculateNextGrowthScore();
 
+                // ✅ ระบบเติบโตทีละเม็ด (ไม่พร้อมกัน)
+                this.pendingGrowth = 0; // จำนวนปล้องที่รอเติบโต
+                this.lastGrowthTime = 0; // เวลาที่เติบโตครั้งล่าสุด
+
                 // ✅ ระบบ invincibility 5 วินาที (เมื่อเกิดใหม่) - ทั้งผู้เล่นและบอท
                 this.invincible = true; // ทั้งผู้เล่นและบอทมี invincibility ตอนเกิด
                 this.invincibleUntil = Date.now() + 5000; // 5 วินาที
@@ -1178,6 +1182,22 @@
                 // Update direction smoothly
                 this.direction.lerp(this.targetDirection.normalize(), CONFIG.TURN_SPEED);
 
+                // ✅ บังคับให้ direction เป็น unit vector เสมอ (ป้องกันบอทนิ่ง)
+                this.direction.normalize();
+
+                // ✅ ระบบเติบโตทีละเม็ด (ทุก 100ms = 0.1 วินาที)
+                const currentTime = Date.now();
+                if (this.pendingGrowth > 0 && (currentTime - this.lastGrowthTime) >= 100) {
+                    this.grow(1); // เติบโต 1 ปล้อง
+                    this.pendingGrowth--;
+                    this.lastGrowthTime = currentTime;
+
+                    // เล่นเสียงเติบโต (แยกจากเสียงกิน)
+                    if (this.isPlayer) {
+                        playSound('grow');
+                    }
+                }
+
                 // Move head
                 const head = this.segments[0];
                 const currentSpeed = this.isBoosting ? CONFIG.BOOST_SPEED : this.speed;
@@ -1194,21 +1214,15 @@
                     return;
                 }
 
-                // Update segment positions
+                // ✅ Simple segment following (ไม่ค้าง - ใช้ lerp ธรรมดา)
                 this.segmentPositions[0] = head.position.clone();
 
                 for (let i = 1; i < this.segments.length; i++) {
                     const target = this.segmentPositions[i - 1];
                     const current = this.segments[i].position;
-                    const distance = current.distanceTo(target);
 
-                    if (distance > CONFIG.SEGMENT_SIZE) {
-                        const direction = new THREE.Vector3()
-                            .subVectors(target, current)
-                            .normalize();
-
-                        current.add(direction.multiplyScalar(distance - CONFIG.SEGMENT_SIZE));
-                    }
+                    // Simple lerp - เบาและรวดเร็ว
+                    current.lerp(target, 0.2);
 
                     this.segmentPositions[i] = current.clone();
                 }
@@ -2269,8 +2283,8 @@
             saveBtnEl.textContent = '⏳ กำลังบันทึก...';
 
             try {
-                // บันทึกคะแนนและหัก wallet
-                const response = await fetch('/games/snake-io/save-progress', {
+                // ✅ บันทึกคะแนนและหัก wallet (แก้ไข URL ให้ถูกต้อง)
+                const response = await fetch('/api/games/snake-io/save-score', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2727,10 +2741,10 @@
                         // ✅ บอทกินอาหาร - ใช้ระบบเดียวกับผู้เล่น (ต้องกิน 10, 15, 20... คะแนนต่อปล้อง)
                         bot.score += foodValue;
 
-                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง - เพิ่มเข้าคิว (ไม่เติบโตทันที)
                         while (bot.score >= bot.nextGrowthScore) {
-                            bot.grow(1); // เติบโต 1 ปล้อง
-                            bot.nextGrowthScore = bot.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
+                            bot.pendingGrowth++; // เพิ่มคิวการเติบโต (จะค่อยๆ โตทีละเม็ดใน update())
+                            bot.nextGrowthScore = bot.calculateNextGrowthScore();
                         }
 
                         scene.remove(food);
@@ -2827,11 +2841,14 @@
                         player.score += foodValue * multiplier;
                         score = player.score; // อัปเดต global score
 
-                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง (ระบบแปรผัน: ต้องกิน 10, 15, 20, 25...)
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง - เพิ่มเข้าคิว (ไม่เติบโตทันที)
                         while (player.score >= player.nextGrowthScore) {
-                            player.grow(1); // เติบโต 1 ปล้อง
-                            player.nextGrowthScore = player.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
+                            player.pendingGrowth++; // เพิ่มคิวการเติบโต (จะค่อยๆ โตทีละเม็ดใน update())
+                            player.nextGrowthScore = player.calculateNextGrowthScore();
                         }
+
+                        // ✅ เล่นเสียงกิน (แยกจากเสียงโต ซึ่งจะเล่นตอนเติบโตจริง)
+                        playSound('eat');
 
                         scene.remove(food);
                         foods.splice(i, 1);
