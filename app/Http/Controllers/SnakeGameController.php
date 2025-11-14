@@ -327,14 +327,15 @@ class SnakeGameController extends Controller
                     'status' => 'completed',
                 ]);
 
-                // บันทึกคะแนนลง leaderboard (ใช้ GameController logic)
+                // บันทึกคะแนนลง leaderboard
                 $game = Game::where('slug', 'snake-io')->firstOrFail();
 
                 \App\Models\GameLeaderboard::create([
                     'user_id' => $user->id,
                     'game_id' => $game->id,
                     'score' => $validated['score'],
-                    'wave_reached' => 1,
+                    // Snake.io ไม่มี wave ใช้ length แทน
+                    'wave_reached' => $validated['length'] ?? 1,
                     'ship_used' => 'snake',
                     'weapon_used' => 'default',
                     'playtime_seconds' => 0,

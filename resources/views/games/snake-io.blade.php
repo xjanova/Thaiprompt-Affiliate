@@ -706,6 +706,19 @@
                 </button>
             </div>
 
+            @auth
+            <!-- ปุ่มบันทึกสี (สำหรับสมาชิก) -->
+            <div style="margin: 20px 0; padding: 15px; background: rgba(0, 255, 255, 0.1); border: 1px solid #00ffff; border-radius: 10px;">
+                <p style="color: #00ffff; font-size: 14px; margin-bottom: 10px;">
+                    💾 บันทึกสีที่เลือกเป็นค่าเริ่มต้น
+                </p>
+                <button class="btn" id="save-skin-btn" style="padding: 8px 16px; font-size: 13px;">
+                    💾 บันทึกสีนี้
+                </button>
+                <span id="save-skin-status" style="color: #00ff00; font-size: 12px; margin-left: 10px;"></span>
+            </div>
+            @endauth
+
             @guest
                 <p style="color: #ffaa00; font-size: 14px; margin: 20px 0;">
                     💡 เข้าสู่ระบบเพื่อปลดล็อค skins พิเศษและบันทึกสกอร์!
@@ -819,10 +832,10 @@
             MOVEMENT_SPEED: 0.15,
             BOOST_SPEED: 0.3,
             TURN_SPEED: 0.05,
-            FOOD_VALUE: 1,
+            FOOD_VALUE: 1, // กินอาหาร 1 ก้อนได้ 1 คะแนน (ต้องกิน 10 คะแนนถึงจะเพิ่ม 1 ปล้อง)
             COLLISION_DISTANCE: 0.6,
-            CAMERA_INITIAL_DISTANCE: 20, // กล้องใกล้ขึ้น (เดิม 40)
-            CAMERA_ZOOMED_OUT_DISTANCE: 50, // ซูมออกเต็มที่ (จำกัดที่ 50 แม้มี powerup)
+            CAMERA_INITIAL_DISTANCE: 15, // กล้องใกล้มากขึ้น (เดิม 20)
+            CAMERA_ZOOMED_OUT_DISTANCE: 50, // ซูมออกเต็มที่เมื่อมี powerup
         };
 
         // Audio System (16-bit style)
@@ -1051,6 +1064,9 @@
                 this.score = 0;
                 this.alive = true;
 
+                // ✅ ระบบคะแนนแปรผัน: คะแนนที่ต้องการต่อปล้อง
+                this.nextGrowthScore = this.calculateNextGrowthScore();
+
                 // ✅ ระบบ invincibility 5 วินาที (เมื่อเกิดใหม่) - ทั้งผู้เล่นและบอท
                 this.invincible = true; // ทั้งผู้เล่นและบอทมี invincibility ตอนเกิด
                 this.invincibleUntil = Date.now() + 5000; // 5 วินาที
@@ -1263,6 +1279,19 @@
                 }
             }
 
+            /**
+             * คำนวณคะแนนที่ต้องการสำหรับปล้องถัดไป
+             * สูตร: 10 + Math.floor(length / 10) * 5
+             * - ปล้องที่ 1-10: ต้องการ 10 คะแนน
+             * - ปล้องที่ 11-20: ต้องการ 15 คะแนน
+             * - ปล้องที่ 21-30: ต้องการ 20 คะแนน
+             */
+            calculateNextGrowthScore() {
+                const baseScore = 10;
+                const increment = Math.floor(this.length / 10) * 5;
+                return baseScore + increment;
+            }
+
             checkSelfCollision() {
                 // Self collision is disabled in .io games
                 // Players should not die when hitting their own body
@@ -1433,6 +1462,12 @@
             document.getElementById('restart-btn').addEventListener('click', restartGame);
             document.getElementById('save-score-btn').addEventListener('click', handleSaveScore);
             document.getElementById('skip-save-btn').addEventListener('click', handleSkipSave);
+
+            // Save skin button (สำหรับสมาชิก)
+            const saveSkinBtn = document.getElementById('save-skin-btn');
+            if (saveSkinBtn) {
+                saveSkinBtn.addEventListener('click', handleSaveSkin);
+            }
 
             // Sound toggle
             const soundToggle = document.getElementById('sound-toggle');
@@ -2208,6 +2243,55 @@
             document.getElementById('save-score-section').style.display = 'none';
         }
 
+        /**
+         * บันทึกสี skin ของสมาชิก
+         */
+        async function handleSaveSkin() {
+            const saveSkinBtn = document.getElementById('save-skin-btn');
+            const statusEl = document.getElementById('save-skin-status');
+
+            if (!saveSkinBtn || !selectedSkin) return;
+
+            saveSkinBtn.disabled = true;
+            const originalText = saveSkinBtn.textContent;
+            saveSkinBtn.textContent = '⏳ กำลังบันทึก...';
+            statusEl.textContent = '';
+
+            try {
+                const response = await fetch('/api/games/snake-io/save-skin-preference', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        skin: selectedSkin
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    statusEl.textContent = '✅ บันทึกสำเร็จ!';
+                    statusEl.style.color = '#00ff00';
+
+                    setTimeout(() => {
+                        statusEl.textContent = '';
+                    }, 3000);
+                } else {
+                    throw new Error(data.message || 'บันทึกล้มเหลว');
+                }
+            } catch (error) {
+                console.error('[Save Skin] Error:', error);
+                statusEl.textContent = '❌ ' + error.message;
+                statusEl.style.color = '#ff4444';
+            } finally {
+                saveSkinBtn.disabled = false;
+                saveSkinBtn.textContent = originalText;
+            }
+        }
+
         function restartGame() {
             // หยุดตรวจสอบการเชื่อมต่อ
             stopConnectionMonitoring();
@@ -2420,7 +2504,8 @@
 
                 // Update UI
                 score = player.score;
-                document.getElementById('score').textContent = score;
+                // แสดงคะแนนปัจจุบัน / คะแนนที่ต้องการ เพื่อโตปล้องถัดไป
+                document.getElementById('score').textContent = `${score} / ${player.nextGrowthScore}`;
                 document.getElementById('length').textContent = player.length;
                 document.getElementById('rank').textContent = '#' + getRank();
 
@@ -2443,13 +2528,18 @@
                 for (let i = foods.length - 1; i >= 0; i--) {
                     const food = foods[i];
                     if (head.distanceTo(food.position) < 1) {
-                        const foodValue = food.userData.value || 1;
+                        const foodValue = food.userData.value || CONFIG.FOOD_VALUE; // 1 คะแนน
                         const multiplier = activePowerups.multiplier ? 2 : 1;
 
-                        // ผู้เล่นกินอาหาร - บวกคะแนน
-                        player.grow(foodValue);
+                        // บวกคะแนน
                         player.score += foodValue * multiplier;
                         score = player.score; // อัปเดต global score
+
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง (ระบบแปรผัน: ต้องกิน 10, 15, 20, 25...)
+                        while (player.score >= player.nextGrowthScore) {
+                            player.grow(1); // เติบโต 1 ปล้อง
+                            player.nextGrowthScore = player.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
+                        }
 
                         scene.remove(food);
                         foods.splice(i, 1);
@@ -2468,10 +2558,10 @@
                     }
                 }
 
-                // ✅ ปรับระยะกล้องตามขนาดหนอน (optimize performance)
-                const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 20
-                const lengthMultiplier = 0.3; // ทุกๆ 1 ความยาว กล้องออก 0.3
-                const maxCameraDistance = 35; // จำกัดระยะสูงสุดตอนปกติที่ 35 (ใกล้ขึ้น)
+                // ✅ ปรับระยะกล้องตามขนาดหนอน (ให้เห็นใกล้หนอน)
+                const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 15
+                const lengthMultiplier = 0.2; // ทุกๆ 1 ความยาว กล้องออก 0.2 (ช้าลง)
+                const maxCameraDistance = 25; // จำกัดระยะสูงสุดตอนปกติที่ 25 (ใกล้มาก)
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -2482,7 +2572,7 @@
                     // มี zoom powerup ให้ออกไปได้ถึง 50
                     targetCameraDistance = CONFIG.CAMERA_ZOOMED_OUT_DISTANCE; // 50
                 } else {
-                    // ปกติจำกัดที่ 35
+                    // ปกติจำกัดที่ 25 (ใกล้มาก)
                     targetCameraDistance = calculatedDistance;
                 }
 
@@ -2527,8 +2617,8 @@
                 createBot();
             }
 
-            // ✅ Spawn powerups (สูงสุด 4 ชิ้นพร้อมกัน, อัตรา 4%)
-            if (powerups.length < 4 && Math.random() < 0.04) {
+            // ✅ Spawn powerups (สูงสุด 4 ชิ้นพร้อมกัน, อัตรา 15% ต่อเฟรม = บ่อยมาก!)
+            if (powerups.length < 4 && Math.random() < 0.15) {
                 createPowerup();
             }
         }
