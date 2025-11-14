@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.246.4] - 2025-11-14
+
+### ✨ Features
+- feat(accounting): upgrade expenses/edit+show to Modern UI v3.0 (13-14/28) (74de3527)
+- feat(accounting): upgrade expenses/create.blade.php to Modern UI v3.0 (12/28) (b3f74ae0)
+- feat(accounting): upgrade expenses/index.blade.php to Modern UI v3.0 (11/28) (da3371c3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1153 from xjanova/claude/session-01tjmndj-01Xqf6DAc3GGqBR8hZ2kkove (f5ccaf73)
+
 ## [v2.246.3] - 2025-11-14
 
 ### ✨ Features
