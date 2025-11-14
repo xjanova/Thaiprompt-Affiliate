@@ -983,6 +983,10 @@
         let currentCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE;
         let targetCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE;
 
+        // ✅ Multiplayer sync throttling (เพื่อป้องกันเกมค้าง)
+        let lastSyncTime = 0;
+        const SYNC_INTERVAL = 1000; // sync ทุก 1 วินาที
+
         const POWERUP_TYPES = {
             MAGNET: {
                 name: 'magnet',
@@ -1548,11 +1552,12 @@
                 SKINS.custom.secondary = customColors[1];
 
                 // เลือก custom skin
-                selectedSkin = 'custom';
+                const customSkinString = `${color1},${color2},${color3}`; // ✅ บันทึก hex codes จริงๆ
+                selectedSkin = customSkinString;
                 document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
 
-                // ✅ บันทึกสี custom (ถ้าเป็นสมาชิก)
-                saveSkinPreference('custom');
+                // ✅ บันทึกสี custom พร้อม hex codes (ถ้าเป็นสมาชิก)
+                saveSkinPreference(customSkinString);
 
                 alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
             });
@@ -2760,14 +2765,20 @@
                 powerup.position.y = 0.8 + Math.sin(Date.now() * 0.003) * 0.2;
             });
 
-            // Sync state กับ server (ทุก 5 frames ~200ms)
-            if (multiplayerManager && player && player.alive && Date.now() % 5 === 0) {
-                multiplayerManager.updatePlayerState(
-                    player.segments[0].position,
-                    player.direction,
-                    player.score,
-                    player.length
-                );
+            // ✅ Sync state กับ server (ทุก 1 วินาที - ป้องกันเกมค้าง)
+            const currentTime = Date.now();
+            if (multiplayerManager && player && player.alive && (currentTime - lastSyncTime) >= SYNC_INTERVAL) {
+                try {
+                    multiplayerManager.updatePlayerState(
+                        player.segments[0].position,
+                        player.direction,
+                        player.score,
+                        player.length
+                    );
+                    lastSyncTime = currentTime;
+                } catch (error) {
+                    console.warn('[Multiplayer] Sync error:', error.message);
+                }
             }
 
             // Render ผู้เล่นคนอื่น (เฉพาะเมื่อ online)
@@ -2903,10 +2914,9 @@
             }
 
             // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB)
-            const rgbHue = (Date.now() * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
-            const currentTime = Date.now();
+            const rgbHue = (currentTime * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
 
-            // ✅ ตรวจสอบและลบอาหารที่หมดอายุ (30 วินาที)
+            // ✅ ตรวจสอบและลบอาหารที่หมดอายุ (30 วินาที) - ใช้ currentTime จาก line ก่อนหน้า
             foods = foods.filter(food => {
                 // อาหารจากการตาย - ตรวจสอบหมดอายุ
                 if (food.userData.expiresAt && currentTime >= food.userData.expiresAt) {
