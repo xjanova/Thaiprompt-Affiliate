@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.211.4] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1081 from xjanova/claude/fix-tpix-menu-dashboard-01XqzLBpCXDAB4uV2uVaYKFM (857f177a)
+- fix: redesign TPIX blockchain views with modern UI (e5e240a5)
+### 🔧 Other Changes
+
+
 ## [v2.211.3] - 2025-11-14
 
 ### ✨ Features
