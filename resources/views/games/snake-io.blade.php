@@ -1083,6 +1083,10 @@
                 // ✅ ระบบคะแนนแปรผัน: คะแนนที่ต้องการต่อปล้อง
                 this.nextGrowthScore = this.calculateNextGrowthScore();
 
+                // ✅ ระบบเติบโตทีละเม็ด (ไม่พร้อมกัน)
+                this.pendingGrowth = 0; // จำนวนปล้องที่รอเติบโต
+                this.lastGrowthTime = 0; // เวลาที่เติบโตครั้งล่าสุด
+
                 // ✅ ระบบ invincibility 5 วินาที (เมื่อเกิดใหม่) - ทั้งผู้เล่นและบอท
                 this.invincible = true; // ทั้งผู้เล่นและบอทมี invincibility ตอนเกิด
                 this.invincibleUntil = Date.now() + 5000; // 5 วินาที
@@ -1169,10 +1173,27 @@
                 // Update direction smoothly
                 this.direction.lerp(this.targetDirection.normalize(), CONFIG.TURN_SPEED);
 
-                // Move head
+                // ✅ บังคับให้ direction เป็น unit vector เสมอ (ไม่สามารถหยุดนิ่งได้)
+                this.direction.normalize();
+
+                // ✅ ระบบเติบโตทีละเม็ด (ทุก 100ms = 0.1 วินาที)
+                const currentTime = Date.now();
+                if (this.pendingGrowth > 0 && (currentTime - this.lastGrowthTime) >= 100) {
+                    this.grow(1); // เติบโต 1 ปล้อง
+                    this.pendingGrowth--;
+                    this.lastGrowthTime = currentTime;
+
+                    // เล่นเสียงเติบโต (แยกจากเสียงกิน)
+                    if (this.isPlayer) {
+                        playSound('grow');
+                    }
+                }
+
+                // Move head - ปล้องทุกปล้องดันให้เดินหน้าเสมอ
                 const head = this.segments[0];
                 const currentSpeed = this.isBoosting ? CONFIG.BOOST_SPEED : this.speed;
 
+                // ✅ บังคับให้เคลื่อนที่ไปข้างหน้าเสมอ (ไม่สามารถใช้เทคนิคขยับๆให้นิ่งได้)
                 head.position.x += this.direction.x * currentSpeed;
                 head.position.z += this.direction.z * currentSpeed;
 
@@ -1284,15 +1305,7 @@
 
                 this.length += amount;
 
-                // Apply score multiplier if active (ไม่บวกคะแนนที่นี่ เพราะจะบวกตอนเก็บไอเทม)
-                if (this.isPlayer) {
-                    playSound('eat');
-
-                    // Play grow sound every 5 segments
-                    if (this.length % 5 === 0) {
-                        playSound('grow');
-                    }
-                }
+                // ✅ ไม่เล่นเสียงที่นี่ - จะเล่นใน update() แทน (แยกเสียงกินกับเสียงโต)
             }
 
             /**
@@ -2231,7 +2244,7 @@
 
             try {
                 // บันทึกคะแนนและหัก wallet
-                const response = await fetch('/games/snake-io/save-progress', {
+                const response = await fetch('/api/games/snake-io/save-score', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2351,22 +2364,57 @@
                     if (data.success && data.skin) {
                         selectedSkin = data.skin;
 
-                        // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
-                        document.querySelectorAll('.skin-option').forEach(option => {
-                            option.classList.remove('selected');
-                            if (option.dataset.skin === data.skin) {
-                                option.classList.add('selected');
-                            }
-                        });
+                        // ✅ ตรวจสอบว่าเป็น custom colors (มี hex code) หรือ preset skin
+                        if (data.skin.includes('#')) {
+                            // Custom colors - แยกสีและนำไปใส่ใน color inputs
+                            const colors = data.skin.split(',');
 
-                        statusEl.textContent = '✅ โหลดสีสำเร็จ: ' + data.skin;
-                        statusEl.style.color = '#00ff00';
+                            // ใส่สีใน color inputs
+                            if (colors[0]) document.getElementById('color1').value = colors[0];
+                            if (colors[1]) document.getElementById('color2').value = colors[1];
+                            if (colors[2]) document.getElementById('color3').value = colors[2];
+
+                            // อัพเดต customColors และ SKINS.custom
+                            customColors = [
+                                parseInt(colors[0]?.replace('#', '0x') || '0x00ff00'),
+                                parseInt(colors[1]?.replace('#', '0x') || '0x00aa00'),
+                                parseInt(colors[2]?.replace('#', '0x') || '0x00dd00')
+                            ];
+                            SKINS.custom.colors = customColors;
+                            SKINS.custom.primary = customColors[0];
+                            SKINS.custom.secondary = customColors[1];
+
+                            // เลือก custom skin option
+                            document.querySelectorAll('.skin-option').forEach(option => {
+                                option.classList.remove('selected');
+                                if (option.dataset.skin === 'custom') {
+                                    option.classList.add('selected');
+                                }
+                            });
+                            selectedSkin = 'custom';
+
+                            statusEl.textContent = '✅ โหลดสี Custom สำเร็จ!';
+                            statusEl.style.color = '#00ff00';
+
+                            console.log('[Skin] โหลดสี custom:', colors);
+                        } else {
+                            // Preset skin (classic, fire, ice, gold, rainbow)
+                            document.querySelectorAll('.skin-option').forEach(option => {
+                                option.classList.remove('selected');
+                                if (option.dataset.skin === data.skin) {
+                                    option.classList.add('selected');
+                                }
+                            });
+
+                            statusEl.textContent = '✅ โหลดสีสำเร็จ: ' + data.skin;
+                            statusEl.style.color = '#00ff00';
+
+                            console.log('[Skin] โหลดสี preset:', data.skin);
+                        }
 
                         setTimeout(() => {
                             statusEl.textContent = '';
                         }, 3000);
-
-                        console.log('[Skin] โหลดสี skin ที่บันทึกไว้:', data.skin);
                     } else {
                         throw new Error('ไม่พบสีที่บันทึกไว้');
                     }
@@ -2688,10 +2736,10 @@
                         // ✅ บอทกินอาหาร - ใช้ระบบเดียวกับผู้เล่น (ต้องกิน 10, 15, 20... คะแนนต่อปล้อง)
                         bot.score += foodValue;
 
-                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง - เพิ่มเข้าคิว (ไม่เติบโตทันที)
                         while (bot.score >= bot.nextGrowthScore) {
-                            bot.grow(1); // เติบโต 1 ปล้อง
-                            bot.nextGrowthScore = bot.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
+                            bot.pendingGrowth++; // เพิ่มคิวการเติบโต (จะค่อยๆ โตทีละเม็ดใน update())
+                            bot.nextGrowthScore = bot.calculateNextGrowthScore();
                         }
 
                         scene.remove(food);
@@ -2788,11 +2836,14 @@
                         player.score += foodValue * multiplier;
                         score = player.score; // อัปเดต global score
 
-                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง (ระบบแปรผัน: ต้องกิน 10, 15, 20, 25...)
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง - เพิ่มเข้าคิว (ไม่เติบโตทันที)
                         while (player.score >= player.nextGrowthScore) {
-                            player.grow(1); // เติบโต 1 ปล้อง
-                            player.nextGrowthScore = player.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
+                            player.pendingGrowth++; // เพิ่มคิวการเติบโต (จะค่อยๆ โตทีละเม็ดใน update())
+                            player.nextGrowthScore = player.calculateNextGrowthScore();
                         }
+
+                        // ✅ เล่นเสียงกิน (แยกจากเสียงโต ซึ่งจะเล่นตอนเติบโตจริง)
+                        playSound('eat');
 
                         scene.remove(food);
                         foods.splice(i, 1);
@@ -2813,8 +2864,8 @@
 
                 // ✅ ปรับระยะกล้องตามขนาดหนอน (ให้เห็นใกล้หนอน)
                 const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 15
-                const lengthMultiplier = 0.2; // ทุกๆ 1 ความยาว กล้องออก 0.2 (ช้าลง)
-                const maxCameraDistance = 20; // ✅ จำกัดระยะสูงสุดตอนปกติที่ 20 (15 + 5 ตามที่ผู้ใช้ต้องการ)
+                const lengthMultiplier = 0.1; // ✅ ทุกๆ 1 ความยาว กล้องออก 0.1 (ช้ามาก - ปรับลดจาก 0.2)
+                const maxCameraDistance = 17; // ✅ จำกัดระยะสูงสุดที่ 17 (ใกล้มากขึ้น - ปรับลดจาก 20)
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
