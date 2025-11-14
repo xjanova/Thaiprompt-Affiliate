@@ -822,7 +822,7 @@
             FOOD_VALUE: 1,
             COLLISION_DISTANCE: 0.6,
             CAMERA_INITIAL_DISTANCE: 20, // กล้องใกล้ขึ้น (เดิม 40)
-            CAMERA_ZOOMED_OUT_DISTANCE: 60, // ซูมออกเต็มที่
+            CAMERA_ZOOMED_OUT_DISTANCE: 50, // ซูมออกเต็มที่ (จำกัดที่ 50 แม้มี powerup)
         };
 
         // Audio System (16-bit style)
@@ -1051,9 +1051,9 @@
                 this.score = 0;
                 this.alive = true;
 
-                // ✅ ระบบ invincibility 5 วินาที (เมื่อเกิดใหม่)
-                this.invincible = isPlayer; // ผู้เล่นเท่านั้นที่มี invincibility ตอนเกิด
-                this.invincibleUntil = isPlayer ? Date.now() + 5000 : 0; // 5 วินาที
+                // ✅ ระบบ invincibility 5 วินาที (เมื่อเกิดใหม่) - ทั้งผู้เล่นและบอท
+                this.invincible = true; // ทั้งผู้เล่นและบอทมี invincibility ตอนเกิด
+                this.invincibleUntil = Date.now() + 5000; // 5 วินาที
 
                 // Create initial segments
                 for (let i = 0; i < this.length; i++) {
@@ -2399,11 +2399,14 @@
 
                 player.update();
 
-                // ✅ หักแต้มเมื่อเร่งความเร็ว 3 แต้ม/วินาที
+                // ✅ หักแต้มเมื่อเร่งความเร็ว 3 แต้ม/วินาที (ไม่มีทศนิยม)
                 if (player.isBoosting) {
                     const pointsPerSecond = 3;
                     const deltaTime = 1 / 60; // 60 FPS
-                    player.score -= pointsPerSecond * deltaTime;
+                    const deduction = pointsPerSecond * deltaTime;
+
+                    // หักคะแนนและใช้ Math.floor เพื่อไม่ให้มีทศนิยม
+                    player.score = Math.floor(player.score - deduction);
 
                     // หยุด boost ถ้าแต้มไม่พอ
                     if (player.score < 3) {
@@ -2468,7 +2471,7 @@
                 // ✅ ปรับระยะกล้องตามขนาดหนอน (optimize performance)
                 const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 20
                 const lengthMultiplier = 0.3; // ทุกๆ 1 ความยาว กล้องออก 0.3
-                const maxCameraDistance = 45; // จำกัดระยะสูงสุดเพื่อลด lag (ไม่ใช่ 60)
+                const maxCameraDistance = 50; // จำกัดระยะสูงสุดที่ 50 เสมอ
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -2476,7 +2479,8 @@
 
                 // Smooth camera zoom
                 if (activePowerups.zoom) {
-                    targetCameraDistance = CONFIG.CAMERA_ZOOMED_OUT_DISTANCE;
+                    // แม้มี zoom powerup ก็จำกัดที่ 50 เท่านั้น
+                    targetCameraDistance = Math.min(CONFIG.CAMERA_ZOOMED_OUT_DISTANCE, maxCameraDistance);
                 } else {
                     targetCameraDistance = calculatedDistance;
                 }
