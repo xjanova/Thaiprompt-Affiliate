@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\QualityController;
 use App\Http\Controllers\Api\CarbonCreditController;
 use App\Http\Controllers\Api\CertificationController;
 use App\Http\Controllers\SnakeGameController;
+use App\Http\Controllers\SnakeGameSyncController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -881,4 +882,43 @@ Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.'
     Route::get('/get-skin-preference', [$controller, 'getSkinPreference'])
         ->middleware('auth:web')
         ->name('get-skin-preference');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Snake.io Sync Service API (NEW - Lightweight & Fast)
+|--------------------------------------------------------------------------
+*/
+// ✅ Snake Sync API - ใช้ Cache/Redis แทน database (เร็วกว่า, ไม่ทำให้เกมค้าง)
+// Rate limited: 120 requests/minute
+Route::prefix('snake-sync')->name('api.snake-sync.')->group(function () {
+    $controller = SnakeGameSyncController::class;
+
+    // เข้าร่วมเกม (สร้าง session)
+    Route::post('/join', [$controller, 'join'])
+        ->name('join');
+
+    // อัปเดตสถานะผู้เล่น
+    Route::post('/update', [$controller, 'updateState'])
+        ->name('update');
+
+    // ดึงผู้เล่น active ทั้งหมด (ไม่รวมตัวเอง)
+    Route::get('/players/{playerId}', [$controller, 'getActivePlayers'])
+        ->name('players');
+
+    // ผู้เล่นตาย
+    Route::post('/died', [$controller, 'playerDied'])
+        ->name('died');
+
+    // ออกจากเกม
+    Route::post('/leave', [$controller, 'leave'])
+        ->name('leave');
+
+    // Ping เพื่อรักษา session
+    Route::post('/ping', [$controller, 'ping'])
+        ->name('ping');
+
+    // ดึงสถิติ (จำนวนผู้เล่น active)
+    Route::get('/stats', [$controller, 'stats'])
+        ->name('stats');
 });
