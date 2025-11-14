@@ -1,7 +1,7 @@
 /**
- * Snake.io Multiplayer Manager
+ * Snake.io Multiplayer Manager (WebSocket Edition)
  *
- * จัดการการเชื่อมต่อ multiplayer และ sync state กับ server
+ * จัดการการเชื่อมต่อ multiplayer ผ่าน Laravel Reverb WebSocket
  */
 class SnakeMultiplayerManager {
     constructor(apiBaseUrl = '/api/games/snake-io') {
@@ -9,14 +9,17 @@ class SnakeMultiplayerManager {
         this.roomId = null;
         this.playerId = null;
         this.roomCode = null;
-        this.syncInterval = null;
-        this.itemSpawnInterval = null;
+        this.channel = null; // WebSocket channel
         this.otherPlayers = new Map(); // Map<playerId, playerData>
         this.serverItems = new Map(); // Map<itemId, itemData>
 
-        // Sync settings
-        this.SYNC_RATE = 200; // มิลลิวินาที (5 ครั้ง/วินาที)
-        this.ITEM_CHECK_RATE = 1000; // ตรวจสอบไอเทมทุก 1 วินาที
+        // Callbacks สำหรับการรับ real-time events
+        this.onPlayerJoinedCallback = null;
+        this.onPlayerLeftCallback = null;
+        this.onPlayerMovedCallback = null;
+        this.onPlayerDiedCallback = null;
+        this.onItemSpawnedCallback = null;
+        this.onItemCollectedCallback = null;
 
         // CSRF Token
         this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -51,8 +54,11 @@ class SnakeMultiplayerManager {
 
             console.log('[Multiplayer] เข้าร่วมห้อง:', this.roomCode, 'Player ID:', this.playerId);
 
-            // เริ่ม sync
-            this.startSync();
+            // เชื่อมต่อ WebSocket channel
+            this.connectWebSocket();
+
+            // โหลดสถานะห้องเริ่มต้น (ผู้เล่นและไอเทมที่มีอยู่แล้ว)
+            await this.loadInitialRoomState();
 
             return data;
         } catch (error) {
@@ -62,11 +68,152 @@ class SnakeMultiplayerManager {
     }
 
     /**
+     * เชื่อมต่อ WebSocket channel
+     */
+    connectWebSocket() {
+        if (!window.Echo) {
+            console.error('[Multiplayer] Laravel Echo ไม่พร้อมใช้งาน');
+            return;
+        }
+
+        const channelName = `snake-room.${this.roomId}`;
+        this.channel = window.Echo.channel(channelName);
+
+        console.log('[Multiplayer] เชื่อมต่อ WebSocket:', channelName);
+
+        // ฟังเหตุการณ์: ผู้เล่นเข้าร่วม
+        this.channel.listen('.player.joined', (data) => {
+            console.log('[WebSocket] ผู้เล่นเข้าร่วม:', data);
+            this.otherPlayers.set(data.player_id, {
+                id: data.player_id,
+                name: data.player_name,
+                skin: data.skin,
+                position: data.position,
+                direction: { x: 1, y: 0, z: 0 },
+                score: 0,
+                length: 5,
+                is_alive: true,
+            });
+
+            if (this.onPlayerJoinedCallback) {
+                this.onPlayerJoinedCallback(data);
+            }
+        });
+
+        // ฟังเหตุการณ์: ผู้เล่นออกจากห้อง
+        this.channel.listen('.player.left', (data) => {
+            console.log('[WebSocket] ผู้เล่นออก:', data.player_id);
+            this.otherPlayers.delete(data.player_id);
+
+            if (this.onPlayerLeftCallback) {
+                this.onPlayerLeftCallback(data);
+            }
+        });
+
+        // ฟังเหตุการณ์: ผู้เล่นเคลื่อนที่
+        this.channel.listen('.player.moved', (data) => {
+            // อัปเดตข้อมูลผู้เล่น
+            if (this.otherPlayers.has(data.player_id)) {
+                const player = this.otherPlayers.get(data.player_id);
+                player.position = data.position;
+                player.direction = data.direction;
+                player.score = data.score;
+                player.length = data.length;
+            }
+
+            if (this.onPlayerMovedCallback) {
+                this.onPlayerMovedCallback(data);
+            }
+        });
+
+        // ฟังเหตุการณ์: ผู้เล่นตาย
+        this.channel.listen('.player.died', (data) => {
+            console.log('[WebSocket] ผู้เล่นตาย:', data.player_id);
+
+            if (this.otherPlayers.has(data.player_id)) {
+                const player = this.otherPlayers.get(data.player_id);
+                player.is_alive = false;
+            }
+
+            if (this.onPlayerDiedCallback) {
+                this.onPlayerDiedCallback(data);
+            }
+        });
+
+        // ฟังเหตุการณ์: ไอเทมใหม่เกิด
+        this.channel.listen('.item.spawned', (data) => {
+            console.log('[WebSocket] ไอเทมใหม่:', data);
+            this.serverItems.set(data.item_id, {
+                id: data.item_id,
+                type: data.type,
+                position: data.position,
+                value: data.value,
+            });
+
+            if (this.onItemSpawnedCallback) {
+                this.onItemSpawnedCallback(data);
+            }
+        });
+
+        // ฟังเหตุการณ์: ไอเทมถูกเก็บ
+        this.channel.listen('.item.collected', (data) => {
+            console.log('[WebSocket] ไอเทมถูกเก็บ:', data.item_id);
+            this.serverItems.delete(data.item_id);
+
+            if (this.onItemCollectedCallback) {
+                this.onItemCollectedCallback(data);
+            }
+        });
+    }
+
+    /**
+     * ยกเลิกการเชื่อมต่อ WebSocket
+     */
+    disconnectWebSocket() {
+        if (this.channel) {
+            window.Echo.leave(`snake-room.${this.roomId}`);
+            this.channel = null;
+            console.log('[Multiplayer] ยกเลิกการเชื่อมต่อ WebSocket');
+        }
+    }
+
+    /**
+     * โหลดสถานะห้องเริ่มต้น
+     */
+    async loadInitialRoomState() {
+        if (!this.roomId) return;
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/room-state/${this.roomId}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+
+            if (!data.success) return;
+
+            const roomState = data.room_state;
+
+            // อัปเดตผู้เล่นคนอื่น
+            this.updateOtherPlayers(roomState.players);
+
+            // อัปเดตไอเทม
+            this.updateItems(roomState.items);
+
+        } catch (error) {
+            console.error('[Multiplayer] โหลดสถานะห้องล้มเหลว:', error);
+        }
+    }
+
+    /**
      * ออกจากเกม
      */
     async leaveGame() {
         try {
-            this.stopSync();
+            this.disconnectWebSocket();
 
             if (!this.playerId) return;
 
@@ -88,7 +235,7 @@ class SnakeMultiplayerManager {
     }
 
     /**
-     * อัปเดตสถานะผู้เล่น
+     * อัปเดตสถานะผู้เล่น (ส่งไปยัง server)
      */
     async updatePlayerState(position, direction, score, length) {
         if (!this.playerId) return;
@@ -142,7 +289,7 @@ class SnakeMultiplayerManager {
             const data = await response.json();
             console.log('[Multiplayer] ผู้เล่นตาย - คะแนนสุดท้าย:', data.final_score);
 
-            this.stopSync();
+            this.disconnectWebSocket();
             return data;
         } catch (error) {
             console.error('[Multiplayer] แจ้งการตายล้มเหลว:', error);
@@ -231,71 +378,6 @@ class SnakeMultiplayerManager {
     }
 
     /**
-     * เริ่ม sync กับ server
-     */
-    startSync() {
-        // Sync สถานะห้องเป็นระยะ
-        this.syncInterval = setInterval(async () => {
-            await this.syncRoomState();
-        }, this.SYNC_RATE);
-
-        // ตรวจสอบไอเทมใหม่
-        this.itemSpawnInterval = setInterval(async () => {
-            await this.syncRoomState();
-        }, this.ITEM_CHECK_RATE);
-
-        console.log('[Multiplayer] เริ่ม sync (ทุก', this.SYNC_RATE, 'ms)');
-    }
-
-    /**
-     * หยุด sync
-     */
-    stopSync() {
-        if (this.syncInterval) {
-            clearInterval(this.syncInterval);
-            this.syncInterval = null;
-        }
-
-        if (this.itemSpawnInterval) {
-            clearInterval(this.itemSpawnInterval);
-            this.itemSpawnInterval = null;
-        }
-
-        console.log('[Multiplayer] หยุด sync');
-    }
-
-    /**
-     * Sync สถานะห้องจาก server
-     */
-    async syncRoomState() {
-        if (!this.roomId) return;
-
-        try {
-            const response = await fetch(`${this.apiBaseUrl}/room-state/${this.roomId}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            const data = await response.json();
-
-            if (!data.success) return;
-
-            const roomState = data.room_state;
-
-            // อัปเดตผู้เล่นคนอื่น
-            this.updateOtherPlayers(roomState.players);
-
-            // อัปเดตไอเทม
-            this.updateItems(roomState.items);
-
-        } catch (error) {
-            console.error('[Multiplayer] Sync room state ล้มเหลว:', error);
-        }
-    }
-
-    /**
      * อัปเดตข้อมูลผู้เล่นคนอื่น
      */
     updateOtherPlayers(players) {
@@ -350,6 +432,33 @@ class SnakeMultiplayerManager {
      */
     getServerItems() {
         return Array.from(this.serverItems.values());
+    }
+
+    /**
+     * ตั้งค่า callback สำหรับเหตุการณ์ต่างๆ
+     */
+    setOnPlayerJoined(callback) {
+        this.onPlayerJoinedCallback = callback;
+    }
+
+    setOnPlayerLeft(callback) {
+        this.onPlayerLeftCallback = callback;
+    }
+
+    setOnPlayerMoved(callback) {
+        this.onPlayerMovedCallback = callback;
+    }
+
+    setOnPlayerDied(callback) {
+        this.onPlayerDiedCallback = callback;
+    }
+
+    setOnItemSpawned(callback) {
+        this.onItemSpawnedCallback = callback;
+    }
+
+    setOnItemCollected(callback) {
+        this.onItemCollectedCallback = callback;
     }
 }
 
