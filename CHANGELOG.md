@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.241.0] - 2025-11-14
+
+### ✨ Features
+- feat: add SnakeGameSyncService - lightweight multiplayer system (1360226b)
+- feat: disable multiplayer completely - OFFLINE MODE ONLY (30e62038)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1142 from xjanova/claude/snake-game-wallet-018Dqk7vxEKCSzTighZZQmES (aa56489f)
+
 ## [v2.240.0] - 2025-11-14
 
 ### ✨ Features
