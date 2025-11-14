@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.223.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1111 from xjanova/claude/fix-crypto-address-default-015YsbBpDm6ibAPR2HUiqmnc (2680e767)
+- fix: resolve crypto address creation without default value (0312ac0e)
+### 🔧 Other Changes
+
+
 ## [v2.223.0] - 2025-11-14
 
 ### ✨ Features
