@@ -16,12 +16,39 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-4xl font-bold text-white mb-2">แก้ไขรายการ</h1>
-                    <p class="text-orange-100 text-lg">อัพเดทข้อมูลรายการในตลาด</p>
+                    <h1 data-translate class="text-4xl font-bold text-white mb-2">แก้ไขรายการ</h1>
+                    <p data-translate class="text-orange-100 text-lg">อัพเดทข้อมูลรายการในตลาด</p>
                 </div>
             </div>
 
-            <a href="{{ route('admin.bot-automation.marketplace.index') }}"
+            
+            <div class="flex items-center gap-3">
+                {{-- Language Switcher --}}
+                <div class="relative inline-block" x-data="{ open: false }">
+                    <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                        </svg>
+                        <span data-translate>ภาษา</span>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-transition
+                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
+                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
+                        </a>
+                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇬🇧</span> English
+                        </a>
+                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇨🇳</span> 中文
+                        </a>
+                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇯🇵</span> 日本語
+                        </a>
+                    </div>
+                </div>
+<a href="{{ route('admin.bot-automation.marketplace.index') }}"
                class="inline-flex items-center px-6 py-3 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-orange-600 dark:text-orange-400 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -80,7 +107,7 @@
                             </label>
                             <select name="category" id="category" required
                                     class="w-full px-4 py-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring focus:ring-orange-200 dark:focus:ring-orange-800 transition-all duration-300 @error('category') border-red-500 @enderror">
-                                <option value="">เลือกหมวดหมู่</option>
+                                <option data-translate>เลือกหมวดหมู่</option>
                                 <option value="sales" {{ old('category', $listing->category ?? '') == 'sales' ? 'selected' : '' }}>ฝ่ายขาย</option>
                                 <option value="support" {{ old('category', $listing->category ?? '') == 'support' ? 'selected' : '' }}>ฝ่ายสนับสนุน</option>
                                 <option value="marketing" {{ old('category', $listing->category ?? '') == 'marketing' ? 'selected' : '' }}>การตลาด</option>
@@ -113,7 +140,7 @@
                         <label for="features" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                             คุณสมบัติ (ทีละบรรทัด)
                         </label>
-                        <textarea name="features" id="features" rows="5" placeholder="คุณสมบัติ 1&#10;คุณสมบัติ 2&#10;คุณสมบัติ 3"
+                        <textarea name="features" id="features" rows="5" placeholder="คุณสมบัติ 1&#10;คุณสมบัติ 2&#10;คุณสมบัติ 3" data-translate-placeholder
                                   class="w-full px-4 py-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring focus:ring-orange-200 dark:focus:ring-orange-800 transition-all duration-300 @error('features') border-red-500 @enderror">{{ old('features', $listing->features ?? '') }}</textarea>
                         @error('features')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -127,7 +154,7 @@
                         </label>
                         <select name="bot_id" id="bot_id"
                                 class="w-full px-4 py-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring focus:ring-orange-200 dark:focus:ring-orange-800 transition-all duration-300 @error('bot_id') border-red-500 @enderror">
-                            <option value="">เลือกบอท (ไม่บังคับ)</option>
+                            <option data-translate>เลือกบอท (ไม่บังคับ)</option>
                             @foreach($bots ?? [] as $bot)
                             <option value="{{ $bot->id }}" {{ old('bot_id', $listing->bot_id ?? '') == $bot->id ? 'selected' : '' }}>
                                 {{ $bot->name }}
@@ -147,7 +174,7 @@
                         @if(isset($listing->image) && $listing->image)
                         <div class="mb-4">
                             <img src="{{ asset('storage/' . $listing->image) }}" alt="รูปปัจจุบัน" class="w-48 h-48 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-700">
-                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">รูปภาพปัจจุบัน (อัพโหลดใหม่เพื่อเปลี่ยน)</p>
+                            <p data-translate class="mt-2 text-sm text-gray-500 dark:text-gray-400">รูปภาพปัจจุบัน (อัพโหลดใหม่เพื่อเปลี่ยน)</p>
                         </div>
                         @endif
                         <div class="flex items-center justify-center w-full">
@@ -156,13 +183,13 @@
                                     <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                     </svg>
-                                    <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">คลิกเพื่ออัพโหลด</span> หรือลากไฟล์มาวาง</p>
+                                    <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span data-translate class="font-semibold">คลิกเพื่ออัพโหลด</span> หรือลากไฟล์มาวาง</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG หรือ GIF (MAX. 2MB)</p>
                                 </div>
                                 <input type="file" name="image" id="image" accept="image/*" class="hidden" @error('image') border-red-500 @enderror>
                             </label>
                         </div>
-                        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">หากไม่อัพโหลดรูปใหม่ จะใช้รูปเดิม</p>
+                        <p data-translate class="mt-2 text-xs text-gray-500 dark:text-gray-400">หากไม่อัพโหลดรูปใหม่ จะใช้รูปเดิม</p>
                         @error('image')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
@@ -231,24 +258,24 @@
             {{-- Statistics --}}
             <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
                 <div class="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-gray-800 dark:to-gray-800 px-6 py-4 border-b border-orange-200 dark:border-gray-700">
-                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">สถิติรายการ</h3>
+                    <h3 data-translate class="text-lg font-bold text-gray-900 dark:text-white">สถิติรายการ</h3>
                 </div>
                 <div class="p-6">
                     <div class="space-y-4">
                         <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">ยอดดู:</span>
+                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">ยอดดู:</span>
                             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $listing->views ?? '0' }}</span>
                         </div>
                         <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">สมาชิก:</span>
+                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">สมาชิก:</span>
                             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $listing->subscribers ?? '0' }}</span>
                         </div>
                         <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">รายได้:</span>
+                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">รายได้:</span>
                             <span class="text-lg font-bold text-green-600 dark:text-green-400">${{ number_format($listing->revenue ?? 0, 2) }}</span>
                         </div>
                         <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">คะแนน:</span>
+                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">คะแนน:</span>
                             <div class="flex items-center">
                                 <span class="text-lg font-bold text-gray-900 dark:text-white mr-2">{{ number_format($listing->rating ?? 0, 1) }}</span>
                                 <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -257,7 +284,7 @@
                             </div>
                         </div>
                         <div class="flex justify-between items-center">
-                            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">สร้างเมื่อ:</span>
+                            <span data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400">สร้างเมื่อ:</span>
                             <span class="text-sm font-semibold text-gray-900 dark:text-white">{{ isset($listing->created_at) ? $listing->created_at->format('d M Y') : 'N/A' }}</span>
                         </div>
                     </div>

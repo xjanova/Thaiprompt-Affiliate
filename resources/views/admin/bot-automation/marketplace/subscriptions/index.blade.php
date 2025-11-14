@@ -16,12 +16,39 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-4xl font-bold text-white mb-2">การสมัครสมาชิก</h1>
-                    <p class="text-orange-100 text-lg">จัดการสมาชิกและการสมัครบอท</p>
+                    <h1 data-translate class="text-4xl font-bold text-white mb-2">การสมัครสมาชิก</h1>
+                    <p data-translate class="text-orange-100 text-lg">จัดการสมาชิกและการสมัครบอท</p>
                 </div>
             </div>
 
-            <a href="{{ route('admin.bot-automation.marketplace.index') }}"
+            
+            <div class="flex items-center gap-3">
+                {{-- Language Switcher --}}
+                <div class="relative inline-block" x-data="{ open: false }">
+                    <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                        </svg>
+                        <span data-translate>ภาษา</span>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-transition
+                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
+                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
+                        </a>
+                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇬🇧</span> English
+                        </a>
+                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇨🇳</span> 中文
+                        </a>
+                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇯🇵</span> 日本語
+                        </a>
+                    </div>
+                </div>
+<a href="{{ route('admin.bot-automation.marketplace.index') }}"
                class="inline-flex items-center px-6 py-3 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-orange-600 dark:text-orange-400 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -37,10 +64,10 @@
         <div class="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-orange-100 dark:border-orange-900/30 hover:border-orange-300 dark:hover:border-orange-700 transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">สมาชิกทั้งหมด</p>
+                    <p data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">สมาชิกทั้งหมด</p>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white">{{ $totalSubscriptions ?? '0' }}</h3>
                     <div class="mt-2 flex items-center text-xs">
-                        <span class="text-orange-600 dark:text-orange-400 font-medium">การสมัครทั้งหมด</span>
+                        <span data-translate class="text-orange-600 dark:text-orange-400 font-medium">การสมัครทั้งหมด</span>
                     </div>
                 </div>
                 <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 dark:from-orange-600 dark:to-amber-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -55,10 +82,10 @@
         <div class="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-green-100 dark:border-green-900/30 hover:border-green-300 dark:hover:border-green-700 transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">กำลังใช้งาน</p>
+                    <p data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">กำลังใช้งาน</p>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white">{{ $activeSubscriptions ?? '0' }}</h3>
                     <div class="mt-2 flex items-center text-xs">
-                        <span class="text-green-600 dark:text-green-400 font-medium">ใช้งานอยู่</span>
+                        <span data-translate class="text-green-600 dark:text-green-400 font-medium">ใช้งานอยู่</span>
                     </div>
                 </div>
                 <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -73,10 +100,10 @@
         <div class="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-blue-100 dark:border-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700 transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">รายได้รายเดือน</p>
+                    <p data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">รายได้รายเดือน</p>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white">${{ number_format($monthlyRevenue ?? 0, 2) }}</h3>
                     <div class="mt-2 flex items-center text-xs">
-                        <span class="text-blue-600 dark:text-blue-400 font-medium">รายได้ต่อเดือน</span>
+                        <span data-translate class="text-blue-600 dark:text-blue-400 font-medium">รายได้ต่อเดือน</span>
                     </div>
                 </div>
                 <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 dark:from-blue-600 dark:to-cyan-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -91,10 +118,10 @@
         <div class="group bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-yellow-100 dark:border-yellow-900/30 hover:border-yellow-300 dark:hover:border-yellow-700 transform hover:-translate-y-1">
             <div class="flex items-center justify-between">
                 <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">ใกล้หมดอายุ</p>
+                    <p data-translate class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">ใกล้หมดอายุ</p>
                     <h3 class="text-3xl font-bold text-gray-900 dark:text-white">{{ $expiringSubscriptions ?? '0' }}</h3>
                     <div class="mt-2 flex items-center text-xs">
-                        <span class="text-yellow-600 dark:text-yellow-400 font-medium">ต้องต่ออายุ</span>
+                        <span data-translate class="text-yellow-600 dark:text-yellow-400 font-medium">ต้องต่ออายุ</span>
                     </div>
                 </div>
                 <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 dark:from-yellow-600 dark:to-amber-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -249,8 +276,8 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                     </svg>
                                 </div>
-                                <p class="text-lg font-medium text-gray-500 dark:text-gray-400">ไม่พบการสมัครสมาชิก</p>
-                                <p class="text-sm text-gray-400 dark:text-gray-500 mt-1">รอการสมัครสมาชิกใหม่</p>
+                                <p data-translate class="text-lg font-medium text-gray-500 dark:text-gray-400">ไม่พบการสมัครสมาชิก</p>
+                                <p data-translate class="text-sm text-gray-400 dark:text-gray-500 mt-1">รอการสมัครสมาชิกใหม่</p>
                             </div>
                         </td>
                     </tr>
