@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.228.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1119 from xjanova/claude/fix-products-show-route-01Lv2UVn6mNfBKUUhc4nmHir (bbd823b0)
+- fix: replace undefined route 'products.show' with 'shop.show' (d3f3b909)
+### 🔧 Other Changes
+
+
 ## [v2.228.0] - 2025-11-14
 
 ### ✨ Features
