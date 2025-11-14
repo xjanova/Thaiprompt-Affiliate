@@ -68,6 +68,7 @@ class DatabaseSeeder extends Seeder
             // 8. E-commerce & Products
             ProductCategorySeeder::class,       // หมวดหมู่สินค้า (ต้องมาก่อน ProductSeeder)
             ProductSeeder::class,               // สินค้าตัวอย่าง
+            WalletTopupPackagesSeeder::class,   // แพ็คเกจเติมเงิน Wallet
             VendorPackageSeeder::class,         // แพคเกจสำหรับผู้ขาย/Vendor
             VendorPackageFeatureSeeder::class,  // ฟีเจอร์ของแพคเกจ Vendor
             MarketplacePlatformSeeder::class,   // Marketplace Platforms (Shopee, Lazada, etc.)

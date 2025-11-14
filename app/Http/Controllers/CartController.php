@@ -111,6 +111,11 @@ class CartController extends Controller
             ]);
         }
 
+        // ✅ ถ้ามี redirect_to_checkout parameter ให้ไปหน้า checkout ทันที (สำหรับ Wallet Topup)
+        if ($request->has('redirect_to_checkout') && $request->redirect_to_checkout) {
+            return redirect()->route('checkout.index')->with('success', 'เพิ่มแพ็คเกจเติมเงินเรียบร้อยแล้ว กรุณาชำระเงิน');
+        }
+
         return redirect()->route('cart.index')->with('success', 'เพิ่มสินค้าลงตะกร้าเรียบร้อยแล้ว');
     }
 

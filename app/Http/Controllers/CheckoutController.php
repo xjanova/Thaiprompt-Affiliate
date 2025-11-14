@@ -47,14 +47,23 @@ class CheckoutController extends Controller
             }
         }
 
-        // Get user's shipping addresses
-        $addresses = ShippingAddress::where('user_id', auth()->id())
-            ->orderBy('is_default', 'desc')
-            ->get();
+        // ✅ ตรวจสอบว่ามี virtual products หรือไม่
+        $hasVirtualProducts = $cartItems->contains(function ($item) {
+            return $item->product->is_virtual;
+        });
+        $hasPhysicalProducts = $cartItems->contains(function ($item) {
+            return !$item->product->is_virtual;
+        });
+
+        // Get user's shipping addresses (เฉพาะเมื่อมีสินค้าที่ต้องส่ง)
+        $addresses = $hasPhysicalProducts
+            ? ShippingAddress::where('user_id', auth()->id())->orderBy('is_default', 'desc')->get()
+            : collect();
 
         // Calculate totals
         $subtotal = $cartItems->sum('subtotal');
-        $shippingFee = $this->calculateShippingFee($subtotal);
+        // ✅ Virtual products ไม่มีค่าส่ง
+        $shippingFee = $hasPhysicalProducts ? $this->calculateShippingFee($subtotal) : 0;
         $total = $subtotal + $shippingFee;
 
         // Calculate cashback preview
@@ -84,12 +93,6 @@ class CheckoutController extends Controller
      */
     public function process(Request $request)
     {
-        $request->validate([
-            'shipping_address_id' => 'required|exists:shipping_addresses,id',
-            'payment_method' => 'required|in:wallet,promptpay,bank_transfer,credit_card,cash_on_delivery,paysolutions',
-            'customer_notes' => 'nullable|string|max:1000',
-        ]);
-
         $cartItems = ShoppingCart::with(['product.seller'])
             ->where('user_id', auth()->id())
             ->get();
@@ -97,6 +100,23 @@ class CheckoutController extends Controller
         if ($cartItems->isEmpty()) {
             return redirect()->route('cart.index')->with('error', 'ตะกร้าสินค้าของคุณว่างเปล่า');
         }
+
+        // ✅ ตรวจสอบว่ามีสินค้าที่ต้องส่งหรือไม่
+        $hasPhysicalProducts = $cartItems->contains(function ($item) {
+            return !$item->product->is_virtual;
+        });
+
+        // ✅ Validation: shipping_address_id required เฉพาะเมื่อมีสินค้าที่ต้องส่ง
+        $validationRules = [
+            'payment_method' => 'required|in:wallet,promptpay,bank_transfer,credit_card,cash_on_delivery,paysolutions',
+            'customer_notes' => 'nullable|string|max:1000',
+        ];
+
+        if ($hasPhysicalProducts) {
+            $validationRules['shipping_address_id'] = 'required|exists:shipping_addresses,id';
+        }
+
+        $request->validate($validationRules);
 
         // Check stock availability again
         foreach ($cartItems as $item) {
@@ -108,12 +128,15 @@ class CheckoutController extends Controller
         DB::beginTransaction();
 
         try {
-            // Get shipping address
-            $shippingAddress = ShippingAddress::findOrFail($request->shipping_address_id);
+            // ✅ Get shipping address (เฉพาะสินค้าที่ต้องส่ง)
+            $shippingAddress = $hasPhysicalProducts && $request->shipping_address_id
+                ? ShippingAddress::findOrFail($request->shipping_address_id)
+                : null;
 
             // Calculate totals
             $subtotal = $cartItems->sum('subtotal');
-            $shippingFee = $this->calculateShippingFee($subtotal);
+            // ✅ Virtual products ไม่มีค่าส่ง
+            $shippingFee = $hasPhysicalProducts ? $this->calculateShippingFee($subtotal) : 0;
             $total = $subtotal + $shippingFee;
             $platformCommission = 0;
             $sellerEarning = 0;
@@ -124,7 +147,8 @@ class CheckoutController extends Controller
             // Create order (don't decrease stock yet - will be done after payment)
             $order = Order::create([
                 'user_id' => auth()->id(),
-                'shipping_address_id' => $request->shipping_address_id,
+                // ✅ Virtual products ไม่ต้องมี shipping address
+                'shipping_address_id' => $shippingAddress ? $request->shipping_address_id : null,
                 'status' => 'pending',
                 'payment_method' => $request->payment_method,
                 'payment_status' => 'pending',
@@ -134,7 +158,8 @@ class CheckoutController extends Controller
                 'cashback_amount' => $cashbackAmount,
                 'cashback_processed' => false,
                 'customer_notes' => $request->customer_notes,
-                'shipping_address_snapshot' => $shippingAddress->toArray(),
+                // ✅ Virtual products ไม่ต้องมี shipping address snapshot
+                'shipping_address_snapshot' => $shippingAddress ? $shippingAddress->toArray() : null,
             ]);
 
             // Create order items
@@ -287,6 +312,9 @@ class CheckoutController extends Controller
                         }
                     }
 
+                    // ✅ ถ้าเป็น Wallet Topup Package - เพิ่มยอดเข้า Wallet
+                    $this->processWalletTopupIfApplicable($order);
+
                     return redirect()->route('checkout.success', $order->id)
                         ->with('success', 'ชำระเงินสำเร็จ');
                 }
@@ -352,5 +380,65 @@ class CheckoutController extends Controller
 
         // Flat rate shipping
         return 50;
+    }
+
+    /**
+     * ประมวลผล Wallet Topup Package (เพิ่มยอดเข้า Wallet)
+     *
+     * @param Order $order
+     * @return void
+     */
+    private function processWalletTopupIfApplicable(Order $order): void
+    {
+        try {
+            // ดึง order items และตรวจสอบว่ามี virtual products (wallet topup) หรือไม่
+            $walletTopupItems = $order->items()->with('product')->get()->filter(function ($item) {
+                return $item->product && $item->product->is_virtual && $item->product->category
+                    && $item->product->category->slug === 'wallet-topup';
+            });
+
+            if ($walletTopupItems->isEmpty()) {
+                return; // ไม่มี topup packages
+            }
+
+            $user = $order->user;
+            $wallet = Wallet::firstOrCreate(
+                ['user_id' => $user->id],
+                ['balance' => 0]
+            );
+
+            // เพิ่มยอดเงินเข้า wallet สำหรับแต่ละ topup package
+            foreach ($walletTopupItems as $item) {
+                $topupAmount = $item->product->price * $item->quantity;
+
+                // เพิ่มยอดเข้า wallet
+                $wallet->balance += $topupAmount;
+                $wallet->save();
+
+                // บันทึก transaction
+                $wallet->transactions()->create([
+                    'type' => 'topup',
+                    'amount' => $topupAmount,
+                    'balance_before' => $wallet->balance - $topupAmount,
+                    'balance_after' => $wallet->balance,
+                    'status' => 'completed',
+                    'description' => "เติมเงินผ่าน {$item->product->name} (Order #{$order->id})",
+                    'reference_type' => 'order',
+                    'reference_id' => $order->id,
+                    'metadata' => json_encode([
+                        'order_id' => $order->id,
+                        'product_id' => $item->product->id,
+                        'product_name' => $item->product->name,
+                        'quantity' => $item->quantity,
+                    ]),
+                ]);
+
+                \Log::info("[Wallet Topup] เพิ่มยอดเงิน {$topupAmount} บาทเข้า wallet ของ user #{$user->id} (Order #{$order->id})");
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('[Wallet Topup] เกิดข้อผิดพลาด: ' . $e->getMessage());
+            // ไม่ throw exception เพื่อไม่ให้กระทบกับการทำงานของ order
+        }
     }
 }
