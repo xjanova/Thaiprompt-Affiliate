@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.210.4] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1075 from xjanova/claude/notification-menu-01DtTQCneef7g1MbwtTKTciX (774b5ee0)
+- fix: simplify notification bell to use inline Alpine.js like other menus (12f25ea9)
+### 🔧 Other Changes
+
+
 ## [v2.210.3] - 2025-11-14
 
 ### ✨ Features
