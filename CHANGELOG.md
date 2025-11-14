@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.246.5] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1154 from xjanova/claude/snake-game-wallet-018Dqk7vxEKCSzTighZZQmES (41ebe5c3)
+- revert: rollback to commit 826ac62 - before segment movement optimization (3bb6315e)
+
 ## [v2.246.4] - 2025-11-14
 
 ### ✨ Features
