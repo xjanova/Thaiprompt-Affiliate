@@ -530,6 +530,9 @@
             <div id="leaderboard-list"></div>
         </div>
 
+        <!-- Power-up Indicators -->
+        <div class="powerup-indicators" id="powerup-indicators"></div>
+
         <!-- Start Screen -->
         <div id="start-screen">
             <h1>🐍 SNAKE.IO</h1>
@@ -732,6 +735,38 @@
         let score = 0;
         let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
 
+        // Power-ups
+        let powerups = [];
+        let activePowerups = {
+            magnet: null,
+            speed: null,
+            multiplier: null
+        };
+
+        const POWERUP_TYPES = {
+            MAGNET: {
+                name: 'magnet',
+                icon: '🧲',
+                color: 0xff00ff,
+                duration: 10000,
+                spawnChance: 0.3
+            },
+            SPEED: {
+                name: 'speed',
+                icon: '⚡',
+                color: 0xffff00,
+                duration: 10000,
+                spawnChance: 0.3
+            },
+            MULTIPLIER: {
+                name: 'multiplier',
+                icon: '✖️',
+                color: 0x00ff00,
+                duration: 10000,
+                spawnChance: 0.4
+            }
+        };
+
         // Skin colors
         const SKINS = {
             'classic': { primary: 0x00ff00, secondary: 0x00aa00 },
@@ -873,7 +908,10 @@
                 }
 
                 this.length += amount;
-                this.score += amount * CONFIG.FOOD_VALUE;
+
+                // Apply score multiplier if active
+                const multiplier = (this.isPlayer && activePowerups.multiplier) ? 2 : 1;
+                this.score += amount * CONFIG.FOOD_VALUE * multiplier;
 
                 // Play eat sound
                 if (this.isPlayer) {
@@ -1080,6 +1118,95 @@
 
             const bot = new Snake(x, z, false, name, skin);
             bots.push(bot);
+        }
+
+        /**
+         * Create power-up item
+         */
+        function createPowerup() {
+            const types = [POWERUP_TYPES.MAGNET, POWERUP_TYPES.SPEED, POWERUP_TYPES.MULTIPLIER];
+            const type = types[Math.floor(Math.random() * types.length)];
+
+            const halfWorld = CONFIG.WORLD_SIZE / 2 - 15;
+            const x = (Math.random() - 0.5) * halfWorld * 2;
+            const z = (Math.random() - 0.5) * halfWorld * 2;
+
+            // Create spinning cube for powerup
+            const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            const material = new THREE.MeshPhongMaterial({
+                color: type.color,
+                emissive: type.color,
+                emissiveIntensity: 0.5,
+                shininess: 100,
+            });
+
+            const powerup = new THREE.Mesh(geometry, material);
+            powerup.position.set(x, 0.8, z);
+            powerup.userData.type = type.name;
+            powerup.userData.icon = type.icon;
+            powerup.userData.duration = type.duration;
+
+            scene.add(powerup);
+            powerups.push(powerup);
+        }
+
+        /**
+         * Activate a power-up
+         */
+        function activatePowerup(type) {
+            const powerupType = Object.values(POWERUP_TYPES).find(p => p.name === type);
+            if (!powerupType) return;
+
+            // Clear existing powerup of same type
+            if (activePowerups[type]) {
+                clearTimeout(activePowerups[type].timeout);
+            }
+
+            // Activate new powerup
+            const endTime = Date.now() + powerupType.duration;
+            activePowerups[type] = {
+                endTime: endTime,
+                timeout: setTimeout(() => {
+                    deactivatePowerup(type);
+                }, powerupType.duration)
+            };
+
+            updatePowerupUI();
+            playSound('grow');
+        }
+
+        /**
+         * Deactivate a power-up
+         */
+        function deactivatePowerup(type) {
+            if (activePowerups[type]) {
+                clearTimeout(activePowerups[type].timeout);
+                activePowerups[type] = null;
+                updatePowerupUI();
+            }
+        }
+
+        /**
+         * Update power-up UI indicators
+         */
+        function updatePowerupUI() {
+            const container = document.getElementById('powerup-indicators');
+            container.innerHTML = '';
+
+            Object.entries(activePowerups).forEach(([type, data]) => {
+                if (!data) return;
+
+                const powerupType = Object.values(POWERUP_TYPES).find(p => p.name === type);
+                const timeLeft = Math.ceil((data.endTime - Date.now()) / 1000);
+
+                const div = document.createElement('div');
+                div.className = `powerup-active ${type}`;
+                div.innerHTML = `
+                    <span class="powerup-icon">${powerupType.icon}</span>
+                    <span class="powerup-time">${timeLeft}s</span>
+                `;
+                container.appendChild(div);
+            });
         }
 
         /**
@@ -1321,7 +1448,17 @@
         function update() {
             if (!gameStarted || gameOver) return;
 
+            // Animate powerups (spin)
+            powerups.forEach(powerup => {
+                powerup.rotation.y += 0.05;
+                powerup.position.y = 0.8 + Math.sin(Date.now() * 0.003) * 0.2;
+            });
+
             if (player && player.alive) {
+                // Apply speed boost
+                const speedMultiplier = activePowerups.speed ? 1.5 : 1;
+                player.speed = CONFIG.MOVEMENT_SPEED * speedMultiplier;
+
                 player.update();
 
                 // Update camera to follow player
@@ -1336,6 +1473,21 @@
                 document.getElementById('length').textContent = player.length;
                 document.getElementById('rank').textContent = '#' + getRank();
 
+                // Magnet effect - attract nearby food
+                if (activePowerups.magnet) {
+                    const magnetRange = 8;
+                    foods.forEach(food => {
+                        const distance = head.distanceTo(food.position);
+                        if (distance < magnetRange && distance > 0.5) {
+                            const direction = new THREE.Vector3()
+                                .subVectors(head, food.position)
+                                .normalize()
+                                .multiplyScalar(0.2);
+                            food.position.add(direction);
+                        }
+                    });
+                }
+
                 // Check food collision
                 for (let i = foods.length - 1; i >= 0; i--) {
                     const food = foods[i];
@@ -1347,6 +1499,16 @@
                         break;
                     }
                 }
+
+                // Check powerup collision
+                for (let i = powerups.length - 1; i >= 0; i--) {
+                    const powerup = powerups[i];
+                    if (head.distanceTo(powerup.position) < 1.5) {
+                        activatePowerup(powerup.userData.type);
+                        scene.remove(powerup);
+                        powerups.splice(i, 1);
+                    }
+                }
             }
 
             updateBots();
@@ -1356,6 +1518,11 @@
 
             updateLeaderboard();
 
+            // Update powerup UI timers
+            if (Object.values(activePowerups).some(p => p !== null)) {
+                updatePowerupUI();
+            }
+
             // Maintain food count
             while (foods.length < CONFIG.FOOD_COUNT) {
                 createFood();
@@ -1364,6 +1531,11 @@
             // Maintain bot count
             while (bots.length < CONFIG.BOT_COUNT) {
                 createBot();
+            }
+
+            // Spawn powerups (1-2 at a time, randomly)
+            if (powerups.length < 2 && Math.random() < 0.01) {
+                createPowerup();
             }
         }
 
