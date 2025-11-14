@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.207.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1066 from xjanova/claude/snak-o-game-01GVRjYkMBpjPvZVmug7cRtM (35f6ab74)
+- fix: remove duplicate canvas variable declaration (afb71777)
+### 🔧 Other Changes
+
+
 ## [v2.207.1] - 2025-11-14
 
 ### ✨ Features
