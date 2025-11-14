@@ -7,7 +7,7 @@
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div class="d-flex align-items-center">
-            <a href="{{ route('admin.crypto.tokens.index') }}" class="btn btn-outline-secondary me-3">
+            <a href="{{ route('admin.tokens.index') }}" class="btn btn-outline-secondary me-3">
                 <i class="fas fa-arrow-left"></i> Back
             </a>
             @if($token->logo)
@@ -227,7 +227,7 @@
                 </div>
                 <div class="card-body">
                     @if($token->status == 'pending')
-                    <form action="{{ route('admin.crypto.tokens.approve', $token->id) }}" method="POST" class="mb-2">
+                    <form action="{{ route('admin.tokens.approve', $token->id) }}" method="POST" class="mb-2">
                         @csrf
                         <button type="submit" class="btn btn-success w-100" onclick="return confirm('Approve this token?')">
                             <i class="fas fa-check"></i> Approve Token
@@ -239,7 +239,7 @@
                     @endif
 
                     @if(!$token->is_verified && $token->status == 'active')
-                    <form action="{{ route('admin.crypto.tokens.verify', $token->id) }}" method="POST" class="mb-2">
+                    <form action="{{ route('admin.tokens.verify', $token->id) }}" method="POST" class="mb-2">
                         @csrf
                         <button type="submit" class="btn btn-primary w-100">
                             <i class="fas fa-check-circle"></i> Verify Token
@@ -248,14 +248,14 @@
                     @endif
 
                     @if(!$token->is_featured)
-                    <form action="{{ route('admin.crypto.tokens.feature', $token->id) }}" method="POST" class="mb-2">
+                    <form action="{{ route('admin.tokens.feature', $token->id) }}" method="POST" class="mb-2">
                         @csrf
                         <button type="submit" class="btn btn-warning w-100">
                             <i class="fas fa-star"></i> Feature Token
                         </button>
                     </form>
                     @else
-                    <form action="{{ route('admin.crypto.tokens.unfeature', $token->id) }}" method="POST" class="mb-2">
+                    <form action="{{ route('admin.tokens.unfeature', $token->id) }}" method="POST" class="mb-2">
                         @csrf
                         <button type="submit" class="btn btn-outline-warning w-100">
                             <i class="far fa-star"></i> Unfeature Token
@@ -263,12 +263,12 @@
                     </form>
                     @endif
 
-                    <a href="{{ route('admin.crypto.tokens.edit', $token->id) }}" class="btn btn-outline-primary w-100 mb-2">
+                    <a href="{{ route('admin.tokens.edit', $token->id) }}" class="btn btn-outline-primary w-100 mb-2">
                         <i class="fas fa-edit"></i> Edit Token
                     </a>
 
                     @if($token->cmc_id)
-                    <form action="{{ route('admin.crypto.tokens.sync-cmc', $token->id) }}" method="POST">
+                    <form action="{{ route('admin.tokens.sync-cmc', $token->id) }}" method="POST">
                         @csrf
                         <button type="submit" class="btn btn-outline-info w-100">
                             <i class="fas fa-sync"></i> Sync with CMC

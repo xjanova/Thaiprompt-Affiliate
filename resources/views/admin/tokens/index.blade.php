@@ -9,7 +9,7 @@
             <i class="fas fa-coins text-primary"></i> TPIX Token Management
         </h1>
         <div>
-            <a href="{{ route('admin.crypto.tokens.import-cmc') }}" class="btn btn-info">
+            <a href="{{ route('admin.tokens.import-cmc') }}" class="btn btn-info">
                 <i class="fas fa-download"></i> Import from CMC
             </a>
         </div>
@@ -143,11 +143,11 @@
                             <td>{{ number_format($token->holders_count ?? 0) }}</td>
                             <td>{{ number_format($token->volume_24h ?? 0, 2) }}</td>
                             <td>
-                                <a href="{{ route('admin.crypto.tokens.show', $token->id) }}" class="btn btn-sm btn-info">
+                                <a href="{{ route('admin.tokens.show', $token->id) }}" class="btn btn-sm btn-info">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 @if($token->status == 'pending')
-                                <form action="{{ route('admin.crypto.tokens.approve', $token->id) }}" method="POST" class="d-inline">
+                                <form action="{{ route('admin.tokens.approve', $token->id) }}" method="POST" class="d-inline">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Approve this token?')">
                                         <i class="fas fa-check"></i>
