@@ -987,6 +987,10 @@
         let lastSyncTime = 0;
         const SYNC_INTERVAL = 1000; // sync ทุก 1 วินาที
 
+        // ✅ Other players rendering throttling (ป้องกันเกมค้าง)
+        let lastRenderOthersTime = 0;
+        const RENDER_OTHERS_INTERVAL = 100; // render ผู้เล่นคนอื่นทุก 100ms (10 FPS)
+
         const POWERUP_TYPES = {
             MAGNET: {
                 name: 'magnet',
@@ -1059,8 +1063,17 @@
             constructor(x, z, isPlayer = false, name = 'Bot', skinKey = 'classic') {
                 this.isPlayer = isPlayer;
                 this.name = name;
-                this.skinKey = skinKey;
-                this.skin = SKINS[skinKey] || SKINS.classic;
+
+                // ✅ ตรวจสอบว่าเป็น custom colors (มี hex codes) หรือ preset skin
+                if (typeof skinKey === 'string' && skinKey.includes('#')) {
+                    // Custom colors - ใช้ SKINS.custom ที่ได้อัปเดตแล้ว
+                    this.skinKey = 'custom';
+                    this.skin = SKINS.custom;
+                } else {
+                    // Preset skin (classic, fire, ice, gold, rainbow)
+                    this.skinKey = skinKey;
+                    this.skin = SKINS[skinKey] || SKINS.classic;
+                }
 
                 this.segments = [];
                 this.segmentPositions = [];
@@ -1596,17 +1609,44 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.skin) {
-                        selectedSkin = data.skin;
+                        // ✅ ตรวจสอบว่าเป็น custom colors (มี hex code) หรือ preset skin
+                        if (data.skin.includes('#')) {
+                            // Custom colors - แยกสีและนำไปใส่ใน color inputs
+                            const colors = data.skin.split(',');
 
-                        // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
-                        document.querySelectorAll('.skin-option').forEach(option => {
-                            option.classList.remove('selected');
-                            if (option.dataset.skin === data.skin) {
-                                option.classList.add('selected');
-                            }
-                        });
+                            // ใส่สีใน color inputs
+                            if (colors[0]) document.getElementById('color1').value = colors[0];
+                            if (colors[1]) document.getElementById('color2').value = colors[1];
+                            if (colors[2]) document.getElementById('color3').value = colors[2];
 
-                        console.log('[Skin] โหลดสี skin ที่บันทึกไว้:', data.skin);
+                            // อัพเดต customColors และ SKINS.custom
+                            customColors = [
+                                parseInt(colors[0]?.replace('#', '0x') || '0x00ff00'),
+                                parseInt(colors[1]?.replace('#', '0x') || '0x00aa00'),
+                                parseInt(colors[2]?.replace('#', '0x') || '0x00dd00')
+                            ];
+                            SKINS.custom.colors = customColors;
+                            SKINS.custom.primary = customColors[0];
+                            SKINS.custom.secondary = customColors[1];
+
+                            // ตั้ง selectedSkin เป็น custom colors string
+                            selectedSkin = data.skin;
+
+                            console.log('[Skin] โหลดสี custom อัตโนมัติ:', colors);
+                        } else {
+                            // Preset skin (classic, fire, ice, gold, rainbow)
+                            selectedSkin = data.skin;
+
+                            // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
+                            document.querySelectorAll('.skin-option').forEach(option => {
+                                option.classList.remove('selected');
+                                if (option.dataset.skin === data.skin) {
+                                    option.classList.add('selected');
+                                }
+                            });
+
+                            console.log('[Skin] โหลดสี preset อัตโนมัติ:', data.skin);
+                        }
                     }
                 }
             } catch (error) {
@@ -2781,9 +2821,14 @@
                 }
             }
 
-            // Render ผู้เล่นคนอื่น (เฉพาะเมื่อ online)
-            if (multiplayerManager && isOnline) {
-                renderOtherPlayers();
+            // ✅ Render ผู้เล่นคนอื่น (throttle ทุก 100ms เพื่อป้องกันเกมค้าง)
+            if (multiplayerManager && isOnline && (currentTime - lastRenderOthersTime) >= RENDER_OTHERS_INTERVAL) {
+                try {
+                    renderOtherPlayers();
+                    lastRenderOthersTime = currentTime;
+                } catch (error) {
+                    console.warn('[Multiplayer] Render error:', error.message);
+                }
                 // ปิดการ render server items เพราะทำให้อาหารปลิว
                 // renderServerItems();
             }
