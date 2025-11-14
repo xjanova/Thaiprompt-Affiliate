@@ -36,6 +36,7 @@ class User extends Authenticatable
         'permissions',
         'preferred_language',
         'menu_theme_preference',
+        'game_preferences',
         // LINE OA fields
         'line_user_id',
         'line_display_name',
@@ -140,6 +141,7 @@ class User extends Authenticatable
             'is_admin' => 'boolean',
             'is_hotel_admin' => 'boolean',
             'permissions' => 'array',
+            'game_preferences' => 'array',
             'rank_updated_at' => 'datetime',
             'line_linked_at' => 'datetime',
             'line_verified' => 'boolean',

@@ -870,4 +870,14 @@ Route::prefix('games/snake-io')->name('api.games.snake-io.')->group(function () 
     // ตรวจสอบ wallet
     Route::get('/check-wallet', [$controller, 'checkWallet'])
         ->name('check-wallet');
+
+    // บันทึก skin preference (สำหรับสมาชิก)
+    Route::post('/save-skin-preference', [$controller, 'saveSkinPreference'])
+        ->middleware('auth:sanctum')
+        ->name('save-skin-preference');
+
+    // ดึง skin preference (สำหรับสมาชิก)
+    Route::get('/get-skin-preference', [$controller, 'getSkinPreference'])
+        ->middleware('auth:sanctum')
+        ->name('get-skin-preference');
 });
