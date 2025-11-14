@@ -148,4 +148,85 @@ class BotTemplateController extends Controller
             'media_type' => $template->media_type,
         ]);
     }
+
+    /**
+     * ส่งออกเทมเพลตเป็นไฟล์ JSON
+     *
+     * @param BotContentTemplate $template
+     * @return \Illuminate\Http\Response
+     */
+    public function export(BotContentTemplate $template)
+    {
+        $data = [
+            'name' => $template->name,
+            'description' => $template->description,
+            'category' => $template->category,
+            'content' => $template->content,
+            'media_url' => $template->media_url,
+            'media_type' => $template->media_type,
+            'platform_specific' => json_decode($template->platform_specific, true),
+            'variables' => json_decode($template->variables, true),
+            'exported_at' => now()->toDateTimeString(),
+            'version' => '1.0',
+        ];
+
+        $filename = 'template-' . \Str::slug($template->name) . '-' . now()->format('Y-m-d') . '.json';
+
+        return response()
+            ->json($data, 200, [
+                'Content-Type' => 'application/json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * ทดสอบเทมเพลตด้วยการส่งข้อความทดสอบ
+     *
+     * @param Request $request
+     * @param BotContentTemplate $template
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function test(Request $request, BotContentTemplate $template)
+    {
+        // ตรวจสอบข้อมูล
+        $validated = $request->validate([
+            'platform' => 'nullable|string|in:line,facebook,instagram,twitter',
+            'test_data' => 'nullable|array',
+        ]);
+
+        // เตรียมเนื้อหาสำหรับทดสอบ
+        $content = $template->content;
+        $variables = json_decode($template->variables ?? '[]', true);
+        $testData = $validated['test_data'] ?? [];
+
+        // แทนที่ variables ด้วยข้อมูลทดสอบ
+        foreach ($variables as $variable) {
+            $value = $testData[$variable] ?? '[TEST: ' . $variable . ']';
+            $content = str_replace("{{" . $variable . "}}", $value, $content);
+        }
+
+        // สร้าง preview ของข้อความ
+        $preview = [
+            'content' => $content,
+            'media_url' => $template->media_url,
+            'media_type' => $template->media_type,
+            'platform' => $validated['platform'] ?? 'line',
+            'category' => $template->category,
+            'test_mode' => true,
+            'timestamp' => now()->toDateTimeString(),
+        ];
+
+        // บันทึก log การทดสอบ (optional)
+        \Log::info('Template test executed', [
+            'template_id' => $template->id,
+            'user_id' => auth()->id(),
+            'platform' => $validated['platform'] ?? 'line',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ทดสอบเทมเพลตสำเร็จ',
+            'preview' => $preview,
+        ]);
+    }
 }

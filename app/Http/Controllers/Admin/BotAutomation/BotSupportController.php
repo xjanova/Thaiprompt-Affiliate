@@ -139,6 +139,63 @@ class BotSupportController extends Controller
     }
 
     /**
+     * ส่งออกข้อมูลทิกเก็ตเป็นไฟล์ JSON
+     *
+     * @param BotSupportTicket $ticket
+     * @return \Illuminate\Http\Response
+     */
+    public function export(BotSupportTicket $ticket)
+    {
+        $ticket->load(['user', 'responses.user']);
+
+        $data = [
+            'ticket_id' => $ticket->id,
+            'subject' => $ticket->subject,
+            'description' => $ticket->description,
+            'status' => $ticket->status,
+            'priority' => $ticket->priority,
+            'created_by' => [
+                'id' => $ticket->user->id,
+                'name' => $ticket->user->name,
+                'email' => $ticket->user->email,
+            ],
+            'created_at' => $ticket->created_at->toDateTimeString(),
+            'responses' => $ticket->responses->map(function ($response) {
+                return [
+                    'user' => $response->user->name,
+                    'message' => $response->message,
+                    'is_internal' => $response->is_internal,
+                    'created_at' => $response->created_at->toDateTimeString(),
+                ];
+            }),
+            'exported_at' => now()->toDateTimeString(),
+        ];
+
+        $filename = 'ticket-' . $ticket->id . '-' . now()->format('Y-m-d') . '.json';
+
+        return response()
+            ->json($data, 200, [
+                'Content-Type' => 'application/json',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * ลบทิกเก็ต
+     *
+     * @param BotSupportTicket $ticket
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroy(BotSupportTicket $ticket)
+    {
+        $ticket->delete();
+
+        return redirect()
+            ->route('admin.bot-automation.support.tickets.index')
+            ->with('success', 'ลบทิกเก็ตสำเร็จ');
+    }
+
+    /**
      * Calculate average response time
      */
     protected function calculateAverageResponseTime()

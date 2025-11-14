@@ -62,6 +62,55 @@ class BotPlatformController extends Controller
     }
 
     /**
+     * แสดงรายละเอียดและการตั้งค่าของ platform connection
+     *
+     * @param BotPlatformConnection $connection
+     * @return \Illuminate\View\View
+     */
+    public function show(BotPlatformConnection $connection)
+    {
+        $connection->load(['user']);
+
+        return view('admin.bot-automation.platforms.show', compact('connection'));
+    }
+
+    /**
+     * แสดงฟอร์มแก้ไขการตั้งค่า platform connection
+     *
+     * @param BotPlatformConnection $connection
+     * @return \Illuminate\View\View
+     */
+    public function edit(BotPlatformConnection $connection)
+    {
+        return view('admin.bot-automation.platforms.edit', compact('connection'));
+    }
+
+    /**
+     * อัพเดทการตั้งค่า platform connection
+     *
+     * @param Request $request
+     * @param BotPlatformConnection $connection
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request, BotPlatformConnection $connection)
+    {
+        $validated = $request->validate([
+            'account_name' => 'required|string|max:255',
+            'access_token' => 'nullable|string',
+            'refresh_token' => 'nullable|string',
+            'page_id' => 'nullable|string',
+            'webhook_url' => 'nullable|url',
+            'is_active' => 'boolean',
+        ]);
+
+        $connection->update($validated);
+
+        return redirect()
+            ->route('admin.bot-automation.platforms.index')
+            ->with('success', 'อัพเดทการตั้งค่าแพลตฟอร์มสำเร็จ');
+    }
+
+    /**
      * Store a newly created platform connection
      */
     public function store(Request $request)
