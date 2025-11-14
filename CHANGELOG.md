@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.215.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1090 from xjanova/claude/snake-game-update-01WyqX3Sc5RAi2kVkpxoHKSv (8be5b2fa)
+- docs: เพิ่มคู่มือ setup Snake.io แก้ปัญหา API error (400a4061)
+
 ## [v2.215.0] - 2025-11-14
 
 ### ✨ Features
