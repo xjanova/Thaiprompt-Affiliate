@@ -345,20 +345,51 @@ function translatePage(lang) {
 // ฟังก์ชันจัดการเทมเพลต
 function duplicateTemplate(id) {
     if (confirm('คุณต้องการคัดลอกเทมเพลตนี้หรือไม่?')) {
-        console.log('Duplicating template:', id);
-        // TODO: Implement duplicate functionality
+        // สร้าง form และ submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/bot-automation/templates/${id}/duplicate`;
+
+        // เพิ่ม CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
 function exportTemplate(id) {
-    console.log('Exporting template:', id);
-    // TODO: Implement export functionality
+    // เปิดหน้าต่างใหม่เพื่อดาวน์โหลดไฟล์
+    window.location.href = `/admin/bot-automation/templates/${id}/export`;
 }
 
 function deleteTemplate(id) {
     if (confirm('คุณแน่ใจหรือไม่ที่จะลบเทมเพลตนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้')) {
-        console.log('Deleting template:', id);
-        // TODO: Implement delete functionality
+        // สร้าง form และ submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/bot-automation/templates/${id}`;
+
+        // เพิ่ม CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrfInput);
+
+        // เพิ่ม method spoofing สำหรับ DELETE
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 

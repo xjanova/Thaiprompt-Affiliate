@@ -371,25 +371,89 @@ function translatePage(lang) {
 // ฟังก์ชันจัดการเทมเพลต
 function duplicateTemplate() {
     if (confirm('คุณต้องการคัดลอกเทมเพลตนี้หรือไม่?')) {
-        console.log('Duplicating template');
-        // TODO: Implement duplicate functionality
+        // สร้าง form และ submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.location.pathname + '/duplicate';
+
+        // เพิ่ม CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
 function exportTemplate() {
-    console.log('Exporting template');
-    // TODO: Implement export functionality
+    // เปิดหน้าต่างใหม่เพื่อดาวน์โหลดไฟล์
+    window.location.href = window.location.pathname + '/export';
 }
 
-function testTemplate() {
-    console.log('Testing template');
-    // TODO: Implement test functionality
+async function testTemplate() {
+    try {
+        // แสดง loading
+        const loadingToast = document.createElement('div');
+        loadingToast.className = 'fixed top-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+        loadingToast.textContent = 'กำลังทดสอบเทมเพลต...';
+        document.body.appendChild(loadingToast);
+
+        // ส่ง request
+        const response = await fetch(window.location.pathname + '/test', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({
+                platform: 'line',
+                test_data: {}
+            })
+        });
+
+        const data = await response.json();
+
+        // ลบ loading toast
+        loadingToast.remove();
+
+        if (data.success) {
+            // แสดงผลลัพธ์
+            alert('✅ ทดสอบสำเร็จ!\n\nเนื้อหา:\n' + data.preview.content);
+        } else {
+            alert('❌ การทดสอบล้มเหลว: ' + (data.message || 'เกิดข้อผิดพลาด'));
+        }
+    } catch (error) {
+        console.error('Test error:', error);
+        alert('❌ เกิดข้อผิดพลาดในการทดสอบ');
+    }
 }
 
 function deleteTemplate() {
     if (confirm('คุณแน่ใจหรือไม่ที่จะลบเทมเพลตนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้')) {
-        console.log('Deleting template');
-        // TODO: Implement delete functionality
+        // สร้าง form และ submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.location.pathname;
+
+        // เพิ่ม CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrfInput);
+
+        // เพิ่ม method spoofing สำหรับ DELETE
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 

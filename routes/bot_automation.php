@@ -23,6 +23,9 @@ Route::prefix('bot-automation/platforms')->name('bot-automation.platforms.')->gr
     Route::get('/', [BotPlatformController::class, 'index'])->name('index');
     Route::get('/connect/{platform}', [BotPlatformController::class, 'connect'])->name('connect');
     Route::post('/store', [BotPlatformController::class, 'store'])->name('store');
+    Route::get('/{connection}', [BotPlatformController::class, 'show'])->name('show');
+    Route::get('/{connection}/edit', [BotPlatformController::class, 'edit'])->name('edit');
+    Route::put('/{connection}', [BotPlatformController::class, 'update'])->name('update');
     Route::delete('/{connection}', [BotPlatformController::class, 'destroy'])->name('destroy');
     Route::post('/{connection}/refresh', [BotPlatformController::class, 'refreshToken'])->name('refresh');
     Route::post('/{connection}/toggle', [BotPlatformController::class, 'toggle'])->name('toggle');
@@ -54,6 +57,8 @@ Route::prefix('bot-automation/templates')->name('bot-automation.templates.')->gr
     Route::delete('/{template}', [BotTemplateController::class, 'destroy'])->name('destroy');
     Route::post('/{template}/duplicate', [BotTemplateController::class, 'duplicate'])->name('duplicate');
     Route::post('/{template}/preview', [BotTemplateController::class, 'preview'])->name('preview');
+    Route::get('/{template}/export', [BotTemplateController::class, 'export'])->name('export');
+    Route::post('/{template}/test', [BotTemplateController::class, 'test'])->name('test');
 });
 
 // Marketplace Management
@@ -81,9 +86,20 @@ Route::prefix('bot-automation/marketplace')->name('bot-automation.marketplace.')
 // Customer Support
 Route::prefix('bot-automation/support')->name('bot-automation.support.')->group(function () {
     Route::get('/', [BotSupportController::class, 'index'])->name('index');
+
+    // Tickets Management
+    Route::get('/tickets', [BotSupportController::class, 'tickets'])->name('tickets.index');
+    Route::get('/tickets/{ticket}', [BotSupportController::class, 'show'])->name('tickets.show');
+    Route::post('/tickets/{ticket}/respond', [BotSupportController::class, 'respond'])->name('tickets.respond');
+    Route::post('/tickets/{ticket}/status', [BotSupportController::class, 'updateStatus'])->name('tickets.updateStatus');
+    Route::post('/tickets/{ticket}/priority', [BotSupportController::class, 'updatePriority'])->name('tickets.updatePriority');
+    Route::post('/tickets/{ticket}/assign', [BotSupportController::class, 'assign'])->name('tickets.assign');
+    Route::get('/tickets/{ticket}/export', [BotSupportController::class, 'export'])->name('tickets.export');
+    Route::delete('/tickets/{ticket}', [BotSupportController::class, 'destroy'])->name('tickets.destroy');
+
     Route::get('/conversations', [BotSupportController::class, 'conversations'])->name('conversations');
-    Route::get('/conversations/{conversation}', [BotSupportController::class, 'show'])->name('conversations.show');
-    Route::post('/conversations/{conversation}/assign', [BotSupportController::class, 'assign'])->name('conversations.assign');
+    Route::get('/conversations/{conversation}', [BotSupportController::class, 'conversationShow'])->name('conversations.show');
+    Route::post('/conversations/{conversation}/assign', [BotSupportController::class, 'conversationAssign'])->name('conversations.assign');
     Route::post('/conversations/{conversation}/resolve', [BotSupportController::class, 'resolve'])->name('conversations.resolve');
     Route::post('/conversations/{conversation}/messages', [BotSupportController::class, 'sendMessage'])->name('messages.send');
     Route::get('/analytics', [BotSupportController::class, 'analytics'])->name('analytics');

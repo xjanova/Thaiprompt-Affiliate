@@ -411,33 +411,50 @@ document.addEventListener('alpine:init', () => {
 
 // ฟังก์ชันจัดการแพลตฟอร์ม
 function editPlatform(id) {
-    console.log('กำลังแก้ไขแพลตฟอร์ม:', id);
-    // TODO: เพิ่ม logic การแก้ไข
+    // ไปหน้าแก้ไขการตั้งค่า
+    window.location.href = `/admin/bot-automation/platforms/${id}/edit`;
 }
 
 function viewSettings(id) {
-    console.log('กำลังดูการตั้งค่าแพลตฟอร์ม:', id);
-    // TODO: เพิ่ม logic การดูการตั้งค่า
+    // ไปหน้าดูรายละเอียดและการตั้งค่า
+    window.location.href = `/admin/bot-automation/platforms/${id}`;
 }
 
-function connectPlatform(id) {
-    if (confirm('เชื่อมต่อแพลตฟอร์มนี้?')) {
-        console.log('กำลังเชื่อมต่อแพลตฟอร์ม:', id);
-        // TODO: เพิ่ม logic การเชื่อมต่อ
-    }
+function connectPlatform(platform) {
+    // ไปหน้าเชื่อมต่อแพลตฟอร์ม
+    window.location.href = `/admin/bot-automation/platforms/connect/${platform}`;
 }
 
 function disconnectPlatform(id) {
     if (confirm('คุณแน่ใจหรือไม่ที่จะยกเลิกการเชื่อมต่อแพลตฟอร์มนี้?')) {
-        console.log('กำลังยกเลิกการเชื่อมต่อแพลตฟอร์ม:', id);
-        // TODO: เพิ่ม logic การยกเลิกการเชื่อมต่อ
+        // สร้าง form และ submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/admin/bot-automation/platforms/${id}`;
+
+        // เพิ่ม CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrfInput);
+
+        // เพิ่ม method spoofing สำหรับ DELETE
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 
 function deletePlatform(id) {
     if (confirm('คุณแน่ใจหรือไม่ที่จะลบแพลตฟอร์มนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้')) {
-        console.log('กำลังลบแพลตฟอร์ม:', id);
-        // TODO: เพิ่ม logic การลบ
+        // ใช้ฟังก์ชันเดียวกับ disconnect
+        disconnectPlatform(id);
     }
 }
 </script>

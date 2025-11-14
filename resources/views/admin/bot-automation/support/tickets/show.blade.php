@@ -494,31 +494,81 @@ if (typeof Alpine !== 'undefined') {
 }
 
 // ฟังก์ชันต่างๆ สำหรับจัดการทิกเก็ต
-function updateStatus(status) {
+async function updateStatus(status) {
     if (confirm('อัพเดทสถานะทิกเก็ตเป็น ' + status + '?')) {
-        console.log('Updating status to:', status);
-        // TODO: ส่ง AJAX request เพื่ออัพเดทสถานะ
+        try {
+            const response = await fetch(window.location.pathname + '/status', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: JSON.stringify({ status: status })
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+        }
     }
 }
 
-function updateTicketStatus(status) {
-    console.log('Updating ticket status to:', status);
-    // TODO: ส่ง AJAX request เพื่ออัพเดทสถานะ
+async function updateTicketStatus(status) {
+    await updateStatus(status);
 }
 
-function updateTicketPriority(priority) {
-    console.log('Updating ticket priority to:', priority);
-    // TODO: ส่ง AJAX request เพื่ออัพเดทความสำคัญ
+async function updateTicketPriority(priority) {
+    try {
+        const response = await fetch(window.location.pathname + '/priority', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ priority: priority })
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('เกิดข้อผิดพลาดในการอัพเดทความสำคัญ');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
 }
 
-function assignTicket(userId) {
-    console.log('Assigning ticket to user:', userId);
-    // TODO: ส่ง AJAX request เพื่อมอบหมายทิกเก็ต
+async function assignTicket(userId) {
+    try {
+        const response = await fetch(window.location.pathname + '/assign', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({ assigned_to: userId })
+        });
+
+        if (response.ok) {
+            window.location.reload();
+        } else {
+            alert('เกิดข้อผิดพลาดในการมอบหมายทิกเก็ต');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    }
 }
 
 function exportTicket() {
-    console.log('Exporting ticket');
-    // TODO: ส่ง AJAX request เพื่อส่งออกทิกเก็ต
+    // ดาวน์โหลดไฟล์ JSON
+    window.location.href = window.location.pathname + '/export';
 }
 
 function printTicket() {
@@ -527,8 +577,27 @@ function printTicket() {
 
 function deleteTicket() {
     if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบทิกเก็ตนี้? การดำเนินการนี้ไม่สามารถยกเลิกได้')) {
-        console.log('Deleting ticket');
-        // TODO: ส่ง AJAX request เพื่อลบทิกเก็ต
+        // สร้าง form และ submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = window.location.pathname;
+
+        // เพิ่ม CSRF token
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = document.querySelector('meta[name="csrf-token"]').content;
+        form.appendChild(csrfInput);
+
+        // เพิ่ม method spoofing สำหรับ DELETE
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_method';
+        methodInput.value = 'DELETE';
+        form.appendChild(methodInput);
+
+        document.body.appendChild(form);
+        form.submit();
     }
 }
 </script>
