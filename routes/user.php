@@ -10,6 +10,7 @@ use App\Http\Controllers\User\KycController;
 use App\Http\Controllers\User\TwoFactorController;
 use App\Http\Controllers\User\TicketController;
 use App\Http\Controllers\User\InvestmentController;
+use App\Http\Controllers\User\MarketplaceController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\EmailPreferenceController;
 use Illuminate\Support\Facades\Route;
@@ -326,6 +327,16 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
 Route::get('/wealth-guide', function () {
     return view('user.wealth-guide');
 })->name('wealth-guide');
+
+// Wealth Guide Pro - Enhanced version with 3D visualizations
+Route::get('/wealth-guide-pro', function () {
+    return view('user.wealth-guide-pro');
+})->name('wealth-guide-pro');
+
+// Marketplace Affiliate System (User)
+Route::prefix('marketplace')->name('marketplace.')->group(function () {
+    Route::get('/products', [MarketplaceController::class, 'products'])->name('products');
+});
 
 // Investment & Staking System (User)
 Route::prefix('investments')->name('investments.')->group(function () {

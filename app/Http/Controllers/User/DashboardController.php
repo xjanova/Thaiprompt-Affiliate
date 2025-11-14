@@ -451,20 +451,14 @@ class DashboardController extends Controller
     }
 
     /**
-     * Get user avatar (first letter or profile picture)
+     * Get user avatar (use profile_picture_url accessor with cache busting)
      */
     protected function getAvatar($user)
     {
-        if ($user->profile_picture) {
-            return [
-                'type' => 'image',
-                'url' => asset($user->profile_picture)
-            ];
-        }
-
+        // Always return image URL - accessor handles LINE picture, uploaded picture, and fallback
         return [
-            'type' => 'text',
-            'text' => strtoupper(substr($user->name, 0, 1))
+            'type' => 'image',
+            'url' => $user->profile_picture_url
         ];
     }
 

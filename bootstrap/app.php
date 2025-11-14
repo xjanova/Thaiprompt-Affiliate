@@ -1,5 +1,6 @@
 <?php
 
+use App\Providers\AuthServiceProvider;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -54,6 +55,8 @@ return Application::configure(basePath: dirname(__DIR__))
             // LINE OA Security middleware
             'line.webhook.throttle' => \App\Http\Middleware\LineWebhookThrottle::class,
             'line.signup.throttle' => \App\Http\Middleware\LineSignupThrottle::class,
+            // Food Passport API Rate Limiting (CRITICAL for TPIX blockchain protection)
+            'food-passport.ratelimit' => \App\Http\Middleware\FoodPassportRateLimiter::class,
             // TPIX Blockchain & Token middleware
             'tpix.token.ownership' => \App\Http\Middleware\CheckTokenOwnership::class,
             'tpix.rate.limit' => \App\Http\Middleware\RateLimitTokenOperations::class,

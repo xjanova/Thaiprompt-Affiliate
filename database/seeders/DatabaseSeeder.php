@@ -55,6 +55,7 @@ class DatabaseSeeder extends Seeder
             PaymentGatewaySeeder::class,        // Payment Gateways (PromptPay, Bank, TrueMoney, Omise, Stripe, PayPal, etc.)
             PaySolutionsGatewaySeeder::class,   // PaySolutions Gateway Integration
             CryptoCurrencySeeder::class,        // Cryptocurrency Support (BTC, ETH, USDT, etc.)
+            TPIXCurrencySeeder::class,          // TPIX Native Token (TPIX Network Blockchain)
 
             // 7. MLM & Affiliate System
             MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM ทั่วไป (สร้างข้อมูลเริ่มต้น)
@@ -93,6 +94,10 @@ class DatabaseSeeder extends Seeder
             TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
             VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
             VideoRewardMenuSeeder::class,       // เมนูระบบ Video Rewards
+            GameSeeder::class,                  // ระบบเกม (Game System)
+            GamesSeeder::class,                 // ข้อมูลเกมต่างๆ (Games Data)
+            MissionsSeeder::class,              // ระบบภารกิจ (Missions System)
+            GameMenuItemSeeder::class,          // เมนูสำหรับระบบเกม (Game Menu Items)
 
             // 13. Support & Ticket System
             TicketCannedResponseSeeder::class,  // Canned Responses สำหรับ Ticket Support (เทมเพลตตอบกลับอัตโนมัติ)

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\TreeController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
+use App\Http\Controllers\Api\NFCCardApiController;
 use App\Http\Controllers\Api\AppConfigController;
 use App\Http\Controllers\Api\AiGenController;
 use App\Http\Controllers\Api\AiGenPackageController;
@@ -15,6 +16,11 @@ use App\Http\Controllers\Api\VideoRewardController;
 use App\Http\Controllers\Api\VideoWatchController;
 use App\Http\Controllers\Api\VideoQuestController;
 use App\Http\Controllers\Api\CoinExchangeController;
+use App\Http\Controllers\Api\FoodPassportController;
+use App\Http\Controllers\Api\TraceabilityController;
+use App\Http\Controllers\Api\QualityController;
+use App\Http\Controllers\Api\CarbonCreditController;
+use App\Http\Controllers\Api\CertificationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -138,6 +144,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/prices', [CryptoWalletApiController::class, 'getPrices']);
             Route::get('/transaction/{txHash}', [CryptoWalletApiController::class, 'checkTransaction']);
             Route::get('/gas-price', [CryptoWalletApiController::class, 'getGasPrice']);
+        });
+
+        // NFC Card API
+        Route::prefix('nfc')->group(function () {
+            Route::get('/cards', [NFCCardApiController::class, 'index']);
+            Route::get('/cards/{cardId}', [NFCCardApiController::class, 'show']);
+            Route::post('/cards/verify', [NFCCardApiController::class, 'verify']);
+            Route::post('/cards/payment', [NFCCardApiController::class, 'processPayment']);
+            Route::get('/cards/{cardId}/transactions', [NFCCardApiController::class, 'transactions']);
+            Route::get('/cards/{cardId}/balance', [NFCCardApiController::class, 'balance']);
+            Route::get('/readers/nearby', [NFCCardApiController::class, 'nearbyReaders']);
         });
 
         // TPIX Native Blockchain API
@@ -549,5 +566,264 @@ Route::prefix('v1/tpix')->name('api.tpix.')->group(function () {
                 ]);
             })->name('stakes.show');
         });
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| Food Passport API Routes
+|--------------------------------------------------------------------------
+| ระบบ Food Passport - ตรวจสอบคุณภาพและความปลอดภัยอาหาร
+| - Farm-to-Fork Traceability
+| - Quality Control & Certifications
+| - Carbon Footprint & Credits
+| - IoT Sensor Integration
+| - Google Maps Integration
+| - Blockchain Verification
+*/
+
+// Public Food Passport Routes (No Auth)
+Route::prefix('v1/food-passport')->middleware('food-passport.ratelimit:public')->name('api.food-passport.')->group(function () {
+
+    // Public Product Scan (QR Code)
+    Route::get('/scan/{passportId}', [FoodPassportController::class, 'scan'])
+        ->name('scan');
+
+    // Public Product View
+    Route::get('/products/{id}', [FoodPassportController::class, 'show'])
+        ->name('products.show');
+
+    // Public Product Search
+    Route::get('/products', [FoodPassportController::class, 'index'])
+        ->name('products.index');
+
+    // Public Certification Verification
+    Route::get('/certifications/{id}/verify', [CertificationController::class, 'verify'])
+        ->name('certifications.verify');
+
+    // Public Carbon Data View
+    Route::get('/products/{id}/carbon', [FoodPassportController::class, 'carbonData'])
+        ->name('products.carbon');
+
+    // Public Journey Tracking
+    Route::get('/products/{id}/journey', [TraceabilityController::class, 'journey'])
+        ->name('products.journey');
+});
+
+// Protected Food Passport Routes (Auth Required)
+Route::prefix('v1/food-passport')->middleware(['auth:sanctum', 'food-passport.ratelimit'])->name('api.food-passport.')->group(function () {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Product Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('products')->name('products.')->group(function () {
+        // Create new food product (Farmers & Admins)
+        Route::post('/', [FoodPassportController::class, 'store'])
+            ->middleware(['food-passport.ratelimit:write', 'can:create,App\Models\FoodProduct'])
+            ->name('store');
+
+        // Update product (Owner or Admin)
+        Route::put('/{id}', [FoodPassportController::class, 'update'])
+            ->middleware(['food-passport.ratelimit:write', 'can:update,id'])
+            ->name('update');
+
+        // Delete product (Owner or Super Admin)
+        Route::delete('/{id}', [FoodPassportController::class, 'destroy'])
+            ->middleware(['food-passport.ratelimit:write', 'can:delete,id'])
+            ->name('destroy');
+
+        // Bulk import products (Verified Farmers & Admins)
+        Route::post('/bulk-import', [FoodPassportController::class, 'bulkImport'])
+            ->middleware(['food-passport.ratelimit:write', 'can:bulkImport,App\Models\FoodProduct'])
+            ->name('bulk-import');
+
+        // Statistics & Dashboard
+        Route::get('/statistics', [FoodPassportController::class, 'statistics'])
+            ->name('statistics');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Traceability & Journey Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('traceability')->name('traceability.')->group(function () {
+        // Add journey stage
+        Route::post('/products/{id}/journey', [TraceabilityController::class, 'addStage'])
+            ->middleware('food-passport.ratelimit:write')
+            ->name('add-stage');
+
+        // Update journey stage
+        Route::put('/journey/{journeyId}', [TraceabilityController::class, 'updateStage'])
+            ->middleware('food-passport.ratelimit:write')
+            ->name('update-stage');
+
+        // Complete journey stage
+        Route::post('/journey/{journeyId}/complete', [TraceabilityController::class, 'completeStage'])
+            ->middleware('food-passport.ratelimit:write')
+            ->name('complete-stage');
+
+        // IoT Sensor Data Recording
+        Route::post('/journey/{journeyId}/sensor-data', [TraceabilityController::class, 'recordSensorData'])
+            ->middleware('food-passport.ratelimit:iot')
+            ->name('record-sensor-data');
+
+        // Bulk IoT Sensor Data Upload
+        Route::post('/journey/{journeyId}/sensor-data/bulk', [TraceabilityController::class, 'bulkRecordSensorData'])
+            ->middleware('food-passport.ratelimit:iot')
+            ->name('bulk-sensor-data');
+
+        // Google Maps Integration
+        Route::post('/geocode', [TraceabilityController::class, 'geocodeLocation'])
+            ->name('geocode');
+
+        Route::post('/calculate-distance', [TraceabilityController::class, 'calculateDistance'])
+            ->name('calculate-distance');
+
+        // Get current location
+        Route::get('/products/{id}/current-location', [TraceabilityController::class, 'currentLocation'])
+            ->name('current-location');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Quality Control & Checkpoints
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('quality')->name('quality.')->group(function () {
+        // Create quality checkpoint
+        Route::post('/products/{id}/checkpoints', [QualityController::class, 'createCheckpoint'])
+            ->middleware(['food-passport.ratelimit:write', 'can:create,App\Models\QualityCheckpoint'])
+            ->name('create-checkpoint');
+
+        // Update checkpoint
+        Route::put('/checkpoints/{id}', [QualityController::class, 'updateCheckpoint'])
+            ->middleware(['food-passport.ratelimit:write', 'can:update,id'])
+            ->name('update-checkpoint');
+
+        // Add corrective actions
+        Route::post('/checkpoints/{id}/corrective-actions', [QualityController::class, 'addCorrectiveActions'])
+            ->middleware('food-passport.ratelimit:write')
+            ->name('add-corrective-actions');
+
+        // Require retest
+        Route::post('/checkpoints/{id}/retest', [QualityController::class, 'requireRetest'])
+            ->middleware('food-passport.ratelimit:write')
+            ->name('require-retest');
+
+        // Get product quality history
+        Route::get('/products/{id}/history', [QualityController::class, 'qualityHistory'])
+            ->name('quality-history');
+
+        // Quality statistics
+        Route::get('/statistics', [QualityController::class, 'statistics'])
+            ->name('statistics');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Carbon Credits & Trading
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('carbon')->name('carbon.')->group(function () {
+        // Issue carbon credit (Admins & Verifiers)
+        Route::post('/products/{id}/issue-credit', [CarbonCreditController::class, 'issueCredit'])
+            ->middleware(['food-passport.ratelimit:blockchain', 'can:issue,App\Models\CarbonCredit'])
+            ->name('issue-credit');
+
+        // View marketplace
+        Route::get('/marketplace', [CarbonCreditController::class, 'marketplace'])
+            ->name('marketplace');
+
+        // View credit details
+        Route::get('/credits/{id}', [CarbonCreditController::class, 'show'])
+            ->name('credits.show');
+
+        // Trade credit
+        Route::post('/credits/{id}/trade', [CarbonCreditController::class, 'trade'])
+            ->middleware(['food-passport.ratelimit:trading', 'can:trade,id'])
+            ->name('credits.trade');
+
+        // Purchase credit
+        Route::post('/credits/{id}/purchase', [CarbonCreditController::class, 'purchase'])
+            ->middleware(['food-passport.ratelimit:trading', 'can:purchase,id'])
+            ->name('credits.purchase');
+
+        // Retire credit
+        Route::post('/credits/{id}/retire', [CarbonCreditController::class, 'retire'])
+            ->middleware(['food-passport.ratelimit:trading', 'can:retire,id'])
+            ->name('credits.retire');
+
+        // My credits
+        Route::get('/my-credits', [CarbonCreditController::class, 'myCredits'])
+            ->name('my-credits');
+
+        // Credit statistics
+        Route::get('/statistics', [CarbonCreditController::class, 'statistics'])
+            ->name('statistics');
+
+        // Transaction history
+        Route::get('/credits/{id}/transactions', [CarbonCreditController::class, 'transactionHistory'])
+            ->name('credits.transactions');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Certifications Management
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('certifications')->name('certifications.')->group(function () {
+        // List certifications
+        Route::get('/', [CertificationController::class, 'index'])
+            ->name('index');
+
+        // Create certification (Certification Bodies & Admins)
+        Route::post('/', [CertificationController::class, 'store'])
+            ->middleware(['food-passport.ratelimit:write', 'can:create,App\Models\FoodCertification'])
+            ->name('store');
+
+        // View certification details
+        Route::get('/{id}', [CertificationController::class, 'show'])
+            ->name('show');
+
+        // Update certification
+        Route::put('/{id}', [CertificationController::class, 'update'])
+            ->middleware(['food-passport.ratelimit:write', 'can:update,id'])
+            ->name('update');
+
+        // Renew certification
+        Route::post('/{id}/renew', [CertificationController::class, 'renew'])
+            ->middleware(['food-passport.ratelimit:write', 'can:renew,id'])
+            ->name('renew');
+
+        // Revoke certification
+        Route::post('/{id}/revoke', [CertificationController::class, 'revoke'])
+            ->middleware(['food-passport.ratelimit:write', 'can:revoke,id'])
+            ->name('revoke');
+
+        // Upload documents
+        Route::post('/{id}/documents', [CertificationController::class, 'uploadDocument'])
+            ->middleware(['food-passport.ratelimit:write', 'can:uploadDocuments,id'])
+            ->name('upload-document');
+
+        // Generate QR code
+        Route::post('/{id}/generate-qr', [CertificationController::class, 'generateQRCode'])
+            ->middleware(['food-passport.ratelimit:write', 'can:generateQRCode,id'])
+            ->name('generate-qr');
+
+        // Record on blockchain
+        Route::post('/{id}/blockchain', [CertificationController::class, 'recordOnBlockchain'])
+            ->middleware(['food-passport.ratelimit:blockchain', 'can:recordOnBlockchain,id'])
+            ->name('blockchain');
+
+        // Get product certifications
+        Route::get('/products/{productId}', [CertificationController::class, 'productCertifications'])
+            ->name('product-certifications');
+
+        // Certification statistics
+        Route::get('/statistics/overview', [CertificationController::class, 'statistics'])
+            ->name('statistics');
     });
 });

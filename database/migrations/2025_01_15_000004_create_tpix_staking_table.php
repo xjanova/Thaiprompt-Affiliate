@@ -8,7 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('tpix_staking_pools', function (Blueprint $table) {
+        if (!Schema::hasTable('tpix_staking_pools')) {
+            Schema::create('tpix_staking_pools', function (Blueprint $table) {
             $table->id();
             $table->foreignId('token_id')->constrained('tpix_tokens')->onDelete('cascade');
             $table->foreignId('creator_id')->constrained('users');
@@ -26,7 +27,7 @@ return new class extends Migration
 
             // Pool Limits
             $table->decimal('pool_cap', 30, 8)->nullable()->comment('Maximum total stake');
-            $table->decimal('total_staked', 30, 8')->default(0)->comment('Currently staked');
+            $table->decimal('total_staked', 30, 8)->default(0)->comment('Currently staked');
             $table->integer('max_stakers')->nullable()->comment('Max number of stakers');
             $table->integer('current_stakers')->default(0);
 
@@ -48,8 +49,10 @@ return new class extends Migration
             $table->index(['token_id', 'status']);
             $table->index('status');
         });
+        }
 
-        Schema::create('tpix_stakes', function (Blueprint $table) {
+        if (!Schema::hasTable('tpix_stakes')) {
+            Schema::create('tpix_stakes', function (Blueprint $table) {
             $table->id();
             $table->foreignId('pool_id')->constrained('tpix_staking_pools')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
@@ -62,8 +65,8 @@ return new class extends Migration
             $table->decimal('rewards_pending', 30, 8)->default(0);
 
             // Timing
-            $table->timestamp('staked_at');
-            $table->timestamp('unlock_at')->comment('When can unstake');
+            $table->timestamp('staked_at')->nullable();
+            $table->timestamp('unlock_at')->nullable()->comment('When can unstake');
             $table->timestamp('last_reward_claim_at')->nullable();
 
             // Status
@@ -81,6 +84,7 @@ return new class extends Migration
             $table->index(['pool_id', 'status']);
             $table->index('unlock_at');
         });
+        }
     }
 
     public function down(): void

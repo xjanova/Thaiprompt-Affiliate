@@ -50,5 +50,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Register Product Observer for Image Cleanup
         \App\Models\Product::observe(\App\Observers\ProductObserver::class);
+
+        // Register Food Passport Observers
+        \App\Models\FoodProduct::observe(\App\Observers\FoodProductObserver::class);
+        \App\Models\ProductJourney::observe(\App\Observers\ProductJourneyObserver::class);
+        \App\Models\QualityCheckpoint::observe(\App\Observers\QualityCheckpointObserver::class);
+        \App\Models\CarbonCredit::observe(\App\Observers\CarbonCreditObserver::class);
     }
 }

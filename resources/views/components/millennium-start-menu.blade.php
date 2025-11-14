@@ -628,6 +628,18 @@
                 ]
             ],
             [
+                'icon' => '🎮',
+                'label' => 'เกมส์',
+                'url' => '#',
+                'order' => 6.8,
+                'submenu' => [
+                    ['label' => 'เกมส์ทั้งหมด', 'url' => safeRoute('games.index')],
+                    ['label' => 'ทัวร์นาเมนต์', 'url' => safeRoute('tournaments.index')],
+                    ['label' => 'รางวัลรายวัน', 'url' => safeRoute('rewards.daily')],
+                    ['label' => 'ภารกิจ', 'url' => safeRoute('rewards.missions')],
+                ]
+            ],
+            [
                 'icon' => '💳',
                 'label' => 'กระเป๋าเงิน THB',
                 'url' => '#',
@@ -696,6 +708,7 @@
                 'url' => '#',
                 'order' => 13,
                 'submenu' => [
+                    ['label' => 'สร้าง QR Code & Barcode', 'url' => safeRoute('qr-barcode.index')],
                     ['label' => 'จำลองรายได้', 'url' => safeRoute('user.mlm.income-simulator')],
                     ['label' => 'จำลองเงินปันผล', 'url' => safeRoute('user.mlm.dividend-simulator')],
                 ]

@@ -55,6 +55,8 @@ return [
 
         // Application Service Providers
         App\Providers\AppServiceProvider::class,
+        App\Providers\AuthServiceProvider::class, // Food Passport Authorization Policies
+        App\Providers\EventServiceProvider::class, // Food Passport Events & Listeners
         App\Providers\StorageLinkServiceProvider::class, // Auto-fix storage symlink
         // App\Providers\ThemeServiceProvider::class, // Theme System v2 - Disabled in favor of simple dark mode
         App\Providers\CryptoServiceProvider::class, // Crypto Payment Gateway Services

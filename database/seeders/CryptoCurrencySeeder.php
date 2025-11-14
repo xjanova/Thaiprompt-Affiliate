@@ -319,6 +319,46 @@ class CryptoCurrencySeeder extends Seeder
                 'description' => 'USDT on Binance Smart Chain (BEP-20).',
             ],
 
+            // TPIX - Thai Prompt Native Token
+            [
+                'code' => 'TPIX',
+                'name' => 'Thai Prompt Token',
+                'symbol' => 'TPIX',
+                'network' => 'tpix-chain',
+                'contract_address' => null, // Native token
+                'token_standard' => 'native',
+                'decimals' => 18,
+                'chain_id' => '88888', // Custom chain ID for TPIX Chain
+                'icon' => '/assets/crypto/tpix.svg',
+                'color' => '#FF6B35', // Thai Prompt brand color
+                'price_source' => 'manual', // Internal pricing
+                'coingecko_id' => null, // Not listed on CoinGecko yet
+                'binance_symbol' => null,
+                'manual_price_thb' => 3.50, // 1 TPIX = 3.50 THB
+                'exchange_fee_percentage' => 0.25, // Lower fees for native token
+                'min_exchange_amount' => 10,
+                'min_deposit' => 1,
+                'min_withdrawal' => 10,
+                'max_withdrawal' => 1000000,
+                'withdrawal_fee' => 0.1, // Very low fee
+                'withdrawal_fee_type' => 'fixed',
+                'confirmations_required' => 6,
+                'rpc_endpoints' => json_encode([
+                    'https://rpc.tpix.network',
+                    'https://rpc-backup.tpix.network',
+                ]),
+                'explorer_url' => 'https://explorer.tpix.network',
+                'explorer_tx_path' => '/tx/',
+                'explorer_address_path' => '/address/',
+                'is_active' => true,
+                'deposit_enabled' => true,
+                'withdrawal_enabled' => true,
+                'exchange_enabled' => true,
+                'payment_gateway_enabled' => true,
+                'sort_order' => 1, // Featured at top
+                'description' => 'TPIX is the native utility token of Thai Prompt ecosystem, used for Food Passport NFTs, Carbon Credits, and platform fees.',
+            ],
+
             // Polygon (MATIC)
             [
                 'code' => 'MATIC',

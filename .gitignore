@@ -26,7 +26,7 @@ yarn-error.log
 Thumbs.db
 
 # Build
-/public/build
+# /public/build - Commented out to commit Vite assets for deployment
 /public/css
 /public/js
 /public/mix-manifest.json

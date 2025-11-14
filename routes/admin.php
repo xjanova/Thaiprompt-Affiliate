@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\WebPManagementController;
 use App\Http\Controllers\Admin\ECommerceController;
+use App\Http\Controllers\Admin\FeaturedStoreController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\MlmGlobalSettingController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
@@ -72,6 +73,9 @@ use App\Http\Controllers\Admin\PageBuilderSectionController;
 use App\Http\Controllers\Admin\SystemResetController;
 use App\Http\Controllers\Admin\ApiEndpointController;
 use App\Http\Controllers\Admin\ApiKeyController;
+use App\Http\Controllers\Admin\NFCCardController;
+use App\Http\Controllers\Admin\NFCReaderController;
+use App\Http\Controllers\Admin\NFCTransactionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -302,6 +306,53 @@ Route::prefix('payment-gateways')->name('payment-gateways.')->group(function () 
     Route::post('/{paymentGateway}/toggle', [PaymentGatewayController::class, 'toggle'])->name('toggle');
     Route::post('/{paymentGateway}/test', [PaymentGatewayController::class, 'testConnection'])->name('test');
     Route::post('/update-order', [PaymentGatewayController::class, 'updateOrder'])->name('update-order');
+});
+
+// NFC Card Management
+Route::prefix('nfc-cards')->name('nfc-cards.')->group(function () {
+    Route::get('/', [NFCCardController::class, 'index'])->name('index');
+    Route::get('/create', [NFCCardController::class, 'create'])->name('create');
+    Route::post('/', [NFCCardController::class, 'store'])->name('store');
+    Route::get('/{nfcCard}', [NFCCardController::class, 'show'])->name('show');
+    Route::get('/{nfcCard}/edit', [NFCCardController::class, 'edit'])->name('edit');
+    Route::put('/{nfcCard}', [NFCCardController::class, 'update'])->name('update');
+    Route::delete('/{nfcCard}', [NFCCardController::class, 'destroy'])->name('destroy');
+    Route::get('/{nfcCard}/pair', [NFCCardController::class, 'pairForm'])->name('pair-form');
+    Route::post('/{nfcCard}/pair', [NFCCardController::class, 'pair'])->name('pair');
+    Route::post('/{nfcCard}/unpair', [NFCCardController::class, 'unpair'])->name('unpair');
+    Route::post('/{nfcCard}/activate', [NFCCardController::class, 'activate'])->name('activate');
+    Route::post('/{nfcCard}/deactivate', [NFCCardController::class, 'deactivate'])->name('deactivate');
+    Route::post('/{nfcCard}/block', [NFCCardController::class, 'block'])->name('block');
+    Route::post('/{nfcCard}/unblock', [NFCCardController::class, 'unblock'])->name('unblock');
+    Route::get('/{nfcCard}/topup', [NFCCardController::class, 'topUpForm'])->name('topup-form');
+    Route::post('/{nfcCard}/topup', [NFCCardController::class, 'topUp'])->name('topup');
+    Route::post('/read', [NFCCardController::class, 'read'])->name('read');
+    Route::get('/export', [NFCCardController::class, 'export'])->name('export');
+});
+
+// NFC Reader Management
+Route::prefix('nfc-readers')->name('nfc-readers.')->group(function () {
+    Route::get('/', [NFCReaderController::class, 'index'])->name('index');
+    Route::get('/create', [NFCReaderController::class, 'create'])->name('create');
+    Route::post('/', [NFCReaderController::class, 'store'])->name('store');
+    Route::get('/{nfcReader}', [NFCReaderController::class, 'show'])->name('show');
+    Route::get('/{nfcReader}/edit', [NFCReaderController::class, 'edit'])->name('edit');
+    Route::put('/{nfcReader}', [NFCReaderController::class, 'update'])->name('update');
+    Route::delete('/{nfcReader}', [NFCReaderController::class, 'destroy'])->name('destroy');
+    Route::post('/{nfcReader}/activate', [NFCReaderController::class, 'activate'])->name('activate');
+    Route::post('/{nfcReader}/deactivate', [NFCReaderController::class, 'deactivate'])->name('deactivate');
+    Route::post('/{nfcReader}/maintenance', [NFCReaderController::class, 'maintenance'])->name('maintenance');
+    Route::post('/{nfcReader}/heartbeat', [NFCReaderController::class, 'heartbeat'])->name('heartbeat');
+    Route::get('/{nfcReader}/status', [NFCReaderController::class, 'status'])->name('status');
+});
+
+// NFC Transaction Management
+Route::prefix('nfc-transactions')->name('nfc-transactions.')->group(function () {
+    Route::get('/', [NFCTransactionController::class, 'index'])->name('index');
+    Route::get('/{nfcTransaction}', [NFCTransactionController::class, 'show'])->name('show');
+    Route::get('/export', [NFCTransactionController::class, 'export'])->name('export');
+    Route::get('/statistics/chart', [NFCTransactionController::class, 'statistics'])->name('statistics');
+    Route::get('/feed/realtime', [NFCTransactionController::class, 'feed'])->name('feed');
 });
 
 // Language Settings
@@ -778,6 +829,14 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
 
     // Reports
     Route::get('/reports', [ECommerceController::class, 'reports'])->name('reports');
+});
+
+// Featured Stores Management (Homepage)
+Route::prefix('featured-stores')->name('featured-stores.')->group(function () {
+    Route::get('/', [FeaturedStoreController::class, 'index'])->name('index');
+    Route::post('/{store}/add', [FeaturedStoreController::class, 'addToFeatured'])->name('add');
+    Route::delete('/{store}/remove', [FeaturedStoreController::class, 'removeFromFeatured'])->name('remove');
+    Route::put('/update-order', [FeaturedStoreController::class, 'updateOrder'])->name('update-order');
 });
 
 // MLM System Management
@@ -1744,6 +1803,19 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
 
     // Usage Logs & Analytics
     Route::get('/usage-logs', [AiGenAdminController::class, 'usageLogs'])->name('usage-logs');
+});
+
+// Game Management Routes
+Route::prefix('games')->name('games.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Admin\GameController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\Admin\GameController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\Admin\GameController::class, 'store'])->name('store');
+    Route::get('/{game}', [App\Http\Controllers\Admin\GameController::class, 'show'])->name('show');
+    Route::get('/{game}/edit', [App\Http\Controllers\Admin\GameController::class, 'edit'])->name('edit');
+    Route::put('/{game}', [App\Http\Controllers\Admin\GameController::class, 'update'])->name('update');
+    Route::delete('/{game}', [App\Http\Controllers\Admin\GameController::class, 'destroy'])->name('destroy');
+    Route::patch('/{game}/toggle-active', [App\Http\Controllers\Admin\GameController::class, 'toggleActive'])->name('toggle-active');
+    Route::post('/update-order', [App\Http\Controllers\Admin\GameController::class, 'updateOrder'])->name('update-order');
 });
 
 // Bot Automation System Routes

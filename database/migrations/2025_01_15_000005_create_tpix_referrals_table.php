@@ -34,7 +34,7 @@ return new class extends Migration
             $table->timestamp('last_used_at')->nullable();
 
             // Statistics
-            $table->decimal('total_rewards_paid', 30, 8')->default(0);
+            $table->decimal('total_rewards_paid', 30, 8)->default(0);
             $table->integer('successful_referrals')->default(0);
 
             $table->timestamps();
