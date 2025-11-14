@@ -120,6 +120,11 @@
             box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
         }
 
+        .powerup-active.zoom {
+            border-color: #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
         .powerup-icon {
             font-size: 24px;
         }
@@ -548,23 +553,42 @@
                 @php
                     $defaultSkins = [
                         ['slug' => 'classic', 'name' => 'Classic', 'color' => '#00ff00', 'price' => 0],
-                        ['slug' => 'fire', 'name' => 'Fire', 'color' => '#ff4400', 'price' => 100],
-                        ['slug' => 'ice', 'name' => 'Ice', 'color' => '#00aaff', 'price' => 100],
-                        ['slug' => 'gold', 'name' => 'Gold', 'color' => '#ffd700', 'price' => 500],
-                        ['slug' => 'rainbow', 'name' => 'Rainbow', 'color' => 'linear-gradient(90deg, #ff0000, #00ff00, #0000ff)', 'price' => 1000],
+                        ['slug' => 'fire', 'name' => 'Fire', 'color' => '#ff4400', 'price' => 0],
+                        ['slug' => 'ice', 'name' => 'Ice', 'color' => '#00aaff', 'price' => 0],
+                        ['slug' => 'gold', 'name' => 'Gold', 'color' => '#ffd700', 'price' => 0],
+                        ['slug' => 'rainbow', 'name' => 'Rainbow', 'color' => 'linear-gradient(90deg, #ff0000, #00ff00, #0000ff)', 'price' => 0],
                     ];
                 @endphp
 
                 @foreach($defaultSkins as $skin)
-                    <div class="skin-option {{ $skin['price'] > 0 && !Auth::check() ? 'locked' : '' }}"
+                    <div class="skin-option"
                          data-skin="{{ $skin['slug'] }}"
                          style="background: {{ $skin['color'] }};"
                          title="{{ $skin['name'] }}">
-                        @if($skin['price'] > 0)
-                            <span class="skin-price">{{ $skin['price'] }} ฿</span>
-                        @endif
                     </div>
                 @endforeach
+            </div>
+
+            <!-- Custom Color Picker -->
+            <div style="margin: 20px 0; padding: 20px; background: rgba(0, 0, 0, 0.5); border-radius: 10px;">
+                <h3 style="color: #00ffff; font-size: 16px; margin-bottom: 15px;">🎨 สร้างสีของคุณเอง (3 สี)</h3>
+                <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                    <div>
+                        <label style="color: #fff; font-size: 12px;">สี 1</label><br>
+                        <input type="color" id="color1" value="#00ff00" style="width: 60px; height: 40px; border: 2px solid #00ffff; border-radius: 5px;">
+                    </div>
+                    <div>
+                        <label style="color: #fff; font-size: 12px;">สี 2</label><br>
+                        <input type="color" id="color2" value="#00aa00" style="width: 60px; height: 40px; border: 2px solid #00ffff; border-radius: 5px;">
+                    </div>
+                    <div>
+                        <label style="color: #fff; font-size: 12px;">สี 3</label><br>
+                        <input type="color" id="color3" value="#00dd00" style="width: 60px; height: 40px; border: 2px solid #00ffff; border-radius: 5px;">
+                    </div>
+                </div>
+                <button class="btn" id="apply-custom-colors" style="margin-top: 15px; padding: 10px 20px; font-size: 14px;">
+                    ✅ ใช้สีนี้
+                </button>
             </div>
 
             @guest
@@ -641,7 +665,7 @@
         const CONFIG = {
             WORLD_SIZE: 200,
             FOOD_COUNT: 100,
-            BOT_COUNT: 10,
+            BOT_COUNT: 30, // เพิ่มเป็น 30 บอท
             INITIAL_LENGTH: 5,
             SEGMENT_SIZE: 0.5,
             MOVEMENT_SPEED: 0.15,
@@ -649,6 +673,8 @@
             TURN_SPEED: 0.05,
             FOOD_VALUE: 1,
             COLLISION_DISTANCE: 0.6,
+            CAMERA_INITIAL_DISTANCE: 20, // กล้องใกล้ขึ้น (เดิม 40)
+            CAMERA_ZOOMED_OUT_DISTANCE: 60, // ซูมออกเต็มที่
         };
 
         // Audio System (16-bit style)
@@ -765,8 +791,13 @@
         let activePowerups = {
             magnet: null,
             speed: null,
-            multiplier: null
+            multiplier: null,
+            zoom: null
         };
+
+        // Camera zoom state
+        let currentCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE;
+        let targetCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE;
 
         const POWERUP_TYPES = {
             MAGNET: {
@@ -774,32 +805,67 @@
                 icon: '🧲',
                 color: 0xff00ff,
                 duration: 10000,
-                spawnChance: 0.3
+                spawnChance: 0.25
             },
             SPEED: {
                 name: 'speed',
                 icon: '⚡',
                 color: 0xffff00,
                 duration: 10000,
-                spawnChance: 0.3
+                spawnChance: 0.25
             },
             MULTIPLIER: {
                 name: 'multiplier',
                 icon: '✖️',
                 color: 0x00ff00,
                 duration: 10000,
-                spawnChance: 0.4
+                spawnChance: 0.25
+            },
+            ZOOM: {
+                name: 'zoom',
+                icon: '🔍',
+                color: 0x00ffff,
+                duration: 15000,
+                spawnChance: 0.25
             }
         };
 
-        // Skin colors
+        // Skin colors - รองรับ 3 สีสลับกัน
         const SKINS = {
-            'classic': { primary: 0x00ff00, secondary: 0x00aa00 },
-            'fire': { primary: 0xff4400, secondary: 0xaa2200 },
-            'ice': { primary: 0x00aaff, secondary: 0x0077cc },
-            'gold': { primary: 0xffd700, secondary: 0xffaa00 },
-            'rainbow': { primary: 0xff00ff, secondary: 0x00ffff }, // will animate
+            'classic': {
+                primary: 0x00ff00,
+                secondary: 0x00aa00,
+                colors: [0x00ff00, 0x00aa00, 0x00dd00] // 3 สีเขียว
+            },
+            'fire': {
+                primary: 0xff4400,
+                secondary: 0xaa2200,
+                colors: [0xff4400, 0xff6600, 0xaa2200] // 3 สีส้ม-แดง
+            },
+            'ice': {
+                primary: 0x00aaff,
+                secondary: 0x0077cc,
+                colors: [0x00aaff, 0x0088dd, 0x0077cc] // 3 สีฟ้า
+            },
+            'gold': {
+                primary: 0xffd700,
+                secondary: 0xffaa00,
+                colors: [0xffd700, 0xffcc00, 0xffaa00] // 3 สีทอง
+            },
+            'rainbow': {
+                primary: 0xff00ff,
+                secondary: 0x00ffff,
+                colors: [0xff0000, 0x00ff00, 0x0000ff] // RGB
+            },
+            'custom': {
+                primary: 0x00ff00,
+                secondary: 0x00aa00,
+                colors: [0x00ff00, 0x00aa00, 0x00dd00] // จะถูกแทนที่โดยสีที่เลือก
+            }
         };
+
+        // Custom colors selected by user
+        let customColors = [0x00ff00, 0x00aa00, 0x00dd00];
 
         class Snake {
             constructor(x, z, isPlayer = false, name = 'Bot', skinKey = 'classic') {
@@ -821,12 +887,37 @@
                 // Create initial segments
                 for (let i = 0; i < this.length; i++) {
                     const geometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE, 8, 8);
+                    // ใช้สีสลับถ้ามีหลายสี
+                    let segmentColor = i === 0 ? this.skin.primary : this.skin.secondary;
+                    if (this.skin.colors && this.skin.colors.length > 0 && i > 0) {
+                        const colorIndex = i % this.skin.colors.length;
+                        segmentColor = this.skin.colors[colorIndex];
+                    }
+
                     const material = new THREE.MeshPhongMaterial({
-                        color: i === 0 ? this.skin.primary : this.skin.secondary,
-                        emissive: i === 0 ? this.skin.primary : 0x000000,
+                        color: segmentColor,
+                        emissive: i === 0 ? segmentColor : 0x000000,
                         emissiveIntensity: i === 0 ? 0.3 : 0,
                         shininess: 100,
+                        // เพิ่มเอฟเฟกต์พิเศษสำหรับผู้เล่น
+                        transparent: this.isPlayer,
+                        opacity: this.isPlayer ? 0.98 : 1.0,
                     });
+
+                    // เพิ่ม outline สำหรับผู้เล่น (ไฮไลท์)
+                    if (this.isPlayer && i === 0) {
+                        // สร้าง outline effect
+                        const outlineGeometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE * 1.15, 8, 8);
+                        const outlineMaterial = new THREE.MeshBasicMaterial({
+                            color: 0xffffff,
+                            transparent: true,
+                            opacity: 0.3,
+                            side: THREE.BackSide
+                        });
+                        this.outline = new THREE.Mesh(outlineGeometry, outlineMaterial);
+                        this.outline.position.copy(segment.position);
+                        scene.add(this.outline);
+                    }
 
                     const segment = new THREE.Mesh(geometry, material);
                     segment.position.set(x - i, 0.5, z);
@@ -907,6 +998,11 @@
                     this.nameSprite.position.y = 2;
                 }
 
+                // Update outline position
+                if (this.outline) {
+                    this.outline.position.copy(head.position);
+                }
+
                 // Rainbow animation for rainbow skin
                 if (this.skinKey === 'rainbow') {
                     const hue = (Date.now() * 0.001) % 1;
@@ -918,9 +1014,20 @@
                 for (let i = 0; i < amount; i++) {
                     const lastSegment = this.segments[this.segments.length - 1];
                     const geometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE, 8, 8);
+
+                    // ใช้สีสลับตามปล้อง (ถ้ามี 3 สี)
+                    let segmentColor = this.skin.secondary;
+                    if (this.skin.colors && this.skin.colors.length > 0) {
+                        const colorIndex = this.segments.length % this.skin.colors.length;
+                        segmentColor = this.skin.colors[colorIndex];
+                    }
+
                     const material = new THREE.MeshPhongMaterial({
-                        color: this.skin.secondary,
+                        color: segmentColor,
                         shininess: 80,
+                        // เพิ่มความโปร่งใสเล็กน้อยถ้าเป็นผู้เล่น
+                        transparent: this.isPlayer,
+                        opacity: this.isPlayer ? 0.95 : 1.0,
                     });
 
                     const segment = new THREE.Mesh(geometry, material);
@@ -934,11 +1041,7 @@
 
                 this.length += amount;
 
-                // Apply score multiplier if active
-                const multiplier = (this.isPlayer && activePowerups.multiplier) ? 2 : 1;
-                this.score += amount * CONFIG.FOOD_VALUE * multiplier;
-
-                // Play eat sound
+                // Apply score multiplier if active (ไม่บวกคะแนนที่นี่ เพราะจะบวกตอนเก็บไอเทม)
                 if (this.isPlayer) {
                     playSound('eat');
 
@@ -1005,7 +1108,8 @@
                     0.1,
                     CONFIG.WORLD_SIZE * 2
                 );
-                camera.position.set(0, 40, 40);
+                // เริ่มต้นกล้องใกล้ขึ้น
+                camera.position.set(0, CONFIG.CAMERA_INITIAL_DISTANCE, CONFIG.CAMERA_INITIAL_DISTANCE);
                 camera.lookAt(0, 0, 0);
 
                 // Renderer
@@ -1096,6 +1200,31 @@
 
             // Select default skin
             document.querySelector('.skin-option').classList.add('selected');
+
+            // Custom color picker
+            document.getElementById('apply-custom-colors').addEventListener('click', function() {
+                const color1 = document.getElementById('color1').value;
+                const color2 = document.getElementById('color2').value;
+                const color3 = document.getElementById('color3').value;
+
+                // แปลง hex เป็น integer
+                customColors = [
+                    parseInt(color1.replace('#', '0x')),
+                    parseInt(color2.replace('#', '0x')),
+                    parseInt(color3.replace('#', '0x'))
+                ];
+
+                // อัปเดต custom skin
+                SKINS.custom.colors = customColors;
+                SKINS.custom.primary = customColors[0];
+                SKINS.custom.secondary = customColors[1];
+
+                // เลือก custom skin
+                selectedSkin = 'custom';
+                document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
+
+                alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
+            });
 
             // Start animation loop
             animate();
@@ -1356,11 +1485,13 @@
                 player = new Snake(0, 0, true, playerName, selectedSkin);
                 console.log('Player created:', playerName);
 
-                // Spawn bots (ลดลงเพราะมีผู้เล่นจริง)
-                for (let i = 0; i < 5; i++) {
+                // Spawn bots (30 บอท แต่จะลดลงเมื่อมีผู้เล่นจริง)
+                const realPlayersCount = 1; // ตัวเราเอง
+                const botsNeeded = Math.max(0, CONFIG.BOT_COUNT - realPlayersCount);
+                for (let i = 0; i < botsNeeded; i++) {
                     createBot();
                 }
-                console.log('Bots spawned:', 5);
+                console.log('Bots spawned:', botsNeeded, '/ Target:', CONFIG.BOT_COUNT);
 
                 // เริ่ม optimized touch input
                 if (touchInputManager) {
@@ -1555,6 +1686,8 @@
 
         function updateBots() {
             bots.forEach(bot => {
+                if (!bot || !bot.alive) return;
+
                 // Simple AI: move towards nearest food
                 const head = bot.segments[0].position;
                 let nearestFood = null;
@@ -1575,13 +1708,19 @@
                     bot.targetDirection.copy(direction);
                 }
 
+                // อัปเดตตำแหน่งบอท
                 bot.update();
 
                 // Check food collision
                 for (let i = foods.length - 1; i >= 0; i--) {
                     const food = foods[i];
                     if (head.distanceTo(food.position) < 1) {
-                        bot.grow(food.userData.value);
+                        const foodValue = food.userData.value || 1;
+
+                        // บอทกินอาหาร - บวกคะแนน
+                        bot.grow(foodValue);
+                        bot.score += foodValue;
+
                         scene.remove(food);
                         foods.splice(i, 1);
                         createFood();
@@ -1589,6 +1728,23 @@
                     }
                 }
             });
+
+            // ลบบอทที่เกินจำนวนผู้เล่นทั้งหมด
+            const totalPlayers = 1 + (multiplayerManager ? multiplayerManager.getOtherPlayers().length : 0);
+            const maxBots = Math.max(0, CONFIG.BOT_COUNT - totalPlayers);
+
+            if (bots.length > maxBots) {
+                // ลบบอทส่วนเกิน
+                const botsToRemove = bots.length - maxBots;
+                for (let i = 0; i < botsToRemove; i++) {
+                    const bot = bots.pop();
+                    if (bot) {
+                        bot.segments.forEach(seg => scene.remove(seg));
+                        if (bot.nameSprite) scene.remove(bot.nameSprite);
+                    }
+                }
+                console.log('[Bots] ลบบอท', botsToRemove, 'ตัว เหลือ', bots.length, 'บอท');
+            }
         }
 
         function update() {
@@ -1623,12 +1779,6 @@
 
                 player.update();
 
-                // Update camera to follow player
-                const head = player.segments[0].position;
-                camera.position.x = head.x;
-                camera.position.z = head.z + 30;
-                camera.lookAt(head.x, 0, head.z);
-
                 // Update UI
                 score = player.score;
                 document.getElementById('score').textContent = score;
@@ -1654,7 +1804,14 @@
                 for (let i = foods.length - 1; i >= 0; i--) {
                     const food = foods[i];
                     if (head.distanceTo(food.position) < 1) {
-                        player.grow(food.userData.value);
+                        const foodValue = food.userData.value || 1;
+                        const multiplier = activePowerups.multiplier ? 2 : 1;
+
+                        // ผู้เล่นกินอาหาร - บวกคะแนน
+                        player.grow(foodValue);
+                        player.score += foodValue * multiplier;
+                        score = player.score; // อัปเดต global score
+
                         scene.remove(food);
                         foods.splice(i, 1);
                         createFood();
@@ -1671,6 +1828,22 @@
                         powerups.splice(i, 1);
                     }
                 }
+
+                // Smooth camera zoom
+                if (activePowerups.zoom) {
+                    targetCameraDistance = CONFIG.CAMERA_ZOOMED_OUT_DISTANCE;
+                } else {
+                    targetCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE;
+                }
+
+                // Lerp camera distance
+                currentCameraDistance += (targetCameraDistance - currentCameraDistance) * 0.05;
+
+                // Update camera to follow player with zoom
+                camera.position.x = head.x;
+                camera.position.y = currentCameraDistance;
+                camera.position.z = head.z + currentCameraDistance;
+                camera.lookAt(head.x, 0, head.z);
             }
 
             updateBots();
