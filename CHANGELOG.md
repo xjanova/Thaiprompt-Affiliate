@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.212.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1085 from xjanova/claude/notification-menu-01DtTQCneef7g1MbwtTKTciX (efc66126)
+- fix: resolve notification management route mismatch and Chart.js error (8cfb5d4f)
+### 🔧 Other Changes
+
+
 ## [v2.212.0] - 2025-11-14
 
 ### ✨ Features
