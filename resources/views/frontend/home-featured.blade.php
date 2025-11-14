@@ -11,6 +11,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -30,6 +33,55 @@
 
         body {
             background: #f8fafc;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* 3D Hero Section */
+        #hero-3d-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .hero-3d-container {
+            position: relative;
+            min-height: 600px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Menu Cards */
+        .menu-card {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 1);
+        }
+
+        .menu-card-icon {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .menu-card:hover .menu-card-icon {
+            transform: scale(1.2) rotateY(360deg);
         }
 
         /* Simple animations */
@@ -40,6 +92,16 @@
         .card-hover:hover {
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
         }
     </style>
 </head>
@@ -65,21 +127,159 @@
         </div>
     </header>
 
-    <!-- Simple Hero Banner -->
-    <section class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <h1 class="text-3xl md:text-4xl font-bold mb-3">{{ $siteInfo['name'] }}</h1>
-            <p class="text-lg md:text-xl mb-4">{{ $siteInfo['tagline'] }}</p>
-            <div class="flex flex-wrap gap-3 justify-center">
-                <a href="{{ route('user.dashboard') }}" class="px-6 py-2 bg-white text-purple-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors">
-                    เริ่มต้นใช้งาน
-                </a>
-                <a href="#featured-stores" class="px-6 py-2 bg-purple-700 text-white font-semibold rounded-lg hover:bg-purple-800 transition-colors">
-                    ดูร้านค้า
-                </a>
+    <!-- 3D Hero Section with Menu -->
+    <section class="hero-3d-container">
+        <canvas id="hero-3d-canvas"></canvas>
+
+        <div class="hero-content">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+                <!-- Hero Title -->
+                <div class="text-center mb-12 pt-8">
+                    <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 float-animation">
+                        {{ $siteInfo['name'] }}
+                    </h1>
+                    <p class="text-lg md:text-xl text-white/90 mb-2">{{ $siteInfo['tagline'] }}</p>
+                    <p class="text-sm md:text-base text-white/80">เลือกเมนูด้านล่างเพื่อเริ่มต้นใช้งาน</p>
+                </div>
+
+                <!-- 3D Menu Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 pb-12">
+                    <!-- ร้านค้าแนะนำ -->
+                    <a href="#featured-stores" class="menu-card rounded-xl p-6 text-center group">
+                        <div class="menu-card-icon">🏪</div>
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-1">ร้านค้าแนะนำ</h3>
+                        <p class="text-xs text-gray-600">ร้านค้าคุณภาพ 5 ดาว</p>
+                    </a>
+
+                    <!-- สินค้ามาใหม่ -->
+                    <a href="#new-products" class="menu-card rounded-xl p-6 text-center group">
+                        <div class="menu-card-icon">📦</div>
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-1">สินค้ามาใหม่</h3>
+                        <p class="text-xs text-gray-600">สินค้าล่าสุดในระบบ</p>
+                    </a>
+
+                    <!-- แดชบอร์ด -->
+                    <a href="{{ route('user.dashboard') }}" class="menu-card rounded-xl p-6 text-center group">
+                        <div class="menu-card-icon">📊</div>
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-1">แดชบอร์ด</h3>
+                        <p class="text-xs text-gray-600">จัดการบัญชีของคุณ</p>
+                    </a>
+
+                    <!-- ร้านค้าทั้งหมด -->
+                    <a href="{{ route('vendor.stores.index') }}" class="menu-card rounded-xl p-6 text-center group">
+                        <div class="menu-card-icon">🛍️</div>
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-1">ร้านค้าทั้งหมด</h3>
+                        <p class="text-xs text-gray-600">เลือกซื้อจากร้านค้า</p>
+                    </a>
+
+                    <!-- เกี่ยวกับเรา -->
+                    <a href="{{ route('about') }}" class="menu-card rounded-xl p-6 text-center group">
+                        <div class="menu-card-icon">ℹ️</div>
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-1">เกี่ยวกับเรา</h3>
+                        <p class="text-xs text-gray-600">รู้จักเราให้มากขึ้น</p>
+                    </a>
+                </div>
             </div>
         </div>
     </section>
+
+    <!-- Three.js 3D Background Script -->
+    <script>
+        // Initialize Three.js Scene
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / 600, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.getElementById('hero-3d-canvas'),
+            alpha: true,
+            antialias: true
+        });
+
+        // Set renderer size
+        const heroContainer = document.querySelector('.hero-3d-container');
+        renderer.setSize(heroContainer.offsetWidth, heroContainer.offsetHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        // Create floating geometric shapes
+        const geometry = new THREE.TorusKnotGeometry(10, 3, 100, 16);
+        const material = new THREE.MeshPhongMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.1,
+            wireframe: true
+        });
+        const torusKnot = new THREE.Mesh(geometry, material);
+        scene.add(torusKnot);
+
+        // Add multiple spheres
+        for (let i = 0; i < 20; i++) {
+            const sphereGeometry = new THREE.SphereGeometry(Math.random() * 2 + 1, 16, 16);
+            const sphereMaterial = new THREE.MeshPhongMaterial({
+                color: Math.random() * 0xffffff,
+                transparent: true,
+                opacity: 0.3,
+                wireframe: true
+            });
+            const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+
+            sphere.position.x = (Math.random() - 0.5) * 100;
+            sphere.position.y = (Math.random() - 0.5) * 100;
+            sphere.position.z = (Math.random() - 0.5) * 100;
+
+            scene.add(sphere);
+        }
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(50, 50, 50);
+        scene.add(directionalLight);
+
+        // Camera position
+        camera.position.z = 50;
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotate torus knot
+            torusKnot.rotation.x += 0.005;
+            torusKnot.rotation.y += 0.005;
+
+            // Rotate spheres
+            scene.children.forEach(child => {
+                if (child instanceof THREE.Mesh && child !== torusKnot) {
+                    child.rotation.x += 0.01;
+                    child.rotation.y += 0.01;
+                }
+            });
+
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const width = heroContainer.offsetWidth;
+            const height = heroContainer.offsetHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        });
+
+        // Mouse interaction
+        document.addEventListener('mousemove', (event) => {
+            const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            camera.position.x = mouseX * 10;
+            camera.position.y = mouseY * 10;
+            camera.lookAt(scene.position);
+        });
+    </script>
 
     <!-- Featured Stores Section -->
     <section id="featured-stores" class="py-12 bg-white">
