@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.207.3] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1067 from xjanova/claude/notification-menu-01DtTQCneef7g1MbwtTKTciX (0a6ff00d)
+- fix: add missing immediate-notification-popup component to admin and seller layouts (f5e2cb0f)
+### 🔧 Other Changes
+
+
 ## [v2.207.2] - 2025-11-14
 
 ### ✨ Features
