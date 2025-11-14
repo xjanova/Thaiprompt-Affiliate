@@ -14,7 +14,10 @@ class CryptoWallet extends Model
 
     protected $fillable = [
         'user_id',
+        'currency_id',
         'wallet_type',
+        'balance',
+        'address',
         'is_master_wallet',
         'master_wallet_id',
         'name',
@@ -42,6 +45,7 @@ class CryptoWallet extends Model
     ];
 
     protected $casts = [
+        'balance' => 'decimal:18',
         'is_master_wallet' => 'boolean',
         'two_factor_enabled' => 'boolean',
         'is_default' => 'boolean',
@@ -279,6 +283,14 @@ class CryptoWallet extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * สกุลเงิน crypto ที่ wallet นี้ใช้
+     */
+    public function currency()
+    {
+        return $this->belongsTo(CryptoCurrency::class, 'currency_id');
     }
 
     /**
