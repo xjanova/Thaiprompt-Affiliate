@@ -52,18 +52,9 @@
         }
 
         /* Animations */
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
-        }
-
         @keyframes glow {
             0%, 100% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.5); }
             50% { box-shadow: 0 0 40px rgba(102, 126, 234, 0.8); }
-        }
-
-        .float-animation {
-            animation: float 3s ease-in-out infinite;
         }
 
         .glow-animation {
@@ -151,66 +142,64 @@
         </div>
     </header>
 
-    <!-- Hero Section with 3D Background -->
-    <section class="relative h-[600px] flex items-center justify-center overflow-hidden pt-20">
+    <!-- Hero Section with 3D Background - Compact Version -->
+    <section class="relative h-[350px] flex items-center justify-center overflow-hidden pt-16">
         <!-- 3D Canvas -->
         <canvas id="hero3d"></canvas>
 
         <!-- Hero Content -->
-        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
-            <div class="float-animation">
-                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 drop-shadow-2xl">
-                    {{ $siteInfo['name'] }}
-                </h1>
-                <p class="text-xl md:text-2xl text-white/90 mb-3 font-light">
-                    {{ $siteInfo['tagline'] }}
-                </p>
-                <p class="text-base md:text-lg text-white/80 mb-8 max-w-2xl mx-auto">
-                    {{ $siteInfo['description'] }}
-                </p>
-            </div>
+        <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
+            <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 drop-shadow-2xl">
+                {{ $siteInfo['name'] }}
+            </h1>
+            <p class="text-base md:text-lg text-white/90 mb-2 font-light">
+                {{ $siteInfo['tagline'] }}
+            </p>
+            <p class="text-sm md:text-base text-white/80 mb-6 max-w-xl mx-auto">
+                {{ $siteInfo['description'] }}
+            </p>
 
             <!-- CTA Buttons -->
-            <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
-                <a href="{{ route('user.dashboard') }}" class="glow-animation px-8 py-3 bg-white text-purple-600 font-bold text-base rounded-full hover:bg-purple-50 transition-all duration-300 shadow-2xl transform hover:scale-105">
+            <div class="flex flex-wrap gap-2 justify-center items-center">
+                <a href="{{ route('user.dashboard') }}" class="px-6 py-2 bg-white text-purple-600 font-semibold text-sm rounded-full hover:bg-purple-50 transition-all duration-300 shadow-lg">
                     เริ่มต้นใช้งาน
                 </a>
-                <a href="#featured-stores" class="px-8 py-3 bg-transparent border-2 border-white text-white font-bold text-base rounded-full hover:bg-white hover:text-purple-600 transition-all duration-300 shadow-2xl transform hover:scale-105">
+                <a href="#featured-stores" class="px-6 py-2 bg-transparent border-2 border-white text-white font-semibold text-sm rounded-full hover:bg-white hover:text-purple-600 transition-all duration-300">
                     ดูร้านค้า
                 </a>
-                <a href="#new-products" class="px-8 py-3 bg-transparent border-2 border-white text-white font-bold text-base rounded-full hover:bg-white hover:text-purple-600 transition-all duration-300 shadow-2xl transform hover:scale-105">
+                <a href="#new-products" class="px-6 py-2 bg-transparent border-2 border-white text-white font-semibold text-sm rounded-full hover:bg-white hover:text-purple-600 transition-all duration-300">
                     สินค้ามาใหม่
                 </a>
             </div>
         </div>
 
         <!-- Scroll Indicator -->
-        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
-            <div class="animate-bounce">
-                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+            <a href="#featured-stores" class="block">
+                <svg class="w-5 h-5 text-white animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
                 </svg>
-            </div>
+            </a>
         </div>
     </section>
 
     <!-- Featured Stores Section -->
-    <section id="featured-stores" class="py-12 bg-gradient-to-b from-white to-purple-50">
+    <section id="featured-stores" class="py-8 bg-gradient-to-b from-white to-purple-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10">
-                <h2 class="text-3xl md:text-4xl font-bold gradient-text mb-3">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl md:text-3xl font-bold gradient-text mb-2">
                     ร้านค้าแนะนำ
                 </h2>
-                <div class="w-20 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
-                <p class="text-base text-gray-600 mt-4">ร้านค้าคุณภาพ ได้รับการรับรองและคัดสรร</p>
+                <div class="w-16 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
+                <p class="text-sm text-gray-600 mt-3">ร้านค้าคุณภาพ ได้รับการรับรองและคัดสรร</p>
             </div>
 
             @if($featuredStores->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     @foreach($featuredStores as $store)
-                        <div class="store-card bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center">
+                        <div class="store-card bg-white rounded-xl shadow-md p-3 flex flex-col items-center">
                             <!-- Store Logo -->
-                            <div class="w-24 h-24 rounded-full overflow-hidden mb-3 border-4 border-purple-200 shadow-lg">
+                            <div class="w-20 h-20 rounded-full overflow-hidden mb-2 border-2 border-purple-200 shadow-lg">
                                 @if($store->store_logo)
                                     <img src="{{ asset($store->store_logo) }}" alt="{{ $store->store_name }}" class="w-full h-full object-cover">
                                 @else
@@ -221,38 +210,38 @@
                             </div>
 
                             <!-- Store Info -->
-                            <h3 class="text-lg font-bold text-gray-800 mb-2 text-center">{{ $store->store_name }}</h3>
+                            <h3 class="text-sm font-bold text-gray-800 mb-1 text-center line-clamp-1">{{ $store->store_name }}</h3>
 
                             <!-- Rating -->
-                            <div class="flex items-center mb-2">
+                            <div class="flex items-center mb-1">
                                 @for($i = 1; $i <= 5; $i++)
                                     @if($i <= $store->rating_average)
-                                        <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg class="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                         </svg>
                                     @else
-                                        <svg class="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                                        <svg class="w-3 h-3 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
                                             <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                                         </svg>
                                     @endif
                                 @endfor
-                                <span class="ml-2 text-sm text-gray-600">({{ number_format($store->rating_average, 1) }})</span>
+                                <span class="ml-1 text-xs text-gray-600">({{ number_format($store->rating_average, 1) }})</span>
                             </div>
 
                             <!-- Stats -->
-                            <div class="grid grid-cols-2 gap-3 w-full mb-3">
+                            <div class="grid grid-cols-2 gap-2 w-full mb-2">
                                 <div class="text-center">
-                                    <p class="text-xl font-bold text-purple-600">{{ number_format($store->total_products) }}</p>
+                                    <p class="text-base font-bold text-purple-600">{{ number_format($store->total_products) }}</p>
                                     <p class="text-xs text-gray-500">สินค้า</p>
                                 </div>
                                 <div class="text-center">
-                                    <p class="text-xl font-bold text-indigo-600">{{ number_format($store->total_sales) }}</p>
+                                    <p class="text-base font-bold text-indigo-600">{{ number_format($store->total_sales) }}</p>
                                     <p class="text-xs text-gray-500">ยอดขาย</p>
                                 </div>
                             </div>
 
                             <!-- Visit Button -->
-                            <a href="{{ route('vendor.store.show', $store->store_slug) }}" class="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-sm text-center rounded-full hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg transform hover:scale-105">
+                            <a href="{{ route('vendor.store.show', $store->store_slug) }}" class="w-full px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-xs text-center rounded-full hover:from-purple-700 hover:to-indigo-700 transition-all duration-300">
                                 เยี่ยมชมร้านค้า
                             </a>
                         </div>
@@ -268,22 +257,22 @@
     </section>
 
     <!-- New Products Section -->
-    <section id="new-products" class="py-12 bg-gradient-to-b from-purple-50 to-white">
+    <section id="new-products" class="py-8 bg-gradient-to-b from-purple-50 to-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-10">
-                <h2 class="text-3xl md:text-4xl font-bold gradient-text mb-3">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl md:text-3xl font-bold gradient-text mb-2">
                     สินค้ามาใหม่
                 </h2>
-                <div class="w-20 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
-                <p class="text-base text-gray-600 mt-4">สินค้าล่าสุดที่เพิ่งเข้ามาในระบบ</p>
+                <div class="w-16 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
+                <p class="text-sm text-gray-600 mt-3">สินค้าล่าสุดที่เพิ่งเข้ามาในระบบ</p>
             </div>
 
             @if($newProducts->count() > 0)
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     @foreach($newProducts as $product)
-                        <div class="product-card bg-white rounded-xl shadow-md overflow-hidden">
+                        <div class="product-card bg-white rounded-lg shadow-md overflow-hidden">
                             <!-- Product Image -->
-                            <div class="relative h-48 bg-gray-200 overflow-hidden group">
+                            <div class="relative h-40 bg-gray-200 overflow-hidden group">
                                 @if($product->main_image_url)
                                     <img src="{{ asset($product->main_image_url) }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                                 @else
@@ -307,26 +296,26 @@
                             </div>
 
                             <!-- Product Info -->
-                            <div class="p-4">
-                                <h3 class="text-sm font-bold text-gray-800 mb-2 line-clamp-2 h-10">{{ $product->name }}</h3>
+                            <div class="p-3">
+                                <h3 class="text-xs font-bold text-gray-800 mb-1 line-clamp-2 h-8">{{ $product->name }}</h3>
 
                                 <!-- Category -->
                                 @if($product->category)
-                                    <p class="text-xs text-gray-500 mb-2">{{ $product->category->name }}</p>
+                                    <p class="text-xs text-gray-500 mb-1">{{ $product->category->name }}</p>
                                 @endif
 
                                 <!-- Price -->
-                                <div class="mb-3">
-                                    <div class="flex items-baseline gap-2">
-                                        <span class="text-lg font-bold text-purple-600">฿{{ number_format($product->price, 2) }}</span>
+                                <div class="mb-2">
+                                    <div class="flex items-baseline gap-1">
+                                        <span class="text-base font-bold text-purple-600">฿{{ number_format($product->price, 0) }}</span>
                                         @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                                            <span class="text-xs text-gray-400 line-through">฿{{ number_format($product->compare_at_price, 2) }}</span>
+                                            <span class="text-xs text-gray-400 line-through">฿{{ number_format($product->compare_at_price, 0) }}</span>
                                         @endif
                                     </div>
                                 </div>
 
                                 <!-- View Button -->
-                                <a href="{{ route('products.show', $product->slug) }}" class="block w-full px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-xs text-center rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-md">
+                                <a href="{{ route('products.show', $product->slug) }}" class="block w-full px-2 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-xs text-center rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300">
                                     ดูสินค้า
                                 </a>
                             </div>
