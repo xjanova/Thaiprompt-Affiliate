@@ -59,18 +59,17 @@ class TPIXWalletController extends Controller
             ]
         );
 
-        // Get deposit address
-        $depositAddress = CryptoAddress::firstOrCreate(
-            [
-                'crypto_wallet_id' => $wallet->id,
-                'crypto_currency_id' => $tpixCurrency->id,
-                'address_type' => 'deposit'
-            ],
-            [
-                'network' => 'tpix',
-                'is_active' => true
-            ]
-        );
+        // Get or create deposit address
+        $depositAddress = CryptoAddress::where('crypto_wallet_id', $wallet->id)
+            ->where('crypto_currency_id', $tpixCurrency->id)
+            ->where('address_type', 'deposit')
+            ->first();
+
+        if (!$depositAddress) {
+            $depositAddress = $this->walletService->generateAddressForCurrency($wallet, $tpixCurrency);
+            // Update address type to 'deposit'
+            $depositAddress->update(['address_type' => 'deposit']);
+        }
 
         // Recent transactions
         $recentTransactions = CryptoTransaction::where('user_id', $user->id)
@@ -151,17 +150,16 @@ class TPIXWalletController extends Controller
         );
 
         // Get or create deposit address
-        $depositAddress = CryptoAddress::firstOrCreate(
-            [
-                'crypto_wallet_id' => $wallet->id,
-                'crypto_currency_id' => $tpixCurrency->id,
-                'address_type' => 'deposit'
-            ],
-            [
-                'network' => 'tpix',
-                'is_active' => true
-            ]
-        );
+        $depositAddress = CryptoAddress::where('crypto_wallet_id', $wallet->id)
+            ->where('crypto_currency_id', $tpixCurrency->id)
+            ->where('address_type', 'deposit')
+            ->first();
+
+        if (!$depositAddress) {
+            $depositAddress = $this->walletService->generateAddressForCurrency($wallet, $tpixCurrency);
+            // Update address type to 'deposit'
+            $depositAddress->update(['address_type' => 'deposit']);
+        }
 
         // Recent deposits
         $recentDeposits = CryptoTransaction::where('user_id', $user->id)
