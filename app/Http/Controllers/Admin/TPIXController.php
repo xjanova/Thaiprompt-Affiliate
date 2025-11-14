@@ -126,19 +126,19 @@ class TPIXController extends Controller
                 'active_wallets' => CryptoWallet::where('currency_id', $tpixCurrency->id)
                     ->where('status', 'active')->count(),
                 'total_balance' => CryptoWallet::where('currency_id', $tpixCurrency->id)->sum('balance'),
-                'transactions_24h' => CryptoTransaction::where('currency_id', $tpixCurrency->id)
+                'transactions_24h' => CryptoTransaction::where('crypto_currency_id', $tpixCurrency->id)
                     ->where('created_at', '>=', now()->subHours(24))->count(),
-                'volume_24h' => CryptoTransaction::where('currency_id', $tpixCurrency->id)
+                'volume_24h' => CryptoTransaction::where('crypto_currency_id', $tpixCurrency->id)
                     ->where('created_at', '>=', now()->subHours(24))
                     ->where('status', 'confirmed')->sum('amount'),
-                'deposits_pending' => CryptoTransaction::where('currency_id', $tpixCurrency->id)
+                'deposits_pending' => CryptoTransaction::where('crypto_currency_id', $tpixCurrency->id)
                     ->where('type', 'deposit')->where('status', 'pending')->count(),
-                'withdrawals_pending' => CryptoTransaction::where('currency_id', $tpixCurrency->id)
+                'withdrawals_pending' => CryptoTransaction::where('crypto_currency_id', $tpixCurrency->id)
                     ->where('type', 'withdrawal')->where('status', 'pending')->count(),
             ];
 
             $recentTransactions = CryptoTransaction::with(['user', 'cryptoWallet'])
-                ->where('currency_id', $tpixCurrency->id)
+                ->where('crypto_currency_id', $tpixCurrency->id)
                 ->orderBy('created_at', 'desc')->limit(20)->get();
 
             $topWallets = CryptoWallet::with('user')
