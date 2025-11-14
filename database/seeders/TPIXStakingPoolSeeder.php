@@ -37,7 +37,7 @@ class TPIXStakingPoolSeeder extends Seeder
             // หากไม่มี TPIX Token ให้สร้างตัวอย่างแบบง่าย
             $this->command->warn('⚠️  ไม่พบ TPIX Token ในระบบ กำลังสร้าง...');
 
-            $adminUser = User::where('is_admin', true)->first() ?? User::first();
+            $adminUser = User::whereIn('role', ['admin', 'super_admin'])->first() ?? User::first();
 
             if (!$adminUser) {
                 $this->command->error('❌ ไม่พบผู้ใช้ในระบบ กรุณา seed ผู้ใช้ก่อน');
@@ -71,7 +71,7 @@ class TPIXStakingPoolSeeder extends Seeder
         }
 
         // สร้าง creator (admin user)
-        $creator = User::where('is_admin', true)->first() ?? User::first();
+        $creator = User::whereIn('role', ['admin', 'super_admin'])->first() ?? User::first();
 
         if (!$creator) {
             $this->command->error('❌ ไม่พบผู้ใช้ในระบบ กรุณา seed ผู้ใช้ก่อน');

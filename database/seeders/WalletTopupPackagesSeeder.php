@@ -30,7 +30,7 @@ class WalletTopupPackagesSeeder extends Seeder
         );
 
         // ✅ หา admin user สำหรับเป็น seller
-        $adminUser = User::where('is_admin', true)->first();
+        $adminUser = User::whereIn('role', ['admin', 'super_admin'])->first();
         if (!$adminUser) {
             $this->command->warn('ไม่พบ admin user สำหรับเป็น seller ของ topup packages');
             return;
