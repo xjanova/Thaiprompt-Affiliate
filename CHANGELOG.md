@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.206.3] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1061 from xjanova/claude/redesign-homepage-featured-018GgUQwhivyXR3B6Gfckyun (d0e176f7)
+- fix: ลด Hero section และทุกส่วนให้กระชับสุดๆ (a6720b7a)
+### 🔧 Other Changes
+
+
 ## [v2.206.2] - 2025-11-14
 
 ### ✨ Features
