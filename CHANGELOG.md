@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.211.3] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1080 from xjanova/claude/fix-currency-id-column-014PErJ1HKSjuqpeMy35Y5vK (21dd660f)
+- fix: add missing currency_id, balance, and address columns to crypto_wallets table (d81f56d3)
+### 🔧 Other Changes
+
+
 ## [v2.211.2] - 2025-11-14
 
 ### ✨ Features
