@@ -136,15 +136,174 @@ class BotAnalyticsController extends Controller
     }
 
     /**
-     * Export analytics data
+     * ส่งออกข้อมูล analytics เป็นไฟล์ CSV
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function export(Request $request)
     {
         $type = $request->get('type', 'executions'); // executions, engagement, performance
         $period = $request->get('period', '30');
 
-        // TODO: Implement CSV/Excel export logic
-        return response()->download('analytics-export.csv');
+        // เตรียมข้อมูลตามประเภทที่เลือก
+        $data = [];
+        $filename = "analytics-{$type}-" . date('Y-m-d') . '.csv';
+
+        switch ($type) {
+            case 'executions':
+                $data = $this->getExecutionsExportData($period);
+                break;
+            case 'engagement':
+                $data = $this->getEngagementExportData($period);
+                break;
+            case 'performance':
+                $data = $this->getPerformanceExportData();
+                break;
+            default:
+                $data = $this->getExecutionsExportData($period);
+        }
+
+        // สร้าง CSV response
+        return response()->streamDownload(function () use ($data) {
+            $handle = fopen('php://output', 'w');
+
+            // เขียน BOM สำหรับ UTF-8
+            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // เขียน headers
+            if (!empty($data)) {
+                fputcsv($handle, array_keys($data[0]));
+
+                // เขียนข้อมูลแต่ละแถว
+                foreach ($data as $row) {
+                    fputcsv($handle, $row);
+                }
+            }
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูล executions สำหรับ export
+     *
+     * @param int $period
+     * @return array
+     */
+    protected function getExecutionsExportData(int $period): array
+    {
+        $executions = BotAutomationExecution::query()
+            ->with(['automation'])
+            ->where('created_at', '>=', now()->subDays($period))
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $executions->map(function ($execution) {
+            return [
+                'ID' => $execution->id,
+                'Automation' => $execution->automation->name ?? 'N/A',
+                'Status' => $execution->status,
+                'Started At' => $execution->started_at?->format('Y-m-d H:i:s'),
+                'Completed At' => $execution->completed_at?->format('Y-m-d H:i:s'),
+                'Duration (seconds)' => $execution->duration,
+                'Error Message' => $execution->error_message ?? '',
+                'Created At' => $execution->created_at->format('Y-m-d H:i:s'),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * ดึงข้อมูล engagement สำหรับ export
+     *
+     * @param int $period
+     * @return array
+     */
+    protected function getEngagementExportData(int $period): array
+    {
+        $metrics = BotEngagementMetric::query()
+            ->with(['automation'])
+            ->where('created_at', '>=', now()->subDays($period))
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $metrics->map(function ($metric) {
+            $engagementRate = $metric->reach > 0
+                ? round(($metric->engagement / $metric->reach) * 100, 2)
+                : 0;
+
+            $ctr = $metric->impressions > 0
+                ? round(($metric->clicks / $metric->impressions) * 100, 2)
+                : 0;
+
+            return [
+                'ID' => $metric->id,
+                'Automation' => $metric->automation->name ?? 'N/A',
+                'Platform' => $metric->platform,
+                'Reach' => $metric->reach,
+                'Impressions' => $metric->impressions,
+                'Clicks' => $metric->clicks,
+                'Shares' => $metric->shares,
+                'Comments' => $metric->comments,
+                'Likes' => $metric->likes,
+                'Total Engagement' => $metric->engagement,
+                'Engagement Rate (%)' => $engagementRate,
+                'CTR (%)' => $ctr,
+                'Created At' => $metric->created_at->format('Y-m-d H:i:s'),
+            ];
+        })->toArray();
+    }
+
+    /**
+     * ดึงข้อมูล performance สำหรับ export
+     *
+     * @return array
+     */
+    protected function getPerformanceExportData(): array
+    {
+        $automations = BotAutomation::query()
+            ->withCount([
+                'executions as total_executions',
+                'executions as successful_executions' => function ($query) {
+                    $query->where('status', 'success');
+                },
+                'executions as failed_executions' => function ($query) {
+                    $query->where('status', 'failed');
+                },
+            ])
+            ->with(['engagementMetrics'])
+            ->get();
+
+        return $automations->map(function ($automation) {
+            $totalReach = $automation->engagementMetrics->sum('reach');
+            $totalEngagement = $automation->engagementMetrics->sum('engagement');
+
+            $successRate = $automation->total_executions > 0
+                ? round(($automation->successful_executions / $automation->total_executions) * 100, 2)
+                : 0;
+
+            $engagementRate = $totalReach > 0
+                ? round(($totalEngagement / $totalReach) * 100, 2)
+                : 0;
+
+            return [
+                'ID' => $automation->id,
+                'Name' => $automation->name,
+                'Type' => $automation->automation_type,
+                'Status' => $automation->is_active ? 'Active' : 'Inactive',
+                'Total Executions' => $automation->total_executions,
+                'Successful Executions' => $automation->successful_executions,
+                'Failed Executions' => $automation->failed_executions,
+                'Success Rate (%)' => $successRate,
+                'Total Reach' => $totalReach,
+                'Total Engagement' => $totalEngagement,
+                'Engagement Rate (%)' => $engagementRate,
+                'Created At' => $automation->created_at->format('Y-m-d H:i:s'),
+            ];
+        })->toArray();
     }
 
     /**

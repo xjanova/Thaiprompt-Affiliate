@@ -365,11 +365,77 @@ if (typeof Alpine !== 'undefined') {
 }
 
 // ฟังก์ชันอัพเดทสถานะทิกเก็ต
-function updateStatus(ticketId, status) {
-    if (confirm('อัพเดทสถานะทิกเก็ตเป็น ' + status + '?')) {
-        console.log('Updating ticket', ticketId, 'to', status);
-        // TODO: ส่ง AJAX request เพื่ออัพเดทสถานะ
+async function updateStatus(ticketId, status) {
+    // แสดง confirmation dialog
+    if (!confirm(`อัพเดทสถานะทิกเก็ตเป็น "${status}"?`)) {
+        return;
     }
+
+    try {
+        // ส่ง AJAX request เพื่ออัพเดทสถานะ
+        const response = await fetch(`/admin/bot-automation/support/tickets/${ticketId}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({
+                status: status
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success !== false) {
+            // แสดงข้อความสำเร็จ
+            showNotification('success', 'อัพเดทสถานะทิกเก็ตสำเร็จ');
+
+            // รีโหลดหน้าเพื่อแสดงข้อมูลใหม่
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            // แสดงข้อความผิดพลาด
+            showNotification('error', result.message || 'เกิดข้อผิดพลาดในการอัพเดทสถานะ');
+        }
+    } catch (error) {
+        console.error('Error updating ticket status:', error);
+        showNotification('error', 'เกิดข้อผิดพลาด: ' + error.message);
+    }
+}
+
+// ฟังก์ชันแสดง notification
+function showNotification(type, message) {
+    // สร้าง notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 px-6 py-4 rounded-lg shadow-lg z-50 transition-all duration-300 ${
+        type === 'success'
+            ? 'bg-green-500 text-white'
+            : 'bg-red-500 text-white'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center space-x-2">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                ${type === 'success'
+                    ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
+                    : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>'
+                }
+            </svg>
+            <span>${message}</span>
+        </div>
+    `;
+
+    // เพิ่ม notification ลงใน body
+    document.body.appendChild(notification);
+
+    // ลบ notification หลังจาก 5 วินาที
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 5000);
 }
 </script>
 @endsection
