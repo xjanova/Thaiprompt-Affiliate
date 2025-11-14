@@ -1664,7 +1664,8 @@
             const z = (Math.random() - 0.5) * halfWorld * 2;
 
             const names = ['Alpha', 'Beta', 'Gamma', 'Delta', 'Epsilon', 'Zeta', 'Eta', 'Theta'];
-            const name = names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random() * 100);
+            const baseName = names[Math.floor(Math.random() * names.length)] + Math.floor(Math.random() * 100);
+            const name = '(AI) ' + baseName; // ✅ เพิ่ม (AI) ข้างหน้าชื่อบอท
             const skinKeys = Object.keys(SKINS);
             const skin = skinKeys[Math.floor(Math.random() * skinKeys.length)];
 

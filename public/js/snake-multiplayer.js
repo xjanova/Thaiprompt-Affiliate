@@ -54,11 +54,8 @@ class SnakeMultiplayerManager {
 
             console.log('[Multiplayer] เข้าร่วมห้อง:', this.roomCode, 'Player ID:', this.playerId);
 
-            // เชื่อมต่อ WebSocket channel
+            // เชื่อมต่อ WebSocket channel (ใช้ polling แทน)
             this.connectWebSocket();
-
-            // โหลดสถานะห้องเริ่มต้น (ผู้เล่นและไอเทมที่มีอยู่แล้ว)
-            await this.loadInitialRoomState();
 
             return data;
         } catch (error) {
@@ -68,119 +65,26 @@ class SnakeMultiplayerManager {
     }
 
     /**
-     * เชื่อมต่อ WebSocket channel
+     * เชื่อมต่อ WebSocket channel (ใช้ Polling แทน WebSocket)
      */
     connectWebSocket() {
-        if (!window.Echo) {
-            console.error('[Multiplayer] Laravel Echo ไม่พร้อมใช้งาน');
-            return;
-        }
+        console.log('[Multiplayer] เริ่ม polling สำหรับ room:', this.roomId);
 
-        const channelName = `snake-room.${this.roomId}`;
-        this.channel = window.Echo.channel(channelName);
-
-        console.log('[Multiplayer] เชื่อมต่อ WebSocket:', channelName);
-
-        // ฟังเหตุการณ์: ผู้เล่นเข้าร่วม
-        this.channel.listen('.player.joined', (data) => {
-            console.log('[WebSocket] ผู้เล่นเข้าร่วม:', data);
-            this.otherPlayers.set(data.player_id, {
-                id: data.player_id,
-                name: data.player_name,
-                skin: data.skin,
-                position: data.position,
-                direction: { x: 1, y: 0, z: 0 },
-                score: 0,
-                length: 5,
-                is_alive: true,
-            });
-
-            if (this.onPlayerJoinedCallback) {
-                this.onPlayerJoinedCallback(data);
+        // ✅ ใช้ Polling แทน WebSocket (ไม่ต้องใช้ Laravel Echo)
+        // โพลทุก 1 วินาที
+        this.pollingInterval = setInterval(async () => {
+            try {
+                await this.pollRoomState();
+            } catch (error) {
+                console.error('[Multiplayer] Polling error:', error);
             }
-        });
-
-        // ฟังเหตุการณ์: ผู้เล่นออกจากห้อง
-        this.channel.listen('.player.left', (data) => {
-            console.log('[WebSocket] ผู้เล่นออก:', data.player_id);
-            this.otherPlayers.delete(data.player_id);
-
-            if (this.onPlayerLeftCallback) {
-                this.onPlayerLeftCallback(data);
-            }
-        });
-
-        // ฟังเหตุการณ์: ผู้เล่นเคลื่อนที่
-        this.channel.listen('.player.moved', (data) => {
-            // อัปเดตข้อมูลผู้เล่น
-            if (this.otherPlayers.has(data.player_id)) {
-                const player = this.otherPlayers.get(data.player_id);
-                player.position = data.position;
-                player.direction = data.direction;
-                player.score = data.score;
-                player.length = data.length;
-            }
-
-            if (this.onPlayerMovedCallback) {
-                this.onPlayerMovedCallback(data);
-            }
-        });
-
-        // ฟังเหตุการณ์: ผู้เล่นตาย
-        this.channel.listen('.player.died', (data) => {
-            console.log('[WebSocket] ผู้เล่นตาย:', data.player_id);
-
-            if (this.otherPlayers.has(data.player_id)) {
-                const player = this.otherPlayers.get(data.player_id);
-                player.is_alive = false;
-            }
-
-            if (this.onPlayerDiedCallback) {
-                this.onPlayerDiedCallback(data);
-            }
-        });
-
-        // ฟังเหตุการณ์: ไอเทมใหม่เกิด
-        this.channel.listen('.item.spawned', (data) => {
-            console.log('[WebSocket] ไอเทมใหม่:', data);
-            this.serverItems.set(data.item_id, {
-                id: data.item_id,
-                type: data.type,
-                position: data.position,
-                value: data.value,
-            });
-
-            if (this.onItemSpawnedCallback) {
-                this.onItemSpawnedCallback(data);
-            }
-        });
-
-        // ฟังเหตุการณ์: ไอเทมถูกเก็บ
-        this.channel.listen('.item.collected', (data) => {
-            console.log('[WebSocket] ไอเทมถูกเก็บ:', data.item_id);
-            this.serverItems.delete(data.item_id);
-
-            if (this.onItemCollectedCallback) {
-                this.onItemCollectedCallback(data);
-            }
-        });
+        }, 1000); // 1 วินาที
     }
 
     /**
-     * ยกเลิกการเชื่อมต่อ WebSocket
+     * โพลสถานะห้อง (ดึงข้อมูลผู้เล่นคนอื่น)
      */
-    disconnectWebSocket() {
-        if (this.channel) {
-            window.Echo.leave(`snake-room.${this.roomId}`);
-            this.channel = null;
-            console.log('[Multiplayer] ยกเลิกการเชื่อมต่อ WebSocket');
-        }
-    }
-
-    /**
-     * โหลดสถานะห้องเริ่มต้น
-     */
-    async loadInitialRoomState() {
+    async pollRoomState() {
         if (!this.roomId) return;
 
         try {
@@ -191,22 +95,68 @@ class SnakeMultiplayerManager {
                 },
             });
 
-            const data = await response.json();
+            if (!response.ok) return;
 
+            const data = await response.json();
             if (!data.success) return;
 
             const roomState = data.room_state;
 
-            // อัปเดตผู้เล่นคนอื่น
-            this.updateOtherPlayers(roomState.players);
+            // อัปเดตผู้เล่นคนอื่น (ไม่รวมตัวเอง)
+            const newPlayerIds = new Set();
 
-            // อัปเดตไอเทม
-            this.updateItems(roomState.items);
+            if (roomState.players && Array.isArray(roomState.players)) {
+                roomState.players.forEach(playerData => {
+                    // ข้ามตัวเอง
+                    if (playerData.player_id === this.playerId) {
+                        return;
+                    }
+
+                    newPlayerIds.add(playerData.player_id);
+
+                    // อัปเดตหรือสร้างผู้เล่นใหม่
+                    if (!this.otherPlayers.has(playerData.player_id)) {
+                        // ผู้เล่นใหม่เข้ามา
+                        console.log('[Multiplayer] ผู้เล่นใหม่เข้าร่วม:', playerData.player_name);
+                    }
+
+                    this.otherPlayers.set(playerData.player_id, {
+                        id: playerData.player_id,
+                        name: playerData.player_name || 'Player',
+                        skin: playerData.skin || 'classic',
+                        position: playerData.position || { x: 0, y: 0, z: 0 },
+                        direction: playerData.direction || { x: 1, y: 0, z: 0 },
+                        score: playerData.score || 0,
+                        length: playerData.length || 5,
+                        is_alive: playerData.is_alive !== false,
+                    });
+                });
+            }
+
+            // ลบผู้เล่นที่ออกไปแล้ว
+            for (const [playerId, playerData] of this.otherPlayers) {
+                if (!newPlayerIds.has(playerId)) {
+                    console.log('[Multiplayer] ผู้เล่นออก:', playerData.name);
+                    this.otherPlayers.delete(playerId);
+                }
+            }
 
         } catch (error) {
-            console.error('[Multiplayer] โหลดสถานะห้องล้มเหลว:', error);
+            // Silent fail - ไม่ให้ error ซ้ำเยอะ
         }
     }
+
+    /**
+     * ยกเลิกการเชื่อมต่อ WebSocket
+     */
+    disconnectWebSocket() {
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+            this.pollingInterval = null;
+            console.log('[Multiplayer] หยุด polling');
+        }
+    }
+
 
     /**
      * ออกจากเกม
