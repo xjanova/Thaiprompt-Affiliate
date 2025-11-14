@@ -592,7 +592,25 @@
             <p>Final Score: <span id="final-score" style="color: #00ffff;">0</span></p>
             <p>Final Length: <span id="final-length" style="color: #ffff00;">0</span></p>
             <p>Final Rank: <span id="final-rank" style="color: #ff00ff;">#0</span></p>
-            <div style="margin-top: 30px;">
+
+            <!-- บันทึกคะแนน -->
+            <div id="save-score-section" style="margin-top: 30px; padding: 20px; background: rgba(0, 0, 0, 0.5); border-radius: 10px;">
+                <h3 style="color: #00ffff; margin-bottom: 15px;">💾 บันทึกคะแนนในสถิติเซิร์ฟเวอร์?</h3>
+                <p style="font-size: 14px; color: #ccc; margin-bottom: 10px;">
+                    ค่าบันทึก: <span style="color: #ffff00; font-weight: bold;">1 แต้ม</span>
+                </p>
+                <div id="wallet-status"></div>
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn" id="save-score-btn" style="background: linear-gradient(135deg, #00ff00, #00aa00);">
+                        ✅ บันทึกคะแนน (1 แต้ม)
+                    </button>
+                    <button class="btn" id="skip-save-btn" style="background: linear-gradient(135deg, #666, #444);">
+                        ❌ ไม่บันทึก
+                    </button>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px;">
                 <button class="btn" id="restart-btn">🔄 PLAY AGAIN</button>
             </div>
         </div>
@@ -615,6 +633,8 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="/js/optimized-touch-input.js"></script>
+    <script src="/js/snake-multiplayer.js"></script>
 
     <script>
         // Game configuration
@@ -728,12 +748,17 @@
         let player;
         let foods = [];
         let bots = [];
+        let otherPlayerSnakes = new Map(); // สำหรับเก็บงูของผู้เล่นคนอื่น
         let gameStarted = false;
         let gameOver = false;
         let playerName = '';
         let selectedSkin = 'classic';
         let score = 0;
         let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
+
+        // Multiplayer Manager
+        let multiplayerManager = null;
+        let touchInputManager = null;
 
         // Power-ups
         let powerups = [];
@@ -1047,6 +1072,8 @@
             // UI Events
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('restart-btn').addEventListener('click', restartGame);
+            document.getElementById('save-score-btn').addEventListener('click', handleSaveScore);
+            document.getElementById('skip-save-btn').addEventListener('click', handleSkipSave);
 
             // Sound toggle
             const soundToggle = document.getElementById('sound-toggle');
@@ -1308,7 +1335,7 @@
             }
         }
 
-        function startGame() {
+        async function startGame() {
             console.log('Starting game...');
 
             // Initialize audio on user interaction
@@ -1317,22 +1344,61 @@
             playerName = document.getElementById('player-name').value.trim() ||
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
-            // Create player
-            player = new Snake(0, 0, true, playerName, selectedSkin);
-            console.log('Player created:', playerName);
+            try {
+                // เริ่ม multiplayer manager
+                multiplayerManager = new SnakeMultiplayerManager();
 
-            // Spawn bots
-            for (let i = 0; i < CONFIG.BOT_COUNT; i++) {
-                createBot();
+                // เข้าร่วมเกม (จะหาห้องอัตโนมัติ)
+                const joinResult = await multiplayerManager.joinGame(playerName, selectedSkin);
+                console.log('[Game] เข้าร่วมห้อง:', joinResult.room_code);
+
+                // Create player
+                player = new Snake(0, 0, true, playerName, selectedSkin);
+                console.log('Player created:', playerName);
+
+                // Spawn bots (ลดลงเพราะมีผู้เล่นจริง)
+                for (let i = 0; i < 5; i++) {
+                    createBot();
+                }
+                console.log('Bots spawned:', 5);
+
+                // เริ่ม optimized touch input
+                if (touchInputManager) {
+                    touchInputManager.destroy();
+                }
+                touchInputManager = new OptimizedTouchInput(camera, player.segments[0]);
+                touchInputManager.init(renderer.domElement);
+
+                // ตั้งค่า callbacks
+                touchInputManager.setOnDirectionChange((direction) => {
+                    if (player && player.alive) {
+                        player.targetDirection.copy(direction);
+                    }
+                });
+
+                touchInputManager.setOnBoostStart(() => {
+                    if (player && player.alive && !player.isBoosting) {
+                        player.isBoosting = true;
+                        playSound('boost');
+                    }
+                });
+
+                touchInputManager.setOnBoostEnd(() => {
+                    if (player) {
+                        player.isBoosting = false;
+                    }
+                });
+
+                gameStarted = true;
+                document.getElementById('start-screen').classList.add('hidden');
+                console.log('Game started successfully!');
+            } catch (error) {
+                console.error('[Game] เริ่มเกมล้มเหลว:', error);
+                alert('เกิดข้อผิดพลาด: ' + error.message);
             }
-            console.log('Bots spawned:', CONFIG.BOT_COUNT);
-
-            gameStarted = true;
-            document.getElementById('start-screen').classList.add('hidden');
-            console.log('Game started successfully!');
         }
 
-        function endGame() {
+        async function endGame() {
             gameOver = true;
             gameStarted = false;
 
@@ -1341,10 +1407,90 @@
             document.getElementById('final-rank').textContent = '#' + getRank();
             document.getElementById('game-over').classList.add('show');
 
-            // Save score if authenticated
-            if (isAuthenticated) {
-                saveScore();
+            // แจ้ง multiplayer manager
+            if (multiplayerManager) {
+                await multiplayerManager.playerDied();
             }
+
+            // ตรวจสอบ wallet status
+            await checkWalletStatus();
+        }
+
+        async function checkWalletStatus() {
+            const walletStatusEl = document.getElementById('wallet-status');
+            const saveBtnEl = document.getElementById('save-score-btn');
+            const skipBtnEl = document.getElementById('skip-save-btn');
+
+            if (!multiplayerManager) {
+                walletStatusEl.innerHTML = '<p style="color: #ff4444;">เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง</p>';
+                saveBtnEl.disabled = true;
+                return;
+            }
+
+            const walletData = await multiplayerManager.checkWallet();
+
+            if (!walletData.authenticated) {
+                // ไม่ได้ login
+                walletStatusEl.innerHTML = `
+                    <p style="color: #ffaa00; font-size: 14px;">
+                        ⚠️ ต้องเข้าสู่ระบบก่อนบันทึกคะแนน
+                    </p>
+                    <div style="margin-top: 10px;">
+                        <a href="${walletData.login_url}" style="color: #00ffff; text-decoration: underline; margin-right: 10px;">เข้าสู่ระบบ</a>
+                        <a href="${walletData.register_url}" style="color: #00ffff; text-decoration: underline;">สมัครสมาชิก</a>
+                    </div>
+                `;
+                saveBtnEl.disabled = true;
+            } else if (!walletData.can_save_score) {
+                // login แล้วแต่แต้มไม่พอ
+                walletStatusEl.innerHTML = `
+                    <p style="color: #ff4444; font-size: 14px;">
+                        ❌ แต้มไม่พอ (ปัจจุบัน: ${walletData.balance} แต้ม)
+                    </p>
+                    <div style="margin-top: 10px;">
+                        <a href="${walletData.topup_url}" style="color: #ffff00; text-decoration: underline;">เติมแต้ม</a>
+                    </div>
+                `;
+                saveBtnEl.disabled = true;
+            } else {
+                // มีแต้มพอ
+                walletStatusEl.innerHTML = `
+                    <p style="color: #00ff00; font-size: 14px;">
+                        ✅ แต้มคงเหลือ: <span style="font-weight: bold;">${walletData.balance} แต้ม</span>
+                    </p>
+                `;
+                saveBtnEl.disabled = false;
+            }
+        }
+
+        async function handleSaveScore() {
+            const saveBtnEl = document.getElementById('save-score-btn');
+            const skipBtnEl = document.getElementById('skip-save-btn');
+
+            // Disable buttons
+            saveBtnEl.disabled = true;
+            skipBtnEl.disabled = true;
+            saveBtnEl.textContent = '⏳ กำลังบันทึก...';
+
+            try {
+                const result = await multiplayerManager.saveScore(score, player.length);
+
+                if (result.success) {
+                    alert('✅ บันทึกคะแนนสำเร็จ!\n\nแต้มคงเหลือ: ' + result.remaining_balance + ' แต้ม');
+                    document.getElementById('save-score-section').style.display = 'none';
+                } else {
+                    throw new Error(result.message || 'บันทึกล้มเหลว');
+                }
+            } catch (error) {
+                alert('❌ เกิดข้อผิดพลาด: ' + error.message);
+                saveBtnEl.disabled = false;
+                skipBtnEl.disabled = false;
+                saveBtnEl.textContent = '✅ บันทึกคะแนน (1 แต้ม)';
+            }
+        }
+
+        function handleSkipSave() {
+            document.getElementById('save-score-section').style.display = 'none';
         }
 
         function restartGame() {
@@ -1453,6 +1599,22 @@
                 powerup.rotation.y += 0.05;
                 powerup.position.y = 0.8 + Math.sin(Date.now() * 0.003) * 0.2;
             });
+
+            // Sync state กับ server (ทุก 5 frames ~200ms)
+            if (multiplayerManager && player && player.alive && Date.now() % 5 === 0) {
+                multiplayerManager.updatePlayerState(
+                    player.segments[0].position,
+                    player.direction,
+                    player.score,
+                    player.length
+                );
+            }
+
+            // Render ผู้เล่นคนอื่น
+            if (multiplayerManager) {
+                renderOtherPlayers();
+                renderServerItems();
+            }
 
             if (player && player.alive) {
                 // Apply speed boost
@@ -1683,6 +1845,104 @@
             if (player && e.touches.length < 2) {
                 player.isBoosting = false;
             }
+        }
+
+        /**
+         * Render ผู้เล่นคนอื่นจาก server
+         */
+        function renderOtherPlayers() {
+            if (!multiplayerManager) return;
+
+            const otherPlayers = multiplayerManager.getOtherPlayers();
+
+            otherPlayers.forEach(playerData => {
+                // สร้างหรืออัปเดตงูของผู้เล่นคนอื่น
+                if (!otherPlayerSnakes.has(playerData.id)) {
+                    // สร้างใหม่
+                    const snake = new Snake(
+                        playerData.position.x,
+                        playerData.position.z,
+                        false,
+                        playerData.name,
+                        playerData.skin
+                    );
+                    otherPlayerSnakes.set(playerData.id, snake);
+                } else {
+                    // อัปเดตตำแหน่ง
+                    const snake = otherPlayerSnakes.get(playerData.id);
+                    if (snake.segments[0] && playerData.position) {
+                        snake.segments[0].position.set(
+                            playerData.position.x,
+                            playerData.position.y || 0.5,
+                            playerData.position.z
+                        );
+                    }
+
+                    // อัปเดตข้อมูล
+                    snake.score = playerData.score;
+                    snake.length = playerData.length;
+                    snake.alive = playerData.is_alive;
+
+                    // อัปเดตทิศทาง
+                    if (playerData.direction) {
+                        snake.direction.set(
+                            playerData.direction.x,
+                            playerData.direction.y || 0,
+                            playerData.direction.z
+                        );
+                    }
+
+                    snake.update();
+                }
+            });
+
+            // ลบผู้เล่นที่ออกไปแล้ว
+            for (const [playerId, snake] of otherPlayerSnakes) {
+                const stillExists = otherPlayers.some(p => p.id === playerId);
+                if (!stillExists) {
+                    // ลบงู
+                    snake.segments.forEach(seg => scene.remove(seg));
+                    if (snake.nameSprite) scene.remove(snake.nameSprite);
+                    otherPlayerSnakes.delete(playerId);
+                }
+            }
+        }
+
+        /**
+         * Render ไอเทมจาก server
+         */
+        function renderServerItems() {
+            if (!multiplayerManager) return;
+
+            const serverItems = multiplayerManager.getServerItems();
+
+            // ลบไอเทมในหน้าจอที่ไม่มีใน server แล้ว
+            foods = foods.filter(food => {
+                const stillExists = serverItems.some(item => {
+                    // ใช้ position เป็นตัวเปรียบเทียบ
+                    return Math.abs(food.position.x - item.position.x) < 0.1 &&
+                           Math.abs(food.position.z - item.position.z) < 0.1;
+                });
+
+                if (!stillExists) {
+                    scene.remove(food);
+                    return false;
+                }
+                return true;
+            });
+
+            // เพิ่มไอเทมใหม่ที่ยังไม่มีในหน้าจอ
+            serverItems.forEach(itemData => {
+                const exists = foods.some(food => {
+                    return Math.abs(food.position.x - itemData.position.x) < 0.1 &&
+                           Math.abs(food.position.z - itemData.position.z) < 0.1;
+                });
+
+                if (!exists) {
+                    // สร้างไอเทมใหม่
+                    createFood(itemData.position.x, itemData.position.z, itemData.value > 1);
+                }
+            });
         }
 
         init();
