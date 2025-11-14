@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.219.0] - 2025-11-14
+
+### ✨ Features
+- feat: เพิ่มระบบจำสี skin และแก้ไข Game Over (b0b02981)
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหาบอทสุ่มเกิดและหายไป (f805c257)
+### 🔧 Other Changes
+- Merge pull request #1103 from xjanova/claude/snake-game-01LpjnzhSBRd17vaac96kCa4 (c775b3e3)
+
 ## [v2.218.5] - 2025-11-14
 
 ### ✨ Features
