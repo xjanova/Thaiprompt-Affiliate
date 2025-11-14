@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.224.0] - 2025-11-14
+
+### ✨ Features
+- Merge pull request #1113 from xjanova/claude/fix-dex-pools-ui-01JcgQyvKNDnKS527NxoQRhy (e1a18ff7)
+- feat: ปรับปรุง UI หน้า DEX Pools ให้สวยงามและทันสมัยขึ้น (26b8cf35)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.223.2] - 2025-11-14
 
 ### ✨ Features
