@@ -842,7 +842,7 @@
         const CONFIG = {
             WORLD_SIZE: 200,
             FOOD_COUNT: 100,
-            BOT_COUNT: 12, // ✅ ลดเหลือ 12 บอท (ป้องกันเกมค้าง)
+            BOT_COUNT: 30, // เพิ่มเป็น 30 บอท
             INITIAL_LENGTH: 5,
             SEGMENT_SIZE: 0.5,
             MOVEMENT_SPEED: 0.15,
@@ -959,12 +959,6 @@
         let score = 0;
         let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
 
-        // ✅ Performance Optimization - Throttling
-        let lastCollisionCheck = 0;
-        let lastLeaderboardUpdate = 0;
-        const COLLISION_CHECK_INTERVAL = 50; // เช็ค collision ทุก 50ms (20 ครั้ง/วินาที แทนที่จะเป็น 60 ครั้ง)
-        const LEADERBOARD_UPDATE_INTERVAL = 500; // อัปเดต leaderboard ทุก 500ms (2 ครั้ง/วินาที)
-
         // Multiplayer Manager
         let multiplayerManager = null;
         let touchInputManager = null;
@@ -988,14 +982,6 @@
         // Camera zoom state
         let currentCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE;
         let targetCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE;
-
-        // ✅ Multiplayer sync throttling (เพื่อป้องกันเกมค้าง)
-        let lastSyncTime = 0;
-        const SYNC_INTERVAL = 1000; // sync ทุก 1 วินาที
-
-        // ✅ Other players rendering throttling (ป้องกันเกมค้าง)
-        let lastRenderOthersTime = 0;
-        const RENDER_OTHERS_INTERVAL = 100; // render ผู้เล่นคนอื่นทุก 100ms (10 FPS)
 
         const POWERUP_TYPES = {
             MAGNET: {
@@ -1069,17 +1055,8 @@
             constructor(x, z, isPlayer = false, name = 'Bot', skinKey = 'classic') {
                 this.isPlayer = isPlayer;
                 this.name = name;
-
-                // ✅ ตรวจสอบว่าเป็น custom colors (มี hex codes) หรือ preset skin
-                if (typeof skinKey === 'string' && skinKey.includes('#')) {
-                    // Custom colors - ใช้ SKINS.custom ที่ได้อัปเดตแล้ว
-                    this.skinKey = 'custom';
-                    this.skin = SKINS.custom;
-                } else {
-                    // Preset skin (classic, fire, ice, gold, rainbow)
-                    this.skinKey = skinKey;
-                    this.skin = SKINS[skinKey] || SKINS.classic;
-                }
+                this.skinKey = skinKey;
+                this.skin = SKINS[skinKey] || SKINS.classic;
 
                 this.segments = [];
                 this.segmentPositions = [];
@@ -1105,10 +1082,6 @@
 
                 // ✅ ระบบคะแนนแปรผัน: คะแนนที่ต้องการต่อปล้อง
                 this.nextGrowthScore = this.calculateNextGrowthScore();
-
-                // ✅ ระบบเติบโตทีละเม็ด (ไม่พร้อมกัน)
-                this.pendingGrowth = 0; // จำนวนปล้องที่รอเติบโต
-                this.lastGrowthTime = 0; // เวลาที่เติบโตครั้งล่าสุด
 
                 // ✅ ระบบ invincibility 5 วินาที (เมื่อเกิดใหม่) - ทั้งผู้เล่นและบอท
                 this.invincible = true; // ทั้งผู้เล่นและบอทมี invincibility ตอนเกิด
@@ -1196,27 +1169,10 @@
                 // Update direction smoothly
                 this.direction.lerp(this.targetDirection.normalize(), CONFIG.TURN_SPEED);
 
-                // ✅ บังคับให้ direction เป็น unit vector เสมอ (ไม่สามารถหยุดนิ่งได้)
-                this.direction.normalize();
-
-                // ✅ ระบบเติบโตทีละเม็ด (ทุก 100ms = 0.1 วินาที)
-                const currentTime = Date.now();
-                if (this.pendingGrowth > 0 && (currentTime - this.lastGrowthTime) >= 100) {
-                    this.grow(1); // เติบโต 1 ปล้อง
-                    this.pendingGrowth--;
-                    this.lastGrowthTime = currentTime;
-
-                    // เล่นเสียงเติบโต (แยกจากเสียงกิน)
-                    if (this.isPlayer) {
-                        playSound('grow');
-                    }
-                }
-
-                // Move head - ปล้องทุกปล้องดันให้เดินหน้าเสมอ
+                // Move head
                 const head = this.segments[0];
                 const currentSpeed = this.isBoosting ? CONFIG.BOOST_SPEED : this.speed;
 
-                // ✅ บังคับให้เคลื่อนที่ไปข้างหน้าเสมอ (ไม่สามารถใช้เทคนิคขยับๆให้นิ่งได้)
                 head.position.x += this.direction.x * currentSpeed;
                 head.position.z += this.direction.z * currentSpeed;
 
@@ -1229,15 +1185,21 @@
                     return;
                 }
 
-                // ✅ Simple segment following (ไม่ค้าง - ใช้ lerp ธรรมดา แทนการคำนวณ distance/direction ที่หนัก!)
+                // Update segment positions
                 this.segmentPositions[0] = head.position.clone();
 
                 for (let i = 1; i < this.segments.length; i++) {
                     const target = this.segmentPositions[i - 1];
                     const current = this.segments[i].position;
+                    const distance = current.distanceTo(target);
 
-                    // ✅ Simple lerp - เบาและรวดเร็ว! (แทนการ distanceTo + normalize + multiply + add)
-                    current.lerp(target, 0.2);
+                    if (distance > CONFIG.SEGMENT_SIZE) {
+                        const direction = new THREE.Vector3()
+                            .subVectors(target, current)
+                            .normalize();
+
+                        current.add(direction.multiplyScalar(distance - CONFIG.SEGMENT_SIZE));
+                    }
 
                     this.segmentPositions[i] = current.clone();
                 }
@@ -1322,7 +1284,15 @@
 
                 this.length += amount;
 
-                // ✅ ไม่เล่นเสียงที่นี่ - จะเล่นใน update() แทน (แยกเสียงกินกับเสียงโต)
+                // Apply score multiplier if active (ไม่บวกคะแนนที่นี่ เพราะจะบวกตอนเก็บไอเทม)
+                if (this.isPlayer) {
+                    playSound('eat');
+
+                    // Play grow sound every 5 segments
+                    if (this.length % 5 === 0) {
+                        playSound('grow');
+                    }
+                }
             }
 
             /**
@@ -1506,17 +1476,8 @@
             // UI Events
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('restart-btn').addEventListener('click', restartGame);
-
-            // Save/Skip score buttons (สำหรับสมาชิกเท่านั้น)
-            const saveScoreBtn = document.getElementById('save-score-btn');
-            if (saveScoreBtn) {
-                saveScoreBtn.addEventListener('click', handleSaveScore);
-            }
-
-            const skipSaveBtn = document.getElementById('skip-save-btn');
-            if (skipSaveBtn) {
-                skipSaveBtn.addEventListener('click', handleSkipSave);
-            }
+            document.getElementById('save-score-btn').addEventListener('click', handleSaveScore);
+            document.getElementById('skip-save-btn').addEventListener('click', handleSkipSave);
 
             // Save skin button (สำหรับสมาชิก)
             const saveSkinBtn = document.getElementById('save-skin-btn');
@@ -1532,13 +1493,11 @@
 
             // Sound toggle
             const soundToggle = document.getElementById('sound-toggle');
-            if (soundToggle) {
-                soundToggle.addEventListener('click', function() {
-                    soundEnabled = !soundEnabled;
-                    this.textContent = soundEnabled ? '🔊' : '🔇';
-                    this.classList.toggle('muted', !soundEnabled);
-                });
-            }
+            soundToggle.addEventListener('click', function() {
+                soundEnabled = !soundEnabled;
+                this.textContent = soundEnabled ? '🔊' : '🔇';
+                this.classList.toggle('muted', !soundEnabled);
+            });
 
             // Skin selection
             document.querySelectorAll('.skin-option').forEach(option => {
@@ -1558,36 +1517,32 @@
             document.querySelector('.skin-option').classList.add('selected');
 
             // Custom color picker
-            const applyCustomColorsBtn = document.getElementById('apply-custom-colors');
-            if (applyCustomColorsBtn) {
-                applyCustomColorsBtn.addEventListener('click', function() {
-                    const color1 = document.getElementById('color1').value;
-                    const color2 = document.getElementById('color2').value;
-                    const color3 = document.getElementById('color3').value;
+            document.getElementById('apply-custom-colors').addEventListener('click', function() {
+                const color1 = document.getElementById('color1').value;
+                const color2 = document.getElementById('color2').value;
+                const color3 = document.getElementById('color3').value;
 
-                    // แปลง hex เป็น integer
-                    customColors = [
-                        parseInt(color1.replace('#', '0x')),
-                        parseInt(color2.replace('#', '0x')),
-                        parseInt(color3.replace('#', '0x'))
-                    ];
+                // แปลง hex เป็น integer
+                customColors = [
+                    parseInt(color1.replace('#', '0x')),
+                    parseInt(color2.replace('#', '0x')),
+                    parseInt(color3.replace('#', '0x'))
+                ];
 
-                    // อัปเดต custom skin
-                    SKINS.custom.colors = customColors;
-                    SKINS.custom.primary = customColors[0];
-                    SKINS.custom.secondary = customColors[1];
+                // อัปเดต custom skin
+                SKINS.custom.colors = customColors;
+                SKINS.custom.primary = customColors[0];
+                SKINS.custom.secondary = customColors[1];
 
-                    // เลือก custom skin
-                    const customSkinString = `${color1},${color2},${color3}`; // ✅ บันทึก hex codes จริงๆ
-                    selectedSkin = customSkinString;
-                    document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
+                // เลือก custom skin
+                selectedSkin = 'custom';
+                document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
 
-                    // ✅ บันทึกสี custom พร้อม hex codes (ถ้าเป็นสมาชิก)
-                    saveSkinPreference(customSkinString);
+                // ✅ บันทึกสี custom (ถ้าเป็นสมาชิก)
+                saveSkinPreference('custom');
 
-                    alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
-                });
-            }
+                alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
+            });
 
             // Start animation loop
             animate();
@@ -1623,44 +1578,17 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.skin) {
-                        // ✅ ตรวจสอบว่าเป็น custom colors (มี hex code) หรือ preset skin
-                        if (data.skin.includes('#')) {
-                            // Custom colors - แยกสีและนำไปใส่ใน color inputs
-                            const colors = data.skin.split(',');
+                        selectedSkin = data.skin;
 
-                            // ใส่สีใน color inputs
-                            if (colors[0]) document.getElementById('color1').value = colors[0];
-                            if (colors[1]) document.getElementById('color2').value = colors[1];
-                            if (colors[2]) document.getElementById('color3').value = colors[2];
+                        // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
+                        document.querySelectorAll('.skin-option').forEach(option => {
+                            option.classList.remove('selected');
+                            if (option.dataset.skin === data.skin) {
+                                option.classList.add('selected');
+                            }
+                        });
 
-                            // อัพเดต customColors และ SKINS.custom
-                            customColors = [
-                                parseInt(colors[0]?.replace('#', '0x') || '0x00ff00'),
-                                parseInt(colors[1]?.replace('#', '0x') || '0x00aa00'),
-                                parseInt(colors[2]?.replace('#', '0x') || '0x00dd00')
-                            ];
-                            SKINS.custom.colors = customColors;
-                            SKINS.custom.primary = customColors[0];
-                            SKINS.custom.secondary = customColors[1];
-
-                            // ตั้ง selectedSkin เป็น custom colors string
-                            selectedSkin = data.skin;
-
-                            console.log('[Skin] โหลดสี custom อัตโนมัติ:', colors);
-                        } else {
-                            // Preset skin (classic, fire, ice, gold, rainbow)
-                            selectedSkin = data.skin;
-
-                            // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
-                            document.querySelectorAll('.skin-option').forEach(option => {
-                                option.classList.remove('selected');
-                                if (option.dataset.skin === data.skin) {
-                                    option.classList.add('selected');
-                                }
-                            });
-
-                            console.log('[Skin] โหลดสี preset อัตโนมัติ:', data.skin);
-                        }
+                        console.log('[Skin] โหลดสี skin ที่บันทึกไว้:', data.skin);
                     }
                 }
             } catch (error) {
@@ -1917,21 +1845,14 @@
                 }
             }
 
-            // Check bot vs bot collisions (Optimized with spatial culling)
+            // Check bot vs bot collisions
             for (let i = bots.length - 1; i >= 0; i--) {
                 const bot1 = bots[i];
                 if (!bot1.alive) continue;
 
-                const bot1Head = bot1.segments[0].position;
-
                 for (let j = i - 1; j >= 0; j--) {
                     const bot2 = bots[j];
                     if (!bot2.alive) continue;
-
-                    // ✅ Spatial Culling - ข้ามการเช็คถ้าบอทอยู่ห่างกันมากกว่า 20 หน่วย (ลด collision checks ลง 80%!)
-                    const bot2Head = bot2.segments[0].position;
-                    const roughDistance = bot1Head.distanceTo(bot2Head);
-                    if (roughDistance > 20) continue; // ไกลเกินไป ไม่มีทางชนได้
 
                     const victim = checkSnakeCollision(bot1, bot2);
                     if (victim) {
@@ -1997,20 +1918,85 @@
         }
 
         /**
-         * ✅ ปิด reconnect (ไม่ใช้ multiplayer แล้ว)
+         * พยายามเชื่อมต่อใหม่
          */
         async function attemptReconnect() {
-            // ไม่ทำอะไร - เล่นแบบ offline อย่างเดียว
-            console.log('[Connection] OFFLINE MODE - ไม่มี reconnection');
-            return false;
+            if (!gameStarted || gameOver) {
+                return;
+            }
+
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                console.warn('[Connection] หมดจำนวนครั้งที่จะ reconnect แล้ว');
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                return;
+            }
+
+            reconnectAttempts++;
+            console.log(`[Connection] พยายาม reconnect ครั้งที่ ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
+
+            updateConnectionStatus('offline', '⚡ RECONNECTING...');
+
+            try {
+                // ปิด connection เดิม
+                if (multiplayerManager) {
+                    multiplayerManager.disconnectWebSocket();
+                }
+
+                // สร้างใหม่
+                multiplayerManager = new SnakeMultiplayerManager();
+
+                // ตั้ง timeout 3 วินาที
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Reconnect timeout')), 3000)
+                );
+
+                const joinResult = await Promise.race([
+                    multiplayerManager.joinGame(playerName, selectedSkin),
+                    timeoutPromise
+                ]);
+
+                console.log('[Connection] Reconnect สำเร็จ! Room:', joinResult.room_code);
+
+                // รีเซ็ตจำนวนครั้งที่ลอง
+                reconnectAttempts = 0;
+
+                // อัปเดตสถานะ
+                updateConnectionStatus('online', '🌐 ONLINE MODE');
+
+                return true;
+            } catch (error) {
+                console.error('[Connection] Reconnect ล้มเหลว:', error.message);
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                return false;
+            }
         }
 
         /**
-         * ✅ ปิด connection monitoring (ไม่ใช้ multiplayer แล้ว)
+         * เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
          */
         function startConnectionMonitoring() {
-            // ไม่ทำอะไร - เล่นแบบ offline อย่างเดียว
-            console.log('[Connection] OFFLINE MODE - ไม่มี connection monitoring');
+            // หยุด monitor เดิม (ถ้ามี)
+            stopConnectionMonitoring();
+
+            console.log('[Connection] เริ่มตรวจสอบการเชื่อมต่อทุก', CONNECTION_CHECK_INTERVAL / 1000, 'วินาที');
+
+            connectionMonitorInterval = setInterval(async () => {
+                if (!gameStarted || gameOver) {
+                    return;
+                }
+
+                // เช็คว่ายังเชื่อมต่ออยู่หรือไม่
+                const connected = await checkConnection();
+
+                if (connected && !isOnline) {
+                    // เพิ่งกลับมา online
+                    updateConnectionStatus('online', '🌐 ONLINE MODE');
+                } else if (!connected && isOnline) {
+                    // เพิ่งหลุด offline - พยายาม reconnect
+                    console.log('[Connection] หลุดการเชื่อมต่อ กำลัง reconnect...');
+                    await attemptReconnect();
+                }
+            }, CONNECTION_CHECK_INTERVAL);
         }
 
         /**
@@ -2034,12 +2020,35 @@
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
             try {
-                // ✅ เล่นแบบ OFFLINE เท่านั้น (ปิด multiplayer เพื่อป้องกันเกมค้าง)
-                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
-                multiplayerManager = null;
-                isOnline = false;
+                // แสดงสถานะกำลังเชื่อมต่อ
+                updateConnectionStatus('offline', 'CONNECTING...');
 
-                console.log('[Game] โหมด OFFLINE - เล่นกับบอทเท่านั้น');
+                // พยายามเชื่อมต่อ multiplayer (แต่ไม่บังคับ)
+                try {
+                    console.log('[Multiplayer] กำลังเชื่อมต่อ...');
+                    multiplayerManager = new SnakeMultiplayerManager();
+
+                    // ตั้ง timeout 3 วินาที
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Connection timeout')), 3000)
+                    );
+
+                    const joinResult = await Promise.race([
+                        multiplayerManager.joinGame(playerName, selectedSkin),
+                        timeoutPromise
+                    ]);
+
+                    console.log('[Multiplayer] เข้าร่วมห้อง:', joinResult.room_code);
+
+                    // เชื่อมต่อสำเร็จ!
+                    updateConnectionStatus('online', '🌐 ONLINE MODE');
+                } catch (multiplayerError) {
+                    console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ เล่นแบบ offline:', multiplayerError.message);
+                    multiplayerManager = null; // ปิดการใช้งาน multiplayer
+
+                    // เล่นแบบ offline
+                    updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                }
 
                 // Create player
                 player = new Snake(0, 0, true, playerName, selectedSkin);
@@ -2094,8 +2103,8 @@
                 gameStarted = true;
                 document.getElementById('start-screen').classList.add('hidden');
 
-                // ✅ ไม่ใช้ connection monitoring (เล่นแบบ offline อย่างเดียว)
-                // startConnectionMonitoring(); // ปิดการใช้งาน
+                // เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
+                startConnectionMonitoring();
 
                 console.log('✅ Game started successfully!');
             } catch (error) {
@@ -2222,7 +2231,7 @@
 
             try {
                 // บันทึกคะแนนและหัก wallet
-                const response = await fetch('/api/games/snake-io/save-score', {
+                const response = await fetch('/games/snake-io/save-progress', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2342,57 +2351,22 @@
                     if (data.success && data.skin) {
                         selectedSkin = data.skin;
 
-                        // ✅ ตรวจสอบว่าเป็น custom colors (มี hex code) หรือ preset skin
-                        if (data.skin.includes('#')) {
-                            // Custom colors - แยกสีและนำไปใส่ใน color inputs
-                            const colors = data.skin.split(',');
+                        // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
+                        document.querySelectorAll('.skin-option').forEach(option => {
+                            option.classList.remove('selected');
+                            if (option.dataset.skin === data.skin) {
+                                option.classList.add('selected');
+                            }
+                        });
 
-                            // ใส่สีใน color inputs
-                            if (colors[0]) document.getElementById('color1').value = colors[0];
-                            if (colors[1]) document.getElementById('color2').value = colors[1];
-                            if (colors[2]) document.getElementById('color3').value = colors[2];
-
-                            // อัพเดต customColors และ SKINS.custom
-                            customColors = [
-                                parseInt(colors[0]?.replace('#', '0x') || '0x00ff00'),
-                                parseInt(colors[1]?.replace('#', '0x') || '0x00aa00'),
-                                parseInt(colors[2]?.replace('#', '0x') || '0x00dd00')
-                            ];
-                            SKINS.custom.colors = customColors;
-                            SKINS.custom.primary = customColors[0];
-                            SKINS.custom.secondary = customColors[1];
-
-                            // เลือก custom skin option
-                            document.querySelectorAll('.skin-option').forEach(option => {
-                                option.classList.remove('selected');
-                                if (option.dataset.skin === 'custom') {
-                                    option.classList.add('selected');
-                                }
-                            });
-                            selectedSkin = 'custom';
-
-                            statusEl.textContent = '✅ โหลดสี Custom สำเร็จ!';
-                            statusEl.style.color = '#00ff00';
-
-                            console.log('[Skin] โหลดสี custom:', colors);
-                        } else {
-                            // Preset skin (classic, fire, ice, gold, rainbow)
-                            document.querySelectorAll('.skin-option').forEach(option => {
-                                option.classList.remove('selected');
-                                if (option.dataset.skin === data.skin) {
-                                    option.classList.add('selected');
-                                }
-                            });
-
-                            statusEl.textContent = '✅ โหลดสีสำเร็จ: ' + data.skin;
-                            statusEl.style.color = '#00ff00';
-
-                            console.log('[Skin] โหลดสี preset:', data.skin);
-                        }
+                        statusEl.textContent = '✅ โหลดสีสำเร็จ: ' + data.skin;
+                        statusEl.style.color = '#00ff00';
 
                         setTimeout(() => {
                             statusEl.textContent = '';
                         }, 3000);
+
+                        console.log('[Skin] โหลดสี skin ที่บันทึกไว้:', data.skin);
                     } else {
                         throw new Error('ไม่พบสีที่บันทึกไว้');
                     }
@@ -2665,20 +2639,17 @@
                     // ไม่มีเป้าหมายตัดหน้า - หยุด boost
                     bot.isBoosting = false;
 
-                    // ✅ พฤติกรรม 2: หาอาหารใกล้ที่สุด (Optimized - เช็คแค่ 30 อันแรกแทนที่จะทั้งหมด)
+                    // ✅ พฤติกรรม 2: หาอาหารใกล้ที่สุด
                     let nearestFood = null;
                     let nearestDistance = Infinity;
 
-                    // ✅ เช็คแค่ 30 อาหารแรก แทนที่จะ 100 ทั้งหมด (ลด CPU ลง 70%!)
-                    const foodSampleSize = Math.min(30, foods.length);
-                    for (let i = 0; i < foodSampleSize; i++) {
-                        const food = foods[i];
+                    foods.forEach(food => {
                         const distance = head.distanceTo(food.position);
                         if (distance < nearestDistance) {
                             nearestDistance = distance;
                             nearestFood = food;
                         }
-                    }
+                    });
 
                     if (nearestFood) {
                         targetDirection = new THREE.Vector3()
@@ -2717,10 +2688,10 @@
                         // ✅ บอทกินอาหาร - ใช้ระบบเดียวกับผู้เล่น (ต้องกิน 10, 15, 20... คะแนนต่อปล้อง)
                         bot.score += foodValue;
 
-                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง - เพิ่มเข้าคิว (ไม่เติบโตทันที)
+                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
                         while (bot.score >= bot.nextGrowthScore) {
-                            bot.pendingGrowth++; // เพิ่มคิวการเติบโต (จะค่อยๆ โตทีละเม็ดใน update())
-                            bot.nextGrowthScore = bot.calculateNextGrowthScore();
+                            bot.grow(1); // เติบโต 1 ปล้อง
+                            bot.nextGrowthScore = bot.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
                         }
 
                         scene.remove(food);
@@ -2741,9 +2712,22 @@
                 powerup.position.y = 0.8 + Math.sin(Date.now() * 0.003) * 0.2;
             });
 
-            // ✅ ปิด multiplayer ทั้งหมด (เพื่อป้องกันเกมค้าง)
-            // Multiplayer ถูกปิดการใช้งาน - เล่นแบบ offline กับบอทเท่านั้น
-            const currentTime = Date.now();
+            // Sync state กับ server (ทุก 5 frames ~200ms)
+            if (multiplayerManager && player && player.alive && Date.now() % 5 === 0) {
+                multiplayerManager.updatePlayerState(
+                    player.segments[0].position,
+                    player.direction,
+                    player.score,
+                    player.length
+                );
+            }
+
+            // Render ผู้เล่นคนอื่น (เฉพาะเมื่อ online)
+            if (multiplayerManager && isOnline) {
+                renderOtherPlayers();
+                // ปิดการ render server items เพราะทำให้อาหารปลิว
+                // renderServerItems();
+            }
 
             if (player && player.alive) {
                 // Apply speed boost
@@ -2804,14 +2788,11 @@
                         player.score += foodValue * multiplier;
                         score = player.score; // อัปเดต global score
 
-                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง - เพิ่มเข้าคิว (ไม่เติบโตทันที)
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง (ระบบแปรผัน: ต้องกิน 10, 15, 20, 25...)
                         while (player.score >= player.nextGrowthScore) {
-                            player.pendingGrowth++; // เพิ่มคิวการเติบโต (จะค่อยๆ โตทีละเม็ดใน update())
-                            player.nextGrowthScore = player.calculateNextGrowthScore();
+                            player.grow(1); // เติบโต 1 ปล้อง
+                            player.nextGrowthScore = player.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
                         }
-
-                        // ✅ เล่นเสียงกิน (แยกจากเสียงโต ซึ่งจะเล่นตอนเติบโตจริง)
-                        playSound('eat');
 
                         scene.remove(food);
                         foods.splice(i, 1);
@@ -2832,8 +2813,8 @@
 
                 // ✅ ปรับระยะกล้องตามขนาดหนอน (ให้เห็นใกล้หนอน)
                 const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 15
-                const lengthMultiplier = 0.1; // ✅ ทุกๆ 1 ความยาว กล้องออก 0.1 (ช้ามาก - ปรับลดจาก 0.2)
-                const maxCameraDistance = 17; // ✅ จำกัดระยะสูงสุดที่ 17 (ใกล้มากขึ้น - ปรับลดจาก 20)
+                const lengthMultiplier = 0.2; // ทุกๆ 1 ความยาว กล้องออก 0.2 (ช้าลง)
+                const maxCameraDistance = 20; // ✅ จำกัดระยะสูงสุดตอนปกติที่ 20 (15 + 5 ตามที่ผู้ใช้ต้องการ)
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -2860,17 +2841,10 @@
 
             updateBots();
 
-            // ✅ Throttle collision checks - ทุก 50ms แทนที่จะทุก frame (ลด CPU ลง 66%!)
-            if (currentTime - lastCollisionCheck >= COLLISION_CHECK_INTERVAL) {
-                checkAllSnakeCollisions();
-                lastCollisionCheck = currentTime;
-            }
+            // Check all snake-to-snake collisions
+            checkAllSnakeCollisions();
 
-            // ✅ Throttle leaderboard updates - ทุก 500ms (ลด DOM manipulation)
-            if (currentTime - lastLeaderboardUpdate >= LEADERBOARD_UPDATE_INTERVAL) {
-                updateLeaderboard();
-                lastLeaderboardUpdate = currentTime;
-            }
+            updateLeaderboard();
 
             // Update powerup UI timers
             if (Object.values(activePowerups).some(p => p !== null)) {
@@ -2878,9 +2852,10 @@
             }
 
             // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB)
-            const rgbHue = (currentTime * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
+            const rgbHue = (Date.now() * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
+            const currentTime = Date.now();
 
-            // ✅ ตรวจสอบและลบอาหารที่หมดอายุ (30 วินาที) - ใช้ currentTime จาก line ก่อนหน้า
+            // ✅ ตรวจสอบและลบอาหารที่หมดอายุ (30 วินาที)
             foods = foods.filter(food => {
                 // อาหารจากการตาย - ตรวจสอบหมดอายุ
                 if (food.userData.expiresAt && currentTime >= food.userData.expiresAt) {
@@ -2915,7 +2890,6 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            // ✅ requestAnimationFrame มี built-in 60 FPS อยู่แล้ว ไม่ต้อง limit เอง!
             update();
             renderer.render(scene, camera);
         }
