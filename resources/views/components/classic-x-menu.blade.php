@@ -135,10 +135,10 @@
                 'url' => '#',
                 'badge' => 'NEW',
                 'submenu' => [
-                    ['label' => 'Token ทั้งหมด', 'url' => safeRoute('admin.tokens.index'), 'route' => 'admin.tokens.index'],
-                    ['label' => 'Approve/Reject', 'url' => safeRoute('admin.tokens.index'), 'route' => 'admin.tokens.index'],
-                    ['label' => 'Verification', 'url' => safeRoute('admin.tokens.index'), 'route' => 'admin.tokens.index'],
-                    ['label' => 'Import from CMC', 'url' => safeRoute('admin.tokens.import-cmc'), 'route' => 'admin.tokens.import-cmc'],
+                    ['label' => '💎 Token ทั้งหมด', 'url' => safeRoute('admin.tokens.index'), 'route' => 'admin.tokens.index'],
+                    ['label' => '⏳ รออนุมัติ', 'url' => safeRoute('admin.tokens.index') . '?status=draft', 'route' => 'admin.tokens.index'],
+                    ['label' => '✅ Verified Tokens', 'url' => safeRoute('admin.tokens.index') . '?verified=1', 'route' => 'admin.tokens.index'],
+                    ['label' => '🔗 Import from CMC', 'url' => safeRoute('admin.tokens.import-cmc'), 'route' => 'admin.tokens.import-cmc'],
                 ]
             ],
             [
