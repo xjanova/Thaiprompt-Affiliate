@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.216.3] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1094 from xjanova/claude/fix-missing-import-cmc-route-01N6giM464uC9FSapzKmgkBy (1c937d2c)
+- fix: update token route names from admin.crypto.tokens to admin.tokens (f6b7f4f1)
+### 🔧 Other Changes
+
+
 ## [v2.216.2] - 2025-11-14
 
 ### ✨ Features
