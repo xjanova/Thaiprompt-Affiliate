@@ -934,7 +934,12 @@
                         opacity: this.isPlayer ? 0.98 : 1.0,
                     });
 
-                    // เพิ่ม outline สำหรับผู้เล่น (ไฮไลท์)
+                    // สร้าง segment ก่อน
+                    const segment = new THREE.Mesh(geometry, material);
+                    segment.position.set(x - i, 0.5, z);
+                    segment.castShadow = true;
+
+                    // เพิ่ม outline สำหรับผู้เล่น (ไฮไลท์) - หลังจากสร้าง segment แล้ว
                     if (this.isPlayer && i === 0) {
                         // สร้าง outline effect
                         const outlineGeometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE * 1.15, 8, 8);
@@ -948,10 +953,6 @@
                         this.outline.position.copy(segment.position);
                         scene.add(this.outline);
                     }
-
-                    const segment = new THREE.Mesh(geometry, material);
-                    segment.position.set(x - i, 0.5, z);
-                    segment.castShadow = true;
 
                     this.segments.push(segment);
                     this.segmentPositions.push(segment.position.clone());
