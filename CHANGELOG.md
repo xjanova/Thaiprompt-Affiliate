@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.224.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1114 from xjanova/claude/fix-package-not-found-01Xi56QTzChB2ZWmMwTcw3n6 (49bb6648)
+- fix: resolve wallet topup package not found error (8e2ebf49)
+### 🔧 Other Changes
+
+
 ## [v2.224.0] - 2025-11-14
 
 ### ✨ Features
