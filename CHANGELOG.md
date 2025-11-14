@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.211.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1079 from xjanova/claude/fix-missing-liquidity-table-01VednZVhFCgDd5fbsae2JEP (64c7e267)
+- fix: add explicit table names to TPIX liquidity models (33c33785)
+### 🔧 Other Changes
+
+
 ## [v2.211.1] - 2025-11-14
 
 ### ✨ Features
