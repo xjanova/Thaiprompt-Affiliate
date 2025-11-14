@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.222.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1108 from xjanova/claude/fix-crypto-address-user-id-01KH7xmz8Abo6DU2aBnfbuR1 (32338e72)
+- fix: correct CryptoAddress column names and add address_type field (3f2bff67)
+### 🔧 Other Changes
+
+
 ## [v2.222.1] - 2025-11-14
 
 ### ✨ Features
