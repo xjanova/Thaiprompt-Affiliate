@@ -1466,7 +1466,7 @@ Route::prefix('tpix')->name('tpix.')->group(function () {
 
     // Settings
     Route::get('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'settings'])->name('settings');
-    Route::post('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'updateSettings'])->name('settings.update');
+    Route::put('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'updateSettings'])->name('update-settings');
 
     // API endpoint for checking blockchain connection
     Route::get('/check-connection', [\App\Http\Controllers\Admin\TPIXController::class, 'checkConnection'])->name('check-connection');
