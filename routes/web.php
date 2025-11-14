@@ -267,7 +267,8 @@ Route::prefix('shop')->name('shop.')->group(function () {
 });
 
 // Vendor Store Routes (Public browsing of individual vendor stores)
-Route::prefix('store')->name('vendor.store.')->group(function () {
+Route::prefix('stores')->name('vendor.stores.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\VendorStoreController::class, 'index'])->name('index');
     Route::get('/{slug}', [\App\Http\Controllers\VendorStoreController::class, 'show'])->name('show');
 });
 

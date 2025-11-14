@@ -282,7 +282,7 @@ class VendorStore extends Model
             return 'https://' . $this->store_domain;
         }
 
-        return route('vendor.store.show', $this->store_slug);
+        return route('vendor.stores.show', $this->store_slug);
     }
 
     /**
