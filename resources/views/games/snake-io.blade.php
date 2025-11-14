@@ -1626,6 +1626,12 @@
             food.userData.value = fromDeath ? 2 : 1;
             food.userData.isRGB = fromDeath; // ✅ Flag สำหรับ animate RGB
 
+            // ✅ เพิ่มเวลาสร้างและหมดอายุ (อาหารจากตายหายใน 30 วินาที)
+            if (fromDeath) {
+                food.userData.createdAt = Date.now();
+                food.userData.expiresAt = Date.now() + 30000; // 30 วินาที
+            }
+
             scene.add(food);
             foods.push(food);
         }
@@ -2437,9 +2443,14 @@
                     if (head.distanceTo(food.position) < 1) {
                         const foodValue = food.userData.value || 1;
 
-                        // บอทกินอาหาร - บวกคะแนน
-                        bot.grow(foodValue);
+                        // ✅ บอทกินอาหาร - ใช้ระบบเดียวกับผู้เล่น (ต้องกิน 10, 15, 20... คะแนนต่อปล้อง)
                         bot.score += foodValue;
+
+                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
+                        while (bot.score >= bot.nextGrowthScore) {
+                            bot.grow(1); // เติบโต 1 ปล้อง
+                            bot.nextGrowthScore = bot.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
+                        }
 
                         scene.remove(food);
                         foods.splice(i, 1);
@@ -2561,7 +2572,7 @@
                 // ✅ ปรับระยะกล้องตามขนาดหนอน (ให้เห็นใกล้หนอน)
                 const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 15
                 const lengthMultiplier = 0.2; // ทุกๆ 1 ความยาว กล้องออก 0.2 (ช้าลง)
-                const maxCameraDistance = 25; // จำกัดระยะสูงสุดตอนปกติที่ 25 (ใกล้มาก)
+                const maxCameraDistance = 20; // ✅ จำกัดระยะสูงสุดตอนปกติที่ 20 (15 + 5 ตามที่ผู้ใช้ต้องการ)
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -2600,11 +2611,23 @@
 
             // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB)
             const rgbHue = (Date.now() * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
-            foods.forEach(food => {
+            const currentTime = Date.now();
+
+            // ✅ ตรวจสอบและลบอาหารที่หมดอายุ (30 วินาที)
+            foods = foods.filter(food => {
+                // อาหารจากการตาย - ตรวจสอบหมดอายุ
+                if (food.userData.expiresAt && currentTime >= food.userData.expiresAt) {
+                    scene.remove(food);
+                    return false; // ลบออกจาก array
+                }
+
+                // Animate RGB
                 if (food.userData.isRGB) {
                     food.material.color.setHSL(rgbHue, 1, 0.6);
                     food.material.emissive.setHSL(rgbHue, 1, 0.6);
                 }
+
+                return true; // เก็บไว้
             });
 
             // Maintain food count
