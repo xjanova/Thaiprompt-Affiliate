@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.210.5] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1076 from xjanova/claude/token-manager-tpix-menu-014Biuqw3FEzbVKEGtsLefxG (be4b7e20)
+- chore: เพิ่มสคริปต์ clear-cache-manual.sh (8961a440)
+
 ## [v2.210.4] - 2025-11-14
 
 ### ✨ Features
