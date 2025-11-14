@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.226.0] - 2025-11-14
+
+### ✨ Features
+- feat: ปรับปรุง UI หน้า My Positions ให้ทันสมัย (3f842216)
+- feat: ปรับปรุง UI หน้า Add Liquidity ให้ทันสมัย (ee674a0b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1116 from xjanova/claude/fix-dex-pools-ui-01JcgQyvKNDnKS527NxoQRhy (853392a3)
+
 ## [v2.225.0] - 2025-11-14
 
 ### ✨ Features
