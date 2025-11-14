@@ -73,7 +73,7 @@ class TPIXWalletController extends Controller
 
         // Recent transactions
         $recentTransactions = CryptoTransaction::where('user_id', $user->id)
-            ->where('currency_id', $tpixCurrency->id)
+            ->where('crypto_currency_id', $tpixCurrency->id)
             ->orderBy('created_at', 'desc')
             ->limit(10)
             ->get();
@@ -81,25 +81,25 @@ class TPIXWalletController extends Controller
         // Statistics
         $stats = [
             'total_received' => CryptoTransaction::where('user_id', $user->id)
-                ->where('currency_id', $tpixCurrency->id)
+                ->where('crypto_currency_id', $tpixCurrency->id)
                 ->where('type', 'deposit')
                 ->where('status', 'confirmed')
                 ->sum('amount'),
 
             'total_sent' => CryptoTransaction::where('user_id', $user->id)
-                ->where('currency_id', $tpixCurrency->id)
+                ->where('crypto_currency_id', $tpixCurrency->id)
                 ->where('type', 'withdrawal')
                 ->where('status', 'confirmed')
                 ->sum('amount'),
 
             'pending_deposits' => CryptoTransaction::where('user_id', $user->id)
-                ->where('currency_id', $tpixCurrency->id)
+                ->where('crypto_currency_id', $tpixCurrency->id)
                 ->where('type', 'deposit')
                 ->where('status', 'pending')
                 ->count(),
 
             'pending_withdrawals' => CryptoTransaction::where('user_id', $user->id)
-                ->where('currency_id', $tpixCurrency->id)
+                ->where('crypto_currency_id', $tpixCurrency->id)
                 ->where('type', 'withdrawal')
                 ->where('status', 'pending')
                 ->count(),
@@ -155,7 +155,7 @@ class TPIXWalletController extends Controller
 
         // Recent deposits
         $recentDeposits = CryptoTransaction::where('user_id', $user->id)
-            ->where('currency_id', $tpixCurrency->id)
+            ->where('crypto_currency_id', $tpixCurrency->id)
             ->where('type', 'deposit')
             ->orderBy('created_at', 'desc')
             ->limit(10)
@@ -194,7 +194,7 @@ class TPIXWalletController extends Controller
 
         // Recent withdrawals
         $recentWithdrawals = CryptoTransaction::where('user_id', $user->id)
-            ->where('currency_id', $tpixCurrency->id)
+            ->where('crypto_currency_id', $tpixCurrency->id)
             ->where('type', 'withdrawal')
             ->orderBy('created_at', 'desc')
             ->limit(10)
@@ -265,7 +265,7 @@ class TPIXWalletController extends Controller
             // Create transaction
             $transaction = CryptoTransaction::create([
                 'user_id' => $user->id,
-                'currency_id' => $tpixCurrency->id,
+                'crypto_currency_id' => $tpixCurrency->id,
                 'crypto_wallet_id' => $wallet->id,
                 'type' => 'withdrawal',
                 'amount' => $amount,
@@ -308,7 +308,7 @@ class TPIXWalletController extends Controller
         }
 
         $query = CryptoTransaction::where('user_id', $user->id)
-            ->where('currency_id', $tpixCurrency->id);
+            ->where('crypto_currency_id', $tpixCurrency->id);
 
         // Type filter
         if ($request->filled('type')) {
