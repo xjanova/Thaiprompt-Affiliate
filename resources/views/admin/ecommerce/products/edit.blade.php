@@ -1,182 +1,331 @@
+{{--
+  * หน้าแก้ไขสินค้า (Product Edit)
+  * ฟอร์มสำหรับแก้ไขข้อมูลสินค้า
+  * รองรับ Dark Mode และ Responsive Design
+  --}}
+
 @extends('layouts.admin')
 
 @section('title', 'แก้ไขสินค้า: ' . $product->name)
 
 @section('content')
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div>
-            <a href="{{ route('admin.ecommerce.products.index') }}" class="text-orange-600 hover:text-orange-800 text-sm mb-2 inline-block">
-                ← กลับไปรายการสินค้า
-            </a>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">แก้ไขสินค้า</h1>
-        </div>
-    </div>
-
+    {{-- Alert Messages --}}
     @if(session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative">
-            {{ session('success') }}
+        <div x-data="{ show: true }" x-show="show" x-transition class="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-l-4 border-green-500 dark:border-green-400 rounded-lg shadow-lg p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-green-800 dark:text-green-200 font-medium">{{ session('success') }}</span>
+                </div>
+                <button @click="show = false" class="text-green-500 dark:text-green-400 hover:text-green-700 dark:hover:text-green-300 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-            {{ session('error') }}
+        <div x-data="{ show: true }" x-show="show" x-transition class="bg-gradient-to-r from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-800/20 border-l-4 border-red-500 dark:border-red-400 rounded-lg shadow-lg p-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-red-800 dark:text-red-200 font-medium">{{ session('error') }}</span>
+                </div>
+                <button @click="show = false" class="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     @endif
 
-    <!-- Form -->
-    <form action="{{ route('admin.ecommerce.products.update', $product) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
+    {{-- Header Section --}}
+    <div class="relative overflow-hidden bg-gradient-to-br from-orange-500 to-pink-600 dark:from-orange-600 dark:to-pink-700 rounded-2xl shadow-2xl p-8">
+        {{-- Background Pattern --}}
+        <div class="absolute inset-0 bg-black/10 dark:bg-black/20" style="background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.15) 1px, transparent 0); background-size: 40px 40px;"></div>
+
+        <div class="relative">
+            <a href="{{ route('admin.ecommerce.products.index') }}" class="inline-flex items-center gap-2 text-white/90 hover:text-white text-sm mb-3 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                กลับไปรายการสินค้า
+            </a>
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 dark:bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </div>
+                <div class="text-white">
+                    <h1 class="text-3xl md:text-4xl font-bold mb-1">แก้ไขสินค้า</h1>
+                    <p class="text-white/90 text-sm md:text-base">{{ $product->name }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Form --}}
+    <form action="{{ route('admin.ecommerce.products.update', $product) }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Main Content -->
+            {{-- Main Content --}}
             <div class="lg:col-span-2 space-y-6">
-                <!-- Basic Information -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">ข้อมูลพื้นฐาน</h2>
+                {{-- Basic Information --}}
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">ข้อมูลพื้นฐาน</h3>
+                        </div>
+                    </div>
 
-                    <div class="space-y-4">
+                    <div class="p-6 space-y-5">
+                        {{-- ชื่อสินค้า --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                ชื่อสินค้า <span class="text-red-600">*</span>
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                </svg>
+                                ชื่อสินค้า <span class="text-red-500">*</span>
                             </label>
-                            <input type="text" name="name" value="{{ old('name', $product->name) }}" required
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                            <input type="text" name="name" value="{{ old('name', $product->name) }}" required placeholder="กรอกชื่อสินค้า..." class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 transition-all">
                             @error('name')
-                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-500 dark:text-red-400 text-sm mt-1 flex items-center gap-1">
+                                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                    {{ $message }}
+                                </p>
                             @enderror
                         </div>
 
+                        {{-- SKU --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                คำอธิบายสั้น
-                            </label>
-                            <textarea name="short_description" rows="2"
-                                      class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">{{ old('short_description', $product->short_description) }}</textarea>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                คำอธิบายสินค้า
-                            </label>
-                            <textarea name="description" rows="6"
-                                      class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">{{ old('description', $product->description) }}</textarea>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pricing -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">ราคา</h2>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                ราคาขาย <span class="text-red-600">*</span>
-                            </label>
-                            <input type="number" name="price" value="{{ old('price', $product->price) }}" step="0.01" min="0" required
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                ราคาเปรียบเทียบ
-                            </label>
-                            <input type="number" name="compare_at_price" value="{{ old('compare_at_price', $product->compare_at_price) }}" step="0.01" min="0"
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                ราคาทุน
-                            </label>
-                            <input type="number" name="cost_price" value="{{ old('cost_price', $product->cost_price) }}" step="0.01" min="0"
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Inventory -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">สต็อก</h2>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/>
+                                </svg>
                                 SKU
                             </label>
-                            <input type="text" name="sku" value="{{ old('sku', $product->sku) }}"
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                            <input type="text" name="sku" value="{{ old('sku', $product->sku) }}" placeholder="รหัสสินค้า" class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 transition-all font-mono">
+                            @error('sku')
+                                <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ $message }}</p>
+                            @enderror
                         </div>
 
+                        {{-- คำอธิบายสั้น --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                จำนวนสต็อก <span class="text-red-600">*</span>
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"/>
+                                </svg>
+                                คำอธิบายสั้น
                             </label>
-                            <input type="number" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity) }}" min="0" required
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                            <textarea name="short_description" rows="2" placeholder="คำอธิบายสินค้าแบบย่อ..." class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 transition-all resize-none">{{ old('short_description', $product->short_description) }}</textarea>
+                        </div>
+
+                        {{-- คำอธิบายสินค้า --}}
+                        <div>
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/>
+                                </svg>
+                                คำอธิบายสินค้า
+                            </label>
+                            <textarea name="description" rows="6" placeholder="รายละเอียดสินค้าแบบครบถ้วน..." class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900/30 transition-all resize-none">{{ old('description', $product->description) }}</textarea>
                         </div>
                     </div>
                 </div>
 
-                <!-- Images -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">รูปภาพสินค้า</h2>
+                {{-- Pricing --}}
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">ราคา</h3>
+                        </div>
+                    </div>
 
-                    <div class="space-y-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                                รูปหลัก
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {{-- ราคาขาย --}}
+                            <div>
+                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    ราคาขาย <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                    <input type="number" name="price" value="{{ old('price', $product->price) }}" step="0.01" min="0" required placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-900/30 transition-all">
+                                </div>
+                                @error('price')
+                                    <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            {{-- ราคาเปรียบเทียบ --}}
+                            <div>
+                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                                    </svg>
+                                    ราคาเปรียบเทียบ
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                    <input type="number" name="compare_at_price" value="{{ old('compare_at_price', $product->compare_at_price) }}" step="0.01" min="0" placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-900/30 transition-all">
+                                </div>
+                            </div>
+
+                            {{-- ราคาทุน --}}
+                            <div>
+                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                    </svg>
+                                    ราคาทุน
+                                </label>
+                                <div class="relative">
+                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">฿</span>
+                                    <input type="number" name="cost_price" value="{{ old('cost_price', $product->cost_price) }}" step="0.01" min="0" placeholder="0.00" class="w-full pl-10 pr-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-green-500 dark:focus:border-green-400 focus:ring-2 focus:ring-green-200 dark:focus:ring-green-900/30 transition-all">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Inventory --}}
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-orange-500 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">สต็อกและคลังสินค้า</h3>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {{-- จำนวนสต็อก --}}
+                            <div>
+                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                                    </svg>
+                                    จำนวนสต็อก <span class="text-red-500">*</span>
+                                </label>
+                                <input type="number" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity) }}" min="0" required placeholder="0" class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/30 transition-all">
+                            </div>
+
+                            {{-- น้ำหนัก --}}
+                            <div>
+                                <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/>
+                                    </svg>
+                                    น้ำหนัก (กรัม)
+                                </label>
+                                <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" step="0.01" min="0" placeholder="0" class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring-2 focus:ring-orange-200 dark:focus:ring-orange-900/30 transition-all">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Images --}}
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">รูปภาพสินค้า</h3>
+                        </div>
+                    </div>
+
+                    <div class="p-6 space-y-4">
+                        {{-- รูปหลัก --}}
+                        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-2 border-dashed border-blue-200 dark:border-blue-800">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 cursor-pointer">
+                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                รูปภาพหลัก
                             </label>
-                            <x-image-upload
-                                name="main_image"
-                                :multiple="false"
-                                :maxFiles="1"
-                                :maxSize="5"
-                                :existingImages="$product->main_image_url ? [[
-                                    'url' => Storage::url($product->main_image_url),
-                                    'name' => 'รูปหลัก'
-                                ]] : []"
-                            />
+                            <input type="file" name="main_image" accept="image/*" class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-blue-900/30 dark:file:text-blue-400 transition-all">
+                            <p class="text-xs text-blue-600 dark:text-blue-400 mt-2 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                                รองรับ JPG, PNG, GIF, WebP (ขนาดไม่เกิน 5MB)
+                            </p>
+                            @if($product->main_image_url ?? $product->primary_image)
+                                <div class="mt-3">
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">รูปภาพปัจจุบัน:</p>
+                                    <img src="{{ $product->primary_image ?? Storage::url($product->main_image_url) }}" alt="Current image" class="w-32 h-32 object-cover rounded-lg ring-2 ring-blue-200 dark:ring-blue-800">
+                                </div>
+                            @endif
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                                รูปเพิ่มเติม (Gallery)
+                        {{-- รูปเพิ่มเติม --}}
+                        <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-dashed border-purple-200 dark:border-purple-800">
+                            <label class="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 cursor-pointer">
+                                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                รูปภาพเพิ่มเติม (สูงสุด 10 ภาพ)
                             </label>
-                            <x-image-upload
-                                name="images"
-                                :multiple="true"
-                                :maxFiles="10"
-                                :maxSize="5"
-                                :existingImages="$product->images->map(function($img) {
-                                    return [
-                                        'id' => $img->id,
-                                        'url' => Storage::url($img->image_url),
-                                        'name' => 'Gallery Image'
-                                    ];
-                                })->toArray()"
-                            />
+                            <input type="file" name="images[]" accept="image/*" multiple class="w-full text-sm text-gray-600 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100 dark:file:bg-purple-900/30 dark:file:text-purple-400 transition-all">
+                            <p class="text-xs text-purple-600 dark:text-purple-400 mt-2 flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+                                สามารถเลือกหลายไฟล์พร้อมกันได้
+                            </p>
+                            @if($product->images && $product->images->count() > 0)
+                                <div class="mt-3">
+                                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">รูปภาพเพิ่มเติมปัจจุบัน:</p>
+                                    <div class="grid grid-cols-4 gap-2">
+                                        @foreach($product->images->take(8) as $image)
+                                            <img src="{{ Storage::url($image->image_url) }}" alt="Gallery image" class="w-full h-20 object-cover rounded-lg ring-2 ring-purple-200 dark:ring-purple-800">
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Sidebar -->
+            {{-- Sidebar --}}
             <div class="space-y-6">
-                <!-- Category -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">หมวดหมู่</h2>
+                {{-- Category --}}
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">หมวดหมู่</h3>
+                        </div>
+                    </div>
 
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            เลือกหมวดหมู่ <span class="text-red-600">*</span>
+                    <div class="p-6">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            เลือกหมวดหมู่ <span class="text-red-500">*</span>
                         </label>
-                        <select name="category_id" required
-                                class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                        <select name="category_id" required class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/30 transition-all">
                             <option value="">-- เลือกหมวดหมู่ --</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>
@@ -184,72 +333,93 @@
                                 </option>
                             @endforeach
                         </select>
+                        @error('category_id')
+                            <p class="text-red-500 dark:text-red-400 text-sm mt-1">{{ $message }}</p>
+                        @enderror
                     </div>
                 </div>
 
-                <!-- Product Details -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
-                    <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">รายละเอียดเพิ่มเติม</h2>
+                {{-- Additional Details --}}
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-pink-500 dark:text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">รายละเอียดเพิ่มเติม</h3>
+                        </div>
+                    </div>
 
-                    <div class="space-y-4">
+                    <div class="p-6 space-y-4">
+                        {{-- แบรนด์ --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                 แบรนด์
                             </label>
-                            <input type="text" name="brand" value="{{ old('brand', $product->brand) }}"
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                            <input type="text" name="brand" value="{{ old('brand', $product->brand) }}" placeholder="ชื่อแบรนด์" class="w-full px-4 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-pink-500 dark:focus:border-pink-400 focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-900/30 transition-all">
                         </div>
 
+                        {{-- คอมมิชชั่น --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                น้ำหนัก (กรัม)
-                            </label>
-                            <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" step="0.01" min="0"
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                 % คอมมิชชั่น
                             </label>
-                            <input type="number" name="commission_rate" value="{{ old('commission_rate', $product->commission_rate) }}" step="0.01" min="0" max="100"
-                                   class="w-full border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white rounded-lg">
+                            <div class="relative">
+                                <input type="number" name="commission_rate" value="{{ old('commission_rate', $product->commission_rate) }}" step="0.01" min="0" max="100" placeholder="15" class="w-full pl-4 pr-10 py-2.5 rounded-lg border-2 border-gray-300 dark:border-gray-600 dark:bg-slate-700 dark:text-white focus:border-pink-500 dark:focus:border-pink-400 focus:ring-2 focus:ring-pink-200 dark:focus:ring-pink-900/30 transition-all">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-semibold">%</span>
+                            </div>
                         </div>
 
-                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <label class="flex items-center mb-2">
-                                <input type="checkbox" name="is_active" value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ใช้งาน</span>
+                        {{-- ตัวเลือก --}}
+                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                            <label class="inline-flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" name="is_active" value="1" {{ old('is_active', $product->is_active) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 text-green-600 focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400 transition-all">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors">✅ ใช้งาน</span>
                             </label>
-                            <label class="flex items-center mb-2">
-                                <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">สินค้าแนะนำ</span>
+
+                            <label class="inline-flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 text-yellow-600 focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-400 transition-all">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">⭐ สินค้าแนะนำ</span>
                             </label>
-                            <label class="flex items-center">
-                                <input type="checkbox" name="track_inventory" value="1" {{ old('track_inventory', $product->track_inventory) ? 'checked' : '' }}
-                                       class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ติดตามสต็อก</span>
+
+                            <label class="inline-flex items-center gap-2 cursor-pointer group">
+                                <input type="checkbox" name="track_inventory" value="1" {{ old('track_inventory', $product->track_inventory) ? 'checked' : '' }} class="w-5 h-5 rounded border-2 border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-all">
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">📊 ติดตามสต็อก</span>
                             </label>
                         </div>
 
-                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700">
-                            <p class="text-sm text-gray-500 dark:text-gray-400">ยอดขาย: <span class="font-semibold text-gray-900 dark:text-white">{{ number_format($product->sales_count) }}</span></p>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">สร้างเมื่อ: {{ $product->created_at->format('d/m/Y H:i') }}</p>
+                        {{-- Meta Info --}}
+                        <div class="pt-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                            <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                                </svg>
+                                <span>ยอดขาย: <strong class="text-gray-900 dark:text-white">{{ number_format($product->sales_count ?? 0) }}</strong> ชิ้น</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <span>สร้างเมื่อ: <strong class="text-gray-900 dark:text-white">{{ $product->created_at->format('d/m/Y') }}</strong></span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Actions -->
-                <div class="bg-white dark:bg-slate-800 rounded-xl shadow p-6">
-                    <div class="space-y-3">
-                        <button type="submit"
-                                class="w-full px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition">
+                {{-- Actions --}}
+                <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="p-6 space-y-3">
+                        <button type="submit" class="flex items-center justify-center gap-3 w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
                             บันทึกการเปลี่ยนแปลง
                         </button>
-                        <a href="{{ route('admin.ecommerce.products.index') }}"
-                           class="block w-full px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-center rounded-lg font-medium transition">
+
+                        <a href="{{ route('admin.ecommerce.products.index') }}" class="flex items-center justify-center gap-3 w-full px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-all duration-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                            </svg>
                             ยกเลิก
                         </a>
                     </div>
