@@ -834,7 +834,8 @@ Route::prefix('v1/food-passport')->middleware(['auth:sanctum', 'food-passport.ra
 | Snake.io Multiplayer Game API
 |--------------------------------------------------------------------------
 */
-Route::prefix('games/snake-io')->name('api.games.snake-io.')->group(function () {
+// ✅ Snake.io Game API - ใช้ web middleware สำหรับ browser session
+Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.')->group(function () {
     // ⚡ Database Mode: ใช้ database เต็มรูปแบบ (save score, wallet, skin preferences)
     // รองรับ multiplayer, leaderboard, wallet transactions
     $controller = \App\Http\Controllers\SnakeGameController::class;
