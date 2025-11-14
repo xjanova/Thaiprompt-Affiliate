@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.206.5] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1063 from xjanova/claude/redesign-homepage-featured-018GgUQwhivyXR3B6Gfckyun (0d5e8700)
+- fix: แก้ไขปัญหา background gradient ทับเนื้อหา (adeef3f9)
+### 🔧 Other Changes
+
+
 ## [v2.206.4] - 2025-11-14
 
 ### ✨ Features
