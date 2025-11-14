@@ -186,11 +186,298 @@ class BotSalesController extends Controller
     }
 
     /**
-     * Generate report data for the specified period
+     * สร้างข้อมูลรายงานตามช่วงเวลาที่กำหนด
+     *
+     * @param string $period day, week, month, year
+     * @return array
      */
-    protected function generateReportData(string $period)
+    protected function generateReportData(string $period): array
     {
-        // TODO: Implement detailed report generation logic
-        return [];
+        // กำหนดช่วงเวลาตาม period
+        $dateRange = $this->getDateRange($period);
+
+        return [
+            // สถิติภาพรวม
+            'overview' => $this->getOverviewStats($dateRange),
+
+            // แนวโน้ม Leads
+            'leads_trend' => $this->getLeadsTrend($dateRange, $period),
+
+            // แนวโน้ม Conversions
+            'conversions_trend' => $this->getConversionsTrend($dateRange, $period),
+
+            // แนวโน้ม Revenue
+            'revenue_trend' => $this->getRevenueTrend($dateRange, $period),
+
+            // Conversion Rate Trend
+            'conversion_rate_trend' => $this->getConversionRateTrend($dateRange, $period),
+
+            // Top Performing Automations
+            'top_automations' => $this->getTopAutomations($dateRange),
+
+            // Lead Sources Breakdown
+            'lead_sources' => $this->getLeadSourcesBreakdown($dateRange),
+
+            // Sales Pipeline Distribution
+            'pipeline_distribution' => $this->getPipelineDistribution(),
+
+            // Period Information
+            'period_info' => [
+                'period' => $period,
+                'start_date' => $dateRange['start']->format('Y-m-d'),
+                'end_date' => $dateRange['end']->format('Y-m-d'),
+            ],
+        ];
+    }
+
+    /**
+     * คำนวณช่วงเวลาตาม period
+     *
+     * @param string $period
+     * @return array
+     */
+    protected function getDateRange(string $period): array
+    {
+        $end = now();
+
+        $start = match ($period) {
+            'day' => now()->subDay(),
+            'week' => now()->subWeek(),
+            'month' => now()->subMonth(),
+            'year' => now()->subYear(),
+            default => now()->subMonth(),
+        };
+
+        return ['start' => $start, 'end' => $end];
+    }
+
+    /**
+     * ดึงสถิติภาพรวม
+     *
+     * @param array $dateRange
+     * @return array
+     */
+    protected function getOverviewStats(array $dateRange): array
+    {
+        $leads = BotSalesLead::whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
+        $conversions = BotSalesConversion::whereBetween('converted_at', [$dateRange['start'], $dateRange['end']]);
+
+        return [
+            'total_leads' => $leads->count(),
+            'new_leads' => (clone $leads)->where('status', 'new')->count(),
+            'qualified_leads' => (clone $leads)->where('status', 'qualified')->count(),
+            'total_conversions' => $conversions->count(),
+            'total_revenue' => $conversions->sum('amount'),
+            'avg_deal_size' => $conversions->avg('amount'),
+            'conversion_rate' => $this->calculateConversionRateForPeriod($dateRange),
+        ];
+    }
+
+    /**
+     * ดึงแนวโน้ม Leads
+     *
+     * @param array $dateRange
+     * @param string $period
+     * @return array
+     */
+    protected function getLeadsTrend(array $dateRange, string $period): array
+    {
+        $groupFormat = $this->getGroupFormat($period);
+
+        return BotSalesLead::query()
+            ->selectRaw("DATE_FORMAT(created_at, '{$groupFormat}') as date, COUNT(*) as count")
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * ดึงแนวโน้ม Conversions
+     *
+     * @param array $dateRange
+     * @param string $period
+     * @return array
+     */
+    protected function getConversionsTrend(array $dateRange, string $period): array
+    {
+        $groupFormat = $this->getGroupFormat($period);
+
+        return BotSalesConversion::query()
+            ->selectRaw("DATE_FORMAT(converted_at, '{$groupFormat}') as date, COUNT(*) as count")
+            ->whereBetween('converted_at', [$dateRange['start'], $dateRange['end']])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * ดึงแนวโน้ม Revenue
+     *
+     * @param array $dateRange
+     * @param string $period
+     * @return array
+     */
+    protected function getRevenueTrend(array $dateRange, string $period): array
+    {
+        $groupFormat = $this->getGroupFormat($period);
+
+        return BotSalesConversion::query()
+            ->selectRaw("DATE_FORMAT(converted_at, '{$groupFormat}') as date, SUM(amount) as revenue")
+            ->whereBetween('converted_at', [$dateRange['start'], $dateRange['end']])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * ดึงแนวโน้ม Conversion Rate
+     *
+     * @param array $dateRange
+     * @param string $period
+     * @return array
+     */
+    protected function getConversionRateTrend(array $dateRange, string $period): array
+    {
+        $groupFormat = $this->getGroupFormat($period);
+
+        // ดึงข้อมูล leads ตามวัน
+        $leads = BotSalesLead::query()
+            ->selectRaw("DATE_FORMAT(created_at, '{$groupFormat}') as date, COUNT(*) as count")
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // ดึงข้อมูล conversions ตามวัน
+        $conversions = BotSalesConversion::query()
+            ->selectRaw("DATE_FORMAT(converted_at, '{$groupFormat}') as date, COUNT(*) as count")
+            ->whereBetween('converted_at', [$dateRange['start'], $dateRange['end']])
+            ->groupBy('date')
+            ->get()
+            ->keyBy('date');
+
+        // คำนวณ conversion rate
+        $result = [];
+        foreach ($leads as $date => $lead) {
+            $conversionCount = $conversions->get($date)?->count ?? 0;
+            $leadCount = $lead->count;
+            $rate = $leadCount > 0 ? round(($conversionCount / $leadCount) * 100, 2) : 0;
+
+            $result[] = [
+                'date' => $date,
+                'rate' => $rate,
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * ดึง Top Performing Automations
+     *
+     * @param array $dateRange
+     * @return array
+     */
+    protected function getTopAutomations(array $dateRange): array
+    {
+        return BotSalesConversion::query()
+            ->selectRaw('automation_id, COUNT(*) as conversions, SUM(amount) as revenue')
+            ->with(['automation'])
+            ->whereBetween('converted_at', [$dateRange['start'], $dateRange['end']])
+            ->groupBy('automation_id')
+            ->orderByDesc('revenue')
+            ->take(10)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'automation_name' => $item->automation->name ?? 'N/A',
+                    'conversions' => $item->conversions,
+                    'revenue' => $item->revenue,
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * ดึง Lead Sources Breakdown
+     *
+     * @param array $dateRange
+     * @return array
+     */
+    protected function getLeadSourcesBreakdown(array $dateRange): array
+    {
+        return BotSalesLead::query()
+            ->selectRaw('source, COUNT(*) as count')
+            ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->groupBy('source')
+            ->orderByDesc('count')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'source' => $item->source ?? 'Unknown',
+                    'count' => $item->count,
+                ];
+            })
+            ->toArray();
+    }
+
+    /**
+     * ดึง Pipeline Distribution
+     *
+     * @return array
+     */
+    protected function getPipelineDistribution(): array
+    {
+        $statuses = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost'];
+        $result = [];
+
+        foreach ($statuses as $status) {
+            $result[] = [
+                'status' => $status,
+                'count' => BotSalesLead::where('status', $status)->count(),
+                'value' => BotSalesLead::where('status', $status)->sum('estimated_value'),
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * คำนวณ Conversion Rate สำหรับช่วงเวลา
+     *
+     * @param array $dateRange
+     * @return float
+     */
+    protected function calculateConversionRateForPeriod(array $dateRange): float
+    {
+        $totalLeads = BotSalesLead::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
+        $conversions = BotSalesConversion::whereBetween('converted_at', [$dateRange['start'], $dateRange['end']])->count();
+
+        if ($totalLeads === 0) {
+            return 0;
+        }
+
+        return round(($conversions / $totalLeads) * 100, 2);
+    }
+
+    /**
+     * รับ format สำหรับ GROUP BY ตาม period
+     *
+     * @param string $period
+     * @return string
+     */
+    protected function getGroupFormat(string $period): string
+    {
+        return match ($period) {
+            'day' => '%Y-%m-%d %H:00:00', // Group by hour
+            'week' => '%Y-%m-%d',          // Group by day
+            'month' => '%Y-%m-%d',         // Group by day
+            'year' => '%Y-%m',             // Group by month
+            default => '%Y-%m-%d',
+        };
     }
 }
