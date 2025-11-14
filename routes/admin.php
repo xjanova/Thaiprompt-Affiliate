@@ -1425,67 +1425,6 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'settings'])->name('settings');
     Route::post('/settings', [\App\Http\Controllers\Admin\CryptoManagementController::class, 'updateSettings'])->name('settings.update');
 
-    // TPIX Native Blockchain Management
-    Route::prefix('tpix')->name('tpix.')->group(function () {
-        // Dashboard
-        Route::get('/dashboard', [\App\Http\Controllers\Admin\TPIXController::class, 'dashboard'])->name('dashboard');
-
-        // Network Status
-        Route::get('/network-status', [\App\Http\Controllers\Admin\TPIXController::class, 'networkStatus'])->name('network-status');
-
-        // Wallets
-        Route::get('/wallets', [\App\Http\Controllers\Admin\TPIXController::class, 'wallets'])->name('wallets');
-
-        // Transactions
-        Route::get('/transactions', [\App\Http\Controllers\Admin\TPIXController::class, 'transactions'])->name('transactions');
-        Route::get('/transactions/{id}', [\App\Http\Controllers\Admin\TPIXController::class, 'transactionDetails'])->name('transactions.details');
-
-        // Settings
-        Route::get('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'settings'])->name('settings');
-        Route::post('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'updateSettings'])->name('settings.update');
-
-        // API endpoint for checking blockchain connection
-        Route::get('/check-connection', [\App\Http\Controllers\Admin\TPIXController::class, 'checkConnection'])->name('check-connection');
-    });
-
-    // TPIX Token Management
-    Route::prefix('tokens')->name('tokens.')->group(function () {
-        // Token List & Overview
-        Route::get('/', [\App\Http\Controllers\Admin\TokenManagementController::class, 'index'])->name('index');
-        Route::get('/{id}', [\App\Http\Controllers\Admin\TokenManagementController::class, 'show'])->name('show');
-
-        // Token Approval & Verification
-        Route::post('/{id}/approve', [\App\Http\Controllers\Admin\TokenManagementController::class, 'approve'])->name('approve');
-        Route::post('/{id}/reject', [\App\Http\Controllers\Admin\TokenManagementController::class, 'reject'])->name('reject');
-        Route::post('/{id}/verify', [\App\Http\Controllers\Admin\TokenManagementController::class, 'verify'])->name('verify');
-        Route::post('/{id}/feature', [\App\Http\Controllers\Admin\TokenManagementController::class, 'feature'])->name('feature');
-        Route::post('/{id}/unfeature', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unfeature'])->name('unfeature');
-
-        // Coin Control Operations
-        Route::post('/{id}/mint', [\App\Http\Controllers\Admin\TokenManagementController::class, 'mint'])->name('mint');
-        Route::post('/{id}/burn', [\App\Http\Controllers\Admin\TokenManagementController::class, 'burn'])->name('burn');
-        Route::post('/{id}/freeze-address', [\App\Http\Controllers\Admin\TokenManagementController::class, 'freezeAddress'])->name('freeze-address');
-        Route::post('/{id}/unfreeze-address', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unfreezeAddress'])->name('unfreeze-address');
-        Route::post('/{id}/pause', [\App\Http\Controllers\Admin\TokenManagementController::class, 'pause'])->name('pause');
-        Route::post('/{id}/unpause', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unpause'])->name('unpause');
-
-        // CoinMarketCap Integration
-        Route::post('/{id}/sync-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'syncWithCMC'])->name('sync-cmc');
-        Route::post('/{id}/link-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'linkCMC'])->name('link-cmc');
-        Route::get('/{id}/cmc-logs', [\App\Http\Controllers\Admin\TokenManagementController::class, 'cmcLogs'])->name('cmc-logs');
-
-        // Import from CoinMarketCap
-        Route::get('/import-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'showImportCMC'])->name('import-cmc');
-        Route::post('/import-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'importFromCMC'])->name('import-cmc.store');
-
-        // Control Actions History
-        Route::get('/{id}/control-actions', [\App\Http\Controllers\Admin\TokenManagementController::class, 'controlActions'])->name('control-actions');
-
-        // Token Settings
-        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TokenManagementController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [\App\Http\Controllers\Admin\TokenManagementController::class, 'update'])->name('update');
-    });
-
     // HD Wallet Management (Hierarchical Deterministic Wallets)
     Route::prefix('hd-wallets')->name('hd-wallets.')->group(function () {
         // Overview
@@ -1508,6 +1447,67 @@ Route::prefix('crypto')->name('crypto.')->group(function () {
         Route::post('/{id}/suspend', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'suspendWallet'])->name('suspend');
         Route::post('/{id}/reactivate', [\App\Http\Controllers\Admin\HDWalletManagementController::class, 'reactivateWallet'])->name('reactivate');
     });
+});
+
+// TPIX Native Blockchain Management
+Route::prefix('tpix')->name('tpix.')->group(function () {
+    // Dashboard
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\TPIXController::class, 'dashboard'])->name('dashboard');
+
+    // Network Status
+    Route::get('/network-status', [\App\Http\Controllers\Admin\TPIXController::class, 'networkStatus'])->name('network-status');
+
+    // Wallets
+    Route::get('/wallets', [\App\Http\Controllers\Admin\TPIXController::class, 'wallets'])->name('wallets');
+
+    // Transactions
+    Route::get('/transactions', [\App\Http\Controllers\Admin\TPIXController::class, 'transactions'])->name('transactions');
+    Route::get('/transactions/{id}', [\App\Http\Controllers\Admin\TPIXController::class, 'transactionDetails'])->name('transactions.details');
+
+    // Settings
+    Route::get('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'settings'])->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\Admin\TPIXController::class, 'updateSettings'])->name('settings.update');
+
+    // API endpoint for checking blockchain connection
+    Route::get('/check-connection', [\App\Http\Controllers\Admin\TPIXController::class, 'checkConnection'])->name('check-connection');
+});
+
+// TPIX Token Management
+Route::prefix('tokens')->name('tokens.')->group(function () {
+    // Token List & Overview
+    Route::get('/', [\App\Http\Controllers\Admin\TokenManagementController::class, 'index'])->name('index');
+    Route::get('/{id}', [\App\Http\Controllers\Admin\TokenManagementController::class, 'show'])->name('show');
+
+    // Token Approval & Verification
+    Route::post('/{id}/approve', [\App\Http\Controllers\Admin\TokenManagementController::class, 'approve'])->name('approve');
+    Route::post('/{id}/reject', [\App\Http\Controllers\Admin\TokenManagementController::class, 'reject'])->name('reject');
+    Route::post('/{id}/verify', [\App\Http\Controllers\Admin\TokenManagementController::class, 'verify'])->name('verify');
+    Route::post('/{id}/feature', [\App\Http\Controllers\Admin\TokenManagementController::class, 'feature'])->name('feature');
+    Route::post('/{id}/unfeature', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unfeature'])->name('unfeature');
+
+    // Coin Control Operations
+    Route::post('/{id}/mint', [\App\Http\Controllers\Admin\TokenManagementController::class, 'mint'])->name('mint');
+    Route::post('/{id}/burn', [\App\Http\Controllers\Admin\TokenManagementController::class, 'burn'])->name('burn');
+    Route::post('/{id}/freeze-address', [\App\Http\Controllers\Admin\TokenManagementController::class, 'freezeAddress'])->name('freeze-address');
+    Route::post('/{id}/unfreeze-address', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unfreezeAddress'])->name('unfreeze-address');
+    Route::post('/{id}/pause', [\App\Http\Controllers\Admin\TokenManagementController::class, 'pause'])->name('pause');
+    Route::post('/{id}/unpause', [\App\Http\Controllers\Admin\TokenManagementController::class, 'unpause'])->name('unpause');
+
+    // CoinMarketCap Integration
+    Route::post('/{id}/sync-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'syncWithCMC'])->name('sync-cmc');
+    Route::post('/{id}/link-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'linkCMC'])->name('link-cmc');
+    Route::get('/{id}/cmc-logs', [\App\Http\Controllers\Admin\TokenManagementController::class, 'cmcLogs'])->name('cmc-logs');
+
+    // Import from CoinMarketCap
+    Route::get('/import-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'showImportCMC'])->name('import-cmc');
+    Route::post('/import-cmc', [\App\Http\Controllers\Admin\TokenManagementController::class, 'importFromCMC'])->name('import-cmc.store');
+
+    // Control Actions History
+    Route::get('/{id}/control-actions', [\App\Http\Controllers\Admin\TokenManagementController::class, 'controlActions'])->name('control-actions');
+
+    // Token Settings
+    Route::get('/{id}/edit', [\App\Http\Controllers\Admin\TokenManagementController::class, 'edit'])->name('edit');
+    Route::put('/{id}', [\App\Http\Controllers\Admin\TokenManagementController::class, 'update'])->name('update');
 });
 
 // App Management (Mobile App Configuration)
