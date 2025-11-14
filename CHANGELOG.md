@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.218.4] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข API endpoint สำหรับ check wallet (ce631bc1)
+- fix: แก้ไขเกมค้างเมื่อเริ่มเล่น Snake.io (b6487453)
+### 🔧 Other Changes
+- Merge pull request #1101 from xjanova/claude/snake-game-01LpjnzhSBRd17vaac96kCa4 (4d9e3b58)
+
 ## [v2.218.3] - 2025-11-14
 
 ### ✨ Features
