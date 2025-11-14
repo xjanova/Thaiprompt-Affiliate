@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.223.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไขปัญหา is_admin column ทั้งหมดในระบบ (528d68c8)
+- fix: แก้ไขการใช้ column is_admin ที่ไม่มีในตาราง users (6ca54e4c)
+### 🔧 Other Changes
+- Merge pull request #1112 from xjanova/claude/fix-is-admin-column-error-01AjkzwbLkoL7DiHyyeWkGA3 (fd7d2ff0)
+
 ## [v2.223.1] - 2025-11-14
 
 ### ✨ Features
