@@ -707,15 +707,20 @@
             </div>
 
             @auth
-            <!-- ปุ่มบันทึกสี (สำหรับสมาชิก) -->
+            <!-- ปุ่มบันทึกและโหลดสี (สำหรับสมาชิก) -->
             <div style="margin: 20px 0; padding: 15px; background: rgba(0, 255, 255, 0.1); border: 1px solid #00ffff; border-radius: 10px;">
                 <p style="color: #00ffff; font-size: 14px; margin-bottom: 10px;">
-                    💾 บันทึกสีที่เลือกเป็นค่าเริ่มต้น
+                    💾 จัดการสีที่บันทึกไว้
                 </p>
-                <button class="btn" id="save-skin-btn" style="padding: 8px 16px; font-size: 13px;">
-                    💾 บันทึกสีนี้
-                </button>
-                <span id="save-skin-status" style="color: #00ff00; font-size: 12px; margin-left: 10px;"></span>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn" id="save-skin-btn" style="padding: 8px 16px; font-size: 13px;">
+                        💾 บันทึกสีนี้
+                    </button>
+                    <button class="btn" id="load-skin-btn" style="padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, #ff9900, #ff6600);">
+                        📥 โหลดสีที่บันทึก
+                    </button>
+                </div>
+                <span id="save-skin-status" style="color: #00ff00; font-size: 12px; display: block; text-align: center; margin-top: 10px;"></span>
             </div>
             @endauth
 
@@ -1467,6 +1472,12 @@
             const saveSkinBtn = document.getElementById('save-skin-btn');
             if (saveSkinBtn) {
                 saveSkinBtn.addEventListener('click', handleSaveSkin);
+            }
+
+            // Load skin button (สำหรับสมาชิก)
+            const loadSkinBtn = document.getElementById('load-skin-btn');
+            if (loadSkinBtn) {
+                loadSkinBtn.addEventListener('click', handleLoadSkin);
             }
 
             // Sound toggle
@@ -2295,6 +2306,68 @@
             } finally {
                 saveSkinBtn.disabled = false;
                 saveSkinBtn.textContent = originalText;
+            }
+        }
+
+        /**
+         * โหลดสี skin ที่บันทึกไว้
+         */
+        async function handleLoadSkin() {
+            const loadSkinBtn = document.getElementById('load-skin-btn');
+            const statusEl = document.getElementById('save-skin-status');
+
+            if (!loadSkinBtn) return;
+
+            loadSkinBtn.disabled = true;
+            const originalText = loadSkinBtn.textContent;
+            loadSkinBtn.textContent = '⏳ กำลังโหลด...';
+            statusEl.textContent = '';
+
+            try {
+                const response = await fetch('/api/games/snake-io/get-skin-preference', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.skin) {
+                        selectedSkin = data.skin;
+
+                        // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
+                        document.querySelectorAll('.skin-option').forEach(option => {
+                            option.classList.remove('selected');
+                            if (option.dataset.skin === data.skin) {
+                                option.classList.add('selected');
+                            }
+                        });
+
+                        statusEl.textContent = '✅ โหลดสีสำเร็จ: ' + data.skin;
+                        statusEl.style.color = '#00ff00';
+
+                        setTimeout(() => {
+                            statusEl.textContent = '';
+                        }, 3000);
+
+                        console.log('[Skin] โหลดสี skin ที่บันทึกไว้:', data.skin);
+                    } else {
+                        throw new Error('ไม่พบสีที่บันทึกไว้');
+                    }
+                } else {
+                    throw new Error('ไม่สามารถโหลดสีได้');
+                }
+            } catch (error) {
+                console.error('[Load Skin] Error:', error);
+                statusEl.textContent = '❌ ' + error.message;
+                statusEl.style.color = '#ff4444';
+            } finally {
+                loadSkinBtn.disabled = false;
+                loadSkinBtn.textContent = originalText;
             }
         }
 
