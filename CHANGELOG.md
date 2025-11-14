@@ -2,6 +2,19 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.206.0] - 2025-11-14
+
+### ✨ Features
+- feat: Add TPIX Navigation Menus & Management Guide (44f08930)
+- feat: Add Complete Blockchain Deployment System (59b08122)
+- feat: Add Complete Staking API System (2c8364eb)
+- feat: Add Complete UI Views & Middleware Registration (bfe59195)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1058 from xjanova/claude/create-custom-crypto-coin-01McBZuxjuNHC9edew2M8ES9 (ed37a3e2)
+- merge: Resolve conflicts with claude/Main (27618fe2)
+
 ## [v2.205.0] - 2025-11-14
 
 ### ✨ Features
