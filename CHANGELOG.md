@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.217.0] - 2025-11-14
+
+### ✨ Features
+- feat: เพิ่มระบบ Auto-Reconnect และ Connection Monitoring (24fd3bb9)
+- feat: เพิ่ม Connection Status Indicator แสดงสถานะ Online/Offline (f588d2fb)
+### 🐛 Bug Fixes
+- fix: แก้ไขเกมค้างเมื่อเริ่มเล่น Snake.io (1b1cab9e)
+### 🔧 Other Changes
+- Merge pull request #1095 from xjanova/claude/snake-game-01LpjnzhSBRd17vaac96kCa4 (613f26bc)
+
 ## [v2.216.3] - 2025-11-14
 
 ### ✨ Features
