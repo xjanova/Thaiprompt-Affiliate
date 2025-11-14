@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.216.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1092 from xjanova/claude/fix-tpix-token-menu-01ESWUCE6Wq4YNxjN4Zpzb4W (ea75eef8)
+- fix: ย้าย TPIX และ Token Management routes ออกจาก crypto prefix (731039de)
+### 🔧 Other Changes
+
+
 ## [v2.216.0] - 2025-11-14
 
 ### ✨ Features
