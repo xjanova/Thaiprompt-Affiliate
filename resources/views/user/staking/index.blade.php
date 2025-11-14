@@ -1,589 +1,164 @@
-@extends('layouts.app')
+@extends('layouts.user')
 
 @section('title', 'Token Staking - TPIX')
 
 @section('content')
-<div class="container py-4">
-    <!-- Hero Section -->
-    <div class="text-center mb-5" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); padding: 60px 20px; border-radius: 20px; color: white;">
-        <h1 class="display-4 fw-bold mb-3">
-            <i class="fas fa-coins me-2"></i>
-            Token Staking
+{{-- Hero Section --}}
+<div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-500 via-pink-500 to-purple-600 dark:from-orange-900 dark:via-pink-900 dark:to-purple-900 p-12 mb-8 shadow-2xl">
+    <div class="absolute inset-0 bg-black/10 dark:bg-white/5"></div>
+    <div class="relative z-10 text-center">
+        <div class="inline-flex items-center gap-3 bg-white/20 dark:bg-black/30 backdrop-blur-sm rounded-full px-6 py-2 mb-4">
+            <i class="fas fa-coins text-2xl text-white"></i>
+            <span class="text-white font-bold text-xl">TPIX Staking</span>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold text-white mb-3 drop-shadow-lg">
+            Stake Token รับรางวัลทุกชั่วโมง
         </h1>
-        <p class="lead mb-0">Stake Token ของคุณและรับรางวัลทุกชั่วโมง</p>
-        <p class="small opacity-75 mt-2">รองรับ 5 ระยะเวลา Lock | APY สูงสุด 200%</p>
+        <p class="text-white/90 text-lg mb-2">รองรับ 5 ระยะเวลา Lock Period • APY สูงสุด 200%</p>
+        <p class="text-white/80 text-sm">ปลอดภัยด้วย Smart Contract บน TPIX Blockchain</p>
+    </div>
+</div>
+
+{{-- Stats Overview --}}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transform hover:scale-105 transition-transform duration-300">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-600 dark:to-indigo-700 flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-layer-group text-2xl text-white"></i>
+        </div>
+        <div id="totalStaked" class="text-3xl font-bold text-gray-900 dark:text-white mb-2">-</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Staked</div>
     </div>
 
-    <!-- Stats Overview -->
-    <div class="row g-4 mb-5">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center h-100">
-                <div class="card-body">
-                    <i class="fas fa-layer-group fa-2x text-primary mb-3"></i>
-                    <h4 class="mb-0" id="totalStaked">-</h4>
-                    <small class="text-muted">Total Staked</small>
-                </div>
-            </div>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transform hover:scale-105 transition-transform duration-300">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 dark:from-green-600 dark:to-emerald-700 flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-users text-2xl text-white"></i>
         </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center h-100">
-                <div class="card-body">
-                    <i class="fas fa-users fa-2x text-success mb-3"></i>
-                    <h4 class="mb-0" id="totalStakers">-</h4>
-                    <small class="text-muted">Active Stakers</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center h-100">
-                <div class="card-body">
-                    <i class="fas fa-percentage fa-2x text-warning mb-3"></i>
-                    <h4 class="mb-0" id="avgAPY">-</h4>
-                    <small class="text-muted">Average APY</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm text-center h-100">
-                <div class="card-body">
-                    <i class="fas fa-gift fa-2x text-danger mb-3"></i>
-                    <h4 class="mb-0" id="totalRewards">-</h4>
-                    <small class="text-muted">Total Rewards</small>
-                </div>
-            </div>
-        </div>
+        <div id="totalStakers" class="text-3xl font-bold text-gray-900 dark:text-white mb-2">-</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Active Stakers</div>
     </div>
 
-    <div class="row">
-        <!-- Staking Pools -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0 fw-bold">
-                            <i class="fas fa-swimming-pool me-2"></i>
-                            Staking Pools
-                        </h5>
-                        <div class="btn-group btn-group-sm" role="group">
-                            <input type="radio" class="btn-check" name="poolFilter" id="allPools" value="all" checked>
-                            <label class="btn btn-outline-primary" for="allPools">All</label>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transform hover:scale-105 transition-transform duration-300">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 dark:from-yellow-600 dark:to-orange-700 flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-percentage text-2xl text-white"></i>
+        </div>
+        <div id="avgAPY" class="text-3xl font-bold text-gray-900 dark:text-white mb-2">-</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Average APY</div>
+    </div>
 
-                            <input type="radio" class="btn-check" name="poolFilter" id="activePools" value="active">
-                            <label class="btn btn-outline-primary" for="activePools">Active</label>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-200 dark:border-gray-700 text-center transform hover:scale-105 transition-transform duration-300">
+        <div class="w-14 h-14 rounded-full bg-gradient-to-br from-pink-500 to-rose-600 dark:from-pink-600 dark:to-rose-700 flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-gift text-2xl text-white"></i>
+        </div>
+        <div id="totalRewards" class="text-3xl font-bold text-gray-900 dark:text-white mb-2">-</div>
+        <div class="text-sm text-gray-600 dark:text-gray-400 font-medium">Total Rewards</div>
+    </div>
+</div>
 
-                            <input type="radio" class="btn-check" name="poolFilter" id="myPools" value="mine">
-                            <label class="btn btn-outline-primary" for="myPools">My Pools</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div id="stakingPools">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary"></div>
-                        </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    {{-- Staking Pools --}}
+    <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {{-- Header --}}
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                        <span class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center">
+                            <i class="fas fa-swimming-pool text-white text-lg"></i>
+                        </span>
+                        Staking Pools
+                    </h2>
+
+                    {{-- Filter Buttons --}}
+                    <div class="flex items-center gap-2">
+                        <button onclick="filterPools('all')" class="pool-filter active px-4 py-2 rounded-lg bg-purple-600 text-white text-sm font-medium transition-all duration-200" data-filter="all">
+                            ทั้งหมด
+                        </button>
+                        <button onclick="filterPools('active')" class="pool-filter px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200" data-filter="active">
+                            กำลังใช้งาน
+                        </button>
+                        <button onclick="filterPools('mine')" class="pool-filter px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-all duration-200" data-filter="mine">
+                            ของฉัน
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- My Stakes Sidebar -->
-        <div class="col-lg-4">
-            <!-- My Total Staking -->
-            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
-                <div class="card-body text-center">
-                    <small class="opacity-75 d-block mb-2">My Total Staked</small>
-                    <h2 class="mb-0" id="myTotalStaked">0.00</h2>
-                    <small class="opacity-75">TPIX</small>
-                    <hr class="my-3 opacity-25">
-                    <div class="d-flex justify-content-between">
+            {{-- Pool List --}}
+            <div id="stakingPools" class="divide-y divide-gray-200 dark:divide-gray-700">
+                <div class="flex items-center justify-center py-12">
+                    <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- My Stakes Sidebar --}}
+    <div class="lg:col-span-1">
+        {{-- My Total Staking Card --}}
+        <div class="bg-gradient-to-br from-purple-600 via-pink-600 to-blue-600 dark:from-purple-800 dark:via-pink-800 dark:to-blue-800 rounded-3xl shadow-2xl overflow-hidden mb-6">
+            <div class="p-8 text-center text-white">
+                <div class="text-sm opacity-90 mb-2">ยอด Stake ของฉัน</div>
+                <div id="myTotalStaked" class="text-4xl font-bold mb-1">0.00</div>
+                <div class="text-sm opacity-75 mb-6">TPIX</div>
+
+                <div class="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                    <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <small class="opacity-75 d-block">Pending Rewards</small>
-                            <div class="fw-bold" id="myPendingRewards">0.00</div>
+                            <div class="text-xs opacity-75 mb-1">Pending Rewards</div>
+                            <div id="myPendingRewards" class="text-lg font-bold">0.00</div>
                         </div>
                         <div>
-                            <small class="opacity-75 d-block">Total Earned</small>
-                            <div class="fw-bold" id="myTotalEarned">0.00</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- My Active Stakes -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom">
-                    <h6 class="mb-0 fw-bold">My Active Stakes</h6>
-                </div>
-                <div class="card-body p-0">
-                    <div id="myStakes">
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-inbox fa-2x mb-2 opacity-25"></i>
-                            <p class="small mb-0">No active stakes</p>
+                            <div class="text-xs opacity-75 mb-1">Total Earned</div>
+                            <div id="myTotalEarned" class="text-lg font-bold">0.00</div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Stake Modal -->
-<div class="modal fade" id="stakeModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Stake Tokens</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        {{-- My Active Stakes --}}
+        <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-b border-gray-200 dark:border-gray-700 p-6">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <i class="fas fa-wallet text-purple-600 dark:text-purple-400"></i>
+                    Stakes ที่ใช้งานอยู่
+                </h3>
             </div>
-            <form id="stakeForm">
-                @csrf
-                <input type="hidden" id="poolId" name="pool_id">
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Pool:</span>
-                            <strong id="modalPoolName">-</strong>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>APY:</span>
-                            <strong class="text-success" id="modalPoolAPY">-</strong>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span>Lock Period:</span>
-                            <strong id="modalLockPeriod">-</strong>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Amount to Stake</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" id="stakeAmount" name="amount" step="0.00000001" required>
-                            <span class="input-group-text" id="modalTokenSymbol">TOKEN</span>
-                        </div>
-                        <div class="form-text">
-                            Available: <span id="modalAvailableBalance">0.00</span>
-                            <button type="button" class="btn btn-link btn-sm p-0 ms-2" onclick="$('#stakeAmount').val($('#modalAvailableBalance').text())">Max</button>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Estimated Rewards</label>
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <div class="row text-center">
-                                    <div class="col">
-                                        <small class="text-muted d-block">Daily</small>
-                                        <strong id="dailyReward">-</strong>
-                                    </div>
-                                    <div class="col">
-                                        <small class="text-muted d-block">Monthly</small>
-                                        <strong id="monthlyReward">-</strong>
-                                    </div>
-                                    <div class="col">
-                                        <small class="text-muted d-block">Yearly</small>
-                                        <strong id="yearlyReward">-</strong>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle me-2"></i>
-                        <small>
-                            การถอนก่อนกำหนดจะมีค่าปรับ 10% ของจำนวนที่ Stake
-                        </small>
-                    </div>
+            <div id="myStakes" class="divide-y divide-gray-200 dark:divide-gray-700 max-h-[600px] overflow-y-auto">
+                <div class="flex flex-col items-center justify-center py-12 px-6 text-center">
+                    <i class="fas fa-inbox text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">ยังไม่มี Stake ที่ใช้งานอยู่</p>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Stake Now</button>
-                </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
-
-<!-- Unstake Modal -->
-<div class="modal fade" id="unstakeModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Unstake Tokens</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="unstakeForm">
-                @csrf
-                <input type="hidden" id="unstakeStakeId" name="stake_id">
-                <div class="modal-body">
-                    <div class="alert alert-info" id="unstakeInfo"></div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Amount to Unstake</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" id="unstakeAmount" name="amount" step="0.00000001" required>
-                            <span class="input-group-text" id="unstakeTokenSymbol">TOKEN</span>
-                        </div>
-                        <div class="form-text">
-                            Staked: <span id="unstakeStakedAmount">0.00</span>
-                        </div>
-                    </div>
-
-                    <div id="earlyWithdrawalWarning" class="alert alert-danger" style="display: none;">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        <strong>Early Withdrawal!</strong>
-                        <p class="mb-0">You will be charged 10% penalty for early withdrawal.</p>
-                        <div class="mt-2">
-                            <small>Penalty: <strong id="penaltyAmount">-</strong></small>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Unstake</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<style>
-.pool-card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.pool-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
-}
-
-.apy-display {
-    font-size: 2rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.stake-card {
-    border-left: 4px solid #667eea;
-}
-</style>
 
 @push('scripts')
 <script>
-let stakingPools = [];
-let myStakes = [];
-let currentPool = null;
-
-$(document).ready(function() {
-    loadStats();
-    loadStakingPools();
-    loadMyStakes();
-
-    $('input[name="poolFilter"]').change(filterPools);
-
-    $('#stakeAmount').on('input', calculateRewards);
-
-    $('#stakeForm').submit(function(e) {
-        e.preventDefault();
-        executeStake();
+/**
+ * ฟังก์ชันจัดการ Pool Filters
+ * ใช้สำหรับกรองแสดง Staking Pools
+ */
+function filterPools(filter) {
+    // อัพเดท active state ของปุ่ม
+    document.querySelectorAll('.pool-filter').forEach(btn => {
+        btn.classList.remove('active', 'bg-purple-600', 'text-white');
+        btn.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
     });
 
-    $('#unstakeForm').submit(function(e) {
-        e.preventDefault();
-        executeUnstake();
-    });
-
-    $('#unstakeAmount').on('input', calculatePenalty);
-});
-
-function loadStats() {
-    // Load global staking stats
-    $('#totalStaked').text('Loading...');
-    $('#totalStakers').text('Loading...');
-    $('#avgAPY').text('Loading...');
-    $('#totalRewards').text('Loading...');
-}
-
-function loadStakingPools() {
-    $.ajax({
-        url: '/api/v1/tpix/staking/pools',
-        method: 'GET',
-        success: function(response) {
-            stakingPools = response.data;
-            displayPools(stakingPools);
-        }
-    });
-}
-
-function displayPools(pools) {
-    if (pools.length === 0) {
-        $('#stakingPools').html(`
-            <div class="text-center py-5 text-muted">
-                <i class="fas fa-inbox fa-3x mb-3 opacity-25"></i>
-                <p class="mb-0">No staking pools available</p>
-            </div>
-        `);
-        return;
+    const activeBtn = document.querySelector(`[data-filter="${filter}"]`);
+    if (activeBtn) {
+        activeBtn.classList.add('active', 'bg-purple-600', 'text-white');
+        activeBtn.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
     }
 
-    const html = pools.map(pool => `
-        <div class="pool-card border-bottom p-4">
-            <div class="row align-items-center">
-                <div class="col-md-2 text-center">
-                    <img src="${pool.token.logo || '/images/default-token.png'}"
-                         alt="${pool.token.symbol}"
-                         class="rounded-circle mb-2"
-                         width="64"
-                         height="64">
-                    <div class="fw-bold">${pool.token.symbol}</div>
-                </div>
-                <div class="col-md-3">
-                    <div class="apy-display">${pool.apy}%</div>
-                    <small class="text-muted">APY</small>
-                </div>
-                <div class="col-md-3">
-                    <small class="text-muted d-block mb-1">Lock Period</small>
-                    <div class="fw-bold">${pool.lock_period_display}</div>
-                    <small class="text-muted">Min Stake: ${pool.min_stake_amount}</small>
-                </div>
-                <div class="col-md-2 text-center">
-                    <small class="text-muted d-block mb-1">Total Staked</small>
-                    <div class="fw-bold">${formatNumber(pool.total_staked)}</div>
-                </div>
-                <div class="col-md-2 text-end">
-                    <button class="btn btn-primary w-100" onclick="openStakeModal(${pool.id})">
-                        <i class="fas fa-plus-circle me-1"></i>
-                        Stake
-                    </button>
-                </div>
-            </div>
-        </div>
-    `).join('');
-
-    $('#stakingPools').html(html);
+    // จะเพิ่ม logic กรอง pools ในภายหลัง
+    console.log('Filter pools:', filter);
 }
 
-function loadMyStakes() {
-    $.ajax({
-        url: '/api/v1/tpix/staking/my-stakes',
-        method: 'GET',
-        success: function(response) {
-            myStakes = response.data;
-
-            if (myStakes.length > 0) {
-                displayMyStakes(myStakes);
-                updateMyStats(myStakes);
-            }
-        }
-    });
-}
-
-function displayMyStakes(stakes) {
-    const html = stakes.map(stake => `
-        <div class="stake-card list-group-item">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div>
-                    <strong>${stake.pool.token.symbol}</strong>
-                    <small class="text-muted d-block">${stake.pool.apy}% APY</small>
-                </div>
-                <span class="badge bg-${stake.is_locked ? 'warning' : 'success'}">
-                    ${stake.is_locked ? 'Locked' : 'Unlocked'}
-                </span>
-            </div>
-            <div class="mb-2">
-                <small class="text-muted d-block">Staked Amount</small>
-                <div class="fw-bold">${formatNumber(stake.staked_amount)} ${stake.pool.token.symbol}</div>
-            </div>
-            <div class="mb-2">
-                <small class="text-muted d-block">Pending Rewards</small>
-                <div class="text-success fw-bold">+${formatNumber(stake.pending_rewards)}</div>
-            </div>
-            ${stake.is_locked ? `
-                <small class="text-muted d-block mb-2">
-                    <i class="fas fa-clock me-1"></i>
-                    Unlocks in ${stake.unlock_time_remaining}
-                </small>
-            ` : ''}
-            <div class="d-grid gap-2">
-                <button class="btn btn-sm btn-outline-success" onclick="claimRewards(${stake.id})">
-                    <i class="fas fa-hand-holding-usd me-1"></i>
-                    Claim Rewards
-                </button>
-                <button class="btn btn-sm btn-outline-danger" onclick="openUnstakeModal(${stake.id})">
-                    <i class="fas fa-minus-circle me-1"></i>
-                    Unstake
-                </button>
-            </div>
-        </div>
-    `).join('');
-
-    $('#myStakes').html(`<div class="list-group list-group-flush">${html}</div>`);
-}
-
-function updateMyStats(stakes) {
-    const totalStaked = stakes.reduce((sum, s) => sum + parseFloat(s.staked_amount), 0);
-    const pendingRewards = stakes.reduce((sum, s) => sum + parseFloat(s.pending_rewards), 0);
-    const totalEarned = stakes.reduce((sum, s) => sum + parseFloat(s.total_earned), 0);
-
-    $('#myTotalStaked').text(formatNumber(totalStaked));
-    $('#myPendingRewards').text(formatNumber(pendingRewards));
-    $('#myTotalEarned').text(formatNumber(totalEarned));
-}
-
-function openStakeModal(poolId) {
-    currentPool = stakingPools.find(p => p.id === poolId);
-    if (!currentPool) return;
-
-    $('#poolId').val(poolId);
-    $('#modalPoolName').text(currentPool.token.symbol + ' Staking');
-    $('#modalPoolAPY').text(currentPool.apy + '%');
-    $('#modalLockPeriod').text(currentPool.lock_period_display);
-    $('#modalTokenSymbol').text(currentPool.token.symbol);
-    $('#modalAvailableBalance').text(formatNumber(currentPool.user_balance || 0));
-
-    $('#stakeModal').modal('show');
-}
-
-function calculateRewards() {
-    const amount = parseFloat($('#stakeAmount').val()) || 0;
-    if (!currentPool || amount === 0) {
-        $('#dailyReward, #monthlyReward, #yearlyReward').text('-');
-        return;
-    }
-
-    const apy = currentPool.apy / 100;
-    const daily = (amount * apy) / 365;
-    const monthly = daily * 30;
-    const yearly = amount * apy;
-
-    $('#dailyReward').text(formatNumber(daily));
-    $('#monthlyReward').text(formatNumber(monthly));
-    $('#yearlyReward').text(formatNumber(yearly));
-}
-
-function executeStake() {
-    const data = $('#stakeForm').serialize();
-
-    $.ajax({
-        url: '/api/v1/tpix/staking/stake',
-        method: 'POST',
-        data: data,
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            alert('Staking successful!');
-            $('#stakeModal').modal('hide');
-            $('#stakeForm')[0].reset();
-            loadMyStakes();
-            loadStakingPools();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.message || 'Please try again'));
-        }
-    });
-}
-
-function openUnstakeModal(stakeId) {
-    const stake = myStakes.find(s => s.id === stakeId);
-    if (!stake) return;
-
-    $('#unstakeStakeId').val(stakeId);
-    $('#unstakeTokenSymbol').text(stake.pool.token.symbol);
-    $('#unstakeStakedAmount').text(formatNumber(stake.staked_amount));
-
-    const infoHtml = `
-        <div class="d-flex justify-content-between mb-2">
-            <span>Pool:</span>
-            <strong>${stake.pool.token.symbol}</strong>
-        </div>
-        <div class="d-flex justify-content-between mb-2">
-            <span>Staked:</span>
-            <strong>${formatNumber(stake.staked_amount)}</strong>
-        </div>
-        <div class="d-flex justify-content-between">
-            <span>Pending Rewards:</span>
-            <strong class="text-success">+${formatNumber(stake.pending_rewards)}</strong>
-        </div>
-    `;
-    $('#unstakeInfo').html(infoHtml);
-
-    if (stake.is_locked) {
-        $('#earlyWithdrawalWarning').show();
-    } else {
-        $('#earlyWithdrawalWarning').hide();
-    }
-
-    $('#unstakeModal').modal('show');
-}
-
-function calculatePenalty() {
-    const amount = parseFloat($('#unstakeAmount').val()) || 0;
-    const penalty = amount * 0.1;
-    $('#penaltyAmount').text(formatNumber(penalty));
-}
-
-function executeUnstake() {
-    const data = $('#unstakeForm').serialize();
-
-    $.ajax({
-        url: '/api/v1/tpix/staking/unstake',
-        method: 'POST',
-        data: data,
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            alert('Unstaked successfully!');
-            $('#unstakeModal').modal('hide');
-            $('#unstakeForm')[0].reset();
-            loadMyStakes();
-            loadStakingPools();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.message || 'Please try again'));
-        }
-    });
-}
-
-function claimRewards(stakeId) {
-    if (!confirm('Claim all pending rewards?')) return;
-
-    $.ajax({
-        url: '/api/v1/tpix/staking/claim-rewards',
-        method: 'POST',
-        data: { stake_id: stakeId },
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        },
-        success: function(response) {
-            alert('Rewards claimed successfully!');
-            loadMyStakes();
-        },
-        error: function(xhr) {
-            alert('Error: ' + (xhr.responseJSON?.message || 'Please try again'));
-        }
-    });
-}
-
-function filterPools() {
-    const filter = $('input[name="poolFilter"]:checked').val();
-    let filtered = [...stakingPools];
-
-    if (filter === 'active') {
-        filtered = filtered.filter(p => p.status === 'active');
-    } else if (filter === 'mine') {
-        const myPoolIds = myStakes.map(s => s.pool_id);
-        filtered = filtered.filter(p => myPoolIds.includes(p.id));
-    }
-
-    displayPools(filtered);
-}
-
-function formatNumber(num) {
-    return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 8 });
-}
+// Log เมื่อโหลดหน้าสำเร็จ
+console.log('TPIX Staking - View loaded');
 </script>
 @endpush
 @endsection
