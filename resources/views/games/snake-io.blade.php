@@ -1229,21 +1229,15 @@
                     return;
                 }
 
-                // Update segment positions
+                // ✅ Simple segment following (ไม่ค้าง - ใช้ lerp ธรรมดา แทนการคำนวณ distance/direction ที่หนัก!)
                 this.segmentPositions[0] = head.position.clone();
 
                 for (let i = 1; i < this.segments.length; i++) {
                     const target = this.segmentPositions[i - 1];
                     const current = this.segments[i].position;
-                    const distance = current.distanceTo(target);
 
-                    if (distance > CONFIG.SEGMENT_SIZE) {
-                        const direction = new THREE.Vector3()
-                            .subVectors(target, current)
-                            .normalize();
-
-                        current.add(direction.multiplyScalar(distance - CONFIG.SEGMENT_SIZE));
-                    }
+                    // ✅ Simple lerp - เบาและรวดเร็ว! (แทนการ distanceTo + normalize + multiply + add)
+                    current.lerp(target, 0.2);
 
                     this.segmentPositions[i] = current.clone();
                 }
