@@ -363,7 +363,7 @@
             @if($newProducts->count() > 0)
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     @foreach($newProducts as $product)
-                        <a href="{{ route('products.show', $product->slug) }}" class="card-hover bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        <a href="{{ route('shop.show', $product->slug) }}" class="card-hover bg-white border border-gray-200 rounded-lg overflow-hidden">
                             <!-- Product Image -->
                             <div class="relative h-32 bg-gray-100">
                                 @if($product->main_image_url)

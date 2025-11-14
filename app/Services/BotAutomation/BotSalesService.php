@@ -248,7 +248,7 @@ class BotSalesService
                 'name' => $product->name,
                 'price' => $product->price,
                 'image' => $product->image_url ?? null,
-                'url' => route('products.show', $product->slug ?? $product->id),
+                'url' => route('shop.show', $product->slug ?? $product->id),
             ])
             ->toArray();
 
