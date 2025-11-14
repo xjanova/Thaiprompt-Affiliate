@@ -1976,85 +1976,20 @@
         }
 
         /**
-         * พยายามเชื่อมต่อใหม่
+         * ✅ ปิด reconnect (ไม่ใช้ multiplayer แล้ว)
          */
         async function attemptReconnect() {
-            if (!gameStarted || gameOver) {
-                return;
-            }
-
-            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-                console.warn('[Connection] หมดจำนวนครั้งที่จะ reconnect แล้ว');
-                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
-                return;
-            }
-
-            reconnectAttempts++;
-            console.log(`[Connection] พยายาม reconnect ครั้งที่ ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
-
-            updateConnectionStatus('offline', '⚡ RECONNECTING...');
-
-            try {
-                // ปิด connection เดิม
-                if (multiplayerManager) {
-                    multiplayerManager.disconnectWebSocket();
-                }
-
-                // สร้างใหม่
-                multiplayerManager = new SnakeMultiplayerManager();
-
-                // ตั้ง timeout 3 วินาที
-                const timeoutPromise = new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Reconnect timeout')), 3000)
-                );
-
-                const joinResult = await Promise.race([
-                    multiplayerManager.joinGame(playerName, selectedSkin),
-                    timeoutPromise
-                ]);
-
-                console.log('[Connection] Reconnect สำเร็จ! Room:', joinResult.room_code);
-
-                // รีเซ็ตจำนวนครั้งที่ลอง
-                reconnectAttempts = 0;
-
-                // อัปเดตสถานะ
-                updateConnectionStatus('online', '🌐 ONLINE MODE');
-
-                return true;
-            } catch (error) {
-                console.error('[Connection] Reconnect ล้มเหลว:', error.message);
-                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
-                return false;
-            }
+            // ไม่ทำอะไร - เล่นแบบ offline อย่างเดียว
+            console.log('[Connection] OFFLINE MODE - ไม่มี reconnection');
+            return false;
         }
 
         /**
-         * เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
+         * ✅ ปิด connection monitoring (ไม่ใช้ multiplayer แล้ว)
          */
         function startConnectionMonitoring() {
-            // หยุด monitor เดิม (ถ้ามี)
-            stopConnectionMonitoring();
-
-            console.log('[Connection] เริ่มตรวจสอบการเชื่อมต่อทุก', CONNECTION_CHECK_INTERVAL / 1000, 'วินาที');
-
-            connectionMonitorInterval = setInterval(async () => {
-                if (!gameStarted || gameOver) {
-                    return;
-                }
-
-                // เช็คว่ายังเชื่อมต่ออยู่หรือไม่
-                const connected = await checkConnection();
-
-                if (connected && !isOnline) {
-                    // เพิ่งกลับมา online
-                    updateConnectionStatus('online', '🌐 ONLINE MODE');
-                } else if (!connected && isOnline) {
-                    // เพิ่งหลุด offline - พยายาม reconnect
-                    console.log('[Connection] หลุดการเชื่อมต่อ กำลัง reconnect...');
-                    await attemptReconnect();
-                }
-            }, CONNECTION_CHECK_INTERVAL);
+            // ไม่ทำอะไร - เล่นแบบ offline อย่างเดียว
+            console.log('[Connection] OFFLINE MODE - ไม่มี connection monitoring');
         }
 
         /**
@@ -2078,35 +2013,12 @@
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
             try {
-                // แสดงสถานะกำลังเชื่อมต่อ
-                updateConnectionStatus('offline', 'CONNECTING...');
+                // ✅ เล่นแบบ OFFLINE เท่านั้น (ปิด multiplayer เพื่อป้องกันเกมค้าง)
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                multiplayerManager = null;
+                isOnline = false;
 
-                // พยายามเชื่อมต่อ multiplayer (แต่ไม่บังคับ)
-                try {
-                    console.log('[Multiplayer] กำลังเชื่อมต่อ...');
-                    multiplayerManager = new SnakeMultiplayerManager();
-
-                    // ตั้ง timeout 3 วินาที
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Connection timeout')), 3000)
-                    );
-
-                    const joinResult = await Promise.race([
-                        multiplayerManager.joinGame(playerName, selectedSkin),
-                        timeoutPromise
-                    ]);
-
-                    console.log('[Multiplayer] เข้าร่วมห้อง:', joinResult.room_code);
-
-                    // เชื่อมต่อสำเร็จ!
-                    updateConnectionStatus('online', '🌐 ONLINE MODE');
-                } catch (multiplayerError) {
-                    console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ เล่นแบบ offline:', multiplayerError.message);
-                    multiplayerManager = null; // ปิดการใช้งาน multiplayer
-
-                    // เล่นแบบ offline
-                    updateConnectionStatus('offline', '🤖 OFFLINE MODE');
-                }
+                console.log('[Game] โหมด OFFLINE - เล่นกับบอทเท่านั้น');
 
                 // Create player
                 player = new Snake(0, 0, true, playerName, selectedSkin);
@@ -2161,8 +2073,8 @@
                 gameStarted = true;
                 document.getElementById('start-screen').classList.add('hidden');
 
-                // เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
-                startConnectionMonitoring();
+                // ✅ ไม่ใช้ connection monitoring (เล่นแบบ offline อย่างเดียว)
+                // startConnectionMonitoring(); // ปิดการใช้งาน
 
                 console.log('✅ Game started successfully!');
             } catch (error) {
@@ -2805,33 +2717,9 @@
                 powerup.position.y = 0.8 + Math.sin(Date.now() * 0.003) * 0.2;
             });
 
-            // ✅ Sync state กับ server (ทุก 1 วินาที - ป้องกันเกมค้าง)
+            // ✅ ปิด multiplayer ทั้งหมด (เพื่อป้องกันเกมค้าง)
+            // Multiplayer ถูกปิดการใช้งาน - เล่นแบบ offline กับบอทเท่านั้น
             const currentTime = Date.now();
-            if (multiplayerManager && player && player.alive && (currentTime - lastSyncTime) >= SYNC_INTERVAL) {
-                try {
-                    multiplayerManager.updatePlayerState(
-                        player.segments[0].position,
-                        player.direction,
-                        player.score,
-                        player.length
-                    );
-                    lastSyncTime = currentTime;
-                } catch (error) {
-                    console.warn('[Multiplayer] Sync error:', error.message);
-                }
-            }
-
-            // ✅ Render ผู้เล่นคนอื่น (throttle ทุก 100ms เพื่อป้องกันเกมค้าง)
-            if (multiplayerManager && isOnline && (currentTime - lastRenderOthersTime) >= RENDER_OTHERS_INTERVAL) {
-                try {
-                    renderOtherPlayers();
-                    lastRenderOthersTime = currentTime;
-                } catch (error) {
-                    console.warn('[Multiplayer] Render error:', error.message);
-                }
-                // ปิดการ render server items เพราะทำให้อาหารปลิว
-                // renderServerItems();
-            }
 
             if (player && player.alive) {
                 // Apply speed boost
