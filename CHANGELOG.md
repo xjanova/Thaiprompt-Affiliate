@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.235.0] - 2025-11-14
+
+### ✨ Features
+- feat: add version and creator info to Snake.io start screen (3e47cde6)
+- feat: improve bot AI with collision avoidance and aggressive behavior (0387251b)
+- feat: add load saved skin button to Snake.io (d9582f68)
+### 🐛 Bug Fixes
+- fix: improve Snake.io game mechanics and balance (d1df3530)
+### 🔧 Other Changes
+- Merge pull request #1133 from xjanova/claude/snake-game-wallet-018Dqk7vxEKCSzTighZZQmES (6f101e62)
+
 ## [v2.234.0] - 2025-11-14
 
 ### ✨ Features
