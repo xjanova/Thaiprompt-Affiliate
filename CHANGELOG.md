@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.218.5] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1102 from xjanova/claude/fix-tpix-token-menu-01ESWUCE6Wq4YNxjN4Zpzb4W (2f2914c6)
+- fix: แก้ไข TPIXController ให้แสดง view แทน redirect เมื่อเกิด error (33413919)
+### 🔧 Other Changes
+
+
 ## [v2.218.4] - 2025-11-14
 
 ### ✨ Features
