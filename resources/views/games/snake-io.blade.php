@@ -1092,10 +1092,6 @@
                 // ✅ ระบบคะแนนแปรผัน: คะแนนที่ต้องการต่อปล้อง
                 this.nextGrowthScore = this.calculateNextGrowthScore();
 
-                // ✅ ระบบเติบโตทีละเม็ด (ไม่พร้อมกัน)
-                this.pendingGrowth = 0; // จำนวนปล้องที่รอเติบโต
-                this.lastGrowthTime = 0; // เวลาที่เติบโตครั้งล่าสุด
-
                 // ✅ ระบบ invincibility 5 วินาที (เมื่อเกิดใหม่) - ทั้งผู้เล่นและบอท
                 this.invincible = true; // ทั้งผู้เล่นและบอทมี invincibility ตอนเกิด
                 this.invincibleUntil = Date.now() + 5000; // 5 วินาที
@@ -1184,19 +1180,6 @@
 
                 // ✅ บังคับให้ direction เป็น unit vector เสมอ (ป้องกันบอทนิ่ง)
                 this.direction.normalize();
-
-                // ✅ ระบบเติบโตทีละเม็ด (ทุก 100ms = 0.1 วินาที)
-                const currentTime = Date.now();
-                if (this.pendingGrowth > 0 && (currentTime - this.lastGrowthTime) >= 100) {
-                    this.grow(1); // เติบโต 1 ปล้อง
-                    this.pendingGrowth--;
-                    this.lastGrowthTime = currentTime;
-
-                    // เล่นเสียงเติบโต (แยกจากเสียงกิน)
-                    if (this.isPlayer) {
-                        playSound('grow');
-                    }
-                }
 
                 // Move head
                 const head = this.segments[0];
@@ -2741,9 +2724,9 @@
                         // ✅ บอทกินอาหาร - ใช้ระบบเดียวกับผู้เล่น (ต้องกิน 10, 15, 20... คะแนนต่อปล้อง)
                         bot.score += foodValue;
 
-                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง - เพิ่มเข้าคิว (ไม่เติบโตทันที)
+                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
                         while (bot.score >= bot.nextGrowthScore) {
-                            bot.pendingGrowth++; // เพิ่มคิวการเติบโต (จะค่อยๆ โตทีละเม็ดใน update())
+                            bot.grow(1); // เติบโต 1 ปล้อง
                             bot.nextGrowthScore = bot.calculateNextGrowthScore();
                         }
 
@@ -2841,14 +2824,11 @@
                         player.score += foodValue * multiplier;
                         score = player.score; // อัปเดต global score
 
-                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง - เพิ่มเข้าคิว (ไม่เติบโตทันที)
+                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
                         while (player.score >= player.nextGrowthScore) {
-                            player.pendingGrowth++; // เพิ่มคิวการเติบโต (จะค่อยๆ โตทีละเม็ดใน update())
+                            player.grow(1); // เติบโต 1 ปล้อง
                             player.nextGrowthScore = player.calculateNextGrowthScore();
                         }
-
-                        // ✅ เล่นเสียงกิน (แยกจากเสียงโต ซึ่งจะเล่นตอนเติบโตจริง)
-                        playSound('eat');
 
                         scene.remove(food);
                         foods.splice(i, 1);
