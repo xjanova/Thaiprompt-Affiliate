@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.203.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1055 from xjanova/claude/claude-md-mhya6ld6lgdhbp54-01NCebcUhTRN2TPBK6HVnFMb (520d2bd4)
+- docs: add comprehensive CLAUDE.md guide for AI assistants (56516f37)
+
 ## [v2.203.0] - 2025-11-13
 
 ### ✨ Features
