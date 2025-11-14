@@ -390,6 +390,102 @@ class SnakeGameController extends Controller
     }
 
     /**
+     * บันทึก skin preference ของสมาชิก
+     *
+     * POST /api/games/snake-io/save-skin-preference
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function saveSkinPreference(Request $request): JsonResponse
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบก่อน',
+            ], 401);
+        }
+
+        $validated = $request->validate([
+            'skin' => 'required|string|max:50',
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            // ดึง game preferences ปัจจุบัน (JSON)
+            $preferences = $user->game_preferences ?? [];
+            if (is_string($preferences)) {
+                $preferences = json_decode($preferences, true) ?? [];
+            }
+
+            // อัปเดตสี skin ของเกม Snake.io
+            $preferences['snake_io'] = [
+                'skin' => $validated['skin'],
+                'updated_at' => now()->toIso8601String(),
+            ];
+
+            // บันทึกกลับเข้า database
+            $user->game_preferences = $preferences;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกสี skin สำเร็จ',
+                'skin' => $validated['skin'],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึง skin preference ของสมาชิก
+     *
+     * GET /api/games/snake-io/get-skin-preference
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getSkinPreference(Request $request): JsonResponse
+    {
+        if (!Auth::check()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'กรุณาเข้าสู่ระบบก่อน',
+                'skin' => 'classic', // default
+            ], 401);
+        }
+
+        try {
+            $user = Auth::user();
+
+            // ดึง game preferences
+            $preferences = $user->game_preferences ?? [];
+            if (is_string($preferences)) {
+                $preferences = json_decode($preferences, true) ?? [];
+            }
+
+            // ดึงสี skin ของเกม Snake.io
+            $snakeSkin = $preferences['snake_io']['skin'] ?? 'classic';
+
+            return response()->json([
+                'success' => true,
+                'skin' => $snakeSkin,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'skin' => 'classic', // default
+            ], 500);
+        }
+    }
+
+    /**
      * ⚡ Anti-cheat: ตรวจสอบความถูกต้องของการเปลี่ยนแปลงสถานะผู้เล่น
      *
      * @param GameRoomPlayer $player ผู้เล่น
