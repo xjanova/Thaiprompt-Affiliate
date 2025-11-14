@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.243.0] - 2025-11-14
+
+### ✨ Features
+- Merge pull request #1144 from xjanova/claude/analyze-session-task-01GRCy2gd6ZVndJQbTLSV2u6 (8867387d)
+- feat: complete remaining TODO items from session_01WFwCmbXf74FrNYvbCN2ap7 (4 items) (5bd6d0a7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.242.0] - 2025-11-14
 
 ### ✨ Features
