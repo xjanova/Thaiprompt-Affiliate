@@ -1,5 +1,5 @@
 @php
-    // Detect current route prefix (user/seller/admin)
+    // ตรวจสอบ route prefix ปัจจุบัน (user/seller/admin)
     $routePrefix = '';
     if (request()->is('user/*') || request()->is('user')) {
         $routePrefix = 'user';
@@ -12,7 +12,7 @@
     }
 @endphp
 
-<div class="relative" x-data="notificationBell('{{ $routePrefix }}')" x-init="init()">
+<div class="relative" x-data="notificationBellComponent" x-init="init('{{ $routePrefix }}')">
     <!-- Bell Icon -->
     <button
         @click="toggleDropdown()"
@@ -143,128 +143,3 @@
         </div>
     </div>
 </div>
-
-<script>
-function notificationBell(routePrefix = 'user') {
-    return {
-        isOpen: false,
-        loading: false,
-        notifications: [],
-        unreadCount: 0,
-        routePrefix: routePrefix,
-
-        init() {
-            this.loadNotifications();
-            this.checkImmediateNotifications();
-
-            // Poll for new notifications every 30 seconds
-            setInterval(() => {
-                this.loadNotifications();
-                this.checkImmediateNotifications();
-            }, 30000);
-        },
-
-        async checkImmediateNotifications() {
-            try {
-                const response = await fetch(`/${this.routePrefix}/notifications/immediate`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-                if (data.notifications && data.notifications.length > 0) {
-                    // Dispatch event for immediate notifications popup
-                    window.dispatchEvent(new CustomEvent('show-immediate-notification', {
-                        detail: { notifications: data.notifications }
-                    }));
-                }
-            } catch (error) {
-                console.error('Error checking immediate notifications:', error);
-            }
-        },
-
-        toggleDropdown() {
-            this.isOpen = !this.isOpen;
-            if (this.isOpen) {
-                this.loadNotifications();
-            }
-        },
-
-        closeDropdown() {
-            this.isOpen = false;
-        },
-
-        async loadNotifications() {
-            try {
-                const response = await fetch(`/${this.routePrefix}/notifications/unread`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-                this.notifications = data.notifications;
-                this.unreadCount = data.unread_count;
-            } catch (error) {
-                console.error('Error loading notifications:', error);
-            }
-        },
-
-        async markAsRead(notificationId) {
-            try {
-                await fetch(`/${this.routePrefix}/notifications/${notificationId}/read`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    }
-                });
-
-                // Reload notifications
-                this.loadNotifications();
-            } catch (error) {
-                console.error('Error marking notification as read:', error);
-            }
-        },
-
-        async markAllAsRead() {
-            try {
-                await fetch(`/${this.routePrefix}/notifications/read-all`, {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json',
-                    }
-                });
-
-                // Reload notifications
-                this.loadNotifications();
-            } catch (error) {
-                console.error('Error marking all as read:', error);
-            }
-        },
-
-        formatDate(dateString) {
-            const date = new Date(dateString);
-            const now = new Date();
-            const diff = Math.floor((now - date) / 1000); // seconds
-
-            if (diff < 60) return 'เมื่อสักครู่';
-            if (diff < 3600) return `${Math.floor(diff / 60)} นาทีที่แล้ว`;
-            if (diff < 86400) return `${Math.floor(diff / 3600)} ชั่วโมงที่แล้ว`;
-            if (diff < 604800) return `${Math.floor(diff / 86400)} วันที่แล้ว`;
-
-            return date.toLocaleDateString('th-TH', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        }
-    }
-}
-</script>
