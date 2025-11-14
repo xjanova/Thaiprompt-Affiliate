@@ -528,11 +528,92 @@
             font-weight: 700;
             color: rgba(0, 255, 255, 0.5);
         }
+
+        /* Connection Status Indicator */
+        #connection-status {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 25px;
+            padding: 8px 20px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Orbitron', 'Noto Sans Thai', sans-serif;
+            font-size: 12px;
+            font-weight: bold;
+            z-index: 50;
+            transition: all 0.3s ease;
+        }
+
+        #connection-status.show {
+            display: flex;
+        }
+
+        #connection-status.online {
+            border-color: rgba(0, 255, 0, 0.6);
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+        }
+
+        #connection-status.offline {
+            border-color: rgba(255, 170, 0, 0.6);
+            box-shadow: 0 0 20px rgba(255, 170, 0, 0.3);
+        }
+
+        #connection-status .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        #connection-status.online .status-dot {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        #connection-status.offline .status-dot {
+            background: #ffaa00;
+            box-shadow: 0 0 10px #ffaa00;
+        }
+
+        #connection-status .status-text {
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.6;
+                transform: scale(1.2);
+            }
+        }
+
+        @media (max-width: 768px) {
+            #connection-status {
+                font-size: 11px;
+                padding: 6px 16px;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
+
+        <!-- Connection Status Indicator -->
+        <div id="connection-status">
+            <div class="status-dot"></div>
+            <span class="status-text">CONNECTING...</span>
+        </div>
 
         <!-- HUD -->
         <div id="hud">
@@ -1495,6 +1576,20 @@
             }
         }
 
+        /**
+         * อัปเดตสถานะการเชื่อมต่อ
+         */
+        function updateConnectionStatus(status, text) {
+            const statusEl = document.getElementById('connection-status');
+            const statusText = statusEl.querySelector('.status-text');
+
+            statusEl.classList.remove('online', 'offline');
+            statusEl.classList.add(status, 'show');
+            statusText.textContent = text;
+
+            console.log(`[Connection] ${status.toUpperCase()}: ${text}`);
+        }
+
         async function startGame() {
             console.log('Starting game...');
 
@@ -1505,6 +1600,9 @@
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
             try {
+                // แสดงสถานะกำลังเชื่อมต่อ
+                updateConnectionStatus('offline', 'CONNECTING...');
+
                 // พยายามเชื่อมต่อ multiplayer (แต่ไม่บังคับ)
                 try {
                     console.log('[Multiplayer] กำลังเชื่อมต่อ...');
@@ -1521,9 +1619,15 @@
                     ]);
 
                     console.log('[Multiplayer] เข้าร่วมห้อง:', joinResult.room_code);
+
+                    // เชื่อมต่อสำเร็จ!
+                    updateConnectionStatus('online', '🌐 ONLINE MODE');
                 } catch (multiplayerError) {
                     console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ เล่นแบบ offline:', multiplayerError.message);
                     multiplayerManager = null; // ปิดการใช้งาน multiplayer
+
+                    // เล่นแบบ offline
+                    updateConnectionStatus('offline', '🤖 OFFLINE MODE');
                 }
 
                 // Create player
@@ -1691,6 +1795,16 @@
 
             foods.forEach(food => scene.remove(food));
             foods = [];
+
+            // Reset multiplayer
+            if (multiplayerManager) {
+                multiplayerManager.disconnectWebSocket();
+                multiplayerManager = null;
+            }
+
+            // ซ่อนสถานะการเชื่อมต่อ
+            const statusEl = document.getElementById('connection-status');
+            statusEl.classList.remove('show', 'online', 'offline');
 
             // Reset
             score = 0;
