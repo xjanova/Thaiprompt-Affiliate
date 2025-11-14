@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.228.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1120 from xjanova/claude/ui-system-redesign-01TJmnDJzbKtTsyFYyMMBvQr (8835e23f)
+- wip: เริ่มอัพเกรด UI ระบบเป็น v3.0.0 - Modern Design System (8d85fece)
+
 ## [v2.228.1] - 2025-11-14
 
 ### ✨ Features
