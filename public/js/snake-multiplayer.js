@@ -71,14 +71,14 @@ class SnakeMultiplayerManager {
         console.log('[Multiplayer] เริ่ม polling สำหรับ room:', this.roomId);
 
         // ✅ ใช้ Polling แทน WebSocket (ไม่ต้องใช้ Laravel Echo)
-        // โพลทุก 1 วินาที
+        // โพลทุก 2 วินาที (เพื่อป้องกันเกมค้าง)
         this.pollingInterval = setInterval(async () => {
             try {
                 await this.pollRoomState();
             } catch (error) {
                 console.error('[Multiplayer] Polling error:', error);
             }
-        }, 1000); // 1 วินาที
+        }, 2000); // ✅ 2 วินาที (ปรับลดจาก 1 วินาที เพื่อไม่ให้เกมค้าง)
     }
 
     /**
