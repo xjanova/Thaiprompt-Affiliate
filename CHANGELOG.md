@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.222.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1107 from xjanova/claude/fix-number-format-type-error-01J1VdTH8aiw1BtT9wnyQ7DS (21c9e54a)
+- fix: resolve TypeError in number_format() by casting string values to float (ddceac73)
+### 🔧 Other Changes
+
+
 ## [v2.222.0] - 2025-11-14
 
 ### ✨ Features
