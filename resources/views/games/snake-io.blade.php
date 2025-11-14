@@ -1051,6 +1051,10 @@
                 this.score = 0;
                 this.alive = true;
 
+                // ✅ ระบบ invincibility 5 วินาที (เมื่อเกิดใหม่)
+                this.invincible = isPlayer; // ผู้เล่นเท่านั้นที่มี invincibility ตอนเกิด
+                this.invincibleUntil = isPlayer ? Date.now() + 5000 : 0; // 5 วินาที
+
                 // Create initial segments
                 for (let i = 0; i < this.length; i++) {
                     const geometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE, 8, 8);
@@ -1063,8 +1067,9 @@
 
                     const material = new THREE.MeshPhongMaterial({
                         color: segmentColor,
-                        emissive: i === 0 ? segmentColor : 0x000000,
-                        emissiveIntensity: i === 0 ? 0.3 : 0,
+                        // ✅ ทำให้หนอนของผู้เล่นเรืองแสงทั้งตัว (ไฮไลท์)
+                        emissive: this.isPlayer ? segmentColor : (i === 0 ? segmentColor : 0x000000),
+                        emissiveIntensity: this.isPlayer ? (i === 0 ? 0.5 : 0.25) : (i === 0 ? 0.3 : 0),
                         shininess: 100,
                         // เพิ่มเอฟเฟกต์พิเศษสำหรับผู้เล่น
                         transparent: this.isPlayer,
@@ -1078,12 +1083,12 @@
 
                     // เพิ่ม outline สำหรับผู้เล่น (ไฮไลท์) - หลังจากสร้าง segment แล้ว
                     if (this.isPlayer && i === 0) {
-                        // สร้าง outline effect
-                        const outlineGeometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE * 1.15, 8, 8);
+                        // ✅ สร้าง outline effect ที่เด่นขึ้น
+                        const outlineGeometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE * 1.3, 8, 8);
                         const outlineMaterial = new THREE.MeshBasicMaterial({
-                            color: 0xffffff,
+                            color: 0x00ffff, // สีฟ้าเรืองแสง
                             transparent: true,
-                            opacity: 0.3,
+                            opacity: 0.5, // เพิ่มจาก 0.3 เป็น 0.5
                             side: THREE.BackSide
                         });
                         this.outline = new THREE.Mesh(outlineGeometry, outlineMaterial);
@@ -1118,6 +1123,11 @@
                 const material = new THREE.SpriteMaterial({ map: texture });
                 this.nameSprite = new THREE.Sprite(material);
                 this.nameSprite.scale.set(4, 1, 1);
+                // ✅ ตั้งตำแหน่งทันทีก่อน add เข้า scene เพื่อไม่ให้เกิดที่ตรงกลาง
+                if (this.segments.length > 0) {
+                    this.nameSprite.position.copy(this.segments[0].position);
+                    this.nameSprite.position.y = 2;
+                }
                 scene.add(this.nameSprite);
             }
 
@@ -1134,12 +1144,14 @@
                 head.position.x += this.direction.x * currentSpeed;
                 head.position.z += this.direction.z * currentSpeed;
 
-                // Wrap around world
+                // ✅ ตรวจสอบชนกำแพง (แทน wrap around) - ชนตาย
                 const halfWorld = CONFIG.WORLD_SIZE / 2;
-                if (head.position.x > halfWorld) head.position.x = -halfWorld;
-                if (head.position.x < -halfWorld) head.position.x = halfWorld;
-                if (head.position.z > halfWorld) head.position.z = -halfWorld;
-                if (head.position.z < -halfWorld) head.position.z = halfWorld;
+                if (head.position.x > halfWorld || head.position.x < -halfWorld ||
+                    head.position.z > halfWorld || head.position.z < -halfWorld) {
+                    // ชนกำแพง - ตาย!
+                    this.die();
+                    return;
+                }
 
                 // Update segment positions
                 this.segmentPositions[0] = head.position.clone();
@@ -1175,6 +1187,37 @@
                 if (this.skinKey === 'rainbow') {
                     const hue = (Date.now() * 0.001) % 1;
                     this.segments[0].material.color.setHSL(hue, 1, 0.5);
+                }
+
+                // ✅ ระบบกระพริบเมื่อมี invincibility
+                if (this.invincible && Date.now() < this.invincibleUntil) {
+                    // กระพริบทุก 200ms (5 ครั้ง/วินาที)
+                    const blinkInterval = 200;
+                    const shouldShow = Math.floor(Date.now() / blinkInterval) % 2 === 0;
+                    const targetOpacity = shouldShow ? 0.5 : 0.95;
+
+                    // ปรับ opacity สำหรับ segment ทุกตัว
+                    this.segments.forEach(segment => {
+                        if (segment.material.transparent) {
+                            segment.material.opacity = targetOpacity;
+                        }
+                    });
+
+                    // ปรับ outline opacity
+                    if (this.outline) {
+                        this.outline.material.opacity = shouldShow ? 0.2 : 0.5;
+                    }
+                } else if (this.invincible && Date.now() >= this.invincibleUntil) {
+                    // หมดเวลา invincibility - คืนค่า opacity ปกติ
+                    this.invincible = false;
+                    this.segments.forEach(segment => {
+                        if (segment.material.transparent) {
+                            segment.material.opacity = this.isPlayer ? 0.98 : 1.0;
+                        }
+                    });
+                    if (this.outline) {
+                        this.outline.material.opacity = 0.5;
+                    }
                 }
             }
 
@@ -1318,6 +1361,50 @@
             gridHelper.material.transparent = true;
             scene.add(gridHelper);
 
+            // ✅ สร้างบาร์เรียสีแดงรอบขอบแมพ (ชนตาย)
+            const halfWorld = CONFIG.WORLD_SIZE / 2;
+            const wallHeight = 5;
+            const wallThickness = 1;
+            const wallMaterial = new THREE.MeshPhongMaterial({
+                color: 0xff0000,
+                emissive: 0xff0000,
+                emissiveIntensity: 0.6,
+                transparent: true,
+                opacity: 0.7,
+            });
+
+            // กำแพงซ้าย (West)
+            const wallLeft = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, wallHeight, CONFIG.WORLD_SIZE),
+                wallMaterial
+            );
+            wallLeft.position.set(-halfWorld, wallHeight / 2, 0);
+            scene.add(wallLeft);
+
+            // กำแพงขวา (East)
+            const wallRight = new THREE.Mesh(
+                new THREE.BoxGeometry(wallThickness, wallHeight, CONFIG.WORLD_SIZE),
+                wallMaterial
+            );
+            wallRight.position.set(halfWorld, wallHeight / 2, 0);
+            scene.add(wallRight);
+
+            // กำแพงหน้า (North)
+            const wallFront = new THREE.Mesh(
+                new THREE.BoxGeometry(CONFIG.WORLD_SIZE, wallHeight, wallThickness),
+                wallMaterial
+            );
+            wallFront.position.set(0, wallHeight / 2, -halfWorld);
+            scene.add(wallFront);
+
+            // กำแพงหลัง (South)
+            const wallBack = new THREE.Mesh(
+                new THREE.BoxGeometry(CONFIG.WORLD_SIZE, wallHeight, wallThickness),
+                wallMaterial
+            );
+            wallBack.position.set(0, wallHeight / 2, halfWorld);
+            scene.add(wallBack);
+
             // Spawn food
             for (let i = 0; i < CONFIG.FOOD_COUNT; i++) {
                 createFood();
@@ -1393,6 +1480,9 @@
                 // เลือก custom skin
                 selectedSkin = 'custom';
                 document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
+
+                // ✅ บันทึกสี custom (ถ้าเป็นสมาชิก)
+                saveSkinPreference('custom');
 
                 alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
             });
@@ -1480,12 +1570,13 @@
 
         function createFood(x = null, z = null, fromDeath = false) {
             const geometry = new THREE.SphereGeometry(0.3, 6, 6);
-            const color = fromDeath ? 0xffffff :
+            // ✅ อาหารจากตาย = RGB เรืองแสง, อาหารธรรมดา = เหลือง/ชมพู
+            const color = fromDeath ? 0xff0000 : // เริ่มจากสีแดง (RGB จะเปลี่ยนทุกเฟรม)
                           (Math.random() > 0.7 ? 0xffff00 : 0xff00ff);
             const material = new THREE.MeshPhongMaterial({
                 color: color,
                 emissive: color,
-                emissiveIntensity: 0.5,
+                emissiveIntensity: fromDeath ? 0.8 : 0.5, // เรืองแสงเยอะกว่า
             });
 
             const food = new THREE.Mesh(geometry, material);
@@ -1498,6 +1589,7 @@
 
             food.position.set(x, 0.3, z);
             food.userData.value = fromDeath ? 2 : 1;
+            food.userData.isRGB = fromDeath; // ✅ Flag สำหรับ animate RGB
 
             scene.add(food);
             foods.push(food);
@@ -1612,6 +1704,11 @@
          */
         function checkSnakeCollision(snake1, snake2) {
             if (!snake1.alive || !snake2.alive) return null;
+
+            // ✅ ข้ามการชนถ้ามี invincibility (5 วินาทีแรก)
+            if (snake1.invincible || snake2.invincible) {
+                return null; // ไม่มีการชน
+            }
 
             const head1 = snake1.segments[0].position;
             const head2 = snake2.segments[0].position;
@@ -2302,6 +2399,19 @@
 
                 player.update();
 
+                // ✅ หักแต้มเมื่อเร่งความเร็ว 3 แต้ม/วินาที
+                if (player.isBoosting) {
+                    const pointsPerSecond = 3;
+                    const deltaTime = 1 / 60; // 60 FPS
+                    player.score -= pointsPerSecond * deltaTime;
+
+                    // หยุด boost ถ้าแต้มไม่พอ
+                    if (player.score < 3) {
+                        player.score = Math.max(0, player.score); // ป้องกันติดลบ
+                        player.isBoosting = false;
+                    }
+                }
+
                 // ดึง head position
                 const head = player.segments[0].position;
 
@@ -2355,11 +2465,20 @@
                     }
                 }
 
+                // ✅ ปรับระยะกล้องตามขนาดหนอน (optimize performance)
+                const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 20
+                const lengthMultiplier = 0.3; // ทุกๆ 1 ความยาว กล้องออก 0.3
+                const maxCameraDistance = 45; // จำกัดระยะสูงสุดเพื่อลด lag (ไม่ใช่ 60)
+
+                // คำนวณระยะกล้องตามขนาดหนอน
+                let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
+                calculatedDistance = Math.min(calculatedDistance, maxCameraDistance);
+
                 // Smooth camera zoom
                 if (activePowerups.zoom) {
                     targetCameraDistance = CONFIG.CAMERA_ZOOMED_OUT_DISTANCE;
                 } else {
-                    targetCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE;
+                    targetCameraDistance = calculatedDistance;
                 }
 
                 // Lerp camera distance
@@ -2384,6 +2503,15 @@
                 updatePowerupUI();
             }
 
+            // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB)
+            const rgbHue = (Date.now() * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
+            foods.forEach(food => {
+                if (food.userData.isRGB) {
+                    food.material.color.setHSL(rgbHue, 1, 0.6);
+                    food.material.emissive.setHSL(rgbHue, 1, 0.6);
+                }
+            });
+
             // Maintain food count
             while (foods.length < CONFIG.FOOD_COUNT) {
                 createFood();
@@ -2394,8 +2522,8 @@
                 createBot();
             }
 
-            // Spawn powerups (1-2 at a time, randomly)
-            if (powerups.length < 2 && Math.random() < 0.01) {
+            // ✅ Spawn powerups (สูงสุด 4 ชิ้นพร้อมกัน, อัตรา 4%)
+            if (powerups.length < 4 && Math.random() < 0.04) {
                 createPowerup();
             }
         }
