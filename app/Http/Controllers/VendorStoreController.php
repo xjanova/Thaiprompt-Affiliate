@@ -10,6 +10,49 @@ use Illuminate\Http\Request;
 class VendorStoreController extends Controller
 {
     /**
+     * แสดงรายการร้านค้า vendor ทั้งหมด
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function index(Request $request)
+    {
+        // สร้าง query สำหรับดึงข้อมูลร้านค้า
+        $query = VendorStore::where('is_active', true)
+            ->with(['owner', 'package']);
+
+        // ค้นหาร้านค้า
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('store_name', 'like', "%{$search}%")
+                  ->orWhere('store_description', 'like', "%{$search}%")
+                  ->orWhere('store_slug', 'like', "%{$search}%");
+            });
+        }
+
+        // เรียงลำดับ
+        $sortBy = $request->get('sort', 'latest');
+        switch ($sortBy) {
+            case 'name':
+                $query->orderBy('store_name', 'asc');
+                break;
+            case 'popular':
+                $query->orderBy('total_orders', 'desc');
+                break;
+            case 'rating':
+                $query->orderBy('rating_average', 'desc');
+                break;
+            default: // latest
+                $query->orderBy('created_at', 'desc');
+        }
+
+        $stores = $query->paginate(12)->withQueryString();
+
+        return view('vendor-store.index', compact('stores'));
+    }
+
+    /**
      * Display a vendor's public storefront
      */
     public function show(Request $request, string $slug)

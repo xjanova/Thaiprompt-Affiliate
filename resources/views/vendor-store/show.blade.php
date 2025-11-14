@@ -147,7 +147,7 @@
                         </h2>
                     </div>
 
-                    <form method="GET" action="{{ route('vendor.store.show', $store->store_slug) }}" class="p-6 space-y-6">
+                    <form method="GET" action="{{ route('vendor.stores.show', $store->store_slug) }}" class="p-6 space-y-6">
                         <!-- Search -->
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
@@ -230,7 +230,7 @@
                                 ค้นหา
                             </button>
                             @if(request()->hasAny(['search', 'category', 'min_price', 'max_price']))
-                            <a href="{{ route('vendor.store.show', $store->store_slug) }}"
+                            <a href="{{ route('vendor.stores.show', $store->store_slug) }}"
                                class="w-full px-6 py-3 border-2 border-gray-300 hover:border-red-500 text-gray-700 hover:text-red-500 font-bold rounded-xl transition-all flex items-center justify-center gap-2 bg-white hover:bg-red-50">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
@@ -294,7 +294,7 @@
                                 : 'ร้านค้านี้ยังไม่มีสินค้า' }}
                         </p>
                         @if(request()->hasAny(['search', 'category', 'min_price', 'max_price']))
-                            <a href="{{ route('vendor.store.show', $store->store_slug) }}"
+                            <a href="{{ route('vendor.stores.show', $store->store_slug) }}"
                                class="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
