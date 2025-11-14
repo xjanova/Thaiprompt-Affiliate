@@ -995,7 +995,6 @@
             document.addEventListener('mousemove', onMouseMove);
 
             // Touch event listeners for mobile/tablet
-            const canvas = document.getElementById('game-canvas');
             canvas.addEventListener('touchstart', onTouchStart, { passive: false });
             canvas.addEventListener('touchmove', onTouchMove, { passive: false });
             canvas.addEventListener('touchend', onTouchEnd, { passive: false });
