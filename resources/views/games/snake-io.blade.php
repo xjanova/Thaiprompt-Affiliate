@@ -645,6 +645,17 @@
         <!-- Start Screen -->
         <div id="start-screen">
             <h1>🐍 SNAKE.IO</h1>
+
+            <!-- เวอร์ชั่นและผู้สร้าง -->
+            <div style="margin-bottom: 15px;">
+                <p style="color: #00ffff; font-size: 14px; margin: 5px 0; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);">
+                    <strong>Version 2.6.0</strong> - Advanced AI
+                </p>
+                <p style="color: #ffaa00; font-size: 13px; margin: 5px 0; text-shadow: 0 0 8px rgba(255, 170, 0, 0.5);">
+                    🎮 Created by <strong>XMAN STUDIO</strong> © 2025
+                </p>
+            </div>
+
             <p style="color: #ccc; font-size: 18px; margin-bottom: 10px;">
                 กินอาหารให้มากที่สุด แต่อย่าชนอะไร!
             </p>
@@ -707,15 +718,20 @@
             </div>
 
             @auth
-            <!-- ปุ่มบันทึกสี (สำหรับสมาชิก) -->
+            <!-- ปุ่มบันทึกและโหลดสี (สำหรับสมาชิก) -->
             <div style="margin: 20px 0; padding: 15px; background: rgba(0, 255, 255, 0.1); border: 1px solid #00ffff; border-radius: 10px;">
                 <p style="color: #00ffff; font-size: 14px; margin-bottom: 10px;">
-                    💾 บันทึกสีที่เลือกเป็นค่าเริ่มต้น
+                    💾 จัดการสีที่บันทึกไว้
                 </p>
-                <button class="btn" id="save-skin-btn" style="padding: 8px 16px; font-size: 13px;">
-                    💾 บันทึกสีนี้
-                </button>
-                <span id="save-skin-status" style="color: #00ff00; font-size: 12px; margin-left: 10px;"></span>
+                <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn" id="save-skin-btn" style="padding: 8px 16px; font-size: 13px;">
+                        💾 บันทึกสีนี้
+                    </button>
+                    <button class="btn" id="load-skin-btn" style="padding: 8px 16px; font-size: 13px; background: linear-gradient(135deg, #ff9900, #ff6600);">
+                        📥 โหลดสีที่บันทึก
+                    </button>
+                </div>
+                <span id="save-skin-status" style="color: #00ff00; font-size: 12px; display: block; text-align: center; margin-top: 10px;"></span>
             </div>
             @endauth
 
@@ -1469,6 +1485,12 @@
                 saveSkinBtn.addEventListener('click', handleSaveSkin);
             }
 
+            // Load skin button (สำหรับสมาชิก)
+            const loadSkinBtn = document.getElementById('load-skin-btn');
+            if (loadSkinBtn) {
+                loadSkinBtn.addEventListener('click', handleLoadSkin);
+            }
+
             // Sound toggle
             const soundToggle = document.getElementById('sound-toggle');
             soundToggle.addEventListener('click', function() {
@@ -1625,6 +1647,12 @@
             food.position.set(x, 0.3, z);
             food.userData.value = fromDeath ? 2 : 1;
             food.userData.isRGB = fromDeath; // ✅ Flag สำหรับ animate RGB
+
+            // ✅ เพิ่มเวลาสร้างและหมดอายุ (อาหารจากตายหายใน 30 วินาที)
+            if (fromDeath) {
+                food.userData.createdAt = Date.now();
+                food.userData.expiresAt = Date.now() + 30000; // 30 วินาที
+            }
 
             scene.add(food);
             foods.push(food);
@@ -2292,6 +2320,68 @@
             }
         }
 
+        /**
+         * โหลดสี skin ที่บันทึกไว้
+         */
+        async function handleLoadSkin() {
+            const loadSkinBtn = document.getElementById('load-skin-btn');
+            const statusEl = document.getElementById('save-skin-status');
+
+            if (!loadSkinBtn) return;
+
+            loadSkinBtn.disabled = true;
+            const originalText = loadSkinBtn.textContent;
+            loadSkinBtn.textContent = '⏳ กำลังโหลด...';
+            statusEl.textContent = '';
+
+            try {
+                const response = await fetch('/api/games/snake-io/get-skin-preference', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.skin) {
+                        selectedSkin = data.skin;
+
+                        // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
+                        document.querySelectorAll('.skin-option').forEach(option => {
+                            option.classList.remove('selected');
+                            if (option.dataset.skin === data.skin) {
+                                option.classList.add('selected');
+                            }
+                        });
+
+                        statusEl.textContent = '✅ โหลดสีสำเร็จ: ' + data.skin;
+                        statusEl.style.color = '#00ff00';
+
+                        setTimeout(() => {
+                            statusEl.textContent = '';
+                        }, 3000);
+
+                        console.log('[Skin] โหลดสี skin ที่บันทึกไว้:', data.skin);
+                    } else {
+                        throw new Error('ไม่พบสีที่บันทึกไว้');
+                    }
+                } else {
+                    throw new Error('ไม่สามารถโหลดสีได้');
+                }
+            } catch (error) {
+                console.error('[Load Skin] Error:', error);
+                statusEl.textContent = '❌ ' + error.message;
+                statusEl.style.color = '#ff4444';
+            } finally {
+                loadSkinBtn.disabled = false;
+                loadSkinBtn.textContent = originalText;
+            }
+        }
+
         function restartGame() {
             // หยุดตรวจสอบการเชื่อมต่อ
             stopConnectionMonitoring();
@@ -2392,6 +2482,118 @@
             `).join('');
         }
 
+        /**
+         * ตรวจจับอันตรายข้างหน้าบอท (งูอื่น)
+         *
+         * @param {Snake} bot บอทที่ต้องการตรวจสอบ
+         * @param {THREE.Vector3} direction ทิศทางที่กำลังมุ่งหน้า
+         * @return {Object|null} { snake, distance } ของงูที่อันตราย หรือ null
+         */
+        function detectDangerAhead(bot, direction) {
+            const head = bot.segments[0].position;
+            const lookAheadDistance = 8; // มองไปข้างหน้า 8 หน่วย
+
+            // คำนวณตำแหน่งที่จะไปถึง
+            const futurePos = new THREE.Vector3()
+                .copy(head)
+                .add(direction.clone().multiplyScalar(lookAheadDistance));
+
+            let nearestDanger = null;
+            let nearestDangerDistance = Infinity;
+
+            // ตรวจสอบงูทั้งหมด (ผู้เล่น + บอทอื่น)
+            const allSnakes = player ? [player, ...bots] : bots;
+
+            allSnakes.forEach(snake => {
+                if (snake === bot || !snake.alive) return;
+
+                // ตรวจสอบทุก segment ของงู
+                snake.segments.forEach((segment, index) => {
+                    const distance = futurePos.distanceTo(segment.position);
+
+                    // ถ้าใกล้เกินไป (< 3 หน่วย) = อันตราย!
+                    if (distance < 3 && distance < nearestDangerDistance) {
+                        nearestDangerDistance = distance;
+                        nearestDanger = {
+                            snake: snake,
+                            distance: distance,
+                            segmentIndex: index
+                        };
+                    }
+                });
+            });
+
+            return nearestDanger;
+        }
+
+        /**
+         * ตรวจสอบโอกาสตัดหน้า (เจอเหยื่อที่เล็กกว่า)
+         *
+         * @param {Snake} bot บอทที่ต้องการตรวจสอบ
+         * @return {Snake|null} งูที่สามารถตัดหน้าได้
+         */
+        function findCutoffTarget(bot) {
+            const head = bot.segments[0].position;
+            const cutoffRange = 10; // ระยะที่พิจารณาตัดหน้า
+            let bestTarget = null;
+            let bestScore = -Infinity;
+
+            // หาผู้เล่นหรือบอทที่เล็กกว่า
+            const allSnakes = player ? [player, ...bots] : bots;
+
+            allSnakes.forEach(snake => {
+                if (snake === bot || !snake.alive) return;
+
+                const targetHead = snake.segments[0].position;
+                const distance = head.distanceTo(targetHead);
+
+                // เงื่อนไขตัดหน้า:
+                // 1. อยู่ในระยะ (< 10)
+                // 2. บอทใหญ่กว่าเป้าหมาย (length > target.length)
+                // 3. ยิ่งเป้าหมายเล็ก ยิ่งดี (สำหรับผู้เล่น ให้คะแนนพิเศษ)
+                if (distance < cutoffRange && bot.length > snake.length) {
+                    let score = (bot.length - snake.length) / distance;
+
+                    // ✅ ให้คะแนนพิเศษถ้าเป้าหมายเป็นผู้เล่น (ตัดหน้าผู้เล่นเป็นพิเศษ!)
+                    if (snake.isPlayer) {
+                        score *= 2.5; // เพิ่ม priority ให้ตัดหน้าผู้เล่น
+                    }
+
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestTarget = snake;
+                    }
+                }
+            });
+
+            return bestTarget;
+        }
+
+        /**
+         * หาทิศทางหลบอันตราย
+         *
+         * @param {THREE.Vector3} currentDirection ทิศทางปัจจุบัน
+         * @param {THREE.Vector3} dangerPosition ตำแหน่งอันตราย
+         * @param {THREE.Vector3} botPosition ตำแหน่งบอท
+         * @return {THREE.Vector3} ทิศทางใหม่ที่หลบ
+         */
+        function getAvoidanceDirection(currentDirection, dangerPosition, botPosition) {
+            // คำนวณทิศทางหนีจากอันตราย
+            const awayFromDanger = new THREE.Vector3()
+                .subVectors(botPosition, dangerPosition)
+                .normalize();
+
+            // ผสมทิศทางเดิมกับทิศทางหนี (70% หนี + 30% เดิม)
+            const blended = new THREE.Vector3()
+                .addVectors(
+                    awayFromDanger.multiplyScalar(0.7),
+                    currentDirection.clone().multiplyScalar(0.3)
+                )
+                .normalize();
+
+            return blended;
+        }
+
         function updateBots() {
             // ✅ อัปเดตเฉพาะบอทที่มีชีวิต และลบบอทที่ตายออกจาก array
             bots = bots.filter(bot => {
@@ -2408,24 +2610,69 @@
 
             // อัปเดตบอทที่ยังมีชีวิต
             bots.forEach(bot => {
-                // Simple AI: move towards nearest food
                 const head = bot.segments[0].position;
-                let nearestFood = null;
-                let nearestDistance = Infinity;
 
-                foods.forEach(food => {
-                    const distance = head.distanceTo(food.position);
-                    if (distance < nearestDistance) {
-                        nearestDistance = distance;
-                        nearestFood = food;
-                    }
-                });
+                // ✅ พฤติกรรม 1: ตรวจสอบโอกาสตัดหน้า (Aggressive AI)
+                const cutoffTarget = findCutoffTarget(bot);
 
-                if (nearestFood) {
-                    const direction = new THREE.Vector3()
-                        .subVectors(nearestFood.position, head)
+                let targetDirection = null;
+
+                if (cutoffTarget) {
+                    // ✅ มีเป้าหมายให้ตัดหน้า - เข้าใส่!
+                    const targetHead = cutoffTarget.segments[0].position;
+
+                    // คำนวณตำแหน่งตัดหน้า (ข้างหน้าเป้าหมายเล็กน้อย)
+                    const targetFuturePos = new THREE.Vector3()
+                        .copy(targetHead)
+                        .add(cutoffTarget.direction.clone().multiplyScalar(3));
+
+                    targetDirection = new THREE.Vector3()
+                        .subVectors(targetFuturePos, head)
                         .normalize();
-                    bot.targetDirection.copy(direction);
+
+                    // ✅ ใช้ boost เพื่อเร่งตัดหน้า!
+                    if (bot.score >= 10) { // ต้องมีแต้มพอ
+                        bot.isBoosting = true;
+                    }
+                } else {
+                    // ไม่มีเป้าหมายตัดหน้า - หยุด boost
+                    bot.isBoosting = false;
+
+                    // ✅ พฤติกรรม 2: หาอาหารใกล้ที่สุด
+                    let nearestFood = null;
+                    let nearestDistance = Infinity;
+
+                    foods.forEach(food => {
+                        const distance = head.distanceTo(food.position);
+                        if (distance < nearestDistance) {
+                            nearestDistance = distance;
+                            nearestFood = food;
+                        }
+                    });
+
+                    if (nearestFood) {
+                        targetDirection = new THREE.Vector3()
+                            .subVectors(nearestFood.position, head)
+                            .normalize();
+                    }
+                }
+
+                // ✅ พฤติกรรม 3: หลบอันตราย (Collision Avoidance) - สำคัญที่สุด!
+                if (targetDirection) {
+                    const danger = detectDangerAhead(bot, targetDirection);
+
+                    if (danger) {
+                        // มีอันตราย! หลบ!
+                        const dangerPos = danger.snake.segments[danger.segmentIndex].position;
+                        targetDirection = getAvoidanceDirection(targetDirection, dangerPos, head);
+
+                        // ✅ ถ้าอันตรายใกล้มาก ให้ใช้ boost หนี!
+                        if (danger.distance < 2 && bot.score >= 5) {
+                            bot.isBoosting = true;
+                        }
+                    }
+
+                    bot.targetDirection.copy(targetDirection);
                 }
 
                 // อัปเดตตำแหน่งบอท
@@ -2437,9 +2684,14 @@
                     if (head.distanceTo(food.position) < 1) {
                         const foodValue = food.userData.value || 1;
 
-                        // บอทกินอาหาร - บวกคะแนน
-                        bot.grow(foodValue);
+                        // ✅ บอทกินอาหาร - ใช้ระบบเดียวกับผู้เล่น (ต้องกิน 10, 15, 20... คะแนนต่อปล้อง)
                         bot.score += foodValue;
+
+                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
+                        while (bot.score >= bot.nextGrowthScore) {
+                            bot.grow(1); // เติบโต 1 ปล้อง
+                            bot.nextGrowthScore = bot.calculateNextGrowthScore(); // คำนวณคะแนนต่อไป
+                        }
 
                         scene.remove(food);
                         foods.splice(i, 1);
@@ -2561,7 +2813,7 @@
                 // ✅ ปรับระยะกล้องตามขนาดหนอน (ให้เห็นใกล้หนอน)
                 const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 15
                 const lengthMultiplier = 0.2; // ทุกๆ 1 ความยาว กล้องออก 0.2 (ช้าลง)
-                const maxCameraDistance = 25; // จำกัดระยะสูงสุดตอนปกติที่ 25 (ใกล้มาก)
+                const maxCameraDistance = 20; // ✅ จำกัดระยะสูงสุดตอนปกติที่ 20 (15 + 5 ตามที่ผู้ใช้ต้องการ)
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -2600,11 +2852,23 @@
 
             // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB)
             const rgbHue = (Date.now() * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
-            foods.forEach(food => {
+            const currentTime = Date.now();
+
+            // ✅ ตรวจสอบและลบอาหารที่หมดอายุ (30 วินาที)
+            foods = foods.filter(food => {
+                // อาหารจากการตาย - ตรวจสอบหมดอายุ
+                if (food.userData.expiresAt && currentTime >= food.userData.expiresAt) {
+                    scene.remove(food);
+                    return false; // ลบออกจาก array
+                }
+
+                // Animate RGB
                 if (food.userData.isRGB) {
                     food.material.color.setHSL(rgbHue, 1, 0.6);
                     food.material.emissive.setHSL(rgbHue, 1, 0.6);
                 }
+
+                return true; // เก็บไว้
             });
 
             // Maintain food count
