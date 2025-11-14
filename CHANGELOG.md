@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.218.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1099 from xjanova/claude/fix-admin-tpix-route-01J59kXTzXUwUc79NXjSSGZ5 (a26eb172)
+- fix: correct TPIX settings update route name and method (b630ae80)
+### 🔧 Other Changes
+
+
 ## [v2.218.1] - 2025-11-14
 
 ### ✨ Features
