@@ -64,6 +64,7 @@ Route::prefix('wallet')->name('wallet.')->group(function () {
 
     // Topup Routes (Wallet Topup Packages)
     Route::get('/topup', [WalletController::class, 'topup'])->name('topup');
+    Route::post('/topup/process', [WalletController::class, 'processTopup'])->name('topup.process');
 
     // Deposit Routes
     Route::get('/deposit', [WalletController::class, 'deposit'])->name('deposit');

@@ -120,6 +120,128 @@ class WalletController extends Controller
     }
 
     /**
+     * ประมวลผลการเติมเงิน Wallet
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function processTopup(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:100|max:100000',
+        ], [
+            'amount.required' => 'กรุณาระบุจำนวนเงินที่ต้องการเติม',
+            'amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลขเท่านั้น',
+            'amount.min' => 'จำนวนเงินขั้นต่ำ 100 บาท',
+            'amount.max' => 'จำนวนเงินสูงสุด 100,000 บาท',
+        ]);
+
+        try {
+            $amount = $request->amount;
+
+            // หาหรือสร้างแพ็คเกจเติมเงิน
+            $product = $this->findOrCreateTopupPackage($amount);
+
+            if (!$product) {
+                return redirect()->back()
+                    ->with('error', 'ไม่สามารถสร้างแพ็คเกจเติมเงินได้ กรุณาติดต่อผู้ดูแลระบบ')
+                    ->withInput();
+            }
+
+            // เพิ่มสินค้าเข้าตะกร้า
+            $cart = \App\Models\Cart::firstOrCreate([
+                'user_id' => auth()->id(),
+            ]);
+
+            // ลบสินค้าเติมเงินเก่าออกจากตะกร้า (ถ้ามี)
+            $cart->items()
+                ->whereHas('product.category', function ($query) {
+                    $query->where('slug', 'wallet-topup');
+                })
+                ->delete();
+
+            // เพิ่มแพ็คเกจเติมเงินใหม่
+            $cart->items()->create([
+                'product_id' => $product->id,
+                'quantity' => 1,
+                'price' => $product->price,
+            ]);
+
+            // ไปหน้า Checkout
+            return redirect()->route('checkout.index')
+                ->with('success', 'เพิ่มแพ็คเกจเติมเงิน ' . number_format($amount, 2) . ' บาทเข้าตะกร้าแล้ว');
+        } catch (Exception $e) {
+            return redirect()->back()
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage())
+                ->withInput();
+        }
+    }
+
+    /**
+     * หาหรือสร้างแพ็คเกจเติมเงิน
+     *
+     * @param float $amount จำนวนเงิน
+     * @return \App\Models\Product|null
+     */
+    private function findOrCreateTopupPackage(float $amount)
+    {
+        // หาหมวดหมู่ wallet-topup
+        $category = \App\Models\ProductCategory::firstOrCreate(
+            ['slug' => 'wallet-topup'],
+            [
+                'name' => 'เติมเงิน Wallet',
+                'description' => 'แพ็คเกจเติมเงินเข้า Wallet',
+                'is_active' => true,
+                'sort_order' => 0,
+            ]
+        );
+
+        // หา admin user สำหรับเป็น seller
+        $adminUser = \App\Models\User::whereIn('role', ['admin', 'super_admin'])->first();
+        if (!$adminUser) {
+            return null;
+        }
+
+        // หาแพ็คเกจที่มีราคาตรงกัน
+        $slug = 'topup-' . (int)$amount;
+        $product = \App\Models\Product::where('slug', $slug)
+            ->where('category_id', $category->id)
+            ->where('is_virtual', true)
+            ->first();
+
+        // ถ้าไม่มี ให้สร้างใหม่
+        if (!$product) {
+            $product = \App\Models\Product::create([
+                'seller_id' => $adminUser->id,
+                'category_id' => $category->id,
+                'name' => '💰 เติมเงิน ' . number_format($amount) . ' บาท',
+                'slug' => $slug,
+                'sku' => 'TOPUP-' . strtoupper($slug),
+                'description' => 'เติมเงิน ' . number_format($amount, 2) . ' บาท เข้า Wallet ของคุณ',
+                'short_description' => 'เติม ' . number_format($amount) . ' บาท',
+                'price' => $amount,
+                'compare_at_price' => null,
+                'cost_price' => $amount,
+                'stock_quantity' => 999999,
+                'track_inventory' => false,
+                'stock_status' => 'in_stock',
+                'is_virtual' => true,
+                'is_active' => true,
+                'is_featured' => false,
+                'is_public_approved' => true,
+                'public_approved_at' => now(),
+                'public_approved_by' => $adminUser->id,
+                'published_at' => now(),
+                'commission_rate' => 0,
+                'customer_cashback' => 0,
+                'cashback_percentage' => 0,
+            ]);
+        }
+
+        return $product;
+    }
+
+    /**
      * Display deposit page
      */
     public function deposit()
