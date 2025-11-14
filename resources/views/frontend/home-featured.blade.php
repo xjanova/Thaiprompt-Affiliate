@@ -143,7 +143,17 @@
                 </div>
 
                 <!-- 3D Menu Cards -->
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 pb-12">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 pb-12">
+                    <!-- เกม Snake.io (ใหม่!) -->
+                    <a href="{{ route('games.show', 'snake-io') }}" class="menu-card rounded-xl p-6 text-center group relative overflow-hidden">
+                        <div class="absolute top-2 right-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs px-2 py-1 rounded-full font-bold animate-pulse">
+                            ใหม่!
+                        </div>
+                        <div class="menu-card-icon">🐍</div>
+                        <h3 class="text-base md:text-lg font-bold text-gray-800 mb-1">Snake.io</h3>
+                        <p class="text-xs text-gray-600">เกมงูออนไลน์สุดมันส์</p>
+                    </a>
+
                     <!-- ร้านค้าแนะนำ -->
                     <a href="#featured-stores" class="menu-card rounded-xl p-6 text-center group">
                         <div class="menu-card-icon">🏪</div>
