@@ -152,42 +152,42 @@
     </header>
 
     <!-- Hero Section with 3D Background -->
-    <section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+    <section class="relative h-[600px] flex items-center justify-center overflow-hidden pt-20">
         <!-- 3D Canvas -->
         <canvas id="hero3d"></canvas>
 
         <!-- Hero Content -->
-        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+        <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 text-center">
             <div class="float-animation">
-                <h1 class="text-6xl md:text-8xl font-bold text-white mb-6 drop-shadow-2xl">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 drop-shadow-2xl">
                     {{ $siteInfo['name'] }}
                 </h1>
-                <p class="text-2xl md:text-3xl text-white/90 mb-4 font-light">
+                <p class="text-xl md:text-2xl text-white/90 mb-3 font-light">
                     {{ $siteInfo['tagline'] }}
                 </p>
-                <p class="text-lg md:text-xl text-white/80 mb-12 max-w-3xl mx-auto">
+                <p class="text-base md:text-lg text-white/80 mb-8 max-w-2xl mx-auto">
                     {{ $siteInfo['description'] }}
                 </p>
             </div>
 
             <!-- CTA Buttons -->
-            <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <a href="{{ route('user.dashboard') }}" class="glow-animation px-10 py-4 bg-white text-purple-600 font-bold text-lg rounded-full hover:bg-purple-50 transition-all duration-300 shadow-2xl transform hover:scale-105">
+            <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                <a href="{{ route('user.dashboard') }}" class="glow-animation px-8 py-3 bg-white text-purple-600 font-bold text-base rounded-full hover:bg-purple-50 transition-all duration-300 shadow-2xl transform hover:scale-105">
                     เริ่มต้นใช้งาน
                 </a>
-                <a href="#featured-stores" class="px-10 py-4 bg-transparent border-2 border-white text-white font-bold text-lg rounded-full hover:bg-white hover:text-purple-600 transition-all duration-300 shadow-2xl transform hover:scale-105">
+                <a href="#featured-stores" class="px-8 py-3 bg-transparent border-2 border-white text-white font-bold text-base rounded-full hover:bg-white hover:text-purple-600 transition-all duration-300 shadow-2xl transform hover:scale-105">
                     ดูร้านค้า
                 </a>
-                <a href="#new-products" class="px-10 py-4 bg-transparent border-2 border-white text-white font-bold text-lg rounded-full hover:bg-white hover:text-purple-600 transition-all duration-300 shadow-2xl transform hover:scale-105">
+                <a href="#new-products" class="px-8 py-3 bg-transparent border-2 border-white text-white font-bold text-base rounded-full hover:bg-white hover:text-purple-600 transition-all duration-300 shadow-2xl transform hover:scale-105">
                     สินค้ามาใหม่
                 </a>
             </div>
         </div>
 
         <!-- Scroll Indicator -->
-        <div class="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-10">
+        <div class="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-10">
             <div class="animate-bounce">
-                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
                 </svg>
             </div>
@@ -195,22 +195,22 @@
     </section>
 
     <!-- Featured Stores Section -->
-    <section id="featured-stores" class="py-20 bg-gradient-to-b from-white to-purple-50">
+    <section id="featured-stores" class="py-12 bg-gradient-to-b from-white to-purple-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-4">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl md:text-4xl font-bold gradient-text mb-3">
                     ร้านค้าแนะนำ
                 </h2>
-                <div class="w-24 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
-                <p class="text-xl text-gray-600 mt-6">ร้านค้าคุณภาพ ได้รับการรับรองและคัดสรร</p>
+                <div class="w-20 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
+                <p class="text-base text-gray-600 mt-4">ร้านค้าคุณภาพ ได้รับการรับรองและคัดสรร</p>
             </div>
 
             @if($featuredStores->count() > 0)
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                     @foreach($featuredStores as $store)
-                        <div class="store-card bg-white rounded-3xl shadow-xl p-6 flex flex-col items-center">
+                        <div class="store-card bg-white rounded-2xl shadow-lg p-4 flex flex-col items-center">
                             <!-- Store Logo -->
-                            <div class="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-purple-200 shadow-lg">
+                            <div class="w-24 h-24 rounded-full overflow-hidden mb-3 border-4 border-purple-200 shadow-lg">
                                 @if($store->store_logo)
                                     <img src="{{ asset($store->store_logo) }}" alt="{{ $store->store_name }}" class="w-full h-full object-cover">
                                 @else
@@ -221,10 +221,10 @@
                             </div>
 
                             <!-- Store Info -->
-                            <h3 class="text-xl font-bold text-gray-800 mb-2 text-center">{{ $store->store_name }}</h3>
+                            <h3 class="text-lg font-bold text-gray-800 mb-2 text-center">{{ $store->store_name }}</h3>
 
                             <!-- Rating -->
-                            <div class="flex items-center mb-3">
+                            <div class="flex items-center mb-2">
                                 @for($i = 1; $i <= 5; $i++)
                                     @if($i <= $store->rating_average)
                                         <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -240,19 +240,19 @@
                             </div>
 
                             <!-- Stats -->
-                            <div class="grid grid-cols-2 gap-4 w-full mb-4">
+                            <div class="grid grid-cols-2 gap-3 w-full mb-3">
                                 <div class="text-center">
-                                    <p class="text-2xl font-bold text-purple-600">{{ number_format($store->total_products) }}</p>
+                                    <p class="text-xl font-bold text-purple-600">{{ number_format($store->total_products) }}</p>
                                     <p class="text-xs text-gray-500">สินค้า</p>
                                 </div>
                                 <div class="text-center">
-                                    <p class="text-2xl font-bold text-indigo-600">{{ number_format($store->total_sales) }}</p>
+                                    <p class="text-xl font-bold text-indigo-600">{{ number_format($store->total_sales) }}</p>
                                     <p class="text-xs text-gray-500">ยอดขาย</p>
                                 </div>
                             </div>
 
                             <!-- Visit Button -->
-                            <a href="{{ route('vendor.store.show', $store->store_slug) }}" class="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-center rounded-full hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg transform hover:scale-105">
+                            <a href="{{ route('vendor.store.show', $store->store_slug) }}" class="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-sm text-center rounded-full hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg transform hover:scale-105">
                                 เยี่ยมชมร้านค้า
                             </a>
                         </div>
@@ -268,22 +268,22 @@
     </section>
 
     <!-- New Products Section -->
-    <section id="new-products" class="py-20 bg-gradient-to-b from-purple-50 to-white">
+    <section id="new-products" class="py-12 bg-gradient-to-b from-purple-50 to-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16">
-                <h2 class="text-5xl md:text-6xl font-bold gradient-text mb-4">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl md:text-4xl font-bold gradient-text mb-3">
                     สินค้ามาใหม่
                 </h2>
-                <div class="w-24 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
-                <p class="text-xl text-gray-600 mt-6">สินค้าล่าสุดที่เพิ่งเข้ามาในระบบ</p>
+                <div class="w-20 h-1 bg-gradient-to-r from-purple-600 to-indigo-600 mx-auto rounded-full"></div>
+                <p class="text-base text-gray-600 mt-4">สินค้าล่าสุดที่เพิ่งเข้ามาในระบบ</p>
             </div>
 
             @if($newProducts->count() > 0)
-                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     @foreach($newProducts as $product)
-                        <div class="product-card bg-white rounded-2xl shadow-lg overflow-hidden">
+                        <div class="product-card bg-white rounded-xl shadow-md overflow-hidden">
                             <!-- Product Image -->
-                            <div class="relative h-64 bg-gray-200 overflow-hidden group">
+                            <div class="relative h-48 bg-gray-200 overflow-hidden group">
                                 @if($product->main_image_url)
                                     <img src="{{ asset($product->main_image_url) }}" alt="{{ $product->name }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
                                 @else
@@ -307,26 +307,26 @@
                             </div>
 
                             <!-- Product Info -->
-                            <div class="p-5">
-                                <h3 class="text-lg font-bold text-gray-800 mb-2 line-clamp-2 h-14">{{ $product->name }}</h3>
+                            <div class="p-4">
+                                <h3 class="text-sm font-bold text-gray-800 mb-2 line-clamp-2 h-10">{{ $product->name }}</h3>
 
                                 <!-- Category -->
                                 @if($product->category)
-                                    <p class="text-sm text-gray-500 mb-3">{{ $product->category->name }}</p>
+                                    <p class="text-xs text-gray-500 mb-2">{{ $product->category->name }}</p>
                                 @endif
 
                                 <!-- Price -->
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <div class="flex items-baseline gap-2">
-                                        <span class="text-2xl font-bold text-purple-600">฿{{ number_format($product->price, 2) }}</span>
+                                        <span class="text-lg font-bold text-purple-600">฿{{ number_format($product->price, 2) }}</span>
                                         @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                                            <span class="text-sm text-gray-400 line-through">฿{{ number_format($product->compare_at_price, 2) }}</span>
+                                            <span class="text-xs text-gray-400 line-through">฿{{ number_format($product->compare_at_price, 2) }}</span>
                                         @endif
                                     </div>
                                 </div>
 
                                 <!-- View Button -->
-                                <a href="{{ route('products.show', $product->slug) }}" class="block w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-center rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-md">
+                                <a href="{{ route('products.show', $product->slug) }}" class="block w-full px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-xs text-center rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-md">
                                     ดูสินค้า
                                 </a>
                             </div>
@@ -343,12 +343,12 @@
     </section>
 
     <!-- Footer -->
-    <footer class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white py-12">
+    <footer class="bg-gradient-to-r from-purple-900 to-indigo-900 text-white py-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-            <img src="{{ $siteLogo }}" alt="{{ $siteInfo['name'] }}" class="h-16 w-auto mx-auto mb-6 filter brightness-0 invert">
-            <p class="text-lg mb-4">{{ $siteInfo['name'] }}</p>
-            <p class="text-purple-200">{{ $siteInfo['tagline'] }}</p>
-            <div class="mt-8 text-sm text-purple-300">
+            <img src="{{ $siteLogo }}" alt="{{ $siteInfo['name'] }}" class="h-12 w-auto mx-auto mb-4 filter brightness-0 invert">
+            <p class="text-base mb-2">{{ $siteInfo['name'] }}</p>
+            <p class="text-sm text-purple-200">{{ $siteInfo['tagline'] }}</p>
+            <div class="mt-4 text-xs text-purple-300">
                 &copy; {{ date('Y') }} {{ $siteInfo['name'] }}. All rights reserved.
             </div>
         </div>
