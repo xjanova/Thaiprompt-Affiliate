@@ -863,7 +863,7 @@ Route::prefix('games/snake-io')->name('api.games.snake-io.')->group(function () 
     Route::get('/room-state/{roomId}', [$controller, 'getRoomState'])
         ->name('room-state');
 
-    // บันทึกคะแนน (ไม่บังคับ auth ใน stateless mode)
+    // บันทึกคะแนน (ต้อง auth และมี wallet เพียงพอ)
     Route::post('/save-score', [$controller, 'saveScore'])
         ->name('save-score');
 
@@ -871,13 +871,13 @@ Route::prefix('games/snake-io')->name('api.games.snake-io.')->group(function () 
     Route::get('/check-wallet', [$controller, 'checkWallet'])
         ->name('check-wallet');
 
-    // บันทึก skin preference (สำหรับสมาชิก)
+    // บันทึก skin preference (สำหรับสมาชิก) - ใช้ auth:web สำหรับ browser
     Route::post('/save-skin-preference', [$controller, 'saveSkinPreference'])
-        ->middleware('auth:sanctum')
+        ->middleware('auth:web')
         ->name('save-skin-preference');
 
-    // ดึง skin preference (สำหรับสมาชิก)
+    // ดึง skin preference (สำหรับสมาชิก) - ใช้ auth:web สำหรับ browser
     Route::get('/get-skin-preference', [$controller, 'getSkinPreference'])
-        ->middleware('auth:sanctum')
+        ->middleware('auth:web')
         ->name('get-skin-preference');
 });
