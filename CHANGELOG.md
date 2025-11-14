@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.206.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1060 from xjanova/claude/snak-o-game-01GVRjYkMBpjPvZVmug7cRtM (7b8c4dea)
+- fix: fix game not starting on PLAY button click (34e28cce)
+### 🔧 Other Changes
+
+
 ## [v2.206.1] - 2025-11-14
 
 ### ✨ Features
