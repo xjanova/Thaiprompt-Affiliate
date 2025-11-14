@@ -385,14 +385,14 @@ Route::prefix('notifications')->name('notifications.')->group(function () {
 });
 
 // Notification Management (Admin Panel)
-Route::prefix('notification-management')->name('notification-management.')->group(function () {
+Route::prefix('notifications')->name('notifications.')->group(function () {
     Route::get('/', [NotificationManagementController::class, 'index'])->name('index');
     Route::get('/statistics', [NotificationManagementController::class, 'statistics'])->name('statistics');
     Route::get('/create', [NotificationManagementController::class, 'create'])->name('create');
     Route::post('/', [NotificationManagementController::class, 'store'])->name('store');
     Route::get('/{notification}', [NotificationManagementController::class, 'show'])->name('show');
-    Route::delete('/{notification}', [NotificationManagementController::class, 'destroy'])->name('destroy-notification');
-    Route::post('/bulk-delete-management', [NotificationManagementController::class, 'bulkDelete'])->name('bulk-delete-management');
+    Route::delete('/{notification}', [NotificationManagementController::class, 'destroy'])->name('destroy');
+    Route::post('/bulk-delete', [NotificationManagementController::class, 'bulkDelete'])->name('bulk-delete');
 });
 
 // Notification Templates
