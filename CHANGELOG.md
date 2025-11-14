@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.205.0] - 2025-11-14
+
+### ✨ Features
+- Merge pull request #1057 from xjanova/claude/snak-o-game-01GVRjYkMBpjPvZVmug7cRtM (6e591da4)
+- feat: add mobile and tablet support for Snake.io (18ca283e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.204.0] - 2025-11-14
 
 ### ✨ Features
