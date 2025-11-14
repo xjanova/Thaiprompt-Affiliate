@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.231.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1128 from xjanova/claude/fix-missing-game-missions-table-01LG8958NFSA8iNMsy8SPmsc (71ee77f4)
+- fix: add missing game_missions table migration (69c27cc9)
+### 🔧 Other Changes
+
+
 ## [v2.231.1] - 2025-11-14
 
 ### ✨ Features
