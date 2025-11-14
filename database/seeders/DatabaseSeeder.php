@@ -56,6 +56,7 @@ class DatabaseSeeder extends Seeder
             PaySolutionsGatewaySeeder::class,   // PaySolutions Gateway Integration
             CryptoCurrencySeeder::class,        // Cryptocurrency Support (BTC, ETH, USDT, etc.)
             TPIXCurrencySeeder::class,          // TPIX Native Token (TPIX Network Blockchain)
+            TPIXStakingPoolSeeder::class,       // TPIX Staking Pools (Flexible, 30d, 90d, 180d, 365d)
 
             // 7. MLM & Affiliate System
             MlmGlobalSettingsSeeder::class,     // การตั้งค่า MLM ทั่วไป (สร้างข้อมูลเริ่มต้น)
