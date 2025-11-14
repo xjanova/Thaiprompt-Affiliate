@@ -2,8 +2,10 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <title>Snake.io - Thai Prompt Games</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
 
@@ -14,6 +16,12 @@
             overflow: hidden;
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             font-family: 'Orbitron', 'Noto Sans Thai', sans-serif;
+            touch-action: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #game-container {
@@ -266,6 +274,7 @@
             font-size: 14px;
             color: #fff;
             pointer-events: none;
+            text-align: center;
         }
 
         .key {
@@ -277,6 +286,86 @@
             margin: 0 3px;
             color: #00ffff;
             font-weight: bold;
+        }
+
+        /* Mobile Controls Help */
+        #controls-mobile {
+            display: none;
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 12px;
+            color: #fff;
+            pointer-events: none;
+            text-align: center;
+            max-width: 90%;
+        }
+
+        /* Responsive adjustments for mobile */
+        @media (max-width: 768px) {
+            #controls {
+                display: none;
+            }
+
+            #controls-mobile {
+                display: block;
+            }
+
+            .hud-item {
+                padding: 10px 15px;
+            }
+
+            .hud-label {
+                font-size: 10px;
+            }
+
+            .hud-value {
+                font-size: 24px;
+            }
+
+            .leaderboard {
+                min-width: 180px;
+                max-height: 300px;
+                padding: 10px;
+            }
+
+            .leaderboard h3 {
+                font-size: 14px;
+            }
+
+            .leaderboard-entry {
+                font-size: 12px;
+                padding: 6px;
+            }
+
+            #start-screen h1 {
+                font-size: 48px;
+            }
+
+            .name-input {
+                font-size: 16px;
+                min-width: 250px;
+            }
+
+            .btn {
+                font-size: 20px;
+                padding: 15px 40px;
+            }
+
+            .skin-option {
+                width: 60px;
+                height: 60px;
+            }
+
+            #sound-toggle {
+                width: 45px;
+                height: 45px;
+                font-size: 20px;
+            }
         }
 
         /* Sound Toggle Button */
@@ -438,11 +527,17 @@
             </div>
         </div>
 
-        <!-- Controls -->
+        <!-- Controls (Desktop) -->
         <div id="controls">
             <span class="key">↑</span> <span class="key">↓</span> <span class="key">←</span> <span class="key">→</span> or
             <span class="key">MOUSE</span> to move |
             <span class="key">SPACE</span> boost
+        </div>
+
+        <!-- Controls (Mobile) -->
+        <div id="controls-mobile">
+            <div style="color: #00ffff; margin-bottom: 5px;">👆 วาดนิ้วไปที่ต้องการ | 👆👆 แตะ 2 นิ้วเพื่อเร่ง</div>
+            <div style="font-size: 10px; opacity: 0.7;">Swipe to move | 2 fingers to boost</div>
         </div>
 
         <!-- Sound Toggle -->
@@ -796,6 +891,19 @@
             document.addEventListener('keydown', onKeyDown);
             document.addEventListener('keyup', onKeyUp);
             document.addEventListener('mousemove', onMouseMove);
+
+            // Touch event listeners for mobile/tablet
+            const canvas = document.getElementById('game-canvas');
+            canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', onTouchMove, { passive: false });
+            canvas.addEventListener('touchend', onTouchEnd, { passive: false });
+
+            // Prevent default touch behavior on the entire document
+            document.addEventListener('touchmove', function(e) {
+                if (gameStarted) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
 
             // UI Events
             document.getElementById('start-btn').addEventListener('click', startGame);
@@ -1223,6 +1331,69 @@
                 if (direction.length() > 0) {
                     player.targetDirection.copy(direction);
                 }
+            }
+        }
+
+        // Touch event handlers for mobile/tablet support
+        function updateDirectionFromTouch(clientX, clientY) {
+            if (!player || !player.alive) return;
+
+            // Convert touch position to normalized device coordinates
+            mouseVector.x = (clientX / window.innerWidth) * 2 - 1;
+            mouseVector.y = -(clientY / window.innerHeight) * 2 + 1;
+
+            // Use raycaster to find where touch points on the ground plane
+            raycaster.setFromCamera(mouseVector, camera);
+
+            const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const intersectPoint = new THREE.Vector3();
+
+            raycaster.ray.intersectPlane(groundPlane, intersectPoint);
+
+            if (intersectPoint) {
+                const head = player.segments[0].position;
+                const direction = new THREE.Vector3()
+                    .subVectors(intersectPoint, head)
+                    .normalize();
+
+                if (direction.length() > 0) {
+                    player.targetDirection.copy(direction);
+                }
+            }
+        }
+
+        function onTouchStart(e) {
+            e.preventDefault();
+
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                updateDirectionFromTouch(touch.clientX, touch.clientY);
+            }
+
+            // Enable boost on double tap
+            if (player && player.alive && e.touches.length === 2) {
+                if (!player.isBoosting) {
+                    player.isBoosting = true;
+                    playSound('boost');
+                }
+            }
+        }
+
+        function onTouchMove(e) {
+            e.preventDefault();
+
+            if (e.touches.length > 0) {
+                const touch = e.touches[0];
+                updateDirectionFromTouch(touch.clientX, touch.clientY);
+            }
+        }
+
+        function onTouchEnd(e) {
+            e.preventDefault();
+
+            // Stop boosting when lifting fingers
+            if (player && e.touches.length < 2) {
+                player.isBoosting = false;
             }
         }
 
