@@ -69,7 +69,7 @@
                 </div>
                 <div>
                     <div class="text-xs text-gray-500 dark:text-gray-400">Current Block</div>
-                    <div class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($status['block_number']) }}</div>
+                    <div class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format((float)$status['block_number']) }}</div>
                 </div>
             </div>
         </div>
@@ -99,8 +99,8 @@
                 </span>
             </div>
             <p class="text-white text-opacity-80 text-sm mb-1">Gas Price</p>
-            <p class="text-4xl font-bold">{{ number_format($status['gas_price_gwei'], 2) }}</p>
-            <p class="text-xs text-white text-opacity-70 mt-2">Gwei ({{ number_format($status['gas_price']) }} Wei)</p>
+            <p class="text-4xl font-bold">{{ number_format((float)$status['gas_price_gwei'], 2) }}</p>
+            <p class="text-xs text-white text-opacity-70 mt-2">Gwei ({{ number_format((float)$status['gas_price']) }} Wei)</p>
         </div>
 
         {{-- Total Supply --}}
@@ -109,7 +109,7 @@
                 <div class="text-5xl">💎</div>
             </div>
             <p class="text-white text-opacity-80 text-sm mb-1">Total Supply</p>
-            <p class="text-4xl font-bold">{{ number_format($status['total_supply']) }}</p>
+            <p class="text-4xl font-bold">{{ number_format((float)$status['total_supply']) }}</p>
             <p class="text-xs text-white text-opacity-70 mt-2">TPIX Tokens</p>
         </div>
 
