@@ -1505,58 +1505,83 @@
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
             try {
-                // เริ่ม multiplayer manager
-                multiplayerManager = new SnakeMultiplayerManager();
+                // พยายามเชื่อมต่อ multiplayer (แต่ไม่บังคับ)
+                try {
+                    console.log('[Multiplayer] กำลังเชื่อมต่อ...');
+                    multiplayerManager = new SnakeMultiplayerManager();
 
-                // เข้าร่วมเกม (จะหาห้องอัตโนมัติ)
-                const joinResult = await multiplayerManager.joinGame(playerName, selectedSkin);
-                console.log('[Game] เข้าร่วมห้อง:', joinResult.room_code);
+                    // ตั้ง timeout 3 วินาที
+                    const timeoutPromise = new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Connection timeout')), 3000)
+                    );
+
+                    const joinResult = await Promise.race([
+                        multiplayerManager.joinGame(playerName, selectedSkin),
+                        timeoutPromise
+                    ]);
+
+                    console.log('[Multiplayer] เข้าร่วมห้อง:', joinResult.room_code);
+                } catch (multiplayerError) {
+                    console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ เล่นแบบ offline:', multiplayerError.message);
+                    multiplayerManager = null; // ปิดการใช้งาน multiplayer
+                }
 
                 // Create player
                 player = new Snake(0, 0, true, playerName, selectedSkin);
                 console.log('Player created:', playerName);
 
-                // Spawn bots (30 บอท แต่จะลดลงเมื่อมีผู้เล่นจริง)
-                const realPlayersCount = 1; // ตัวเราเอง
-                const botsNeeded = Math.max(0, CONFIG.BOT_COUNT - realPlayersCount);
+                // Spawn bots (30 บอท)
+                const botsNeeded = CONFIG.BOT_COUNT;
                 for (let i = 0; i < botsNeeded; i++) {
                     createBot();
                 }
-                console.log('Bots spawned:', botsNeeded, '/ Target:', CONFIG.BOT_COUNT);
+                console.log('Bots spawned:', botsNeeded);
 
                 // เริ่ม optimized touch input
-                if (touchInputManager) {
-                    touchInputManager.destroy();
+                try {
+                    if (touchInputManager) {
+                        touchInputManager.destroy();
+                    }
+
+                    // ตรวจสอบว่า OptimizedTouchInput มีอยู่จริง
+                    if (typeof OptimizedTouchInput !== 'undefined') {
+                        touchInputManager = new OptimizedTouchInput(camera, player.segments[0]);
+                        touchInputManager.init(renderer.domElement);
+
+                        // ตั้งค่า callbacks
+                        touchInputManager.setOnDirectionChange((direction) => {
+                            if (player && player.alive) {
+                                player.targetDirection.copy(direction);
+                            }
+                        });
+
+                        touchInputManager.setOnBoostStart(() => {
+                            if (player && player.alive && !player.isBoosting) {
+                                player.isBoosting = true;
+                                playSound('boost');
+                            }
+                        });
+
+                        touchInputManager.setOnBoostEnd(() => {
+                            if (player) {
+                                player.isBoosting = false;
+                            }
+                        });
+
+                        console.log('[TouchInput] เปิดใช้งาน optimized touch input');
+                    } else {
+                        console.warn('[TouchInput] OptimizedTouchInput ไม่พร้อมใช้งาน ใช้ touch events ธรรมดา');
+                    }
+                } catch (touchError) {
+                    console.warn('[TouchInput] เปิดใช้งานไม่สำเร็จ:', touchError.message);
                 }
-                touchInputManager = new OptimizedTouchInput(camera, player.segments[0]);
-                touchInputManager.init(renderer.domElement);
-
-                // ตั้งค่า callbacks
-                touchInputManager.setOnDirectionChange((direction) => {
-                    if (player && player.alive) {
-                        player.targetDirection.copy(direction);
-                    }
-                });
-
-                touchInputManager.setOnBoostStart(() => {
-                    if (player && player.alive && !player.isBoosting) {
-                        player.isBoosting = true;
-                        playSound('boost');
-                    }
-                });
-
-                touchInputManager.setOnBoostEnd(() => {
-                    if (player) {
-                        player.isBoosting = false;
-                    }
-                });
 
                 gameStarted = true;
                 document.getElementById('start-screen').classList.add('hidden');
-                console.log('Game started successfully!');
+                console.log('✅ Game started successfully!');
             } catch (error) {
                 console.error('[Game] เริ่มเกมล้มเหลว:', error);
-                alert('เกิดข้อผิดพลาด: ' + error.message);
+                alert('เกิดข้อผิดพลาด: ' + error.message + '\n\nกรุณารีเฟรชหน้าใหม่');
             }
         }
 
@@ -1809,6 +1834,9 @@
                 player.speed = CONFIG.MOVEMENT_SPEED * speedMultiplier;
 
                 player.update();
+
+                // ดึง head position
+                const head = player.segments[0].position;
 
                 // Update UI
                 score = player.score;
