@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.218.0] - 2025-11-14
+
+### ✨ Features
+- Merge pull request #1096 from xjanova/claude/fix-tpix-token-menu-01ESWUCE6Wq4YNxjN4Zpzb4W (faae04f5)
+- feat: เพิ่มสคริปต์แก้ไขเมนู TPIX สำหรับ production server (88ada6aa)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.217.0] - 2025-11-14
 
 ### ✨ Features
