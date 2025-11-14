@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.211.5] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1082 from xjanova/claude/fix-vendor-stores-route-01HSaPMh13NiYo2vjukhj5Sz (997e095e)
+- fix: add missing vendor.stores.index route and update route naming (911793c5)
+### 🔧 Other Changes
+
+
 ## [v2.211.4] - 2025-11-14
 
 ### ✨ Features
