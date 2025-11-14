@@ -645,6 +645,17 @@
         <!-- Start Screen -->
         <div id="start-screen">
             <h1>🐍 SNAKE.IO</h1>
+
+            <!-- เวอร์ชั่นและผู้สร้าง -->
+            <div style="margin-bottom: 15px;">
+                <p style="color: #00ffff; font-size: 14px; margin: 5px 0; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);">
+                    <strong>Version 2.6.0</strong> - Advanced AI
+                </p>
+                <p style="color: #ffaa00; font-size: 13px; margin: 5px 0; text-shadow: 0 0 8px rgba(255, 170, 0, 0.5);">
+                    🎮 Created by <strong>XMAN STUDIO</strong> © 2025
+                </p>
+            </div>
+
             <p style="color: #ccc; font-size: 18px; margin-bottom: 10px;">
                 กินอาหารให้มากที่สุด แต่อย่าชนอะไร!
             </p>
