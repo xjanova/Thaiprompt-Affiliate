@@ -78,7 +78,7 @@ class QuotationController extends Controller
         $quotation->save();
 
         // Notify admins
-        $admins = User::where('is_admin', true)->get();
+        $admins = User::whereIn('role', ['admin', 'super_admin'])->get();
         Notification::send($admins, new NewQuotationNotification($quotation));
 
         return redirect()
