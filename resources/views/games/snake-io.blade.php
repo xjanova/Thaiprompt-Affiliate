@@ -1362,6 +1362,9 @@
                         document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
                         this.classList.add('selected');
                         selectedSkin = this.dataset.skin;
+
+                        // ✅ บันทึกสี skin (ถ้าเป็นสมาชิก)
+                        saveSkinPreference(selectedSkin);
                     }
                 });
             });
@@ -1397,11 +1400,81 @@
             // Start animation loop
             animate();
 
+            // ✅ โหลดสี skin ที่สมาชิกบันทึกไว้
+            if (isAuthenticated) {
+                loadSavedSkin();
+            }
+
             console.log('Game initialization complete!');
 
             } catch (error) {
                 console.error('Error initializing game:', error);
                 alert('เกมโหลดไม่สำเร็จ: ' + error.message);
+            }
+        }
+
+        /**
+         * โหลดสี skin ที่สมาชิกบันทึกไว้
+         */
+        async function loadSavedSkin() {
+            try {
+                const response = await fetch('/api/games/snake-io/get-skin-preference', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.skin) {
+                        selectedSkin = data.skin;
+
+                        // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
+                        document.querySelectorAll('.skin-option').forEach(option => {
+                            option.classList.remove('selected');
+                            if (option.dataset.skin === data.skin) {
+                                option.classList.add('selected');
+                            }
+                        });
+
+                        console.log('[Skin] โหลดสี skin ที่บันทึกไว้:', data.skin);
+                    }
+                }
+            } catch (error) {
+                console.warn('[Skin] ไม่สามารถโหลดสีที่บันทึกไว้:', error.message);
+            }
+        }
+
+        /**
+         * บันทึกสี skin ที่เลือก (สำหรับสมาชิก)
+         */
+        async function saveSkinPreference(skin) {
+            if (!isAuthenticated) {
+                return; // Guest ไม่ต้องบันทึก
+            }
+
+            try {
+                const response = await fetch('/api/games/snake-io/save-skin-preference', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ skin })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('[Skin] บันทึกสีสำเร็จ:', skin);
+                }
+            } catch (error) {
+                console.warn('[Skin] ไม่สามารถบันทึกสี:', error.message);
             }
         }
 
@@ -2066,6 +2139,29 @@
             // Reset connection state
             isOnline = false;
             reconnectAttempts = 0;
+
+            // ✅ รีเซ็ต save-score-section เพื่อให้แสดงในรอบถัดไป
+            const saveScoreSection = document.getElementById('save-score-section');
+            if (saveScoreSection) {
+                saveScoreSection.style.display = ''; // รีเซ็ตกลับเป็นค่าเริ่มต้น
+            }
+
+            // ✅ รีเซ็ต wallet status สำหรับสมาชิก
+            const walletStatusEl = document.getElementById('wallet-status');
+            if (walletStatusEl) {
+                walletStatusEl.innerHTML = '<p style="color: #ccc; font-size: 14px;">⏳ กำลังโหลดข้อมูล...</p>';
+            }
+
+            // ✅ รีเซ็ตปุ่ม save และ skip
+            const saveBtnEl = document.getElementById('save-score-btn');
+            const skipBtnEl = document.getElementById('skip-save-btn');
+            if (saveBtnEl) {
+                saveBtnEl.disabled = false;
+                saveBtnEl.textContent = '✅ บันทึกคะแนน (1 แต้ม)';
+            }
+            if (skipBtnEl) {
+                skipBtnEl.disabled = false;
+            }
 
             // Reset
             score = 0;
