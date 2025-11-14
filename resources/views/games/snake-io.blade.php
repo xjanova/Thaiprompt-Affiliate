@@ -562,20 +562,37 @@
         };
 
         // Audio System (16-bit style)
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let audioContext;
         let soundEnabled = true;
+
+        // Initialize audio context on user interaction
+        function initAudio() {
+            try {
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // Resume audio context if suspended
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+            } catch (error) {
+                console.warn('Audio not supported:', error);
+                soundEnabled = false;
+            }
+        }
 
         // 16-bit sound generator
         function playSound(type) {
-            if (!soundEnabled) return;
+            if (!soundEnabled || !audioContext) return;
 
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
+            try {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
 
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
 
-            const now = audioContext.currentTime;
+                const now = audioContext.currentTime;
 
             switch(type) {
                 case 'eat':
@@ -630,6 +647,9 @@
                     oscillator.start(now);
                     oscillator.stop(now + 0.2);
                     break;
+            }
+            } catch (error) {
+                console.warn('Sound playback error:', error);
             }
         }
 
@@ -834,26 +854,41 @@
         }
 
         function init() {
-            // Scene
-            scene = new THREE.Scene();
-            scene.fog = new THREE.Fog(0x16213e, 50, CONFIG.WORLD_SIZE);
+            console.log('Initializing game...');
 
-            // Camera
-            camera = new THREE.PerspectiveCamera(
-                60,
-                window.innerWidth / window.innerHeight,
-                0.1,
-                CONFIG.WORLD_SIZE * 2
-            );
-            camera.position.set(0, 40, 40);
-            camera.lookAt(0, 0, 0);
+            // Check if THREE.js is loaded
+            if (typeof THREE === 'undefined') {
+                console.error('THREE.js not loaded!');
+                alert('เกมโหลดไม่สำเร็จ กรุณารีเฟรชหน้าใหม่');
+                return;
+            }
 
-            // Renderer
-            const canvas = document.getElementById('game-canvas');
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.shadowMap.enabled = true;
-            renderer.setPixelRatio(window.devicePixelRatio);
+            try {
+                // Scene
+                scene = new THREE.Scene();
+                scene.fog = new THREE.Fog(0x16213e, 50, CONFIG.WORLD_SIZE);
+
+                // Camera
+                camera = new THREE.PerspectiveCamera(
+                    60,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    CONFIG.WORLD_SIZE * 2
+                );
+                camera.position.set(0, 40, 40);
+                camera.lookAt(0, 0, 0);
+
+                // Renderer
+                const canvas = document.getElementById('game-canvas');
+                if (!canvas) {
+                    console.error('Canvas element not found!');
+                    return;
+                }
+
+                renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.shadowMap.enabled = true;
+                renderer.setPixelRatio(window.devicePixelRatio);
 
             // Lights
             const ambientLight = new THREE.AmbientLight(0x404080, 0.6);
@@ -933,6 +968,13 @@
 
             // Start animation loop
             animate();
+
+            console.log('Game initialization complete!');
+
+            } catch (error) {
+                console.error('Error initializing game:', error);
+                alert('เกมโหลดไม่สำเร็จ: ' + error.message);
+            }
         }
 
         function createFood(x = null, z = null, fromDeath = false) {
@@ -1074,19 +1116,27 @@
         }
 
         function startGame() {
+            console.log('Starting game...');
+
+            // Initialize audio on user interaction
+            initAudio();
+
             playerName = document.getElementById('player-name').value.trim() ||
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
             // Create player
             player = new Snake(0, 0, true, playerName, selectedSkin);
+            console.log('Player created:', playerName);
 
             // Spawn bots
             for (let i = 0; i < CONFIG.BOT_COUNT; i++) {
                 createBot();
             }
+            console.log('Bots spawned:', CONFIG.BOT_COUNT);
 
             gameStarted = true;
             document.getElementById('start-screen').classList.add('hidden');
+            console.log('Game started successfully!');
         }
 
         function endGame() {
