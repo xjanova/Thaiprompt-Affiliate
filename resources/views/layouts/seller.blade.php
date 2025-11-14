@@ -464,6 +464,11 @@
         }
     </script>
 
+    {{-- Notification System --}}
+    @auth
+        <x-immediate-notification-popup />
+    @endauth
+
     @stack('scripts')
 </body>
 </html>
