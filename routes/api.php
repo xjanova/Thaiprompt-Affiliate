@@ -834,10 +834,9 @@ Route::prefix('v1/food-passport')->middleware(['auth:sanctum', 'food-passport.ra
 |--------------------------------------------------------------------------
 */
 Route::prefix('games/snake-io')->name('api.games.snake-io.')->group(function () {
-    // ⚡ Stateless Mode: ไม่ต้องใช้ database (สำหรับ testing environment)
-    $controller = class_exists('\App\Models\Game') && \DB::connection()->getDatabaseName()
-        ? \App\Http\Controllers\SnakeGameController::class
-        : \App\Http\Controllers\SnakeGameControllerStateless::class;
+    // ⚡ Stateless Mode: ใช้ in-memory สำหรับ testing environment
+    // ไม่ต้อง setup MySQL/database - เหมาะสำหรับ Claude Code environment
+    $controller = \App\Http\Controllers\SnakeGameControllerStateless::class;
 
     // เข้าร่วมเกม (ไม่บังคับ auth)
     Route::post('/join', [$controller, 'join'])
