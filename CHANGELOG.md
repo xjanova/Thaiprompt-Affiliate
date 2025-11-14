@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.213.0] - 2025-11-14
+
+### ✨ Features
+- feat: เพิ่มระบบ anti-cheat สำหรับ Snake.io (58667092)
+- feat: เพิ่ม server-side item spawning สำหรับ Snake.io (c84aac2a)
+- feat: เพิ่ม Laravel Reverb WebSocket และ broadcasting events สำหรับ Snake.io (b0eba4d7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1086 from xjanova/claude/snake-game-update-01WyqX3Sc5RAi2kVkpxoHKSv (368ef43e)
+- refactor: เปลี่ยนจาก polling เป็น WebSocket ใน snake-multiplayer.js (fb2f2652)
+
 ## [v2.212.1] - 2025-11-14
 
 ### ✨ Features
