@@ -1506,8 +1506,17 @@
             // UI Events
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('restart-btn').addEventListener('click', restartGame);
-            document.getElementById('save-score-btn').addEventListener('click', handleSaveScore);
-            document.getElementById('skip-save-btn').addEventListener('click', handleSkipSave);
+
+            // Save/Skip score buttons (สำหรับสมาชิกเท่านั้น)
+            const saveScoreBtn = document.getElementById('save-score-btn');
+            if (saveScoreBtn) {
+                saveScoreBtn.addEventListener('click', handleSaveScore);
+            }
+
+            const skipSaveBtn = document.getElementById('skip-save-btn');
+            if (skipSaveBtn) {
+                skipSaveBtn.addEventListener('click', handleSkipSave);
+            }
 
             // Save skin button (สำหรับสมาชิก)
             const saveSkinBtn = document.getElementById('save-skin-btn');
@@ -1523,11 +1532,13 @@
 
             // Sound toggle
             const soundToggle = document.getElementById('sound-toggle');
-            soundToggle.addEventListener('click', function() {
-                soundEnabled = !soundEnabled;
-                this.textContent = soundEnabled ? '🔊' : '🔇';
-                this.classList.toggle('muted', !soundEnabled);
-            });
+            if (soundToggle) {
+                soundToggle.addEventListener('click', function() {
+                    soundEnabled = !soundEnabled;
+                    this.textContent = soundEnabled ? '🔊' : '🔇';
+                    this.classList.toggle('muted', !soundEnabled);
+                });
+            }
 
             // Skin selection
             document.querySelectorAll('.skin-option').forEach(option => {
@@ -1547,33 +1558,36 @@
             document.querySelector('.skin-option').classList.add('selected');
 
             // Custom color picker
-            document.getElementById('apply-custom-colors').addEventListener('click', function() {
-                const color1 = document.getElementById('color1').value;
-                const color2 = document.getElementById('color2').value;
-                const color3 = document.getElementById('color3').value;
+            const applyCustomColorsBtn = document.getElementById('apply-custom-colors');
+            if (applyCustomColorsBtn) {
+                applyCustomColorsBtn.addEventListener('click', function() {
+                    const color1 = document.getElementById('color1').value;
+                    const color2 = document.getElementById('color2').value;
+                    const color3 = document.getElementById('color3').value;
 
-                // แปลง hex เป็น integer
-                customColors = [
-                    parseInt(color1.replace('#', '0x')),
-                    parseInt(color2.replace('#', '0x')),
-                    parseInt(color3.replace('#', '0x'))
-                ];
+                    // แปลง hex เป็น integer
+                    customColors = [
+                        parseInt(color1.replace('#', '0x')),
+                        parseInt(color2.replace('#', '0x')),
+                        parseInt(color3.replace('#', '0x'))
+                    ];
 
-                // อัปเดต custom skin
-                SKINS.custom.colors = customColors;
-                SKINS.custom.primary = customColors[0];
-                SKINS.custom.secondary = customColors[1];
+                    // อัปเดต custom skin
+                    SKINS.custom.colors = customColors;
+                    SKINS.custom.primary = customColors[0];
+                    SKINS.custom.secondary = customColors[1];
 
-                // เลือก custom skin
-                const customSkinString = `${color1},${color2},${color3}`; // ✅ บันทึก hex codes จริงๆ
-                selectedSkin = customSkinString;
-                document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
+                    // เลือก custom skin
+                    const customSkinString = `${color1},${color2},${color3}`; // ✅ บันทึก hex codes จริงๆ
+                    selectedSkin = customSkinString;
+                    document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
 
-                // ✅ บันทึกสี custom พร้อม hex codes (ถ้าเป็นสมาชิก)
-                saveSkinPreference(customSkinString);
+                    // ✅ บันทึกสี custom พร้อม hex codes (ถ้าเป็นสมาชิก)
+                    saveSkinPreference(customSkinString);
 
-                alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
-            });
+                    alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
+                });
+            }
 
             // Start animation loop
             animate();
