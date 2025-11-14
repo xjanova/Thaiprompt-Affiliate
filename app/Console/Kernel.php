@@ -140,6 +140,19 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('LINE conversation cleanup failed');
             });
+
+        // Snake.io Game Item Spawning
+        // Spawn powerups and maintain food items every minute
+        $schedule->command('snake-game:spawn-items')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Snake Game] Item spawning completed successfully');
+            })
+            ->onFailure(function () {
+                \Log::error('[Snake Game] Item spawning failed');
+            });
     }
 
     /**

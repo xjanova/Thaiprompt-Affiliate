@@ -12,6 +12,7 @@
         "intervention/image": "^3.11",
         "jenssegers/agent": "^2.6",
         "laravel/framework": "^11.0",
+        "laravel/reverb": "*",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.8",
         "web3p/web3.php": "^0.1.6"

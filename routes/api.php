@@ -836,35 +836,35 @@ Route::prefix('v1/food-passport')->middleware(['auth:sanctum', 'food-passport.ra
 */
 Route::prefix('games/snake-io')->name('api.games.snake-io.')->group(function () {
     // เข้าร่วมเกม (ไม่บังคับ auth)
-    Route::post('/join', [SnakeGameController::class, 'join'])
+    Route::post('/join', [\App\Http\Controllers\SnakeGameController::class, 'join'])
         ->name('join');
 
     // ออกจากห้อง
-    Route::post('/leave', [SnakeGameController::class, 'leave'])
+    Route::post('/leave', [\App\Http\Controllers\SnakeGameController::class, 'leave'])
         ->name('leave');
 
     // อัปเดตสถานะผู้เล่น
-    Route::post('/update-state', [SnakeGameController::class, 'updateState'])
+    Route::post('/update-state', [\App\Http\Controllers\SnakeGameController::class, 'updateState'])
         ->name('update-state');
 
     // ผู้เล่นตาย
-    Route::post('/player-died', [SnakeGameController::class, 'playerDied'])
+    Route::post('/player-died', [\App\Http\Controllers\SnakeGameController::class, 'playerDied'])
         ->name('player-died');
 
     // เก็บไอเทม
-    Route::post('/collect-item', [SnakeGameController::class, 'collectItem'])
+    Route::post('/collect-item', [\App\Http\Controllers\SnakeGameController::class, 'collectItem'])
         ->name('collect-item');
 
     // ดึงสถานะห้อง
-    Route::get('/room-state/{roomId}', [SnakeGameController::class, 'getRoomState'])
+    Route::get('/room-state/{roomId}', [\App\Http\Controllers\SnakeGameController::class, 'getRoomState'])
         ->name('room-state');
 
     // บันทึกคะแนน (ต้อง auth + หัก wallet)
-    Route::post('/save-score', [SnakeGameController::class, 'saveScore'])
+    Route::post('/save-score', [\App\Http\Controllers\SnakeGameController::class, 'saveScore'])
         ->middleware('auth:sanctum')
         ->name('save-score');
 
     // ตรวจสอบ wallet
-    Route::get('/check-wallet', [SnakeGameController::class, 'checkWallet'])
+    Route::get('/check-wallet', [\App\Http\Controllers\SnakeGameController::class, 'checkWallet'])
         ->name('check-wallet');
 });

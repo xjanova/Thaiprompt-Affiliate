@@ -143,6 +143,16 @@ class SnakeGameController extends Controller
         try {
             $player = GameRoomPlayer::findOrFail($validated['player_id']);
 
+            // ⚡ Anti-cheat: ตรวจสอบความถูกต้องของข้อมูล
+            $validation = $this->validatePlayerStateChange($player, $validated);
+            if (!$validation['valid']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'การเปลี่ยนแปลงสถานะไม่ถูกต้อง',
+                    'reason' => $validation['reason'],
+                ], 400);
+            }
+
             $this->roomManager->updatePlayerState(
                 $player,
                 $validated['position'],
@@ -377,5 +387,91 @@ class SnakeGameController extends Controller
             'can_save_score' => $wallet && $wallet->balance >= 1,
             'topup_url' => route('user.wallet.index'),
         ]);
+    }
+
+    /**
+     * ⚡ Anti-cheat: ตรวจสอบความถูกต้องของการเปลี่ยนแปลงสถานะผู้เล่น
+     *
+     * @param GameRoomPlayer $player ผู้เล่น
+     * @param array $newState สถานะใหม่
+     * @return array ['valid' => bool, 'reason' => string]
+     */
+    protected function validatePlayerStateChange(GameRoomPlayer $player, array $newState): array
+    {
+        // เวลาที่ผ่านไปนับจากการอัปเดตล่าสุด (วินาที)
+        $timeSinceLastUpdate = $player->last_update
+            ? now()->diffInSeconds($player->last_update)
+            : 1;
+
+        // ป้องกัน division by zero
+        if ($timeSinceLastUpdate === 0) {
+            $timeSinceLastUpdate = 0.1;
+        }
+
+        // 1. ตรวจสอบการเพิ่มคะแนน
+        $scoreDiff = $newState['score'] - $player->score;
+        if ($scoreDiff < 0) {
+            return ['valid' => false, 'reason' => 'คะแนนลดลง (ไม่อนุญาต)'];
+        }
+
+        // คะแนนต้องไม่เพิ่มมากเกินไป (max 100 points ต่อวินาที)
+        $maxScorePerSecond = 100;
+        if ($scoreDiff > $maxScorePerSecond * $timeSinceLastUpdate) {
+            return ['valid' => false, 'reason' => 'คะแนนเพิ่มเร็วเกินไป'];
+        }
+
+        // 2. ตรวจสอบความยาว
+        $lengthDiff = $newState['length'] - $player->length;
+        if ($lengthDiff < 0) {
+            // ความยาวลดได้แต่ไม่ควรลดมากเกินไป
+            if (abs($lengthDiff) > 20) {
+                return ['valid' => false, 'reason' => 'ความยาวลดมากเกินไป'];
+            }
+        } else {
+            // ความยาวเพิ่ม - ต้องสอดคล้องกับคะแนน
+            if ($lengthDiff > $scoreDiff + 10) { // +10 เผื่อความคลาดเคลื่อน
+                return ['valid' => false, 'reason' => 'ความยาวเพิ่มไม่สอดคล้องกับคะแนน'];
+            }
+
+            // ความยาวต้องไม่เพิ่มมากเกินไป (max 50 ต่อวินาที)
+            $maxLengthPerSecond = 50;
+            if ($lengthDiff > $maxLengthPerSecond * $timeSinceLastUpdate) {
+                return ['valid' => false, 'reason' => 'ความยาวเพิ่มเร็วเกินไป'];
+            }
+        }
+
+        // 3. ตรวจสอบระยะทางการเคลื่อนที่
+        $oldPos = $player->position;
+        $newPos = $newState['position'];
+
+        $distance = sqrt(
+            pow($newPos['x'] - $oldPos['x'], 2) +
+            pow($newPos['z'] - $oldPos['z'], 2)
+        );
+
+        // ความเร็วสูงสุด (หน่วยต่อวินาที) - งูเดินได้ประมาณ 20 หน่วยต่อวินาที
+        $maxSpeed = 30; // เผื่อ boost
+        $maxDistance = $maxSpeed * $timeSinceLastUpdate;
+
+        if ($distance > $maxDistance) {
+            return ['valid' => false, 'reason' => 'เคลื่อนที่เร็วเกินไป (teleport)'];
+        }
+
+        // 4. ตรวจสอบว่าอยู่ในขอบเขตแผนที่
+        $room = $player->room;
+        $worldSize = $room->settings['world_size'] ?? 200;
+        $maxBoundary = $worldSize / 2;
+
+        if (abs($newPos['x']) > $maxBoundary || abs($newPos['z']) > $maxBoundary) {
+            return ['valid' => false, 'reason' => 'ตำแหน่งอยู่นอกแผนที่'];
+        }
+
+        // 5. Rate limiting - ป้องกันการอัปเดตบ่อยเกินไป
+        if ($timeSinceLastUpdate < 0.05) { // น้อยกว่า 50ms
+            return ['valid' => false, 'reason' => 'อัปเดตบ่อยเกินไป'];
+        }
+
+        // ผ่านการตรวจสอบทั้งหมด
+        return ['valid' => true, 'reason' => ''];
     }
 }
