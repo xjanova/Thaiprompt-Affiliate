@@ -17,17 +17,46 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-4xl font-bold text-white mb-2">ประวัติการทำงานของบอท</h1>
-                    <p class="text-violet-100 text-lg">ดูรายละเอียดการทำงานและผลลัพธ์ของบอททั้งหมด</p>
+                    <h1 data-translate class="text-4xl font-bold text-white mb-2">ประวัติการทำงานของบอท</h1>
+                    <p data-translate class="text-violet-100 text-lg">ดูรายละเอียดการทำงานและผลลัพธ์ของบอททั้งหมด</p>
                 </div>
             </div>
-            <a href="{{ route('admin.bot-automation.analytics.index') }}"
-               class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 border-2 border-white/30 flex items-center gap-2 shadow-lg hover:shadow-xl">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                กลับไปแดชบอร์ด
-            </a>
+
+            {{-- Language Switcher --}}
+            <div class="flex items-center gap-3">
+                <div class="relative inline-block" x-data="{ open: false }">
+                    <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                        </svg>
+                        <span data-translate>ภาษา</span>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-transition
+                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
+                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
+                        </a>
+                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇬🇧</span> English
+                        </a>
+                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇨🇳</span> 中文
+                        </a>
+                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇯🇵</span> 日本語
+                        </a>
+                    </div>
+                </div>
+
+                <a href="{{ route('admin.bot-automation.analytics.index') }}"
+                   class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 border-2 border-white/30 flex items-center gap-2 shadow-lg hover:shadow-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span data-translate>กลับไปแดชบอร์ด</span>
+                </a>
+            </div>
         </div>
     </div>
 

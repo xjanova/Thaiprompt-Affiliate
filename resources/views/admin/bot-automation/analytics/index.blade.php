@@ -9,16 +9,44 @@
         {{-- Background Pattern SVG --}}
         <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
 
-        <div class="relative flex items-center gap-4">
-            {{-- Icon พร้อม Animation --}}
-            <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 animate-pulse">
-                <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
+        <div class="relative flex items-center justify-between w-full">
+            <div class="flex items-center gap-4">
+                {{-- Icon พร้อม Animation --}}
+                <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center border-2 border-white/30 animate-pulse">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 data-translate class="text-4xl font-bold text-white mb-2">แดชบอร์ดวิเคราะห์บอท</h1>
+                    <p data-translate class="text-violet-100 text-lg">ข้อมูลการทำงานและประสิทธิภาพของบอทอัตโนมัติ</p>
+                </div>
             </div>
-            <div>
-                <h1 class="text-4xl font-bold text-white mb-2">แดชบอร์ดวิเคราะห์บอท</h1>
-                <p class="text-violet-100 text-lg">ข้อมูลการทำงานและประสิทธิภาพของบอทอัตโนมัติ</p>
+
+            {{-- Language Switcher --}}
+            <div class="relative inline-block" x-data="{ open: false }">
+                <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                    </svg>
+                    <span data-translate>ภาษา</span>
+                </button>
+
+                <div x-show="open" @click.away="open = false" x-transition
+                     class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
+                    <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
+                    </a>
+                    <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <span class="mr-2">🇬🇧</span> English
+                    </a>
+                    <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <span class="mr-2">🇨🇳</span> 中文
+                    </a>
+                    <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                        <span class="mr-2">🇯🇵</span> 日本語
+                    </a>
+                </div>
             </div>
         </div>
     </div>
@@ -36,7 +64,7 @@
                     </div>
                 </div>
                 <div class="space-y-1">
-                    <p class="text-sm font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide">ครั้งที่ทำงานทั้งหมด</p>
+                    <p data-translate class="text-sm font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide">ครั้งที่ทำงานทั้งหมด</p>
                     <p class="text-4xl font-bold text-violet-600 dark:text-violet-400">{{ number_format($totalExecutions ?? 0) }}</p>
                 </div>
             </div>
@@ -53,7 +81,7 @@
                     </div>
                 </div>
                 <div class="space-y-1">
-                    <p class="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">อัตราความสำเร็จ</p>
+                    <p data-translate class="text-sm font-semibold text-green-700 dark:text-green-300 uppercase tracking-wide">อัตราความสำเร็จ</p>
                     <p class="text-4xl font-bold text-green-600 dark:text-green-400">{{ $successRate ?? '0' }}%</p>
                 </div>
             </div>
@@ -71,7 +99,7 @@
                     </div>
                 </div>
                 <div class="space-y-1">
-                    <p class="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide">บอทที่ทำงาน</p>
+                    <p data-translate class="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide">บอทที่ทำงาน</p>
                     <p class="text-4xl font-bold text-cyan-600 dark:text-cyan-400">{{ $activeBots ?? '0' }}</p>
                 </div>
             </div>
@@ -88,7 +116,7 @@
                     </div>
                 </div>
                 <div class="space-y-1">
-                    <p class="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">เวลาตอบสนองเฉลี่ย</p>
+                    <p data-translate class="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide">เวลาตอบสนองเฉลี่ย</p>
                     <p class="text-4xl font-bold text-amber-600 dark:text-amber-400">{{ $avgResponseTime ?? '0' }}<span class="text-xl">ms</span></p>
                 </div>
             </div>
@@ -104,7 +132,7 @@
                     <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
                     </svg>
-                    ภาพรวมประสิทธิภาพบอท
+                    <span data-translate>ภาพรวมประสิทธิภาพบอท</span>
                 </h3>
             </div>
             <div class="p-6">
@@ -122,7 +150,7 @@
                     <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                     </svg>
-                    เข้าถึงอย่างรวดเร็ว
+                    <span data-translate>เข้าถึงอย่างรวดเร็ว</span>
                 </h3>
 
                 <div class="space-y-3">
@@ -136,8 +164,8 @@
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="font-semibold text-white">ดูการทำงาน</p>
-                            <p class="text-xs text-violet-200">รายละเอียดการ Execute</p>
+                            <p data-translate class="font-semibold text-white">ดูการทำงาน</p>
+                            <p data-translate class="text-xs text-violet-200">รายละเอียดการ Execute</p>
                         </div>
                         <svg class="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -153,8 +181,8 @@
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="font-semibold text-white">Engagement Metrics</p>
-                            <p class="text-xs text-violet-200">วัดการมีส่วนร่วม</p>
+                            <p data-translate class="font-semibold text-white">Engagement Metrics</p>
+                            <p data-translate class="text-xs text-violet-200">วัดการมีส่วนร่วม</p>
                         </div>
                         <svg class="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -170,8 +198,8 @@
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="font-semibold text-white">รายละเอียดประสิทธิภาพ</p>
-                            <p class="text-xs text-violet-200">ข้อมูล Performance</p>
+                            <p data-translate class="font-semibold text-white">รายละเอียดประสิทธิภาพ</p>
+                            <p data-translate class="text-xs text-violet-200">ข้อมูล Performance</p>
                         </div>
                         <svg class="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -187,8 +215,8 @@
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="font-semibold text-white">สถิติแพลตฟอร์ม</p>
-                            <p class="text-xs text-violet-200">ข้อมูลแต่ละแพลตฟอร์ม</p>
+                            <p data-translate class="font-semibold text-white">สถิติแพลตฟอร์ม</p>
+                            <p data-translate class="text-xs text-violet-200">ข้อมูลแต่ละแพลตฟอร์ม</p>
                         </div>
                         <svg class="w-5 h-5 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

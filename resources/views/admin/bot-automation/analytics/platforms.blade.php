@@ -41,17 +41,46 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-4xl font-bold text-white mb-2">การวิเคราะห์แพลตฟอร์ม</h1>
-                    <p class="text-violet-100 text-lg">ติดตามสถิติและประสิทธิภาพของแพลตฟอร์มต่างๆ</p>
+                    <h1 data-translate class="text-4xl font-bold text-white mb-2">การวิเคราะห์แพลตฟอร์ม</h1>
+                    <p data-translate class="text-violet-100 text-lg">ติดตามสถิติและประสิทธิภาพของแพลตฟอร์มต่างๆ</p>
                 </div>
             </div>
-            <a href="{{ route('admin.bot-automation.analytics.index') }}"
-               class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 border-2 border-white/30 flex items-center gap-2 shadow-lg hover:shadow-xl">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                กลับไปแดชบอร์ด
-            </a>
+
+            <div class="flex items-center gap-3">
+                {{-- Language Switcher --}}
+                <div class="relative inline-block" x-data="{ open: false }">
+                    <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                        </svg>
+                        <span data-translate>ภาษา</span>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-transition
+                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
+                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
+                        </a>
+                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇬🇧</span> English
+                        </a>
+                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇨🇳</span> 中文
+                        </a>
+                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇯🇵</span> 日本語
+                        </a>
+                    </div>
+                </div>
+
+                <a href="{{ route('admin.bot-automation.analytics.index') }}"
+                   class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 border-2 border-white/30 flex items-center gap-2 shadow-lg hover:shadow-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span data-translate>กลับไปแดชบอร์ด</span>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -65,7 +94,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide mb-1">แพลตฟอร์มทั้งหมด</p>
+                <p data-translate class="text-sm font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide mb-1">แพลตฟอร์มทั้งหมด</p>
                 <p class="text-4xl font-bold text-violet-600 dark:text-violet-400">{{ $totalPlatforms ?? '0' }}</p>
             </div>
         </div>
@@ -78,7 +107,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide mb-1">แพลตฟอร์มที่ใช้งาน</p>
+                <p data-translate class="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide mb-1">แพลตฟอร์มที่ใช้งาน</p>
                 <p class="text-4xl font-bold text-emerald-600 dark:text-emerald-400">{{ $activePlatforms ?? '0' }}</p>
             </div>
         </div>
@@ -91,7 +120,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide mb-1">ข้อความทั้งหมด</p>
+                <p data-translate class="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide mb-1">ข้อความทั้งหมด</p>
                 <p class="text-4xl font-bold text-cyan-600 dark:text-cyan-400">{{ $totalMessages ?? '0' }}</p>
             </div>
         </div>
@@ -104,7 +133,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">ผู้ใช้ที่เชื่อมต่อ</p>
+                <p data-translate class="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">ผู้ใช้ที่เชื่อมต่อ</p>
                 <p class="text-4xl font-bold text-amber-600 dark:text-amber-400">{{ $connectedUsers ?? '0' }}</p>
             </div>
         </div>
@@ -162,13 +191,13 @@
             <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                 <thead class="bg-gray-50 dark:bg-slate-900">
                     <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">แพลตฟอร์ม</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">สถานะ</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">บอทที่เชื่อมต่อ</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ข้อความทั้งหมด</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ผู้ใช้ที่ใช้งาน</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">อัตราสำเร็จ</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">กิจกรรมล่าสุด</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider" data-translate>แพลตฟอร์ม</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider" data-translate>สถานะ</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider" data-translate>บอทที่เชื่อมต่อ</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider" data-translate>ข้อความทั้งหมด</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider" data-translate>ผู้ใช้ที่ใช้งาน</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider" data-translate>อัตราสำเร็จ</th>
+                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider" data-translate>กิจกรรมล่าสุด</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
@@ -205,7 +234,7 @@
                                 <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                                 </svg>
-                                <p class="text-lg font-medium">ไม่มีข้อมูลแพลตฟอร์ม</p>
+                                <p data-translate class="text-lg font-medium">ไม่มีข้อมูลแพลตฟอร์ม</p>
                             </div>
                         </td>
                     </tr>

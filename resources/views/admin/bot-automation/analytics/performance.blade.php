@@ -41,17 +41,46 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-4xl font-bold text-white mb-2">การวิเคราะห์ประสิทธิภาพ</h1>
-                    <p class="text-violet-100 text-lg">ติดตามและวิเคราะห์ประสิทธิภาพการทำงานของบอท</p>
+                    <h1 data-translate class="text-4xl font-bold text-white mb-2">การวิเคราะห์ประสิทธิภาพ</h1>
+                    <p data-translate class="text-violet-100 text-lg">ติดตามและวิเคราะห์ประสิทธิภาพการทำงานของบอท</p>
                 </div>
             </div>
-            <a href="{{ route('admin.bot-automation.analytics.index') }}"
-               class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 border-2 border-white/30 flex items-center gap-2 shadow-lg hover:shadow-xl">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                </svg>
-                กลับไปแดชบอร์ด
-            </a>
+
+            <div class="flex items-center gap-3">
+                {{-- Language Switcher --}}
+                <div class="relative inline-block" x-data="{ open: false }">
+                    <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                        </svg>
+                        <span data-translate>ภาษา</span>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-transition
+                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
+                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
+                        </a>
+                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇬🇧</span> English
+                        </a>
+                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇨🇳</span> 中文
+                        </a>
+                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇯🇵</span> 日本語
+                        </a>
+                    </div>
+                </div>
+
+                <a href="{{ route('admin.bot-automation.analytics.index') }}"
+                   class="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-semibold hover:bg-white/30 transition-all duration-300 border-2 border-white/30 flex items-center gap-2 shadow-lg hover:shadow-xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    <span data-translate>กลับไปแดshบอร์ด</span>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -65,7 +94,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide mb-1">เวลาตอบกลับเฉลี่ย</p>
+                <p data-translate class="text-sm font-semibold text-violet-700 dark:text-violet-300 uppercase tracking-wide mb-1">เวลาตอบกลับเฉลี่ย</p>
                 <p class="text-4xl font-bold text-violet-600 dark:text-violet-400">{{ $avgResponseTime ?? '0' }}<span class="text-xl">ms</span></p>
             </div>
         </div>
@@ -78,7 +107,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide mb-1">อัตราความสำเร็จ</p>
+                <p data-translate class="text-sm font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wide mb-1">อัตราความสำเร็จ</p>
                 <p class="text-4xl font-bold text-emerald-600 dark:text-emerald-400">{{ $successRate ?? '0' }}<span class="text-xl">%</span></p>
             </div>
         </div>
@@ -91,7 +120,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide mb-1">เวลาทำงาน</p>
+                <p data-translate class="text-sm font-semibold text-cyan-700 dark:text-cyan-300 uppercase tracking-wide mb-1">เวลาทำงาน</p>
                 <p class="text-4xl font-bold text-cyan-600 dark:text-cyan-400">{{ $uptime ?? '0' }}<span class="text-xl">%</span></p>
             </div>
         </div>
@@ -104,7 +133,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                     </svg>
                 </div>
-                <p class="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">อัตราข้อผิดพลาด</p>
+                <p data-translate class="text-sm font-semibold text-amber-700 dark:text-amber-300 uppercase tracking-wide mb-1">อัตราข้อผิดพลาด</p>
                 <p class="text-4xl font-bold text-amber-600 dark:text-amber-400">{{ $errorRate ?? '0' }}<span class="text-xl">%</span></p>
             </div>
         </div>
@@ -115,7 +144,7 @@
         {{-- Performance Trends Chart --}}
         <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 px-6 py-4">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <h2 data-translate class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                     <svg class="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                     </svg>
@@ -132,7 +161,7 @@
         {{-- Top Performing Bots --}}
         <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
             <div class="border-b border-gray-200 dark:border-slate-700 bg-gradient-to-r from-violet-50 to-purple-50 dark:from-slate-800 dark:to-slate-800 px-6 py-4">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <h2 data-translate class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                     <svg class="w-6 h-6 text-violet-600 dark:text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
                     </svg>
@@ -152,14 +181,14 @@
                             </div>
                             <span class="text-lg font-bold text-emerald-600 dark:text-emerald-400">{{ $bot->success_rate ?? '0' }}%</span>
                         </div>
-                        <p class="text-sm text-gray-600 dark:text-gray-400 ml-11">{{ $bot->executions ?? '0' }} การทำงาน</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 ml-11">{{ $bot->executions ?? '0' }} <span data-translate>การทำงาน</span></p>
                     </div>
                     @empty
                     <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                         <svg class="w-12 h-12 mx-auto mb-3 text-gray-400 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                         </svg>
-                        <p class="font-medium">ไม่มีข้อมูลประสิทธิภาพ</p>
+                        <p data-translate class="font-medium">ไม่มีข้อมูลประสิทธิภาพ</p>
                     </div>
                     @endforelse
                 </div>
@@ -181,12 +210,12 @@
             <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
                 <thead class="bg-gray-50 dark:bg-slate-900">
                     <tr>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ชื่อบอท</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">การทำงาน</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">อัตราสำเร็จ</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">เวลาตอบกลับเฉลี่ย</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">จำนวนข้อผิดพลาด</th>
-                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ทำงานล่าสุด</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ชื่อบอท</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">การทำงาน</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">อัตราสำเร็จ</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">เวลาตอบกลับเฉลี่ย</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">จำนวนข้อผิดพลาด</th>
+                        <th data-translate scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">ทำงานล่าสุด</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
@@ -206,7 +235,7 @@
                                 <svg class="w-16 h-16 text-gray-400 dark:text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
                                 </svg>
-                                <p class="text-lg font-medium">ไม่มีข้อมูลประสิทธิภาพ</p>
+                                <p data-translate class="text-lg font-medium">ไม่มีข้อมูลประสิทธิภาพ</p>
                             </div>
                         </td>
                     </tr>

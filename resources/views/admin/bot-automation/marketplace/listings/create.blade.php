@@ -16,12 +16,39 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-4xl font-bold text-white mb-2">สร้างรายการใหม่</h1>
-                    <p class="text-orange-100 text-lg">เพิ่มบอทเข้าสู่ตลาดซื้อขาย</p>
+                    <h1 data-translate class="text-4xl font-bold text-white mb-2">สร้างรายการใหม่</h1>
+                    <p data-translate class="text-orange-100 text-lg">เพิ่มบอทเข้าสู่ตลาดซื้อขาย</p>
                 </div>
             </div>
 
-            <a href="{{ route('admin.bot-automation.marketplace.index') }}"
+            
+            <div class="flex items-center gap-3">
+                {{-- Language Switcher --}}
+                <div class="relative inline-block" x-data="{ open: false }">
+                    <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-200 border border-white/30 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                        </svg>
+                        <span data-translate>ภาษา</span>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-transition
+                         class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-gray-200 dark:border-slate-700 overflow-hidden z-50">
+                        <a href="/lang/th" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇹🇭</span> <span data-translate>ไทย</span>
+                        </a>
+                        <a href="/lang/en" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇬🇧</span> English
+                        </a>
+                        <a href="/lang/zh" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇨🇳</span> 中文
+                        </a>
+                        <a href="/lang/ja" class="block px-4 py-3 hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                            <span class="mr-2">🇯🇵</span> 日本語
+                        </a>
+                    </div>
+                </div>
+<a href="{{ route('admin.bot-automation.marketplace.index') }}"
                class="inline-flex items-center px-6 py-3 bg-white hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700 text-orange-600 dark:text-orange-400 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
@@ -79,11 +106,11 @@
                             </label>
                             <select name="category" id="category" required
                                     class="w-full px-4 py-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring focus:ring-orange-200 dark:focus:ring-orange-800 transition-all duration-300 @error('category') border-red-500 @enderror">
-                                <option value="">เลือกหมวดหมู่</option>
-                                <option value="sales" {{ old('category') == 'sales' ? 'selected' : '' }}>ฝ่ายขาย</option>
-                                <option value="support" {{ old('category') == 'support' ? 'selected' : '' }}>ฝ่ายสนับสนุน</option>
-                                <option value="marketing" {{ old('category') == 'marketing' ? 'selected' : '' }}>การตลาด</option>
-                                <option value="automation" {{ old('category') == 'automation' ? 'selected' : '' }}>ระบบอัตโนมัติ</option>
+                                <option data-translate>เลือกหมวดหมู่</option>
+                                <option data-translate>ฝ่ายขาย</option>
+                                <option data-translate>ฝ่ายสนับสนุน</option>
+                                <option data-translate>การตลาด</option>
+                                <option data-translate>ระบบอัตโนมัติ</option>
                             </select>
                             @error('category')
                                 <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -112,7 +139,7 @@
                         <label for="features" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                             คุณสมบัติ (ทีละบรรทัด)
                         </label>
-                        <textarea name="features" id="features" rows="5" placeholder="คุณสมบัติ 1&#10;คุณสมบัติ 2&#10;คุณสมบัติ 3"
+                        <textarea name="features" id="features" rows="5" placeholder="คุณสมบัติ 1&#10;คุณสมบัติ 2&#10;คุณสมบัติ 3" data-translate-placeholder
                                   class="w-full px-4 py-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring focus:ring-orange-200 dark:focus:ring-orange-800 transition-all duration-300 @error('features') border-red-500 @enderror">{{ old('features') }}</textarea>
                         @error('features')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -126,7 +153,7 @@
                         </label>
                         <select name="bot_id" id="bot_id"
                                 class="w-full px-4 py-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring focus:ring-orange-200 dark:focus:ring-orange-800 transition-all duration-300 @error('bot_id') border-red-500 @enderror">
-                            <option value="">เลือกบอท (ไม่บังคับ)</option>
+                            <option data-translate>เลือกบอท (ไม่บังคับ)</option>
                             @foreach($bots ?? [] as $bot)
                             <option value="{{ $bot->id }}" {{ old('bot_id') == $bot->id ? 'selected' : '' }}>
                                 {{ $bot->name }}
@@ -149,7 +176,7 @@
                                     <svg class="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                     </svg>
-                                    <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span class="font-semibold">คลิกเพื่ออัพโหลด</span> หรือลากไฟล์มาวาง</p>
+                                    <p class="mb-2 text-sm text-gray-500 dark:text-gray-400"><span data-translate class="font-semibold">คลิกเพื่ออัพโหลด</span> หรือลากไฟล์มาวาง</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG หรือ GIF (MAX. 2MB)</p>
                                 </div>
                                 <input type="file" name="image" id="image" accept="image/*" class="hidden" @error('image') border-red-500 @enderror>
@@ -176,9 +203,9 @@
                         </label>
                         <select name="status" id="status" required
                                 class="w-full px-4 py-3 rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:border-orange-500 dark:focus:border-orange-400 focus:ring focus:ring-orange-200 dark:focus:ring-orange-800 transition-all duration-300 @error('status') border-red-500 @enderror">
-                            <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>รอดำเนินการ</option>
-                            <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>ใช้งาน</option>
-                            <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>ไม่ใช้งาน</option>
+                            <option data-translate>รอดำเนินการ</option>
+                            <option data-translate>ใช้งาน</option>
+                            <option data-translate>ไม่ใช้งาน</option>
                         </select>
                         @error('status')
                             <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -220,31 +247,31 @@
                             <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="text-sm text-gray-700 dark:text-gray-300">ใช้ชื่อที่ชัดเจนและเข้าใจง่าย</span>
+                            <span data-translate class="text-sm text-gray-700 dark:text-gray-300">ใช้ชื่อที่ชัดเจนและเข้าใจง่าย</span>
                         </li>
                         <li class="flex items-start">
                             <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="text-sm text-gray-700 dark:text-gray-300">เขียนคำอธิบายละเอียดและครบถ้วน</span>
+                            <span data-translate class="text-sm text-gray-700 dark:text-gray-300">เขียนคำอธิบายละเอียดและครบถ้วน</span>
                         </li>
                         <li class="flex items-start">
                             <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="text-sm text-gray-700 dark:text-gray-300">ตั้งราคาที่แข่งขันได้</span>
+                            <span data-translate class="text-sm text-gray-700 dark:text-gray-300">ตั้งราคาที่แข่งขันได้</span>
                         </li>
                         <li class="flex items-start">
                             <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="text-sm text-gray-700 dark:text-gray-300">เพิ่มรูปภาพคุณภาพสูง</span>
+                            <span data-translate class="text-sm text-gray-700 dark:text-gray-300">เพิ่มรูปภาพคุณภาพสูง</span>
                         </li>
                         <li class="flex items-start">
                             <svg class="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="text-sm text-gray-700 dark:text-gray-300">ระบุคุณสมบัติสำคัญอย่างชัดเจน</span>
+                            <span data-translate class="text-sm text-gray-700 dark:text-gray-300">ระบุคุณสมบัติสำคัญอย่างชัดเจน</span>
                         </li>
                     </ul>
                 </div>
