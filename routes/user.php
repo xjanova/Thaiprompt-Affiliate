@@ -62,6 +62,9 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
 Route::prefix('wallet')->name('wallet.')->group(function () {
     Route::get('/', [WalletController::class, 'index'])->name('index');
 
+    // Topup Routes (Wallet Topup Packages)
+    Route::get('/topup', [WalletController::class, 'topup'])->name('topup');
+
     // Deposit Routes
     Route::get('/deposit', [WalletController::class, 'deposit'])->name('deposit');
     Route::post('/deposit/promptpay', [WalletController::class, 'depositPromptPay'])->name('deposit.promptpay');

@@ -98,6 +98,28 @@ class WalletController extends Controller
     }
 
     /**
+     * แสดงหน้าเติมเงิน Wallet (Topup Packages)
+     *
+     * @return \Illuminate\View\View
+     */
+    public function topup()
+    {
+        $user = auth()->user();
+        $wallet = $this->walletService->getOrCreateWallet($user);
+
+        // ดึงแพ็คเกจเติมเงิน (virtual products ในหมวด wallet-topup)
+        $topupPackages = \App\Models\Product::where('is_virtual', true)
+            ->where('is_active', true)
+            ->whereHas('category', function ($query) {
+                $query->where('slug', 'wallet-topup');
+            })
+            ->orderBy('price', 'asc')
+            ->get();
+
+        return view('user.wallet.topup', compact('wallet', 'topupPackages'));
+    }
+
+    /**
      * Display deposit page
      */
     public function deposit()
