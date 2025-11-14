@@ -174,7 +174,7 @@ class LineAlertService
     private function sendAdminAlert(string $title, string $message): void
     {
         // Get admin users with LINE connected
-        $admins = \App\Models\User::where('is_admin', true)
+        $admins = \App\Models\User::whereIn('role', ['admin', 'super_admin'])
             ->whereNotNull('line_user_id')
             ->get();
 
