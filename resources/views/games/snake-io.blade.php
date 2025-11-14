@@ -962,11 +962,8 @@
         // ✅ Performance Optimization - Throttling
         let lastCollisionCheck = 0;
         let lastLeaderboardUpdate = 0;
-        let lastFrameTime = 0;
         const COLLISION_CHECK_INTERVAL = 50; // เช็ค collision ทุก 50ms (20 ครั้ง/วินาที แทนที่จะเป็น 60 ครั้ง)
         const LEADERBOARD_UPDATE_INTERVAL = 500; // อัปเดต leaderboard ทุก 500ms (2 ครั้ง/วินาที)
-        const TARGET_FPS = 60; // 60 FPS
-        const FRAME_INTERVAL = 1000 / TARGET_FPS; // ~16.67ms
 
         // Multiplayer Manager
         let multiplayerManager = null;
@@ -2924,17 +2921,9 @@
 
         function animate() {
             requestAnimationFrame(animate);
-
-            // ✅ FPS Limiter - จำกัดที่ 60 FPS (ลด CPU usage)
-            const now = Date.now();
-            const elapsed = now - lastFrameTime;
-
-            if (elapsed >= FRAME_INTERVAL) {
-                lastFrameTime = now - (elapsed % FRAME_INTERVAL);
-
-                update();
-                renderer.render(scene, camera);
-            }
+            // ✅ requestAnimationFrame มี built-in 60 FPS อยู่แล้ว ไม่ต้อง limit เอง!
+            update();
+            renderer.render(scene, camera);
         }
 
         function onWindowResize() {
