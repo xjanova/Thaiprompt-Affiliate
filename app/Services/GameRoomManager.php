@@ -6,6 +6,12 @@ use App\Models\GameRoom;
 use App\Models\GameRoomPlayer;
 use App\Models\GameRoomItem;
 use App\Models\Game;
+use App\Events\SnakeGame\PlayerJoined;
+use App\Events\SnakeGame\PlayerLeft;
+use App\Events\SnakeGame\PlayerMoved;
+use App\Events\SnakeGame\PlayerDied as PlayerDiedEvent;
+use App\Events\SnakeGame\ItemSpawned;
+use App\Events\SnakeGame\ItemCollected as ItemCollectedEvent;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -128,6 +134,15 @@ class GameRoomManager
             $room->start();
         }
 
+        // Broadcast event: ผู้เล่นเข้าร่วมห้อง
+        broadcast(new PlayerJoined(
+            $room->id,
+            $player->id,
+            $playerName,
+            $skinSlug,
+            $position
+        ))->toOthers();
+
         return $player;
     }
 
@@ -140,9 +155,14 @@ class GameRoomManager
     public function leaveRoom(GameRoomPlayer $player): void
     {
         $room = $player->room;
+        $roomId = $room->id;
+        $playerId = $player->id;
 
         // ลบผู้เล่น
         $player->disconnect();
+
+        // Broadcast event: ผู้เล่นออกจากห้อง
+        broadcast(new PlayerLeft($roomId, $playerId))->toOthers();
 
         // อัปเดตจำนวนผู้เล่น
         $room->updatePlayerCount();
@@ -172,6 +192,16 @@ class GameRoomManager
             'length' => $length,
             'last_update' => now(),
         ]);
+
+        // Broadcast event: ผู้เล่นเคลื่อนที่
+        broadcast(new PlayerMoved(
+            $player->room_id,
+            $player->id,
+            $position,
+            $direction,
+            $score,
+            $length
+        ))->toOthers();
     }
 
     /**
@@ -182,7 +212,18 @@ class GameRoomManager
      */
     public function playerDied(GameRoomPlayer $player): void
     {
+        $finalScore = $player->score;
+        $finalLength = $player->length;
+
         $player->die();
+
+        // Broadcast event: ผู้เล่นตาย
+        broadcast(new PlayerDiedEvent(
+            $player->room_id,
+            $player->id,
+            $finalScore,
+            $finalLength
+        ))->toOthers();
 
         // สร้างอาหารจากร่างของงู (แปลง segments เป็นอาหาร)
         $this->spawnFoodFromSnake($player);
@@ -208,6 +249,13 @@ class GameRoomManager
 
         // เก็บไอเทม
         $item->collect($player->id);
+
+        // Broadcast event: เก็บไอเทม
+        broadcast(new ItemCollectedEvent(
+            $player->room_id,
+            $item->id,
+            $player->id
+        ))->toOthers();
 
         // อัปเดตคะแนนผู้เล่นถ้าเป็นอาหาร
         if ($item->item_type === GameRoomItem::TYPE_FOOD) {
@@ -256,7 +304,18 @@ class GameRoomManager
         $type = $types[array_rand($types)];
 
         $position = $this->generateRandomFoodPosition($worldSize);
-        GameRoomItem::spawnPowerup($roomId, $type, $position);
+        $item = GameRoomItem::spawnPowerup($roomId, $type, $position);
+
+        // Broadcast event: เกิดไอเทมใหม่
+        if ($item) {
+            broadcast(new ItemSpawned(
+                $roomId,
+                $item->id,
+                $item->item_type,
+                $position,
+                $item->value
+            ));
+        }
     }
 
     /**
@@ -285,7 +344,18 @@ class GameRoomManager
             $spawnCount = $targetFoodCount - $foodCount;
             for ($i = 0; $i < $spawnCount; $i++) {
                 $position = $this->generateRandomFoodPosition($worldSize);
-                GameRoomItem::spawnFood($roomId, $position, 1);
+                $item = GameRoomItem::spawnFood($roomId, $position, 1);
+
+                // Broadcast event: เกิดอาหารใหม่
+                if ($item) {
+                    broadcast(new ItemSpawned(
+                        $roomId,
+                        $item->id,
+                        $item->item_type,
+                        $position,
+                        $item->value
+                    ));
+                }
             }
         }
     }
