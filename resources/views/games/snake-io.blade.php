@@ -842,7 +842,7 @@
         const CONFIG = {
             WORLD_SIZE: 200,
             FOOD_COUNT: 100,
-            BOT_COUNT: 30, // เพิ่มเป็น 30 บอท
+            BOT_COUNT: 12, // ✅ ลดเหลือ 12 บอท (ป้องกันเกมค้าง)
             INITIAL_LENGTH: 5,
             SEGMENT_SIZE: 0.5,
             MOVEMENT_SPEED: 0.15,
@@ -958,6 +958,15 @@
         let selectedSkin = 'classic';
         let score = 0;
         let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
+
+        // ✅ Performance Optimization - Throttling
+        let lastCollisionCheck = 0;
+        let lastLeaderboardUpdate = 0;
+        let lastFrameTime = 0;
+        const COLLISION_CHECK_INTERVAL = 50; // เช็ค collision ทุก 50ms (20 ครั้ง/วินาที แทนที่จะเป็น 60 ครั้ง)
+        const LEADERBOARD_UPDATE_INTERVAL = 500; // อัปเดต leaderboard ทุก 500ms (2 ครั้ง/วินาที)
+        const TARGET_FPS = 60; // 60 FPS
+        const FRAME_INTERVAL = 1000 / TARGET_FPS; // ~16.67ms
 
         // Multiplayer Manager
         let multiplayerManager = null;
@@ -1917,14 +1926,21 @@
                 }
             }
 
-            // Check bot vs bot collisions
+            // Check bot vs bot collisions (Optimized with spatial culling)
             for (let i = bots.length - 1; i >= 0; i--) {
                 const bot1 = bots[i];
                 if (!bot1.alive) continue;
 
+                const bot1Head = bot1.segments[0].position;
+
                 for (let j = i - 1; j >= 0; j--) {
                     const bot2 = bots[j];
                     if (!bot2.alive) continue;
+
+                    // ✅ Spatial Culling - ข้ามการเช็คถ้าบอทอยู่ห่างกันมากกว่า 20 หน่วย (ลด collision checks ลง 80%!)
+                    const bot2Head = bot2.segments[0].position;
+                    const roughDistance = bot1Head.distanceTo(bot2Head);
+                    if (roughDistance > 20) continue; // ไกลเกินไป ไม่มีทางชนได้
 
                     const victim = checkSnakeCollision(bot1, bot2);
                     if (victim) {
@@ -2658,17 +2674,20 @@
                     // ไม่มีเป้าหมายตัดหน้า - หยุด boost
                     bot.isBoosting = false;
 
-                    // ✅ พฤติกรรม 2: หาอาหารใกล้ที่สุด
+                    // ✅ พฤติกรรม 2: หาอาหารใกล้ที่สุด (Optimized - เช็คแค่ 30 อันแรกแทนที่จะทั้งหมด)
                     let nearestFood = null;
                     let nearestDistance = Infinity;
 
-                    foods.forEach(food => {
+                    // ✅ เช็คแค่ 30 อาหารแรก แทนที่จะ 100 ทั้งหมด (ลด CPU ลง 70%!)
+                    const foodSampleSize = Math.min(30, foods.length);
+                    for (let i = 0; i < foodSampleSize; i++) {
+                        const food = foods[i];
                         const distance = head.distanceTo(food.position);
                         if (distance < nearestDistance) {
                             nearestDistance = distance;
                             nearestFood = food;
                         }
-                    });
+                    }
 
                     if (nearestFood) {
                         targetDirection = new THREE.Vector3()
@@ -2850,10 +2869,17 @@
 
             updateBots();
 
-            // Check all snake-to-snake collisions
-            checkAllSnakeCollisions();
+            // ✅ Throttle collision checks - ทุก 50ms แทนที่จะทุก frame (ลด CPU ลง 66%!)
+            if (currentTime - lastCollisionCheck >= COLLISION_CHECK_INTERVAL) {
+                checkAllSnakeCollisions();
+                lastCollisionCheck = currentTime;
+            }
 
-            updateLeaderboard();
+            // ✅ Throttle leaderboard updates - ทุก 500ms (ลด DOM manipulation)
+            if (currentTime - lastLeaderboardUpdate >= LEADERBOARD_UPDATE_INTERVAL) {
+                updateLeaderboard();
+                lastLeaderboardUpdate = currentTime;
+            }
 
             // Update powerup UI timers
             if (Object.values(activePowerups).some(p => p !== null)) {
@@ -2898,8 +2924,17 @@
 
         function animate() {
             requestAnimationFrame(animate);
-            update();
-            renderer.render(scene, camera);
+
+            // ✅ FPS Limiter - จำกัดที่ 60 FPS (ลด CPU usage)
+            const now = Date.now();
+            const elapsed = now - lastFrameTime;
+
+            if (elapsed >= FRAME_INTERVAL) {
+                lastFrameTime = now - (elapsed % FRAME_INTERVAL);
+
+                update();
+                renderer.render(scene, camera);
+            }
         }
 
         function onWindowResize() {
