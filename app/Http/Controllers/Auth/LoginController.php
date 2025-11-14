@@ -41,9 +41,10 @@ class LoginController extends Controller
             // Get authenticated user
             $user = Auth::user();
 
-            // Check if 2FA is required for login
-            if ($this->twoFactorService->requiresVerification($user, 'login')) {
-                // Store intended URL in session before redirecting to 2FA
+            // ตรวจสอบว่าต้องการ 2FA สำหรับการ login หรือไม่
+            // หากผู้ใช้ยังไม่ได้ตั้งค่า 2FA จะข้ามการตรวจสอบ
+            if ($this->twoFactorService->isRequired('login', $user)) {
+                // เก็บข้อมูลใน session ก่อน redirect ไป 2FA
                 $request->session()->put('2fa_user_id', $user->id);
                 $request->session()->put('2fa_action', 'login');
 
