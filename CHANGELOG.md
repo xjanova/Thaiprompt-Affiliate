@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.231.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1127 from xjanova/claude/fix-game-api-database-01HyntYTzEazyzaot5TQKqUp (e63c7fe4)
+- fix: reduce camera distance and add web middleware for Snake.io (fda67980)
+### 🔧 Other Changes
+
+
 ## [v2.231.0] - 2025-11-14
 
 ### ✨ Features
