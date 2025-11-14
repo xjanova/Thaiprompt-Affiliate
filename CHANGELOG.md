@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.216.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1093 from xjanova/claude/snake-game-01LpjnzhSBRd17vaac96kCa4 (bda6fd2a)
+- fix: แก้ไข 'Cannot access segment before initialization' ใน Snake.io (f17e0e41)
+### 🔧 Other Changes
+
+
 ## [v2.216.1] - 2025-11-14
 
 ### ✨ Features
