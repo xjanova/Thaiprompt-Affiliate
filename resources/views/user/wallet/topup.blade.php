@@ -28,11 +28,18 @@
     <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl p-6">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6">เลือกจำนวนเงินที่ต้องการเติม</h2>
 
-        <form id="topup-form" action="{{ route('cart.add') }}" method="POST">
+        @if($topupPackages->isEmpty())
+            <div class="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-300 dark:border-yellow-600 rounded-lg">
+                <p class="text-yellow-800 dark:text-yellow-300">
+                    ⚠️ <strong>ข้อมูลแพ็คเกจยังไม่พร้อม</strong><br>
+                    กรุณาติดต่อผู้ดูแลระบบเพื่อรัน seeder: <code class="bg-yellow-100 dark:bg-yellow-800 px-2 py-1 rounded">php artisan db:seed --class=WalletTopupPackagesSeeder</code>
+                </p>
+            </div>
+        @endif
+
+        <form id="topup-form" action="{{ route('user.wallet.topup.process') }}" method="POST">
             @csrf
-            <input type="hidden" name="redirect_to_checkout" value="true">
-            <input type="hidden" name="quantity" value="1">
-            <input type="hidden" id="selected-product-id" name="product_id" value="">
+            <input type="hidden" id="topup-amount" name="amount" value="">
 
             <!-- Quick Amount Buttons -->
             <div class="mb-6">
@@ -129,10 +136,6 @@
 @push('scripts')
 <script>
 let selectedAmount = 0;
-let selectedProductId = null;
-
-// ดึงข้อมูลแพ็คเกจทั้งหมด
-const topupPackages = @json($topupPackages->keyBy('price'));
 
 /**
  * เลือกจำนวนเงินจากปุ่มด่วน
@@ -146,12 +149,8 @@ function selectAmount(amount) {
     // อัพเดต UI
     updateUI(amount);
 
-    // หาแพ็คเกจที่ตรงกับจำนวนเงิน
-    const packageData = topupPackages[amount];
-    if (packageData) {
-        selectedProductId = packageData.id;
-        document.getElementById('selected-product-id').value = packageData.id;
-    }
+    // ตั้งค่าจำนวนเงินใน hidden field
+    document.getElementById('topup-amount').value = amount;
 
     // Highlight ปุ่มที่เลือก
     document.querySelectorAll('.quick-amount-btn').forEach(btn => {
@@ -186,17 +185,8 @@ function updateCustomAmount(value) {
     // อัพเดต UI
     updateUI(amount);
 
-    // หาหรือสร้างแพ็คเกจที่ตรงกับจำนวนเงิน
-    const packageData = topupPackages[amount];
-    if (packageData) {
-        selectedProductId = packageData.id;
-        document.getElementById('selected-product-id').value = packageData.id;
-    } else {
-        // ถ้าไม่มีแพ็คเกจตรงกัน ให้ใช้แพ็คเกจที่ใกล้เคียงที่สุด หรือแพ็คเกจแรก
-        const nearestPackage = Object.values(topupPackages)[0];
-        selectedProductId = nearestPackage ? nearestPackage.id : null;
-        document.getElementById('selected-product-id').value = selectedProductId;
-    }
+    // ตั้งค่าจำนวนเงินใน hidden field
+    document.getElementById('topup-amount').value = amount;
 }
 
 /**
@@ -225,14 +215,14 @@ document.getElementById('topup-form').addEventListener('submit', function(e) {
         return false;
     }
 
-    if (!selectedProductId) {
+    if (selectedAmount > 100000) {
         e.preventDefault();
-        alert('เกิดข้อผิดพลาด: ไม่พบแพ็คเกจที่เลือก กรุณาลองใหม่อีกครั้ง');
+        alert('จำนวนเงินสูงสุด 100,000 บาท');
         return false;
     }
 
     console.log('[Topup] เลือกจำนวนเงิน:', selectedAmount, 'บาท');
-    console.log('[Topup] Product ID:', selectedProductId);
+    return true;
 });
 </script>
 @endpush
