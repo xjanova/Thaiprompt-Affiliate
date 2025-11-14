@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.229.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1123 from xjanova/claude/fix-gameseeder-syntax-011F52FNKoCYxsTtwtjBRXsh (5e4f116b)
+- fix: resolve unclosed bracket syntax error in GamesSeeder.php (91e05a40)
+### 🔧 Other Changes
+
+
 ## [v2.229.1] - 2025-11-14
 
 ### ✨ Features
