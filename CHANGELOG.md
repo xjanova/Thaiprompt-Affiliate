@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.210.2] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข admin routes ให้ใช้ prefix และ redirect ถูกต้อง (0ff233d5)
+### 🔧 Other Changes
+- Merge pull request #1073 from xjanova/claude/token-manager-tpix-menu-014Biuqw3FEzbVKEGtsLefxG (57f87295)
+- chore: เพิ่มสคริปต์ fix-admin-routes.sh สำหรับ clear cache (1108d9b2)
+
 ## [v2.210.1] - 2025-11-14
 
 ### ✨ Features
