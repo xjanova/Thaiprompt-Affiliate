@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,8 +18,20 @@
             font-family: 'Kanit', sans-serif;
         }
 
-        body {
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
             overflow-x: hidden;
+        }
+
+        body {
+            background: white;
+        }
+
+        /* Hero Section Background */
+        .hero-bg {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
@@ -30,12 +42,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
-        }
-
-        /* Smooth Scroll */
-        html {
-            scroll-behavior: smooth;
+            z-index: 1;
+            pointer-events: none;
         }
 
         /* Glass Morphism */
@@ -143,12 +151,12 @@
     </header>
 
     <!-- Hero Section with 3D Background - Compact Version -->
-    <section class="relative h-[350px] flex items-center justify-center overflow-hidden pt-16">
+    <section class="hero-bg relative h-[350px] flex items-center justify-center overflow-hidden pt-16">
         <!-- 3D Canvas -->
         <canvas id="hero3d"></canvas>
 
         <!-- Hero Content -->
-        <div class="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
+        <div class="relative z-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center">
             <h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-2 drop-shadow-2xl">
                 {{ $siteInfo['name'] }}
             </h1>
@@ -174,7 +182,7 @@
         </div>
 
         <!-- Scroll Indicator -->
-        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+        <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-20">
             <a href="#featured-stores" class="block">
                 <svg class="w-5 h-5 text-white animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
