@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.214.0] - 2025-11-14
+
+### ✨ Features
+- feat: เพิ่มเวอร์ชั่นเกมที่มุมล่างซ้าย Snake.io (1175c968)
+### 🐛 Bug Fixes
+- fix: เปลี่ยน default database จาก sqlite เป็น mysql (f2d179ab)
+### 🔧 Other Changes
+- Merge pull request #1087 from xjanova/claude/snake-game-update-01WyqX3Sc5RAi2kVkpxoHKSv (9db32434)
+
 ## [v2.213.0] - 2025-11-14
 
 ### ✨ Features
