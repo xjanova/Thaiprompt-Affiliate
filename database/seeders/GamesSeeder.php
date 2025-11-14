@@ -113,8 +113,8 @@ class GamesSeeder extends Seeder
                         'fire_rate' => 0.6,
                     ],
                 ],
-            ]
-        );
+            ],
+        ]);
 
         // Create Achievements
         $achievements = [
