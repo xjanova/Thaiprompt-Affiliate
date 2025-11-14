@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\AiMonitoringController;
 use App\Http\Controllers\Admin\KnowledgeBaseController;
 use App\Http\Controllers\Admin\WebPManagementController;
 use App\Http\Controllers\Admin\ECommerceController;
+use App\Http\Controllers\Admin\FeaturedStoreController;
 use App\Http\Controllers\Admin\KycController;
 use App\Http\Controllers\Admin\MlmGlobalSettingController;
 use App\Http\Controllers\Admin\PaymentGatewayController;
@@ -828,6 +829,14 @@ Route::prefix('ecommerce')->name('ecommerce.')->group(function () {
 
     // Reports
     Route::get('/reports', [ECommerceController::class, 'reports'])->name('reports');
+});
+
+// Featured Stores Management (Homepage)
+Route::prefix('featured-stores')->name('featured-stores.')->group(function () {
+    Route::get('/', [FeaturedStoreController::class, 'index'])->name('index');
+    Route::post('/{store}/add', [FeaturedStoreController::class, 'addToFeatured'])->name('add');
+    Route::delete('/{store}/remove', [FeaturedStoreController::class, 'removeFromFeatured'])->name('remove');
+    Route::put('/update-order', [FeaturedStoreController::class, 'updateOrder'])->name('update-order');
 });
 
 // MLM System Management
