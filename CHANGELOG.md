@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.245.0] - 2025-11-14
+
+### ✨ Features
+- feat: upgrade Invoices index to Modern UI v3.0 (7/28) (19e91092)
+- feat: complete Accounting Contacts module with Modern UI v3.0 (246add04)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1148 from xjanova/claude/session-01tjmndj-01Xqf6DAc3GGqBR8hZ2kkove (2466b1c9)
+
 ## [v2.244.2] - 2025-11-14
 
 ### ✨ Features
