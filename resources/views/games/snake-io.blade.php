@@ -897,6 +897,13 @@
         let multiplayerManager = null;
         let touchInputManager = null;
 
+        // Connection monitoring
+        let connectionMonitorInterval = null;
+        let isOnline = false;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+        const CONNECTION_CHECK_INTERVAL = 5000; // เช็คทุก 5 วินาที
+
         // Power-ups
         let powerups = [];
         let activePowerups = {
@@ -1587,7 +1594,139 @@
             statusEl.classList.add(status, 'show');
             statusText.textContent = text;
 
+            // อัปเดตสถานะ global
+            const wasOnline = isOnline;
+            isOnline = (status === 'online');
+
+            // แจ้งเตือนเมื่อสถานะเปลี่ยน
+            if (wasOnline !== isOnline && gameStarted) {
+                if (isOnline) {
+                    console.log('🟢 [Connection] กลับมา ONLINE แล้ว!');
+                } else {
+                    console.log('🔴 [Connection] หลุดเป็น OFFLINE');
+                }
+            }
+
             console.log(`[Connection] ${status.toUpperCase()}: ${text}`);
+        }
+
+        /**
+         * เช็คสถานะการเชื่อมต่อ
+         */
+        async function checkConnection() {
+            if (!multiplayerManager) {
+                return false;
+            }
+
+            try {
+                // ลองเช็คว่ายังเชื่อมต่ออยู่หรือไม่
+                const response = await fetch(`${multiplayerManager.apiBaseUrl}/ping`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    signal: AbortSignal.timeout(2000) // timeout 2 วินาที
+                });
+
+                const data = await response.json();
+                return data.success === true;
+            } catch (error) {
+                console.warn('[Connection] Ping failed:', error.message);
+                return false;
+            }
+        }
+
+        /**
+         * พยายามเชื่อมต่อใหม่
+         */
+        async function attemptReconnect() {
+            if (!gameStarted || gameOver) {
+                return;
+            }
+
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+                console.warn('[Connection] หมดจำนวนครั้งที่จะ reconnect แล้ว');
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                return;
+            }
+
+            reconnectAttempts++;
+            console.log(`[Connection] พยายาม reconnect ครั้งที่ ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}...`);
+
+            updateConnectionStatus('offline', '⚡ RECONNECTING...');
+
+            try {
+                // ปิด connection เดิม
+                if (multiplayerManager) {
+                    multiplayerManager.disconnectWebSocket();
+                }
+
+                // สร้างใหม่
+                multiplayerManager = new SnakeMultiplayerManager();
+
+                // ตั้ง timeout 3 วินาที
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Reconnect timeout')), 3000)
+                );
+
+                const joinResult = await Promise.race([
+                    multiplayerManager.joinGame(playerName, selectedSkin),
+                    timeoutPromise
+                ]);
+
+                console.log('[Connection] Reconnect สำเร็จ! Room:', joinResult.room_code);
+
+                // รีเซ็ตจำนวนครั้งที่ลอง
+                reconnectAttempts = 0;
+
+                // อัปเดตสถานะ
+                updateConnectionStatus('online', '🌐 ONLINE MODE');
+
+                return true;
+            } catch (error) {
+                console.error('[Connection] Reconnect ล้มเหลว:', error.message);
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                return false;
+            }
+        }
+
+        /**
+         * เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
+         */
+        function startConnectionMonitoring() {
+            // หยุด monitor เดิม (ถ้ามี)
+            stopConnectionMonitoring();
+
+            console.log('[Connection] เริ่มตรวจสอบการเชื่อมต่อทุก', CONNECTION_CHECK_INTERVAL / 1000, 'วินาที');
+
+            connectionMonitorInterval = setInterval(async () => {
+                if (!gameStarted || gameOver) {
+                    return;
+                }
+
+                // เช็คว่ายังเชื่อมต่ออยู่หรือไม่
+                const connected = await checkConnection();
+
+                if (connected && !isOnline) {
+                    // เพิ่งกลับมา online
+                    updateConnectionStatus('online', '🌐 ONLINE MODE');
+                } else if (!connected && isOnline) {
+                    // เพิ่งหลุด offline - พยายาม reconnect
+                    console.log('[Connection] หลุดการเชื่อมต่อ กำลัง reconnect...');
+                    await attemptReconnect();
+                }
+            }, CONNECTION_CHECK_INTERVAL);
+        }
+
+        /**
+         * หยุดตรวจสอบการเชื่อมต่อ
+         */
+        function stopConnectionMonitoring() {
+            if (connectionMonitorInterval) {
+                clearInterval(connectionMonitorInterval);
+                connectionMonitorInterval = null;
+                console.log('[Connection] หยุดตรวจสอบการเชื่อมต่อ');
+            }
         }
 
         async function startGame() {
@@ -1682,6 +1821,10 @@
 
                 gameStarted = true;
                 document.getElementById('start-screen').classList.add('hidden');
+
+                // เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
+                startConnectionMonitoring();
+
                 console.log('✅ Game started successfully!');
             } catch (error) {
                 console.error('[Game] เริ่มเกมล้มเหลว:', error);
@@ -1692,6 +1835,9 @@
         async function endGame() {
             gameOver = true;
             gameStarted = false;
+
+            // หยุดตรวจสอบการเชื่อมต่อ
+            stopConnectionMonitoring();
 
             document.getElementById('final-score').textContent = score;
             document.getElementById('final-length').textContent = player.length;
@@ -1785,6 +1931,9 @@
         }
 
         function restartGame() {
+            // หยุดตรวจสอบการเชื่อมต่อ
+            stopConnectionMonitoring();
+
             // Clean up
             if (player) player.die();
             bots.forEach(bot => {
@@ -1805,6 +1954,10 @@
             // ซ่อนสถานะการเชื่อมต่อ
             const statusEl = document.getElementById('connection-status');
             statusEl.classList.remove('show', 'online', 'offline');
+
+            // Reset connection state
+            isOnline = false;
+            reconnectAttempts = 0;
 
             // Reset
             score = 0;
