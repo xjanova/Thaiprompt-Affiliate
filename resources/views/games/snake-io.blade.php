@@ -2471,7 +2471,7 @@
                 // ✅ ปรับระยะกล้องตามขนาดหนอน (optimize performance)
                 const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 20
                 const lengthMultiplier = 0.3; // ทุกๆ 1 ความยาว กล้องออก 0.3
-                const maxCameraDistance = 50; // จำกัดระยะสูงสุดที่ 50 เสมอ
+                const maxCameraDistance = 35; // จำกัดระยะสูงสุดตอนปกติที่ 35 (ใกล้ขึ้น)
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -2479,9 +2479,10 @@
 
                 // Smooth camera zoom
                 if (activePowerups.zoom) {
-                    // แม้มี zoom powerup ก็จำกัดที่ 50 เท่านั้น
-                    targetCameraDistance = Math.min(CONFIG.CAMERA_ZOOMED_OUT_DISTANCE, maxCameraDistance);
+                    // มี zoom powerup ให้ออกไปได้ถึง 50
+                    targetCameraDistance = CONFIG.CAMERA_ZOOMED_OUT_DISTANCE; // 50
                 } else {
+                    // ปกติจำกัดที่ 35
                     targetCameraDistance = calculatedDistance;
                 }
 
