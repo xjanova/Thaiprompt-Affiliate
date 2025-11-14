@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.247.3] - 2025-11-14
+
+### ✨ Features
+- feat(accounting): upgrade Balance Sheet report to Modern UI v3.0 (20/28) (dffbc000)
+- feat(accounting): upgrade Reports index to Modern UI v3.0 (19/28) (1d141fe0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1158 from xjanova/claude/session-01tjmndj-01Xqf6DAc3GGqBR8hZ2kkove (7bf2bbb5)
+
 ## [v2.247.2] - 2025-11-14
 
 ### ✨ Features
