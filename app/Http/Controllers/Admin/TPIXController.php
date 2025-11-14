@@ -104,8 +104,57 @@ class TPIXController extends Controller
             ));
         } catch (Exception $e) {
             Log::error('TPIX dashboard error', ['error' => $e->getMessage()]);
-            return redirect()->route('admin.crypto.dashboard')
-                ->with('error', 'Failed to load TPIX dashboard: ' . $e->getMessage());
+
+            // ถ้า TPIX currency ไม่มี ให้ redirect ไป crypto dashboard
+            $tpixCurrency = CryptoCurrency::where('code', 'TPIX')->first();
+            if (!$tpixCurrency) {
+                return redirect()->route('admin.crypto.dashboard')
+                    ->with('error', 'TPIX currency not found. Please run the seeder first.');
+            }
+
+            // ถ้ามี currency แต่ blockchain error ให้แสดง dashboard พร้อม warning
+            $networkInfo = [
+                'error' => true,
+                'message' => $e->getMessage(),
+            ];
+
+            $stats = [
+                'total_supply' => '7000000000',
+                'circulating_supply' => '7000000000',
+                'current_block' => 0,
+                'total_wallets' => CryptoWallet::where('currency_id', $tpixCurrency->id)->count(),
+                'active_wallets' => CryptoWallet::where('currency_id', $tpixCurrency->id)
+                    ->where('status', 'active')->count(),
+                'total_balance' => CryptoWallet::where('currency_id', $tpixCurrency->id)->sum('balance'),
+                'transactions_24h' => CryptoTransaction::where('currency_id', $tpixCurrency->id)
+                    ->where('created_at', '>=', now()->subHours(24))->count(),
+                'volume_24h' => CryptoTransaction::where('currency_id', $tpixCurrency->id)
+                    ->where('created_at', '>=', now()->subHours(24))
+                    ->where('status', 'confirmed')->sum('amount'),
+                'deposits_pending' => CryptoTransaction::where('currency_id', $tpixCurrency->id)
+                    ->where('type', 'deposit')->where('status', 'pending')->count(),
+                'withdrawals_pending' => CryptoTransaction::where('currency_id', $tpixCurrency->id)
+                    ->where('type', 'withdrawal')->where('status', 'pending')->count(),
+            ];
+
+            $recentTransactions = CryptoTransaction::with(['user', 'cryptoWallet'])
+                ->where('currency_id', $tpixCurrency->id)
+                ->orderBy('created_at', 'desc')->limit(20)->get();
+
+            $topWallets = CryptoWallet::with('user')
+                ->where('currency_id', $tpixCurrency->id)
+                ->orderBy('balance', 'desc')->limit(10)->get();
+
+            $volumeData = $this->getDailyVolumeData($tpixCurrency->id, 30);
+
+            return view('admin.tpix.dashboard', compact(
+                'tpixCurrency',
+                'networkInfo',
+                'stats',
+                'recentTransactions',
+                'topWallets',
+                'volumeData'
+            ))->with('warning', 'Cannot connect to TPIX blockchain. Showing database data only.');
         }
     }
 
@@ -134,8 +183,27 @@ class TPIXController extends Controller
             return view('admin.tpix.network-status', compact('status', 'networkInfo'));
         } catch (Exception $e) {
             Log::error('TPIX network status error', ['error' => $e->getMessage()]);
-            return redirect()->route('admin.tpix.dashboard')
-                ->with('error', 'Failed to fetch network status: ' . $e->getMessage());
+
+            // แสดง view พร้อม error message แทน redirect
+            $status = [
+                'network_name' => 'TPIX Blockchain',
+                'chain_id' => 'N/A',
+                'block_number' => 0,
+                'gas_price' => 0,
+                'gas_price_gwei' => 0,
+                'total_supply' => 'N/A',
+                'block_time' => 2,
+                'rpc_url' => config('tpix.rpc_url', 'N/A'),
+                'explorer_url' => config('tpix.explorer_url', 'N/A'),
+            ];
+
+            $networkInfo = [
+                'error' => true,
+                'message' => 'Failed to connect to TPIX blockchain: ' . $e->getMessage(),
+            ];
+
+            return view('admin.tpix.network-status', compact('status', 'networkInfo'))
+                ->with('error', 'Cannot connect to TPIX blockchain. Please check RPC configuration.');
         }
     }
 
