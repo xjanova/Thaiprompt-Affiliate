@@ -1606,9 +1606,7 @@
                         playSound('kill');
                     }
                     victim.die();
-                    if (victim === bot) {
-                        createBot(); // Respawn bot
-                    }
+                    // ✅ ไม่สร้างบอทใหม่ทันที ให้ระบบ maintain bot count จัดการ
                     return; // Only one death per frame
                 }
             }
@@ -1625,7 +1623,7 @@
                     const victim = checkSnakeCollision(bot1, bot2);
                     if (victim) {
                         victim.die();
-                        createBot(); // Respawn
+                        // ✅ ไม่สร้างบอทใหม่ทันที ให้ระบบ maintain bot count จัดการ
                         return; // Only one death per frame
                     }
                 }
@@ -2118,9 +2116,21 @@
         }
 
         function updateBots() {
-            bots.forEach(bot => {
-                if (!bot || !bot.alive) return;
+            // ✅ อัปเดตเฉพาะบอทที่มีชีวิต และลบบอทที่ตายออกจาก array
+            bots = bots.filter(bot => {
+                if (!bot || !bot.alive) {
+                    // ลบบอทที่ตายออกจาก scene
+                    if (bot && bot.segments) {
+                        bot.segments.forEach(seg => scene.remove(seg));
+                        if (bot.nameSprite) scene.remove(bot.nameSprite);
+                    }
+                    return false; // ลบออกจาก array
+                }
+                return true; // เก็บไว้
+            });
 
+            // อัปเดตบอทที่ยังมีชีวิต
+            bots.forEach(bot => {
                 // Simple AI: move towards nearest food
                 const head = bot.segments[0].position;
                 let nearestFood = null;
@@ -2161,23 +2171,6 @@
                     }
                 }
             });
-
-            // ลบบอทที่เกินจำนวนผู้เล่นทั้งหมด
-            const totalPlayers = 1 + (multiplayerManager ? multiplayerManager.getOtherPlayers().length : 0);
-            const maxBots = Math.max(0, CONFIG.BOT_COUNT - totalPlayers);
-
-            if (bots.length > maxBots) {
-                // ลบบอทส่วนเกิน
-                const botsToRemove = bots.length - maxBots;
-                for (let i = 0; i < botsToRemove; i++) {
-                    const bot = bots.pop();
-                    if (bot) {
-                        bot.segments.forEach(seg => scene.remove(seg));
-                        if (bot.nameSprite) scene.remove(bot.nameSprite);
-                    }
-                }
-                console.log('[Bots] ลบบอท', botsToRemove, 'ตัว เหลือ', bots.length, 'บอท');
-            }
         }
 
         function update() {
