@@ -410,30 +410,54 @@ class CheckoutController extends Controller
             // เพิ่มยอดเงินเข้า wallet สำหรับแต่ละ topup package
             foreach ($walletTopupItems as $item) {
                 $topupAmount = $item->product->price * $item->quantity;
+                $balanceBefore = $wallet->balance;
 
                 // เพิ่มยอดเข้า wallet
                 $wallet->balance += $topupAmount;
                 $wallet->save();
 
-                // บันทึก transaction
+                // สร้างคำอธิบายที่ละเอียด
+                $description = sprintf(
+                    "💰 เติมเงิน Wallet จำนวน ฿%s\nผ่านแพ็คเกจ: %s\nOrder: #%s\nวันที่: %s",
+                    number_format($topupAmount, 2),
+                    $item->product->name,
+                    $order->id,
+                    now()->format('d/m/Y H:i:s')
+                );
+
+                // บันทึก transaction พร้อมรายละเอียดครบถ้วน
                 $wallet->transactions()->create([
                     'type' => 'topup',
                     'amount' => $topupAmount,
-                    'balance_before' => $wallet->balance - $topupAmount,
+                    'balance_before' => $balanceBefore,
                     'balance_after' => $wallet->balance,
                     'status' => 'completed',
-                    'description' => "เติมเงินผ่าน {$item->product->name} (Order #{$order->id})",
+                    'description' => $description,
                     'reference_type' => 'order',
                     'reference_id' => $order->id,
                     'metadata' => json_encode([
+                        'transaction_type' => 'wallet_topup',
+                        'purpose' => 'เติมเงินเข้า Wallet',
                         'order_id' => $order->id,
+                        'order_number' => $order->id,
                         'product_id' => $item->product->id,
                         'product_name' => $item->product->name,
+                        'product_sku' => $item->product->sku,
                         'quantity' => $item->quantity,
+                        'unit_price' => $item->product->price,
+                        'total_amount' => $topupAmount,
+                        'payment_method' => $order->payment_method,
+                        'payment_status' => $order->payment_status,
+                        'user_id' => $user->id,
+                        'user_name' => $user->name,
+                        'user_email' => $user->email,
+                        'timestamp' => now()->toIso8601String(),
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent(),
                     ]),
                 ]);
 
-                \Log::info("[Wallet Topup] เพิ่มยอดเงิน {$topupAmount} บาทเข้า wallet ของ user #{$user->id} (Order #{$order->id})");
+                \Log::info("[Wallet Topup] เพิ่มยอดเงิน ฿{$topupAmount} เข้า wallet ของ {$user->name} (User #{$user->id}, Order #{$order->id})");
             }
 
         } catch (\Exception $e) {

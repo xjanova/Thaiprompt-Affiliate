@@ -168,13 +168,35 @@ class SnakeGameControllerStateless extends Controller
      */
     public function checkWallet(): JsonResponse
     {
+        // ตรวจสอบว่า user login หรือไม่
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => true,
+                'authenticated' => false,
+                'balance' => 0,
+                'can_save_score' => false,
+                'login_url' => '/login',
+                'register_url' => '/register',
+            ]);
+        }
+
+        // ดึงข้อมูล wallet
+        $wallet = \App\Models\Wallet::where('user_id', $user->id)->first();
+        $balance = $wallet ? $wallet->balance : 0;
+
+        // ตรวจสอบว่ามียอดเงินพอบันทึกคะแนนหรือไม่ (ต้องการ 1 แต้ม)
+        $requiredPoints = 1;
+        $canSave = $balance >= $requiredPoints;
+
         return response()->json([
             'success' => true,
-            'authenticated' => false,
-            'balance' => 0,
-            'can_save_score' => false,
-            'login_url' => '/login',
-            'register_url' => '/register',
+            'authenticated' => true,
+            'balance' => (float) $balance,
+            'can_save_score' => $canSave,
+            'required_points' => $requiredPoints,
+            'topup_url' => '/user/wallet/topup',
         ]);
     }
 
