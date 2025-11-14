@@ -1055,8 +1055,17 @@
             constructor(x, z, isPlayer = false, name = 'Bot', skinKey = 'classic') {
                 this.isPlayer = isPlayer;
                 this.name = name;
-                this.skinKey = skinKey;
-                this.skin = SKINS[skinKey] || SKINS.classic;
+
+                // ✅ ตรวจสอบว่าเป็น custom colors (มี hex codes) หรือ preset skin
+                if (typeof skinKey === 'string' && skinKey.includes('#')) {
+                    // Custom colors - ใช้ SKINS.custom ที่ได้อัปเดตแล้ว
+                    this.skinKey = 'custom';
+                    this.skin = SKINS.custom;
+                } else {
+                    // Preset skin (classic, fire, ice, gold, rainbow)
+                    this.skinKey = skinKey;
+                    this.skin = SKINS[skinKey] || SKINS.classic;
+                }
 
                 this.segments = [];
                 this.segmentPositions = [];
@@ -1493,11 +1502,13 @@
 
             // Sound toggle
             const soundToggle = document.getElementById('sound-toggle');
-            soundToggle.addEventListener('click', function() {
-                soundEnabled = !soundEnabled;
-                this.textContent = soundEnabled ? '🔊' : '🔇';
-                this.classList.toggle('muted', !soundEnabled);
-            });
+            if (soundToggle) {
+                soundToggle.addEventListener('click', function() {
+                    soundEnabled = !soundEnabled;
+                    this.textContent = soundEnabled ? '🔊' : '🔇';
+                    this.classList.toggle('muted', !soundEnabled);
+                });
+            }
 
             // Skin selection
             document.querySelectorAll('.skin-option').forEach(option => {
@@ -1517,10 +1528,12 @@
             document.querySelector('.skin-option').classList.add('selected');
 
             // Custom color picker
-            document.getElementById('apply-custom-colors').addEventListener('click', function() {
-                const color1 = document.getElementById('color1').value;
-                const color2 = document.getElementById('color2').value;
-                const color3 = document.getElementById('color3').value;
+            const applyCustomColorsBtn = document.getElementById('apply-custom-colors');
+            if (applyCustomColorsBtn) {
+                applyCustomColorsBtn.addEventListener('click', function() {
+                    const color1 = document.getElementById('color1').value;
+                    const color2 = document.getElementById('color2').value;
+                    const color3 = document.getElementById('color3').value;
 
                 // แปลง hex เป็น integer
                 customColors = [
@@ -1534,15 +1547,17 @@
                 SKINS.custom.primary = customColors[0];
                 SKINS.custom.secondary = customColors[1];
 
-                // เลือก custom skin
-                selectedSkin = 'custom';
+                // ✅ เลือก custom skin และบันทึกเป็น hex codes (ไม่ใช่ string 'custom')
+                const customSkinString = `${color1},${color2},${color3}`; // "#00ff00,#00aa00,#00dd00"
+                selectedSkin = customSkinString;
                 document.querySelectorAll('.skin-option').forEach(o => o.classList.remove('selected'));
 
-                // ✅ บันทึกสี custom (ถ้าเป็นสมาชิก)
-                saveSkinPreference('custom');
+                    // ✅ บันทึกสี custom พร้อม hex codes (ถ้าเป็นสมาชิก)
+                    saveSkinPreference(customSkinString);
 
-                alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
-            });
+                    alert('✅ ใช้สีของคุณเองแล้ว!\n\nสี 1: ' + color1 + '\nสี 2: ' + color2 + '\nสี 3: ' + color3);
+                });
+            }
 
             // Start animation loop
             animate();
@@ -1578,17 +1593,41 @@
                 if (response.ok) {
                     const data = await response.json();
                     if (data.success && data.skin) {
-                        selectedSkin = data.skin;
+                        // ✅ ตรวจสอบว่าเป็น custom colors (มี hex codes) หรือ preset skin
+                        if (data.skin.includes('#')) {
+                            // Custom colors - parse และ populate color picker
+                            const colors = data.skin.split(',');
+                            document.getElementById('color1').value = colors[0];
+                            document.getElementById('color2').value = colors[1];
+                            document.getElementById('color3').value = colors[2];
 
-                        // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
-                        document.querySelectorAll('.skin-option').forEach(option => {
-                            option.classList.remove('selected');
-                            if (option.dataset.skin === data.skin) {
-                                option.classList.add('selected');
-                            }
-                        });
+                            // อัปเดต customColors และ SKINS.custom
+                            customColors = [
+                                parseInt(colors[0]?.replace('#', '0x')),
+                                parseInt(colors[1]?.replace('#', '0x')),
+                                parseInt(colors[2]?.replace('#', '0x'))
+                            ];
+                            SKINS.custom.colors = customColors;
+                            SKINS.custom.primary = customColors[0];
+                            SKINS.custom.secondary = customColors[1];
 
-                        console.log('[Skin] โหลดสี skin ที่บันทึกไว้:', data.skin);
+                            selectedSkin = data.skin; // เก็บ hex codes
+
+                            console.log('[Skin] โหลดสี custom:', colors);
+                        } else {
+                            // Preset skin
+                            selectedSkin = data.skin;
+
+                            // เลือก skin option ที่ตรงกับสีที่บันทึกไว้
+                            document.querySelectorAll('.skin-option').forEach(option => {
+                                option.classList.remove('selected');
+                                if (option.dataset.skin === data.skin) {
+                                    option.classList.add('selected');
+                                }
+                            });
+
+                            console.log('[Skin] โหลดสี preset:', data.skin);
+                        }
                     }
                 }
             } catch (error) {
