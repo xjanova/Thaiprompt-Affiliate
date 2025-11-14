@@ -21,6 +21,7 @@ use App\Http\Controllers\Api\TraceabilityController;
 use App\Http\Controllers\Api\QualityController;
 use App\Http\Controllers\Api\CarbonCreditController;
 use App\Http\Controllers\Api\CertificationController;
+use App\Http\Controllers\SnakeGameController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -834,8 +835,6 @@ Route::prefix('v1/food-passport')->middleware(['auth:sanctum', 'food-passport.ra
 |--------------------------------------------------------------------------
 */
 Route::prefix('games/snake-io')->name('api.games.snake-io.')->group(function () {
-    use App\Http\Controllers\SnakeGameController;
-
     // เข้าร่วมเกม (ไม่บังคับ auth)
     Route::post('/join', [SnakeGameController::class, 'join'])
         ->name('join');
