@@ -1920,7 +1920,7 @@
 
             try {
                 // ดึงข้อมูล wallet จาก API
-                const response = await fetch('/api/user/wallet/balance', {
+                const response = await fetch('/api/games/snake-io/check-wallet', {
                     method: 'GET',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1936,9 +1936,10 @@
 
                 const data = await response.json();
                 const balance = parseFloat(data.balance || 0);
+                const canSave = data.can_save_score !== false;
                 const requiredPoints = 1;
 
-                console.log('[Wallet] Balance:', balance, 'แต้ม');
+                console.log('[Wallet] Balance:', balance, 'แต้ม', 'Can save:', canSave);
 
                 if (balance >= requiredPoints) {
                     // แต้มพอ - อนุญาตให้บันทึก
