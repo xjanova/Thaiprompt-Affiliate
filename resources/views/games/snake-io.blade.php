@@ -645,12 +645,23 @@
         <!-- Start Screen -->
         <div id="start-screen">
             <h1>🐍 SNAKE.IO</h1>
-            <p style="color: #ccc; font-size: 18px; margin-bottom: 30px;">
+            <p style="color: #ccc; font-size: 18px; margin-bottom: 10px;">
                 กินอาหารให้มากที่สุด แต่อย่าชนอะไร!
             </p>
 
+            @auth
+                <p style="color: #00ff00; font-size: 14px; margin-bottom: 20px;">
+                    ✅ เข้าสู่ระบบแล้ว: <strong>{{ Auth::user()->name }}</strong>
+                </p>
+            @else
+                <p style="color: #ffaa00; font-size: 14px; margin-bottom: 20px;">
+                    👤 เล่นในโหมด Guest (คะแนนจะไม่ถูกบันทึก)
+                </p>
+            @endauth
+
             <input type="text" id="player-name" class="name-input"
-                   placeholder="{{ Auth::check() ? Auth::user()->name : 'Enter your name' }}"
+                   value="{{ Auth::check() ? Auth::user()->name : '' }}"
+                   placeholder="กรอกชื่อของคุณ"
                    maxlength="20">
 
             <div class="skin-selector">
@@ -2111,8 +2122,8 @@
                 document.getElementById('length').textContent = player.length;
                 document.getElementById('rank').textContent = '#' + getRank();
 
-                // Magnet effect - attract nearby food
-                if (activePowerups.magnet) {
+                // Magnet effect - attract nearby food (เฉพาะเมื่อมี powerup เท่านั้น!)
+                if (activePowerups.magnet && activePowerups.magnet !== null) {
                     const magnetRange = 8;
                     foods.forEach(food => {
                         const distance = head.distanceTo(food.position);
