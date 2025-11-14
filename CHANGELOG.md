@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.209.0] - 2025-11-14
+
+### ✨ Features
+- Merge pull request #1069 from xjanova/claude/token-manager-tpix-menu-014Biuqw3FEzbVKEGtsLefxG (b36266c4)
+- feat: แก้ไขเมนู Token Manager และ TPIX Blockchain ให้ทำงานได้ (678a408e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.208.0] - 2025-11-14
 
 ### ✨ Features
