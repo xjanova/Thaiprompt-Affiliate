@@ -10,6 +10,13 @@ class TPIXLiquidityPosition extends Model
 {
     use HasFactory;
 
+    /**
+     * ชื่อตารางในฐานข้อมูล
+     *
+     * @var string
+     */
+    protected $table = 'tpix_liquidity_positions';
+
     protected $fillable = [
         'user_id',
         'pool_id',
