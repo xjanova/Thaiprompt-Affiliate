@@ -49,14 +49,16 @@
 
         .hud-top {
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: flex-start;
+            gap: 15px;
+            flex-wrap: wrap;
         }
 
         .hud-item {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(10px);
-            border: 2px solid rgba(0, 255, 255, 0.5);
+            border: 2px solid rgba(0, 255, 255, 0.6);
             border-radius: 10px;
             padding: 15px 25px;
             box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
@@ -64,15 +66,74 @@
 
         .hud-label {
             font-size: 12px;
-            opacity: 0.8;
+            opacity: 1;
             margin-bottom: 5px;
+            color: #ffffff;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
         }
 
         .hud-value {
             font-size: 32px;
             font-weight: 900;
             color: #00ffff;
-            text-shadow: 0 0 10px rgba(0, 255, 255, 0.8);
+            text-shadow:
+                0 0 10px rgba(0, 255, 255, 1),
+                0 0 20px rgba(0, 255, 255, 0.5),
+                2px 2px 4px rgba(0, 0, 0, 1);
+        }
+
+        /* Power-up Indicators */
+        .powerup-indicators {
+            position: absolute;
+            top: 120px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .powerup-active {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid;
+            border-radius: 10px;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: pulse 1s infinite;
+        }
+
+        .powerup-active.magnet {
+            border-color: #ff00ff;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+        }
+
+        .powerup-active.speed {
+            border-color: #ffff00;
+            box-shadow: 0 0 20px rgba(255, 255, 0, 0.5);
+        }
+
+        .powerup-active.multiplier {
+            border-color: #00ff00;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+
+        .powerup-icon {
+            font-size: 24px;
+        }
+
+        .powerup-time {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
 
         /* Leaderboard */
@@ -80,9 +141,9 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             backdrop-filter: blur(10px);
-            border: 2px solid rgba(0, 255, 255, 0.5);
+            border: 2px solid rgba(0, 255, 255, 0.6);
             border-radius: 10px;
             padding: 15px;
             min-width: 250px;
@@ -94,6 +155,9 @@
             color: #00ffff;
             margin-bottom: 10px;
             font-size: 18px;
+            text-shadow:
+                0 0 10px rgba(0, 255, 255, 0.8),
+                2px 2px 4px rgba(0, 0, 0, 1);
         }
 
         .leaderboard-entry {
@@ -104,11 +168,14 @@
             font-size: 14px;
             display: flex;
             justify-content: space-between;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
         }
 
         .leaderboard-entry.you {
-            background: rgba(255, 255, 0, 0.2);
+            background: rgba(255, 255, 0, 0.3);
             border: 1px solid #ffff00;
+            font-weight: bold;
         }
 
         /* Start Screen */
