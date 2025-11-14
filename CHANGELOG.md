@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.214.1] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1088 from xjanova/claude/fix-two-factor-method-01WgkAMTrxLiXFXJhwobuW7K (f9baac69)
+- fix: แก้ไขการเรียกใช้เมธอด TwoFactorService ใน LoginController (9dc66634)
+### 🔧 Other Changes
+
+
 ## [v2.214.0] - 2025-11-14
 
 ### ✨ Features
