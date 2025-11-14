@@ -11,6 +11,13 @@ class TPIXLiquidityPool extends Model
 {
     use HasFactory;
 
+    /**
+     * ชื่อตารางในฐานข้อมูล
+     *
+     * @var string
+     */
+    protected $table = 'tpix_liquidity_pools';
+
     protected $fillable = [
         'token_a_id',
         'token_b_id',
