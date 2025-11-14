@@ -85,7 +85,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Redirect /admin to /admin/dashboard
-Route::redirect('/', '/admin/dashboard');
+Route::redirect('/', '/dashboard');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
