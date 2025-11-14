@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.210.3] - 2025-11-14
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1074 from xjanova/claude/fix-missing-stakes-table-012x6iyJZD4KL6gero1karun (d9b13893)
+- docs: add deployment instructions for fixing missing tpix_stakes table (7ff59dd8)
+
 ## [v2.210.2] - 2025-11-14
 
 ### ✨ Features
