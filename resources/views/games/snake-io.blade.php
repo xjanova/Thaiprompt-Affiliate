@@ -2346,6 +2346,169 @@
             }
         }
 
+        /**
+         * ✅ เช็คสถานะ service ว่าเปิดหรือปิด
+         *
+         * เรียก API เพื่อตรวจสอบว่า multiplayer service กำลังทำงานหรือไม่
+         */
+        async function checkServiceStatus() {
+            try {
+                const response = await fetch('/api/games/snake-io/service-status', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    signal: AbortSignal.timeout(3000) // timeout 3 วินาที
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const wasOnline = isServiceOnline;
+                    isServiceOnline = data.is_online;
+
+                    console.log(`[Service] สถานะ: ${data.mode.toUpperCase()} (was: ${wasOnline ? 'online' : 'offline'}, now: ${isServiceOnline ? 'online' : 'offline'})`);
+
+                    // ตรวจจับการเปลี่ยนสถานะ
+                    if (!wasOnline && isServiceOnline) {
+                        // Service เพิ่งเปิด - เข้าสู่ online mode
+                        console.log('🟢 [Service] Service is now ONLINE - Switching to multiplayer mode');
+                        await switchToOnlineMode();
+                    } else if (wasOnline && !isServiceOnline) {
+                        // Service เพิ่งปิด - เข้าสู่ offline mode
+                        console.log('🔴 [Service] Service is now OFFLINE - Switching to offline mode');
+                        await switchToOfflineMode();
+                    }
+                }
+            } catch (error) {
+                console.error('[Service] ตรวจสอบสถานะ service ไม่สำเร็จ:', error.message);
+                // ถ้า error = ถือว่า offline
+                if (isServiceOnline) {
+                    isServiceOnline = false;
+                    console.log('🔴 [Service] ไม่สามารถติดต่อ service ได้ - Switching to offline mode');
+                    await switchToOfflineMode();
+                }
+            }
+        }
+
+        /**
+         * ✅ สลับไปยัง Online Mode (Multiplayer)
+         *
+         * เมื่อ service เปิด จะพยายามเชื่อมต่อ multiplayer และเข้าห้อง
+         */
+        async function switchToOnlineMode() {
+            // ตรวจสอบว่าเกมกำลังเล่นอยู่หรือไม่
+            if (!gameStarted || gameOver) {
+                console.log('[Service] เกมยังไม่เริ่มหรือจบแล้ว ข้าม online mode');
+                return;
+            }
+
+            // ถ้ามี multiplayer manager อยู่แล้ว = online อยู่แล้ว
+            if (multiplayerManager) {
+                console.log('[Service] อยู่ใน online mode อยู่แล้ว');
+                return;
+            }
+
+            try {
+                console.log('[Service] กำลังเชื่อมต่อ multiplayer...');
+                updateConnectionStatus('offline', '⚡ CONNECTING TO MULTIPLAYER...');
+
+                // สร้าง multiplayer manager ใหม่
+                multiplayerManager = new SnakeMultiplayerManager();
+
+                // ตั้ง timeout 5 วินาที
+                const timeoutPromise = new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Connection timeout')), 5000)
+                );
+
+                const joinResult = await Promise.race([
+                    multiplayerManager.joinGame(playerName, selectedSkin),
+                    timeoutPromise
+                ]);
+
+                console.log('🌐 [Service] เข้าร่วม multiplayer สำเร็จ! Room:', joinResult.room_code);
+
+                // เชื่อมต่อสำเร็จ!
+                updateConnectionStatus('online', '🌐 ONLINE MODE');
+
+                // เริ่มตรวจสอบการเชื่อมต่อ
+                startConnectionMonitoring();
+
+                // รีเซ็ตจำนวนครั้งที่ลอง reconnect
+                reconnectAttempts = 0;
+
+            } catch (error) {
+                console.error('[Service] เชื่อมต่อ multiplayer ไม่สำเร็จ:', error.message);
+                multiplayerManager = null;
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+            }
+        }
+
+        /**
+         * ✅ สลับไปยัง Offline Mode (กับ Bots)
+         *
+         * เมื่อ service ปิด จะตัดการเชื่อมต่อ multiplayer และเล่นกับ bots อย่างเดียว
+         */
+        async function switchToOfflineMode() {
+            if (!multiplayerManager) {
+                console.log('[Service] อยู่ใน offline mode อยู่แล้ว');
+                return;
+            }
+
+            try {
+                console.log('[Service] กำลังตัดการเชื่อมต่อ multiplayer...');
+
+                // แจ้ง server ก่อนออก
+                if (multiplayerManager) {
+                    multiplayerManager.disconnectWebSocket();
+                    multiplayerManager = null;
+                }
+
+                // หยุดตรวจสอบการเชื่อมต่อ
+                stopConnectionMonitoring();
+
+                console.log('🤖 [Service] สลับเป็น offline mode สำเร็จ - เล่นกับ bots');
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+
+            } catch (error) {
+                console.error('[Service] สลับเป็น offline mode ล้มเหลว:', error.message);
+                // บังคับปิด multiplayer อยู่ดี
+                multiplayerManager = null;
+                updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+            }
+        }
+
+        /**
+         * ✅ เริ่มตรวจสอบสถานะ service เป็นระยะ (ทุก 10 วินาที)
+         *
+         * ใช้สำหรับตรวจจับว่า service เปิด/ปิด เพื่อสลับ mode อัตโนมัติ
+         */
+        function startServicePolling() {
+            // เช็คทันที
+            checkServiceStatus();
+
+            // หยุด polling เดิม (ถ้ามี)
+            stopServicePolling();
+
+            console.log('[Service] เริ่มตรวจสอบสถานะ service ทุก', SERVICE_CHECK_INTERVAL / 1000, 'วินาที');
+
+            serviceStatusInterval = setInterval(() => {
+                checkServiceStatus();
+            }, SERVICE_CHECK_INTERVAL);
+        }
+
+        /**
+         * ✅ หยุดตรวจสอบสถานะ service
+         */
+        function stopServicePolling() {
+            if (serviceStatusInterval) {
+                clearInterval(serviceStatusInterval);
+                serviceStatusInterval = null;
+                console.log('[Service] หยุดตรวจสอบสถานะ service');
+            }
+        }
+
         async function startGame() {
             console.log('Starting game...');
 
@@ -2356,35 +2519,73 @@
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
             try {
-                // แสดงสถานะกำลังเชื่อมต่อ
-                updateConnectionStatus('offline', 'CONNECTING...');
+                // ✅ เช็คสถานะ service ก่อนว่าเปิดหรือปิด
+                console.log('[Service] กำลังตรวจสอบสถานะ multiplayer service...');
+                updateConnectionStatus('offline', 'CHECKING SERVICE...');
 
-                // พยายามเชื่อมต่อ multiplayer (แต่ไม่บังคับ)
                 try {
-                    console.log('[Multiplayer] กำลังเชื่อมต่อ...');
-                    multiplayerManager = new SnakeMultiplayerManager();
+                    // ตรวจสอบสถานะ service
+                    const serviceResponse = await fetch('/api/games/snake-io/service-status', {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                        },
+                        signal: AbortSignal.timeout(3000)
+                    });
 
-                    // ตั้ง timeout 3 วินาที
-                    const timeoutPromise = new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Connection timeout')), 3000)
-                    );
+                    const serviceData = await serviceResponse.json();
+                    isServiceOnline = serviceData.success && serviceData.is_online;
 
-                    const joinResult = await Promise.race([
-                        multiplayerManager.joinGame(playerName, selectedSkin),
-                        timeoutPromise
-                    ]);
+                    console.log('[Service] สถานะ service:', isServiceOnline ? 'ONLINE' : 'OFFLINE');
 
-                    console.log('[Multiplayer] เข้าร่วมห้อง:', joinResult.room_code);
+                    // ถ้า service เปิด = พยายามเชื่อมต่อ multiplayer
+                    if (isServiceOnline) {
+                        try {
+                            console.log('[Multiplayer] Service เปิดอยู่ - กำลังเชื่อมต่อ multiplayer...');
+                            updateConnectionStatus('offline', '⚡ CONNECTING TO MULTIPLAYER...');
 
-                    // เชื่อมต่อสำเร็จ!
-                    updateConnectionStatus('online', '🌐 ONLINE MODE');
-                } catch (multiplayerError) {
-                    console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ เล่นแบบ offline:', multiplayerError.message);
-                    multiplayerManager = null; // ปิดการใช้งาน multiplayer
+                            multiplayerManager = new SnakeMultiplayerManager();
 
-                    // เล่นแบบ offline
+                            // ตั้ง timeout 5 วินาที
+                            const timeoutPromise = new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error('Connection timeout')), 5000)
+                            );
+
+                            const joinResult = await Promise.race([
+                                multiplayerManager.joinGame(playerName, selectedSkin),
+                                timeoutPromise
+                            ]);
+
+                            console.log('🌐 [Multiplayer] เข้าร่วมห้อง:', joinResult.room_code);
+
+                            // เชื่อมต่อสำเร็จ!
+                            updateConnectionStatus('online', '🌐 ONLINE MODE');
+
+                            // เริ่มตรวจสอบการเชื่อมต่อ multiplayer
+                            startConnectionMonitoring();
+
+                        } catch (multiplayerError) {
+                            console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ เล่นแบบ offline:', multiplayerError.message);
+                            multiplayerManager = null;
+                            updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                        }
+                    } else {
+                        // Service ปิด = เล่นแบบ offline
+                        console.log('🤖 [Service] Service ปิดอยู่ - เริ่มเกมแบบ offline mode');
+                        multiplayerManager = null;
+                        updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                    }
+
+                } catch (serviceError) {
+                    console.warn('[Service] ตรวจสอบสถานะ service ไม่สำเร็จ เล่นแบบ offline:', serviceError.message);
+                    isServiceOnline = false;
+                    multiplayerManager = null;
                     updateConnectionStatus('offline', '🤖 OFFLINE MODE');
                 }
+
+                // ✅ เริ่มตรวจสอบสถานะ service ทุก 10 วินาที
+                startServicePolling();
 
                 // Create player
                 player = new Snake(0, 0, true, playerName, selectedSkin);
@@ -2438,9 +2639,6 @@
 
                 gameStarted = true;
                 document.getElementById('start-screen').classList.add('hidden');
-
-                // เริ่มตรวจสอบการเชื่อมต่อเป็นระยะ
-                startConnectionMonitoring();
 
                 console.log('✅ Game started successfully!');
             } catch (error) {
@@ -2722,6 +2920,9 @@
         function restartGame() {
             // หยุดตรวจสอบการเชื่อมต่อ
             stopConnectionMonitoring();
+
+            // ✅ หยุดตรวจสอบสถานะ service
+            stopServicePolling();
 
             // Clean up
             if (player) player.die();
