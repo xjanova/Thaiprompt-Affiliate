@@ -43,7 +43,7 @@ return new class extends Migration
 
             // Indexes
             $table->index(['key', 'is_active']);
-            $table->index('group');
+            // หมายเหตุ: index สำหรับ 'group' ถูกสร้างแล้วที่บรรทัด 34 (.index())
         });
     }
 
