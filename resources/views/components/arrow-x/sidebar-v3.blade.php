@@ -154,10 +154,10 @@
                  @click.outside="profileOpen = false"
                  x-transition
                  class="absolute bottom-full left-0 right-0 mb-2 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden">
-                <a href="{{ route('admin.profile.edit') }}"
-                   class="block px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm">
+                <a href="#"
+                   class="block px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm opacity-50 cursor-not-allowed">
                     <i class="fas fa-user-circle mr-2 drop-shadow"></i>
-                    <span class="drop-shadow">โปรไฟล์</span>
+                    <span class="drop-shadow">โปรไฟล์ (Coming Soon)</span>
                 </a>
                 <a href="{{ route('admin.settings.index') }}"
                    class="block px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm border-t border-white/20">
