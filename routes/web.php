@@ -208,6 +208,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/user/theme/current', [\App\Http\Controllers\User\ThemeController::class, 'getCurrentTheme'])->name('user.theme.current');
 });
 
+// Language Switcher (Public - no auth required)
+Route::prefix('language')->name('language.')->group(function () {
+    Route::get('/switch/{lang}', [\App\Http\Controllers\LanguageSwitcherController::class, 'switch'])->name('switch');
+    Route::get('/current', [\App\Http\Controllers\LanguageSwitcherController::class, 'current'])->name('current');
+});
+
 // LINE Signup via Invitation Link (Public Routes with Rate Limiting)
 Route::prefix('line/signup')->name('line.signup.')->middleware(['line.signup.throttle'])->group(function () {
     Route::get('/invitation/{token}', [\App\Http\Controllers\LineSignupController::class, 'handleInvitation'])->name('invitation');

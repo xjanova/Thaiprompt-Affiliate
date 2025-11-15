@@ -174,18 +174,24 @@
             </div>
         </div>
 
-        {{-- Google Translate --}}
+        {{-- Google Translate & Language Switcher --}}
         <div class="group">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 opacity-60">
-                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="fas fa-globe text-white text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Google Translate</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Multi-Language</h3>
                 <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                    Multi-language Support (Coming Soon)
+                    14 ภาษา, Auto-Translate, Caching
                 </p>
-                <div class="inline-block px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs rounded-full">
-                    Phase 6
+
+                {{-- Language Switcher Demo --}}
+                <div class="mb-3">
+                    <x-arrow-x.language-switcher variant="dropdown" />
+                </div>
+
+                <div class="inline-block px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs rounded-full">
+                    ✅ Active
                 </div>
             </div>
         </div>
