@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.250.5] - 2025-11-15
+
+### ✨ Features
+- feat(game-settings): add game settings management system (Part 1 - Backend) (3c3b5413)
+### 🐛 Bug Fixes
+- fix(snake-game): fix growth system and add server configuration (d89d19d3)
+### 🔧 Other Changes
+- Merge pull request #1172 from xjanova/claude/analyze-snake-game-project-01Qfo5tFr3MNSpUWcksZmM7o (cade1d53)
+
 ## [v2.250.4] - 2025-11-15
 
 ### ✨ Features
