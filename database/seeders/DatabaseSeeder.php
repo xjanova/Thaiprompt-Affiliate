@@ -98,6 +98,7 @@ class DatabaseSeeder extends Seeder
             VideoRewardMenuSeeder::class,       // เมนูระบบ Video Rewards
             GameSeeder::class,                  // ระบบเกม (Game System)
             GamesSeeder::class,                 // ข้อมูลเกมต่างๆ (Games Data)
+            GameSettingsSeeder::class,          // การตั้งค่าเกม (IP, Port, Server Config)
             MissionsSeeder::class,              // ระบบภารกิจ (Missions System)
             GameMenuItemSeeder::class,          // เมนูสำหรับระบบเกม (Game Menu Items)
 
