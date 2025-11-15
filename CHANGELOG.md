@@ -2,6 +2,44 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.0.0] - 2025-11-15
+
+### 🎨 Major UI Overhaul - Modern UI v3.0
+**Phase 1: Hotels Module (21 files)**
+- Upgraded all Hotels admin views with Modern UI v3.0
+- Replaced emoji icons with FontAwesome
+- Added comprehensive dark mode support
+- Enhanced responsive design patterns
+- Modules: rooms, bookings, packages, facilities, reviews, reports, settings
+
+**Phase 2: MLM System (20 files)**
+- Upgraded all MLM admin views with Modern UI v3.0
+- Enhanced visual hierarchy and user experience
+- Improved data visualization and charts
+- Modules: members, plans, commissions, product-pv, reports, genealogy, calculator, settings
+
+### 🐛 Critical Bug Fixes
+- **Bug #1**: Fixed missing sponsor_id relationship in MLM member model
+- **Bug #2**: Resolved duplicate PV increment in binary service
+- **Bug #3**: Implemented carry forward PV expiry tracking
+
+### 📊 Statistics
+- **Total Files Upgraded**: 41 files
+- **Total Commits**: 13 commits
+- **UI Components**: 100+ components enhanced
+- **Dark Mode**: Full support across all modules
+
+### 🚀 Breaking Changes
+- Major version bump to v3.0.0 due to significant UI changes
+- All admin interfaces now use Modern UI v3.0 design system
+- FontAwesome icons replace all emoji/SVG icons
+- Dark mode is now default-enabled
+
+### 📝 Notes
+- Modern UI upgrade project in progress (Phase 3+: E-Commerce, AI Bots, Seller, User modules)
+- Current progress: 41/180+ files (23%)
+- Future phases scheduled for upcoming releases
+
 ## [v2.250.0] - 2025-11-15
 
 ### ✨ Features
