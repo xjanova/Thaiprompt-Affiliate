@@ -228,7 +228,7 @@
         </a>
 
         <!-- Total Referrals -->
-        <a href="{{ route('user.referrals') }}" class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
+        <a href="{{ route('user.team') }}" class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition duration-300 block cursor-pointer">
             <div class="absolute top-0 right-0 -mt-4 -mr-4">
                 <div class="w-24 h-24 bg-white opacity-10 rounded-full"></div>
             </div>
@@ -268,7 +268,7 @@
             </div>
         </a>
 
-        <a href="{{ route('user.referrals') }}" class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition cursor-pointer block">
+        <a href="{{ route('user.team') }}" class="bg-white rounded-xl shadow-md p-4 hover:shadow-lg transition cursor-pointer block">
             <div class="flex items-center gap-3">
                 <div class="text-3xl">🎯</div>
                 <div>
@@ -411,7 +411,7 @@
         <div class="bg-white rounded-2xl shadow-xl p-6">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-xl font-bold text-gray-900">🏆 Top Referrers ของคุณ</h3>
-                <a href="{{ route('user.referrals') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
+                <a href="{{ route('user.team') }}" class="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
                     ดูทั้งหมด →
                 </a>
             </div>
@@ -506,7 +506,7 @@
     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
         <h3 class="text-xl font-bold mb-4">⚡ การกระทำด่วน</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="{{ route('user.referrals') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-center transition transform hover:scale-105">
+            <a href="{{ route('user.team') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-center transition transform hover:scale-105">
                 <div class="text-3xl mb-2">👥</div>
                 <p class="text-sm font-semibold">ดูผู้แนะนำ</p>
             </a>
