@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
             // 3. Content & Pages
             DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
             SeoMetaSeeder::class,               // สร้าง SEO meta data
-            MenuItemSeeder::class,              // สร้างเมนูสำหรับ Header
+            // MenuItemSeeder::class,              // ❌ REMOVED: V3 uses config/menus.php instead
             // PageBuilderSeeder::class,           // Page Builder Templates (Homepage, Wiki, About builder) - SKIP: Already exists
             // HomepageImportSeeder::class,        // Import current homepage to Page Builder - SKIP: Already exists
 
@@ -95,12 +95,12 @@ class DatabaseSeeder extends Seeder
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
             TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
             VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
-            VideoRewardMenuSeeder::class,       // เมนูระบบ Video Rewards
+            // VideoRewardMenuSeeder::class,       // ❌ REMOVED: V3 uses config/menus.php instead
             GameSeeder::class,                  // ระบบเกม (Game System)
             GamesSeeder::class,                 // ข้อมูลเกมต่างๆ (Games Data)
             GameSettingsSeeder::class,          // การตั้งค่าเกม (IP, Port, Server Config)
             MissionsSeeder::class,              // ระบบภารกิจ (Missions System)
-            GameMenuItemSeeder::class,          // เมนูสำหรับระบบเกม (Game Menu Items)
+            // GameMenuItemSeeder::class,          // ❌ REMOVED: V3 uses config/menus.php instead
 
             // 13. Support & Ticket System
             TicketCannedResponseSeeder::class,  // Canned Responses สำหรับ Ticket Support (เทมเพลตตอบกลับอัตโนมัติ)
@@ -109,10 +109,10 @@ class DatabaseSeeder extends Seeder
             // 14. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
-            ChatbotMenuSeeder::class,           // Chatbot Rental System Menu (Bot Management, Marketplace, Rentals, Earnings)
+            // ChatbotMenuSeeder::class,           // ❌ REMOVED: V3 uses config/menus.php instead
 
             // 15. AI Gen System Menu (AiGenSeeder already in section 5)
-            AiGenMenuSeeder::class,             // AI Gen System Menu Items for Admin Panel
+            // AiGenMenuSeeder::class,             // ❌ REMOVED: V3 uses config/menus.php instead
         ]);
 
         $this->command->info('');

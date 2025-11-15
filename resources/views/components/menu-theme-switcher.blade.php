@@ -47,7 +47,71 @@
 
             <!-- Content -->
             <div class="p-6">
-                <div class="grid md:grid-cols-2 gap-6">
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Arrow X Theme Card (NEW) -->
+                    <div class="theme-card group cursor-pointer"
+                         :class="{ 'selected': currentTheme === 'arrow-x' }"
+                         @click="selectTheme('arrow-x')">
+                        <div class="relative rounded-xl overflow-hidden border-4 transition-all duration-300"
+                             :class="currentTheme === 'arrow-x' ? 'border-cyan-500 shadow-xl shadow-cyan-500/50' : 'border-gray-200 dark:border-gray-700 hover:border-cyan-300'">
+
+                            <!-- Preview Image/Mockup -->
+                            <div class="h-48 bg-gradient-to-br from-slate-900 via-cyan-900 to-purple-900 flex items-center justify-center p-4 relative overflow-hidden">
+                                <!-- RGB Border Effect Preview -->
+                                <div class="absolute inset-0 opacity-30">
+                                    <div class="absolute inset-0" style="background: conic-gradient(from 0deg, #FF0080, #00F0FF, #7F00FF, #FFD700, #FF0080); animation: rgbRotate 4s linear infinite;"></div>
+                                </div>
+                                <div class="w-full h-full bg-gradient-to-br from-slate-800/90 via-cyan-900/50 to-purple-900/50 backdrop-blur-xl rounded-lg border border-white/20 flex items-center justify-center relative">
+                                    <div class="text-center">
+                                        <i class="fas fa-bolt text-7xl text-cyan-400 mb-3"></i>
+                                        <div class="text-white font-bold text-lg">Arrow X™</div>
+                                        <div class="text-cyan-300 text-xs mt-1">Premium Edition</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Selected Badge -->
+                            <div x-show="currentTheme === 'arrow-x'"
+                                 class="absolute top-4 right-4 bg-cyan-500 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center">
+                                <i class="fas fa-check mr-2"></i> เลือกอยู่
+                            </div>
+
+                            <!-- Premium Badge -->
+                            <div class="absolute top-4 left-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center">
+                                <i class="fas fa-star mr-1"></i> PREMIUM
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <h3 class="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                                <i class="fas fa-magic text-cyan-500 mr-2"></i>
+                                Arrow X Theme
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400 mt-2">
+                                ธีมพรีเมียมรุ่นล่าสุด มาพร้อม RGB Lighting, Glassmorphism, และ 3D Effects ที่ทันสมัยที่สุด
+                            </p>
+
+                            <div class="mt-4 space-y-2">
+                                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    RGB Border Animation
+                                </div>
+                                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Glassmorphism Design
+                                </div>
+                                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    3D Depth Effects
+                                </div>
+                                <div class="flex items-center text-sm text-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                                    Smooth Animations
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Millennium Theme Card -->
                     <div class="theme-card group cursor-pointer"
                          :class="{ 'selected': currentTheme === 'millennium' }"
@@ -193,6 +257,12 @@
     /* Hide elements with x-cloak until Alpine.js loads (prevent FOUC) */
     [x-cloak] {
         display: none !important;
+    }
+
+    /* RGB Rotation Animation */
+    @keyframes rgbRotate {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
     .theme-switcher-trigger {
