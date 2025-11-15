@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.249.2] - 2025-11-15
+
+### ✨ Features
+- Merge pull request #1165 from xjanova/claude/session-01tjmndj-01Xqf6DAc3GGqBR8hZ2kkove (52df3ca1)
+- feat(hotels): upgrade Hotels Index to Modern UI v3.0 (1/36 Hotels Phase 2) (b44421c3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.249.1] - 2025-11-15
 
 ### ✨ Features
