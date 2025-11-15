@@ -1120,6 +1120,11 @@
             COLLISION_DISTANCE: 0.6,
             CAMERA_INITIAL_DISTANCE: 15, // กล้องใกล้มากขึ้น (เดิม 20)
             CAMERA_ZOOMED_OUT_DISTANCE: 50, // ซูมออกเต็มที่เมื่อมี powerup
+
+            // ✅ WebSocket/API Server Configuration
+            GAME_SERVER_IP: '123.253.62.251', // IP ของเซิฟเวอร์เกม
+            GAME_SERVER_PORT: '8080', // Port สำหรับ API (ปรับได้ตามการตั้งค่าเซิฟเวอร์)
+            GAME_SERVER_WS_PORT: '6001', // Port สำหรับ WebSocket (Laravel Reverb default)
         };
 
         // Audio System (16-bit style)
@@ -1596,6 +1601,15 @@
 
                 this.length += amount;
 
+                // ✅ คำนวณคะแนนที่ต้องการสำหรับปล้องถัดไป (สะสมจากคะแนนปัจจุบัน)
+                // ระบบการเติบโต:
+                // - ข้อที่ 1-10: ต้อง 10 คะแนนต่อข้อ
+                // - ข้อที่ 11-20: ต้อง 15 คะแนนต่อข้อ
+                // - ข้อที่ 21-30: ต้อง 20 คะแนนต่อข้อ
+                // - ข้อที่ 31+: ต้อง 25 คะแนนต่อข้อ
+                const scorePerSegment = 10 + Math.floor(this.length / 10) * 5;
+                this.nextGrowthScore = this.score + scorePerSegment;
+
                 // Apply score multiplier if active (ไม่บวกคะแนนที่นี่ เพราะจะบวกตอนเก็บไอเทม)
                 if (this.isPlayer) {
                     playSound('eat');
@@ -1630,32 +1644,9 @@
 
                 this.length = this.segments.length;
 
-                // ✅ คำนวณ nextGrowthScore ใหม่ตามจำนวนข้อปัจจุบัน
-                this.nextGrowthScore = this.calculateNextGrowthScore();
-            }
-
-            /**
-             * คำนวณคะแนนที่ต้องการสำหรับปล้องถัดไป
-             * สูตร: 10 + Math.floor(length / 10) * 5
-             * - ปล้องที่ 1-10: ต้องการ 10 คะแนน
-             * - ปล้องที่ 11-20: ต้องการ 15 คะแนน
-             * - ปล้องที่ 21-30: ต้องการ 20 คะแนน
-             */
-            calculateNextGrowthScore() {
-                // ✅ คะแนนที่ต้องการต่อข้อขึ้นกับจำนวนข้อปัจจุบัน
-                // ข้อที่ 1-10: ต้อง 10 แต้ม/ข้อ
-                // ข้อที่ 11-20: ต้อง 15 แต้ม/ข้อ
-                // ข้อที่ 21-30: ต้อง 20 แต้ม/ข้อ
-                // ข้อที่ 31+: ต้อง 25 แต้ม/ข้อ
-                if (this.length <= 10) {
-                    return 10;
-                } else if (this.length <= 20) {
-                    return 15;
-                } else if (this.length <= 30) {
-                    return 20;
-                } else {
-                    return 25;
-                }
+                // ✅ อัพเดท nextGrowthScore ตามระบบเดียวกับ grow()
+                const scorePerSegment = 10 + Math.floor(this.length / 10) * 5;
+                this.nextGrowthScore = this.score + scorePerSegment;
             }
 
             checkSelfCollision() {
@@ -2330,8 +2321,11 @@
                     multiplayerManager.disconnectWebSocket();
                 }
 
-                // สร้างใหม่
-                multiplayerManager = new SnakeMultiplayerManager();
+                // สร้างใหม่ พร้อม server config
+                multiplayerManager = new SnakeMultiplayerManager('/api/games/snake-io', {
+                    ip: CONFIG.GAME_SERVER_IP,
+                    port: CONFIG.GAME_SERVER_PORT
+                });
 
                 // ตั้ง timeout 3 วินาที
                 const timeoutPromise = new Promise((_, reject) =>
@@ -2466,8 +2460,11 @@
                 console.log('[Service] กำลังเชื่อมต่อ multiplayer...');
                 updateConnectionStatus('offline', '⚡ CONNECTING TO MULTIPLAYER...');
 
-                // สร้าง multiplayer manager ใหม่
-                multiplayerManager = new SnakeMultiplayerManager();
+                // สร้าง multiplayer manager ใหม่ พร้อม server config
+                multiplayerManager = new SnakeMultiplayerManager('/api/games/snake-io', {
+                    ip: CONFIG.GAME_SERVER_IP,
+                    port: CONFIG.GAME_SERVER_PORT
+                });
 
                 // ตั้ง timeout 5 วินาที
                 const timeoutPromise = new Promise((_, reject) =>
@@ -2597,7 +2594,10 @@
                             console.log('[Multiplayer] Service เปิดอยู่ - กำลังเชื่อมต่อ multiplayer...');
                             updateConnectionStatus('offline', '⚡ CONNECTING TO MULTIPLAYER...');
 
-                            multiplayerManager = new SnakeMultiplayerManager();
+                            multiplayerManager = new SnakeMultiplayerManager('/api/games/snake-io', {
+                                ip: CONFIG.GAME_SERVER_IP,
+                                port: CONFIG.GAME_SERVER_PORT
+                            });
 
                             // ตั้ง timeout 5 วินาที
                             const timeoutPromise = new Promise((_, reject) =>
@@ -3260,13 +3260,10 @@
                         // ✅ บอทกินอาหาร - ใช้ระบบเดียวกับผู้เล่น (ต้องกิน 10, 15, 20... คะแนนต่อปล้อง)
                         bot.score += foodValue;
 
-                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง (เพิ่ม safety limit ป้องกันค้าง)
-                        let botGrowthIterations = 0;
-                        const MAX_BOT_GROWTH_PER_FRAME = 10;
-                        while (bot.score >= bot.nextGrowthScore && botGrowthIterations < MAX_BOT_GROWTH_PER_FRAME) {
-                            bot.grow(1); // เติบโต 1 ปล้อง
-                            bot.nextGrowthScore = bot.calculateNextGrowthScore();
-                            botGrowthIterations++;
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
+                        // ระบบใหม่: nextGrowthScore คำนวณใน grow() โดยบวกจากคะแนนปัจจุบัน
+                        while (bot.score >= bot.nextGrowthScore) {
+                            bot.grow(1); // เติบโต 1 ปล้อง (จะอัพเดท nextGrowthScore อัตโนมัติ)
                         }
 
                         scene.remove(food);
@@ -3395,13 +3392,10 @@
                         player.score += foodValue * multiplier;
                         score = player.score; // อัปเดต global score
 
-                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง (เพิ่ม safety limit ป้องกันค้าง)
-                        let growthIterations = 0;
-                        const MAX_GROWTH_PER_FRAME = 10; // ป้องกันค้างถ้าโตเร็วเกินไป
-                        while (player.score >= player.nextGrowthScore && growthIterations < MAX_GROWTH_PER_FRAME) {
-                            player.grow(1); // เติบโต 1 ปล้อง
-                            player.nextGrowthScore = player.calculateNextGrowthScore();
-                            growthIterations++;
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
+                        // ระบบใหม่: nextGrowthScore คำนวณใน grow() โดยบวกจากคะแนนปัจจุบัน
+                        while (player.score >= player.nextGrowthScore) {
+                            player.grow(1); // เติบโต 1 ปล้อง (จะอัพเดท nextGrowthScore อัตโนมัติ)
                         }
 
                         scene.remove(food);
