@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.13.1] - 2025-11-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1206 from xjanova/claude/fix-missing-theme-settings-table-01DYrMNMhRMZYji21NpGNcBx (691223d8)
+- fix: add missing app_theme_settings table migration and update seeder (71700494)
+### 🔧 Other Changes
+
+
 ## [v3.13.0] - 2025-11-15
 
 ### ✨ Features
