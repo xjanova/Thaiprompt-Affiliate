@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.250.6] - 2025-11-15
+
+### ✨ Features
+- Merge pull request #1173 from xjanova/claude/analyze-snake-game-project-01Qfo5tFr3MNSpUWcksZmM7o (abc76e2c)
+- feat(game-settings): add game settings UI and API integration (Part 2 - Frontend) (310f7d1e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.250.5] - 2025-11-15
 
 ### ✨ Features
