@@ -471,6 +471,37 @@
             color: #ff4444;
         }
 
+        /* ✅ Fullscreen Toggle Button */
+        #fullscreen-toggle {
+            position: absolute;
+            bottom: 20px;
+            right: 80px; /* ห่างจาก sound toggle */
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ffaa00;
+            color: #ffaa00;
+            font-size: 24px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            z-index: 50;
+            pointer-events: auto;
+        }
+
+        #fullscreen-toggle:hover {
+            background: rgba(255, 170, 0, 0.2);
+            transform: scale(1.1);
+        }
+
+        #fullscreen-toggle.active {
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+
         /* Shop Button */
         #shop-btn {
             position: absolute;
@@ -673,6 +704,15 @@
                 bottom: 10px;
                 right: 10px;
             }
+
+            /* ปุ่ม fullscreen toggle */
+            #fullscreen-toggle {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                bottom: 10px;
+                right: 60px;
+            }
         }
 
         /* ✅ Responsive: จอแนวนอน (landscape) */
@@ -773,6 +813,15 @@
                 font-size: 16px;
                 bottom: 5px;
                 right: 5px;
+            }
+
+            /* ปุ่ม fullscreen toggle */
+            #fullscreen-toggle {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+                bottom: 5px;
+                right: 50px;
             }
         }
     </style>
@@ -996,6 +1045,9 @@
 
         <!-- Sound Toggle -->
         <button id="sound-toggle" title="Toggle Sound">🔊</button>
+
+        <!-- ✅ Fullscreen Toggle -->
+        <button id="fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
 
         <!-- Game Version -->
         <div id="game-version">
@@ -3208,10 +3260,13 @@
                         // ✅ บอทกินอาหาร - ใช้ระบบเดียวกับผู้เล่น (ต้องกิน 10, 15, 20... คะแนนต่อปล้อง)
                         bot.score += foodValue;
 
-                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
-                        while (bot.score >= bot.nextGrowthScore) {
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง (เพิ่ม safety limit ป้องกันค้าง)
+                        let botGrowthIterations = 0;
+                        const MAX_BOT_GROWTH_PER_FRAME = 10;
+                        while (bot.score >= bot.nextGrowthScore && botGrowthIterations < MAX_BOT_GROWTH_PER_FRAME) {
                             bot.grow(1); // เติบโต 1 ปล้อง
                             bot.nextGrowthScore = bot.calculateNextGrowthScore();
+                            botGrowthIterations++;
                         }
 
                         scene.remove(food);
@@ -3340,10 +3395,13 @@
                         player.score += foodValue * multiplier;
                         score = player.score; // อัปเดต global score
 
-                        // ตรวจสอบว่าคะแนนพอเติบโตหรือยัง
-                        while (player.score >= player.nextGrowthScore) {
+                        // ✅ ตรวจสอบว่าคะแนนพอเติบโตหรือยัง (เพิ่ม safety limit ป้องกันค้าง)
+                        let growthIterations = 0;
+                        const MAX_GROWTH_PER_FRAME = 10; // ป้องกันค้างถ้าโตเร็วเกินไป
+                        while (player.score >= player.nextGrowthScore && growthIterations < MAX_GROWTH_PER_FRAME) {
                             player.grow(1); // เติบโต 1 ปล้อง
                             player.nextGrowthScore = player.calculateNextGrowthScore();
+                            growthIterations++;
                         }
 
                         scene.remove(food);
@@ -3424,18 +3482,24 @@
                 return true; // เก็บไว้
             });
 
-            // Maintain food count
-            while (foods.length < CONFIG.FOOD_COUNT) {
+            // ✅ Maintain food count (เพิ่ม safety limit ป้องกันค้าง)
+            let foodSpawnIterations = 0;
+            const MAX_FOOD_SPAWN_PER_FRAME = 5; // สร้างสูงสุด 5 ชิ้นต่อเฟรม
+            while (foods.length < CONFIG.FOOD_COUNT && foodSpawnIterations < MAX_FOOD_SPAWN_PER_FRAME) {
                 createFood();
+                foodSpawnIterations++;
             }
 
-            // Maintain bot count
-            while (bots.length < CONFIG.BOT_COUNT) {
+            // ✅ Maintain bot count (เพิ่ม safety limit ป้องกันค้าง)
+            let botSpawnIterations = 0;
+            const MAX_BOT_SPAWN_PER_FRAME = 2; // สร้างสูงสุด 2 บอทต่อเฟรม
+            while (bots.length < CONFIG.BOT_COUNT && botSpawnIterations < MAX_BOT_SPAWN_PER_FRAME) {
                 createBot();
+                botSpawnIterations++;
             }
 
-            // ✅ Spawn powerups (สูงสุด 4 ชิ้นพร้อมกัน, อัตรา 15% ต่อเฟรม = บ่อยมาก!)
-            if (powerups.length < 4 && Math.random() < 0.15) {
+            // ✅ Spawn powerups (ลด spawn rate จาก 15% เป็น 2% เพื่อป้องกันค้าง)
+            if (powerups.length < 4 && Math.random() < 0.02) {
                 createPowerup();
             }
         }
@@ -3743,6 +3807,88 @@
                 }
             });
         }
+
+        /**
+         * ✅ Fullscreen API Support
+         */
+        function toggleFullscreen() {
+            const elem = document.documentElement;
+            const btn = document.getElementById('fullscreen-toggle');
+
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement) {
+                // เข้าสู่ fullscreen
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                } else if (elem.webkitRequestFullscreen) { /* Safari */
+                    elem.webkitRequestFullscreen();
+                } else if (elem.mozRequestFullScreen) { /* Firefox */
+                    elem.mozRequestFullScreen();
+                } else if (elem.msRequestFullscreen) { /* IE11 */
+                    elem.msRequestFullscreen();
+                }
+                btn.classList.add('active');
+                btn.innerHTML = '⛶'; // icon เต็มจอ
+            } else {
+                // ออกจาก fullscreen
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) { /* Safari */
+                    document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) { /* Firefox */
+                    document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) { /* IE11 */
+                    document.msExitFullscreen();
+                }
+                btn.classList.remove('active');
+                btn.innerHTML = '⛶'; // icon ปกติ
+            }
+        }
+
+        /**
+         * ✅ ตรวจจับการออกจาก fullscreen (กด ESC)
+         */
+        function handleFullscreenChange() {
+            const btn = document.getElementById('fullscreen-toggle');
+            if (!document.fullscreenElement && !document.webkitFullscreenElement && !document.mozFullScreenElement) {
+                btn.classList.remove('active');
+                btn.innerHTML = '⛶';
+            } else {
+                btn.classList.add('active');
+                btn.innerHTML = '⛶';
+            }
+        }
+
+        /**
+         * ✅ Event Listeners สำหรับ UI Controls
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fullscreen toggle
+            const fullscreenBtn = document.getElementById('fullscreen-toggle');
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', toggleFullscreen);
+            }
+
+            // ตรวจจับการเปลี่ยนสถานะ fullscreen
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+            // Sound toggle
+            const soundBtn = document.getElementById('sound-toggle');
+            if (soundBtn) {
+                soundBtn.addEventListener('click', function() {
+                    soundEnabled = !soundEnabled;
+                    this.textContent = soundEnabled ? '🔊' : '🔇';
+                    this.classList.toggle('muted', !soundEnabled);
+
+                    // Resume audio context if suspended
+                    if (soundEnabled && audioContext && audioContext.state === 'suspended') {
+                        audioContext.resume();
+                    }
+                });
+            }
+        });
 
         init();
     </script>
