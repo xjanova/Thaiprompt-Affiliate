@@ -2,6 +2,19 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.249.1] - 2025-11-15
+
+### ✨ Features
+- feat(page-builder): upgrade Preview to Modern UI v3.0 (8/8 Phase 1 Complete) (a3b7a022)
+- feat(settings): upgrade Languages to Modern UI v3.0 (7/8 Phase 1) (8fab13f6)
+- feat(crypto): upgrade User HD Wallets to Modern UI v3.0 (6/8 Phase 1) (2d718c2a)
+- feat(crypto): upgrade Master HD Wallets to Modern UI v3.0 (5/8 Phase 1) (5cbeb885)
+- feat(crypto): upgrade Child HD Wallets to Modern UI v3.0 (4/8 Phase 1) (dcb485b7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1164 from xjanova/claude/session-01tjmndj-01Xqf6DAc3GGqBR8hZ2kkove (ae8600ee)
+
 ## [v2.249.0] - 2025-11-15
 
 ### ✨ Features
