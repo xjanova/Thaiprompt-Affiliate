@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.13.0] - 2025-11-15
+
+### ✨ Features
+- feat: transform admin dashboard to demo/dashboard4 style with dark mode (db7cd898)
+- feat: transform admin dashboard to demo/dashboard4 fusion style (f7f11208)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1205 from xjanova/claude/remove-theme-selection-use-arrow-x-01KVcPrdf77WbXwSN7ag4yWD (82cbbfd1)
+
 ## [v3.12.0] - 2025-11-15
 
 ### ✨ Features
