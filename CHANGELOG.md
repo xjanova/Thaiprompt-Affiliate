@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.5.0] - 2025-11-15
+
+### ✨ Features
+- Merge pull request #1196 from xjanova/claude/refactor-v3-codebase-01LFNm8hrrrEXKTJkVYtawLY (20333732)
+- feat: implement Arrow X Theme System Phase 1 - Database & Models (c681dd4a)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.4.1] - 2025-11-15
 
 ### ✨ Features
