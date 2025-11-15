@@ -4,8 +4,17 @@
  * จัดการการเชื่อมต่อ multiplayer ผ่าน Laravel Reverb WebSocket
  */
 class SnakeMultiplayerManager {
-    constructor(apiBaseUrl = '/api/games/snake-io') {
-        this.apiBaseUrl = apiBaseUrl;
+    constructor(apiBaseUrl = '/api/games/snake-io', serverConfig = null) {
+        // ✅ รองรับการตั้งค่า server แบบ custom (IP + Port)
+        if (serverConfig && serverConfig.ip && serverConfig.port) {
+            // ใช้ full URL จาก server config
+            this.apiBaseUrl = `http://${serverConfig.ip}:${serverConfig.port}/api/games/snake-io`;
+            console.log('[Multiplayer] ใช้ custom server:', this.apiBaseUrl);
+        } else {
+            // ใช้ relative path (สำหรับ localhost หรือ same domain)
+            this.apiBaseUrl = apiBaseUrl;
+        }
+
         this.roomId = null;
         this.playerId = null;
         this.roomCode = null;
