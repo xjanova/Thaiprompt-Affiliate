@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.14.3] - 2025-11-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1210 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (1d86b0e5)
+- fix: disable profile route in sidebar-v3 (route not exists) (4bd1784d)
+### 🔧 Other Changes
+
+
 ## [v3.14.2] - 2025-11-15
 
 ### ✨ Features
