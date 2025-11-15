@@ -8,6 +8,7 @@ use App\Models\AppFeature;
 use App\Models\AppBanner;
 use App\Models\AppMaintenance;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Schema;
 
 class AppManagementSeeder extends Seeder
 {
@@ -80,6 +81,12 @@ class AppManagementSeeder extends Seeder
 
     private function seedAppThemeSettings()
     {
+        // ✅ ตรวจสอบว่าตารางมีอยู่หรือไม่ก่อน (ป้องกัน error กรณีตารางยังไม่ถูกสร้าง)
+        if (!Schema::hasTable('app_theme_settings')) {
+            $this->command->warn('⚠️  Table app_theme_settings does not exist - skipping (Arrow X theme is used by default)');
+            return;
+        }
+
         // Check if theme settings exist
         if (AppThemeSetting::find(1)) {
             $this->command->warn('⚠️  App Theme Settings already exist - skipping to preserve customizations');
