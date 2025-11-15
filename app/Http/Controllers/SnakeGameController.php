@@ -300,14 +300,23 @@ class SnakeGameController extends Controller
         try {
             $user = Auth::user();
 
-            // ตรวจสอบ wallet
-            $wallet = Wallet::where('user_id', $user->id)->first();
+            // ✅ สร้าง wallet อัตโนมัติถ้ายังไม่มี
+            $wallet = Wallet::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'balance' => 0,
+                    'total_earned' => 0,
+                    'total_spent' => 0,
+                    'currency' => 'points',
+                ]
+            );
 
-            if (!$wallet || $wallet->balance < 1) {
+            // ตรวจสอบ balance
+            if ($wallet->balance < 1) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'แต้มไม่เพียงพอ ต้องการ 1 แต้มในการบันทึกคะแนน',
-                    'current_balance' => $wallet ? $wallet->balance : 0,
+                    'message' => '💰 แต้มไม่เพียงพอ!\n\nต้องการ 1 แต้มในการบันทึกคะแนน\nคุณมี ' . $wallet->balance . ' แต้ม\n\nกรุณาเติมแต้มหรือทำภารกิจเพื่อรับแต้มฟรี',
+                    'current_balance' => $wallet->balance,
                     'topup_url' => route('user.wallet.index'),
                     'need_points' => 1,
                 ], 400);
