@@ -56,11 +56,11 @@ class GameSettingsController extends Controller
             GameSetting::clearCache();
 
             return redirect()
-                ->route('admin.game-settings.index')
+                ->route('admin.games.game-settings.index')
                 ->with('success', 'บันทึกการตั้งค่าสำเร็จ');
         } catch (\Exception $e) {
             return redirect()
-                ->route('admin.game-settings.index')
+                ->route('admin.games.game-settings.index')
                 ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
         }
     }
