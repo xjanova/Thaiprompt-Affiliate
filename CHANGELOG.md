@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.2.0] - 2025-11-15
+
+### ✨ Features
+- feat: add game management menu in admin sidebar (a233f2b1)
+### 🐛 Bug Fixes
+- fix: add missing calculateNextGrowthScore() function in snake game (470df67b)
+### 🔧 Other Changes
+- Merge pull request #1191 from xjanova/claude/fix-snake-game-error-01Gk7qEftbiSDzS3TvwTTQ59 (d6e55208)
+
 ## [v3.1.0] - 2025-11-15
 
 ### ✨ Features
