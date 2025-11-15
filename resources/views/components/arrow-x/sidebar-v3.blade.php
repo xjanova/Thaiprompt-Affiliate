@@ -136,8 +136,8 @@
     {{-- Version & License Footer --}}
     <div class="p-4 border-t border-white/30">
         <div class="flex items-center gap-3">
-            {{-- Spinning Logo --}}
-            <div class="flex-shrink-0">
+            {{-- 3D Flip Logo --}}
+            <div class="flex-shrink-0 perspective-container">
                 @php
                     $logoUrl = config('app.logo_url', null);
                     $logoText = config('app.logo_text', 'TP');
@@ -146,20 +146,20 @@
                 @if($logoUrl)
                     <img src="{{ $logoUrl }}"
                          alt="Logo"
-                         class="w-10 h-10 rounded-xl object-cover shadow-lg animate-spin-slow">
+                         class="w-10 h-10 rounded-xl object-cover shadow-lg logo-3d-flip">
                 @else
-                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg animate-spin-slow">
+                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg logo-3d-flip">
                         <span class="text-white text-sm font-bold drop-shadow">{{ $logoText }}</span>
                     </div>
                 @endif
             </div>
 
-            {{-- Version & License Info --}}
+            {{-- Version & License Info (3D Text) --}}
             <div x-show="sidebarOpen" x-transition class="flex-1 min-w-0">
-                {{-- Version --}}
+                {{-- Version 3D --}}
                 <div class="flex items-center gap-2 mb-1">
-                    <span class="text-white/90 text-xs font-medium drop-shadow">Version</span>
-                    <span class="px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-lg">
+                    <span class="text-white/90 text-xs font-medium drop-shadow text-3d">Version</span>
+                    <span class="px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-lg version-badge-3d">
                         {{ config('app.version', '3.13.1') }}
                     </span>
                 </div>
@@ -179,7 +179,7 @@
             </div>
         </div>
 
-        {{-- Powered by Badge (when collapsed) --}}
+        {{-- Collapsed Version --}}
         <div x-show="!sidebarOpen" x-transition class="mt-2 text-center">
             <span class="text-white/60 text-xs drop-shadow block">v{{ config('app.version', '3.13.1') }}</span>
         </div>
@@ -226,22 +226,50 @@
 }
 
 /**
- * Slow Spin Animation - สำหรับโลโก้
+ * 3D Logo Flip Animation - หมุนไปทางขวาแบบ 3D
  */
-@keyframes spin-slow {
-    from {
-        transform: rotate(0deg);
+.perspective-container {
+    perspective: 1000px;
+}
+
+@keyframes flip-3d {
+    0% {
+        transform: rotateY(0deg);
     }
-    to {
-        transform: rotate(360deg);
+    50% {
+        transform: rotateY(180deg);
+    }
+    100% {
+        transform: rotateY(360deg);
     }
 }
 
-.animate-spin-slow {
-    animation: spin-slow 8s linear infinite;
+.logo-3d-flip {
+    animation: flip-3d 4s ease-in-out infinite;
+    transform-style: preserve-3d;
 }
 
-.animate-spin-slow:hover {
-    animation-duration: 2s;
+.logo-3d-flip:hover {
+    animation-duration: 1s;
+}
+
+/**
+ * 3D Text Effect - ข้อความแบบ 3D
+ */
+.text-3d {
+    text-shadow:
+        1px 1px 2px rgba(0, 0, 0, 0.3),
+        2px 2px 4px rgba(0, 0, 0, 0.2),
+        3px 3px 6px rgba(0, 0, 0, 0.1);
+}
+
+/**
+ * 3D Version Badge - Badge แบบ 3D
+ */
+.version-badge-3d {
+    transform: translateZ(10px);
+    box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        0 8px 16px rgba(0, 0, 0, 0.2);
 }
 </style>

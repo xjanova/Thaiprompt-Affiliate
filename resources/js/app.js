@@ -12,7 +12,6 @@ import Alpine from 'alpinejs';
 // Import Alpine Stores (V3)
 import './alpine/stores/theme';
 import './alpine/stores/sidebar';
-import './alpine/stores/language';
 
 // Make Alpine available globally
 window.Alpine = Alpine;
