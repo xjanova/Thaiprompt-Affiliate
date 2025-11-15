@@ -1816,6 +1816,12 @@ Route::prefix('games')->name('games.')->group(function () {
     Route::delete('/{game}', [App\Http\Controllers\Admin\GameController::class, 'destroy'])->name('destroy');
     Route::patch('/{game}/toggle-active', [App\Http\Controllers\Admin\GameController::class, 'toggleActive'])->name('toggle-active');
     Route::post('/update-order', [App\Http\Controllers\Admin\GameController::class, 'updateOrder'])->name('update-order');
+
+    // ✅ Snake.io Multiplayer Service Monitor
+    Route::prefix('snake-io')->name('snake-io.')->group(function () {
+        Route::get('/monitor', [App\Http\Controllers\Admin\SnakeGameAdminController::class, 'dashboard'])
+            ->name('monitor');
+    });
 });
 
 // Bot Automation System Routes

@@ -882,7 +882,33 @@ Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.'
     Route::get('/get-skin-preference', [$controller, 'getSkinPreference'])
         ->middleware('auth:web')
         ->name('get-skin-preference');
+
+    // ✅ Check service status (สำหรับ client polling)
+    Route::get('/service-status', [$controller, 'getServiceStatus'])
+        ->name('service-status');
 });
+
+// ✅ Admin API Routes for Snake.io Service Monitor
+Route::middleware(['web', 'auth', 'role:admin'])
+    ->prefix('admin/games/snake-io')
+    ->name('api.admin.games.snake-io.')
+    ->group(function () {
+        $controller = \App\Http\Controllers\Admin\SnakeGameAdminController::class;
+
+        // Service control
+        Route::post('/start', [$controller, 'startService'])->name('start');
+        Route::post('/stop', [$controller, 'stopService'])->name('stop');
+        Route::get('/status', [$controller, 'getStatus'])->name('status');
+
+        // Players & Rooms
+        Route::get('/players', [$controller, 'getOnlinePlayers'])->name('players');
+        Route::get('/rooms', [$controller, 'getRooms'])->name('rooms');
+
+        // Admin actions
+        Route::post('/kick/{userId}', [$controller, 'kickPlayer'])->name('kick');
+        Route::get('/suspicious', [$controller, 'getSuspiciousActivities'])->name('suspicious');
+        Route::post('/clear-data', [$controller, 'clearData'])->name('clear-data');
+    });
 
 /*
 |--------------------------------------------------------------------------
