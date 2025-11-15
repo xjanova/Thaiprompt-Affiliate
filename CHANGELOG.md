@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.3.0] - 2025-11-15
+
+### ✨ Features
+- feat: add V3 UI themes complete dashboard examples (458545ca)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1192 from xjanova/claude/refactor-v3-codebase-01LFNm8hrrrEXKTJkVYtawLY (9d1c9673)
+- build: compile V3 demo assets with Tailwind CSS and Alpine.js (398b3c92)
+
 ## [v3.2.0] - 2025-11-15
 
 ### ✨ Features
