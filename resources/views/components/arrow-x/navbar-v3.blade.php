@@ -28,10 +28,10 @@
 <header class="h-16 glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-10">
     {{-- Left Section: Page Title --}}
     <div class="flex items-center gap-4">
-        {{-- Mobile Menu Toggle --}}
+        {{-- Mobile Menu Toggle with Pulse --}}
         <button @click="sidebarOpen = !sidebarOpen"
                 type="button"
-                class="md:hidden p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95">
+                class="md:hidden p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95 relative burger-pulse">
             <i class="fas fa-bars text-white text-lg drop-shadow"></i>
         </button>
 
@@ -241,5 +241,21 @@
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+}
+
+/**
+ * Burger Menu Pulse Animation - กระพริบเป็นช่วงๆ
+ */
+@keyframes burger-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+}
+
+.burger-pulse {
+    animation: burger-pulse 2s ease-in-out infinite;
 }
 </style>
