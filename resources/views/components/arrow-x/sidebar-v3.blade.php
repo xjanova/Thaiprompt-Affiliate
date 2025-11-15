@@ -27,9 +27,21 @@
     'logo' => null,
 ])
 
+{{-- Mobile Overlay --}}
+<div x-show="sidebarOpen && window.innerWidth < 768"
+     @click="sidebarOpen = false"
+     x-transition:enter="transition-opacity ease-out duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition-opacity ease-in duration-200"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 bg-black/50 z-30 md:hidden">
+</div>
+
 <aside
-    :class="sidebarOpen ? 'w-64' : 'w-20'"
-    class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 relative z-20"
+    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
+    class="glass-fusion w-64 md:w-64 transition-all duration-300 flex flex-col border-r border-white/30 fixed md:relative z-40 h-full"
     x-cloak
 >
     {{-- Logo Section --}}
@@ -133,46 +145,55 @@
         </a>
     </nav>
 
-    {{-- User Profile Footer --}}
+    {{-- Version & License Footer --}}
     <div class="p-4 border-t border-white/30">
-        <div x-data="{ profileOpen: false }" class="relative">
-            <button @click="profileOpen = !profileOpen"
-                    type="button"
-                    class="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/20 transition-all cursor-pointer">
-                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span class="text-white font-bold drop-shadow">{{ substr(Auth::user()->name, 0, 1) }}</span>
-                </div>
-                <div x-show="sidebarOpen" x-transition class="flex-1 min-w-0 text-left">
-                    <p class="font-medium text-white text-sm truncate drop-shadow">{{ Auth::user()->name }}</p>
-                    <p class="text-xs text-white/80 truncate">{{ Auth::user()->email }}</p>
-                </div>
-                <i x-show="sidebarOpen" x-transition class="fas fa-chevron-down text-white/80 text-xs drop-shadow"></i>
-            </button>
+        <div class="flex items-center gap-3">
+            {{-- Spinning Logo --}}
+            <div class="flex-shrink-0">
+                @php
+                    $logoUrl = config('app.logo_url', null);
+                    $logoText = config('app.logo_text', 'TP');
+                @endphp
 
-            {{-- Profile Dropdown --}}
-            <div x-show="profileOpen"
-                 @click.outside="profileOpen = false"
-                 x-transition
-                 class="absolute bottom-full left-0 right-0 mb-2 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden">
-                <a href="#"
-                   class="block px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm opacity-50 cursor-not-allowed">
-                    <i class="fas fa-user-circle mr-2 drop-shadow"></i>
-                    <span class="drop-shadow">โปรไฟล์ (Coming Soon)</span>
-                </a>
-                <a href="{{ route('admin.settings.index') }}"
-                   class="block px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm border-t border-white/20">
-                    <i class="fas fa-cog mr-2 drop-shadow"></i>
-                    <span class="drop-shadow">ตั้งค่า</span>
-                </a>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button type="submit"
-                            class="w-full text-left px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm border-t border-white/20">
-                        <i class="fas fa-sign-out-alt mr-2 drop-shadow"></i>
-                        <span class="drop-shadow">ออกจากระบบ</span>
-                    </button>
-                </form>
+                @if($logoUrl)
+                    <img src="{{ $logoUrl }}"
+                         alt="Logo"
+                         class="w-10 h-10 rounded-xl object-cover shadow-lg animate-spin-slow">
+                @else
+                    <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg animate-spin-slow">
+                        <span class="text-white text-sm font-bold drop-shadow">{{ $logoText }}</span>
+                    </div>
+                @endif
             </div>
+
+            {{-- Version & License Info --}}
+            <div x-show="sidebarOpen" x-transition class="flex-1 min-w-0">
+                {{-- Version --}}
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-white/90 text-xs font-medium drop-shadow">Version</span>
+                    <span class="px-2 py-0.5 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold rounded-full shadow-lg">
+                        {{ config('app.version', '3.13.1') }}
+                    </span>
+                </div>
+
+                {{-- License --}}
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-shield-alt text-purple-400 text-xs drop-shadow"></i>
+                    <span class="text-white/80 text-xs drop-shadow">
+                        {{ config('app.license_text', 'Premium License') }}
+                    </span>
+                </div>
+
+                {{-- Company/Owner --}}
+                <p class="text-white/60 text-xs mt-1 truncate drop-shadow">
+                    © {{ date('Y') }} {{ config('app.company', 'ThaiPrompt') }}
+                </p>
+            </div>
+        </div>
+
+        {{-- Powered by Badge (when collapsed) --}}
+        <div x-show="!sidebarOpen" x-transition class="mt-2 text-center">
+            <span class="text-white/60 text-xs drop-shadow block">v{{ config('app.version', '3.13.1') }}</span>
         </div>
     </div>
 </aside>
@@ -214,5 +235,25 @@
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+/**
+ * Slow Spin Animation - สำหรับโลโก้
+ */
+@keyframes spin-slow {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+}
+
+.animate-spin-slow:hover {
+    animation-duration: 2s;
 }
 </style>

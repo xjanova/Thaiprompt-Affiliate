@@ -28,11 +28,13 @@
 <header class="h-16 glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-10">
     {{-- Left Section: Page Title --}}
     <div class="flex items-center gap-4">
-        {{-- Mobile Menu Toggle --}}
+        {{-- Mobile Menu Toggle with Pulse Animation --}}
         <button @click="sidebarOpen = !sidebarOpen"
                 type="button"
-                class="md:hidden p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95">
+                class="md:hidden p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95 relative">
             <i class="fas fa-bars text-white text-lg drop-shadow"></i>
+            {{-- Pulse Ring (only on mobile when closed) --}}
+            <span x-show="!sidebarOpen" class="absolute inset-0 rounded-lg bg-white/30 animate-ping"></span>
         </button>
 
         {{-- Page Title --}}
@@ -154,6 +156,24 @@
             </div>
         </div>
 
+        {{-- Scroll to Top Button --}}
+        <button @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+                x-show="showScrollTop"
+                x-transition
+                type="button"
+                class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
+                title="กลับขึ้นด้านบน">
+            <i class="fas fa-arrow-up text-white drop-shadow"></i>
+        </button>
+
+        {{-- Theme Customizer Toggle --}}
+        <button @click="$dispatch('toggle-customizer')"
+                type="button"
+                class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
+                title="ปรับแต่งธีม">
+            <i class="fas fa-palette text-white drop-shadow"></i>
+        </button>
+
         {{-- Dark Mode Toggle --}}
         <button @click="$store.theme.toggle()"
                 type="button"
@@ -162,6 +182,36 @@
             <i x-show="!$store.theme.isDark" class="fas fa-moon text-white drop-shadow"></i>
             <i x-show="$store.theme.isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
         </button>
+
+        {{-- Language Switcher --}}
+        <div x-data="{ languageOpen: false }" class="relative" x-init="$store.language.init()">
+            <button @click="languageOpen = !languageOpen"
+                    type="button"
+                    class="flex items-center gap-2 p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95">
+                <span class="text-xl" x-text="$store.language.getCurrentLanguage().flag"></span>
+                <span class="hidden md:block text-white text-sm font-medium drop-shadow" x-text="$store.language.getCurrentLanguage().code.toUpperCase()"></span>
+            </button>
+
+            {{-- Language Dropdown --}}
+            <div x-show="languageOpen"
+                 @click.outside="languageOpen = false"
+                 x-transition
+                 class="absolute top-full right-0 mt-2 w-48 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden">
+                <div class="py-2">
+                    <template x-for="lang in $store.language.available" :key="lang.code">
+                        <button @click="$store.language.change(lang.code); languageOpen = false"
+                                type="button"
+                                class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors"
+                                :class="$store.language.current === lang.code ? 'bg-white/20' : ''">
+                            <span class="text-xl" x-text="lang.flag"></span>
+                            <span class="text-white text-sm font-medium drop-shadow" x-text="lang.name"></span>
+                            <i x-show="$store.language.current === lang.code"
+                               class="fas fa-check text-green-400 ml-auto drop-shadow"></i>
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
 
         {{-- User Profile Dropdown --}}
         <div x-data="{ profileOpen: false }" class="relative">
