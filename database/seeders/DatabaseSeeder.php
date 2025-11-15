@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
             // 1. Core Settings & Configuration (ต้องมาก่อนสุด)
             AppNameSettingSeeder::class,        // ตั้งค่าชื่อแอพ
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
-            // ThemeSeeder::class,              // ❌ REMOVED: Old theme system (replaced by Arrow X Theme System)
             ArrowXThemeSeeder::class,           // ✅ Arrow X Theme System (V3) - Default theme data
             AppManagementSeeder::class,         // ตั้งค่าแอพ, ธีม, ฟีเจอร์, แบนเนอร์, และ maintenance
             CookieSettingsSeeder::class,        // ตั้งค่า Cookie Consent & PDPA
@@ -38,7 +37,6 @@ class DatabaseSeeder extends Seeder
             // 3. Content & Pages
             DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
             SeoMetaSeeder::class,               // สร้าง SEO meta data
-            // MenuItemSeeder::class,              // ❌ REMOVED: V3 uses config/menus.php instead
             // PageBuilderSeeder::class,           // Page Builder Templates (Homepage, Wiki, About builder) - SKIP: Already exists
             // HomepageImportSeeder::class,        // Import current homepage to Page Builder - SKIP: Already exists
 
@@ -96,12 +94,10 @@ class DatabaseSeeder extends Seeder
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
             TradingBotSystemSeeder::class,      // ระบบเทรดดิ้งบอท (Packages, Exchanges, Strategies)
             VideoRewardSystemSeeder::class,     // ระบบรางวัลจากการดูวิดีโอ (Channels, Videos, Quests, Coins)
-            // VideoRewardMenuSeeder::class,       // ❌ REMOVED: V3 uses config/menus.php instead
             GameSeeder::class,                  // ระบบเกม (Game System)
             GamesSeeder::class,                 // ข้อมูลเกมต่างๆ (Games Data)
             GameSettingsSeeder::class,          // การตั้งค่าเกม (IP, Port, Server Config)
             MissionsSeeder::class,              // ระบบภารกิจ (Missions System)
-            // GameMenuItemSeeder::class,          // ❌ REMOVED: V3 uses config/menus.php instead
 
             // 13. Support & Ticket System
             TicketCannedResponseSeeder::class,  // Canned Responses สำหรับ Ticket Support (เทมเพลตตอบกลับอัตโนมัติ)
@@ -110,10 +106,6 @@ class DatabaseSeeder extends Seeder
             // 14. Bot Automation System
             BotPlatformSeeder::class,           // Social Media Platforms (Facebook, LINE, Instagram, Twitter)
             BotMarketplaceCategorySeeder::class, // Bot Marketplace Categories (Sales, Support, Marketing, etc.)
-            // ChatbotMenuSeeder::class,           // ❌ REMOVED: V3 uses config/menus.php instead
-
-            // 15. AI Gen System Menu (AiGenSeeder already in section 5)
-            // AiGenMenuSeeder::class,             // ❌ REMOVED: V3 uses config/menus.php instead
         ]);
 
         $this->command->info('');
