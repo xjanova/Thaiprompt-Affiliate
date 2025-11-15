@@ -155,11 +155,12 @@
         </div>
 
         {{-- Dark Mode Toggle --}}
-        <button @click="darkMode = !darkMode"
+        <button @click="$store.theme.toggle()"
                 type="button"
-                class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95">
-            <i x-show="!darkMode" class="fas fa-moon text-white drop-shadow"></i>
-            <i x-show="darkMode" class="fas fa-sun text-yellow-300 drop-shadow"></i>
+                class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
+                :title="$store.theme.isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'">
+            <i x-show="!$store.theme.isDark" class="fas fa-moon text-white drop-shadow"></i>
+            <i x-show="$store.theme.isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
         </button>
 
         {{-- User Profile Dropdown --}}
