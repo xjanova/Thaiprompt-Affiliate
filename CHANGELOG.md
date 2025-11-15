@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.251.4] - 2025-11-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1179 from xjanova/claude/analyze-modern-ui-upgrade-01EpRCcTP6FtQLWBnbEAkgYC (04e55b23)
+- fix(mlm): resolve 3 critical MLM bugs 🐛 (97258895)
+### 🔧 Other Changes
+
+
 ## [v2.251.3] - 2025-11-15
 
 ### ✨ Features
