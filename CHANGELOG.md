@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.251.11] - 2025-11-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1186 from xjanova/claude/analyze-snake-game-project-01Qfo5tFr3MNSpUWcksZmM7o (3655f6eb)
+- fix(routes): move game-settings routes inside games group and update menu route name (40a55c51)
+### 🔧 Other Changes
+
+
 ## [v2.251.10] - 2025-11-15
 
 ### ✨ Features
