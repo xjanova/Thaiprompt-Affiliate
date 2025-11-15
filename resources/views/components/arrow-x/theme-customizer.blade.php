@@ -100,15 +100,8 @@
     }
 }"
      class="fixed right-0 top-0 bottom-0 z-[9999]"
-     @keydown.escape.window="customizerOpen = false">
-
-    {{-- Toggle Button --}}
-    <button @click="customizerOpen = !customizerOpen"
-            class="fixed right-0 top-1/2 -translate-y-1/2 glass-fusion text-white p-4 rounded-l-2xl shadow-2xl border border-white/30 border-r-0 transition-all hover:scale-110"
-            :class="customizerOpen ? 'translate-x-[400px]' : 'translate-x-0'"
-            title="เปิดการปรับแต่งธีม (Ctrl+Shift+T)">
-        <i class="fas fa-palette text-2xl" :class="customizerOpen ? 'fa-spin' : ''"></i>
-    </button>
+     @keydown.escape.window="customizerOpen = false"
+     @toggle-customizer.window="customizerOpen = !customizerOpen">
 
     {{-- Customizer Panel --}}
     <div x-show="customizerOpen"

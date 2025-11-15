@@ -25,12 +25,32 @@
 </head>
 <body class="h-full font-sans overflow-hidden"
       x-data="{
-          sidebarOpen: true,
-          profileOpen: false
+          sidebarOpen: window.innerWidth >= 768,
+          profileOpen: false,
+          showScrollTop: false
       }"
       x-init="
           // เริ่มต้น theme store
           $store.theme.init();
+
+          // ตรวจสอบ scroll position สำหรับปุ่มกลับด้านบน
+          $nextTick(() => {
+              const mainContent = document.querySelector('main.overflow-y-auto');
+              if (mainContent) {
+                  mainContent.addEventListener('scroll', () => {
+                      showScrollTop = mainContent.scrollTop > 300;
+                  });
+              }
+          });
+
+          // ปรับ sidebar ตามขนาดหน้าจอ (มือถือซ่อน, desktop แสดง)
+          window.addEventListener('resize', () => {
+              if (window.innerWidth >= 768) {
+                  sidebarOpen = true;
+              } else {
+                  sidebarOpen = false;
+              }
+          });
       ">
 
     {{-- Background Gradient - โหมดสว่าง=สีสัน, โหมดมืด=มืด+ทึบ --}}
@@ -124,6 +144,21 @@
 
     {{-- Theme Customizer - ปรับแต่งธีมแบบละเอียด --}}
     <x-arrow-x.theme-customizer />
+
+    {{-- Scroll to Top Button - ปุ่มกลับขึ้นด้านบน (มุมขวาล่าง) --}}
+    <button @click="document.querySelector('main.overflow-y-auto').scrollTo({ top: 0, behavior: 'smooth' })"
+            x-show="showScrollTop"
+            x-transition:enter="transition ease-out duration-300 transform"
+            x-transition:enter-start="translate-y-16 opacity-0 scale-75"
+            x-transition:enter-end="translate-y-0 opacity-100 scale-100"
+            x-transition:leave="transition ease-in duration-200 transform"
+            x-transition:leave-start="translate-y-0 opacity-100 scale-100"
+            x-transition:leave-end="translate-y-16 opacity-0 scale-75"
+            type="button"
+            class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl glass-fusion shadow-2xl border border-white/30 hover:scale-110 transition-all group"
+            title="กลับขึ้นด้านบน">
+        <i class="fas fa-arrow-up text-white text-xl drop-shadow group-hover:scale-110 group-hover:-translate-y-1 transition-transform"></i>
+    </button>
 
     @stack('scripts')
 </body>
