@@ -2,6 +2,22 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.247.5] - 2025-11-15
+
+### ✨ Features
+- feat(accounting): upgrade Setup page to Modern UI v3.0 (28/28) (aaf4c6ba)
+- feat(accounting): upgrade FlowAccount connect form to Modern UI v3.0 (27/28) (a37ea89c)
+- feat(accounting): upgrade FlowAccount index to Modern UI v3.0 (26/28) (2158fc18)
+- feat(accounting): upgrade Tax report to Modern UI v3.0 (25/28) (9609d26f)
+- feat(accounting): upgrade Sales report to Modern UI v3.0 (24/28) (767cf9a1)
+- feat(accounting): upgrade Profit-Loss report to Modern UI v3.0 (23/28) (6571b528)
+- feat(accounting): upgrade Expenses report to Modern UI v3.0 (22/28) (b6394ca8)
+- feat(accounting): upgrade Cash Flow report to Modern UI v3.0 (21/28) (896cbd76)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1160 from xjanova/claude/session-01tjmndj-01Xqf6DAc3GGqBR8hZ2kkove (bd8f2a1e)
+
 ## [v2.247.4] - 2025-11-15
 
 ### ✨ Features
