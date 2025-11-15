@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.14.0] - 2025-11-15
+
+### ✨ Features
+- feat: complete admin dashboard v3 restructure with all components (b33dad48)
+- feat: add admin dashboard v3 components with demo/dashboard4 theme (26776efb)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1207 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (a9b80298)
+
 ## [v3.13.1] - 2025-11-15
 
 ### ✨ Features
