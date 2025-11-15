@@ -890,17 +890,129 @@ Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.'
 
 // ✅ Game Configuration API - ดึงค่า config จาก database
 Route::get('/games/config', function () {
-    // ดึงค่า config ทั้งหมดของเกม
-    $config = \App\Models\GameSetting::getGroup('snake_io');
+    // ดึงค่า config ทั้งหมดของเกมจากทุกกลุ่ม
+    $groups = [
+        'snake_io_server',
+        'snake_io_world',
+        'snake_io_movement',
+        'snake_io_camera',
+        'snake_io_scoring',
+        'snake_io_food',
+        'snake_io_bots',
+        'snake_io_powerups',
+        'snake_io_powerup_magnet',
+        'snake_io_powerup_speed',
+        'snake_io_powerup_multiplier',
+        'snake_io_powerup_zoom',
+    ];
 
+    $allConfig = [];
+    foreach ($groups as $group) {
+        $groupConfig = \App\Models\GameSetting::getGroup($group);
+        $allConfig = array_merge($allConfig, $groupConfig);
+    }
+
+    // จัดรูปแบบ response ให้เป็น camelCase และจัดกลุ่ม
     return response()->json([
         'success' => true,
         'data' => [
-            'server_ip' => $config['snake_io_server_ip'] ?? '127.0.0.1',
-            'server_port' => $config['snake_io_server_port'] ?? 8080,
-            'ws_port' => $config['snake_io_ws_port'] ?? 6001,
-            'enabled' => $config['snake_io_enabled'] ?? true,
-            'max_players_per_room' => $config['snake_io_max_players_per_room'] ?? 30,
+            // Server Configuration
+            'server' => [
+                'ip' => $allConfig['snake_io_server_ip'] ?? '123.253.62.251',
+                'port' => (int) ($allConfig['snake_io_server_port'] ?? 8080),
+                'ws_port' => (int) ($allConfig['snake_io_ws_port'] ?? 6001),
+                'enabled' => filter_var($allConfig['snake_io_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                'max_players_per_room' => (int) ($allConfig['snake_io_max_players_per_room'] ?? 30),
+            ],
+
+            // World Settings
+            'world' => [
+                'size' => (int) ($allConfig['world_size'] ?? 200),
+                'initial_snake_length' => (int) ($allConfig['initial_snake_length'] ?? 5),
+                'segment_size' => (float) ($allConfig['segment_size'] ?? 0.5),
+                'collision_distance' => (float) ($allConfig['collision_distance'] ?? 0.6),
+            ],
+
+            // Movement Settings
+            'movement' => [
+                'speed' => (float) ($allConfig['movement_speed'] ?? 0.15),
+                'boost_speed' => (float) ($allConfig['boost_speed'] ?? 0.3),
+                'turn_speed' => (float) ($allConfig['turn_speed'] ?? 0.05),
+            ],
+
+            // Camera Settings
+            'camera' => [
+                'initial_distance' => (int) ($allConfig['camera_initial_distance'] ?? 15),
+                'zoomed_out_distance' => (int) ($allConfig['camera_zoomed_out_distance'] ?? 50),
+                'zoom_speed' => (float) ($allConfig['camera_zoom_speed'] ?? 0.05),
+            ],
+
+            // Scoring System
+            'scoring' => [
+                'food_value' => (int) ($allConfig['food_value'] ?? 1),
+                'points_per_growth' => (int) ($allConfig['points_per_growth'] ?? 10),
+                'score_multiplier_base' => (int) ($allConfig['score_multiplier_base'] ?? 1),
+                'save_score_enabled' => filter_var($allConfig['save_score_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            ],
+
+            // Food Settings
+            'food' => [
+                'count' => (int) ($allConfig['food_count'] ?? 100),
+                'spawn_rate' => (float) ($allConfig['food_spawn_rate'] ?? 0.5),
+                'lifetime' => (int) ($allConfig['food_lifetime'] ?? 0),
+                'value_min' => (int) ($allConfig['food_value_min'] ?? 1),
+                'value_max' => (int) ($allConfig['food_value_max'] ?? 1),
+            ],
+
+            // Bot Settings
+            'bots' => [
+                'count' => (int) ($allConfig['bot_count'] ?? 30),
+                'max_spawn_per_frame' => (int) ($allConfig['bot_max_spawn_per_frame'] ?? 2),
+                'intelligence_level' => (int) ($allConfig['bot_intelligence_level'] ?? 5),
+            ],
+
+            // Powerups - General
+            'powerups' => [
+                'max_count' => (int) ($allConfig['powerup_max_count'] ?? 4),
+                'spawn_rate' => (float) ($allConfig['powerup_spawn_rate'] ?? 0.02),
+                'global_lifetime' => (int) ($allConfig['powerup_global_lifetime'] ?? 30000),
+
+                // Magnet
+                'magnet' => [
+                    'enabled' => filter_var($allConfig['magnet_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                    'duration' => (int) ($allConfig['magnet_duration'] ?? 10000),
+                    'spawn_chance' => (float) ($allConfig['magnet_spawn_chance'] ?? 0.25),
+                    'lifetime' => (int) ($allConfig['magnet_lifetime'] ?? 30000),
+                    'range' => (int) ($allConfig['magnet_range'] ?? 10),
+                ],
+
+                // Speed Boost
+                'speed' => [
+                    'enabled' => filter_var($allConfig['speed_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                    'duration' => (int) ($allConfig['speed_duration'] ?? 10000),
+                    'spawn_chance' => (float) ($allConfig['speed_spawn_chance'] ?? 0.25),
+                    'lifetime' => (int) ($allConfig['speed_lifetime'] ?? 30000),
+                    'multiplier' => (float) ($allConfig['speed_multiplier'] ?? 2),
+                ],
+
+                // Score Multiplier
+                'multiplier' => [
+                    'enabled' => filter_var($allConfig['multiplier_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                    'duration' => (int) ($allConfig['multiplier_duration'] ?? 10000),
+                    'spawn_chance' => (float) ($allConfig['multiplier_spawn_chance'] ?? 0.25),
+                    'lifetime' => (int) ($allConfig['multiplier_lifetime'] ?? 30000),
+                    'value' => (int) ($allConfig['multiplier_value'] ?? 2),
+                ],
+
+                // Zoom Out
+                'zoom' => [
+                    'enabled' => filter_var($allConfig['zoom_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                    'duration' => (int) ($allConfig['zoom_duration'] ?? 15000),
+                    'spawn_chance' => (float) ($allConfig['zoom_spawn_chance'] ?? 0.25),
+                    'lifetime' => (int) ($allConfig['zoom_lifetime'] ?? 30000),
+                    'distance' => (int) ($allConfig['zoom_distance'] ?? 50),
+                ],
+            ],
         ],
     ]);
 })->name('api.games.config');

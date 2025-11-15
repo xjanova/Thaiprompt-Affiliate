@@ -183,30 +183,124 @@
             font-weight: bold;
         }
 
-        /* Start Screen */
-        #start-screen {
+        /* ✨ Title Screen - หน้าแรกสะอาด */
+        #title-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #0a0a1a 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            overflow: hidden;
+        }
+
+        #title-screen.hidden {
+            display: none;
+        }
+
+        /* Canvas พื้นหลังเคลื่อนไหว */
+        #title-bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+            filter: blur(2px);
+        }
+
+        .title-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            animation: fadeInUp 1s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .title-logo {
+            font-size: 96px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #00ffff, #00ff00, #00ffff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: none;
+            margin-bottom: 10px;
+            animation: glowPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(0, 255, 255, 0.8));
+            }
+            50% {
+                filter: drop-shadow(0 0 40px rgba(0, 255, 255, 1));
+            }
+        }
+
+        .title-subtitle {
+            font-size: 20px;
+            color: #00ffff;
+            margin-bottom: 50px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+
+        .title-version {
+            font-size: 12px;
+            color: #888;
+            margin-top: 40px;
+            opacity: 0.7;
+        }
+
+        /* ✨ Character Setup Screen - หน้าเลือกสี */
+        #character-setup-screen {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.95);
-            display: flex;
+            display: none;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 100;
+            overflow-y: auto;
+            padding: 20px;
         }
 
-        #start-screen.hidden {
-            display: none;
+        #character-setup-screen.show {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
         }
 
-        #start-screen h1 {
-            font-size: 72px;
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .setup-title {
+            font-size: 48px;
             color: #00ffff;
             text-shadow: 0 0 30px rgba(0, 255, 255, 1);
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .name-input {
@@ -863,23 +957,38 @@
         <!-- Power-up Indicators -->
         <div class="powerup-indicators" id="powerup-indicators"></div>
 
-        <!-- Start Screen -->
-        <div id="start-screen">
-            <h1>🐍 SNAKE.IO</h1>
+        <!-- ✨ Title Screen - หน้าแรกสะอาด -->
+        <div id="title-screen">
+            <!-- Canvas พื้นหลังเคลื่อนไหว -->
+            <canvas id="title-bg-canvas"></canvas>
 
-            <!-- เวอร์ชั่นและผู้สร้าง -->
-            <div style="margin-bottom: 15px;">
-                <p style="color: #00ffff; font-size: 14px; margin: 5px 0; text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);">
-                    <strong>Version 2.6.0</strong> - Advanced AI
-                </p>
-                <p style="color: #ffaa00; font-size: 13px; margin: 5px 0; text-shadow: 0 0 8px rgba(255, 170, 0, 0.5);">
-                    🎮 Created by <strong>XMAN STUDIO</strong> © 2025
+            <!-- เนื้อหาหลัก -->
+            <div class="title-content">
+                <h1 class="title-logo">🐍 SNAKE.IO</h1>
+                <p class="title-subtitle">กินอาหารให้มากที่สุด แต่อย่าชนอะไร!</p>
+
+                <button class="btn" id="play-btn" style="margin-top: 20px;">
+                    ▶️ PLAY NOW
+                </button>
+
+                @guest
+                    <div style="margin-top: 30px;">
+                        <a href="{{ route('login') }}" style="color: #00ffff; text-decoration: none; margin: 0 10px; font-size: 14px;">เข้าสู่ระบบ</a>
+                        |
+                        <a href="{{ route('register') }}" style="color: #00ffff; text-decoration: none; margin: 0 10px; font-size: 14px;">สมัครสมาชิก</a>
+                    </div>
+                @endguest
+
+                <p class="title-version">
+                    Version 2.6.0 - Advanced AI<br>
+                    🎮 Created by XMAN STUDIO © 2025
                 </p>
             </div>
+        </div>
 
-            <p style="color: #ccc; font-size: 18px; margin-bottom: 10px;">
-                กินอาหารให้มากที่สุด แต่อย่าชนอะไร!
-            </p>
+        <!-- ✨ Character Setup Screen - หน้าเลือกสีและตั้งชื่อ -->
+        <div id="character-setup-screen">
+            <h1 class="setup-title">🎨 ปรับแต่งตัวละครของคุณ</h1>
 
             @auth
                 <p style="color: #00ff00; font-size: 14px; margin-bottom: 20px;">
@@ -917,7 +1026,7 @@
             </div>
 
             <!-- Custom Color Picker -->
-            <div style="margin: 20px 0; padding: 20px; background: rgba(0, 0, 0, 0.5); border-radius: 10px;">
+            <div style="margin: 20px 0; padding: 20px; background: rgba(0, 0, 0, 0.5); border-radius: 10px; max-width: 500px;">
                 <h3 style="color: #00ffff; font-size: 16px; margin-bottom: 15px;">🎨 สร้างสีของคุณเอง (3 สี)</h3>
                 <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                     <div>
@@ -940,7 +1049,7 @@
 
             @auth
             <!-- ปุ่มบันทึกและโหลดสี (สำหรับสมาชิก) -->
-            <div style="margin: 20px 0; padding: 15px; background: rgba(0, 255, 255, 0.1); border: 1px solid #00ffff; border-radius: 10px;">
+            <div style="margin: 20px 0; padding: 15px; background: rgba(0, 255, 255, 0.1); border: 1px solid #00ffff; border-radius: 10px; max-width: 500px;">
                 <p style="color: #00ffff; font-size: 14px; margin-bottom: 10px;">
                     💾 จัดการสีที่บันทึกไว้
                 </p>
@@ -962,17 +1071,14 @@
                 </p>
             @endguest
 
-            <div>
-                <button class="btn" id="start-btn">▶️ PLAY NOW</button>
+            <div style="display: flex; gap: 15px; margin-top: 30px;">
+                <button class="btn" id="back-to-title-btn" style="background: linear-gradient(135deg, #666, #444);">
+                    ← ย้อนกลับ
+                </button>
+                <button class="btn" id="start-game-btn">
+                    ▶️ เริ่มเล่น
+                </button>
             </div>
-
-            @guest
-                <div style="margin-top: 20px;">
-                    <a href="{{ route('login') }}" style="color: #00ffff; text-decoration: none; margin: 0 10px;">เข้าสู่ระบบ</a>
-                    |
-                    <a href="{{ route('register') }}" style="color: #00ffff; text-decoration: none; margin: 0 10px;">สมัครสมาชิก</a>
-                </div>
-            @endguest
         </div>
 
         <!-- Game Over -->
@@ -1129,7 +1235,7 @@
 
         /**
          * ✅ โหลดการตั้งค่าเกมจาก API
-         * ดึง IP, Port จาก database แทน hardcode
+         * ดึงค่า config ทั้งหมดจาก database แทน hardcode
          */
         async function loadGameConfig() {
             try {
@@ -1137,15 +1243,62 @@
                 const result = await response.json();
 
                 if (result.success && result.data) {
-                    // อัพเดท CONFIG จาก API
-                    CONFIG.GAME_SERVER_IP = result.data.server_ip || CONFIG.GAME_SERVER_IP;
-                    CONFIG.GAME_SERVER_PORT = result.data.server_port || CONFIG.GAME_SERVER_PORT;
-                    CONFIG.GAME_SERVER_WS_PORT = result.data.ws_port || CONFIG.GAME_SERVER_WS_PORT;
+                    const data = result.data;
 
-                    console.log('[Config] โหลด config จาก API สำเร็จ:', {
-                        ip: CONFIG.GAME_SERVER_IP,
-                        port: CONFIG.GAME_SERVER_PORT,
-                        ws_port: CONFIG.GAME_SERVER_WS_PORT,
+                    // ✅ Server Configuration
+                    CONFIG.GAME_SERVER_IP = data.server?.ip || CONFIG.GAME_SERVER_IP;
+                    CONFIG.GAME_SERVER_PORT = data.server?.port || CONFIG.GAME_SERVER_PORT;
+                    CONFIG.GAME_SERVER_WS_PORT = data.server?.ws_port || CONFIG.GAME_SERVER_WS_PORT;
+
+                    // ✅ World Settings
+                    CONFIG.WORLD_SIZE = data.world?.size || CONFIG.WORLD_SIZE;
+                    CONFIG.INITIAL_LENGTH = data.world?.initial_snake_length || CONFIG.INITIAL_LENGTH;
+                    CONFIG.SEGMENT_SIZE = data.world?.segment_size || CONFIG.SEGMENT_SIZE;
+                    CONFIG.COLLISION_DISTANCE = data.world?.collision_distance || CONFIG.COLLISION_DISTANCE;
+
+                    // ✅ Movement Settings
+                    CONFIG.MOVEMENT_SPEED = data.movement?.speed || CONFIG.MOVEMENT_SPEED;
+                    CONFIG.BOOST_SPEED = data.movement?.boost_speed || CONFIG.BOOST_SPEED;
+                    CONFIG.TURN_SPEED = data.movement?.turn_speed || CONFIG.TURN_SPEED;
+
+                    // ✅ Camera Settings
+                    CONFIG.CAMERA_INITIAL_DISTANCE = data.camera?.initial_distance || CONFIG.CAMERA_INITIAL_DISTANCE;
+                    CONFIG.CAMERA_ZOOMED_OUT_DISTANCE = data.camera?.zoomed_out_distance || CONFIG.CAMERA_ZOOMED_OUT_DISTANCE;
+
+                    // ✅ Scoring System
+                    CONFIG.FOOD_VALUE = data.scoring?.food_value || CONFIG.FOOD_VALUE;
+                    CONFIG.POINTS_PER_GROWTH = data.scoring?.points_per_growth || 10;
+
+                    // ✅ Food Settings
+                    CONFIG.FOOD_COUNT = data.food?.count || CONFIG.FOOD_COUNT;
+
+                    // ✅ Bot Settings
+                    CONFIG.BOT_COUNT = data.bots?.count || CONFIG.BOT_COUNT;
+
+                    // ✅ Powerup Settings - อัพเดท POWERUP_TYPES
+                    if (data.powerups?.magnet) {
+                        POWERUP_TYPES.MAGNET.duration = data.powerups.magnet.duration;
+                        POWERUP_TYPES.MAGNET.spawnChance = data.powerups.magnet.spawn_chance;
+                    }
+                    if (data.powerups?.speed) {
+                        POWERUP_TYPES.SPEED.duration = data.powerups.speed.duration;
+                        POWERUP_TYPES.SPEED.spawnChance = data.powerups.speed.spawn_chance;
+                    }
+                    if (data.powerups?.multiplier) {
+                        POWERUP_TYPES.MULTIPLIER.duration = data.powerups.multiplier.duration;
+                        POWERUP_TYPES.MULTIPLIER.spawnChance = data.powerups.multiplier.spawn_chance;
+                    }
+                    if (data.powerups?.zoom) {
+                        POWERUP_TYPES.ZOOM.duration = data.powerups.zoom.duration;
+                        POWERUP_TYPES.ZOOM.spawnChance = data.powerups.zoom.spawn_chance;
+                    }
+
+                    console.log('[Config] ✅ โหลด config จาก API สำเร็จทั้งหมด:', {
+                        server: { ip: CONFIG.GAME_SERVER_IP, port: CONFIG.GAME_SERVER_PORT },
+                        world: { size: CONFIG.WORLD_SIZE, bot_count: CONFIG.BOT_COUNT },
+                        food: { count: CONFIG.FOOD_COUNT, value: CONFIG.FOOD_VALUE },
+                        camera: { initial: CONFIG.CAMERA_INITIAL_DISTANCE, zoomed: CONFIG.CAMERA_ZOOMED_OUT_DISTANCE },
+                        powerups: POWERUP_TYPES,
                     });
                 } else {
                     console.warn('[Config] ใช้ config default (API ไม่ตอบกลับ)');
@@ -1842,8 +1995,23 @@
                 }
             }, { passive: false });
 
-            // UI Events
-            document.getElementById('start-btn').addEventListener('click', startGame);
+            // ✨ UI Events - รองรับ Title Screen + Character Setup Screen
+            // 1. Play Button → แสดงหน้า Character Setup
+            document.getElementById('play-btn').addEventListener('click', function() {
+                document.getElementById('title-screen').classList.add('hidden');
+                document.getElementById('character-setup-screen').classList.add('show');
+            });
+
+            // 2. Back to Title Button → กลับหน้า Title
+            document.getElementById('back-to-title-btn').addEventListener('click', function() {
+                document.getElementById('character-setup-screen').classList.remove('show');
+                document.getElementById('title-screen').classList.remove('hidden');
+            });
+
+            // 3. Start Game Button → เริ่มเกม
+            document.getElementById('start-game-btn').addEventListener('click', startGame);
+
+            // 4. Restart Button → เล่นใหม่
             document.getElementById('restart-btn').addEventListener('click', restartGame);
 
             // ✅ Save score buttons (สำหรับสมาชิกเท่านั้น - ต้องมี null check)
@@ -2721,7 +2889,8 @@
                 }
 
                 gameStarted = true;
-                document.getElementById('start-screen').classList.add('hidden');
+                // ✨ ซ่อน Character Setup Screen (ไม่ใช่ start-screen แล้ว)
+                document.getElementById('character-setup-screen').classList.remove('show');
 
                 console.log('✅ Game started successfully!');
             } catch (error) {
@@ -3059,7 +3228,8 @@
             score = 0;
             gameOver = false;
             document.getElementById('game-over').classList.remove('show');
-            document.getElementById('start-screen').classList.remove('hidden');
+            // ✨ แสดง Title Screen (ไม่ใช่ start-screen แล้ว)
+            document.getElementById('title-screen').classList.remove('hidden');
 
             // Respawn food
             for (let i = 0; i < CONFIG.FOOD_COUNT; i++) {
@@ -3884,9 +4054,93 @@
         }
 
         /**
+         * ✨ Title Screen Background Animation (งูเคลื่อนไหว)
+         */
+        function initTitleAnimation() {
+            const canvas = document.getElementById('title-bg-canvas');
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            class AnimatedSnake {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.length = 20 + Math.random() * 30;
+                    this.segments = [];
+                    this.angle = Math.random() * Math.PI * 2;
+                    this.speed = 0.5 + Math.random();
+                    this.hue = Math.random() * 60 + 120;
+
+                    for (let i = 0; i < this.length; i++) {
+                        this.segments.push({ x: this.x, y: this.y });
+                    }
+                }
+
+                update() {
+                    this.angle += (Math.random() - 0.5) * 0.1;
+                    this.x += Math.cos(this.angle) * this.speed;
+                    this.y += Math.sin(this.angle) * this.speed;
+
+                    if (this.x < 0) this.x = canvas.width;
+                    if (this.x > canvas.width) this.x = 0;
+                    if (this.y < 0) this.y = canvas.height;
+                    if (this.y > canvas.height) this.y = 0;
+
+                    this.segments.unshift({ x: this.x, y: this.y });
+                    if (this.segments.length > this.length) {
+                        this.segments.pop();
+                    }
+                }
+
+                draw() {
+                    for (let i = 0; i < this.segments.length; i++) {
+                        const segment = this.segments[i];
+                        const alpha = (1 - i / this.segments.length) * 0.6;
+                        const size = (1 - i / this.segments.length) * 15 + 5;
+
+                        ctx.fillStyle = `hsla(${this.hue}, 70%, 50%, ${alpha})`;
+                        ctx.beginPath();
+                        ctx.arc(segment.x, segment.y, size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            }
+
+            const snakes = [];
+            for (let i = 0; i < 5; i++) {
+                snakes.push(new AnimatedSnake());
+            }
+
+            function animate() {
+                ctx.fillStyle = 'rgba(10, 10, 26, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                snakes.forEach(snake => {
+                    snake.update();
+                    snake.draw();
+                });
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
+
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+        }
+
+        /**
          * ✅ Event Listeners สำหรับ UI Controls
          */
         document.addEventListener('DOMContentLoaded', function() {
+            // ✨ เริ่ม Title Background Animation
+            initTitleAnimation();
+
             // Fullscreen toggle
             const fullscreenBtn = document.getElementById('fullscreen-toggle');
             if (fullscreenBtn) {
