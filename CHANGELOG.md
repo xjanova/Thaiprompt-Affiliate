@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.16.0] - 2025-11-15
+
+### ✨ Features
+- Merge pull request #1212 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (7572b31f)
+- feat: implement working dark mode with dynamic backgrounds (5d4d2862)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.15.0] - 2025-11-15
 
 ### ✨ Features
