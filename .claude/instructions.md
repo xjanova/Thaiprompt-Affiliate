@@ -6,6 +6,24 @@
 
 **EVERY TIME** you start working on ANY task (create, update, refactor, debug), you **MUST** read these guideline documents first:
 
+---
+
+## 📏 RESPONSE STYLE - ใช้ในทุกการตอบ (MANDATORY)
+
+**อ่านก่อนทุกครั้ง**: **[response-style.md](./.claude/response-style.md)**
+
+### กฎสั้นๆ:
+- ✅ **ตอบสั้น กระชับ** - แจ้งสถานะ + push เท่านั้น
+- ❌ **ห้ามอธิบายยาว** - ยกเว้นผู้ใช้ขอ
+- ❌ **ห้ามโชว์โค้ด** - ผู้ใช้ดูใน GitHub ได้
+- ✅ **ประหยัด token 75-85%** - ใช้งานได้นาน 4-6 เท่า
+
+**ตัวอย่าง:**
+- ผู้ใช้: "สร้าง Feature X" → ตอบ: "กำลังสร้าง Feature X..." → [ทำงาน] → "✅ Pushed"
+- ผู้ใช้: "อธิบาย Feature X" → ตอบ: [อธิบายได้เต็มที่]
+
+---
+
 ### 📋 Required Reading Checklist (อ่านก่อนทำงานเสมอ)
 
 ก่อนลงมือทำงานใดๆ ต้องอ่านเอกสารเหล่านี้ก่อน:
