@@ -495,4 +495,3 @@ function formatNumber(num) {
 }
 </script>
 @endpush
-@endsection
