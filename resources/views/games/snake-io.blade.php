@@ -1257,7 +1257,9 @@
                 this.targetDirection = this.direction.clone();
                 this.speed = CONFIG.MOVEMENT_SPEED;
                 this.isBoosting = false;
-                this.boostPointsUsed = 0; // ✅ ติดตามแต้มที่ใช้ boost (ทุก 50 แต้ม = ลด 1 ข้อ)
+                // ✅ ระบบลดขนาด: เร่งติดต่อกัน 3 วินาที = หาย 1 ข้อ
+                this.boostStartTime = null; // เวลาที่เริ่ม boost
+                this.lastShrinkTime = 0; // เวลาที่ลดขนาดครั้งล่าสุด
                 this.length = CONFIG.INITIAL_LENGTH;
                 this.score = 0;
                 this.alive = true;
@@ -1345,7 +1347,7 @@
                 scene.add(this.nameSprite);
             }
 
-            update() {
+            update(now = Date.now()) {
                 if (!this.alive) return;
 
                 // Update direction smoothly
@@ -1394,17 +1396,17 @@
                     this.outline.position.copy(head.position);
                 }
 
-                // Rainbow animation for rainbow skin
+                // ✅ Rainbow animation for rainbow skin (ใช้ now แทน Date.now())
                 if (this.skinKey === 'rainbow') {
-                    const hue = (Date.now() * 0.001) % 1;
+                    const hue = (now * 0.001) % 1;
                     this.segments[0].material.color.setHSL(hue, 1, 0.5);
                 }
 
-                // ✅ ระบบกระพริบเมื่อมี invincibility
-                if (this.invincible && Date.now() < this.invincibleUntil) {
+                // ✅ ระบบกระพริบเมื่อมี invincibility (ใช้ now แทน Date.now())
+                if (this.invincible && now < this.invincibleUntil) {
                     // กระพริบทุก 200ms (5 ครั้ง/วินาที)
                     const blinkInterval = 200;
-                    const shouldShow = Math.floor(Date.now() / blinkInterval) % 2 === 0;
+                    const shouldShow = Math.floor(now / blinkInterval) % 2 === 0;
                     const targetOpacity = shouldShow ? 0.5 : 0.95;
 
                     // ปรับ opacity สำหรับ segment ทุกตัว
@@ -1418,7 +1420,7 @@
                     if (this.outline) {
                         this.outline.material.opacity = shouldShow ? 0.2 : 0.5;
                     }
-                } else if (this.invincible && Date.now() >= this.invincibleUntil) {
+                } else if (this.invincible && now >= this.invincibleUntil) {
                     // หมดเวลา invincibility - คืนค่า opacity ปกติ
                     this.invincible = false;
                     this.segments.forEach(segment => {
@@ -1723,8 +1725,16 @@
             // UI Events
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('restart-btn').addEventListener('click', restartGame);
-            document.getElementById('save-score-btn').addEventListener('click', handleSaveScore);
-            document.getElementById('skip-save-btn').addEventListener('click', handleSkipSave);
+
+            // ✅ Save score buttons (สำหรับสมาชิกเท่านั้น - ต้องมี null check)
+            const saveScoreBtn = document.getElementById('save-score-btn');
+            const skipSaveBtn = document.getElementById('skip-save-btn');
+            if (saveScoreBtn) {
+                saveScoreBtn.addEventListener('click', handleSaveScore);
+            }
+            if (skipSaveBtn) {
+                skipSaveBtn.addEventListener('click', handleSkipSave);
+            }
 
             // Save skin button (สำหรับสมาชิก)
             const saveSkinBtn = document.getElementById('save-skin-btn');
@@ -2855,7 +2865,7 @@
             return blended;
         }
 
-        function updateBots() {
+        function updateBots(now) {
             // ✅ อัปเดตเฉพาะบอทที่มีชีวิต และลบบอทที่ตายออกจาก array
             bots = bots.filter(bot => {
                 if (!bot || !bot.alive) {
@@ -2936,8 +2946,8 @@
                     bot.targetDirection.copy(targetDirection);
                 }
 
-                // อัปเดตตำแหน่งบอท
-                bot.update();
+                // อัปเดตตำแหน่งบอท (ส่ง now เข้าไป)
+                bot.update(now);
 
                 // Check food collision
                 for (let i = foods.length - 1; i >= 0; i--) {
@@ -2966,14 +2976,17 @@
         function update() {
             if (!gameStarted || gameOver) return;
 
+            // ✅ แคช timestamp เพื่อลด Date.now() calls (ป้องกันเกมค้าง)
+            const now = Date.now();
+
             // Animate powerups (spin)
             powerups.forEach(powerup => {
                 powerup.rotation.y += 0.05;
-                powerup.position.y = 0.8 + Math.sin(Date.now() * 0.003) * 0.2;
+                powerup.position.y = 0.8 + Math.sin(now * 0.003) * 0.2;
             });
 
             // Sync state กับ server (ทุก 5 frames ~200ms)
-            if (multiplayerManager && player && player.alive && Date.now() % 5 === 0) {
+            if (multiplayerManager && player && player.alive && now % 5 === 0) {
                 multiplayerManager.updatePlayerState(
                     player.segments[0].position,
                     player.direction,
@@ -2994,9 +3007,10 @@
                 const speedMultiplier = activePowerups.speed ? 1.5 : 1;
                 player.speed = CONFIG.MOVEMENT_SPEED * speedMultiplier;
 
-                player.update();
+                // ✅ ส่ง now เข้าไปเพื่อลด Date.now() calls
+                player.update(now);
 
-                // ✅ หักแต้มเมื่อเร่งความเร็ว 1 แต้ม/วินาที + ลด 1 ข้อ/50 แต้ม + เรืองแสง
+                // ✅ หักแต้มเมื่อเร่งความเร็ว 1 แต้ม/วินาที + ลด 1 ข้อ/3 วินาที (ติดต่อกัน) + เรืองแสง
                 if (player.isBoosting) {
                     const pointsPerSecond = 1; // ✅ เปลี่ยนจาก 3 เป็น 1
                     const deltaTime = 1 / 60; // 60 FPS
@@ -3005,24 +3019,31 @@
                     // หักคะแนนและใช้ Math.floor เพื่อไม่ให้มีทศนิยม
                     player.score = Math.floor(player.score - deduction);
 
-                    // ✅ ติดตามแต้มที่ใช้ boost (สะสมทุก frame)
-                    player.boostPointsUsed += deduction;
+                    // ✅ บันทึกเวลาเริ่ม boost (ถ้ายังไม่มี) - ใช้ now แทน Date.now()
+                    if (player.boostStartTime === null) {
+                        player.boostStartTime = now;
+                    }
 
-                    // ✅ ลด 1 ข้อทุก 50 แต้มที่ใช้
-                    if (player.boostPointsUsed >= 50) {
+                    // ✅ เช็คว่า boost ต่อเนื่องครบ 3 วินาทีหรือยัง
+                    const boostDuration = now - player.boostStartTime;
+                    const shrinkInterval = 3000; // 3 วินาที = 3000ms
+
+                    if (boostDuration >= shrinkInterval && (now - player.lastShrinkTime) >= shrinkInterval) {
+                        // เร่งติดต่อกันครบ 3 วินาที และยังไม่เคย shrink ในช่วงนี้
                         player.shrink(1); // ลด 1 ข้อ
-                        player.boostPointsUsed -= 50; // รีเซ็ตตัวนับ (เก็บส่วนเกิน)
+                        player.lastShrinkTime = now; // บันทึกเวลา shrink
+                        player.boostStartTime = now; // รีสตาร์ทนับ 3 วินาทีใหม่
                     }
 
                     // หยุด boost ถ้าแต้มไม่พอ
                     if (player.score < 1) {
                         player.score = Math.max(0, player.score); // ป้องกันติดลบ
                         player.isBoosting = false;
-                        player.boostPointsUsed = 0; // ✅ รีเซ็ตเมื่อหยุด boost
+                        player.boostStartTime = null; // ✅ รีเซ็ตเมื่อหยุด boost
                     }
                 } else {
-                    // ✅ รีเซ็ต boostPointsUsed เมื่อไม่ boost
-                    player.boostPointsUsed = 0;
+                    // ✅ รีเซ็ต boostStartTime เมื่อไม่ boost
+                    player.boostStartTime = null;
                 }
 
                 // ดึง head position
@@ -3084,10 +3105,10 @@
                     }
                 }
 
-                // ✅ ปรับระยะกล้องตามขนาดหนอน (ไม่เกิน 5 ปกติ, 20 เมื่อ zoom)
-                const baseCameraDistance = 5; // ✅ เปลี่ยนจาก 15 เป็น 5 (ใกล้มาก)
+                // ✅ ปรับระยะกล้องตามขนาดหนอน (ไม่เกิน 12 ปกติ, 20 เมื่อ zoom)
+                const baseCameraDistance = 12; // ✅ ระยะกล้องตอนเกิด (เพิ่มจาก 5 เป็น 12 ให้ไกลขึ้น)
                 const lengthMultiplier = 0; // ✅ ไม่ขยับกล้องตามความยาว (คงที่)
-                const maxCameraDistance = 5; // ✅ จำกัดระยะสูงสุดปกติที่ 5
+                const maxCameraDistance = 12; // ✅ จำกัดระยะสูงสุดปกติที่ 12
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -3112,7 +3133,8 @@
                 camera.lookAt(head.x, 0, head.z);
             }
 
-            updateBots();
+            // ✅ ส่ง now เข้าไปเพื่อลด Date.now() calls
+            updateBots(now);
 
             // Check all snake-to-snake collisions
             checkAllSnakeCollisions();
@@ -3124,14 +3146,13 @@
                 updatePowerupUI();
             }
 
-            // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB)
-            const rgbHue = (Date.now() * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
-            const currentTime = Date.now();
+            // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB) - ใช้ now แทน Date.now()
+            const rgbHue = (now * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
 
             // ✅ ตรวจสอบและลบอาหารที่หมดอายุ (30 วินาที)
             foods = foods.filter(food => {
                 // อาหารจากการตาย - ตรวจสอบหมดอายุ
-                if (food.userData.expiresAt && currentTime >= food.userData.expiresAt) {
+                if (food.userData.expiresAt && now >= food.userData.expiresAt) {
                     scene.remove(food);
                     return false; // ลบออกจาก array
                 }
