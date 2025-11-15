@@ -1832,5 +1832,46 @@ Route::prefix('games')->name('games.')->group(function () {
     });
 });
 
+// Arrow X Theme System Routes
+Route::prefix('arrow-x-theme')->name('arrow-x-theme.')->group(function () {
+    // Dashboard
+    Route::get('/', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'index'])
+        ->name('index');
+
+    // General Settings
+    Route::get('/general-settings', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'generalSettings'])
+        ->name('general-settings');
+    Route::put('/general-settings', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'updateGeneralSettings'])
+        ->name('general-settings.update');
+
+    // Color Settings
+    Route::get('/color-settings', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'colorSettings'])
+        ->name('color-settings');
+    Route::put('/color-settings', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'updateColorSettings'])
+        ->name('color-settings.update');
+
+    // RGB Effects
+    Route::get('/rgb-effects', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'rgbEffects'])
+        ->name('rgb-effects');
+    Route::post('/rgb-effects', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'storeRgbEffect'])
+        ->name('rgb-effects.store');
+    Route::put('/rgb-effects/{rgbEffect}', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'updateRgbEffect'])
+        ->name('rgb-effects.update');
+    Route::delete('/rgb-effects/{rgbEffect}', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'destroyRgbEffect'])
+        ->name('rgb-effects.destroy');
+
+    // Typography
+    Route::get('/typography', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'typography'])
+        ->name('typography');
+    Route::put('/typography', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'updateTypography'])
+        ->name('typography.update');
+
+    // Upload Assets
+    Route::post('/upload-logo', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'uploadLogo'])
+        ->name('upload-logo');
+    Route::post('/upload-favicon', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'uploadFavicon'])
+        ->name('upload-favicon');
+});
+
 // Bot Automation System Routes
 require __DIR__.'/bot_automation.php';
