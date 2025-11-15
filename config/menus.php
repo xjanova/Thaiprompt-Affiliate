@@ -831,9 +831,6 @@ return [
             'order' => 11,
             'permissions' => [],
             'submenu' => [
-                ['label' => 'ผู้แนะนำ', 'route' => 'user.referrals'],
-                ['label' => 'ผังสายงาน', 'route' => 'user.organization'],
-                ['label' => 'ผังแบบไบนารี', 'route' => 'user.organization.binary'],
                 ['label' => 'ผู้มุ่งหวัง', 'route' => 'user.prospects.index'],
                 ['label' => 'ลีดเดอร์บอร์ด', 'route' => 'user.ranks.leaderboard'],
             ],

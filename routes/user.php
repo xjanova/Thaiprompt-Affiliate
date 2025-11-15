@@ -35,9 +35,6 @@ Route::post('/profile/update-password', [DashboardController::class, 'updatePass
     ->middleware(['turnstile:password_change', 'two-factor:password_change'])
     ->name('profile.update-password');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
-Route::get('/referrals', [DashboardController::class, 'referrals'])->name('referrals');
-Route::get('/organization', [DashboardController::class, 'organizationChart'])->name('organization');
-Route::get('/organization-binary', [DashboardController::class, 'binaryOrganizationChart'])->name('organization.binary');
 
 // MLM Prospects (ผู้มุ่งหวัง)
 Route::prefix('prospects')->name('prospects.')->group(function () {
@@ -46,9 +43,6 @@ Route::prefix('prospects')->name('prospects.')->group(function () {
     Route::post('/', [\App\Http\Controllers\User\MlmProspectController::class, 'store'])->name('store');
     Route::get('/{id}', [\App\Http\Controllers\User\MlmProspectController::class, 'show'])->name('show');
 });
-
-// Organization Tree API (for web session)
-Route::get('/organization/tree-data', [DashboardController::class, 'getOrganizationTreeData'])->name('organization.tree-data');
 
 // KYC Verification
 Route::prefix('kyc')->name('kyc.')->group(function () {
