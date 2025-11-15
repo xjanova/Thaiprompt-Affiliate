@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.251.8] - 2025-11-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1183 from xjanova/claude/fix-migration-errors-01RSXEfwRs1YFp9KKpmDTqJR (ba77e284)
+- fix: add ALTER migration to update game_settings type ENUM (6bbb4c08)
+### 🔧 Other Changes
+
+
 ## [v2.251.7] - 2025-11-15
 
 ### ✨ Features
