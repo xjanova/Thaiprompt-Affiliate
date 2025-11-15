@@ -14,6 +14,11 @@
         border: 1px solid rgba(255, 255, 255, 0.2);
     }
 
+    .dark .glass-effect {
+        background: rgba(31, 41, 55, 0.95);
+        border: 1px solid rgba(75, 85, 99, 0.3);
+    }
+
     .warning-danger {
         animation: pulse-danger 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
@@ -45,6 +50,10 @@
         overflow: hidden;
     }
 
+    .dark .placement-visual {
+        background: #1f2937;
+    }
+
     .node {
         position: absolute;
         width: 50px;
@@ -74,25 +83,30 @@
         background: #9ca3af;
         transform-origin: left center;
     }
+
+    .dark .connection-line {
+        background: #6b7280;
+    }
 </style>
 @endpush
 
 @section('content')
-<div class="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-8">
+<div class="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 py-8">
     <div class="max-w-7xl mx-auto px-4">
         <!-- Header -->
         <div class="glass-effect rounded-2xl shadow-2xl p-8 mb-8">
             <div class="flex items-center justify-between">
                 <div>
-                    <h1 class="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                        🎯 สร้างแผน MLM - Premium Configuration
+                    <h1 class="text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 bg-clip-text text-transparent flex items-center gap-3">
+                        <i class="fas fa-bullseye"></i>
+                        สร้างแผน MLM - Premium Configuration
                     </h1>
-                    <p class="text-gray-600 mt-2 text-lg">
+                    <p class="text-gray-600 dark:text-gray-400 mt-2 text-lg">
                         ระบบการตั้งค่าอัจฉริยะ พร้อมการป้องกัน Overpay แบบเรียลไทม์
                     </p>
                 </div>
                 <a href="{{ route('admin.mlm.plans.index') }}"
-                   class="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-semibold">
+                   class="px-6 py-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl transition-all duration-200 font-semibold">
                     ← กลับ
                 </a>
             </div>
@@ -107,72 +121,72 @@
 
                     <!-- Basic Information -->
                     <div class="glass-effect rounded-2xl shadow-xl p-6">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                             <span class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-3 text-white">1</span>
                             ข้อมูลพื้นฐาน
                         </h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     ชื่อแผน (EN) <span class="text-red-500">*</span>
                                 </label>
                                 <input type="text" name="name" id="plan-name" value="{{ old('name') }}"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                                        placeholder="e.g., Diamond Plan" required>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     ชื่อแผน (TH)
                                 </label>
                                 <input type="text" name="name_th" value="{{ old('name_th') }}"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                                        placeholder="เช่น แผนไดมอนด์">
                             </div>
                         </div>
 
                         <div class="mt-6">
-                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                 ประเภทแผน <span class="text-red-500">*</span>
                             </label>
                             <div class="grid grid-cols-3 gap-4">
                                 <label class="plan-type-card cursor-pointer">
                                     <input type="radio" name="type" value="unilevel" class="hidden peer" required>
-                                    <div class="p-6 border-2 border-gray-200 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all text-center">
-                                        <div class="text-4xl mb-2">📊</div>
-                                        <div class="font-bold text-gray-800">Unilevel</div>
-                                        <div class="text-xs text-gray-600 mt-1">ระดับชั้นสายงาน</div>
+                                    <div class="p-6 border-2 border-gray-200 dark:border-gray-600 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/30 dark:bg-gray-700 transition-all text-center">
+                                        <div class="text-4xl mb-2"><i class="fas fa-chart-bar text-purple-600 dark:text-purple-400"></i></div>
+                                        <div class="font-bold text-gray-800 dark:text-white">Unilevel</div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">ระดับชั้นสายงาน</div>
                                     </div>
                                 </label>
 
                                 <label class="plan-type-card cursor-pointer">
                                     <input type="radio" name="type" value="binary" class="hidden peer">
-                                    <div class="p-6 border-2 border-gray-200 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all text-center">
-                                        <div class="text-4xl mb-2">🔀</div>
-                                        <div class="font-bold text-gray-800">Binary</div>
-                                        <div class="text-xs text-gray-600 mt-1">ทวิภาค (ซ้าย-ขวา)</div>
+                                    <div class="p-6 border-2 border-gray-200 dark:border-gray-600 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/30 dark:bg-gray-700 transition-all text-center">
+                                        <div class="text-4xl mb-2"><i class="fas fa-code-branch text-purple-600 dark:text-purple-400"></i></div>
+                                        <div class="font-bold text-gray-800 dark:text-white">Binary</div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">ทวิภาค (ซ้าย-ขวา)</div>
                                     </div>
                                 </label>
 
                                 <label class="plan-type-card cursor-pointer">
                                     <input type="radio" name="type" value="hybrid" class="hidden peer">
-                                    <div class="p-6 border-2 border-gray-200 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all text-center">
-                                        <div class="text-4xl mb-2">⚡</div>
-                                        <div class="font-bold text-gray-800">Hybrid</div>
-                                        <div class="text-xs text-gray-600 mt-1">ผสม (ทั้งสองแบบ)</div>
+                                    <div class="p-6 border-2 border-gray-200 dark:border-gray-600 rounded-xl peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/30 dark:bg-gray-700 transition-all text-center">
+                                        <div class="text-4xl mb-2"><i class="fas fa-bolt text-purple-600 dark:text-purple-400"></i></div>
+                                        <div class="font-bold text-gray-800 dark:text-white">Hybrid</div>
+                                        <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">ผสม (ทั้งสองแบบ)</div>
                                     </div>
                                 </label>
                             </div>
                         </div>
 
                         <div class="mt-6">
-                            <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                 สีของแผน
                             </label>
                             <div class="flex items-center gap-4">
                                 <input type="color" name="color" id="plan-color" value="{{ old('color', '#8B5CF6') }}"
-                                       class="w-20 h-12 border-2 border-gray-200 rounded-xl cursor-pointer">
+                                       class="w-20 h-12 border-2 border-gray-200 dark:border-gray-600 rounded-xl cursor-pointer">
                                 <span id="color-preview" class="px-4 py-2 rounded-lg text-white font-semibold" style="background: #8B5CF6;">
                                     Preview
                                 </span>
@@ -182,45 +196,45 @@
 
                     <!-- PV System -->
                     <div class="glass-effect rounded-2xl shadow-xl p-6">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                             <span class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mr-3 text-white">2</span>
                             ระบบ PV (Point Value)
                         </h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     PV Rate (1 THB = X PV) <span class="text-red-500">*</span>
                                 </label>
                                 <input type="number" name="global_pv_rate" id="pv-rate" value="{{ old('global_pv_rate', 1) }}"
                                        min="0" step="0.01"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                        required>
-                                <p class="text-xs text-gray-500 mt-1">อัตราแปลงเงินเป็น PV</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">อัตราแปลงเงินเป็น PV</p>
                             </div>
 
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     Commission Per PV (THB) <span class="text-red-500">*</span>
                                 </label>
                                 <input type="number" name="global_commission_per_pv" id="commission-per-pv" value="{{ old('global_commission_per_pv', 1) }}"
                                        min="0" step="0.01"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                        required>
-                                <p class="text-xs text-gray-500 mt-1">ค่าคอมมิชชันต่อ 1 PV</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ค่าคอมมิชชันต่อ 1 PV</p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Unilevel Settings -->
                     <div id="unilevel-section" class="glass-effect rounded-2xl shadow-xl p-6 hidden">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                             <span class="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mr-3 text-white">3</span>
                             การตั้งค่า Unilevel
                         </h2>
 
                         <div class="mb-6">
-                            <label class="block text-sm font-bold text-gray-700 mb-4">
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-4">
                                 เปอร์เซ็นต์คอมมิชชันแต่ละระดับ
                             </label>
                             <div id="unilevel-levels" class="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -230,21 +244,21 @@
 
                         <div class="grid grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     จำนวนระดับสูงสุด
                                 </label>
                                 <input type="number" name="unilevel_max_depth" id="unilevel-max-depth" value="{{ old('unilevel_max_depth', 10) }}"
                                        min="1" max="50"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     Max Commission/Level (฿)
                                 </label>
                                 <input type="number" name="unilevel_max_commission_per_level" value="{{ old('unilevel_max_commission_per_level') }}"
                                        min="0" step="0.01"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                                        placeholder="ไม่จำกัด">
                             </div>
                         </div>
@@ -252,61 +266,61 @@
 
                     <!-- Binary Settings -->
                     <div id="binary-section" class="glass-effect rounded-2xl shadow-xl p-6 hidden">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                             <span class="w-10 h-10 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mr-3 text-white">4</span>
                             การตั้งค่า Binary
                         </h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     Pair Commission (฿/คู่)
                                 </label>
                                 <input type="number" name="binary_pair_commission" id="binary-pair-commission" value="{{ old('binary_pair_commission', 100) }}"
                                        min="0" step="0.01"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     Match Percentage (%)
                                 </label>
                                 <input type="number" name="binary_match_percentage" id="binary-match-percentage" value="{{ old('binary_match_percentage', 50) }}"
                                        min="0" max="100" step="0.01"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     Max Pairs/Day
                                 </label>
                                 <input type="number" name="binary_max_pairs_per_day" value="{{ old('binary_max_pairs_per_day') }}"
                                        min="0" step="1"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                                        placeholder="ไม่จำกัด">
                             </div>
 
                             <div>
-                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                     Max Commission/Day (฿)
                                 </label>
                                 <input type="number" name="binary_max_commission_per_day" value="{{ old('binary_max_commission_per_day') }}"
                                        min="0" step="0.01"
-                                       class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
                                        placeholder="ไม่จำกัด">
                             </div>
                         </div>
 
                         <!-- Flush Options -->
-                        <div class="mt-6 p-4 bg-purple-50 rounded-xl">
-                            <h3 class="font-bold text-gray-800 mb-4">การล้างคะแนน PV (Flush)</h3>
+                        <div class="mt-6 p-4 bg-purple-50 dark:bg-purple-900/30 rounded-xl">
+                            <h3 class="font-bold text-gray-800 dark:text-white mb-4">การล้างคะแนน PV (Flush)</h3>
 
                             <div class="grid grid-cols-2 gap-4 mb-4">
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Flush Mode
                                     </label>
-                                    <select name="binary_flush_mode" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500">
+                                    <select name="binary_flush_mode" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500">
                                         <option value="percentage">Percentage (ตาม %)</option>
                                         <option value="full">Full (ล้างหมด)</option>
                                         <option value="none">None (ไม่ล้าง)</option>
@@ -314,80 +328,80 @@
                                 </div>
 
                                 <div>
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         Flush Percentage (%)
                                     </label>
                                     <input type="number" name="binary_flush_percentage" value="{{ old('binary_flush_percentage', 100) }}"
                                            min="0" max="100" step="0.01"
-                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500">
+                                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500">
                                 </div>
                             </div>
 
                             <label class="flex items-center">
                                 <input type="checkbox" name="binary_carry_forward_pv" value="1" class="w-5 h-5 text-purple-600 rounded">
-                                <span class="ml-3 text-sm font-semibold text-gray-700">ยกยอด PV ไปเดือนถัดไป (Carry Forward)</span>
+                                <span class="ml-3 text-sm font-semibold text-gray-700 dark:text-gray-300">ยกยอด PV ไปเดือนถัดไป (Carry Forward)</span>
                             </label>
                         </div>
 
                         <!-- Auto Placement -->
-                        <div class="mt-6 p-4 bg-blue-50 rounded-xl">
-                            <h3 class="font-bold text-gray-800 mb-4">การต่อสายงานอัตโนมัติ (Auto Placement)</h3>
+                        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-xl">
+                            <h3 class="font-bold text-gray-800 dark:text-white mb-4">การต่อสายงานอัตโนมัติ (Auto Placement)</h3>
 
                             <label class="flex items-center mb-4">
                                 <input type="checkbox" name="auto_placement" id="auto-placement-toggle" value="1" class="w-5 h-5 text-blue-600 rounded">
-                                <span class="ml-3 text-sm font-semibold text-gray-700">เปิดใช้งาน Auto Placement</span>
+                                <span class="ml-3 text-sm font-semibold text-gray-700 dark:text-gray-300">เปิดใช้งาน Auto Placement</span>
                             </label>
 
                             <div id="placement-options" class="hidden">
-                                <label class="block text-sm font-bold text-gray-700 mb-3">
+                                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
                                     กลยุทธ์การจัดวาง
                                 </label>
 
                                 <div class="grid grid-cols-3 gap-3">
                                     <label class="cursor-pointer">
                                         <input type="radio" name="binary_placement_preference" value="left_first" class="hidden peer">
-                                        <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all text-center">
-                                            <div class="text-2xl mb-1">⬅️</div>
-                                            <div class="text-xs font-bold">ซ้ายสุด</div>
+                                        <div class="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 dark:bg-gray-700 transition-all text-center">
+                                            <div class="text-2xl mb-1"><i class="fas fa-arrow-left text-blue-600 dark:text-blue-400"></i></div>
+                                            <div class="text-xs font-bold text-gray-800 dark:text-white">ซ้ายสุด</div>
                                         </div>
                                     </label>
 
                                     <label class="cursor-pointer">
                                         <input type="radio" name="binary_placement_preference" value="right_first" class="hidden peer">
-                                        <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all text-center">
-                                            <div class="text-2xl mb-1">➡️</div>
-                                            <div class="text-xs font-bold">ขวาสุด</div>
+                                        <div class="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 dark:bg-gray-700 transition-all text-center">
+                                            <div class="text-2xl mb-1"><i class="fas fa-arrow-right text-blue-600 dark:text-blue-400"></i></div>
+                                            <div class="text-xs font-bold text-gray-800 dark:text-white">ขวาสุด</div>
                                         </div>
                                     </label>
 
                                     <label class="cursor-pointer">
                                         <input type="radio" name="binary_placement_preference" value="fill_level" class="hidden peer">
-                                        <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all text-center">
-                                            <div class="text-2xl mb-1">📊</div>
-                                            <div class="text-xs font-bold">เต็มชั้น</div>
+                                        <div class="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 dark:bg-gray-700 transition-all text-center">
+                                            <div class="text-2xl mb-1"><i class="fas fa-chart-bar text-blue-600 dark:text-blue-400"></i></div>
+                                            <div class="text-xs font-bold text-gray-800 dark:text-white">เต็มชั้น</div>
                                         </div>
                                     </label>
 
                                     <label class="cursor-pointer">
                                         <input type="radio" name="binary_placement_preference" value="weak_leg" class="hidden peer">
-                                        <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all text-center">
-                                            <div class="text-2xl mb-1">⚖️</div>
-                                            <div class="text-xs font-bold">ขาอ่อน</div>
+                                        <div class="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 dark:bg-gray-700 transition-all text-center">
+                                            <div class="text-2xl mb-1"><i class="fas fa-balance-scale text-blue-600 dark:text-blue-400"></i></div>
+                                            <div class="text-xs font-bold text-gray-800 dark:text-white">ขาอ่อน</div>
                                         </div>
                                     </label>
 
                                     <label class="cursor-pointer">
                                         <input type="radio" name="binary_placement_preference" value="balanced" class="hidden peer">
-                                        <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all text-center">
-                                            <div class="text-2xl mb-1">🎯</div>
-                                            <div class="text-xs font-bold">สมดุล</div>
+                                        <div class="p-4 border-2 border-gray-200 dark:border-gray-600 rounded-lg peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 dark:bg-gray-700 transition-all text-center">
+                                            <div class="text-2xl mb-1"><i class="fas fa-bullseye text-blue-600 dark:text-blue-400"></i></div>
+                                            <div class="text-xs font-bold text-gray-800 dark:text-white">สมดุล</div>
                                         </div>
                                     </label>
                                 </div>
 
                                 <!-- Visual Preview -->
                                 <div class="mt-4">
-                                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                                         ภาพตัวอย่างการจัดวาง
                                     </label>
                                     <div id="placement-visual" class="placement-visual"></div>
@@ -400,12 +414,13 @@
                     <div class="glass-effect rounded-2xl shadow-xl p-6">
                         <div class="flex items-center justify-between">
                             <button type="button" onclick="history.back()"
-                                    class="px-8 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold transition-all">
+                                    class="px-8 py-4 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-bold transition-all">
                                 ยกเลิก
                             </button>
                             <button type="submit"
-                                    class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-105">
-                                💾 บันทึกแผน MLM
+                                    class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-bold shadow-lg transition-all transform hover:scale-105 flex items-center gap-2">
+                                <i class="fas fa-save"></i>
+                                บันทึกแผน MLM
                             </button>
                         </div>
                     </div>
@@ -416,15 +431,18 @@
                     <div class="sticky top-4 space-y-6">
                         <!-- Calculator -->
                         <div class="glass-effect rounded-2xl shadow-xl p-6">
-                            <h3 class="text-xl font-bold text-gray-800 mb-4">📊 ตัวอย่างการคำนวณ</h3>
+                            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                                <i class="fas fa-chart-bar text-purple-600 dark:text-purple-400"></i>
+                                ตัวอย่างการคำนวณ
+                            </h3>
 
                             <div class="space-y-4">
                                 <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-2">
+                                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                         ยอดขาย (THB)
                                     </label>
                                     <input type="number" id="calc-sales" value="10000" min="0" step="100"
-                                           class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500">
+                                           class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500">
                                 </div>
 
                                 <div id="calc-results" class="space-y-3">
@@ -437,13 +455,13 @@
                         <div id="overpay-warning" class="hidden">
                             <div class="glass-effect rounded-2xl shadow-xl p-6 border-2 border-red-500 warning-danger">
                                 <div class="flex items-start">
-                                    <div class="text-4xl mr-3">⚠️</div>
+                                    <div class="text-4xl mr-3"><i class="fas fa-exclamation-triangle text-red-500"></i></div>
                                     <div>
-                                        <h3 class="text-xl font-bold text-red-600 mb-2">คำเตือน: Overpay!</h3>
-                                        <p class="text-sm text-red-700 mb-3" id="overpay-message"></p>
-                                        <div class="bg-red-100 rounded-lg p-3">
-                                            <div class="text-xs font-semibold text-red-800 mb-1">อัตราคอมมิชชันรวม:</div>
-                                            <div class="text-2xl font-bold text-red-600" id="total-commission-percentage">0%</div>
+                                        <h3 class="text-xl font-bold text-red-600 dark:text-red-400 mb-2">คำเตือน: Overpay!</h3>
+                                        <p class="text-sm text-red-700 dark:text-red-300 mb-3" id="overpay-message"></p>
+                                        <div class="bg-red-100 dark:bg-red-900/30 rounded-lg p-3">
+                                            <div class="text-xs font-semibold text-red-800 dark:text-red-300 mb-1">อัตราคอมมิชชันรวม:</div>
+                                            <div class="text-2xl font-bold text-red-600 dark:text-red-400" id="total-commission-percentage">0%</div>
                                         </div>
                                     </div>
                                 </div>
@@ -454,10 +472,10 @@
                         <div id="safe-indicator" class="hidden">
                             <div class="glass-effect rounded-2xl shadow-xl p-6 border-2 border-green-500">
                                 <div class="flex items-center">
-                                    <div class="text-4xl mr-3">✅</div>
+                                    <div class="text-4xl mr-3"><i class="fas fa-check-circle text-green-500"></i></div>
                                     <div>
-                                        <h3 class="text-xl font-bold text-green-600">การตั้งค่าปลอดภัย</h3>
-                                        <p class="text-sm text-green-700">อัตราคอมมิชชันอยู่ในเกณฑ์ที่ดี</p>
+                                        <h3 class="text-xl font-bold text-green-600 dark:text-green-400">การตั้งค่าปลอดภัย</h3>
+                                        <p class="text-sm text-green-700 dark:text-green-300">อัตราคอมมิชชันอยู่ในเกณฑ์ที่ดี</p>
                                     </div>
                                 </div>
                             </div>
@@ -465,8 +483,11 @@
 
                         <!-- Tips -->
                         <div class="glass-effect rounded-2xl shadow-xl p-6">
-                            <h3 class="text-lg font-bold text-gray-800 mb-3">💡 คำแนะนำ</h3>
-                            <ul class="space-y-2 text-sm text-gray-600">
+                            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                                <i class="fas fa-lightbulb text-yellow-500"></i>
+                                คำแนะนำ
+                            </h3>
+                            <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                                 <li class="flex items-start">
                                     <span class="text-purple-500 mr-2">•</span>
                                     <span>คอมมิชชันรวมไม่ควรเกิน 40-50% ของยอดขาย</span>
@@ -560,12 +581,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
             container.innerHTML += `
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-2">Level ${i}</label>
+                    <label class="block text-xs font-bold text-gray-600 dark:text-gray-400 mb-2">Level ${i}</label>
                     <div class="relative">
                         <input type="number" name="unilevel_levels[${i}]"
                                value="${defaultValue}" min="0" max="100" step="0.1"
-                               class="w-full px-3 py-2 pr-8 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-green-500 unilevel-percentage">
-                        <span class="absolute right-2 top-2 text-gray-500 text-sm">%</span>
+                               class="w-full px-3 py-2 pr-8 border-2 border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:ring-2 focus:ring-green-500 unilevel-percentage">
+                        <span class="absolute right-2 top-2 text-gray-500 dark:text-gray-400 text-sm">%</span>
                     </div>
                 </div>
             `;
@@ -587,7 +608,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const pv = sales * pvRate;
         let totalCommission = 0;
         let totalPercentage = 0;
-        let results = '<div class="text-sm font-semibold text-gray-700 mb-2">PV: ' + pv.toFixed(2) + '</div>';
+        let results = '<div class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">PV: ' + pv.toFixed(2) + '</div>';
 
         // Unilevel Calculation
         if (type === 'unilevel' || type === 'hybrid') {
@@ -603,9 +624,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
             totalCommission += unilevelTotal;
             results += `
-                <div class="bg-green-50 rounded-lg p-3 mb-2">
-                    <div class="text-xs font-semibold text-green-800">Unilevel:</div>
-                    <div class="text-lg font-bold text-green-600">฿${unilevelTotal.toFixed(2)}</div>
+                <div class="bg-green-50 dark:bg-green-900/30 rounded-lg p-3 mb-2">
+                    <div class="text-xs font-semibold text-green-800 dark:text-green-300">Unilevel:</div>
+                    <div class="text-lg font-bold text-green-600 dark:text-green-400">฿${unilevelTotal.toFixed(2)}</div>
                 </div>
             `;
         }
@@ -624,19 +645,19 @@ document.addEventListener('DOMContentLoaded', function() {
             totalPercentage += (binaryCommission / sales) * 100;
 
             results += `
-                <div class="bg-orange-50 rounded-lg p-3 mb-2">
-                    <div class="text-xs font-semibold text-orange-800">Binary (${pairs} pairs):</div>
-                    <div class="text-lg font-bold text-orange-600">฿${binaryCommission.toFixed(2)}</div>
+                <div class="bg-orange-50 dark:bg-orange-900/30 rounded-lg p-3 mb-2">
+                    <div class="text-xs font-semibold text-orange-800 dark:text-orange-300">Binary (${pairs} pairs):</div>
+                    <div class="text-lg font-bold text-orange-600 dark:text-orange-400">฿${binaryCommission.toFixed(2)}</div>
                 </div>
             `;
         }
 
         // Total
         results += `
-            <div class="bg-purple-50 rounded-lg p-3 border-2 border-purple-200">
-                <div class="text-xs font-semibold text-purple-800">รวมทั้งหมด:</div>
-                <div class="text-2xl font-bold text-purple-600">฿${totalCommission.toFixed(2)}</div>
-                <div class="text-xs text-purple-700 mt-1">(${totalPercentage.toFixed(2)}% ของยอดขาย)</div>
+            <div class="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-3 border-2 border-purple-200 dark:border-purple-700">
+                <div class="text-xs font-semibold text-purple-800 dark:text-purple-300">รวมทั้งหมด:</div>
+                <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">฿${totalCommission.toFixed(2)}</div>
+                <div class="text-xs text-purple-700 dark:text-purple-300 mt-1">(${totalPercentage.toFixed(2)}% ของยอดขาย)</div>
             </div>
         `;
 
