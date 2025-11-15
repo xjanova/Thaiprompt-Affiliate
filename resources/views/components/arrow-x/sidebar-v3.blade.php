@@ -71,15 +71,6 @@
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-users w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">ผู้ใช้งาน</span>
-            @php
-                $pendingUsers = \App\Models\User::where('status', 'pending')->count();
-            @endphp
-            @if($pendingUsers > 0)
-                <span x-show="sidebarOpen" x-transition
-                      class="ml-auto px-2 py-0.5 bg-gradient-to-r from-red-500 to-pink-600 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
-                    {{ $pendingUsers }}
-                </span>
-            @endif
         </a>
 
         {{-- Affiliates --}}
