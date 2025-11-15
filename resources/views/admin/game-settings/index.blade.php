@@ -34,7 +34,7 @@
     @endif
 
     {{-- Settings Form --}}
-    <form action="{{ route('admin.game-settings.update') }}" method="POST">
+    <form action="{{ route('admin.games.game-settings.update') }}" method="POST">
         @csrf
         @method('PUT')
 
