@@ -34,6 +34,9 @@ class MlmMember extends Model
         'right_leg_members',
         'carried_left_pv',
         'carried_right_pv',
+        'carried_left_pv_expires_at',
+        'carried_right_pv_expires_at',
+        'carry_forward_days',
         'status',
         'joined_at',
         'last_purchase_at',
@@ -54,6 +57,8 @@ class MlmMember extends Model
             'right_leg_sales' => 'decimal:2',
             'carried_left_pv' => 'decimal:2',
             'carried_right_pv' => 'decimal:2',
+            'carried_left_pv_expires_at' => 'datetime',
+            'carried_right_pv_expires_at' => 'datetime',
             'joining_fee_paid' => 'decimal:2',
             'is_qualified' => 'boolean',
             'joined_at' => 'datetime',
@@ -83,6 +88,17 @@ class MlmMember extends Model
     public function package()
     {
         return $this->belongsTo(MlmPackage::class, 'package_id');
+    }
+
+    /**
+     * Get sponsor (alias สำหรับ unilevel sponsor - ใช้เป็น default sponsor)
+     *
+     * เพิ่ม relationship นี้เพื่อแก้ Bug #1: Missing sponsor_id relationship
+     * ระบบใช้ unilevel_sponsor_id เป็น sponsor หลัก
+     */
+    public function sponsor()
+    {
+        return $this->belongsTo(MlmMember::class, 'unilevel_sponsor_id');
     }
 
     /**
@@ -180,6 +196,17 @@ class MlmMember extends Model
     }
 
     /**
+     * Get sponsor_id (accessor สำหรับ unilevel_sponsor_id)
+     *
+     * เพิ่ม accessor นี้เพื่อแก้ Bug #1: Missing sponsor_id relationship
+     * ให้ $member->sponsor_id คืนค่าเดียวกับ $member->unilevel_sponsor_id
+     */
+    public function getSponsorIdAttribute()
+    {
+        return $this->unilevel_sponsor_id;
+    }
+
+    /**
      * Get weaker leg PV
      */
     public function getWeakerLegPvAttribute()
@@ -209,5 +236,62 @@ class MlmMember extends Model
     public function scopeQualified($query)
     {
         return $query->where('is_qualified', true);
+    }
+
+    /**
+     * ตรวจสอบและลบ carried PV ที่หมดอายุ
+     *
+     * แก้ Bug #3: Missing carry forward PV expiry logic
+     * ตรวจสอบ expiry date ของ carried PV และรีเซ็ตถ้าหมดอายุ
+     *
+     * @return bool True ถ้ามี PV หมดอายุ
+     */
+    public function expireCarriedPv(): bool
+    {
+        $hasExpired = false;
+        $now = now();
+
+        // ตรวจสอบ left leg carried PV
+        if ($this->carried_left_pv > 0 && $this->carried_left_pv_expires_at && $now->greaterThan($this->carried_left_pv_expires_at)) {
+            $this->carried_left_pv = 0;
+            $this->carried_left_pv_expires_at = null;
+            $hasExpired = true;
+        }
+
+        // ตรวจสอบ right leg carried PV
+        if ($this->carried_right_pv > 0 && $this->carried_right_pv_expires_at && $now->greaterThan($this->carried_right_pv_expires_at)) {
+            $this->carried_right_pv = 0;
+            $this->carried_right_pv_expires_at = null;
+            $hasExpired = true;
+        }
+
+        if ($hasExpired) {
+            $this->save();
+        }
+
+        return $hasExpired;
+    }
+
+    /**
+     * ตั้งค่า expiry date สำหรับ carried PV
+     *
+     * @param string $leg 'left' หรือ 'right'
+     * @param float $pvAmount จำนวน PV ที่จะ carry forward
+     * @return void
+     */
+    public function setCarriedPvExpiry(string $leg, float $pvAmount): void
+    {
+        $carryForwardDays = $this->carry_forward_days ?? 30; // Default 30 วัน
+        $expiryDate = now()->addDays($carryForwardDays);
+
+        if ($leg === 'left') {
+            $this->carried_left_pv = $pvAmount;
+            $this->carried_left_pv_expires_at = $expiryDate;
+        } elseif ($leg === 'right') {
+            $this->carried_right_pv = $pvAmount;
+            $this->carried_right_pv_expires_at = $expiryDate;
+        }
+
+        $this->save();
     }
 }

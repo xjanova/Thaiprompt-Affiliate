@@ -30,11 +30,14 @@ class MlmBinaryService
 
     /**
      * Attribute PV to binary leg
+     *
+     * แก้ Bug #2: ลบการ increment total_pv ออก เพราะ MlmCalculationService ทำหน้าที่นี้แล้ว
+     * เก็บเฉพาะการ traverse up binary tree เพื่ออัพเดท left_leg_pv / right_leg_pv
      */
     protected function attributePvToBinaryLeg(MlmMember $member, $pvAmount)
     {
-        // Add to personal PV
-        $member->increment('total_pv', $pvAmount);
+        // Note: ไม่ต้อง increment total_pv ที่นี่แล้ว
+        // เพราะ MlmCalculationService::processOrder() increment ไว้แล้ว (ป้องกันการนับซ้ำ)
 
         // Traverse up the binary tree and add to respective leg
         $currentMember = $member;
@@ -65,6 +68,9 @@ class MlmBinaryService
 
         while ($currentMember->binaryParent) {
             $parent = $currentMember->binaryParent;
+
+            // แก้ Bug #3: ตรวจสอบและลบ carried PV ที่หมดอายุก่อนคำนวณ
+            $parent->expireCarriedPv();
 
             // Check if parent is qualified
             if (!$parent->is_qualified || $parent->status !== 'active') {
@@ -142,16 +148,12 @@ class MlmBinaryService
                         $parent->decrement('carried_right_pv', min($parent->carried_right_pv, $pvFlushed));
                     }
 
-                    // Carry forward remaining PV
+                    // แก้ Bug #3: Carry forward remaining PV พร้อม set expiry date
                     $remainingWeakPv = $weakerLeg - ($pairsToProcess * $this->getPairRatio($plan));
 
                     if ($remainingWeakPv > 0) {
-                        if ($leftPv <= $rightPv) {
-                            $parent->carried_left_pv = $remainingWeakPv;
-                        } else {
-                            $parent->carried_right_pv = $remainingWeakPv;
-                        }
-                        $parent->save();
+                        $leg = ($leftPv <= $rightPv) ? 'left' : 'right';
+                        $parent->setCarriedPvExpiry($leg, $remainingWeakPv);
                     }
                 }
             }
