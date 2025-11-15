@@ -36,6 +36,17 @@ Arrow X = Theme 1 (Base) + Theme 3 (Buttons) + Customizable Transparency
 
 ## 🗂️ Database Schema Design
 
+**รวม 7 Tables:**
+1. `theme_settings` - การตั้งค่าหลัก
+2. `theme_colors` - สี Gradient
+3. `theme_rgb_effects` - RGB animations
+4. `theme_typography` - ฟอนต์
+5. `theme_components` - Component settings
+6. `translation_cache` - Cache คำแปลจาก Google Translate
+7. `google_translate_settings` - ตั้งค่า Google Translate API
+
+---
+
 ### 1. Table: `theme_settings`
 เก็บการตั้งค่า Theme ทั้งหมด
 
@@ -138,11 +149,16 @@ CREATE TABLE theme_rgb_effects (
 
     -- Target Element
     target_element ENUM(
-        'sidebar', 'navbar', 'menu-items', 'cards', 'buttons',
-        'headers', 'titles', 'badges', 'borders', 'backgrounds',
+        'sidebar', 'navbar', 'menu-items', 'menu-items-active', 'cards', 'buttons', 'buttons-active',
+        'links-active', 'headers', 'titles', 'badges', 'borders', 'backgrounds',
         'custom'
     ) NOT NULL,
     custom_selector VARCHAR(255) NULL COMMENT 'CSS selector if target=custom',
+
+    -- Trigger State (เมื่อไหร่จะแสดงเอฟเฟกต์)
+    trigger_state ENUM(
+        'always', 'hover', 'active', 'focus', 'click'
+    ) DEFAULT 'always' COMMENT 'always=แสดงตลอด, hover=เมื่อ hover, active=เมื่อ element เป็น active',
 
     -- RGB Animation Settings
     animation_type ENUM(
@@ -265,6 +281,86 @@ CREATE TABLE theme_components (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+### 6. Table: `translation_cache`
+เก็บ cache คำแปลจาก Google Translate API
+
+```sql
+CREATE TABLE translation_cache (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    -- Source & Target
+    source_language VARCHAR(5) NOT NULL COMMENT 'th, en, ja, etc.',
+    target_language VARCHAR(5) NOT NULL COMMENT 'th, en, ja, etc.',
+
+    -- Text
+    source_text TEXT NOT NULL,
+    translated_text TEXT NOT NULL,
+
+    -- Hash for fast lookup
+    text_hash VARCHAR(64) NOT NULL COMMENT 'SHA256 hash of source_text + languages',
+
+    -- API Info
+    api_provider VARCHAR(50) DEFAULT 'google_translate',
+    api_call_timestamp TIMESTAMP NULL,
+
+    -- Usage Stats
+    hit_count INT DEFAULT 1 COMMENT 'จำนวนครั้งที่ใช้ cache นี้',
+    last_used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    -- Created/Updated
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    UNIQUE KEY unique_translation (text_hash, source_language, target_language),
+    INDEX idx_languages (source_language, target_language),
+    INDEX idx_hash (text_hash),
+    INDEX idx_last_used (last_used_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### 7. Table: `google_translate_settings`
+เก็บการตั้งค่า Google Translate API
+
+```sql
+CREATE TABLE google_translate_settings (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+
+    -- API Credentials
+    api_key VARCHAR(255) NOT NULL COMMENT 'Google Cloud API Key (encrypted)',
+    project_id VARCHAR(100) NULL,
+
+    -- Default Settings
+    default_source_language VARCHAR(5) DEFAULT 'th' COMMENT 'ภาษาต้นทาง',
+    enabled_target_languages JSON DEFAULT '["en", "ja", "zh", "ko"]' COMMENT 'ภาษาที่เปิดใช้งาน',
+
+    -- Features
+    auto_detect_enabled BOOLEAN DEFAULT true COMMENT 'ตรวจจับภาษาอัตโนมัติ',
+    cache_enabled BOOLEAN DEFAULT true COMMENT 'ใช้ cache',
+    cache_ttl INT DEFAULT 2592000 COMMENT 'Cache TTL (seconds) = 30 days',
+
+    -- Limits & Quotas
+    daily_quota INT DEFAULT 10000 COMMENT 'จำนวนคำแปลสูงสุดต่อวัน',
+    monthly_quota INT DEFAULT 300000,
+    current_daily_usage INT DEFAULT 0,
+    current_monthly_usage INT DEFAULT 0,
+    quota_reset_at TIMESTAMP NULL,
+
+    -- Fallback
+    fallback_language VARCHAR(5) DEFAULT 'th' COMMENT 'ภาษาสำรอง',
+    fallback_enabled BOOLEAN DEFAULT true,
+
+    -- Status
+    is_active BOOLEAN DEFAULT true,
+    last_api_call_at TIMESTAMP NULL,
+    last_error_message TEXT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 ---
 
 ## 🏗️ Backend Architecture
@@ -283,11 +379,14 @@ app/
 │   ├── ThemeColor.php                       # Color schemes
 │   ├── ThemeRgbEffect.php                   # RGB effects
 │   ├── ThemeTypography.php                  # Typography settings
-│   └── ThemeComponent.php                   # Component settings
+│   ├── ThemeComponent.php                   # Component settings
+│   ├── TranslationCache.php                 # Translation cache model
+│   └── GoogleTranslateSetting.php           # Google Translate API settings
 ├── Services/
 │   ├── ThemeService.php                     # Business logic
 │   ├── ThemeCompilerService.php             # Compile CSS/JS
-│   └── RgbEffectService.php                 # RGB animations
+│   ├── RgbEffectService.php                 # RGB animations
+│   └── TranslationService.php               # Google Translate API integration
 └── View/
     └── Components/
         ├── ArrowXLayout.php                 # Main layout component
@@ -387,6 +486,127 @@ class RgbEffectService
      * Get all active effects
      */
     public function getActiveEffects(): Collection;
+}
+```
+
+#### 4. **TranslationService.php**
+```php
+<?php
+
+namespace App\Services;
+
+use Google\Cloud\Translate\V2\TranslateClient;
+use App\Models\TranslationCache;
+use App\Models\GoogleTranslateSetting;
+
+class TranslationService
+{
+    protected TranslateClient $client;
+    protected GoogleTranslateSetting $settings;
+
+    /**
+     * แปลข้อความผ่าน Google Translate API
+     *
+     * @param string $text ข้อความต้นทาง
+     * @param string $targetLang ภาษาปลายทาง (en, ja, zh, etc.)
+     * @param string|null $sourceLang ภาษาต้นทาง (null = auto-detect)
+     * @return string ข้อความที่แปลแล้ว
+     */
+    public function translate(
+        string $text,
+        string $targetLang,
+        ?string $sourceLang = null
+    ): string;
+
+    /**
+     * ตรวจสอบ cache ก่อนเรียก API
+     *
+     * @param string $text
+     * @param string $sourceLang
+     * @param string $targetLang
+     * @return string|null
+     */
+    protected function getFromCache(
+        string $text,
+        string $sourceLang,
+        string $targetLang
+    ): ?string;
+
+    /**
+     * บันทึกลง cache
+     *
+     * @param string $sourceText
+     * @param string $translatedText
+     * @param string $sourceLang
+     * @param string $targetLang
+     * @return void
+     */
+    protected function saveToCache(
+        string $sourceText,
+        string $translatedText,
+        string $sourceLang,
+        string $targetLang
+    ): void;
+
+    /**
+     * ตรวจจับภาษาอัตโนมัติ
+     *
+     * @param string $text
+     * @return string Language code (th, en, ja, etc.)
+     */
+    public function detectLanguage(string $text): string;
+
+    /**
+     * แปลหลายข้อความพร้อมกัน (batch)
+     *
+     * @param array $texts
+     * @param string $targetLang
+     * @param string|null $sourceLang
+     * @return array
+     */
+    public function translateBatch(
+        array $texts,
+        string $targetLang,
+        ?string $sourceLang = null
+    ): array;
+
+    /**
+     * ตรวจสอบ quota ว่าเหลือพอหรือไม่
+     *
+     * @return bool
+     */
+    public function checkQuota(): bool;
+
+    /**
+     * อัพเดท quota usage
+     *
+     * @param int $count
+     * @return void
+     */
+    protected function updateQuotaUsage(int $count): void;
+
+    /**
+     * ดึงภาษาที่รองรับทั้งหมด
+     *
+     * @return array
+     */
+    public function getSupportedLanguages(): array;
+
+    /**
+     * Fallback เป็นภาษาไทยถ้าแปลไม่ได้
+     *
+     * @param string $text
+     * @return string
+     */
+    protected function fallback(string $text): string;
+
+    /**
+     * ล้าง cache ที่ไม่ได้ใช้งานนานๆ
+     *
+     * @param int $days
+     * @return int จำนวน records ที่ลบ
+     */
+    public function clearOldCache(int $days = 30): int;
 }
 ```
 
@@ -573,31 +793,61 @@ function arrowXApp() {
 - Animation Duration
 
 #### 7. ✨ **เอฟเฟกต์ RGB (RGB Effects)**
-**แยกตามตำแหน่ง:**
-- Sidebar RGB Effect
+**แยกตามตำแหน่งและ State:**
+
+**Trigger State Options (เมื่อไหร่จะแสดงเอฟเฟกต์):**
+- Always - แสดงตลอดเวลา
+- Hover - แสดงเมื่อ hover
+- Active - แสดงเมื่อ element เป็น active
+- Focus - แสดงเมื่อ focus
+- Click - แสดงเมื่อคลิก
+
+**RGB Effect Positions:**
+
+- **Sidebar RGB Effect**
   - Enable/Disable
-  - Animation Type (Rainbow/Wave/Pulse/Glow/etc.)
-  - Colors Cycle
+  - Trigger State (Always/Hover/Active/Focus)
+  - Animation Type (Rainbow/Wave/Pulse/Glow/Breathing/Slide/Rotate/Flash)
+  - Colors Cycle (JSON array of hex colors)
   - Speed (ms)
-  - Intensity
+  - Intensity (Subtle/Medium/Strong/Extreme)
+  - Blur Radius (px)
 
-- Navbar RGB Effect
+- **Navbar RGB Effect**
+  - (same options as Sidebar)
+
+- **Menu Items RGB Effect**
+  - (same options)
+  - **Trigger State: Always** (แสดงตลอด)
+
+- **Menu Items Active RGB Effect** ⭐ **NEW**
+  - (same options)
+  - **Trigger State: Active** (แสดงเฉพาะเมนูที่กำลัง active)
+  - **CSS Target: .menu-item.active, .nav-link.active**
+
+- **Cards RGB Effect**
   - (same options)
 
-- Menu Items RGB Effect
+- **Buttons RGB Effect**
+  - (same options)
+  - **Trigger State: Always/Hover** (แสดงตลอดหรือเมื่อ hover)
+
+- **Buttons Active RGB Effect** ⭐ **NEW**
+  - (same options)
+  - **Trigger State: Active/Click** (แสดงเมื่อปุ่มถูกคลิกหรือ active)
+  - **CSS Target: .btn.active, .btn:active, button.active**
+
+- **Links Active RGB Effect** ⭐ **NEW**
+  - (same options)
+  - **Trigger State: Active** (แสดงเฉพาะลิงก์ที่ active)
+  - **CSS Target: a.active, a.router-link-active**
+
+- **Headers RGB Effect**
   - (same options)
 
-- Cards RGB Effect
-  - (same options)
-
-- Buttons RGB Effect
-  - (same options)
-
-- Headers RGB Effect
-  - (same options)
-
-- Custom Elements RGB Effect
-  - CSS Selector
+- **Custom Elements RGB Effect**
+  - CSS Selector (กำหนดเอง)
+  - Trigger State (กำหนดเอง)
   - (same options)
 
 #### 8. 🔤 **ตัวอักษรและฟอนต์ (Typography)**
@@ -610,12 +860,23 @@ function arrowXApp() {
 - Line Heights
 
 #### 9. 🌍 **ภาษาและการแปล (Language & Localization)**
-- Default Language (th/en/etc.)
-- Available Languages
-- RTL Support (Enable/Disable)
-- Date Format
-- Number Format
-- Currency Symbol
+**ใช้ Google Translate API อัตโนมัติ**
+- Default Language (th = ไทย เป็นค่าเริ่มต้น)
+- Target Languages (เลือกภาษาที่ต้องการแปล)
+- Google Cloud Translate API Key
+- Auto-detect Language (ตรวจจับภาษาอัตโนมัติ)
+- Translation Cache (เก็บ cache คำแปลเพื่อประหยัด API calls)
+- RTL Support (Enable/Disable สำหรับภาษาอาหรับ/ฮีบรู)
+- Date Format (แยกตามภาษา)
+- Number Format (แยกตามภาษา)
+- Currency Symbol (แยกตามภาษา)
+
+**คุณสมบัติ:**
+- ✅ แปลอัตโนมัติผ่าน Google Translate API
+- ✅ Cache คำแปลใน Database (ไม่เรียก API ซ้ำ)
+- ✅ Fallback เป็นภาษาไทยถ้าแปลไม่ได้
+- ✅ รองรับ 100+ ภาษา (ตาม Google Translate)
+- ✅ แปล Real-time เมื่อผู้ใช้เปลี่ยนภาษา
 
 #### 10. 🎭 **โหมดมืด/สว่าง (Dark/Light Mode)**
 - Default Mode
@@ -675,11 +936,15 @@ function arrowXApp() {
 - [ ] Build และ Cache CSS/JS Files
 - [ ] Hot Reload สำหรับ Development
 
-### **Phase 6: Language System (Week 6)** 🌍
-- [ ] Multi-language Support
-- [ ] Language Switcher UI
-- [ ] Translation Management
-- [ ] Default Language: Thai
+### **Phase 6: Google Translate API Integration (Week 6)** 🌍
+- [ ] Setup Google Cloud Translate API
+- [ ] สร้าง TranslationService (ใช้ Google Translate API)
+- [ ] Translation Cache System (เก็บ cache ใน Database)
+- [ ] Language Switcher UI (เลือกภาษาได้ 100+ ภาษา)
+- [ ] Auto-detect Language Feature
+- [ ] Fallback System (กลับไปใช้ไทยถ้าแปลไม่ได้)
+- [ ] Default Language: Thai (th)
+- [ ] Admin UI สำหรับจัดการ API Key และ Target Languages
 
 ### **Phase 7: Migration & Testing (Week 7)** 🧪
 - [ ] ยกเลิกระบบ Theme เดิม (Deprecate old themes)
