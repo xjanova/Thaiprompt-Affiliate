@@ -2,6 +2,20 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.7.0] - 2025-11-15
+
+### ✨ Features
+- feat: implement Phase 7 - Arrow X Testing & Documentation (ce89f33d)
+- feat: implement Phase 6 - Arrow X Multi-Language Support (07088eef)
+- feat: implement Phase 5 - Arrow X Services & Navigation Components (03640ba4)
+- feat: implement Phase 4 - Arrow X Frontend Components Library (5423842c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1198 from xjanova/claude/refactor-v3-codebase-01LFNm8hrrrEXKTJkVYtawLY (e5c862ac)
+- docs: add Arrow X Theme System project completion report (647a5613)
+- docs: complete Arrow X Theme System Phase 8 - Final Documentation (1b698808)
+
 ## [v3.6.0] - 2025-11-15
 
 ### ✨ Features
