@@ -33,31 +33,36 @@
           $store.theme.init();
       ">
 
-    {{-- Background Gradient พื้นหลังแบบ Dashboard4 - สลับตาม dark mode --}}
+    {{-- Background Gradient - โหมดสว่าง=สีสัน, โหมดมืด=มืด+ทึบ --}}
     <div class="fixed inset-0 -z-10 transition-colors duration-500"
          :class="$store.theme.isDark
-             ? 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500'
-             : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300'">
+             ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+             : 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500'">
     </div>
+
+    {{-- Dark Mode Overlay - เพิ่มความทึบ 95% เมื่อโหมดมืด --}}
+    <div x-show="$store.theme.isDark"
+         x-transition
+         class="fixed inset-0 bg-black/40 -z-10"></div>
 
     {{-- Animated Background Circles วงกลมเคลื่อนไหวพื้นหลัง --}}
     <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-cyan-400 to-blue-600 opacity-30'
-                 : 'bg-gradient-to-br from-cyan-300 to-blue-400 opacity-10'">
+                 ? 'bg-gradient-to-br from-blue-600 to-cyan-700 opacity-15'
+                 : 'bg-gradient-to-br from-cyan-400 to-blue-600 opacity-30'">
         </div>
         <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              style="animation-delay: 1s;"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-pink-400 to-purple-600 opacity-30'
-                 : 'bg-gradient-to-br from-pink-300 to-purple-400 opacity-10'">
+                 ? 'bg-gradient-to-br from-purple-700 to-pink-800 opacity-15'
+                 : 'bg-gradient-to-br from-pink-400 to-purple-600 opacity-30'">
         </div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              style="animation-delay: 2s;"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-yellow-400 to-orange-600 opacity-30'
-                 : 'bg-gradient-to-br from-yellow-300 to-orange-400 opacity-10'">
+                 ? 'bg-gradient-to-br from-orange-800 to-yellow-900 opacity-15'
+                 : 'bg-gradient-to-br from-yellow-400 to-orange-600 opacity-30'">
         </div>
     </div>
 
@@ -116,6 +121,9 @@
             </div>
         </template>
     </div>
+
+    {{-- Theme Customizer - ปรับแต่งธีมแบบละเอียด --}}
+    <x-arrow-x.theme-customizer />
 
     @stack('scripts')
 </body>
