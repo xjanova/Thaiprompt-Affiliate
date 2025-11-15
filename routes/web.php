@@ -66,6 +66,11 @@ Route::prefix('demo')->name('demo.')->group(function () {
     Route::get('/dashboard4', function () {
         return view('demo.dashboard4');
     })->name('dashboard4');
+
+    // Arrow X Components Showcase
+    Route::get('/components', function () {
+        return view('demo.components');
+    })->name('components');
 });
 
 // Tournament Routes
