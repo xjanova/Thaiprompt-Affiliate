@@ -70,11 +70,18 @@
                             </div>
                         </div>
 
-                        <a href="{{ route('demo.theme1') }}"
-                           class="block w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
-                            <i class="fas fa-eye mr-2"></i>
-                            ดูตัวอย่าง
-                        </a>
+                        <div class="grid grid-cols-2 gap-3">
+                            <a href="{{ route('demo.theme1') }}"
+                               class="block px-4 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i class="fas fa-eye mr-2"></i>
+                                Theme
+                            </a>
+                            <a href="{{ route('demo.dashboard1') }}"
+                               class="block px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i class="fas fa-th-large mr-2"></i>
+                                Dashboard
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -125,11 +132,18 @@
                             </div>
                         </div>
 
-                        <a href="{{ route('demo.theme2') }}"
-                           class="block w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
-                            <i class="fas fa-eye mr-2"></i>
-                            ดูตัวอย่าง
-                        </a>
+                        <div class="grid grid-cols-2 gap-3">
+                            <a href="{{ route('demo.theme2') }}"
+                               class="block px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i class="fas fa-eye mr-2"></i>
+                                Theme
+                            </a>
+                            <a href="{{ route('demo.dashboard2') }}"
+                               class="block px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i class="fas fa-th-large mr-2"></i>
+                                Dashboard
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -177,11 +191,18 @@
                             </div>
                         </div>
 
-                        <a href="{{ route('demo.theme3') }}"
-                           class="block w-full px-6 py-3 bg-gray-700 dark:bg-gray-600 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
-                            <i class="fas fa-eye mr-2"></i>
-                            ดูตัวอย่าง
-                        </a>
+                        <div class="grid grid-cols-2 gap-3">
+                            <a href="{{ route('demo.theme3') }}"
+                               class="block px-4 py-3 bg-gray-700 dark:bg-gray-600 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i class="fas fa-eye mr-2"></i>
+                                Theme
+                            </a>
+                            <a href="{{ route('demo.dashboard3') }}"
+                               class="block px-4 py-3 bg-gray-800 dark:bg-gray-700 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i class="fas fa-th-large mr-2"></i>
+                                Dashboard
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
