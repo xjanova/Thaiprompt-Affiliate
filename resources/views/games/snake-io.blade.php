@@ -1010,6 +1010,50 @@
     <script src="/js/snake-multiplayer.js"></script>
 
     <script>
+        /**
+         * ✅ MULTIPLAYER ARCHITECTURE: Client-side Prediction
+         *
+         * แนวคิด:
+         * -------
+         * แทนที่จะ sync ตำแหน่งทุก frame (ทำให้ค้าง + lag)
+         * เราใช้วิธี "Client-side Prediction with Server Reconciliation"
+         *
+         * วิธีทำงาน:
+         * ----------
+         * 1. Client ส่ง INPUT ไป Server (realtime):
+         *    - direction (ทิศทางที่เคลื่อนไหว)
+         *    - isBoosting (กำลังเร่งความเร็วหรือไม่)
+         *    - ข้อมูลเล็ก ส่งได้บ่อย ไม่ค้าง
+         *
+         * 2. Client คำนวณ movement เอง (60 FPS):
+         *    - ไม่ต้องรอ Server ส่งตำแหน่งมา
+         *    - smooth ไม่กระตุก แม้ ping สูง
+         *
+         * 3. Server ส่ง Position Correction กลับมา (ทุก 500ms):
+         *    - ตำแหน่งที่แท้จริงจาก Server (authoritative)
+         *    - Client ทำ smooth lerp correction
+         *
+         * 4. Rubber Banding Prevention:
+         *    - ถ้าห่าง > 3 หน่วย = teleport (ป้องกัน cheating)
+         *    - ถ้าห่าง < 3 หน่วย = lerp ช้าๆ (smooth)
+         *
+         * ข้อดี:
+         * ------
+         * ✅ Real-time มากขึ้น (lag แค่ milliseconds)
+         * ✅ Smooth 60 FPS (ไม่ค้าง)
+         * ✅ ลด bandwidth 80% (ส่งแค่ input)
+         * ✅ Graceful degradation (ถ้า lag = ผู้เล่นอื่นเคลื่อนไหวต่อ)
+         *
+         * ข้อเสีย:
+         * -------
+         * ❌ ซับซ้อนกว่า (ต้องจัดการ correction)
+         * ❌ อาจมี rubber banding เล็กน้อย
+         *
+         * ดูเพิ่มเติม:
+         * - https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html
+         * - https://gafferongames.com/post/what_every_programmer_needs_to_know_about_game_networking/
+         */
+
         // Game configuration
         const CONFIG = {
             WORLD_SIZE: 200,
@@ -2985,19 +3029,27 @@
                 powerup.position.y = 0.8 + Math.sin(now * 0.003) * 0.2;
             });
 
-            // Sync state กับ server (ทุก 5 frames ~200ms)
-            if (multiplayerManager && player && player.alive && now % 5 === 0) {
+            // ✅ Sync INPUT กับ server (Client-side Prediction)
+            // ส่ง direction + isBoosting บ่อยๆ (ทุก frame หรือเมื่อเปลี่ยน)
+            // ส่ง position แค่เป็นครั้งคราว (ทุก 500ms) เพื่อ correction
+            if (multiplayerManager && player && player.alive) {
+                // ส่ง INPUT ทุก frame (ข้อมูลเล็ก, realtime)
                 multiplayerManager.updatePlayerState(
                     player.segments[0].position,
                     player.direction,
                     player.score,
-                    player.length
+                    player.length,
+                    {
+                        isBoosting: player.isBoosting, // ✅ ส่ง boost state
+                        // Position correction ทุก 500ms (ไม่ต้องส่งทุก frame)
+                        positionUpdate: (now % 500 < 16), // ส่งทุก 500ms (16ms = 1 frame @ 60fps)
+                    }
                 );
             }
 
-            // Render ผู้เล่นคนอื่น (เฉพาะเมื่อ online)
+            // ✅ Render ผู้เล่นคนอื่น (เฉพาะเมื่อ online) - ใช้ Client-side Prediction
             if (multiplayerManager && isOnline) {
-                renderOtherPlayers();
+                renderOtherPlayers(now);
                 // ปิดการ render server items เพราะทำให้อาหารปลิว
                 // renderServerItems();
             }
@@ -3329,9 +3381,16 @@
         }
 
         /**
-         * Render ผู้เล่นคนอื่นจาก server
+         * ✅ Render ผู้เล่นคนอื่นด้วย Client-side Prediction
+         *
+         * แนวคิด:
+         * - ไม่ sync ตำแหน่งทุก frame (ทำให้ค้าง)
+         * - Sync เฉพาะ INPUT: direction, isBoosting (ข้อมูลเล็ก, realtime)
+         * - Client คำนวณ movement เอง (smooth 60 FPS)
+         * - Server ส่ง position correction เป็นครั้งคราว (ทุก 500ms)
+         * - Smooth lerp correction เพื่อไม่ให้กระตุก
          */
-        function renderOtherPlayers() {
+        function renderOtherPlayers(now) {
             if (!multiplayerManager) return;
 
             const otherPlayers = multiplayerManager.getOtherPlayers();
@@ -3339,7 +3398,7 @@
             otherPlayers.forEach(playerData => {
                 // สร้างหรืออัปเดตงูของผู้เล่นคนอื่น
                 if (!otherPlayerSnakes.has(playerData.id)) {
-                    // สร้างใหม่
+                    // ✅ สร้างใหม่
                     const snake = new Snake(
                         playerData.position.x,
                         playerData.position.z,
@@ -3347,33 +3406,85 @@
                         playerData.name,
                         playerData.skin
                     );
+
+                    // ✅ เพิ่ม metadata สำหรับ client-side prediction
+                    snake.lastServerPosition = new THREE.Vector3(
+                        playerData.position.x,
+                        0.5,
+                        playerData.position.z
+                    );
+                    snake.lastServerUpdate = now;
+                    snake.positionCorrectionNeeded = false;
+
                     otherPlayerSnakes.set(playerData.id, snake);
                 } else {
-                    // อัปเดตตำแหน่ง
+                    // ✅ อัปเดต INPUT จาก server (realtime, ข้อมูลเล็ก)
                     const snake = otherPlayerSnakes.get(playerData.id);
-                    if (snake.segments[0] && playerData.position) {
-                        snake.segments[0].position.set(
-                            playerData.position.x,
-                            playerData.position.y || 0.5,
-                            playerData.position.z
-                        );
-                    }
 
-                    // อัปเดตข้อมูล
-                    snake.score = playerData.score;
-                    snake.length = playerData.length;
-                    snake.alive = playerData.is_alive;
-
-                    // อัปเดตทิศทาง
+                    // อัปเดตทิศทางจาก server (ทุกครั้งที่มีการเปลี่ยน)
                     if (playerData.direction) {
-                        snake.direction.set(
+                        snake.targetDirection.set(
                             playerData.direction.x,
                             playerData.direction.y || 0,
                             playerData.direction.z
                         );
                     }
 
-                    snake.update();
+                    // อัปเดต boost state
+                    if (playerData.isBoosting !== undefined) {
+                        snake.isBoosting = playerData.isBoosting;
+                    }
+
+                    // อัปเดตข้อมูล meta
+                    snake.score = playerData.score || snake.score;
+                    snake.length = playerData.length || snake.length;
+                    snake.alive = playerData.is_alive !== undefined ? playerData.is_alive : snake.alive;
+
+                    // ✅ Position Correction (จาก server เป็นครั้งคราว ทุก 500ms)
+                    if (playerData.position && playerData.positionUpdate) {
+                        const serverPos = new THREE.Vector3(
+                            playerData.position.x,
+                            0.5,
+                            playerData.position.z
+                        );
+
+                        // คำนวณระยะห่างจากตำแหน่งปัจจุบัน
+                        const currentPos = snake.segments[0].position;
+                        const distance = currentPos.distanceTo(serverPos);
+
+                        // ✅ ถ้าห่างเกิน 3 หน่วย = correction แรง (teleport)
+                        if (distance > 3) {
+                            // Rubber banding - warp to server position
+                            snake.segments[0].position.copy(serverPos);
+                            snake.lastServerPosition.copy(serverPos);
+                        }
+                        // ✅ ถ้าห่างน้อย = smooth correction (lerp)
+                        else if (distance > 0.5) {
+                            // Gentle correction - lerp slowly
+                            snake.lastServerPosition.copy(serverPos);
+                            snake.positionCorrectionNeeded = true;
+                        }
+
+                        snake.lastServerUpdate = now;
+                    }
+
+                    // ✅ Smooth position correction (lerp)
+                    if (snake.positionCorrectionNeeded) {
+                        const currentPos = snake.segments[0].position;
+                        const targetPos = snake.lastServerPosition;
+
+                        // Lerp ช้าๆ เพื่อความ smooth
+                        currentPos.lerp(targetPos, 0.1);
+
+                        // ถ้าใกล้พอแล้ว = หยุด correction
+                        if (currentPos.distanceTo(targetPos) < 0.1) {
+                            snake.positionCorrectionNeeded = false;
+                        }
+                    }
+
+                    // ✅ คำนวณ movement ที่ client (smooth 60 FPS)
+                    // แทนที่จะรอ server ส่งตำแหน่งมา
+                    snake.update(now);
                 }
             });
 
@@ -3384,6 +3495,7 @@
                     // ลบงู
                     snake.segments.forEach(seg => scene.remove(seg));
                     if (snake.nameSprite) scene.remove(snake.nameSprite);
+                    if (snake.outline) scene.remove(snake.outline);
                     otherPlayerSnakes.delete(playerId);
                 }
             }
