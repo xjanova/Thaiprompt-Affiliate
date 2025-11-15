@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.6.0] - 2025-11-15
+
+### ✨ Features
+- feat: implement Phase 3 - Arrow X RGB Effects System (133cbbed)
+- feat: implement Arrow X Theme System Phase 2 - Admin UI (fd0b5090)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1197 from xjanova/claude/refactor-v3-codebase-01LFNm8hrrrEXKTJkVYtawLY (ee366035)
+
 ## [v3.5.0] - 2025-11-15
 
 ### ✨ Features
