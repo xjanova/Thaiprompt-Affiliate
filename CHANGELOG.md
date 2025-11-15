@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.251.0] - 2025-11-15
+
+### ✨ Features
+- Merge pull request #1175 from xjanova/claude/token-usage-history-01PKxc9KNsQ86sTm5chTUd6c (a829aed0)
+- feat: add response style guidelines for concise AI responses (de4986ea)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v2.250.7] - 2025-11-15
 
 ### ✨ Features
