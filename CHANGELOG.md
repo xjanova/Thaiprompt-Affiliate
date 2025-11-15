@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.3.1] - 2025-11-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1193 from xjanova/claude/fix-snake-game-error-01Gk7qEftbiSDzS3TvwTTQ59 (427e0ce9)
+- fix: correct route names in GameSettingsController and view (da386dcc)
+### 🔧 Other Changes
+
+
 ## [v3.3.0] - 2025-11-15
 
 ### ✨ Features
