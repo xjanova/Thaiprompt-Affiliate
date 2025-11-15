@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.249.0] - 2025-11-15
+
+### ✨ Features
+- feat: implement Client-side Prediction for smooth multiplayer (160bf49b)
+### 🐛 Bug Fixes
+- fix: resolve 3 critical issues - bot movement, growth system, score saving (eb0430ef)
+### 🔧 Other Changes
+- Merge pull request #1163 from xjanova/claude/snake-game-wallet-018Dqk7vxEKCSzTighZZQmES (d32f5fe9)
+
 ## [v2.248.0] - 2025-11-15
 
 ### ✨ Features
