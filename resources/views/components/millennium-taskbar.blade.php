@@ -131,6 +131,8 @@
             ['icon' => '📧', 'label' => 'จัดการอีเมล', 'url' => route('admin.email.templates.index'), 'color' => 'from-blue-600 to-indigo-600'],
             ['icon' => '📱', 'label' => 'LINE OA & AI', 'url' => route('admin.line-oa.index'), 'color' => 'from-green-500 to-emerald-500'],
             ['icon' => '🎓', 'label' => 'Academy System', 'url' => route('admin.academy.courses.index'), 'color' => 'from-purple-600 to-pink-600'],
+            ['icon' => '🎮', 'label' => 'เกม & เอนเตอร์เทนเมนต์', 'url' => route('admin.games.index'), 'color' => 'from-cyan-500 to-blue-500', 'highlight' => true],
+            ['icon' => '🐍', 'label' => 'Snake.io Monitor', 'url' => route('admin.games.snake-io.monitor'), 'color' => 'from-lime-500 to-green-500', 'highlight' => true],
             ['icon' => '📊', 'label' => 'ระบบการตลาด', 'url' => route('admin.affiliates.index'), 'color' => 'from-pink-600 to-rose-600'],
             ['icon' => '⚙️', 'label' => 'ตั้งค่าระบบ', 'url' => route('admin.settings.index'), 'color' => 'from-gray-600 to-slate-600'],
         ];
