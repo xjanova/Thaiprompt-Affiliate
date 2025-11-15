@@ -275,9 +275,6 @@
                                 <span class="text-sm">เปิด POS</span>
                             </a>
 
-                            <!-- Theme Switcher -->
-                            <x-menu-theme-switcher />
-
                             <!-- Dashboard Switcher -->
                             <x-dashboard-switcher />
 
@@ -328,9 +325,6 @@
                                 </svg>
                                 <span class="text-sm">เปิด POS</span>
                             </a>
-
-                            <!-- Theme Switcher -->
-                            <x-menu-theme-switcher />
 
                             <!-- Dashboard Switcher -->
                             <x-dashboard-switcher />
