@@ -1129,7 +1129,7 @@
 
         /**
          * ✅ โหลดการตั้งค่าเกมจาก API
-         * ดึง IP, Port จาก database แทน hardcode
+         * ดึงค่า config ทั้งหมดจาก database แทน hardcode
          */
         async function loadGameConfig() {
             try {
@@ -1137,15 +1137,62 @@
                 const result = await response.json();
 
                 if (result.success && result.data) {
-                    // อัพเดท CONFIG จาก API
-                    CONFIG.GAME_SERVER_IP = result.data.server_ip || CONFIG.GAME_SERVER_IP;
-                    CONFIG.GAME_SERVER_PORT = result.data.server_port || CONFIG.GAME_SERVER_PORT;
-                    CONFIG.GAME_SERVER_WS_PORT = result.data.ws_port || CONFIG.GAME_SERVER_WS_PORT;
+                    const data = result.data;
 
-                    console.log('[Config] โหลด config จาก API สำเร็จ:', {
-                        ip: CONFIG.GAME_SERVER_IP,
-                        port: CONFIG.GAME_SERVER_PORT,
-                        ws_port: CONFIG.GAME_SERVER_WS_PORT,
+                    // ✅ Server Configuration
+                    CONFIG.GAME_SERVER_IP = data.server?.ip || CONFIG.GAME_SERVER_IP;
+                    CONFIG.GAME_SERVER_PORT = data.server?.port || CONFIG.GAME_SERVER_PORT;
+                    CONFIG.GAME_SERVER_WS_PORT = data.server?.ws_port || CONFIG.GAME_SERVER_WS_PORT;
+
+                    // ✅ World Settings
+                    CONFIG.WORLD_SIZE = data.world?.size || CONFIG.WORLD_SIZE;
+                    CONFIG.INITIAL_LENGTH = data.world?.initial_snake_length || CONFIG.INITIAL_LENGTH;
+                    CONFIG.SEGMENT_SIZE = data.world?.segment_size || CONFIG.SEGMENT_SIZE;
+                    CONFIG.COLLISION_DISTANCE = data.world?.collision_distance || CONFIG.COLLISION_DISTANCE;
+
+                    // ✅ Movement Settings
+                    CONFIG.MOVEMENT_SPEED = data.movement?.speed || CONFIG.MOVEMENT_SPEED;
+                    CONFIG.BOOST_SPEED = data.movement?.boost_speed || CONFIG.BOOST_SPEED;
+                    CONFIG.TURN_SPEED = data.movement?.turn_speed || CONFIG.TURN_SPEED;
+
+                    // ✅ Camera Settings
+                    CONFIG.CAMERA_INITIAL_DISTANCE = data.camera?.initial_distance || CONFIG.CAMERA_INITIAL_DISTANCE;
+                    CONFIG.CAMERA_ZOOMED_OUT_DISTANCE = data.camera?.zoomed_out_distance || CONFIG.CAMERA_ZOOMED_OUT_DISTANCE;
+
+                    // ✅ Scoring System
+                    CONFIG.FOOD_VALUE = data.scoring?.food_value || CONFIG.FOOD_VALUE;
+                    CONFIG.POINTS_PER_GROWTH = data.scoring?.points_per_growth || 10;
+
+                    // ✅ Food Settings
+                    CONFIG.FOOD_COUNT = data.food?.count || CONFIG.FOOD_COUNT;
+
+                    // ✅ Bot Settings
+                    CONFIG.BOT_COUNT = data.bots?.count || CONFIG.BOT_COUNT;
+
+                    // ✅ Powerup Settings - อัพเดท POWERUP_TYPES
+                    if (data.powerups?.magnet) {
+                        POWERUP_TYPES.MAGNET.duration = data.powerups.magnet.duration;
+                        POWERUP_TYPES.MAGNET.spawnChance = data.powerups.magnet.spawn_chance;
+                    }
+                    if (data.powerups?.speed) {
+                        POWERUP_TYPES.SPEED.duration = data.powerups.speed.duration;
+                        POWERUP_TYPES.SPEED.spawnChance = data.powerups.speed.spawn_chance;
+                    }
+                    if (data.powerups?.multiplier) {
+                        POWERUP_TYPES.MULTIPLIER.duration = data.powerups.multiplier.duration;
+                        POWERUP_TYPES.MULTIPLIER.spawnChance = data.powerups.multiplier.spawn_chance;
+                    }
+                    if (data.powerups?.zoom) {
+                        POWERUP_TYPES.ZOOM.duration = data.powerups.zoom.duration;
+                        POWERUP_TYPES.ZOOM.spawnChance = data.powerups.zoom.spawn_chance;
+                    }
+
+                    console.log('[Config] ✅ โหลด config จาก API สำเร็จทั้งหมด:', {
+                        server: { ip: CONFIG.GAME_SERVER_IP, port: CONFIG.GAME_SERVER_PORT },
+                        world: { size: CONFIG.WORLD_SIZE, bot_count: CONFIG.BOT_COUNT },
+                        food: { count: CONFIG.FOOD_COUNT, value: CONFIG.FOOD_VALUE },
+                        camera: { initial: CONFIG.CAMERA_INITIAL_DISTANCE, zoomed: CONFIG.CAMERA_ZOOMED_OUT_DISTANCE },
+                        powerups: POWERUP_TYPES,
                     });
                 } else {
                     console.warn('[Config] ใช้ config default (API ไม่ตอบกลับ)');
