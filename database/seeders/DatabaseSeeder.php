@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             // 1. Core Settings & Configuration (ต้องมาก่อนสุด)
             AppNameSettingSeeder::class,        // ตั้งค่าชื่อแอพ
             TwoFactorSettingsSeeder::class,     // ตั้งค่า 2FA และ OTP
-            ThemeSeeder::class,                 // ธีมของระบบ
+            // ThemeSeeder::class,              // ❌ REMOVED: Old theme system (replaced by Arrow X Theme System)
             AppManagementSeeder::class,         // ตั้งค่าแอพ, ธีม, ฟีเจอร์, แบนเนอร์, และ maintenance
             CookieSettingsSeeder::class,        // ตั้งค่า Cookie Consent & PDPA
             WindowsUiSeeder::class,             // Windows UI Settings (Colors, Themes, RGB - NO menu items)
