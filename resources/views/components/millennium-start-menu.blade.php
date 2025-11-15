@@ -146,12 +146,6 @@
     // ใช้ MenuService เพื่อดึงเมนูจาก config/menus.php
     $menuService = app(MenuService::class);
     $menuItems = $menuService->getMenuForRole($type, $user);
-
-    // ✅ สำหรับ compatibility กับ code เดิม: แปลง 'route' เป็น 'url' และรักษา order
-    // (MenuService ทำให้แล้ว แต่เก็บ safeRoute function ไว้เผื่อใช้ในอนาคต)
-
-    // ✅ V3: All menus are now managed in config/menus.php
-    // Hard-coded menus have been removed. See git history if needed.
 @endphp
 
 <!-- Millennium Start Menu Overlay -->

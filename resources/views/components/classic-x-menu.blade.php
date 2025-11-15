@@ -33,10 +33,7 @@
     $menuService = app(MenuService::class);
     $menuItems = $menuService->getMenuForRole($type, $user);
 
-    // ✅ V3: All menus are now managed in config/menus.php
-    // Hard-coded menus have been removed (including missing team menu). See git history if needed.
-
-    // แปลง emoji icons เป็น Font Awesome icons (สำหรับ Classic X compat)
+    // แปลง emoji icons เป็น Font Awesome icons (สำหรับ Classic X theme)
     $iconMap = [
         '📊' => 'fa-dashboard',
         '👤' => 'fa-user',
@@ -82,12 +79,6 @@
         }
     }
     unset($item);
-
-    // DEPRECATED: Old hard-coded menus removed
-    /*
-    if ($type === 'admin') {
-        $oldMenuItems = [
-    */
 
     // Get app information for footer
     $appName = \App\Models\Setting::get('app_name', 'TP-Affiliate');
