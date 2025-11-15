@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.9.1] - 2025-11-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1201 from xjanova/claude/review-new-team-menu-01CBZ6oaQ7yiWaskS2kArGKY (096da307)
+- chore: clean up commented seeders in DatabaseSeeder (e7ff2ec6)
+
 ## [v3.9.0] - 2025-11-15
 
 ### ✨ Features
