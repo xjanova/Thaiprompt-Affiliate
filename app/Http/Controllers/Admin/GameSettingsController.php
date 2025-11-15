@@ -3,63 +3,65 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\GameSetting;
 use Illuminate\Http\Request;
 
+/**
+ * จัดการหน้าตั้งค่าเกมในระบบ Admin
+ */
 class GameSettingsController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * แสดงหน้าตั้งค่าเกม
+     *
+     * @return \Illuminate\View\View
      */
     public function index()
     {
-        //
+        // ดึง settings ทั้งหมด จัดกลุ่มตาม group
+        $settings = GameSetting::orderBy('group')
+            ->orderBy('key')
+            ->get()
+            ->groupBy('group');
+
+        return view('admin.game-settings.index', [
+            'settings' => $settings,
+            'pageTitle' => 'ตั้งค่าเกม',
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * อัพเดทการตั้งค่า
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function create()
+    public function update(Request $request)
     {
-        //
-    }
+        try {
+            // ดึงข้อมูลทั้งหมดจาก request
+            $data = $request->except('_token', '_method');
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+            foreach ($data as $key => $value) {
+                // ดึง setting เดิม
+                $setting = GameSetting::where('key', $key)->first();
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+                if ($setting) {
+                    // อัพเดทค่า
+                    GameSetting::set($key, $value, $setting->type, $setting->group);
+                }
+            }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+            // ล้าง cache ทั้งหมด
+            GameSetting::clearCache();
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+            return redirect()
+                ->route('admin.game-settings.index')
+                ->with('success', 'บันทึกการตั้งค่าสำเร็จ');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.game-settings.index')
+                ->with('error', 'เกิดข้อผิดพลาด: ' . $e->getMessage());
+        }
     }
 }
