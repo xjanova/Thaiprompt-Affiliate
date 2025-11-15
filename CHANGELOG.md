@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.251.9] - 2025-11-15
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1184 from xjanova/claude/fix-blade-section-error-017XBG95xejKy3XPKJiQPvmG (2b812b9a)
+- fix: remove extra @endsection directive in my-positions.blade.php (cd0c2b42)
+### 🔧 Other Changes
+
+
 ## [v2.251.8] - 2025-11-15
 
 ### ✨ Features
