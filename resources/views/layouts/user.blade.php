@@ -250,9 +250,6 @@
                         </div>
 
                         <div class="flex items-center space-x-3">
-                            <!-- Theme Switcher -->
-                            <x-menu-theme-switcher />
-
                             <!-- Dashboard Switcher -->
                             <x-dashboard-switcher />
 
@@ -292,9 +289,6 @@
                         </div>
 
                         <div class="flex items-center space-x-3">
-                            <!-- Theme Switcher -->
-                            <x-menu-theme-switcher />
-
                             <!-- Dashboard Switcher -->
                             <x-dashboard-switcher />
 
