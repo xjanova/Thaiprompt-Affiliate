@@ -143,6 +143,7 @@ class ThemeCompilerService
     protected function generateThemeUtilities(ThemeSetting $themeSetting): string
     {
         $brandName = $themeSetting->brand_name ?? 'Arrow X';
+        $version = $themeSetting->version ?? '1.0.0';
 
         return <<<JS
 
@@ -150,7 +151,7 @@ class ThemeCompilerService
 window.ArrowXTheme = {
     name: '{$themeSetting->theme_name}',
     brand: '{$brandName}',
-    version: '{$themeSetting->version ?? '1.0.0'}',
+    version: '{$version}',
 
     // Toggle dark mode
     toggleDarkMode() {
