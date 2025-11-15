@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.247.6] - 2025-11-15
+
+### ✨ Features
+- feat(tickets): upgrade KB Article Form to Modern UI v3.0 (3/8 Phase 1) (6db10604)
+- feat(tickets): upgrade Settings to Modern UI v3.0 (2/8 Phase 1) (4d7497ec)
+- feat(smart-sliders): upgrade Analytics to Modern UI v3.0 (1/8 Phase 1) (90625c8c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1161 from xjanova/claude/session-01tjmndj-01Xqf6DAc3GGqBR8hZ2kkove (3e61f9a5)
+
 ## [v2.247.5] - 2025-11-15
 
 ### ✨ Features
