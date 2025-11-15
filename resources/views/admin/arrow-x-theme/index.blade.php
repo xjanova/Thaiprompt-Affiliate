@@ -137,18 +137,61 @@
             </div>
         </a>
 
-        {{-- Google Translate --}}
+        {{-- Cache Management --}}
+        <div class="group" x-data="{ showActions: false }">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div class="w-16 h-16 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mb-4">
+                    <i class="fas fa-database text-white text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Cache Management</h3>
+                <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                    Compile, Cache, Optimize
+                </p>
+
+                {{-- Action Buttons --}}
+                <div class="space-y-2">
+                    <form action="{{ route('admin.arrow-x-theme.compile') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full px-4 py-2 bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 rounded-lg text-sm hover:bg-teal-200 dark:hover:bg-teal-900/50 transition">
+                            <i class="fas fa-sync mr-2"></i> Compile Theme
+                        </button>
+                    </form>
+
+                    <form action="{{ route('admin.arrow-x-theme.clear-cache') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg text-sm hover:bg-red-200 dark:hover:bg-red-900/50 transition">
+                            <i class="fas fa-trash mr-2"></i> Clear Cache
+                        </button>
+                    </form>
+
+                    <form action="{{ route('admin.arrow-x-theme.compile-files') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="w-full px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg text-sm hover:bg-blue-200 dark:hover:bg-blue-900/50 transition">
+                            <i class="fas fa-file-code mr-2"></i> Compile to Files
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- Google Translate & Language Switcher --}}
         <div class="group">
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 opacity-60">
-                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-green-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                     <i class="fas fa-globe text-white text-2xl"></i>
                 </div>
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Google Translate</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Multi-Language</h3>
                 <p class="text-gray-600 dark:text-gray-400 text-sm mb-4">
-                    Multi-language Support (Coming Soon)
+                    14 ภาษา, Auto-Translate, Caching
                 </p>
-                <div class="inline-block px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 text-xs rounded-full">
-                    Phase 6
+
+                {{-- Language Switcher Demo --}}
+                <div class="mb-3">
+                    <x-arrow-x.language-switcher variant="dropdown" />
+                </div>
+
+                <div class="inline-block px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs rounded-full">
+                    ✅ Active
                 </div>
             </div>
         </div>

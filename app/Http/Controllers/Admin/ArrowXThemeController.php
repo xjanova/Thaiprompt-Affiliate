@@ -430,4 +430,71 @@ class ArrowXThemeController extends Controller
             return $themeSetting;
         });
     }
+
+    /**
+     * Compile theme และ refresh cache
+     *
+     * @return RedirectResponse
+     */
+    public function compileTheme(): RedirectResponse
+    {
+        try {
+            $compilerService = app(\App\Services\ThemeCompilerService::class);
+            $themeSetting = ThemeSetting::active();
+
+            if (!$themeSetting) {
+                return redirect()->back()->with('error', 'ไม่พบ active theme');
+            }
+
+            // Compile และ refresh cache
+            $compiled = $compilerService->compile($themeSetting, true);
+
+            $cssSize = number_format(strlen($compiled['css']));
+            $jsSize = number_format(strlen($compiled['js']));
+
+            return redirect()->back()->with('success', "Compile สำเร็จ! (CSS: {$cssSize} bytes, JS: {$jsSize} bytes)");
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Compile ล้มเหลว: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Clear theme cache
+     *
+     * @return RedirectResponse
+     */
+    public function clearCache(): RedirectResponse
+    {
+        try {
+            $compilerService = app(\App\Services\ThemeCompilerService::class);
+            $compilerService->clearCache();
+
+            return redirect()->back()->with('success', 'ล้าง cache สำเร็จ!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'ล้าง cache ล้มเหลว: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Compile theme เป็น static files
+     *
+     * @return RedirectResponse
+     */
+    public function compileToFiles(): RedirectResponse
+    {
+        try {
+            $compilerService = app(\App\Services\ThemeCompilerService::class);
+            $themeSetting = ThemeSetting::active();
+
+            if (!$themeSetting) {
+                return redirect()->back()->with('error', 'ไม่พบ active theme');
+            }
+
+            $files = $compilerService->compileToFile($themeSetting);
+
+            return redirect()->back()->with('success', 'สร้าง static files สำเร็จ!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'สร้าง static files ล้มเหลว: ' . $e->getMessage());
+        }
+    }
 }

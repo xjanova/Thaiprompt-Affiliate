@@ -66,6 +66,11 @@ Route::prefix('demo')->name('demo.')->group(function () {
     Route::get('/dashboard4', function () {
         return view('demo.dashboard4');
     })->name('dashboard4');
+
+    // Arrow X Components Showcase
+    Route::get('/components', function () {
+        return view('demo.components');
+    })->name('components');
 });
 
 // Tournament Routes
@@ -201,6 +206,12 @@ Route::middleware('auth')->group(function () {
     // Theme Switching (accessible by all authenticated users)
     Route::post('/user/theme/update', [\App\Http\Controllers\User\ThemeController::class, 'updateTheme'])->name('user.theme.update');
     Route::get('/user/theme/current', [\App\Http\Controllers\User\ThemeController::class, 'getCurrentTheme'])->name('user.theme.current');
+});
+
+// Language Switcher (Public - no auth required)
+Route::prefix('language')->name('language.')->group(function () {
+    Route::get('/switch/{lang}', [\App\Http\Controllers\LanguageSwitcherController::class, 'switch'])->name('switch');
+    Route::get('/current', [\App\Http\Controllers\LanguageSwitcherController::class, 'current'])->name('current');
 });
 
 // LINE Signup via Invitation Link (Public Routes with Rate Limiting)

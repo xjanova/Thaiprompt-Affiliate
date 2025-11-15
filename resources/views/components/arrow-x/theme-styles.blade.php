@@ -8,9 +8,11 @@
 --}}
 
 @php
-    $themeService = app(\App\Services\ThemeService::class);
-    $compiledCss = $themeService->compileThemeCss();
-    $compiledJs = $themeService->compileThemeJs();
+    // ใช้ ThemeCompilerService สำหรับ compile และ cache
+    $compilerService = app(\App\Services\ThemeCompilerService::class);
+    $compiled = $compilerService->getCompiled();
+    $compiledCss = $compiled['css'];
+    $compiledJs = $compiled['js'];
 @endphp
 
 {{-- Arrow X Theme Styles --}}
