@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.12.0] - 2025-11-15
+
+### ✨ Features
+- feat: modernize admin dashboard and complete Arrow X sidebar (6a0cbda9)
+### 🐛 Bug Fixes
+- fix: prevent AppThemeSetting from querying non-existent database table (c73c1f6a)
+### 🔧 Other Changes
+- Merge pull request #1204 from xjanova/claude/remove-theme-selection-use-arrow-x-01KVcPrdf77WbXwSN7ag4yWD (db97c4ee)
+- refactor: reorganize theme menu to Arrow X settings (5107bc25)
+
 ## [v3.11.0] - 2025-11-15
 
 ### ✨ Features
