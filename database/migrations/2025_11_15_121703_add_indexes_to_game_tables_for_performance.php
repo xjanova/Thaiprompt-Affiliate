@@ -184,9 +184,15 @@ return new class extends Migration
     protected function indexExists(string $table, string $index): bool
     {
         $connection = Schema::getConnection();
-        $schemaManager = $connection->getDoctrineSchemaManager();
-        $indexes = $schemaManager->listTableIndexes($table);
+        $databaseName = $connection->getDatabaseName();
 
-        return isset($indexes[$index]);
+        // ใช้ raw SQL query เพื่อตรวจสอบ index (Laravel 11 compatible)
+        $result = $connection->select(
+            "SELECT COUNT(*) as count FROM information_schema.statistics
+             WHERE table_schema = ? AND table_name = ? AND index_name = ?",
+            [$databaseName, $table, $index]
+        );
+
+        return $result[0]->count > 0;
     }
 };
