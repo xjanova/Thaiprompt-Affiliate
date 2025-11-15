@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.1.0] - 2025-11-15
+
+### ✨ Features
+- Merge pull request #1190 from xjanova/claude/refactor-v3-codebase-01LFNm8hrrrEXKTJkVYtawLY (7bbfb35d)
+- feat: add V3 UI themes demo gallery (e05f7b10)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.0.2] - 2025-11-15
 
 ### ✨ Features
