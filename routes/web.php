@@ -32,6 +32,25 @@ Route::get('/demo/space-shooter', function () {
     return view('demo-space-shooter');
 })->name('demo.space-shooter');
 
+// V3 UI Themes Demo Routes
+Route::prefix('demo')->name('demo.')->group(function () {
+    Route::get('/', function () {
+        return view('demo.index');
+    })->name('index');
+
+    Route::get('/theme1', function () {
+        return view('demo.theme1');
+    })->name('theme1');
+
+    Route::get('/theme2', function () {
+        return view('demo.theme2');
+    })->name('theme2');
+
+    Route::get('/theme3', function () {
+        return view('demo.theme3');
+    })->name('theme3');
+});
+
 // Tournament Routes
 Route::prefix('tournaments')->name('tournaments.')->group(function () {
     Route::get('/', [\App\Http\Controllers\TournamentController::class, 'index'])->name('index');
