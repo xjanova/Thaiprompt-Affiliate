@@ -25,12 +25,27 @@
 </head>
 <body class="h-full font-sans overflow-hidden"
       x-data="{
-          sidebarOpen: true,
-          profileOpen: false
+          sidebarOpen: window.innerWidth >= 768,
+          profileOpen: false,
+          showScrollTop: false
       }"
       x-init="
           // เริ่มต้น theme store
           $store.theme.init();
+
+          // ตรวจสอบ scroll position
+          window.addEventListener('scroll', () => {
+              showScrollTop = window.pageYOffset > 300;
+          });
+
+          // ปรับ sidebar ตามขนาดหน้าจอ
+          window.addEventListener('resize', () => {
+              if (window.innerWidth >= 768) {
+                  sidebarOpen = true;
+              } else {
+                  sidebarOpen = false;
+              }
+          });
       ">
 
     {{-- Background Gradient - โหมดสว่าง=สีสัน, โหมดมืด=มืด+ทึบ --}}
