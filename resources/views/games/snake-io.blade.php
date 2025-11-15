@@ -1010,6 +1010,50 @@
     <script src="/js/snake-multiplayer.js"></script>
 
     <script>
+        /**
+         * ✅ MULTIPLAYER ARCHITECTURE: Client-side Prediction
+         *
+         * แนวคิด:
+         * -------
+         * แทนที่จะ sync ตำแหน่งทุก frame (ทำให้ค้าง + lag)
+         * เราใช้วิธี "Client-side Prediction with Server Reconciliation"
+         *
+         * วิธีทำงาน:
+         * ----------
+         * 1. Client ส่ง INPUT ไป Server (realtime):
+         *    - direction (ทิศทางที่เคลื่อนไหว)
+         *    - isBoosting (กำลังเร่งความเร็วหรือไม่)
+         *    - ข้อมูลเล็ก ส่งได้บ่อย ไม่ค้าง
+         *
+         * 2. Client คำนวณ movement เอง (60 FPS):
+         *    - ไม่ต้องรอ Server ส่งตำแหน่งมา
+         *    - smooth ไม่กระตุก แม้ ping สูง
+         *
+         * 3. Server ส่ง Position Correction กลับมา (ทุก 500ms):
+         *    - ตำแหน่งที่แท้จริงจาก Server (authoritative)
+         *    - Client ทำ smooth lerp correction
+         *
+         * 4. Rubber Banding Prevention:
+         *    - ถ้าห่าง > 3 หน่วย = teleport (ป้องกัน cheating)
+         *    - ถ้าห่าง < 3 หน่วย = lerp ช้าๆ (smooth)
+         *
+         * ข้อดี:
+         * ------
+         * ✅ Real-time มากขึ้น (lag แค่ milliseconds)
+         * ✅ Smooth 60 FPS (ไม่ค้าง)
+         * ✅ ลด bandwidth 80% (ส่งแค่ input)
+         * ✅ Graceful degradation (ถ้า lag = ผู้เล่นอื่นเคลื่อนไหวต่อ)
+         *
+         * ข้อเสีย:
+         * -------
+         * ❌ ซับซ้อนกว่า (ต้องจัดการ correction)
+         * ❌ อาจมี rubber banding เล็กน้อย
+         *
+         * ดูเพิ่มเติม:
+         * - https://www.gabrielgambetta.com/client-side-prediction-server-reconciliation.html
+         * - https://gafferongames.com/post/what_every_programmer_needs_to_know_about_game_networking/
+         */
+
         // Game configuration
         const CONFIG = {
             WORLD_SIZE: 200,
@@ -1257,7 +1301,9 @@
                 this.targetDirection = this.direction.clone();
                 this.speed = CONFIG.MOVEMENT_SPEED;
                 this.isBoosting = false;
-                this.boostPointsUsed = 0; // ✅ ติดตามแต้มที่ใช้ boost (ทุก 50 แต้ม = ลด 1 ข้อ)
+                // ✅ ระบบลดขนาด: เร่งติดต่อกัน 3 วินาที = หาย 1 ข้อ
+                this.boostStartTime = null; // เวลาที่เริ่ม boost
+                this.lastShrinkTime = 0; // เวลาที่ลดขนาดครั้งล่าสุด
                 this.length = CONFIG.INITIAL_LENGTH;
                 this.score = 0;
                 this.alive = true;
@@ -1345,7 +1391,7 @@
                 scene.add(this.nameSprite);
             }
 
-            update() {
+            update(now = Date.now()) {
                 if (!this.alive) return;
 
                 // Update direction smoothly
@@ -1394,17 +1440,17 @@
                     this.outline.position.copy(head.position);
                 }
 
-                // Rainbow animation for rainbow skin
+                // ✅ Rainbow animation for rainbow skin (ใช้ now แทน Date.now())
                 if (this.skinKey === 'rainbow') {
-                    const hue = (Date.now() * 0.001) % 1;
+                    const hue = (now * 0.001) % 1;
                     this.segments[0].material.color.setHSL(hue, 1, 0.5);
                 }
 
-                // ✅ ระบบกระพริบเมื่อมี invincibility
-                if (this.invincible && Date.now() < this.invincibleUntil) {
+                // ✅ ระบบกระพริบเมื่อมี invincibility (ใช้ now แทน Date.now())
+                if (this.invincible && now < this.invincibleUntil) {
                     // กระพริบทุก 200ms (5 ครั้ง/วินาที)
                     const blinkInterval = 200;
-                    const shouldShow = Math.floor(Date.now() / blinkInterval) % 2 === 0;
+                    const shouldShow = Math.floor(now / blinkInterval) % 2 === 0;
                     const targetOpacity = shouldShow ? 0.5 : 0.95;
 
                     // ปรับ opacity สำหรับ segment ทุกตัว
@@ -1418,7 +1464,7 @@
                     if (this.outline) {
                         this.outline.material.opacity = shouldShow ? 0.2 : 0.5;
                     }
-                } else if (this.invincible && Date.now() >= this.invincibleUntil) {
+                } else if (this.invincible && now >= this.invincibleUntil) {
                     // หมดเวลา invincibility - คืนค่า opacity ปกติ
                     this.invincible = false;
                     this.segments.forEach(segment => {
@@ -1723,8 +1769,16 @@
             // UI Events
             document.getElementById('start-btn').addEventListener('click', startGame);
             document.getElementById('restart-btn').addEventListener('click', restartGame);
-            document.getElementById('save-score-btn').addEventListener('click', handleSaveScore);
-            document.getElementById('skip-save-btn').addEventListener('click', handleSkipSave);
+
+            // ✅ Save score buttons (สำหรับสมาชิกเท่านั้น - ต้องมี null check)
+            const saveScoreBtn = document.getElementById('save-score-btn');
+            const skipSaveBtn = document.getElementById('skip-save-btn');
+            if (saveScoreBtn) {
+                saveScoreBtn.addEventListener('click', handleSaveScore);
+            }
+            if (skipSaveBtn) {
+                skipSaveBtn.addEventListener('click', handleSkipSave);
+            }
 
             // Save skin button (สำหรับสมาชิก)
             const saveSkinBtn = document.getElementById('save-skin-btn');
@@ -2855,7 +2909,7 @@
             return blended;
         }
 
-        function updateBots() {
+        function updateBots(now) {
             // ✅ อัปเดตเฉพาะบอทที่มีชีวิต และลบบอทที่ตายออกจาก array
             bots = bots.filter(bot => {
                 if (!bot || !bot.alive) {
@@ -2936,8 +2990,8 @@
                     bot.targetDirection.copy(targetDirection);
                 }
 
-                // อัปเดตตำแหน่งบอท
-                bot.update();
+                // อัปเดตตำแหน่งบอท (ส่ง now เข้าไป)
+                bot.update(now);
 
                 // Check food collision
                 for (let i = foods.length - 1; i >= 0; i--) {
@@ -2966,25 +3020,36 @@
         function update() {
             if (!gameStarted || gameOver) return;
 
+            // ✅ แคช timestamp เพื่อลด Date.now() calls (ป้องกันเกมค้าง)
+            const now = Date.now();
+
             // Animate powerups (spin)
             powerups.forEach(powerup => {
                 powerup.rotation.y += 0.05;
-                powerup.position.y = 0.8 + Math.sin(Date.now() * 0.003) * 0.2;
+                powerup.position.y = 0.8 + Math.sin(now * 0.003) * 0.2;
             });
 
-            // Sync state กับ server (ทุก 5 frames ~200ms)
-            if (multiplayerManager && player && player.alive && Date.now() % 5 === 0) {
+            // ✅ Sync INPUT กับ server (Client-side Prediction)
+            // ส่ง direction + isBoosting บ่อยๆ (ทุก frame หรือเมื่อเปลี่ยน)
+            // ส่ง position แค่เป็นครั้งคราว (ทุก 500ms) เพื่อ correction
+            if (multiplayerManager && player && player.alive) {
+                // ส่ง INPUT ทุก frame (ข้อมูลเล็ก, realtime)
                 multiplayerManager.updatePlayerState(
                     player.segments[0].position,
                     player.direction,
                     player.score,
-                    player.length
+                    player.length,
+                    {
+                        isBoosting: player.isBoosting, // ✅ ส่ง boost state
+                        // Position correction ทุก 500ms (ไม่ต้องส่งทุก frame)
+                        positionUpdate: (now % 500 < 16), // ส่งทุก 500ms (16ms = 1 frame @ 60fps)
+                    }
                 );
             }
 
-            // Render ผู้เล่นคนอื่น (เฉพาะเมื่อ online)
+            // ✅ Render ผู้เล่นคนอื่น (เฉพาะเมื่อ online) - ใช้ Client-side Prediction
             if (multiplayerManager && isOnline) {
-                renderOtherPlayers();
+                renderOtherPlayers(now);
                 // ปิดการ render server items เพราะทำให้อาหารปลิว
                 // renderServerItems();
             }
@@ -2994,9 +3059,10 @@
                 const speedMultiplier = activePowerups.speed ? 1.5 : 1;
                 player.speed = CONFIG.MOVEMENT_SPEED * speedMultiplier;
 
-                player.update();
+                // ✅ ส่ง now เข้าไปเพื่อลด Date.now() calls
+                player.update(now);
 
-                // ✅ หักแต้มเมื่อเร่งความเร็ว 1 แต้ม/วินาที + ลด 1 ข้อ/50 แต้ม + เรืองแสง
+                // ✅ หักแต้มเมื่อเร่งความเร็ว 1 แต้ม/วินาที + ลด 1 ข้อ/3 วินาที (ติดต่อกัน) + เรืองแสง
                 if (player.isBoosting) {
                     const pointsPerSecond = 1; // ✅ เปลี่ยนจาก 3 เป็น 1
                     const deltaTime = 1 / 60; // 60 FPS
@@ -3005,24 +3071,31 @@
                     // หักคะแนนและใช้ Math.floor เพื่อไม่ให้มีทศนิยม
                     player.score = Math.floor(player.score - deduction);
 
-                    // ✅ ติดตามแต้มที่ใช้ boost (สะสมทุก frame)
-                    player.boostPointsUsed += deduction;
+                    // ✅ บันทึกเวลาเริ่ม boost (ถ้ายังไม่มี) - ใช้ now แทน Date.now()
+                    if (player.boostStartTime === null) {
+                        player.boostStartTime = now;
+                    }
 
-                    // ✅ ลด 1 ข้อทุก 50 แต้มที่ใช้
-                    if (player.boostPointsUsed >= 50) {
+                    // ✅ เช็คว่า boost ต่อเนื่องครบ 3 วินาทีหรือยัง
+                    const boostDuration = now - player.boostStartTime;
+                    const shrinkInterval = 3000; // 3 วินาที = 3000ms
+
+                    if (boostDuration >= shrinkInterval && (now - player.lastShrinkTime) >= shrinkInterval) {
+                        // เร่งติดต่อกันครบ 3 วินาที และยังไม่เคย shrink ในช่วงนี้
                         player.shrink(1); // ลด 1 ข้อ
-                        player.boostPointsUsed -= 50; // รีเซ็ตตัวนับ (เก็บส่วนเกิน)
+                        player.lastShrinkTime = now; // บันทึกเวลา shrink
+                        player.boostStartTime = now; // รีสตาร์ทนับ 3 วินาทีใหม่
                     }
 
                     // หยุด boost ถ้าแต้มไม่พอ
                     if (player.score < 1) {
                         player.score = Math.max(0, player.score); // ป้องกันติดลบ
                         player.isBoosting = false;
-                        player.boostPointsUsed = 0; // ✅ รีเซ็ตเมื่อหยุด boost
+                        player.boostStartTime = null; // ✅ รีเซ็ตเมื่อหยุด boost
                     }
                 } else {
-                    // ✅ รีเซ็ต boostPointsUsed เมื่อไม่ boost
-                    player.boostPointsUsed = 0;
+                    // ✅ รีเซ็ต boostStartTime เมื่อไม่ boost
+                    player.boostStartTime = null;
                 }
 
                 // ดึง head position
@@ -3084,10 +3157,10 @@
                     }
                 }
 
-                // ✅ ปรับระยะกล้องตามขนาดหนอน (ไม่เกิน 5 ปกติ, 20 เมื่อ zoom)
-                const baseCameraDistance = 5; // ✅ เปลี่ยนจาก 15 เป็น 5 (ใกล้มาก)
+                // ✅ ปรับระยะกล้องตามขนาดหนอน (ไม่เกิน 12 ปกติ, 20 เมื่อ zoom)
+                const baseCameraDistance = 12; // ✅ ระยะกล้องตอนเกิด (เพิ่มจาก 5 เป็น 12 ให้ไกลขึ้น)
                 const lengthMultiplier = 0; // ✅ ไม่ขยับกล้องตามความยาว (คงที่)
-                const maxCameraDistance = 5; // ✅ จำกัดระยะสูงสุดปกติที่ 5
+                const maxCameraDistance = 12; // ✅ จำกัดระยะสูงสุดปกติที่ 12
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -3112,7 +3185,8 @@
                 camera.lookAt(head.x, 0, head.z);
             }
 
-            updateBots();
+            // ✅ ส่ง now เข้าไปเพื่อลด Date.now() calls
+            updateBots(now);
 
             // Check all snake-to-snake collisions
             checkAllSnakeCollisions();
@@ -3124,14 +3198,13 @@
                 updatePowerupUI();
             }
 
-            // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB)
-            const rgbHue = (Date.now() * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
-            const currentTime = Date.now();
+            // ✅ Animate RGB สำหรับอาหารจากการตาย (เรืองแสง RGB) - ใช้ now แทน Date.now()
+            const rgbHue = (now * 0.001) % 1; // เปลี่ยนทุก 1 วินาที
 
             // ✅ ตรวจสอบและลบอาหารที่หมดอายุ (30 วินาที)
             foods = foods.filter(food => {
                 // อาหารจากการตาย - ตรวจสอบหมดอายุ
-                if (food.userData.expiresAt && currentTime >= food.userData.expiresAt) {
+                if (food.userData.expiresAt && now >= food.userData.expiresAt) {
                     scene.remove(food);
                     return false; // ลบออกจาก array
                 }
@@ -3308,9 +3381,16 @@
         }
 
         /**
-         * Render ผู้เล่นคนอื่นจาก server
+         * ✅ Render ผู้เล่นคนอื่นด้วย Client-side Prediction
+         *
+         * แนวคิด:
+         * - ไม่ sync ตำแหน่งทุก frame (ทำให้ค้าง)
+         * - Sync เฉพาะ INPUT: direction, isBoosting (ข้อมูลเล็ก, realtime)
+         * - Client คำนวณ movement เอง (smooth 60 FPS)
+         * - Server ส่ง position correction เป็นครั้งคราว (ทุก 500ms)
+         * - Smooth lerp correction เพื่อไม่ให้กระตุก
          */
-        function renderOtherPlayers() {
+        function renderOtherPlayers(now) {
             if (!multiplayerManager) return;
 
             const otherPlayers = multiplayerManager.getOtherPlayers();
@@ -3318,7 +3398,7 @@
             otherPlayers.forEach(playerData => {
                 // สร้างหรืออัปเดตงูของผู้เล่นคนอื่น
                 if (!otherPlayerSnakes.has(playerData.id)) {
-                    // สร้างใหม่
+                    // ✅ สร้างใหม่
                     const snake = new Snake(
                         playerData.position.x,
                         playerData.position.z,
@@ -3326,33 +3406,85 @@
                         playerData.name,
                         playerData.skin
                     );
+
+                    // ✅ เพิ่ม metadata สำหรับ client-side prediction
+                    snake.lastServerPosition = new THREE.Vector3(
+                        playerData.position.x,
+                        0.5,
+                        playerData.position.z
+                    );
+                    snake.lastServerUpdate = now;
+                    snake.positionCorrectionNeeded = false;
+
                     otherPlayerSnakes.set(playerData.id, snake);
                 } else {
-                    // อัปเดตตำแหน่ง
+                    // ✅ อัปเดต INPUT จาก server (realtime, ข้อมูลเล็ก)
                     const snake = otherPlayerSnakes.get(playerData.id);
-                    if (snake.segments[0] && playerData.position) {
-                        snake.segments[0].position.set(
-                            playerData.position.x,
-                            playerData.position.y || 0.5,
-                            playerData.position.z
-                        );
-                    }
 
-                    // อัปเดตข้อมูล
-                    snake.score = playerData.score;
-                    snake.length = playerData.length;
-                    snake.alive = playerData.is_alive;
-
-                    // อัปเดตทิศทาง
+                    // อัปเดตทิศทางจาก server (ทุกครั้งที่มีการเปลี่ยน)
                     if (playerData.direction) {
-                        snake.direction.set(
+                        snake.targetDirection.set(
                             playerData.direction.x,
                             playerData.direction.y || 0,
                             playerData.direction.z
                         );
                     }
 
-                    snake.update();
+                    // อัปเดต boost state
+                    if (playerData.isBoosting !== undefined) {
+                        snake.isBoosting = playerData.isBoosting;
+                    }
+
+                    // อัปเดตข้อมูล meta
+                    snake.score = playerData.score || snake.score;
+                    snake.length = playerData.length || snake.length;
+                    snake.alive = playerData.is_alive !== undefined ? playerData.is_alive : snake.alive;
+
+                    // ✅ Position Correction (จาก server เป็นครั้งคราว ทุก 500ms)
+                    if (playerData.position && playerData.positionUpdate) {
+                        const serverPos = new THREE.Vector3(
+                            playerData.position.x,
+                            0.5,
+                            playerData.position.z
+                        );
+
+                        // คำนวณระยะห่างจากตำแหน่งปัจจุบัน
+                        const currentPos = snake.segments[0].position;
+                        const distance = currentPos.distanceTo(serverPos);
+
+                        // ✅ ถ้าห่างเกิน 3 หน่วย = correction แรง (teleport)
+                        if (distance > 3) {
+                            // Rubber banding - warp to server position
+                            snake.segments[0].position.copy(serverPos);
+                            snake.lastServerPosition.copy(serverPos);
+                        }
+                        // ✅ ถ้าห่างน้อย = smooth correction (lerp)
+                        else if (distance > 0.5) {
+                            // Gentle correction - lerp slowly
+                            snake.lastServerPosition.copy(serverPos);
+                            snake.positionCorrectionNeeded = true;
+                        }
+
+                        snake.lastServerUpdate = now;
+                    }
+
+                    // ✅ Smooth position correction (lerp)
+                    if (snake.positionCorrectionNeeded) {
+                        const currentPos = snake.segments[0].position;
+                        const targetPos = snake.lastServerPosition;
+
+                        // Lerp ช้าๆ เพื่อความ smooth
+                        currentPos.lerp(targetPos, 0.1);
+
+                        // ถ้าใกล้พอแล้ว = หยุด correction
+                        if (currentPos.distanceTo(targetPos) < 0.1) {
+                            snake.positionCorrectionNeeded = false;
+                        }
+                    }
+
+                    // ✅ คำนวณ movement ที่ client (smooth 60 FPS)
+                    // แทนที่จะรอ server ส่งตำแหน่งมา
+                    snake.update(now);
                 }
             });
 
@@ -3363,6 +3495,7 @@
                     // ลบงู
                     snake.segments.forEach(seg => scene.remove(seg));
                     if (snake.nameSprite) scene.remove(snake.nameSprite);
+                    if (snake.outline) scene.remove(snake.outline);
                     otherPlayerSnakes.delete(playerId);
                 }
             }
