@@ -603,6 +603,178 @@
                 padding: 6px 16px;
             }
         }
+
+        /* ✅ Responsive: จอเล็กมาก (มือถือ) */
+        @media (max-width: 480px) {
+            #hud {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+            }
+
+            .hud-top {
+                gap: 8px;
+            }
+
+            .hud-item {
+                padding: 8px 12px;
+            }
+
+            .hud-label {
+                font-size: 9px;
+            }
+
+            .hud-value {
+                font-size: 18px;
+            }
+
+            /* ซ่อน leaderboard ในจอเล็ก */
+            .leaderboard {
+                display: none;
+            }
+
+            /* ย่อ powerup indicators */
+            .powerup-indicators {
+                top: 80px;
+                left: 10px;
+            }
+
+            .powerup-indicator {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            /* Start screen */
+            #start-screen h1 {
+                font-size: 36px;
+            }
+
+            .name-input {
+                font-size: 14px;
+                min-width: 200px;
+                padding: 10px 20px;
+            }
+
+            .btn {
+                font-size: 16px;
+                padding: 12px 30px;
+            }
+
+            .skin-option {
+                width: 50px;
+                height: 50px;
+            }
+
+            /* ปุ่ม sound toggle */
+            #sound-toggle {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+                bottom: 10px;
+                right: 10px;
+            }
+        }
+
+        /* ✅ Responsive: จอแนวนอน (landscape) */
+        @media (max-height: 500px) and (orientation: landscape) {
+            #hud {
+                top: 5px;
+                left: 5px;
+            }
+
+            .hud-top {
+                gap: 5px;
+            }
+
+            .hud-item {
+                padding: 5px 10px;
+            }
+
+            .hud-label {
+                font-size: 8px;
+                margin-bottom: 2px;
+            }
+
+            .hud-value {
+                font-size: 16px;
+            }
+
+            /* ซ่อน leaderboard ใน landscape */
+            .leaderboard {
+                display: none;
+            }
+
+            /* ย่อ powerup indicators */
+            .powerup-indicators {
+                top: 60px;
+                left: 5px;
+            }
+
+            .powerup-indicator {
+                padding: 4px 8px;
+                font-size: 10px;
+                margin-bottom: 3px;
+            }
+
+            /* Start screen ให้เล็กลง */
+            #start-screen h1 {
+                font-size: 32px;
+                margin-bottom: 10px;
+            }
+
+            #start-screen p {
+                font-size: 12px !important;
+                margin: 3px 0 !important;
+            }
+
+            .name-input {
+                font-size: 14px;
+                min-width: 200px;
+                padding: 8px 16px;
+                margin: 10px 0;
+            }
+
+            .btn {
+                font-size: 16px;
+                padding: 10px 25px;
+                margin: 5px;
+            }
+
+            .skin-selector {
+                margin: 10px 0;
+                gap: 10px;
+            }
+
+            .skin-option {
+                width: 45px;
+                height: 45px;
+            }
+
+            /* Custom color picker ให้เล็กลง */
+            #start-screen > div {
+                padding: 10px !important;
+                margin: 10px 0 !important;
+            }
+
+            #start-screen h3 {
+                font-size: 13px !important;
+                margin-bottom: 8px !important;
+            }
+
+            input[type="color"] {
+                width: 45px !important;
+                height: 30px !important;
+            }
+
+            /* ปุ่ม sound toggle */
+            #sound-toggle {
+                width: 35px;
+                height: 35px;
+                font-size: 16px;
+                bottom: 5px;
+                right: 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1085,6 +1257,7 @@
                 this.targetDirection = this.direction.clone();
                 this.speed = CONFIG.MOVEMENT_SPEED;
                 this.isBoosting = false;
+                this.boostPointsUsed = 0; // ✅ ติดตามแต้มที่ใช้ boost (ทุก 50 แต้ม = ลด 1 ข้อ)
                 this.length = CONFIG.INITIAL_LENGTH;
                 this.score = 0;
                 this.alive = true;
@@ -1257,6 +1430,36 @@
                         this.outline.material.opacity = 0.5;
                     }
                 }
+
+                // ✅ เอฟเฟคเรืองแสงเมื่อ boost (ทั้งผู้เล่นและบอท)
+                if (this.isBoosting) {
+                    // เพิ่มความเรืองแสงให้ทุก segment
+                    this.segments.forEach((segment, i) => {
+                        // ตั้งค่า emissive (เรืองแสง) เป็นสีของ segment
+                        const segmentColor = segment.material.color.getHex();
+                        segment.material.emissive.setHex(segmentColor);
+
+                        // ความเข้มของแสงเรืองแสง (หัวเรืองแสงมากกว่าลำตัว)
+                        segment.material.emissiveIntensity = i === 0 ? 0.7 : 0.5;
+                    });
+
+                    // เพิ่ม outline glow ถ้าเป็นผู้เล่น
+                    if (this.outline && this.isPlayer) {
+                        this.outline.material.opacity = 0.8; // เรืองแสงมากขึ้น
+                    }
+                } else {
+                    // คืนค่าความเรืองแสงปกติเมื่อไม่ boost
+                    this.segments.forEach((segment, i) => {
+                        const segmentColor = segment.material.color.getHex();
+                        segment.material.emissive.setHex(this.isPlayer ? segmentColor : (i === 0 ? segmentColor : 0x000000));
+                        segment.material.emissiveIntensity = this.isPlayer ? (i === 0 ? 0.5 : 0.25) : (i === 0 ? 0.3 : 0);
+                    });
+
+                    // คืนค่า outline opacity ปกติ
+                    if (this.outline && this.isPlayer) {
+                        this.outline.material.opacity = 0.5;
+                    }
+                }
             }
 
             grow(amount = 1) {
@@ -1302,6 +1505,33 @@
             }
 
             /**
+             * ✅ ลดขนาดงู (สำหรับ boost system)
+             * ลด 1 ข้อจากท้าย (ไม่ลดถ้าเหลือแค่ข้อเดียว)
+             */
+            shrink(amount = 1) {
+                for (let i = 0; i < amount; i++) {
+                    // ต้องมีอย่างน้อย 2 ข้อ (หัว + ลำตัว 1 ข้อ)
+                    if (this.segments.length <= 2) {
+                        break;
+                    }
+
+                    // ลบปล้องท้ายสุด
+                    const lastSegment = this.segments.pop();
+                    this.segmentPositions.pop();
+                    scene.remove(lastSegment);
+
+                    // อย่าลืม dispose geometry และ material เพื่อไม่ให้ memory leak
+                    lastSegment.geometry.dispose();
+                    lastSegment.material.dispose();
+                }
+
+                this.length = this.segments.length;
+
+                // ✅ คำนวณ nextGrowthScore ใหม่ตามจำนวนข้อปัจจุบัน
+                this.nextGrowthScore = this.calculateNextGrowthScore();
+            }
+
+            /**
              * คำนวณคะแนนที่ต้องการสำหรับปล้องถัดไป
              * สูตร: 10 + Math.floor(length / 10) * 5
              * - ปล้องที่ 1-10: ต้องการ 10 คะแนน
@@ -1309,9 +1539,20 @@
              * - ปล้องที่ 21-30: ต้องการ 20 คะแนน
              */
             calculateNextGrowthScore() {
-                const baseScore = 10;
-                const increment = Math.floor(this.length / 10) * 5;
-                return baseScore + increment;
+                // ✅ คะแนนที่ต้องการต่อข้อขึ้นกับจำนวนข้อปัจจุบัน
+                // ข้อที่ 1-10: ต้อง 10 แต้ม/ข้อ
+                // ข้อที่ 11-20: ต้อง 15 แต้ม/ข้อ
+                // ข้อที่ 21-30: ต้อง 20 แต้ม/ข้อ
+                // ข้อที่ 31+: ต้อง 25 แต้ม/ข้อ
+                if (this.length <= 10) {
+                    return 10;
+                } else if (this.length <= 20) {
+                    return 15;
+                } else if (this.length <= 30) {
+                    return 20;
+                } else {
+                    return 25;
+                }
             }
 
             checkSelfCollision() {
@@ -2483,23 +2724,6 @@
             }
         }
 
-        function saveScore() {
-            fetch('/games/snake-io/save-progress', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                },
-                body: JSON.stringify({
-                    score: score,
-                    wave: 1,
-                    kills: 0,
-                    bosses: 0,
-                    playtime: Math.floor(Date.now() / 1000),
-                }),
-            });
-        }
-
         function getRank() {
             const allSnakes = [player, ...bots].filter(s => s.alive);
             allSnakes.sort((a, b) => b.score - a.score);
@@ -2772,20 +2996,33 @@
 
                 player.update();
 
-                // ✅ หักแต้มเมื่อเร่งความเร็ว 3 แต้ม/วินาที (ไม่มีทศนิยม)
+                // ✅ หักแต้มเมื่อเร่งความเร็ว 1 แต้ม/วินาที + ลด 1 ข้อ/50 แต้ม + เรืองแสง
                 if (player.isBoosting) {
-                    const pointsPerSecond = 3;
+                    const pointsPerSecond = 1; // ✅ เปลี่ยนจาก 3 เป็น 1
                     const deltaTime = 1 / 60; // 60 FPS
                     const deduction = pointsPerSecond * deltaTime;
 
                     // หักคะแนนและใช้ Math.floor เพื่อไม่ให้มีทศนิยม
                     player.score = Math.floor(player.score - deduction);
 
+                    // ✅ ติดตามแต้มที่ใช้ boost (สะสมทุก frame)
+                    player.boostPointsUsed += deduction;
+
+                    // ✅ ลด 1 ข้อทุก 50 แต้มที่ใช้
+                    if (player.boostPointsUsed >= 50) {
+                        player.shrink(1); // ลด 1 ข้อ
+                        player.boostPointsUsed -= 50; // รีเซ็ตตัวนับ (เก็บส่วนเกิน)
+                    }
+
                     // หยุด boost ถ้าแต้มไม่พอ
-                    if (player.score < 3) {
+                    if (player.score < 1) {
                         player.score = Math.max(0, player.score); // ป้องกันติดลบ
                         player.isBoosting = false;
+                        player.boostPointsUsed = 0; // ✅ รีเซ็ตเมื่อหยุด boost
                     }
+                } else {
+                    // ✅ รีเซ็ต boostPointsUsed เมื่อไม่ boost
+                    player.boostPointsUsed = 0;
                 }
 
                 // ดึง head position
@@ -2847,10 +3084,10 @@
                     }
                 }
 
-                // ✅ ปรับระยะกล้องตามขนาดหนอน (ให้เห็นใกล้หนอน)
-                const baseCameraDistance = CONFIG.CAMERA_INITIAL_DISTANCE; // 15
-                const lengthMultiplier = 0.2; // ทุกๆ 1 ความยาว กล้องออก 0.2 (ช้าลง)
-                const maxCameraDistance = 20; // ✅ จำกัดระยะสูงสุดตอนปกติที่ 20 (15 + 5 ตามที่ผู้ใช้ต้องการ)
+                // ✅ ปรับระยะกล้องตามขนาดหนอน (ไม่เกิน 5 ปกติ, 20 เมื่อ zoom)
+                const baseCameraDistance = 5; // ✅ เปลี่ยนจาก 15 เป็น 5 (ใกล้มาก)
+                const lengthMultiplier = 0; // ✅ ไม่ขยับกล้องตามความยาว (คงที่)
+                const maxCameraDistance = 5; // ✅ จำกัดระยะสูงสุดปกติที่ 5
 
                 // คำนวณระยะกล้องตามขนาดหนอน
                 let calculatedDistance = baseCameraDistance + (player.length * lengthMultiplier);
@@ -2858,10 +3095,10 @@
 
                 // Smooth camera zoom
                 if (activePowerups.zoom) {
-                    // มี zoom powerup ให้ออกไปได้ถึง 50
-                    targetCameraDistance = CONFIG.CAMERA_ZOOMED_OUT_DISTANCE; // 50
+                    // ✅ มี zoom powerup ให้ออกไปได้ถึง 20 (แทน 50)
+                    targetCameraDistance = 20;
                 } else {
-                    // ปกติจำกัดที่ 25 (ใกล้มาก)
+                    // ปกติจำกัดที่ 5 (ใกล้มาก)
                     targetCameraDistance = calculatedDistance;
                 }
 
