@@ -62,6 +62,10 @@ Route::prefix('demo')->name('demo.')->group(function () {
     Route::get('/dashboard3', function () {
         return view('demo.dashboard3');
     })->name('dashboard3');
+
+    Route::get('/dashboard4', function () {
+        return view('demo.dashboard4');
+    })->name('dashboard4');
 });
 
 // Tournament Routes
