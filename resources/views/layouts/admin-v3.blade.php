@@ -26,25 +26,39 @@
 <body class="h-full font-sans overflow-hidden"
       x-data="{
           sidebarOpen: true,
-          profileOpen: false,
-          darkMode: localStorage.getItem('darkMode') === 'true' || false
+          profileOpen: false
       }"
       x-init="
-          $watch('darkMode', val => {
-              localStorage.setItem('darkMode', val);
-              document.documentElement.classList.toggle('dark', val);
-          });
-          document.documentElement.classList.toggle('dark', darkMode);
+          // เริ่มต้น theme store
+          $store.theme.init();
       ">
 
-    {{-- Background Gradient พื้นหลังแบบ Dashboard4 --}}
-    <div class="fixed inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 -z-10"></div>
+    {{-- Background Gradient พื้นหลังแบบ Dashboard4 - สลับตาม dark mode --}}
+    <div class="fixed inset-0 -z-10 transition-colors duration-500"
+         :class="$store.theme.isDark
+             ? 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500'
+             : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300'">
+    </div>
 
     {{-- Animated Background Circles วงกลมเคลื่อนไหวพื้นหลัง --}}
     <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-cyan-400 to-blue-600 rounded-full blur-3xl opacity-30 animate-pulse"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full blur-3xl opacity-30 animate-pulse" style="animation-delay: 1s;"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-full blur-3xl opacity-30 animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
+             :class="$store.theme.isDark
+                 ? 'bg-gradient-to-br from-cyan-400 to-blue-600 opacity-30'
+                 : 'bg-gradient-to-br from-cyan-300 to-blue-400 opacity-10'">
+        </div>
+        <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
+             style="animation-delay: 1s;"
+             :class="$store.theme.isDark
+                 ? 'bg-gradient-to-br from-pink-400 to-purple-600 opacity-30'
+                 : 'bg-gradient-to-br from-pink-300 to-purple-400 opacity-10'">
+        </div>
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
+             style="animation-delay: 2s;"
+             :class="$store.theme.isDark
+                 ? 'bg-gradient-to-br from-yellow-400 to-orange-600 opacity-30'
+                 : 'bg-gradient-to-br from-yellow-300 to-orange-400 opacity-10'">
+        </div>
     </div>
 
     <div class="flex h-full">
