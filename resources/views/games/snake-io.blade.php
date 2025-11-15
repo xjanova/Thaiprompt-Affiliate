@@ -1751,6 +1751,21 @@
                 }
             }
 
+            /**
+             * คำนวณคะแนนที่ต้องการสำหรับการเติบโตครั้งต่อไป
+             * ระบบการเติบโต:
+             * - ข้อที่ 1-10: ต้อง 10 คะแนนต่อข้อ
+             * - ข้อที่ 11-20: ต้อง 15 คะแนนต่อข้อ
+             * - ข้อที่ 21-30: ต้อง 20 คะแนนต่อข้อ
+             * - ข้อที่ 31+: ต้อง 25 คะแนนต่อข้อ
+             *
+             * @return {number} คะแนนที่ต้องการสำหรับการเติบโตครั้งต่อไป
+             */
+            calculateNextGrowthScore() {
+                const scorePerSegment = 10 + Math.floor(this.length / 10) * 5;
+                return this.score + scorePerSegment;
+            }
+
             grow(amount = 1) {
                 for (let i = 0; i < amount; i++) {
                     const lastSegment = this.segments[this.segments.length - 1];

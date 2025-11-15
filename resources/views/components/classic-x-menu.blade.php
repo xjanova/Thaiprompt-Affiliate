@@ -267,6 +267,16 @@
                 ]
             ],
             [
+                'icon' => 'fa-gamepad',
+                'label' => 'เกม & บันเทิง',
+                'url' => '#',
+                'badge' => 'NEW',
+                'submenu' => [
+                    ['label' => '🎮 ตั้งค่าเกม', 'url' => safeRoute('admin.games.game-settings.index'), 'route' => 'admin.games.game-settings.index'],
+                    ['label' => '🐍 Snake.io Monitor', 'url' => safeRoute('admin.games.snake-io.monitor'), 'route' => 'admin.games.snake-io.monitor'],
+                ]
+            ],
+            [
                 'icon' => 'fa-file-alt',
                 'label' => 'เพจ & SEO',
                 'url' => '#',
