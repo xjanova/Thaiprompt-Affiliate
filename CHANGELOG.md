@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.251.3] - 2025-11-15
+
+### ✨ Features
+- feat(ui): redesign title screen with animated background (1f23b0cb)
+- feat(game-settings): add comprehensive game configuration system with 58 settings (48b0aeb8)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1178 from xjanova/claude/analyze-snake-game-project-01Qfo5tFr3MNSpUWcksZmM7o (a1fedfd8)
+
 ## [v2.251.2] - 2025-11-15
 
 ### ✨ Features
