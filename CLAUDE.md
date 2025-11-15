@@ -2,7 +2,78 @@
 
 > **Complete Guide for AI Assistants Working on the Thaiprompt-Affiliate Codebase**
 >
-> Version: 2.203.0 | Last Updated: 2025-11-14 | Framework: Laravel 11 + Vite
+> **Version: 3.0.0** | Last Updated: 2025-11-15 | Framework: Laravel 11 + Vite
+>
+> 🚀 **NOW USING V3 CODING STANDARDS** - Tailwind CSS + Alpine.js + SortableJS
+
+---
+
+## 🆕 VERSION 3.0 - BREAKING CHANGES
+
+> **⚠️ IMPORTANT: เราอยู่ที่ Version 3 แล้ว - แนวทางการเขียนโค้ดเปลี่ยนแปลงไปจาก V2**
+
+### 🎯 V3 Core Technologies
+
+**Frontend Stack (เปลี่ยนแปลงหลัก)**:
+- ✅ **Tailwind CSS** - Pure utility-first (ไม่ใช้ Bootstrap แล้ว)
+- ✅ **Alpine.js** - Lightweight JS framework (ลด jQuery/Vue.js)
+- ✅ **SortableJS** - Modern drag & drop (ไม่ใช้ jQuery UI)
+- ✅ **Vite** - Fast build tool
+
+**Backend Stack (ไม่เปลี่ยนแปลง)**:
+- ✅ **Laravel 11** - Backend framework
+- ✅ **Blade Templates** - Server-side rendering
+- ✅ **MySQL 8.0+** - Database
+
+### 📚 V3 Documentation (อ่านก่อนเริ่มงาน)
+
+**บังคับอ่านสำหรับ V3**:
+
+1. **[.claude/V3_CODING_GUIDELINES.md](.claude/V3_CODING_GUIDELINES.md)** ⭐ **NEW**
+   - แนวทางการเขียนโค้ด V3
+   - Tailwind + Alpine.js + SortableJS patterns
+   - Component architecture
+   - Performance best practices
+
+2. **[.claude/V3_UI_DESIGN_SYSTEM.md](.claude/V3_UI_DESIGN_SYSTEM.md)** ⭐ **NEW**
+   - UI/UX standards สำหรับ V3
+   - Modern design patterns (Glassmorphism, 3D effects)
+   - Component library
+   - Animation & transitions
+
+3. **[.claude/V3_ALPINE_BEST_PRACTICES.md](.claude/V3_ALPINE_BEST_PRACTICES.md)** ⭐ **NEW**
+   - Alpine.js best practices
+   - Component patterns
+   - State management
+   - Integration กับ SortableJS
+
+### ⚠️ สิ่งที่เปลี่ยนแปลงจาก V2
+
+| ด้าน | V2 (เก่า) ❌ | V3 (ใหม่) ✅ |
+|------|--------------|-------------|
+| **CSS Framework** | Bootstrap + Custom CSS | Tailwind CSS (pure) |
+| **JavaScript** | jQuery + Vue.js | Alpine.js (หลัก) |
+| **Drag & Drop** | jQuery UI Sortable | SortableJS |
+| **UI Style** | Flat, Traditional | 3D, Glassmorphism, Gradients |
+| **Bundle Size** | ~500KB+ | ~150KB (target) |
+
+### 🚫 สิ่งที่ห้ามทำใน V3
+
+- ❌ **ห้ามใช้ jQuery** สำหรับ DOM manipulation (ใช้ Alpine.js แทน)
+- ❌ **ห้ามใช้ Bootstrap classes** (ใช้ Tailwind utilities แทน)
+- ❌ **ห้ามใช้ jQuery UI Sortable** (ใช้ SortableJS แทน)
+- ❌ **ห้ามสร้าง custom CSS classes** ใหม่ (ใช้ Tailwind, ยกเว้นจำเป็นจริงๆ)
+- ❌ **ห้าม inline styles** (ใช้ Tailwind classes)
+
+### ✅ สิ่งที่ต้องทำใน V3
+
+- ✅ **ใช้ Tailwind CSS** สำหรับทุก styling
+- ✅ **ใช้ Alpine.js** สำหรับ interactivity
+- ✅ **Component-based architecture** (Blade + Alpine components)
+- ✅ **Modern UI** - Glassmorphism, 3D effects, smooth animations
+- ✅ **Performance-first** - Lazy loading, debounce, optimize
+- ✅ **Dark mode support** - ทุก component
+- ✅ **Mobile-first responsive** - ทดสอบทุก breakpoint
 
 ---
 
@@ -57,16 +128,24 @@ php artisan serve
 
 **MANDATORY READING (กฎบังคับ):**
 
-1. **[CLAUDE_CONTEXT.md](CLAUDE_CONTEXT.md)** - Ecosystem context and license system
-2. **[.claude/THAI_LANGUAGE_RULES.md](.claude/THAI_LANGUAGE_RULES.md)** - 🇹🇭 Thai language requirements (100% compliance)
-3. **[.claude/instructions.md](.claude/instructions.md)** - Core development guidelines
-4. **[.claude/DATABASE_GUIDELINES.md](.claude/DATABASE_GUIDELINES.md)** - Database and migration rules
-5. **[.claude/seeder-guidelines.md](.claude/seeder-guidelines.md)** - Seeder synchronization rules
-6. **[.claude/ROUTES_GUIDELINES.md](.claude/ROUTES_GUIDELINES.md)** - Route and view conventions
-7. **[.claude/UI_DESIGN_SYSTEM.md](.claude/UI_DESIGN_SYSTEM.md)** - UI/UX standards
+**🆕 V3 Guidelines (อ่านก่อน!):**
+
+1. **[.claude/V3_CODING_GUIDELINES.md](.claude/V3_CODING_GUIDELINES.md)** ⭐ - แนวทางการเขียนโค้ด V3
+2. **[.claude/V3_UI_DESIGN_SYSTEM.md](.claude/V3_UI_DESIGN_SYSTEM.md)** ⭐ - UI/UX standards V3
+3. **[.claude/V3_ALPINE_BEST_PRACTICES.md](.claude/V3_ALPINE_BEST_PRACTICES.md)** ⭐ - Alpine.js patterns
+
+**Core Guidelines (ยังคงใช้):**
+
+4. **[CLAUDE_CONTEXT.md](CLAUDE_CONTEXT.md)** - Ecosystem context and license system
+5. **[.claude/THAI_LANGUAGE_RULES.md](.claude/THAI_LANGUAGE_RULES.md)** - 🇹🇭 Thai language requirements (100% compliance)
+6. **[.claude/instructions.md](.claude/instructions.md)** - Core development guidelines
+7. **[.claude/DATABASE_GUIDELINES.md](.claude/DATABASE_GUIDELINES.md)** - Database and migration rules
+8. **[.claude/seeder-guidelines.md](.claude/seeder-guidelines.md)** - Seeder synchronization rules
+9. **[.claude/ROUTES_GUIDELINES.md](.claude/ROUTES_GUIDELINES.md)** - Route and view conventions
 
 **⚠️ WARNING**: Not reading these guidelines will result in:
-- Code not meeting standards
+- Code not meeting V3 standards ⚠️ **NEW**
+- Using deprecated technologies (jQuery, Bootstrap) ⚠️ **NEW**
 - Deployment failures
 - Database integrity issues
 - UI/UX inconsistencies
@@ -146,13 +225,14 @@ php artisan serve
 - `jenssegers/agent` - User agent detection
 - `guzzlehttp/guzzle` - HTTP client
 
-### Frontend Technologies
+### Frontend Technologies (V3 Stack)
 
 ```json
 {
   "build_tool": "Vite 5.0",
   "css_framework": "Tailwind CSS 3.4",
   "js_framework": "Alpine.js 3.13.5",
+  "drag_drop": "SortableJS 1.15+",
   "charts": "Chart.js 4.4.1",
   "3d": "Three.js 0.181.1",
   "visualization": "D3.js 7.9.0, vis-network 10.0.2",
@@ -160,6 +240,17 @@ php artisan serve
   "blockchain": "ethers 5.8.0, viem 1.21.4"
 }
 ```
+
+**🆕 V3 Primary Stack**:
+- ✅ **Tailwind CSS** - Utility-first CSS framework
+- ✅ **Alpine.js** - Lightweight reactive framework (~15KB)
+- ✅ **SortableJS** - Drag & drop library
+- ✅ **Vite** - Fast build tool & HMR
+
+**📊 Specialized Libraries** (ยังคงใช้):
+- Chart.js, Three.js, D3.js - Data visualization
+- GSAP - Advanced animations
+- ethers, viem - Blockchain integration
 
 ### Development Tools
 
