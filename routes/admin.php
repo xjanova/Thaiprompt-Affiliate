@@ -1822,14 +1822,14 @@ Route::prefix('games')->name('games.')->group(function () {
         Route::get('/monitor', [App\Http\Controllers\Admin\SnakeGameAdminController::class, 'dashboard'])
             ->name('monitor');
     });
-});
 
-// ✅ Game Settings Management (IP, Port, Server Configuration)
-Route::prefix('game-settings')->name('game-settings.')->group(function () {
-    Route::get('/', [App\Http\Controllers\Admin\GameSettingsController::class, 'index'])
-        ->name('index');
-    Route::put('/update', [App\Http\Controllers\Admin\GameSettingsController::class, 'update'])
-        ->name('update');
+    // ✅ Game Settings Management (IP, Port, Server Configuration)
+    Route::prefix('game-settings')->name('game-settings.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\GameSettingsController::class, 'index'])
+            ->name('index');
+        Route::put('/update', [App\Http\Controllers\Admin\GameSettingsController::class, 'update'])
+            ->name('update');
+    });
 });
 
 // Bot Automation System Routes
