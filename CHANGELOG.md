@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.9.0] - 2025-11-15
+
+### ✨ Features
+- feat: integrate team menu system with V3 MenuService (4666d75e)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1200 from xjanova/claude/review-new-team-menu-01CBZ6oaQ7yiWaskS2kArGKY (14e9d27d)
+- chore: remove old team system completely (6ce1422b)
+- chore: remove deprecated code comments (0a9ebf8a)
+
 ## [v3.8.0] - 2025-11-15
 
 ### ✨ Features
