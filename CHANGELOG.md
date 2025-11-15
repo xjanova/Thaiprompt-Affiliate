@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.8.0] - 2025-11-15
+
+### ✨ Features
+- feat: implement V3 menu components and Arrow X theme (Phase 2) (a6772694)
+- feat: implement V3 menu system foundation (Phase 1) (9afb7cdc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1199 from xjanova/claude/refactor-menu-system-01DBp8edz3GmwuP17gQxFvD6 (9d2ce7ea)
+- refactor: cleanup V2 menu system (database-driven approach) (d81e58ea)
+
 ## [v3.7.0] - 2025-11-15
 
 ### ✨ Features
