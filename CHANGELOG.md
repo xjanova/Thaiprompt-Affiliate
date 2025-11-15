@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.19.0] - 2025-11-15
+
+### ✨ Features
+- Merge pull request #1218 from xjanova/claude/v3-dashboard-clean-01TtAB5ggsWWBNA2HGTG3GRG (62896769)
+- feat: complete V3 dashboard with all requested features (1ca92a6b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.18.1] - 2025-11-15
 
 ### ✨ Features
