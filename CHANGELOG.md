@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.11.0] - 2025-11-15
+
+### ✨ Features
+- Merge pull request #1203 from xjanova/claude/remove-theme-selection-use-arrow-x-01KVcPrdf77WbXwSN7ag4yWD (d4b75727)
+- feat: force Arrow X theme for all users by removing theme selection logic (d44eed6d)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.10.0] - 2025-11-15
 
 ### ✨ Features
