@@ -21,7 +21,7 @@
     </div>
 
     {{-- Theme Cards --}}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
 
         {{-- Theme 1: Premium Gradient --}}
         <div class="group perspective-1000 animate-scale-in">
@@ -201,6 +201,70 @@
                                class="block px-4 py-3 bg-gray-800 dark:bg-gray-700 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
                                 <i class="fas fa-th-large mr-2"></i>
                                 Dashboard
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Theme 4: Ultimate Fusion --}}
+        <div class="group perspective-1000 animate-scale-in" style="animation-delay: 300ms;">
+            <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105 group-hover:rotate-y-3">
+                {{-- Glow Effect (Rainbow) --}}
+                <div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity"></div>
+
+                {{-- Card --}}
+                <div class="relative bg-white dark:bg-gray-800 rounded-3xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                    {{-- Preview Image --}}
+                    <div class="relative h-64 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 overflow-hidden">
+                        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAxOGMzLjMxNCAwIDYgMi42ODYgNiA2cy0yLjY4NiA2LTYgNi02LTIuNjg2LTYtNiAyLjY4Ni02IDYtNiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIG9wYWNpdHk9Ii4yIi8+PC9nPjwvc3ZnPg==')] opacity-30"></div>
+
+                        <div class="relative z-10 h-full flex flex-col items-center justify-center p-8">
+                            <div class="w-20 h-20 bg-white/25 backdrop-blur-md rounded-3xl flex items-center justify-center mb-4 shadow-xl border border-white/30">
+                                <i class="fas fa-rocket text-white text-4xl"></i>
+                            </div>
+                            <h3 class="text-3xl font-bold text-white drop-shadow-lg">Theme 4</h3>
+                        </div>
+                    </div>
+
+                    {{-- Content --}}
+                    <div class="p-8">
+                        <span class="inline-block px-3 py-1 bg-gradient-to-r from-purple-500 to-orange-500 text-white text-xs font-bold rounded-full mb-4 shadow-lg">
+                            Ultimate Fusion
+                        </span>
+                        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+                            Ultimate Fusion
+                        </h2>
+                        <p class="text-gray-600 dark:text-gray-400 mb-6">
+                            รวม Best of All Worlds: สีสรร Gradient + ความใส Glass + ปุ่ม Neumorphic
+                        </p>
+
+                        <div class="space-y-3 mb-6">
+                            <div class="flex items-center gap-2 text-sm">
+                                <i class="fas fa-check-circle text-purple-600 dark:text-purple-400"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Gradient Colors (Theme 1)</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <i class="fas fa-check-circle text-pink-600 dark:text-pink-400"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Glass Effect (Theme 2)</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-sm">
+                                <i class="fas fa-check-circle text-orange-600 dark:text-orange-400"></i>
+                                <span class="text-gray-700 dark:text-gray-300">Neumorphic Buttons (Theme 3)</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <a href="{{ route('demo.dashboard4') }}"
+                               class="block px-4 py-3 bg-gradient-to-r from-purple-500 to-orange-500 text-white text-center font-bold rounded-xl hover:shadow-lg transform hover:scale-105 transition-all">
+                                <i class="fas fa-th-large mr-2"></i>
+                                Dashboard
+                            </a>
+                            <a href="{{ route('demo.dashboard4') }}"
+                               class="block px-4 py-3 border-2 border-purple-500 dark:border-purple-400 text-purple-600 dark:text-purple-400 text-center font-bold rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all">
+                                <i class="fas fa-eye mr-2"></i>
+                                Preview
                             </a>
                         </div>
                     </div>
