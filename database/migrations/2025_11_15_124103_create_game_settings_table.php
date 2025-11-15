@@ -27,8 +27,8 @@ return new class extends Migration
             // ค่าของ setting (รองรับข้อความยาว)
             $table->text('value')->nullable();
 
-            // ประเภทข้อมูล (string, integer, boolean, json)
-            $table->enum('type', ['string', 'integer', 'boolean', 'json'])->default('string');
+            // ประเภทข้อมูล (string, integer, float, decimal, boolean, json)
+            $table->enum('type', ['string', 'integer', 'float', 'decimal', 'boolean', 'json'])->default('string');
 
             // กลุ่มของ setting
             $table->string('group', 50)->default('general')->index();
