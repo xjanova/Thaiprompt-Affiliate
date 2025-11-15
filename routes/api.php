@@ -888,6 +888,23 @@ Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.'
         ->name('service-status');
 });
 
+// ✅ Game Configuration API - ดึงค่า config จาก database
+Route::get('/games/config', function () {
+    // ดึงค่า config ทั้งหมดของเกม
+    $config = \App\Models\GameSetting::getGroup('snake_io');
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'server_ip' => $config['snake_io_server_ip'] ?? '127.0.0.1',
+            'server_port' => $config['snake_io_server_port'] ?? 8080,
+            'ws_port' => $config['snake_io_ws_port'] ?? 6001,
+            'enabled' => $config['snake_io_enabled'] ?? true,
+            'max_players_per_room' => $config['snake_io_max_players_per_room'] ?? 30,
+        ],
+    ]);
+})->name('api.games.config');
+
 // ✅ Admin API Routes for Snake.io Service Monitor
 Route::middleware(['web', 'auth', 'role:admin'])
     ->prefix('admin/games/snake-io')

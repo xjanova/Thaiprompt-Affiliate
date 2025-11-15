@@ -1106,7 +1106,7 @@
          * - https://gafferongames.com/post/what_every_programmer_needs_to_know_about_game_networking/
          */
 
-        // Game configuration
+        // Game configuration (จะโหลดจาก API)
         const CONFIG = {
             WORLD_SIZE: 200,
             FOOD_COUNT: 100,
@@ -1121,11 +1121,39 @@
             CAMERA_INITIAL_DISTANCE: 15, // กล้องใกล้มากขึ้น (เดิม 20)
             CAMERA_ZOOMED_OUT_DISTANCE: 50, // ซูมออกเต็มที่เมื่อมี powerup
 
-            // ✅ WebSocket/API Server Configuration
+            // ✅ WebSocket/API Server Configuration (default values, จะถูก override จาก API)
             GAME_SERVER_IP: '123.253.62.251', // IP ของเซิฟเวอร์เกม
             GAME_SERVER_PORT: '8080', // Port สำหรับ API (ปรับได้ตามการตั้งค่าเซิฟเวอร์)
             GAME_SERVER_WS_PORT: '6001', // Port สำหรับ WebSocket (Laravel Reverb default)
         };
+
+        /**
+         * ✅ โหลดการตั้งค่าเกมจาก API
+         * ดึง IP, Port จาก database แทน hardcode
+         */
+        async function loadGameConfig() {
+            try {
+                const response = await fetch('/api/games/config');
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    // อัพเดท CONFIG จาก API
+                    CONFIG.GAME_SERVER_IP = result.data.server_ip || CONFIG.GAME_SERVER_IP;
+                    CONFIG.GAME_SERVER_PORT = result.data.server_port || CONFIG.GAME_SERVER_PORT;
+                    CONFIG.GAME_SERVER_WS_PORT = result.data.ws_port || CONFIG.GAME_SERVER_WS_PORT;
+
+                    console.log('[Config] โหลด config จาก API สำเร็จ:', {
+                        ip: CONFIG.GAME_SERVER_IP,
+                        port: CONFIG.GAME_SERVER_PORT,
+                        ws_port: CONFIG.GAME_SERVER_WS_PORT,
+                    });
+                } else {
+                    console.warn('[Config] ใช้ config default (API ไม่ตอบกลับ)');
+                }
+            } catch (error) {
+                console.warn('[Config] โหลด config ล้มเหลว, ใช้ค่า default:', error);
+            }
+        }
 
         // Audio System (16-bit style)
         let audioContext;
@@ -2560,6 +2588,9 @@
 
         async function startGame() {
             console.log('Starting game...');
+
+            // ✅ โหลด config จาก API ก่อนเริ่มเกม
+            await loadGameConfig();
 
             // Initialize audio on user interaction
             initAudio();
