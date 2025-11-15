@@ -1871,6 +1871,14 @@ Route::prefix('arrow-x-theme')->name('arrow-x-theme.')->group(function () {
         ->name('upload-logo');
     Route::post('/upload-favicon', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'uploadFavicon'])
         ->name('upload-favicon');
+
+    // Cache Management
+    Route::post('/compile', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'compileTheme'])
+        ->name('compile');
+    Route::post('/clear-cache', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'clearCache'])
+        ->name('clear-cache');
+    Route::post('/compile-files', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'compileToFiles'])
+        ->name('compile-files');
 });
 
 // Bot Automation System Routes
