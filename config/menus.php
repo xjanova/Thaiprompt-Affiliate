@@ -405,18 +405,18 @@ return [
         ],
 
         [
-            'id' => 'themes-ui',
-            'label' => 'ธีม & UI',
+            'id' => 'theme-settings',
+            'label' => 'ตั้งค่าธีม',
             'icon' => '🎨',
             'route' => null,
             'order' => 23,
             'permissions' => [],
             'submenu' => [
-                ['label' => 'Theme Builder', 'route' => 'admin.themes.builder'],
-                ['label' => 'Page Builder', 'route' => 'admin.page-builder.index'],
-                ['label' => 'Windows UI', 'route' => 'admin.windows-ui.index'],
-                ['label' => 'Icons', 'route' => 'admin.icons.index'],
-                ['label' => 'Floating Tools', 'route' => 'admin.floating-tools.index'],
+                ['label' => '📊 ภาพรวมธีม', 'route' => 'admin.arrow-x-theme.index'],
+                ['label' => '⚙️ ตั้งค่าทั่วไป', 'route' => 'admin.arrow-x-theme.general-settings'],
+                ['label' => '🎨 สีและการไล่สี', 'route' => 'admin.arrow-x-theme.color-settings'],
+                ['label' => '✨ เอฟเฟกต์ RGB', 'route' => 'admin.arrow-x-theme.rgb-effects'],
+                ['label' => '🔤 ตัวอักษรและฟอนต์', 'route' => 'admin.arrow-x-theme.typography'],
             ],
         ],
 

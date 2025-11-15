@@ -182,13 +182,41 @@ class AppThemeSetting extends Model
 
     /**
      * Get the singleton instance
+     *
+     * หมายเหตุ: ปิดการใช้งานตาราง app_theme_settings แล้ว เนื่องจากบังคับใช้ Arrow X Theme เท่านั้น
+     * Return ค่า default object แทนการดึงจากฐานข้อมูล
      */
     public static function getInstance()
     {
-        return static::firstOrCreate([], [
-            'theme_name' => 'default',
-            'primary_color' => '#3B82F6',
+        // สร้าง instance ใหม่โดยไม่บันทึกลงฐานข้อมูล
+        $instance = new static([
+            'theme_name' => 'Arrow X',
+            'primary_color' => '#8B5CF6', // Purple
+            'primary_dark_color' => '#7C3AED',
+            'primary_light_color' => '#A78BFA',
+            'secondary_color' => '#3B82F6', // Blue
+            'secondary_dark_color' => '#2563EB',
+            'secondary_light_color' => '#60A5FA',
+            'background_color' => '#F9FAFB',
+            'background_dark_color' => '#111827',
+            'text_primary_color' => '#111827',
+            'text_primary_dark_color' => '#F9FAFB',
+            'success_color' => '#10B981',
+            'warning_color' => '#F59E0B',
+            'error_color' => '#EF4444',
+            'info_color' => '#3B82F6',
+            'font_family' => 'Noto Sans Thai, Inter, sans-serif',
+            'font_family_en' => 'Inter, sans-serif',
+            'font_size_base' => 16,
+            'border_radius_medium' => 12,
+            'dark_mode_enabled' => true,
+            'dark_mode_default' => false,
             'is_active' => true,
         ]);
+
+        // Set exists เป็น false เพื่อป้องกันการ save
+        $instance->exists = false;
+
+        return $instance;
     }
 }
