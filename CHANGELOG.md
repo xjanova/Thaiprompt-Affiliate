@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.251.10] - 2025-11-15
+
+### ✨ Features
+- feat(mlm): upgrade settings/index to Modern UI v3.0 (Group 6 complete - 4/4) (ebf76910)
+- feat(mlm): upgrade genealogy, calculator, placement-examples to Modern UI v3.0 (3/4 Group 6 WIP) (7b845b21)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1185 from xjanova/claude/analyze-modern-ui-upgrade-01EpRCcTP6FtQLWBnbEAkgYC (259bad88)
+
 ## [v2.251.9] - 2025-11-15
 
 ### ✨ Features
