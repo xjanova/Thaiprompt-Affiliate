@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.250.4] - 2025-11-15
+
+### ✨ Features
+- feat(hotels): upgrade Special Offers (create & index) to Modern UI v3.0 (18-19/36 Hotels Phase 2) (d9e1d621)
+- feat(hotels): upgrade Rooms Management to Modern UI v3.0 (16-17/36 Hotels Phase 2) (e6ccb3a9)
+- feat(hotels): upgrade Facilities Management to Modern UI v3.0 (15/36 Hotels Phase 2) (0a854e5c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1171 from xjanova/claude/analyze-modern-ui-upgrade-01EpRCcTP6FtQLWBnbEAkgYC (d0a310fb)
+
 ## [v2.250.3] - 2025-11-15
 
 ### ✨ Features
