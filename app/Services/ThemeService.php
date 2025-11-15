@@ -2,408 +2,212 @@
 
 namespace App\Services;
 
-use App\Models\Theme;
-use App\Models\ThemePreset;
-use App\Models\UserTheme;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
+use App\Models\ThemeSetting;
 
+/**
+ * ThemeService
+ *
+ * จัดการ Arrow X Theme compilation และ CSS generation
+ */
 class ThemeService
 {
     /**
-     * Get theme for user
+     * สร้าง CSS Variables จาก Theme Settings
+     *
+     * @param ThemeSetting|null $themeSetting
+     * @return string
      */
-    public function getThemeForUser($userId)
+    public function generateCssVariables(?ThemeSetting $themeSetting = null): string
     {
-        // Try to get from cache first
-        return Cache::remember("user_theme_{$userId}", 3600, function () use ($userId) {
-            $userTheme = UserTheme::getActiveThemeForUser($userId);
+        $themeSetting = $themeSetting ?? ThemeSetting::active();
 
-            if ($userTheme && $userTheme->theme) {
-                return [
-                    'theme' => $userTheme->theme,
-                    'mode' => $userTheme->mode,
-                ];
-            }
-
-            // Fallback to default theme
-            return [
-                'theme' => Theme::getDefault(),
-                'mode' => 'auto',
-            ];
-        });
-    }
-
-    /**
-     * Set theme for user
-     */
-    public function setThemeForUser($userId, $themeId, $mode = 'auto')
-    {
-        $result = UserTheme::setThemeForUser($userId, $themeId, $mode);
-
-        // Clear cache
-        Cache::forget("user_theme_{$userId}");
-
-        return $result;
-    }
-
-    /**
-     * Get CSS for user
-     */
-    public function getCssForUser($userId, $mode = null)
-    {
-        $userTheme = $this->getThemeForUser($userId);
-
-        if (!$userTheme['theme']) {
+        if (!$themeSetting) {
             return '';
         }
 
-        // Determine mode
-        if ($mode === null) {
-            $mode = $userTheme['mode'] === 'auto' ? 'light' : $userTheme['mode'];
+        $css = "/* Arrow X Theme - CSS Variables */\n";
+        $css .= ":root {\n";
+
+        // Layout Variables
+        $css .= "    /* Layout */\n";
+        $css .= "    --arrow-x-sidebar-width: {$themeSetting->sidebar_width}px;\n";
+        $css .= "    --arrow-x-navbar-height: {$themeSetting->navbar_height}px;\n";
+        $css .= "    --arrow-x-footer-height: {$themeSetting->footer_height}px;\n\n";
+
+        // Opacity Variables
+        $css .= "    /* Opacity */\n";
+        $css .= "    --arrow-x-global-opacity: " . ($themeSetting->global_opacity / 100) . ";\n";
+        $css .= "    --arrow-x-sidebar-opacity: " . ($themeSetting->sidebar_opacity / 100) . ";\n";
+        $css .= "    --arrow-x-navbar-opacity: " . ($themeSetting->navbar_opacity / 100) . ";\n";
+        $css .= "    --arrow-x-card-opacity: " . ($themeSetting->card_opacity / 100) . ";\n";
+        $css .= "    --arrow-x-modal-opacity: " . ($themeSetting->modal_opacity / 100) . ";\n\n";
+
+        // Card Variables
+        $css .= "    /* Cards */\n";
+        $css .= "    --arrow-x-card-blur: {$themeSetting->card_blur_intensity}px;\n";
+        $css .= "    --arrow-x-card-border-width: {$themeSetting->card_border_width}px;\n";
+        $css .= "    --arrow-x-card-border-radius: {$themeSetting->card_border_radius}px;\n";
+        $css .= "    --arrow-x-card-shadow: var(--shadow-{$themeSetting->card_shadow_intensity});\n\n";
+
+        // Colors (if available)
+        if ($themeSetting->color) {
+            $css .= $this->generateColorVariables($themeSetting->color);
         }
 
-        return $userTheme['theme']->generateCss($mode);
-    }
-
-    /**
-     * Create theme from preset
-     */
-    public function createThemeFromPreset($presetId, $displayName = null, $isDefault = false, $userId = null)
-    {
-        $preset = ThemePreset::findOrFail($presetId);
-
-        DB::beginTransaction();
-        try {
-            $theme = $preset->toTheme($displayName, $isDefault);
-
-            if ($userId) {
-                $theme->created_by = $userId;
-                $theme->save();
-            }
-
-            DB::commit();
-            return $theme;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    /**
-     * Create custom theme
-     */
-    public function createTheme(array $data)
-    {
-        DB::beginTransaction();
-        try {
-            $theme = Theme::create($data);
-
-            // If set as default, update others
-            if ($data['is_default'] ?? false) {
-                Theme::where('id', '!=', $theme->id)
-                    ->update(['is_default' => false]);
-            }
-
-            DB::commit();
-            return $theme;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    /**
-     * Update theme
-     */
-    public function updateTheme($themeId, array $data)
-    {
-        DB::beginTransaction();
-        try {
-            $theme = Theme::findOrFail($themeId);
-
-            // Prevent updating system themes
-            if ($theme->is_system && !($data['is_system'] ?? false)) {
-                throw new \Exception('Cannot modify system theme');
-            }
-
-            $theme->update($data);
-
-            // If set as default, update others
-            if ($data['is_default'] ?? false) {
-                Theme::where('id', '!=', $theme->id)
-                    ->update(['is_default' => false]);
-            }
-
-            // Clear all user theme caches
-            $this->clearAllUserThemeCaches();
-
-            DB::commit();
-            return $theme;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    /**
-     * Delete theme
-     */
-    public function deleteTheme($themeId)
-    {
-        DB::beginTransaction();
-        try {
-            $theme = Theme::findOrFail($themeId);
-
-            // Prevent deleting system or default themes
-            if ($theme->is_system) {
-                throw new \Exception('Cannot delete system theme');
-            }
-
-            if ($theme->is_default) {
-                throw new \Exception('Cannot delete default theme. Please set another theme as default first.');
-            }
-
-            // Move users to default theme
-            $defaultTheme = Theme::getDefault();
-            if ($defaultTheme) {
-                UserTheme::where('theme_id', $themeId)
-                    ->update(['theme_id' => $defaultTheme->id]);
-            }
-
-            // Delete preview images
-            if ($theme->preview_light) {
-                $path = str_replace('/storage/', '', $theme->preview_light);
-                Storage::disk('public')->delete($path);
-            }
-
-            if ($theme->preview_dark) {
-                $path = str_replace('/storage/', '', $theme->preview_dark);
-                Storage::disk('public')->delete($path);
-            }
-
-            $theme->delete();
-
-            // Clear all user theme caches
-            $this->clearAllUserThemeCaches();
-
-            DB::commit();
-            return true;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    /**
-     * Duplicate theme
-     */
-    public function duplicateTheme($themeId, $newName, $newDisplayName)
-    {
-        $originalTheme = Theme::findOrFail($themeId);
-
-        $newTheme = $originalTheme->replicate();
-        $newTheme->name = $newName;
-        $newTheme->display_name = $newDisplayName;
-        $newTheme->is_default = false;
-        $newTheme->is_system = false;
-        $newTheme->save();
-
-        return $newTheme;
-    }
-
-    /**
-     * Upload preview image
-     */
-    public function uploadPreviewImage($theme, $file, $mode = 'light')
-    {
-        $webpService = app(WebPService::class);
-
-        // Convert to WebP
-        $result = $webpService->convertAndStore($file, 'theme-previews', 85);
-
-        // Delete old preview if exists
-        $oldPreview = $mode === 'light' ? $theme->preview_light : $theme->preview_dark;
-        if ($oldPreview) {
-            $path = str_replace('/storage/', '', $oldPreview);
-            Storage::disk('public')->delete($path);
+        // Typography (if available)
+        if ($themeSetting->typography) {
+            $css .= $this->generateTypographyVariables($themeSetting->typography);
         }
 
-        // Update theme
-        if ($mode === 'light') {
-            $theme->preview_light = $result['url'];
-        } else {
-            $theme->preview_dark = $result['url'];
+        $css .= "}\n";
+
+        return $css;
+    }
+
+    /**
+     * สร้าง Color Variables
+     */
+    protected function generateColorVariables($color): string
+    {
+        $css = "    /* Colors - Primary Gradient */\n";
+        $css .= "    --arrow-x-primary-start: {$color->primary_start};\n";
+        $css .= "    --arrow-x-primary-middle: {$color->primary_middle};\n";
+        $css .= "    --arrow-x-primary-end: {$color->primary_end};\n";
+        $css .= "    --arrow-x-primary-gradient: linear-gradient(" . str_replace('-', ' ', $color->gradient_direction) . ", {$color->primary_start}, {$color->primary_middle}, {$color->primary_end});\n\n";
+
+        $css .= "    /* Colors - Secondary Gradient */\n";
+        $css .= "    --arrow-x-secondary-start: {$color->secondary_start};\n";
+        $css .= "    --arrow-x-secondary-middle: {$color->secondary_middle};\n";
+        $css .= "    --arrow-x-secondary-end: {$color->secondary_end};\n";
+        $css .= "    --arrow-x-secondary-gradient: linear-gradient(" . str_replace('-', ' ', $color->gradient_direction) . ", {$color->secondary_start}, {$color->secondary_middle}, {$color->secondary_end});\n\n";
+
+        $css .= "    /* Colors - Status */\n";
+        $css .= "    --arrow-x-accent: {$color->accent_color};\n";
+        $css .= "    --arrow-x-success: {$color->success_color};\n";
+        $css .= "    --arrow-x-warning: {$color->warning_color};\n";
+        $css .= "    --arrow-x-error: {$color->error_color};\n";
+        $css .= "    --arrow-x-info: {$color->info_color};\n\n";
+
+        $css .= "    /* Colors - Background (Light) */\n";
+        $css .= "    --arrow-x-bg-primary: {$color->background_primary};\n";
+        $css .= "    --arrow-x-bg-secondary: {$color->background_secondary};\n";
+        $css .= "    --arrow-x-bg-tertiary: {$color->background_tertiary};\n\n";
+
+        $css .= "    /* Colors - Text (Light) */\n";
+        $css .= "    --arrow-x-text-primary: {$color->text_primary};\n";
+        $css .= "    --arrow-x-text-secondary: {$color->text_secondary};\n";
+        $css .= "    --arrow-x-text-tertiary: {$color->text_tertiary};\n\n";
+
+        $css .= "    /* Colors - Borders */\n";
+        $css .= "    --arrow-x-border: {$color->border_color};\n";
+        $css .= "    --arrow-x-divider: {$color->divider_color};\n\n";
+
+        return $css;
+    }
+
+    /**
+     * สร้าง Typography Variables
+     */
+    protected function generateTypographyVariables($typography): string
+    {
+        $css = "    /* Typography - Fonts */\n";
+        $css .= "    --arrow-x-font-primary: '{$typography->primary_font}', sans-serif;\n";
+        $css .= "    --arrow-x-font-secondary: '{$typography->secondary_font}', sans-serif;\n";
+        $css .= "    --arrow-x-font-code: '{$typography->code_font}', monospace;\n\n";
+
+        $css .= "    /* Typography - Sizes */\n";
+        $css .= "    --arrow-x-text-base: {$typography->base_font_size}rem;\n";
+        $css .= "    --arrow-x-text-h1: {$typography->heading_h1_size}rem;\n";
+        $css .= "    --arrow-x-text-h2: {$typography->heading_h2_size}rem;\n";
+        $css .= "    --arrow-x-text-h3: {$typography->heading_h3_size}rem;\n";
+        $css .= "    --arrow-x-text-h4: {$typography->heading_h4_size}rem;\n";
+        $css .= "    --arrow-x-text-h5: {$typography->heading_h5_size}rem;\n";
+        $css .= "    --arrow-x-text-h6: {$typography->heading_h6_size}rem;\n\n";
+
+        $css .= "    /* Typography - Line Heights */\n";
+        $css .= "    --arrow-x-leading-heading: {$typography->heading_line_height};\n";
+        $css .= "    --arrow-x-leading-body: {$typography->body_line_height};\n\n";
+
+        return $css;
+    }
+
+    /**
+     * สร้าง Dark Mode CSS Variables
+     */
+    public function generateDarkModeCssVariables(?ThemeSetting $themeSetting = null): string
+    {
+        $themeSetting = $themeSetting ?? ThemeSetting::active();
+
+        if (!$themeSetting || !$themeSetting->color) {
+            return '';
         }
 
-        $theme->save();
+        $color = $themeSetting->color;
 
-        return $result['url'];
+        $css = "/* Arrow X Theme - Dark Mode */\n";
+        $css .= ".dark, [data-theme='dark'] {\n";
+
+        $css .= "    /* Colors - Background (Dark) */\n";
+        $css .= "    --arrow-x-bg-primary: {$color->dark_background_primary};\n";
+        $css .= "    --arrow-x-bg-secondary: {$color->dark_background_secondary};\n";
+        $css .= "    --arrow-x-bg-tertiary: {$color->dark_background_tertiary};\n\n";
+
+        $css .= "    /* Colors - Text (Dark) */\n";
+        $css .= "    --arrow-x-text-primary: {$color->dark_text_primary};\n";
+        $css .= "    --arrow-x-text-secondary: {$color->dark_text_secondary};\n";
+        $css .= "    --arrow-x-text-tertiary: {$color->dark_text_tertiary};\n\n";
+
+        $css .= "    /* Colors - Borders (Dark) */\n";
+        $css .= "    --arrow-x-border: {$color->dark_border_color};\n";
+        $css .= "    --arrow-x-divider: {$color->dark_divider_color};\n";
+
+        $css .= "}\n";
+
+        return $css;
     }
 
     /**
-     * Get all themes
+     * Compile ทุกอย่างเป็น CSS file เดียว
+     *
+     * @return string
      */
-    public function getAllThemes($activeOnly = true)
+    public function compileThemeCss(): string
     {
-        $query = Theme::query();
+        $rgbService = new RgbEffectService();
 
-        if ($activeOnly) {
-            $query->where('is_active', true);
-        }
+        $css = "/**\n";
+        $css .= " * Arrow X Theme System - Compiled CSS\n";
+        $css .= " * Generated: " . now()->toDateTimeString() . "\n";
+        $css .= " */\n\n";
 
-        return $query->orderBy('is_default', 'desc')
-            ->orderBy('is_system', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // CSS Variables
+        $css .= $this->generateCssVariables() . "\n\n";
+
+        // Dark Mode
+        $css .= $this->generateDarkModeCssVariables() . "\n\n";
+
+        // RGB Effects
+        $css .= $rgbService->generateAllEffectsCss() . "\n";
+
+        return $css;
     }
 
     /**
-     * Get theme statistics
+     * Compile JavaScript
+     *
+     * @return string
      */
-    public function getThemeStatistics($themeId)
+    public function compileThemeJs(): string
     {
-        $theme = Theme::findOrFail($themeId);
+        $rgbService = new RgbEffectService();
 
-        return [
-            'total_users' => $theme->users()->count(),
-            'active_users' => $theme->users()->where('is_active', true)->count(),
-            'mode_distribution' => [
-                'light' => $theme->users()->where('mode', 'light')->count(),
-                'dark' => $theme->users()->where('mode', 'dark')->count(),
-                'auto' => $theme->users()->where('mode', 'auto')->count(),
-            ],
-        ];
-    }
+        $js = "/**\n";
+        $js .= " * Arrow X Theme System - Compiled JavaScript\n";
+        $js .= " * Generated: " . now()->toDateTimeString() . "\n";
+        $js .= " */\n\n";
 
-    /**
-     * Initialize default themes
-     */
-    public function initializeDefaultThemes()
-    {
-        DB::beginTransaction();
-        try {
-            // Create default theme presets
-            foreach (ThemePreset::defaultPresets() as $presetData) {
-                ThemePreset::updateOrCreate(
-                    ['name' => $presetData['name']],
-                    $presetData
-                );
-            }
+        $js .= $rgbService->generateAllEffectsJs();
 
-            // Create default system theme if not exists (Classic X)
-            if (!Theme::where('is_system', true)->exists()) {
-                $defaultPreset = ThemePreset::where('name', 'classic_x')->first();
-
-                if ($defaultPreset) {
-                    $theme = $defaultPreset->toTheme('Classic X (Default)', true);
-                    $theme->is_system = true;
-                    $theme->save();
-                }
-            }
-
-            DB::commit();
-            return true;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    /**
-     * Export theme configuration
-     */
-    public function exportTheme($themeId)
-    {
-        $theme = Theme::findOrFail($themeId);
-
-        return [
-            'name' => $theme->name,
-            'display_name' => $theme->display_name,
-            'description' => $theme->description,
-            'colors' => $theme->colors,
-            'typography' => $theme->typography,
-            'spacing' => $theme->spacing,
-            'borders' => $theme->borders,
-            'shadows' => $theme->shadows,
-            'animations' => $theme->animations,
-            'custom_css' => $theme->custom_css,
-            'dark_colors' => $theme->dark_colors,
-            'exported_at' => now()->toIso8601String(),
-            'version' => config('version.current'),
-        ];
-    }
-
-    /**
-     * Import theme configuration
-     */
-    public function importTheme(array $config, $userId = null)
-    {
-        DB::beginTransaction();
-        try {
-            // Validate config
-            if (!isset($config['name']) || !isset($config['display_name'])) {
-                throw new \Exception('Invalid theme configuration');
-            }
-
-            // Create unique name if exists
-            $baseName = $config['name'];
-            $counter = 1;
-            while (Theme::where('name', $config['name'])->exists()) {
-                $config['name'] = $baseName . '_' . $counter;
-                $counter++;
-            }
-
-            $theme = Theme::create([
-                'name' => $config['name'],
-                'display_name' => $config['display_name'],
-                'description' => $config['description'] ?? null,
-                'colors' => $config['colors'] ?? null,
-                'typography' => $config['typography'] ?? null,
-                'spacing' => $config['spacing'] ?? null,
-                'borders' => $config['borders'] ?? null,
-                'shadows' => $config['shadows'] ?? null,
-                'animations' => $config['animations'] ?? null,
-                'custom_css' => $config['custom_css'] ?? null,
-                'dark_colors' => $config['dark_colors'] ?? null,
-                'is_active' => true,
-                'created_by' => $userId,
-            ]);
-
-            DB::commit();
-            return $theme;
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    /**
-     * Clear all user theme caches
-     */
-    protected function clearAllUserThemeCaches()
-    {
-        // This is a simple implementation
-        // In production, you might want to use Cache tags or Redis SCAN
-        Cache::flush();
-    }
-
-    /**
-     * Generate theme CSS file
-     */
-    public function generateThemeCssFile($themeId, $mode = 'light')
-    {
-        $theme = Theme::findOrFail($themeId);
-
-        $css = $theme->generateCss($mode);
-
-        // Save to public directory
-        $filename = "theme-{$theme->name}-{$mode}.css";
-        $path = "css/themes/{$filename}";
-
-        Storage::disk('public')->put($path, $css);
-
-        return "/storage/{$path}";
+        return $js;
     }
 }
