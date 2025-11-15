@@ -1186,6 +1186,11 @@
         const MAX_RECONNECT_ATTEMPTS = 5;
         const CONNECTION_CHECK_INTERVAL = 5000; // เช็คทุก 5 วินาที
 
+        // ✅ Service Status Polling (เช็คทุก 10 วินาที ว่า service เปิดหรือปิด)
+        let serviceStatusInterval = null;
+        let isServiceOnline = false;
+        const SERVICE_CHECK_INTERVAL = 10000; // เช็คทุก 10 วินาที
+
         // Power-ups
         let powerups = [];
         let activePowerups = {

@@ -454,6 +454,26 @@ class SnakeGameController extends Controller
     }
 
     /**
+     * ตรวจสอบสถานะ service (สำหรับ client polling)
+     *
+     * GET /api/games/snake-io/service-status
+     *
+     * @return JsonResponse
+     */
+    public function getServiceStatus(): JsonResponse
+    {
+        $serviceManager = app(\App\Services\SnakeGame\SnakeGameServiceManager::class);
+        $isOnline = $serviceManager->isOnline();
+
+        return response()->json([
+            'success' => true,
+            'is_online' => $isOnline,
+            'mode' => $isOnline ? 'online' : 'offline',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
      * ดึง skin preference ของสมาชิก
      *
      * GET /api/games/snake-io/get-skin-preference
