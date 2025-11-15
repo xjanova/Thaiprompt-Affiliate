@@ -1,0 +1,305 @@
+/**
+ * V3 Theme Customizer - Global Styles
+ * ใช้ CSS custom properties เพื่อให้สามารถปรับแต่งได้แบบ real-time
+ */
+
+:root {
+    /* Glass Effects */
+    --glass-opacity: 0.15;
+    --glass-blur: 12px;
+    --border-opacity: 0.3;
+
+    /* Shadows & Glow */
+    --shadow-intensity: 0.5;
+    --glow-intensity: 0.6;
+
+    /* Animations */
+    --animation-speed: 500ms;
+    --hover-scale: 1.05;
+
+    /* Roundness */
+    --card-roundness: 16px;
+    --button-roundness: 12px;
+
+    /* Colors (HSL values) */
+    --primary-hue: 260;
+    --accent-hue: 340;
+
+    /* Advanced */
+    --backdrop-saturate: 100%;
+    --perspective-depth: 1000px;
+}
+
+/**
+ * Glass Fusion Effect - ทุก element ที่มี class นี้จะใช้ค่าจาก customizer
+ */
+.glass-fusion {
+    background: rgba(255, 255, 255, var(--glass-opacity));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--backdrop-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--backdrop-saturate));
+    border: 1px solid rgba(255, 255, 255, var(--border-opacity));
+    border-radius: var(--card-roundness);
+    transition: all var(--animation-speed) ease;
+}
+
+/**
+ * Glass Neumorphic Effect - สำหรับ buttons และ menu items
+ */
+.glass-neu {
+    background: rgba(255, 255, 255, calc(var(--glass-opacity) * 0.7));
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.7)) saturate(var(--backdrop-saturate));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.7)) saturate(var(--backdrop-saturate));
+    border: 1px solid rgba(255, 255, 255, calc(var(--border-opacity) * 0.8));
+    border-radius: var(--button-roundness);
+    transition: all var(--animation-speed) ease;
+}
+
+/**
+ * Hover Effects - ทุก element ที่ hover
+ */
+.glass-fusion:hover,
+.glass-neu:hover {
+    transform: scale(var(--hover-scale));
+}
+
+/**
+ * Shadows - apply ตาม intensity
+ */
+.shadow-lg,
+.shadow-xl,
+.shadow-2xl {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, calc(var(--shadow-intensity) * 0.3)),
+                0 20px 48px rgba(0, 0, 0, calc(var(--shadow-intensity) * 0.2));
+}
+
+.drop-shadow,
+.drop-shadow-lg {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, calc(var(--shadow-intensity) * 0.5)));
+}
+
+/**
+ * Text Shadows
+ */
+.text-white,
+.text-gray-100,
+.text-gray-200 {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, calc(var(--shadow-intensity) * 0.3));
+}
+
+/**
+ * Glow Effects - สำหรับ stat cards และ buttons
+ */
+[class*="bg-gradient-to"] {
+    position: relative;
+}
+
+[class*="bg-gradient-to"]::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    filter: blur(20px);
+    opacity: calc(var(--glow-intensity) * 0.6);
+    z-index: -1;
+    transition: opacity var(--animation-speed) ease;
+}
+
+/**
+ * Buttons - ใช้ roundness จาก customizer
+ */
+button,
+.btn,
+[role="button"] {
+    border-radius: var(--button-roundness);
+    transition: all var(--animation-speed) ease;
+}
+
+button:hover,
+.btn:hover,
+[role="button"]:hover {
+    transform: scale(var(--hover-scale));
+}
+
+/**
+ * Cards - ใช้ roundness จาก customizer
+ */
+.rounded-xl,
+.rounded-2xl,
+.rounded-3xl {
+    border-radius: var(--card-roundness);
+}
+
+/**
+ * 3D Transform Effects
+ */
+.transform-gpu {
+    perspective: var(--perspective-depth);
+}
+
+/**
+ * Animations - ใช้ speed จาก customizer
+ */
+.transition,
+.transition-all,
+.transition-colors,
+.transition-transform {
+    transition-duration: var(--animation-speed);
+}
+
+/**
+ * Custom Scrollbar - ปรับตาม theme
+ */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, calc(var(--glass-opacity) * 0.5));
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, calc(var(--border-opacity) * 1.5));
+    border-radius: 4px;
+    transition: background var(--animation-speed) ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, calc(var(--border-opacity) * 2));
+}
+
+/**
+ * Navbar Dropdowns - แก้ไขให้ใช้ค่าจาก customizer
+ */
+nav [class*="absolute"],
+nav [class*="fixed"],
+header [class*="absolute"],
+header [class*="fixed"] {
+    background: rgba(255, 255, 255, var(--glass-opacity));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--backdrop-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--backdrop-saturate));
+    border: 1px solid rgba(255, 255, 255, var(--border-opacity));
+    border-radius: var(--card-roundness);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, calc(var(--shadow-intensity) * 0.3));
+}
+
+/**
+ * Menu Items - hover effects
+ */
+nav a:hover,
+header a:hover,
+[role="menuitem"]:hover {
+    background: rgba(255, 255, 255, calc(var(--glass-opacity) * 1.5));
+    transform: scale(var(--hover-scale));
+    transition: all var(--animation-speed) ease;
+}
+
+/**
+ * Dark Mode - ปรับค่าให้เข้มขึ้น
+ */
+.dark .glass-fusion {
+    background: rgba(0, 0, 0, calc(var(--glass-opacity) * 2));
+}
+
+.dark .glass-neu {
+    background: rgba(0, 0, 0, calc(var(--glass-opacity) * 1.5));
+}
+
+.dark nav [class*="absolute"],
+.dark nav [class*="fixed"],
+.dark header [class*="absolute"],
+.dark header [class*="fixed"] {
+    background: rgba(0, 0, 0, calc(var(--glass-opacity) * 2.5));
+}
+
+/**
+ * Input Fields - ใช้ style จาก customizer
+ */
+input,
+textarea,
+select {
+    background: rgba(255, 255, 255, calc(var(--glass-opacity) * 0.8));
+    border: 1px solid rgba(255, 255, 255, var(--border-opacity));
+    border-radius: var(--button-roundness);
+    transition: all var(--animation-speed) ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    background: rgba(255, 255, 255, calc(var(--glass-opacity) * 1.2));
+    border-color: rgba(255, 255, 255, calc(var(--border-opacity) * 2));
+    transform: scale(1.02);
+}
+
+/**
+ * Stat Cards - 3D effects
+ */
+.stat-card {
+    perspective: var(--perspective-depth);
+    transition: all var(--animation-speed) ease;
+}
+
+.stat-card:hover {
+    transform: scale(var(--hover-scale)) rotateY(5deg);
+}
+
+/**
+ * Notifications Toast
+ */
+.toast,
+[role="alert"] {
+    background: rgba(255, 255, 255, var(--glass-opacity));
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid rgba(255, 255, 255, var(--border-opacity));
+    border-radius: var(--card-roundness);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, calc(var(--shadow-intensity) * 0.4));
+}
+
+/**
+ * Modal Backdrops
+ */
+.backdrop {
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--backdrop-saturate));
+}
+
+/**
+ * Primary Color - ใช้ hue จาก customizer
+ */
+.text-primary,
+.bg-primary {
+    color: hsl(var(--primary-hue), 70%, 60%);
+}
+
+.border-primary {
+    border-color: hsl(var(--primary-hue), 70%, 60%);
+}
+
+/**
+ * Accent Color - ใช้ hue จาก customizer
+ */
+.text-accent,
+.bg-accent {
+    color: hsl(var(--accent-hue), 70%, 60%);
+}
+
+.border-accent {
+    border-color: hsl(var(--accent-hue), 70%, 60%);
+}
+
+/**
+ * Smooth Animations
+ */
+* {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/**
+ * Focus Visible - accessibility
+ */
+:focus-visible {
+    outline: 2px solid hsl(var(--primary-hue), 70%, 60%);
+    outline-offset: 2px;
+}
