@@ -128,9 +128,12 @@
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="text-2xl">
-                                    @if($earner['rank'] == 1) 🥇
-                                    @elseif($earner['rank'] == 2) 🥈
-                                    @elseif($earner['rank'] == 3) 🥉
+                                    @if($earner['rank'] == 1)
+                                        <i class="fas fa-trophy text-yellow-500"></i>
+                                    @elseif($earner['rank'] == 2)
+                                        <i class="fas fa-medal text-gray-400"></i>
+                                    @elseif($earner['rank'] == 3)
+                                        <i class="fas fa-award text-orange-500"></i>
                                     @else
                                         <span class="text-gray-500 dark:text-gray-400 font-semibold">#{{ $earner['rank'] }}</span>
                                     @endif

@@ -504,7 +504,7 @@ function loadTopPerformers(metric) {
 
     container.innerHTML = performers.map(p => `
         <div class="bg-gradient-to-br ${p.rank === 1 ? 'from-yellow-400 to-orange-500' : p.rank === 2 ? 'from-gray-300 to-gray-400' : p.rank === 3 ? 'from-orange-300 to-orange-400' : 'from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800'} rounded-xl p-4 shadow-lg text-center transform hover:scale-105 transition-all duration-300">
-            <div class="text-4xl mb-2">${p.rank === 1 ? '🥇' : p.rank === 2 ? '🥈' : p.rank === 3 ? '🥉' : '⭐'}</div>
+            <div class="text-4xl mb-2"><i class="fas fa-${p.rank === 1 ? 'trophy' : p.rank === 2 ? 'medal' : p.rank === 3 ? 'award' : 'star'} ${p.rank <= 3 ? 'text-white' : 'text-yellow-500 dark:text-yellow-400'}"></i></div>
             <p class="font-bold ${p.rank <= 3 ? 'text-white' : 'text-gray-900 dark:text-white'}">${p.name}</p>
             <p class="text-2xl font-bold ${p.rank <= 3 ? 'text-white' : 'text-gray-900 dark:text-white'} mt-2">${p.value}</p>
             <p class="text-xs ${p.rank <= 3 ? 'text-white opacity-75' : 'text-gray-600 dark:text-gray-400'} mt-1">#${p.rank}</p>
