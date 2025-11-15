@@ -25,7 +25,7 @@
 </head>
 <body class="h-full font-sans overflow-hidden"
       x-data="{
-          sidebarOpen: window.innerWidth >= 768,
+          sidebarOpen: true,
           profileOpen: false,
           showScrollTop: false
       }"
@@ -33,17 +33,13 @@
           // เริ่มต้น theme store
           $store.theme.init();
 
-          // ตรวจสอบ scroll position
-          window.addEventListener('scroll', () => {
-              showScrollTop = window.pageYOffset > 300;
-          });
-
-          // ปรับ sidebar ตามขนาดหน้าจอ
-          window.addEventListener('resize', () => {
-              if (window.innerWidth >= 768) {
-                  sidebarOpen = true;
-              } else {
-                  sidebarOpen = false;
+          // ตรวจสอบ scroll position สำหรับปุ่มกลับด้านบน
+          $nextTick(() => {
+              const mainContent = document.querySelector('main.overflow-y-auto');
+              if (mainContent) {
+                  mainContent.addEventListener('scroll', () => {
+                      showScrollTop = mainContent.scrollTop > 300;
+                  });
               }
           });
       ">
@@ -139,6 +135,16 @@
 
     {{-- Theme Customizer - ปรับแต่งธีมแบบละเอียด --}}
     <x-arrow-x.theme-customizer />
+
+    {{-- Scroll to Top Button - ปุ่มกลับขึ้นด้านบน (ล่างขวา) --}}
+    <button @click="document.querySelector('main.overflow-y-auto').scrollTo({ top: 0, behavior: 'smooth' })"
+            x-show="showScrollTop"
+            x-transition
+            type="button"
+            class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl glass-fusion shadow-2xl border border-white/30 hover:scale-110 transition-all group"
+            title="กลับขึ้นด้านบน">
+        <i class="fas fa-arrow-up text-white text-xl drop-shadow group-hover:scale-110 transition-transform"></i>
+    </button>
 
     @stack('scripts')
 </body>

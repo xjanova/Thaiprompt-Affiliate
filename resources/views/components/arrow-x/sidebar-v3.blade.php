@@ -27,21 +27,9 @@
     'logo' => null,
 ])
 
-{{-- Mobile Overlay --}}
-<div x-show="sidebarOpen && window.innerWidth < 768"
-     @click="sidebarOpen = false"
-     x-transition:enter="transition-opacity ease-out duration-300"
-     x-transition:enter-start="opacity-0"
-     x-transition:enter-end="opacity-100"
-     x-transition:leave="transition-opacity ease-in duration-200"
-     x-transition:leave-start="opacity-100"
-     x-transition:leave-end="opacity-0"
-     class="fixed inset-0 bg-black/50 z-30 md:hidden">
-</div>
-
 <aside
-    :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'"
-    class="glass-fusion w-64 md:w-64 transition-all duration-300 flex flex-col border-r border-white/30 fixed md:relative z-40 h-full"
+    :class="sidebarOpen ? 'w-64' : 'w-20'"
+    class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 relative z-20"
     x-cloak
 >
     {{-- Logo Section --}}
