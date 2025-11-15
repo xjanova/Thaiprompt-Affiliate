@@ -95,22 +95,22 @@
         </a>
 
         {{-- Products --}}
-        <a href="{{ route('admin.products.index') }}"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.products.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+        <a href="{{ route('admin.ecommerce.products.index') }}"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.products.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-box w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">สินค้า</span>
         </a>
 
         {{-- Orders --}}
-        <a href="{{ route('admin.orders.index') }}"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.orders.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+        <a href="{{ route('admin.ecommerce.orders.index') }}"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.orders.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-shopping-cart w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">คำสั่งซื้อ</span>
         </a>
 
         {{-- Reports --}}
-        <a href="{{ route('admin.reports.index') }}"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.reports.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+        <a href="{{ route('admin.ecommerce.reports') }}"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.reports') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-chart-bar w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">รายงาน</span>
         </a>
@@ -126,7 +126,7 @@
         </a>
 
         {{-- Help --}}
-        <a href="{{ route('admin.help.index') }}"
+        <a href="#"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform glass-neu text-white/90 hover:bg-white/20 hover:scale-105">
             <i class="fas fa-question-circle w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">ช่วยเหลือ</span>
