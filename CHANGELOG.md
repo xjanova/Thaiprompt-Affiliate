@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v2.250.0] - 2025-11-15
+
+### ✨ Features
+- feat: implement client-side service status polling for Snake.io (f70fabe6)
+- feat: add Snake.io Admin Dashboard with service monitoring (WIP) (0a7f661c)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1167 from xjanova/claude/snake-game-wallet-018Dqk7vxEKCSzTighZZQmES (420b3de6)
+
 ## [v2.249.3] - 2025-11-15
 
 ### ✨ Features
