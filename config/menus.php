@@ -827,7 +827,7 @@ return [
             'id' => 'team',
             'label' => 'ทีมงาน',
             'icon' => '👥',
-            'route' => null,
+            'route' => 'user.team',
             'order' => 11,
             'permissions' => [],
             'submenu' => [
