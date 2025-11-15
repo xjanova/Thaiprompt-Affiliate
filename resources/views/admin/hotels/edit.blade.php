@@ -1,402 +1,461 @@
 @extends('layouts.admin')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Header Section -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="container mx-auto px-4 py-6">
+    {{-- Header Section --}}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
         <div>
-            <h1 class="h2 mb-1 font-weight-bold text-primary">
-                <i class="fas fa-edit mr-2"></i>แก้ไขโรงแรม: {{ $hotel->name }}
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fas fa-edit text-blue-600 dark:text-blue-400"></i>
+                แก้ไขโรงแรม: {{ $hotel->name }}
             </h1>
-            <p class="text-muted mb-0">อัปเดตข้อมูลโรงแรมและการตั้งค่าต่างๆ</p>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">อัปเดตข้อมูลโรงแรมและการตั้งค่าต่างๆ</p>
         </div>
-        <div>
-            <a href="{{ route('admin.hotels.show', $hotel->id) }}" class="btn btn-outline-info mr-2">
-                <i class="fas fa-eye mr-1"></i> ดูโรงแรม
+        <div class="flex gap-2">
+            <a href="{{ route('admin.hotels.show', $hotel->id) }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                <i class="fas fa-eye"></i>
+                <span>ดูโรงแรม</span>
             </a>
-            <a href="{{ route('admin.hotels.index') }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left mr-1"></i> กลับสู่รายการ
+            <a href="{{ route('admin.hotels.index') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                <i class="fas fa-arrow-left"></i>
+                <span>กลับสู่รายการ</span>
             </a>
         </div>
     </div>
 
-    <form action="{{ route('admin.hotels.update', $hotel->id) }}" method="POST" enctype="multipart/form-data" id="hotelForm">
+    <form action="{{ route('admin.hotels.update', $hotel->id) }}" method="POST" enctype="multipart/form-data" id="hotelForm" x-data="hotelForm()">
         @csrf
         @method('PUT')
 
-        <div class="row">
-            <div class="col-lg-8">
-                <!-- Tabbed Interface -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-white border-bottom">
-                        <ul class="nav nav-tabs card-header-tabs" id="hotelTabs" role="tablist">
-                            <li class="nav-item">
-                                <a class="nav-link active" id="basic-tab" data-toggle="tab" href="#basic" role="tab">
-                                    <i class="fas fa-info-circle mr-1"></i> ข้อมูลพื้นฐาน
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="location-tab" data-toggle="tab" href="#location" role="tab">
-                                    <i class="fas fa-map-marker-alt mr-1"></i> ที่ตั้ง
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="contact-tab" data-toggle="tab" href="#contact" role="tab">
-                                    <i class="fas fa-phone mr-1"></i> ข้อมูลติดต่อ
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="policies-tab" data-toggle="tab" href="#policies" role="tab">
-                                    <i class="fas fa-file-contract mr-1"></i> นโยบาย
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="seo-tab" data-toggle="tab" href="#seo" role="tab">
-                                    <i class="fas fa-search mr-1"></i> SEO
-                                </a>
-                            </li>
-                        </ul>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- Main Content --}}
+            <div class="lg:col-span-2 space-y-6">
+                {{-- Tabbed Interface --}}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" x-data="{ activeTab: 'basic' }">
+                    {{-- Tabs Header --}}
+                    <div class="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                        <div class="flex overflow-x-auto">
+                            <button type="button" @click="activeTab = 'basic'"
+                                    :class="activeTab === 'basic' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                                    class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                                <i class="fas fa-info-circle"></i>
+                                <span>ข้อมูลพื้นฐาน</span>
+                            </button>
+                            <button type="button" @click="activeTab = 'location'"
+                                    :class="activeTab === 'location' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                                    class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>ที่ตั้ง</span>
+                            </button>
+                            <button type="button" @click="activeTab = 'contact'"
+                                    :class="activeTab === 'contact' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                                    class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                                <i class="fas fa-phone"></i>
+                                <span>ข้อมูลติดต่อ</span>
+                            </button>
+                            <button type="button" @click="activeTab = 'policies'"
+                                    :class="activeTab === 'policies' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                                    class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                                <i class="fas fa-file-contract"></i>
+                                <span>นโยบาย</span>
+                            </button>
+                            <button type="button" @click="activeTab = 'seo'"
+                                    :class="activeTab === 'seo' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                                    class="flex items-center gap-2 px-6 py-4 border-b-2 font-medium text-sm transition-colors whitespace-nowrap">
+                                <i class="fas fa-search"></i>
+                                <span>SEO</span>
+                            </button>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="tab-content" id="hotelTabsContent">
-                            <!-- Basic Information Tab -->
-                            <div class="tab-pane fade show active" id="basic" role="tabpanel">
-                                <h5 class="text-primary mb-4">
-                                    <i class="fas fa-info-circle mr-2"></i>ข้อมูลพื้นฐานของโรงแรม
-                                </h5>
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-building text-primary mr-1"></i>ชื่อโรงแรม
-                                        <span class="text-danger">*</span>
+
+                    <div class="p-6">
+                        {{-- Basic Information Tab --}}
+                        <div x-show="activeTab === 'basic'" x-transition>
+                            <h5 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+                                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400"></i>
+                                ข้อมูลพื้นฐานของโรงแรม
+                            </h5>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-building text-blue-600 dark:text-blue-400 mr-1"></i>
+                                        ชื่อโรงแรม <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" name="name" class="form-control form-control-lg @error('name') is-invalid @enderror"
-                                           value="{{ old('name', $hotel->name) }}" placeholder="เช่น Grand Palace Hotel Bangkok" required>
-                                    <small class="form-text text-muted">ชื่อที่จะแสดงบนเว็บไซต์และผลการค้นหา</small>
+                                    <input type="text" name="name"
+                                           class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all @error('name') border-red-500 @enderror"
+                                           value="{{ old('name', $hotel->name) }}"
+                                           placeholder="เช่น Grand Palace Hotel Bangkok" required>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">ชื่อที่จะแสดงบนเว็บไซต์และผลการค้นหา</p>
                                     @error('name')
-                                        <div class="invalid-feedback">{{ $message }}</div>
+                                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                                     @enderror
                                 </div>
 
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-link text-info mr-1"></i>Slug (URL)
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-link text-indigo-600 dark:text-indigo-400 mr-1"></i>
+                                        Slug (URL)
                                     </label>
-                                    <div class="input-group">
-                                        <div class="input-group-prepend">
-                                            <span class="input-group-text"><i class="fas fa-globe"></i></span>
+                                    <div class="flex gap-2">
+                                        <div class="flex-shrink-0 flex items-center px-4 bg-gray-100 dark:bg-gray-700 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-lg">
+                                            <i class="fas fa-globe text-gray-500 dark:text-gray-400"></i>
                                         </div>
-                                        <input type="text" name="slug" class="form-control @error('slug') is-invalid @enderror"
-                                               value="{{ old('slug', $hotel->slug) }}" placeholder="auto-generate จากชื่อโรงแรม">
+                                        <input type="text" name="slug"
+                                               class="flex-1 px-4 py-3 rounded-r-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('slug', $hotel->slug) }}"
+                                               placeholder="auto-generate จากชื่อโรงแรม">
                                     </div>
-                                    <small class="form-text text-muted">URL ปัจจุบัน: <strong>{{ $hotel->slug }}</strong></small>
-                                    @error('slug')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">URL ปัจจุบัน: <strong class="text-blue-600 dark:text-blue-400">{{ $hotel->slug }}</strong></p>
                                 </div>
 
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-align-left text-success mr-1"></i>คำอธิบายแบบย่อ
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-align-left text-green-600 dark:text-green-400 mr-1"></i>
+                                        คำอธิบายแบบย่อ
                                     </label>
-                                    <textarea name="short_description" rows="2" class="form-control"
+                                    <textarea name="short_description" rows="2"
+                                              class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all resize-none"
                                               placeholder="สรุปสั้นๆ เกี่ยวกับโรงแรม (1-2 ประโยค)">{{ old('short_description', $hotel->short_description) }}</textarea>
-                                    <small class="form-text text-muted">แสดงในรายการค้นหาและการ์ดแสดงโรงแรม</small>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">แสดงในรายการค้นหาและการ์ดแสดงโรงแรม</p>
                                 </div>
 
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-align-justify text-success mr-1"></i>คำอธิบายแบบเต็ม
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-align-justify text-green-600 dark:text-green-400 mr-1"></i>
+                                        คำอธิบายแบบเต็ม
                                     </label>
-                                    <textarea name="description" rows="6" class="form-control"
+                                    <textarea name="description" rows="6"
+                                              class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all resize-none"
                                               placeholder="รายละเอียดเกี่ยวกับโรงแรม สิ่งอำนวยความสะดวก และบริการต่างๆ">{{ old('description', $hotel->description) }}</textarea>
-                                    <small class="form-text text-muted">รายละเอียดแบบเต็มที่แสดงในหน้าข้อมูลโรงแรม</small>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">รายละเอียดแบบเต็มที่แสดงในหน้าข้อมูลโรงแรม</p>
                                 </div>
 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-home text-warning mr-1"></i>ประเภท
-                                                <span class="text-danger">*</span>
-                                            </label>
-                                            <select name="type" class="form-control custom-select" required>
-                                                <option value="hotel" {{ $hotel->type == 'hotel' ? 'selected' : '' }}>🏨 โรงแรม</option>
-                                                <option value="resort" {{ $hotel->type == 'resort' ? 'selected' : '' }}>🏖️ รีสอร์ท</option>
-                                                <option value="hostel" {{ $hotel->type == 'hostel' ? 'selected' : '' }}>🛏️ โฮสเทล</option>
-                                                <option value="apartment" {{ $hotel->type == 'apartment' ? 'selected' : '' }}>🏢 อพาร์ทเมนท์</option>
-                                                <option value="villa" {{ $hotel->type == 'villa' ? 'selected' : '' }}>🏡 วิลล่า</option>
-                                                <option value="guesthouse" {{ $hotel->type == 'guesthouse' ? 'selected' : '' }}>🏠 เกสต์เฮาส์</option>
-                                            </select>
-                                        </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <i class="fas fa-home text-amber-600 dark:text-amber-400 mr-1"></i>
+                                            ประเภท <span class="text-red-500">*</span>
+                                        </label>
+                                        <select name="type"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                                required>
+                                            <option value="hotel" {{ $hotel->type == 'hotel' ? 'selected' : '' }}>🏨 โรงแรม</option>
+                                            <option value="resort" {{ $hotel->type == 'resort' ? 'selected' : '' }}>🏖️ รีสอร์ท</option>
+                                            <option value="hostel" {{ $hotel->type == 'hostel' ? 'selected' : '' }}>🛏️ โฮสเทล</option>
+                                            <option value="apartment" {{ $hotel->type == 'apartment' ? 'selected' : '' }}>🏢 อพาร์ทเมนท์</option>
+                                            <option value="villa" {{ $hotel->type == 'villa' ? 'selected' : '' }}>🏡 วิลล่า</option>
+                                            <option value="guesthouse" {{ $hotel->type == 'guesthouse' ? 'selected' : '' }}>🏠 เกสต์เฮาส์</option>
+                                        </select>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-star text-warning mr-1"></i>ระดับดาว
-                                            </label>
-                                            <select name="star_rating" class="form-control custom-select">
-                                                <option value="">ไม่ระบุ</option>
-                                                @for($i = 1; $i <= 5; $i++)
-                                                    <option value="{{ $i }}" {{ $hotel->star_rating == $i ? 'selected' : '' }}>
-                                                        @for($j = 0; $j < $i; $j++)⭐@endfor {{ $i }} ดาว
-                                                    </option>
-                                                @endfor
-                                            </select>
-                                        </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <i class="fas fa-star text-amber-500 dark:text-amber-400 mr-1"></i>
+                                            ระดับดาว
+                                        </label>
+                                        <select name="star_rating"
+                                                class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all">
+                                            <option value="">ไม่ระบุ</option>
+                                            @for($i = 1; $i <= 5; $i++)
+                                                <option value="{{ $i }}" {{ $hotel->star_rating == $i ? 'selected' : '' }}>
+                                                    @for($j = 0; $j < $i; $j++)⭐@endfor {{ $i }} ดาว
+                                                </option>
+                                            @endfor
+                                        </select>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Location Tab -->
-                            <div class="tab-pane fade" id="location" role="tabpanel">
-                                <h5 class="text-primary mb-4">
-                                    <i class="fas fa-map-marker-alt mr-2"></i>ที่ตั้งและแผนที่
-                                </h5>
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-map-signs text-danger mr-1"></i>ที่อยู่
-                                        <span class="text-danger">*</span>
+                        {{-- Location Tab --}}
+                        <div x-show="activeTab === 'location'" x-transition x-cloak>
+                            <h5 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+                                <i class="fas fa-map-marker-alt text-red-600 dark:text-red-400"></i>
+                                ที่ตั้งและแผนที่
+                            </h5>
+
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-map-signs text-red-600 dark:text-red-400 mr-1"></i>
+                                        ที่อยู่ <span class="text-red-500">*</span>
                                     </label>
-                                    <input type="text" name="address" class="form-control"
+                                    <input type="text" name="address"
+                                           class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
                                            value="{{ old('address', $hotel->address) }}"
                                            placeholder="เช่น 123 ถนนสุขุมวิท" required>
-                                    <small class="form-text text-muted">ที่อยู่ตามถนน เลขที่อาคาร</small>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">ที่อยู่ตามถนน เลขที่อาคาร</p>
                                 </div>
 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-city text-info mr-1"></i>เมือง/อำเภอ
-                                                <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" name="city" class="form-control"
-                                                   value="{{ old('city', $hotel->city) }}"
-                                                   placeholder="เช่น กรุงเทพมหานคร" required>
-                                        </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <i class="fas fa-city text-blue-600 dark:text-blue-400 mr-1"></i>
+                                            เมือง/อำเภอ <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" name="city"
+                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('city', $hotel->city) }}"
+                                               placeholder="เช่น กรุงเทพมหานคร" required>
                                     </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-map text-info mr-1"></i>จังหวัด/รัฐ
-                                            </label>
-                                            <input type="text" name="state" class="form-control"
-                                                   value="{{ old('state', $hotel->state) }}"
-                                                   placeholder="เช่น กรุงเทพมหานคร">
-                                        </div>
-                                    </div>
-                                </div>
 
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-globe-asia text-success mr-1"></i>ประเทศ
-                                                <span class="text-danger">*</span>
-                                            </label>
-                                            <input type="text" name="country" class="form-control"
-                                                   value="{{ old('country', $hotel->country) }}"
-                                                   placeholder="Thailand" required>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-mail-bulk text-secondary mr-1"></i>รหัสไปรษณีย์
-                                            </label>
-                                            <input type="text" name="postal_code" class="form-control"
-                                                   value="{{ old('postal_code', $hotel->postal_code) }}"
-                                                   placeholder="เช่น 10110">
-                                        </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <i class="fas fa-map text-blue-600 dark:text-blue-400 mr-1"></i>
+                                            จังหวัด/รัฐ
+                                        </label>
+                                        <input type="text" name="state"
+                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('state', $hotel->state) }}"
+                                               placeholder="เช่น กรุงเทพมหานคร">
                                     </div>
                                 </div>
 
-                                <hr class="my-4">
-                                <h6 class="text-muted mb-3">
-                                    <i class="fas fa-map-pin mr-2"></i>พิกัดแผนที่ (ไม่บังคับ)
-                                </h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-compass text-warning mr-1"></i>Latitude (ละติจูด)
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <i class="fas fa-globe-asia text-green-600 dark:text-green-400 mr-1"></i>
+                                            ประเทศ <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" name="country"
+                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('country', $hotel->country) }}"
+                                               placeholder="Thailand" required>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <i class="fas fa-mail-bulk text-gray-600 dark:text-gray-400 mr-1"></i>
+                                            รหัสไปรษณีย์
+                                        </label>
+                                        <input type="text" name="postal_code"
+                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('postal_code', $hotel->postal_code) }}"
+                                               placeholder="เช่น 10110">
+                                    </div>
+                                </div>
+
+                                <div class="border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+                                    <h6 class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 mb-4">
+                                        <i class="fas fa-map-pin text-amber-600 dark:text-amber-400"></i>
+                                        พิกัดแผนที่ (ไม่บังคับ)
+                                    </h6>
+
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-compass text-amber-600 dark:text-amber-400 mr-1"></i>
+                                                Latitude (ละติจูด)
                                             </label>
-                                            <input type="number" step="0.000001" name="latitude" class="form-control"
+                                            <input type="number" step="0.000001" name="latitude"
+                                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
                                                    value="{{ old('latitude', $hotel->latitude) }}"
                                                    placeholder="13.7563">
-                                            <small class="form-text text-muted">สำหรับแสดงตำแหน่งบนแผนที่</small>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">สำหรับแสดงตำแหน่งบนแผนที่</p>
                                         </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-compass text-warning mr-1"></i>Longitude (ลองจิจูด)
+
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                                <i class="fas fa-compass text-amber-600 dark:text-amber-400 mr-1"></i>
+                                                Longitude (ลองจิจูด)
                                             </label>
-                                            <input type="number" step="0.000001" name="longitude" class="form-control"
+                                            <input type="number" step="0.000001" name="longitude"
+                                                   class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
                                                    value="{{ old('longitude', $hotel->longitude) }}"
                                                    placeholder="100.5018">
-                                            <small class="form-text text-muted">สำหรับแสดงตำแหน่งบนแผนที่</small>
+                                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">สำหรับแสดงตำแหน่งบนแผนที่</p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Contact Tab -->
-                            <div class="tab-pane fade" id="contact" role="tabpanel">
-                                <h5 class="text-primary mb-4">
-                                    <i class="fas fa-phone mr-2"></i>ข้อมูลติดต่อ
-                                </h5>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-phone-alt text-success mr-1"></i>เบอร์โทรศัพท์
-                                            </label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text"><i class="fas fa-phone"></i></span>
-                                                </div>
-                                                <input type="text" name="phone" class="form-control"
-                                                       value="{{ old('phone', $hotel->phone) }}"
-                                                       placeholder="02-123-4567">
-                                            </div>
-                                            <small class="form-text text-muted">เบอร์โทรศัพท์ติดต่อโรงแรม</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-envelope text-danger mr-1"></i>อีเมล
-                                            </label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text"><i class="fas fa-at"></i></span>
-                                                </div>
-                                                <input type="email" name="email" class="form-control"
-                                                       value="{{ old('email', $hotel->email) }}"
-                                                       placeholder="info@hotel.com">
-                                            </div>
-                                            <small class="form-text text-muted">อีเมลสำหรับติดต่อ</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-globe text-info mr-1"></i>เว็บไซต์
-                                            </label>
-                                            <div class="input-group">
-                                                <div class="input-group-prepend">
-                                                    <span class="input-group-text"><i class="fas fa-link"></i></span>
-                                                </div>
-                                                <input type="url" name="website" class="form-control"
-                                                       value="{{ old('website', $hotel->website) }}"
-                                                       placeholder="https://hotel.com">
-                                            </div>
-                                            <small class="form-text text-muted">เว็บไซต์ของโรงแรม</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                        {{-- Contact Tab --}}
+                        <div x-show="activeTab === 'contact'" x-transition x-cloak>
+                            <h5 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+                                <i class="fas fa-phone text-green-600 dark:text-green-400"></i>
+                                ข้อมูลติดต่อ
+                            </h5>
 
-                            <!-- Policies Tab -->
-                            <div class="tab-pane fade" id="policies" role="tabpanel">
-                                <h5 class="text-primary mb-4">
-                                    <i class="fas fa-file-contract mr-2"></i>นโยบายและกฎระเบียบ
-                                </h5>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-clock text-success mr-1"></i>เวลาเช็คอิน
-                                            </label>
-                                            <input type="time" name="check_in_time" class="form-control"
-                                                   value="{{ old('check_in_time', $hotel->check_in_time ? $hotel->check_in_time->format('H:i') : '14:00') }}">
-                                            <small class="form-text text-muted">เวลาที่ผู้เข้าพักสามารถเช็คอินได้</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label class="font-weight-bold">
-                                                <i class="fas fa-clock text-warning mr-1"></i>เวลาเช็คเอาท์
-                                            </label>
-                                            <input type="time" name="check_out_time" class="form-control"
-                                                   value="{{ old('check_out_time', $hotel->check_out_time ? $hotel->check_out_time->format('H:i') : '12:00') }}">
-                                            <small class="form-text text-muted">เวลาที่ต้องเช็คเอาท์</small>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-ban text-danger mr-1"></i>นโยบายการยกเลิก
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-phone-alt text-green-600 dark:text-green-400 mr-1"></i>
+                                        เบอร์โทรศัพท์
                                     </label>
-                                    <textarea name="cancellation_policy" rows="3" class="form-control"
+                                    <div class="flex gap-2">
+                                        <div class="flex-shrink-0 flex items-center px-4 bg-gray-100 dark:bg-gray-700 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-lg">
+                                            <i class="fas fa-phone text-gray-500 dark:text-gray-400"></i>
+                                        </div>
+                                        <input type="text" name="phone"
+                                               class="flex-1 px-4 py-3 rounded-r-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('phone', $hotel->phone) }}"
+                                               placeholder="02-123-4567">
+                                    </div>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">เบอร์โทรศัพท์ติดต่อโรงแรม</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-envelope text-red-600 dark:text-red-400 mr-1"></i>
+                                        อีเมล
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <div class="flex-shrink-0 flex items-center px-4 bg-gray-100 dark:bg-gray-700 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-lg">
+                                            <i class="fas fa-at text-gray-500 dark:text-gray-400"></i>
+                                        </div>
+                                        <input type="email" name="email"
+                                               class="flex-1 px-4 py-3 rounded-r-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('email', $hotel->email) }}"
+                                               placeholder="info@hotel.com">
+                                    </div>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">อีเมลสำหรับติดต่อ</p>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-globe text-blue-600 dark:text-blue-400 mr-1"></i>
+                                        เว็บไซต์
+                                    </label>
+                                    <div class="flex gap-2">
+                                        <div class="flex-shrink-0 flex items-center px-4 bg-gray-100 dark:bg-gray-700 border border-r-0 border-gray-300 dark:border-gray-600 rounded-l-lg">
+                                            <i class="fas fa-link text-gray-500 dark:text-gray-400"></i>
+                                        </div>
+                                        <input type="url" name="website"
+                                               class="flex-1 px-4 py-3 rounded-r-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('website', $hotel->website) }}"
+                                               placeholder="https://hotel.com">
+                                    </div>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">เว็บไซต์ของโรงแรม</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Policies Tab --}}
+                        <div x-show="activeTab === 'policies'" x-transition x-cloak>
+                            <h5 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+                                <i class="fas fa-file-contract text-purple-600 dark:text-purple-400"></i>
+                                นโยบายและกฎระเบียบ
+                            </h5>
+
+                            <div class="space-y-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <i class="fas fa-clock text-green-600 dark:text-green-400 mr-1"></i>
+                                            เวลาเช็คอิน
+                                        </label>
+                                        <input type="time" name="check_in_time"
+                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('check_in_time', $hotel->check_in_time ? $hotel->check_in_time->format('H:i') : '14:00') }}">
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">เวลาที่ผู้เข้าพักสามารถเช็คอินได้</p>
+                                    </div>
+
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                            <i class="fas fa-clock text-amber-600 dark:text-amber-400 mr-1"></i>
+                                            เวลาเช็คเอาท์
+                                        </label>
+                                        <input type="time" name="check_out_time"
+                                               class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
+                                               value="{{ old('check_out_time', $hotel->check_out_time ? $hotel->check_out_time->format('H:i') : '12:00') }}">
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">เวลาที่ต้องเช็คเอาท์</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-ban text-red-600 dark:text-red-400 mr-1"></i>
+                                        นโยบายการยกเลิก
+                                    </label>
+                                    <textarea name="cancellation_policy" rows="3"
+                                              class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all resize-none"
                                               placeholder="เช่น ยกเลิกฟรีก่อน 24 ชั่วโมง, หลังจากนั้นคิด 1 คืน">{{ old('cancellation_policy', $hotel->cancellation_policy) }}</textarea>
-                                    <small class="form-text text-muted">เงื่อนไขการยกเลิกการจอง</small>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">เงื่อนไขการยกเลิกการจอง</p>
                                 </div>
 
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-clipboard-list text-info mr-1"></i>กฎระเบียบของที่พัก
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-clipboard-list text-blue-600 dark:text-blue-400 mr-1"></i>
+                                        กฎระเบียบของที่พัก
                                     </label>
-                                    <textarea name="house_rules" rows="3" class="form-control"
+                                    <textarea name="house_rules" rows="3"
+                                              class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all resize-none"
                                               placeholder="เช่น ห้ามสูบบุหรี่, ห้ามนำสัตว์เลี้ยง, เงียบหลัง 22:00 น.">{{ old('house_rules', $hotel->house_rules) }}</textarea>
-                                    <small class="form-text text-muted">กฎและข้อบังคับที่ผู้เข้าพักต้องปฏิบัติตาม</small>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">กฎและข้อบังคับที่ผู้เข้าพักต้องปฏิบัติตาม</p>
                                 </div>
 
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-credit-card text-success mr-1"></i>นโยบายการชำระเงิน
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-credit-card text-green-600 dark:text-green-400 mr-1"></i>
+                                        นโยบายการชำระเงิน
                                     </label>
-                                    <textarea name="payment_policy" rows="3" class="form-control"
+                                    <textarea name="payment_policy" rows="3"
+                                              class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all resize-none"
                                               placeholder="เช่น ชำระเต็มจำนวนเมื่อเช็คอิน, รับบัตรเครดิต, QR Code">{{ old('payment_policy', $hotel->payment_policy) }}</textarea>
-                                    <small class="form-text text-muted">วิธีการและเงื่อนไขการชำระเงิน</small>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">วิธีการและเงื่อนไขการชำระเงิน</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- SEO Tab --}}
+                        <div x-show="activeTab === 'seo'" x-transition x-cloak>
+                            <h5 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
+                                <i class="fas fa-search text-indigo-600 dark:text-indigo-400"></i>
+                                การตั้งค่า SEO
+                            </h5>
+
+                            <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                                <div class="flex gap-3">
+                                    <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-0.5"></i>
+                                    <div>
+                                        <p class="font-medium text-blue-900 dark:text-blue-300">คำแนะนำ:</p>
+                                        <p class="text-sm text-blue-800 dark:text-blue-400 mt-1">ข้อมูล SEO จะช่วยให้โรงแรมของคุณปรากฏในผลการค้นหาของ Google และ Search Engine อื่นๆ</p>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- SEO Tab -->
-                            <div class="tab-pane fade" id="seo" role="tabpanel">
-                                <h5 class="text-primary mb-4">
-                                    <i class="fas fa-search mr-2"></i>การตั้งค่า SEO
-                                </h5>
-                                <div class="alert alert-info">
-                                    <i class="fas fa-info-circle mr-2"></i>
-                                    <strong>คำแนะนำ:</strong> ข้อมูล SEO จะช่วยให้โรงแรมของคุณปรากฏในผลการค้นหาของ Google และ Search Engine อื่นๆ
-                                </div>
-
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-heading text-primary mr-1"></i>Meta Title
+                            <div class="space-y-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-heading text-blue-600 dark:text-blue-400 mr-1"></i>
+                                        Meta Title
                                     </label>
-                                    <input type="text" name="meta_title" class="form-control"
+                                    <input type="text" name="meta_title" x-model="metaTitle" maxlength="60"
+                                           class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
                                            value="{{ old('meta_title', $hotel->meta_title) }}"
-                                           placeholder="เช่น Grand Palace Hotel Bangkok - โรงแรมหรู 5 ดาว ใจกลางกรุงเทพฯ"
-                                           maxlength="60">
-                                    <small class="form-text text-muted">
-                                        <span class="char-count">{{ strlen($hotel->meta_title ?? '') }}</span>/60 ตัวอักษร - ชื่อที่แสดงในผลการค้นหา
-                                    </small>
+                                           placeholder="เช่น Grand Palace Hotel Bangkok - โรงแรมหรู 5 ดาว ใจกลางกรุงเทพฯ">
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                        <span x-text="metaTitle.length"></span>/60 ตัวอักษร - ชื่อที่แสดงในผลการค้นหา
+                                    </p>
                                 </div>
 
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-align-left text-info mr-1"></i>Meta Description
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-align-left text-indigo-600 dark:text-indigo-400 mr-1"></i>
+                                        Meta Description
                                     </label>
-                                    <textarea name="meta_description" rows="3" class="form-control"
-                                              placeholder="คำอธิบายย่อเกี่ยวกับโรงแรม เพื่อดึงดูดผู้เข้าชมจากผลการค้นหา"
-                                              maxlength="160">{{ old('meta_description', $hotel->meta_description) }}</textarea>
-                                    <small class="form-text text-muted">
-                                        <span class="desc-count">{{ strlen($hotel->meta_description ?? '') }}</span>/160 ตัวอักษร - คำอธิบายที่แสดงในผลการค้นหา
-                                    </small>
+                                    <textarea name="meta_description" x-model="metaDescription" rows="3" maxlength="160"
+                                              class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all resize-none"
+                                              placeholder="คำอธิบายย่อเกี่ยวกับโรงแรม เพื่อดึงดูดผู้เข้าชมจากผลการค้นหา">{{ old('meta_description', $hotel->meta_description) }}</textarea>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                        <span x-text="metaDescription.length"></span>/160 ตัวอักษร - คำอธิบายที่แสดงในผลการค้นหา
+                                    </p>
                                 </div>
 
-                                <div class="form-group">
-                                    <label class="font-weight-bold">
-                                        <i class="fas fa-tags text-success mr-1"></i>Meta Keywords
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                        <i class="fas fa-tags text-green-600 dark:text-green-400 mr-1"></i>
+                                        Meta Keywords
                                     </label>
-                                    <input type="text" name="meta_keywords" class="form-control"
+                                    <input type="text" name="meta_keywords"
+                                           class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all"
                                            value="{{ old('meta_keywords', $hotel->meta_keywords) }}"
                                            placeholder="เช่น โรงแรม, กรุงเทพ, ที่พัก, 5 ดาว (คั่นด้วยจุลภาค)">
-                                    <small class="form-text text-muted">คำสำคัญที่เกี่ยวข้องกับโรงแรม คั่นด้วยจุลภาค (,)</small>
+                                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">คำสำคัญที่เกี่ยวข้องกับโรงแรม คั่นด้วยจุลภาค (,)</p>
                                 </div>
                             </div>
                         </div>
@@ -404,160 +463,185 @@
                 </div>
             </div>
 
-            <div class="col-lg-4">
-                <!-- Current Images -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-gradient-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-images mr-2"></i>รูปภาพและสื่อ
+            {{-- Sidebar --}}
+            <div class="space-y-6">
+                {{-- Images Card --}}
+                <div class="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6">
+                        <h5 class="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                            <i class="fas fa-images"></i>
+                            รูปภาพและสื่อ
                         </h5>
-                    </div>
-                    <div class="card-body">
-                        @if($hotel->main_image)
-                            <div class="form-group">
-                                <label class="font-weight-bold d-block">
-                                    <i class="fas fa-image text-primary mr-1"></i>รูปหลักปัจจุบัน
-                                </label>
-                                <img src="{{ $hotel->main_image_url }}" class="img-thumbnail mb-2" style="max-width: 100%; border-radius: 8px;">
-                                <div class="custom-file mt-2">
-                                    <input type="file" name="main_image" class="custom-file-input" id="mainImage" accept="image/*">
-                                    <label class="custom-file-label" for="mainImage">เปลี่ยนรูป...</label>
-                                </div>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-info-circle mr-1"></i>ขนาดแนะนำ: 1200x800px (JPG, PNG)
-                                </small>
-                                <div id="mainImagePreview" class="mt-2"></div>
-                            </div>
-                        @else
-                            <div class="form-group">
-                                <label class="font-weight-bold">
-                                    <i class="fas fa-image text-primary mr-1"></i>รูปหลัก
-                                    <span class="badge badge-info badge-sm">แนะนำ</span>
-                                </label>
-                                <div class="custom-file">
-                                    <input type="file" name="main_image" class="custom-file-input" id="mainImage" accept="image/*">
-                                    <label class="custom-file-label" for="mainImage">เลือกไฟล์...</label>
-                                </div>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-info-circle mr-1"></i>ขนาดแนะนำ: 1200x800px (JPG, PNG)
-                                </small>
-                            </div>
-                        @endif
 
-                        <div class="form-group">
-                            <label class="font-weight-bold">
-                                <i class="fas fa-photo-video text-success mr-1"></i>เพิ่มรูปในแกลเลอรี่
-                                <span class="badge badge-secondary badge-sm">หลายรูป</span>
-                            </label>
-                            <div class="custom-file">
-                                <input type="file" name="gallery_images[]" class="custom-file-input" id="galleryImages" accept="image/*" multiple>
-                                <label class="custom-file-label" for="galleryImages">เลือกไฟล์...</label>
+                        <div class="space-y-4">
+                            @if($hotel->main_image)
+                                <div>
+                                    <label class="block text-sm font-medium text-white/90 mb-2">
+                                        <i class="fas fa-image mr-1"></i>
+                                        รูปหลักปัจจุบัน
+                                    </label>
+                                    <img src="{{ $hotel->main_image_url }}" class="w-full rounded-lg shadow-lg mb-3">
+                                    <label class="flex items-center justify-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white rounded-lg cursor-pointer transition-all">
+                                        <i class="fas fa-sync-alt"></i>
+                                        <span class="text-sm">เปลี่ยนรูป...</span>
+                                        <input type="file" name="main_image" class="hidden" accept="image/*" @change="previewImage($event)">
+                                    </label>
+                                    <p class="mt-2 text-xs text-white/70">
+                                        <i class="fas fa-info-circle mr-1"></i>ขนาดแนะนำ: 1200x800px (JPG, PNG)
+                                    </p>
+                                    <div x-show="imagePreview" class="mt-3">
+                                        <img :src="imagePreview" class="w-full rounded-lg shadow-lg">
+                                    </div>
+                                </div>
+                            @else
+                                <div>
+                                    <label class="block text-sm font-medium text-white/90 mb-2">
+                                        <i class="fas fa-image mr-1"></i>
+                                        รูปหลัก <span class="px-2 py-0.5 bg-blue-500 text-xs rounded-full ml-1">แนะนำ</span>
+                                    </label>
+                                    <label class="flex items-center justify-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white rounded-lg cursor-pointer transition-all">
+                                        <i class="fas fa-upload"></i>
+                                        <span class="text-sm">เลือกไฟล์...</span>
+                                        <input type="file" name="main_image" class="hidden" accept="image/*" @change="previewImage($event)">
+                                    </label>
+                                    <p class="mt-2 text-xs text-white/70">
+                                        <i class="fas fa-info-circle mr-1"></i>ขนาดแนะนำ: 1200x800px (JPG, PNG)
+                                    </p>
+                                </div>
+                            @endif
+
+                            <div>
+                                <label class="block text-sm font-medium text-white/90 mb-2">
+                                    <i class="fas fa-photo-video mr-1"></i>
+                                    เพิ่มรูปในแกลเลอรี่ <span class="px-2 py-0.5 bg-gray-600 text-xs rounded-full ml-1">หลายรูป</span>
+                                </label>
+                                <label class="flex items-center justify-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 border-2 border-white/30 text-white rounded-lg cursor-pointer transition-all">
+                                    <i class="fas fa-images"></i>
+                                    <span class="text-sm">เลือกหลายไฟล์...</span>
+                                    <input type="file" name="gallery_images[]" class="hidden" accept="image/*" multiple>
+                                </label>
+                                <p class="mt-2 text-xs text-white/70">
+                                    <i class="fas fa-images mr-1"></i>เลือกหลายรูปพร้อมกัน (Ctrl+Click)
+                                </p>
                             </div>
-                            <small class="form-text text-muted">
-                                <i class="fas fa-images mr-1"></i>เลือกหลายรูปพร้อมกัน (Ctrl+Click)
-                            </small>
                         </div>
                     </div>
                 </div>
 
-                <!-- Facilities -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-gradient-success text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-concierge-bell mr-2"></i>สิ่งอำนวยความสะดวก
+                {{-- Facilities Card --}}
+                <div class="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6">
+                        <h5 class="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                            <i class="fas fa-concierge-bell"></i>
+                            สิ่งอำนวยความสะดวก
                         </h5>
-                    </div>
-                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                        <div class="facility-grid">
+
+                        <div class="max-h-96 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
                             @foreach($facilities as $facility)
-                                <div class="facility-item">
-                                    <div class="custom-control custom-checkbox">
-                                        <input type="checkbox" class="custom-control-input" id="facility{{ $facility->id }}"
-                                               name="facilities[]" value="{{ $facility->id }}"
-                                               {{ $hotel->facilities->contains($facility->id) ? 'checked' : '' }}>
-                                        <label class="custom-control-label d-flex align-items-center" for="facility{{ $facility->id }}">
-                                            <i class="fas fa-check-circle text-success mr-2" style="font-size: 0.9rem;"></i>
-                                            <span>{{ $facility->name }}</span>
-                                        </label>
-                                    </div>
-                                </div>
+                                <label class="flex items-center gap-3 p-3 bg-white/10 hover:bg-white/20 rounded-lg cursor-pointer transition-all group">
+                                    <input type="checkbox" name="facilities[]" value="{{ $facility->id }}"
+                                           {{ $hotel->facilities->contains($facility->id) ? 'checked' : '' }}
+                                           class="w-5 h-5 rounded border-white/30 text-emerald-600 focus:ring-2 focus:ring-white/50">
+                                    <span class="text-white text-sm font-medium group-hover:translate-x-1 transition-transform">
+                                        {{ $facility->name }}
+                                    </span>
+                                </label>
                             @endforeach
                         </div>
                     </div>
                 </div>
 
-                <!-- Settings -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-gradient-warning text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-cog mr-2"></i>การตั้งค่า
+                {{-- Settings Card --}}
+                <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6">
+                        <h5 class="text-lg font-semibold text-white flex items-center gap-2 mb-4">
+                            <i class="fas fa-cog"></i>
+                            การตั้งค่า
                         </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="bg-light p-3 rounded mb-3">
-                            <div class="custom-control custom-switch mb-3">
-                                <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1"
-                                       {{ $hotel->is_active ? 'checked' : '' }}>
-                                <label class="custom-control-label font-weight-bold" for="is_active">
-                                    <i class="fas fa-toggle-on text-success mr-1"></i>เปิดใช้งาน
+
+                        <div class="space-y-4">
+                            <div class="bg-white/10 rounded-lg p-4 space-y-4">
+                                <label class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" name="is_active" value="1" {{ $hotel->is_active ? 'checked' : '' }}
+                                           class="mt-1 w-5 h-5 rounded border-white/30 text-green-600 focus:ring-2 focus:ring-white/50">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 text-white font-medium">
+                                            <i class="fas fa-toggle-on text-green-400"></i>
+                                            เปิดใช้งาน
+                                        </div>
+                                        <p class="text-xs text-white/70 mt-1">เปิดให้ผู้ใช้สามารถจองได้</p>
+                                    </div>
                                 </label>
-                                <small class="d-block text-muted ml-4">เปิดให้ผู้ใช้สามารถจองได้</small>
+
+                                <label class="flex items-start gap-3 cursor-pointer">
+                                    <input type="checkbox" name="is_featured" value="1" {{ $hotel->is_featured ? 'checked' : '' }}
+                                           class="mt-1 w-5 h-5 rounded border-white/30 text-amber-500 focus:ring-2 focus:ring-white/50">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-2 text-white font-medium">
+                                            <i class="fas fa-star text-yellow-300"></i>
+                                            โรงแรมแนะนำ
+                                        </div>
+                                        <p class="text-xs text-white/70 mt-1">แสดงในหน้าแรกและรายการแนะนำ</p>
+                                    </div>
+                                </label>
                             </div>
 
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="is_featured" name="is_featured" value="1"
-                                       {{ $hotel->is_featured ? 'checked' : '' }}>
-                                <label class="custom-control-label font-weight-bold" for="is_featured">
-                                    <i class="fas fa-star text-warning mr-1"></i>โรงแรมแนะนำ
+                            <div>
+                                <label class="block text-sm font-medium text-white/90 mb-2">
+                                    <i class="fas fa-user-tie mr-1"></i>
+                                    เจ้าของโรงแรม
                                 </label>
-                                <small class="d-block text-muted ml-4">แสดงในหน้าแรกและรายการแนะนำ</small>
+                                <select name="owner_id"
+                                        class="w-full px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all">
+                                    <option value="" class="text-gray-900">-- ไม่ระบุ --</option>
+                                    @if(isset($owners))
+                                        @foreach($owners as $owner)
+                                            <option value="{{ $owner->id }}" {{ $hotel->owner_id == $owner->id ? 'selected' : '' }} class="text-gray-900">
+                                                {{ $owner->name }}
+                                            </option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                                <p class="mt-1 text-xs text-white/70">เจ้าของหรือผู้จัดการโรงแรม</p>
                             </div>
-                        </div>
 
-                        <div class="form-group">
-                            <label class="font-weight-bold">
-                                <i class="fas fa-user-tie text-info mr-1"></i>เจ้าของโรงแรม
-                            </label>
-                            <select name="owner_id" class="form-control custom-select">
-                                <option value="">-- ไม่ระบุ --</option>
-                                @if(isset($owners))
-                                    @foreach($owners as $owner)
-                                        <option value="{{ $owner->id }}" {{ $hotel->owner_id == $owner->id ? 'selected' : '' }}>
-                                            {{ $owner->name }}
-                                        </option>
-                                    @endforeach
-                                @endif
-                            </select>
-                            <small class="form-text text-muted">เจ้าของหรือผู้จัดการโรงแรม</small>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="font-weight-bold">
-                                <i class="fas fa-percentage text-success mr-1"></i>Commission Rate
-                            </label>
-                            <div class="input-group">
-                                <input type="number" step="0.01" name="commission_rate" class="form-control"
-                                       value="{{ old('commission_rate', $hotel->commission_rate) }}" min="0" max="100">
-                                <div class="input-group-append">
-                                    <span class="input-group-text">%</span>
+                            <div>
+                                <label class="block text-sm font-medium text-white/90 mb-2">
+                                    <i class="fas fa-percentage mr-1"></i>
+                                    Commission Rate
+                                </label>
+                                <div class="flex gap-2">
+                                    <input type="number" step="0.01" name="commission_rate" value="{{ old('commission_rate', $hotel->commission_rate) }}" min="0" max="100"
+                                           class="flex-1 px-4 py-3 rounded-lg border border-white/30 bg-white/10 text-white focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all">
+                                    <div class="flex-shrink-0 flex items-center px-4 bg-white/10 border border-white/30 rounded-lg text-white">
+                                        %
+                                    </div>
                                 </div>
+                                <p class="mt-1 text-xs text-white/70">ค่าคอมมิชชั่นสำหรับ Affiliate (0-100%)</p>
                             </div>
-                            <small class="form-text text-muted">ค่าคอมมิชชั่นสำหรับ Affiliate (0-100%)</small>
                         </div>
                     </div>
                 </div>
 
-                <!-- Submit -->
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <button type="submit" class="btn btn-success btn-lg btn-block mb-2">
-                            <i class="fas fa-save mr-2"></i> บันทึกการแก้ไข
+                {{-- Submit Actions --}}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6 space-y-3">
+                        <button type="submit"
+                                class="w-full flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+                            <i class="fas fa-save"></i>
+                            <span>บันทึกการแก้ไข</span>
                         </button>
-                        <a href="{{ route('admin.hotels.show', $hotel->id) }}" class="btn btn-outline-info btn-block mb-2">
-                            <i class="fas fa-eye mr-1"></i> ดูโรงแรม
+
+                        <a href="{{ route('admin.hotels.show', $hotel->id) }}"
+                           class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-medium rounded-lg hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors">
+                            <i class="fas fa-eye"></i>
+                            <span>ดูโรงแรม</span>
                         </a>
-                        <a href="{{ route('admin.hotels.index') }}" class="btn btn-outline-secondary btn-block">
-                            <i class="fas fa-times mr-1"></i> ยกเลิก
+
+                        <a href="{{ route('admin.hotels.index') }}"
+                           class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                            <i class="fas fa-times"></i>
+                            <span>ยกเลิก</span>
                         </a>
                     </div>
                 </div>
@@ -566,165 +650,50 @@
     </form>
 </div>
 
-@push('styles')
-<style>
-    /* Custom Styling for Hotel Settings */
-    .bg-gradient-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    .bg-gradient-success {
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-    }
-    .bg-gradient-warning {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-    }
-
-    .card {
-        border-radius: 10px;
-        overflow: hidden;
-    }
-
-    .card-header {
-        border-bottom: 2px solid rgba(0,0,0,0.05);
-    }
-
-    .nav-tabs .nav-link {
-        border: none;
-        color: #6c757d;
-        padding: 12px 20px;
-        transition: all 0.3s;
-    }
-
-    .nav-tabs .nav-link:hover {
-        color: #667eea;
-        background-color: #f8f9fa;
-    }
-
-    .nav-tabs .nav-link.active {
-        color: #667eea;
-        font-weight: 600;
-        border-bottom: 3px solid #667eea;
-        background-color: #f8f9ff;
-    }
-
-    .form-control:focus, .custom-select:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    }
-
-    .btn-success {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
-        transition: all 0.3s;
-    }
-
-    .btn-success:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
-    }
-
-    .facility-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .facility-item {
-        padding: 8px 12px;
-        background: #f8f9fa;
-        border-radius: 6px;
-        transition: all 0.2s;
-    }
-
-    .facility-item:hover {
-        background: #e9ecef;
-        transform: translateX(5px);
-    }
-
-    .custom-file-label::after {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    #mainImagePreview img {
-        max-width: 100%;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-</style>
-@endpush
-
 @push('scripts')
 <script>
-$(document).ready(function() {
-    // Custom file input labels
-    $('.custom-file-input').on('change', function() {
-        let fileName = $(this).val().split('\\').pop();
-        $(this).next('.custom-file-label').addClass("selected").html(fileName || 'เลือกไฟล์...');
-    });
+function hotelForm() {
+    return {
+        metaTitle: '{{ old("meta_title", $hotel->meta_title ?? "") }}',
+        metaDescription: '{{ old("meta_description", $hotel->meta_description ?? "") }}',
+        imagePreview: null,
 
-    // Main image preview
-    $('#mainImage').on('change', function() {
-        const file = this.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                $('#mainImagePreview').html('<img src="' + e.target.result + '" class="img-thumbnail mt-2" style="max-width: 100%; border-radius: 8px;">');
+        previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.imagePreview = e.target.result;
+                };
+                reader.readAsDataURL(file);
             }
-            reader.readAsDataURL(file);
         }
-    });
-
-    // Character counter for meta title
-    $('input[name="meta_title"]').on('input', function() {
-        let length = $(this).val().length;
-        $(this).closest('.form-group').find('.char-count').text(length);
-    });
-
-    // Character counter for meta description
-    $('textarea[name="meta_description"]').on('input', function() {
-        let length = $(this).val().length;
-        $(this).closest('.form-group').find('.desc-count').text(length);
-    });
-
-    // Form validation before submit
-    $('#hotelForm').on('submit', function(e) {
-        let isValid = true;
-        let errorMessage = '';
-
-        // Check required fields
-        if (!$('input[name="name"]').val()) {
-            isValid = false;
-            errorMessage += '- กรุณากรอกชื่อโรงแรม\n';
-        }
-
-        if (!$('input[name="address"]').val()) {
-            isValid = false;
-            errorMessage += '- กรุณากรอกที่อยู่\n';
-        }
-
-        if (!$('input[name="city"]').val()) {
-            isValid = false;
-            errorMessage += '- กรุณากรอกเมือง\n';
-        }
-
-        if (!isValid) {
-            e.preventDefault();
-            alert('กรุณากรอกข้อมูลให้ครบถ้วน:\n\n' + errorMessage);
-            return false;
-        }
-    });
-
-    // Smooth scroll to tab on validation error
-    @if ($errors->any())
-        setTimeout(function() {
-            $('html, body').animate({
-                scrollTop: $('.is-invalid:first').offset().top - 100
-            }, 500);
-        }, 100);
-    @endif
-});
+    }
+}
 </script>
+
+<style>
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+[x-cloak] {
+    display: none !important;
+}
+</style>
 @endpush
 @endsection
