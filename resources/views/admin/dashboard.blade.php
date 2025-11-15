@@ -4,13 +4,19 @@
 
 @push('styles')
 <style>
-    /* Background Gradient - Demo Dashboard 4 Style */
+    /* Background Gradient - Light/Dark Mode */
     body::before {
         content: '';
         position: fixed;
         inset: 0;
-        background: linear-gradient(135deg, rgb(168, 85, 247), rgb(236, 72, 153), rgb(251, 146, 60));
         z-index: -10;
+        /* Light Mode: Soft gradient */
+        background: linear-gradient(135deg, rgb(243, 244, 246), rgb(229, 231, 235), rgb(209, 213, 219));
+    }
+
+    /* Dark Mode: Colorful gradient (Demo Dashboard 4 Style) */
+    .dark body::before {
+        background: linear-gradient(135deg, rgb(168, 85, 247), rgb(236, 72, 153), rgb(251, 146, 60));
     }
 
     /* Animated Background Circles */
@@ -18,9 +24,18 @@
         position: fixed;
         border-radius: 50%;
         filter: blur(60px);
-        opacity: 0.3;
         z-index: -5;
         animation: pulse 3s ease-in-out infinite;
+    }
+
+    /* Light Mode: Subtle circles */
+    .bg-circle {
+        opacity: 0.1;
+    }
+
+    /* Dark Mode: Vibrant circles */
+    .dark .bg-circle {
+        opacity: 0.3;
     }
 
     .bg-circle-1 {
@@ -52,20 +67,72 @@
 
     /* Glass Fusion Effect */
     .glass-fusion {
-        background: rgba(255, 255, 255, 0.15);
+        /* Light Mode: More opaque white */
+        background: rgba(255, 255, 255, 0.85);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    /* Dark Mode: Translucent with blur */
+    .dark .glass-fusion {
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.3);
     }
 
     .glass-neu {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.7);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
+    }
+
+    .dark .glass-neu {
+        background: rgba(255, 255, 255, 0.1);
     }
 
     /* Perspective for 3D cards */
     .perspective-1000 {
         perspective: 1000px;
+    }
+
+    /* Text colors adjustment for light mode */
+    .glass-fusion .text-white,
+    .glass-fusion h1,
+    .glass-fusion h2,
+    .glass-fusion h3,
+    .glass-fusion p {
+        color: rgb(17, 24, 39); /* gray-900 for light mode */
+    }
+
+    .dark .glass-fusion .text-white,
+    .dark .glass-fusion h1,
+    .dark .glass-fusion h2,
+    .dark .glass-fusion h3,
+    .dark .glass-fusion p {
+        color: rgb(255, 255, 255); /* white for dark mode */
+    }
+
+    /* White/90 opacity text in light mode */
+    .glass-fusion .text-white\/90,
+    .glass-fusion .text-white\/80 {
+        color: rgb(55, 65, 81); /* gray-700 for light mode */
+    }
+
+    .dark .glass-fusion .text-white\/90 {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .dark .glass-fusion .text-white\/80 {
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    /* Drop shadow for light mode text */
+    .glass-fusion .drop-shadow-lg {
+        filter: none;
+    }
+
+    .dark .glass-fusion .drop-shadow-lg {
+        filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1));
     }
 </style>
 @endpush
