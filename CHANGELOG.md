@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.25.4] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1237 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (27518761)
+- fix: เพิ่ม height ให้ chart container (#revenue-chart) (0a62f2e9)
+### 🔧 Other Changes
+
+
 ## [v3.25.3] - 2025-11-16
 
 ### ✨ Features
