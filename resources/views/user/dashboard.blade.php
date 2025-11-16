@@ -431,6 +431,11 @@ function themeSelector() {
                 // ค่าเริ่มต้น (Glassmorphism)
                 this.currentSettings = this.getPresetSettings('glassmorphism');
             }
+
+            // Apply settings ทันทีเมื่อโหลดหน้า
+            if (Object.keys(this.currentSettings).length > 0) {
+                this.applySettings(this.currentSettings);
+            }
         },
 
         /**
