@@ -230,48 +230,29 @@
 <script>
 // รอให้ DOM และ ApexCharts โหลดเสร็จ
 function initRevenueChart() {
-    console.log('🚀 [DEBUG] กำลังโหลดกราฟรายได้...');
-    console.log('🚀 [DEBUG] document.readyState:', document.readyState);
-
     // ตรวจสอบว่า ApexCharts โหลดสำเร็จหรือไม่
     if (typeof ApexCharts === 'undefined') {
-        console.error('❌ [DEBUG] ApexCharts library ไม่โหลด - ลองใหม่ใน 500ms');
         setTimeout(initRevenueChart, 500);
         return;
     }
-    console.log('✅ [DEBUG] ApexCharts library พร้อมแล้ว:', typeof ApexCharts);
 
     // ตรวจสอบว่ามี element สำหรับกราฟหรือไม่
     const chartElement = document.querySelector('#revenue-chart');
     if (!chartElement) {
-        console.error('❌ [DEBUG] ไม่พบ element #revenue-chart - ลองใหม่ใน 300ms');
         setTimeout(initRevenueChart, 300);
         return;
     }
 
-    console.log('✅ [DEBUG] พบ chart element:', chartElement);
-    console.log('✅ [DEBUG] chartElement width:', chartElement.offsetWidth);
-    console.log('✅ [DEBUG] chartElement height:', chartElement.offsetHeight);
-    console.log('✅ [DEBUG] chartElement computed style:', window.getComputedStyle(chartElement).height);
-
     // ข้อมูลจริงจากฐานข้อมูล
     let monthlyData = @json($monthlyRevenue);
-    console.log('📊 [DEBUG] monthlyData จาก backend:', monthlyData);
-    console.log('📊 [DEBUG] monthlyData type:', typeof monthlyData);
-    console.log('📊 [DEBUG] monthlyData is Array?:', Array.isArray(monthlyData));
 
     // แปลง object เป็น array ถ้าจำเป็น
     if (!Array.isArray(monthlyData)) {
-        console.log('🔧 [DEBUG] แปลง object เป็น array...');
         monthlyData = Object.values(monthlyData);
-        console.log('🔧 [DEBUG] monthlyData หลังแปลง:', monthlyData);
     }
-
-    console.log('📊 [DEBUG] monthlyData length:', monthlyData?.length);
 
     // ถ้าไม่มีข้อมูล ใช้ข้อมูลจริง 12 เดือนที่ผ่านมา
     if (!monthlyData || monthlyData.length === 0) {
-        console.log('⚠️ [DEBUG] ไม่มีข้อมูลรายได้ ใช้ข้อมูลเริ่มต้น');
         const now = new Date();
         monthlyData = [];
         for (let i = 11; i >= 0; i--) {
@@ -295,14 +276,6 @@ function initRevenueChart() {
     });
 
     const seriesData = monthlyData.map(item => parseFloat(item.total || 0));
-
-    console.log('📊 [DEBUG] ข้อมูลกราฟ:', {
-        categories: categories,
-        data: seriesData,
-        rawData: monthlyData
-    });
-    console.log('📊 [DEBUG] categories length:', categories.length);
-    console.log('📊 [DEBUG] seriesData length:', seriesData.length);
 
     // ตั้งค่า ApexCharts
     const options = {
@@ -409,24 +382,11 @@ function initRevenueChart() {
     };
 
     // สร้าง chart
-    console.log('🎨 [DEBUG] กำลังสร้าง ApexCharts instance...');
-    console.log('🎨 [DEBUG] options:', options);
-
     try {
         const chart = new ApexCharts(chartElement, options);
-        console.log('🎨 [DEBUG] ApexCharts instance สร้างสำเร็จ:', chart);
-
-        console.log('🎨 [DEBUG] กำลังเรียก chart.render()...');
-        chart.render().then(() => {
-            console.log('✅ [DEBUG] กราฟแสดงผลสำเร็จ! (Promise resolved)');
-        }).catch((err) => {
-            console.error('❌ [DEBUG] chart.render() error:', err);
-        });
-
-        console.log('✅ [DEBUG] chart.render() ถูกเรียกแล้ว (async)');
+        chart.render();
     } catch (error) {
-        console.error('❌ [DEBUG] เกิดข้อผิดพลาดในการสร้างกราฟ:', error);
-        console.error('❌ [DEBUG] error.stack:', error.stack);
+        console.error('❌ เกิดข้อผิดพลาดในการสร้างกราฟ:', error);
     }
 }
 
