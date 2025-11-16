@@ -63,20 +63,18 @@
         </div>
     </div>
 
-    <div class="flex h-full">
-        {{-- Sidebar Component --}}
-        <x-arrow-x.sidebar-v3 />
+    {{-- Sidebar Component (Fixed overlay บน mobile, Relative บน desktop) --}}
+    <x-arrow-x.sidebar-v3 />
 
-        {{-- Main Content Area --}}
-        <div class="flex-1 flex flex-col overflow-hidden">
-            {{-- Top Navbar Component --}}
-            <x-arrow-x.navbar-v3 />
+    {{-- Main Content Area (Full width บน mobile, Flex-1 บน desktop) --}}
+    <div class="flex flex-col h-full w-full md:ml-0 overflow-hidden">
+        {{-- Top Navbar Component --}}
+        <x-arrow-x.navbar-v3 />
 
-            {{-- Page Content --}}
-            <main class="flex-1 overflow-y-auto p-4 md:p-6">
-                @yield('content')
-            </main>
-        </div>
+        {{-- Page Content --}}
+        <main class="flex-1 overflow-y-auto p-4 md:p-6">
+            @yield('content')
+        </main>
     </div>
 
     {{-- Toast Notifications --}}
