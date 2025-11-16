@@ -220,23 +220,34 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         $rules = [
+            // ข้อมูลส่วนตัว
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'in:male,female,other,prefer_not_to_say'],
+
+            // ที่อยู่หลัก (Billing Address)
             'address' => ['nullable', 'string', 'max:500'],
             'city' => ['nullable', 'string', 'max:100'],
             'state' => ['nullable', 'string', 'max:100'],
             'postal_code' => ['nullable', 'string', 'max:20'],
             'country' => ['nullable', 'string', 'max:2'],
+
+            // ที่อยู่จัดส่ง (Shipping Address) - NEW
             'shipping_address' => ['nullable', 'string', 'max:500'],
             'shipping_city' => ['nullable', 'string', 'max:100'],
             'shipping_state' => ['nullable', 'string', 'max:100'],
             'shipping_postal_code' => ['nullable', 'string', 'max:20'],
             'shipping_country' => ['nullable', 'string', 'max:2'],
             'shipping_phone' => ['nullable', 'string', 'regex:/^(\+66|66|0)[0-9]{9}$/'],
+
+            // รูปโปรไฟล์ (จะแปลงเป็น WebP อัตโนมัติ)
             'profile_picture' => ['nullable', 'image', 'mimes:jpeg,png,gif,webp', 'max:5120'], // 5MB max
+
+            // รหัสผ่าน (ถ้ามีการเปลี่ยน)
+            'current_password' => ['nullable', 'string'],
+            'new_password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers(), 'confirmed'],
         ];
 
         $validated = $request->validate($rules);
@@ -265,6 +276,29 @@ class DashboardController extends Controller
             $validated['phone_verified'] = false;
             $validated['phone_verified_at'] = null;
         }
+
+        // Handle password change
+        if ($request->filled('current_password') && $request->filled('new_password')) {
+            // Check if current password is correct
+            if (!Hash::check($request->current_password, $user->password)) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'รหัสผ่านปัจจุบันไม่ถูกต้อง');
+            }
+
+            // Check if new password is same as current password
+            if (Hash::check($request->new_password, $user->password)) {
+                return back()
+                    ->withInput()
+                    ->with('error', 'รหัสผ่านใหม่ต้องไม่เหมือนกับรหัสผ่านเดิม');
+            }
+
+            // Update password
+            $validated['password'] = Hash::make($request->new_password);
+        }
+
+        // Remove password fields from validated array if not changing password
+        unset($validated['current_password'], $validated['new_password']);
 
         $user->update($validated);
 
