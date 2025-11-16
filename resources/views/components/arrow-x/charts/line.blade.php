@@ -1,9 +1,9 @@
 {{--
 /**
- * Line Chart Component - Chart.js Line Chart พร้อม Glass Effect
+ * Line Chart Component - ApexCharts Area/Line Chart พร้อม Glass Effect
  *
  * @props
- * @param string $id HTML ID สำหรับ canvas element (required, unique)
+ * @param string $id HTML ID สำหรับ chart container (required, unique)
  * @param string $title หัวข้อของ chart (default: "Chart")
  * @param string $icon Font Awesome icon class (default: "fas fa-chart-line")
  * @param string $gradient Tailwind gradient classes (default: "from-blue-500 to-purple-600")
@@ -22,27 +22,28 @@
  * />
  *
  * @section('scripts')
- * <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+ * <script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
  * <script>
- * const ctx = document.getElementById('sales-chart').getContext('2d');
- * new Chart(ctx, {
- *     type: 'line',
- *     data: {
- *         labels: @json($labels),
- *         datasets: [{
- *             label: 'ยอดขาย',
- *             data: @json($data),
- *             borderColor: 'rgb(59, 130, 246)',
- *             backgroundColor: 'rgba(59, 130, 246, 0.1)',
- *             tension: 0.4,
- *             fill: true
- *         }]
+ * const options = {
+ *     series: [{
+ *         name: 'ยอดขาย',
+ *         data: @json($data)
+ *     }],
+ *     chart: {
+ *         type: 'area',
+ *         height: 350
+ *     },
+ *     xaxis: {
+ *         categories: @json($labels)
  *     }
- * });
+ * };
+ * const chart = new ApexCharts(document.querySelector('#sales-chart'), options);
+ * chart.render();
  * </script>
  * @endsection
  *
- * @tip ต้อง include Chart.js library ใน scripts section
+ * @tip ต้อง include ApexCharts library ใน scripts section
+ * @tip รองรับ responsive แบบ automatic
  * @tip ใช้ gradient ต่างๆ เพื่อแยกประเภท chart
  */
 --}}
@@ -66,11 +67,9 @@
         </div>
     </div>
 
-    {{-- Chart Canvas --}}
+    {{-- Chart Container สำหรับ ApexCharts --}}
     <div class="p-6" style="min-height: {{ $height + 48 }}px;">
-        <div style="position: relative; height: {{ $height }}px; width: 100%;">
-            <canvas id="{{ $id }}"></canvas>
-        </div>
+        <div id="{{ $id }}" style="width: 100%;"></div>
     </div>
 </div>
 

@@ -28,24 +28,63 @@
 <header class="h-16 glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-10">
     {{-- Left Section: Page Title --}}
     <div class="flex items-center gap-4">
-        {{-- Mobile Menu Toggle (Burger Menu) - กระพริบทุก 30 วินาที --}}
+        {{-- Mobile Menu Toggle (Burger Menu) - กระพริบทุก 30 วินาที + Tooltip ทุก 15 วัน --}}
         <div x-data="{
             blinking: false,
+            showTooltip: false,
             startBlink() {
                 this.blinking = true;
                 setTimeout(() => { this.blinking = false; }, 1500);
+            },
+            checkTooltip() {
+                const lastShown = localStorage.getItem('burgerTooltipLastShown');
+                const now = new Date().getTime();
+                const fifteenDays = 15 * 24 * 60 * 60 * 1000;
+
+                if (!lastShown || (now - parseInt(lastShown)) > fifteenDays) {
+                    // แสดง tooltip หลังจาก 2 วินาที
+                    setTimeout(() => {
+                        this.showTooltip = true;
+                        // ซ่อนหลัง 10 วินาที
+                        setTimeout(() => {
+                            this.showTooltip = false;
+                            localStorage.setItem('burgerTooltipLastShown', now.toString());
+                        }, 10000);
+                    }, 2000);
+                }
             }
         }"
         x-init="
             setInterval(() => { startBlink(); }, 30000);
+            checkTooltip();
         "
-        class="md:hidden">
-            <button @click="sidebarOpen = !sidebarOpen"
+        class="md:hidden relative">
+            <button @click="sidebarOpen = !sidebarOpen; showTooltip = false"
                     type="button"
                     class="p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
                     :class="blinking ? 'animate-blink-burger' : ''">
                 <i class="fas fa-bars text-white text-lg drop-shadow"></i>
             </button>
+
+            {{-- Tooltip --}}
+            <div x-show="showTooltip"
+                 x-transition
+                 @click="showTooltip = false"
+                 class="absolute top-full left-0 mt-2 w-64 glass-dropdown rounded-xl shadow-2xl border border-white/30 p-4 z-50 cursor-pointer">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-info-circle text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-white font-medium text-sm mb-1">💡 เคล็ดลับ</p>
+                        <p class="text-white/80 text-xs">กดที่ปุ่ม <i class="fas fa-bars mx-1"></i> นี้เพื่อเปิดเมนู</p>
+                    </div>
+                    <button @click.stop="showTooltip = false; localStorage.setItem('burgerTooltipLastShown', new Date().getTime().toString())"
+                            class="flex-shrink-0 text-white/60 hover:text-white">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
         </div>
 
         {{-- Page Title --}}
@@ -79,8 +118,8 @@
                     {{-- Search Results Dropdown --}}
                     <div x-show="searchOpen && searchQuery.length > 0"
                          x-transition
-                         class="absolute top-full left-0 right-0 mt-2 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden max-h-96 overflow-y-auto">
-                        <div class="p-4">
+                         class="absolute top-full left-0 right-0 mt-2 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden max-h-96 overflow-y-auto">
+                        <div class="p-4 bg-black/20">
                             <p class="text-white/80 text-sm">
                                 <i class="fas fa-search mr-2"></i>
                                 ค้นหา: <span x-text="searchQuery" class="font-bold"></span>
@@ -111,9 +150,9 @@
             <div x-show="notificationOpen"
                  @click.outside="notificationOpen = false"
                  x-transition
-                 class="absolute top-full right-0 mt-2 w-80 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden">
+                 class="absolute top-full right-0 mt-2 w-80 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden">
                 {{-- Header --}}
-                <div class="px-4 py-3 border-b border-white/20">
+                <div class="px-4 py-3 border-b border-white/20 bg-black/20">
                     <div class="flex items-center justify-between">
                         <h3 class="font-bold text-white drop-shadow">การแจ้งเตือน</h3>
                         @if($unreadNotifications > 0)
@@ -170,6 +209,14 @@
         {{-- Language Switcher --}}
         <x-arrow-x.language-switcher />
 
+        {{-- Theme Customizer --}}
+        <button @click="$dispatch('toggle-customizer')"
+                type="button"
+                class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
+                title="ปรับแต่งธีม">
+            <i class="fas fa-paint-brush text-white drop-shadow"></i>
+        </button>
+
         {{-- Dark Mode Toggle --}}
         <button @click="$store.theme.toggle()"
                 type="button"
@@ -195,9 +242,9 @@
             <div x-show="profileOpen"
                  @click.outside="profileOpen = false"
                  x-transition
-                 class="absolute top-full right-0 mt-2 w-56 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden">
+                 class="absolute top-full right-0 mt-2 w-56 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden">
                 {{-- User Info --}}
-                <div class="px-4 py-3 border-b border-white/20">
+                <div class="px-4 py-3 border-b border-white/20 bg-black/20">
                     <p class="font-medium text-white text-sm drop-shadow">{{ Auth::user()->name }}</p>
                     <p class="text-xs text-white/70 truncate">{{ Auth::user()->email }}</p>
                 </div>
@@ -240,6 +287,15 @@
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+}
+
+/**
+ * Glass Dropdown Effect - เข้มขึ้นสำหรับ dropdown menus
+ */
+.glass-dropdown {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 
 /**

@@ -42,21 +42,23 @@
 
 {{-- Sidebar Container --}}
 <aside
+    x-data="{ hovered: false }"
+    @mouseenter="hovered = true"
+    @mouseleave="hovered = false"
     class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 z-40
            fixed md:relative inset-y-0 left-0 w-64
            transform md:transform-none"
     :class="{
         'translate-x-0': sidebarOpen,
         '-translate-x-full': !sidebarOpen,
-        'md:w-64': sidebarOpen,
-        'md:w-0': !sidebarOpen,
-        'md:overflow-hidden': !sidebarOpen
+        'md:w-64': sidebarOpen || hovered,
+        'md:w-20': !sidebarOpen && !hovered
     }"
     x-cloak
 >
     {{-- Logo Section --}}
     <div class="h-16 flex items-center justify-between px-4 border-b border-white/30">
-        <div class="flex items-center gap-3 transition-all" x-show="sidebarOpen" x-transition>
+        <div class="flex items-center gap-3 transition-all" x-show="sidebarOpen || hovered" x-transition>
             @if($logo)
                 <img src="{{ $logo }}" alt="{{ $title }}" class="w-10 h-10 rounded-xl object-cover shadow-lg">
             @else
@@ -87,61 +89,67 @@
     </div>
 
     {{-- Navigation Menu --}}
-    <nav class="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+    <nav class="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
+         @click.away="if (!sidebarOpen && hovered && window.innerWidth >= 768) { hovered = false }">
         {{-- Dashboard --}}
         <a href="{{ route('admin.dashboard') }}"
+           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-home w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">แดชบอร์ด</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">แดชบอร์ด</span>
         </a>
 
         {{-- Users --}}
         <a href="{{ route('admin.users.index') }}"
+           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-users w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">ผู้ใช้งาน</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
         </a>
 
         {{-- Affiliates --}}
         <a href="{{ route('admin.affiliates.index') }}"
+           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-network-wired w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">Affiliate</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Affiliate</span>
         </a>
 
         {{-- Commissions --}}
         <a href="{{ route('admin.commissions.index') }}"
+           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.commissions.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-coins w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">คอมมิชชั่น</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
         </a>
 
         {{-- Wallet --}}
         <a href="{{ route('admin.wallet.index') }}"
+           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.wallet.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-wallet w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">กระเป๋าเงิน</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
         </a>
 
         {{-- Products --}}
         <a href="{{ route('admin.ecommerce.products.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.products.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-box w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">สินค้า</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">สินค้า</span>
         </a>
 
         {{-- Orders --}}
         <a href="{{ route('admin.ecommerce.orders.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.orders.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-shopping-cart w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">คำสั่งซื้อ</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คำสั่งซื้อ</span>
         </a>
 
         {{-- Reports --}}
         <a href="{{ route('admin.ecommerce.reports') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.reports') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-chart-bar w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">รายงาน</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">รายงาน</span>
         </a>
 
         {{-- Divider --}}
@@ -151,14 +159,14 @@
         <a href="{{ route('admin.settings.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.settings.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cog w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">ตั้งค่า</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่า</span>
         </a>
 
         {{-- Help --}}
         <a href="#"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform glass-neu text-white/90 hover:bg-white/20 hover:scale-105">
             <i class="fas fa-question-circle w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">ช่วยเหลือ</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ช่วยเหลือ</span>
         </a>
     </nav>
 
