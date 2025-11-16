@@ -488,4 +488,119 @@ function userDashboard() {
 }
 </style>
 @endpush
+
+@push('scripts')
+{{-- Chart.js Library --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+/**
+ * สร้าง Revenue Chart ด้วย Chart.js
+ */
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('revenue-chart');
+
+    if (!ctx) {
+        console.warn('Revenue chart canvas not found');
+        return;
+    }
+
+    // ดึงข้อมูลจาก Controller
+    const chartData = @json($chartData ?? ['labels' => [], 'data' => []]);
+
+    // ตรวจสอบว่ามีข้อมูลหรือไม่
+    if (!chartData.labels || chartData.labels.length === 0) {
+        console.warn('No chart data available');
+        return;
+    }
+
+    // สร้าง gradient สำหรับ background
+    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');  // blue-500
+    gradient.addColorStop(1, 'rgba(147, 51, 234, 0.1)');  // purple-600
+
+    // สร้าง Chart
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'รายได้',
+                data: chartData.data,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: gradient,
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: 'rgb(59, 130, 246)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    padding: 12,
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
+                    displayColors: false,
+                    callbacks: {
+                        label: function(context) {
+                            return '฿' + Number(context.parsed.y).toLocaleString('th-TH', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                    },
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        font: {
+                            family: 'Noto Sans Thai, sans-serif'
+                        }
+                    }
+                },
+                y: {
+                    grid: {
+                        color: 'rgba(255, 255, 255, 0.1)',
+                        borderColor: 'rgba(255, 255, 255, 0.2)',
+                    },
+                    ticks: {
+                        color: 'rgba(255, 255, 255, 0.8)',
+                        font: {
+                            family: 'Noto Sans Thai, sans-serif'
+                        },
+                        callback: function(value) {
+                            return '฿' + Number(value).toLocaleString('th-TH');
+                        }
+                    },
+                    beginAtZero: true
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            }
+        }
+    });
+});
+</script>
+@endpush
 @endsection
