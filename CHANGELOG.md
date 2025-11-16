@@ -2,6 +2,41 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.18.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1224 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (afed0782)
+- feat: add real-time translation system with Google Translate API (dc25db34)
+- Merge pull request #1222 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (588a7617)
+- feat: add ultra premium footer and real-time chart with actual data (896e7dd7)
+- Merge pull request #1221 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (a7357b4e)
+- feat: improve V3 dashboard with enhanced features (6b17e756)
+- Merge pull request #1219 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (6e4034cf)
+- Merge pull request #1218 from xjanova/claude/v3-dashboard-clean-01TtAB5ggsWWBNA2HGTG3GRG (62896769)
+- feat: complete V3 dashboard with all requested features (1ca92a6b)
+- feat: complete V3 dashboard with all requested features (29a20b48)
+- Merge pull request #1215 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (23184b76)
+- feat: add multi-language support, mobile improvements, and UI enhancements (e0856c30)
+### 🐛 Bug Fixes
+- Merge pull request #1223 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (8aa0a6ae)
+- fix: mobile sidebar drawer with overlay (no duplicate burger menu) (7391fc80)
+- Merge pull request #1216 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (e870cecc)
+- fix: revert to correct implementation - keep only approved features (96bf154e)
+- Merge pull request #1214 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (3fda6201)
+- fix: apply theme customizer settings to all components (0c86e03e)
+### 🔧 Other Changes
+- chore: bump version to 3.17.0 [skip ci] (48324c48)
+- chore: bump version to 3.16.0 [skip ci] (c0b2ef7f)
+- chore: bump version to 3.15.0 [skip ci] (ad82efd2)
+- chore: bump version to 3.14.0 [skip ci] (b6c4fce4)
+- Merge pull request #1220 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (962b2fa3)
+- revert: restore to V3 before theme customizer (commit 5d4d286) (1463c3ca)
+- chore: bump version to 3.20.0 [skip ci] (7ba1953b)
+- chore: bump version to 3.19.0 [skip ci] (5915dc91)
+- chore: bump version to 3.18.1 [skip ci] (ec20f229)
+- chore: bump version to 3.18.0 [skip ci] (3d096adc)
+- chore: bump version to 3.17.1 [skip ci] (b3bef533)
+
 ## [v3.17.0] - 2025-11-16
 
 ### ✨ Features
