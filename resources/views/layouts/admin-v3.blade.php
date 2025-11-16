@@ -34,29 +34,31 @@
       ">
 
     {{-- Background Gradient พื้นหลังแบบ Dashboard4 - สลับตาม dark mode --}}
+    {{-- Light mode: Colorful gradient | Dark mode: Dark gradient + opacity --}}
     <div class="fixed inset-0 -z-10 transition-colors duration-500"
          :class="$store.theme.isDark
-             ? 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500'
-             : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300'">
+             ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
+             : 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500'">
     </div>
 
     {{-- Animated Background Circles วงกลมเคลื่อนไหวพื้นหลัง --}}
+    {{-- Light mode: opacity น้อย | Dark mode: opacity สูง (95%) --}}
     <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-cyan-400 to-blue-600 opacity-30'
+                 ? 'bg-gradient-to-br from-cyan-400 to-blue-600 opacity-95'
                  : 'bg-gradient-to-br from-cyan-300 to-blue-400 opacity-10'">
         </div>
         <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              style="animation-delay: 1s;"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-pink-400 to-purple-600 opacity-30'
+                 ? 'bg-gradient-to-br from-pink-400 to-purple-600 opacity-95'
                  : 'bg-gradient-to-br from-pink-300 to-purple-400 opacity-10'">
         </div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              style="animation-delay: 2s;"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-yellow-400 to-orange-600 opacity-30'
+                 ? 'bg-gradient-to-br from-yellow-400 to-orange-600 opacity-95'
                  : 'bg-gradient-to-br from-yellow-300 to-orange-400 opacity-10'">
         </div>
     </div>
