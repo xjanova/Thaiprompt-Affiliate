@@ -137,7 +137,8 @@ Alpine.store('language', {
      * เปลี่ยนภาษาและแปลหน้าเว็บ
      */
     setLanguage(langCode) {
-        console.log('🌐 เปลี่ยนภาษาเป็น:', langCode);
+        console.log('🌐 [DEBUG] setLanguage() called with:', langCode);
+        console.log('🌐 [DEBUG] isGoogleTranslateReady:', this.isGoogleTranslateReady);
 
         this.current = langCode;
         localStorage.setItem('app_language', langCode);
@@ -148,28 +149,44 @@ Alpine.store('language', {
      * แปลหน้าเว็บด้วย Google Translate
      */
     translatePage(targetLang) {
+        console.log('🔄 [DEBUG] translatePage() called with:', targetLang);
+        console.log('🔄 [DEBUG] isGoogleTranslateReady:', this.isGoogleTranslateReady);
+
         if (!this.isGoogleTranslateReady) {
-            console.log('⏳ รอ Google Translate โหลด...');
+            console.log('⏳ [DEBUG] รอ Google Translate โหลด... (retry ใน 500ms)');
             setTimeout(() => this.translatePage(targetLang), 500);
             return;
         }
 
         this.isTranslating = true;
+        console.log('🔄 [DEBUG] isTranslating set to true');
 
         // หา Google Translate select element
         const selectElement = document.querySelector('.goog-te-combo');
+        console.log('🔍 [DEBUG] selectElement (.goog-te-combo):', selectElement);
+        console.log('🔍 [DEBUG] selectElement value before:', selectElement?.value);
+
         if (selectElement) {
             // เปลี่ยนค่า select และ trigger change event
             selectElement.value = targetLang;
-            selectElement.dispatchEvent(new Event('change'));
+            console.log('🔍 [DEBUG] selectElement value after:', selectElement.value);
 
-            console.log('✅ กำลังแปลเป็น:', targetLang);
+            selectElement.dispatchEvent(new Event('change'));
+            console.log('✅ [DEBUG] change event dispatched for language:', targetLang);
 
             setTimeout(() => {
                 this.isTranslating = false;
+                console.log('🔄 [DEBUG] isTranslating set to false');
             }, 1000);
         } else {
-            console.warn('⚠️ ยังไม่พบ Google Translate dropdown - ลองใหม่...');
+            console.warn('⚠️ [DEBUG] ไม่พบ .goog-te-combo - ลองใหม่ใน 300ms');
+            console.log('🔍 [DEBUG] ทุก elements ที่เริ่มด้วย goog-te:',
+                Array.from(document.querySelectorAll('[class*="goog-te"]')).map(el => ({
+                    class: el.className,
+                    tag: el.tagName,
+                    id: el.id
+                }))
+            );
             setTimeout(() => this.translatePage(targetLang), 300);
         }
     },
