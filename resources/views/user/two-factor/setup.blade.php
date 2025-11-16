@@ -1,4 +1,4 @@
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'ตั้งค่าการยืนยันตัวตนแบบ 2 ชั้น (2FA)')
 

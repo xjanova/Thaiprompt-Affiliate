@@ -497,7 +497,101 @@ resources/
     └── [other views]
 ```
 
-### 2. 🧩 Component Architecture
+### 2. 📐 Blade Layouts (MANDATORY)
+
+**กฎบังคับสำหรับ V3** - ต้องใช้ Arrow X Layouts เท่านั้น:
+
+#### **User Pages**
+```blade
+{{-- ✅ ถูกต้อง: ใช้ Arrow X Layout --}}
+@extends('layouts.user-arrow-x')
+
+@section('title', 'หน้าของฉัน')
+
+@section('content')
+    {{-- เนื้อหาของคุณที่นี่ --}}
+@endsection
+
+{{-- ❌ ผิด: ห้ามใช้ layout เก่า --}}
+@extends('layouts.user')  {{-- ห้ามใช้! --}}
+```
+
+#### **Admin Pages**
+```blade
+{{-- ✅ ถูกต้อง: ใช้ Admin V3 Layout --}}
+@extends('layouts.admin-v3')
+
+@section('title', 'จัดการระบบ')
+
+@section('content')
+    {{-- เนื้อหาของคุณที่นี่ --}}
+@endsection
+
+{{-- ❌ ผิด: ห้ามใช้ layout เก่า --}}
+@extends('layouts.admin')  {{-- ห้ามใช้! --}}
+```
+
+#### **Seller Pages**
+```blade
+{{-- ✅ ถูกต้อง: ใช้ Seller V3 Layout --}}
+@extends('layouts.seller-v3')
+
+{{-- ❌ ผิด: ห้ามใช้ layout เก่า --}}
+@extends('layouts.seller')  {{-- ห้ามใช้! --}}
+```
+
+**Available Layouts (V3 Only)**:
+- ✅ `layouts.user-arrow-x` - สำหรับหน้า User ทุกหน้า
+- ✅ `layouts.admin-v3` - สำหรับหน้า Admin ทุกหน้า
+- ✅ `layouts.seller-v3` - สำหรับหน้า Seller ทุกหน้า
+- ❌ `layouts.user` - **DEPRECATED** ห้ามใช้
+- ❌ `layouts.admin` - **DEPRECATED** ห้ามใช้
+- ❌ `layouts.seller` - **DEPRECATED** ห้ามใช้
+
+**Features ของ Arrow X Layouts**:
+- 🎨 Glass Fusion Theme (backdrop-filter, gradients)
+- 🌙 Dark Mode Support (auto)
+- 📱 Mobile Responsive (100%)
+- ⚡ Alpine.js Integration
+- 🎯 V3 Coding Guidelines (100%)
+- 🔧 Arrow X Sidebar & Navbar Components
+
+**ตัวอย่างการใช้งาน**:
+
+```blade
+{{-- User Dashboard Example --}}
+@extends('layouts.user-arrow-x')
+
+@section('title', 'แดชบอร์ด')
+
+@section('content')
+<div class="container-fluid px-4 py-6" x-data="dashboardManager()">
+    {{-- Header with Arrow X Style --}}
+    <div class="mb-8">
+        <h1 class="text-4xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
+            แดชบอร์ด
+        </h1>
+    </div>
+
+    {{-- Glass Fusion Card --}}
+    <div class="glass-fusion-card rounded-2xl p-6 shadow-2xl">
+        {{-- Your content here --}}
+    </div>
+</div>
+
+@push('scripts')
+<script>
+function dashboardManager() {
+    return {
+        // Alpine.js component
+    };
+}
+</script>
+@endpush
+@endsection
+```
+
+### 3. 🧩 Component Architecture
 
 **Blade Component Pattern**:
 
