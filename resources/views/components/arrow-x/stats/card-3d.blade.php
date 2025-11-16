@@ -82,8 +82,12 @@
                     @endif
                 </div>
 
-                {{-- Value ค่าสถิติหลัก --}}
-                <h3 class="text-3xl font-bold text-white mb-1 drop-shadow-lg">
+                {{-- Value ค่าสถิติหลัก (Responsive font size) --}}
+                <h3 class="text-xl sm:text-2xl lg:text-3xl font-bold text-white mb-1 drop-shadow-lg truncate"
+                    :class="{
+                        'text-base sm:text-lg lg:text-xl': '{{ $value }}'.length > 15,
+                        'text-lg sm:text-xl lg:text-2xl': '{{ $value }}'.length > 10 && '{{ $value }}'.length <= 15
+                    }">
                     {{ $value }}
                 </h3>
 
