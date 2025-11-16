@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.23.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่ม Theme Customizer + แก้ sidebar desktop icon-only + hover expand (f31967c6)
+### 🐛 Bug Fixes
+- Merge pull request #1229 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (dda2a403)
+### 🔧 Other Changes
+
+
 ## [v3.22.0] - 2025-11-16
 
 ### ✨ Features
