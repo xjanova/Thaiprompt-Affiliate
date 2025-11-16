@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.32.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1256 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (44dd0c99)
+- feat: เพิ่มระบบ Theme Preset สำหรับ Arrow X (10 presets พร้อมปุ่มเลือก) (629bfc37)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.31.4] - 2025-11-16
 
 ### ✨ Features
