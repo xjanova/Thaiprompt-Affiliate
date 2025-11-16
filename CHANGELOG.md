@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.31.3] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1254 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (7ebd6dfc)
+- docs: เพิ่มกฎ Custom Theme & Dark/Light Mode ใน V3 Guidelines + แก้ไขหน้า Commissions (2b7a3c6b)
+
 ## [v3.31.2] - 2025-11-16
 
 ### ✨ Features
