@@ -133,45 +133,39 @@
         </a>
     </nav>
 
-    {{-- User Profile Footer --}}
+    {{-- Footer: Logo + Version + License (3D Style) --}}
     <div class="p-4 border-t border-white/30">
-        <div x-data="{ profileOpen: false }" class="relative">
-            <button @click="profileOpen = !profileOpen"
-                    type="button"
-                    class="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/20 transition-all cursor-pointer">
-                <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <span class="text-white font-bold drop-shadow">{{ substr(Auth::user()->name, 0, 1) }}</span>
+        <div class="flex items-center gap-3">
+            {{-- Logo with 3D rotateY animation (หมุนไปทางขวา แบบ 3D ไม่ใช่แบบนาฬิกา) --}}
+            <div class="relative w-12 h-12 flex-shrink-0">
+                <div class="w-full h-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-2xl animate-rotate-y-3d">
+                    <i class="fas fa-rocket text-white text-xl drop-shadow-lg"></i>
                 </div>
-                <div x-show="sidebarOpen" x-transition class="flex-1 min-w-0 text-left">
-                    <p class="font-medium text-white text-sm truncate drop-shadow">{{ Auth::user()->name }}</p>
-                    <p class="text-xs text-white/80 truncate">{{ Auth::user()->email }}</p>
-                </div>
-                <i x-show="sidebarOpen" x-transition class="fas fa-chevron-down text-white/80 text-xs drop-shadow"></i>
-            </button>
+            </div>
 
-            {{-- Profile Dropdown --}}
-            <div x-show="profileOpen"
-                 @click.outside="profileOpen = false"
-                 x-transition
-                 class="absolute bottom-full left-0 right-0 mb-2 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden">
-                <a href="#"
-                   class="block px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm opacity-50 cursor-not-allowed">
-                    <i class="fas fa-user-circle mr-2 drop-shadow"></i>
-                    <span class="drop-shadow">โปรไฟล์ (Coming Soon)</span>
-                </a>
-                <a href="{{ route('admin.settings.index') }}"
-                   class="block px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm border-t border-white/20">
-                    <i class="fas fa-cog mr-2 drop-shadow"></i>
-                    <span class="drop-shadow">ตั้งค่า</span>
-                </a>
-                <form action="{{ route('logout') }}" method="POST">
-                    @csrf
-                    <button type="submit"
-                            class="w-full text-left px-4 py-3 hover:bg-white/20 transition-colors text-white text-sm border-t border-white/20">
-                        <i class="fas fa-sign-out-alt mr-2 drop-shadow"></i>
-                        <span class="drop-shadow">ออกจากระบบ</span>
-                    </button>
-                </form>
+            {{-- Version + License Info --}}
+            <div x-show="sidebarOpen" x-transition class="flex-1 min-w-0">
+                {{-- App Name --}}
+                <div class="text-white font-bold text-sm drop-shadow-lg tracking-wide">
+                    TP-Affiliate
+                </div>
+
+                {{-- Version Number --}}
+                @php
+                    $version = file_exists(base_path('VERSION'))
+                        ? trim(file_get_contents(base_path('VERSION')))
+                        : '3.0.0';
+                @endphp
+                <div class="text-white/90 text-xs drop-shadow flex items-center gap-1 mt-0.5">
+                    <i class="fas fa-code-branch text-xs"></i>
+                    <span class="font-mono">v{{ $version }}</span>
+                </div>
+
+                {{-- License Status --}}
+                <div class="text-green-400 text-xs flex items-center gap-1 mt-0.5">
+                    <i class="fas fa-shield-check drop-shadow"></i>
+                    <span class="drop-shadow font-medium">Licensed</span>
+                </div>
             </div>
         </div>
     </div>
@@ -214,5 +208,26 @@
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+/**
+ * 3D RotateY Animation - หมุนโลโก้แบบ 3D (ไปทางขวา ไม่ใช่แบบนาฬิกา)
+ */
+@keyframes rotate-y-3d {
+    0% {
+        transform: perspective(400px) rotateY(0deg);
+    }
+    100% {
+        transform: perspective(400px) rotateY(360deg);
+    }
+}
+
+.animate-rotate-y-3d {
+    animation: rotate-y-3d 4s ease-in-out infinite;
+    transform-style: preserve-3d;
+}
+
+.animate-rotate-y-3d:hover {
+    animation-play-state: paused;
 }
 </style>

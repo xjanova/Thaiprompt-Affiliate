@@ -28,12 +28,25 @@
 <header class="h-16 glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-10">
     {{-- Left Section: Page Title --}}
     <div class="flex items-center gap-4">
-        {{-- Mobile Menu Toggle --}}
-        <button @click="sidebarOpen = !sidebarOpen"
-                type="button"
-                class="md:hidden p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95">
-            <i class="fas fa-bars text-white text-lg drop-shadow"></i>
-        </button>
+        {{-- Mobile Menu Toggle (Burger Menu) - กระพริบทุก 30 วินาที --}}
+        <div x-data="{
+            blinking: false,
+            startBlink() {
+                this.blinking = true;
+                setTimeout(() => { this.blinking = false; }, 1500);
+            }
+        }"
+        x-init="
+            setInterval(() => { startBlink(); }, 30000);
+        "
+        class="md:hidden">
+            <button @click="sidebarOpen = !sidebarOpen"
+                    type="button"
+                    class="p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
+                    :class="blinking ? 'animate-blink-burger' : ''">
+                <i class="fas fa-bars text-white text-lg drop-shadow"></i>
+            </button>
+        </div>
 
         {{-- Page Title --}}
         @if($pageTitle)
@@ -233,5 +246,31 @@
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+}
+
+/**
+ * Blink Animation สำหรับ Burger Menu - กระพริบทุก 30 วินาที
+ */
+@keyframes blink-burger {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    25% {
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+    75% {
+        opacity: 0.3;
+        transform: scale(0.95);
+    }
+}
+
+.animate-blink-burger {
+    animation: blink-burger 0.6s ease-in-out 3;
 }
 </style>
