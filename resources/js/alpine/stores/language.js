@@ -1,19 +1,20 @@
 import Alpine from 'alpinejs';
 
 /**
- * Language Store - Simple Language Selector (ไม่แปลอัตโนมัติ)
+ * Language Store - Google Translate Integration (แปลอัตโนมัติเหมือน Chrome)
  *
  * Features:
- * - เลือกภาษาได้ แต่ไม่แปลอัตโนมัติ
- * - บันทึก preference ลง localStorage
- * - แสดงธงภาษา
+ * - ใช้ Google Translate Element API
+ * - แปลหน้าเว็บอัตโนมัติเหมือน Chrome
+ * - ฟรี ไม่ต้องใช้ API key
  */
 Alpine.store('language', {
     // สถานะปัจจุบัน
     current: 'th',
     isTranslating: false,
+    isGoogleTranslateReady: false,
 
-    // ภาษาที่รองรับ
+    // ภาษาที่รองรับ (ใช้ code ที่ Google Translate รองรับ)
     languages: [
         { code: 'th', name: 'ไทย', flag: '🇹🇭', nativeName: 'ภาษาไทย' },
         { code: 'en', name: 'English', flag: '🇺🇸', nativeName: 'English' },
@@ -30,27 +31,147 @@ Alpine.store('language', {
      * เริ่มต้น language store
      */
     init() {
-        // โหลดภาษาจาก localStorage
+        // โหลด Google Translate Element script
+        this.loadGoogleTranslate();
+
+        // โหลดภาษาที่บันทึกไว้
         const savedLang = localStorage.getItem('app_language');
         if (savedLang && this.languages.find(l => l.code === savedLang)) {
             this.current = savedLang;
         } else {
-            // Default เป็นภาษาไทยเสมอ
             this.current = 'th';
             localStorage.setItem('app_language', 'th');
         }
 
-        console.log('🌐 Language Store initialized (ไม่มีการแปลอัตโนมัติ):', this.current);
+        console.log('🌐 Language Store initialized with Google Translate:', this.current);
     },
 
     /**
-     * เปลี่ยนภาษา (ไม่แปล - เพียงแค่บันทึก preference)
+     * โหลด Google Translate Element script
+     */
+    loadGoogleTranslate() {
+        // เช็คว่าโหลดแล้วหรือยัง
+        if (window.google?.translate) {
+            this.initGoogleTranslate();
+            return;
+        }
+
+        // สร้าง callback function สำหรับ Google Translate
+        window.googleTranslateElementInit = () => {
+            this.initGoogleTranslate();
+        };
+
+        // โหลด Google Translate script
+        const script = document.createElement('script');
+        script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+        script.async = true;
+        script.onerror = () => {
+            console.error('❌ ไม่สามารถโหลด Google Translate ได้');
+        };
+        document.head.appendChild(script);
+    },
+
+    /**
+     * Initialize Google Translate Element
+     */
+    initGoogleTranslate() {
+        // สร้าง hidden div สำหรับ Google Translate Element
+        if (!document.getElementById('google_translate_element')) {
+            const div = document.createElement('div');
+            div.id = 'google_translate_element';
+            div.style.display = 'none';
+            document.body.appendChild(div);
+        }
+
+        try {
+            // Initialize Google Translate
+            new window.google.translate.TranslateElement({
+                pageLanguage: 'th',
+                includedLanguages: 'th,en,zh-CN,ja,ko,vi,de,fr,es',
+                autoDisplay: false,
+                layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE
+            }, 'google_translate_element');
+
+            this.isGoogleTranslateReady = true;
+            console.log('✅ Google Translate พร้อมใช้งาน');
+
+            // ซ่อน Google Translate toolbar
+            this.hideGoogleTranslateToolbar();
+
+            // ถ้ามีภาษาที่บันทึกไว้ ให้แปลทันที
+            const savedLang = localStorage.getItem('app_language');
+            if (savedLang && savedLang !== 'th') {
+                setTimeout(() => this.translatePage(savedLang), 1000);
+            }
+        } catch (error) {
+            console.error('❌ เกิดข้อผิดพลาดใน Google Translate:', error);
+        }
+    },
+
+    /**
+     * ซ่อน Google Translate toolbar/banner
+     */
+    hideGoogleTranslateToolbar() {
+        const style = document.createElement('style');
+        style.textContent = `
+            .goog-te-banner-frame,
+            .goog-te-balloon-frame,
+            #goog-gt-tt,
+            .goog-tooltip {
+                display: none !important;
+            }
+            body {
+                top: 0 !important;
+            }
+            .skiptranslate {
+                display: none !important;
+            }
+            #google_translate_element {
+                display: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+    },
+
+    /**
+     * เปลี่ยนภาษาและแปลหน้าเว็บ
      */
     setLanguage(langCode) {
-        console.log('🌐 เปลี่ยนภาษาเป็น:', langCode, '(ไม่มีการแปลอัตโนมัติ)');
+        console.log('🌐 เปลี่ยนภาษาเป็น:', langCode);
 
         this.current = langCode;
         localStorage.setItem('app_language', langCode);
+        this.translatePage(langCode);
+    },
+
+    /**
+     * แปลหน้าเว็บด้วย Google Translate
+     */
+    translatePage(targetLang) {
+        if (!this.isGoogleTranslateReady) {
+            console.log('⏳ รอ Google Translate โหลด...');
+            setTimeout(() => this.translatePage(targetLang), 500);
+            return;
+        }
+
+        this.isTranslating = true;
+
+        // หา Google Translate select element
+        const selectElement = document.querySelector('.goog-te-combo');
+        if (selectElement) {
+            // เปลี่ยนค่า select และ trigger change event
+            selectElement.value = targetLang;
+            selectElement.dispatchEvent(new Event('change'));
+
+            console.log('✅ กำลังแปลเป็น:', targetLang);
+
+            setTimeout(() => {
+                this.isTranslating = false;
+            }, 1000);
+        } else {
+            console.warn('⚠️ ยังไม่พบ Google Translate dropdown - ลองใหม่...');
+            setTimeout(() => this.translatePage(targetLang), 300);
+        }
     },
 
     /**
@@ -61,10 +182,11 @@ Alpine.store('language', {
     },
 
     /**
-     * Clear cache
+     * Clear cache และกลับเป็นภาษาไทย
      */
     clearCache() {
         localStorage.removeItem('app_language');
         this.current = 'th';
+        this.translatePage('th');
     }
 });
