@@ -42,12 +42,15 @@
 
 {{-- Sidebar Container --}}
 <aside
-    class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 relative z-40
+    class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 z-40
            fixed md:relative inset-y-0 left-0 w-64
-           transform"
+           transform md:transform-none"
     :class="{
         'translate-x-0': sidebarOpen,
-        '-translate-x-full': !sidebarOpen
+        '-translate-x-full': !sidebarOpen,
+        'md:w-64': sidebarOpen,
+        'md:w-0': !sidebarOpen,
+        'md:overflow-hidden': !sidebarOpen
     }"
     x-cloak
 >
