@@ -167,6 +167,9 @@
             </div>
         </div>
 
+        {{-- Language Switcher --}}
+        <x-arrow-x.language-switcher />
+
         {{-- Dark Mode Toggle --}}
         <button @click="$store.theme.toggle()"
                 type="button"
