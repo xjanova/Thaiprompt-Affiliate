@@ -230,18 +230,30 @@
 /**
  * Revenue Chart - กราฟแสดงรายได้รายเดือนตามข้อมูลจริง
  */
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('revenue-chart');
-    if (!ctx) {
-        console.error('Canvas element "revenue-chart" not found');
+function initRevenueChart() {
+    // เช็คว่า Chart.js โหลดแล้วหรือยัง
+    if (typeof Chart === 'undefined') {
+        console.warn('⏳ Waiting for Chart.js to load...');
+        setTimeout(initRevenueChart, 100);
         return;
     }
 
+    const ctx = document.getElementById('revenue-chart');
+    if (!ctx) {
+        console.error('❌ Canvas element "revenue-chart" not found');
+        return;
+    }
+
+    console.log('🎨 Initializing revenue chart...');
+
     // ข้อมูลจริงจากฐานข้อมูล
-    let monthlyData = @json($monthlyRevenue);
+    let monthlyData = @json($monthlyRevenue ?? []);
+
+    console.log('📊 Raw monthlyRevenue:', monthlyData);
 
     // ถ้าไม่มีข้อมูล ใช้ข้อมูลจริง 12 เดือนที่ผ่านมา (ค่าเริ่มต้นเป็น 0)
     if (!monthlyData || monthlyData.length === 0) {
+        console.log('⚠️ No revenue data found, generating empty 12 months');
         const now = new Date();
         monthlyData = [];
         for (let i = 11; i >= 0; i--) {
@@ -394,7 +406,15 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     console.log('✅ Chart initialized successfully');
-});
+}
+
+// เรียก initRevenueChart เมื่อ DOM โหลดเสร็จ
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRevenueChart);
+} else {
+    // DOM โหลดเสร็จแล้ว เรียกทันที
+    initRevenueChart();
+}
 </script>
 @endpush
 

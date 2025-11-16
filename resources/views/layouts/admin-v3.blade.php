@@ -23,14 +23,21 @@
 
     @stack('styles')
 </head>
-<body class="h-full font-sans overflow-hidden"
+<body class="h-full font-sans overflow-hidden flex"
       x-data="{
-          sidebarOpen: true,
+          sidebarOpen: window.innerWidth >= 768,
           profileOpen: false
       }"
       x-init="
           // เริ่มต้น theme store
           $store.theme.init();
+
+          // ปิด sidebar อัตโนมัติบนมือถือเมื่อเปลี่ยนขนาดหน้าจอ
+          window.addEventListener('resize', () => {
+              if (window.innerWidth < 768) {
+                  sidebarOpen = false;
+              }
+          });
       ">
 
     {{-- Background Gradient พื้นหลังแบบ Dashboard4 - สลับตาม dark mode --}}
@@ -66,8 +73,8 @@
     {{-- Sidebar Component (Fixed overlay บน mobile, Relative บน desktop) --}}
     <x-arrow-x.sidebar-v3 />
 
-    {{-- Main Content Area (Full width บน mobile, Flex-1 บน desktop) --}}
-    <div class="flex flex-col h-full w-full md:ml-0 overflow-hidden">
+    {{-- Main Content Area (Flex-1 เพื่อขยายเต็มพื้นที่) --}}
+    <div class="flex flex-col flex-1 h-full overflow-hidden">
         {{-- Top Navbar Component --}}
         <x-arrow-x.navbar-v3 />
 
