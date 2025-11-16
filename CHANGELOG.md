@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.28.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1246 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (5ccc041c)
+- feat: migrate Settings and Profile to V3 theme + fix language dropdown opacity (a9ab40d9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.27.0] - 2025-11-16
 
 ### ✨ Features
