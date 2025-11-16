@@ -276,7 +276,7 @@
             icon="fas fa-star"
             gradient="from-orange-500 to-red-600"
             :change="$stats['points_change'] ?? 0"
-            href="{{ route('user.rank.progress') }}"
+            href="{{ route('user.ranks.progress') }}"
         />
     </div>
 
