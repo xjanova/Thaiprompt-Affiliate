@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.31.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่มระบบ Site Settings และแก้ไขลิ้งค์เมนู (Part 2) (fb95b669)
+- feat: ปรับปรุงระบบโปรไฟล์ + เพิ่ม Site Settings (Part 1) (fba37ae3)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1251 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (09565d82)
+- Merge branch 'claude/Main' into claude/study-documents-019cwizWTHAn9HoBTVgArESL (f640808e)
+
 ## [v3.30.0] - 2025-11-16
 
 ### ✨ Features
