@@ -2,6 +2,51 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.14.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1219 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (6e4034cf)
+- Merge pull request #1218 from xjanova/claude/v3-dashboard-clean-01TtAB5ggsWWBNA2HGTG3GRG (62896769)
+- feat: complete V3 dashboard with all requested features (1ca92a6b)
+- feat: complete V3 dashboard with all requested features (29a20b48)
+- Merge pull request #1215 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (23184b76)
+- feat: add multi-language support, mobile improvements, and UI enhancements (e0856c30)
+- Merge pull request #1213 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (5322574b)
+- feat: add advanced theme customizer and fix dark mode + chart (39319ba2)
+- Merge pull request #1212 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (7572b31f)
+- feat: implement working dark mode with dynamic backgrounds (5d4d2862)
+- Merge pull request #1211 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (2b9b6812)
+- feat: add V3 common components and fix navbar routes (7c154784)
+- feat: complete admin dashboard v3 restructure with all components (b33dad48)
+- feat: add admin dashboard v3 components with demo/dashboard4 theme (26776efb)
+### 🐛 Bug Fixes
+- Merge pull request #1216 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (e870cecc)
+- fix: revert to correct implementation - keep only approved features (96bf154e)
+- Merge pull request #1214 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (3fda6201)
+- fix: apply theme customizer settings to all components (0c86e03e)
+- Merge pull request #1210 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (1d86b0e5)
+- fix: disable profile route in sidebar-v3 (route not exists) (4bd1784d)
+- Merge pull request #1209 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (70cc0372)
+- fix: correct route names in sidebar-v3 navigation (80c848e6)
+- Merge pull request #1208 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (d0446f89)
+- fix: remove invalid User status query in sidebar-v3 (a5d6dbea)
+### 🔧 Other Changes
+- Merge pull request #1220 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (962b2fa3)
+- revert: restore to V3 before theme customizer (commit 5d4d286) (1463c3ca)
+- chore: bump version to 3.20.0 [skip ci] (7ba1953b)
+- chore: bump version to 3.19.0 [skip ci] (5915dc91)
+- chore: bump version to 3.18.1 [skip ci] (ec20f229)
+- chore: bump version to 3.18.0 [skip ci] (3d096adc)
+- chore: bump version to 3.17.1 [skip ci] (b3bef533)
+- chore: bump version to 3.17.0 [skip ci] (d3a9ae6b)
+- chore: bump version to 3.16.0 [skip ci] (ddb02aa9)
+- chore: bump version to 3.15.0 [skip ci] (d356d99b)
+- chore: bump version to 3.14.3 [skip ci] (eabe9c30)
+- chore: bump version to 3.14.2 [skip ci] (239996f8)
+- chore: bump version to 3.14.1 [skip ci] (06726e43)
+- chore: bump version to 3.14.0 [skip ci] (77a76c66)
+- Merge pull request #1207 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (a9b80298)
+
 ## [v3.13.1] - 2025-11-15
 
 ### ✨ Features
