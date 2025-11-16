@@ -1,676 +1,654 @@
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
-@section('title', 'โปรไฟล์')
-
-@push('scripts')
-@if(config('turnstile.enabled') && config('turnstile.points.password_change'))
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
-@endif
-@endpush
+@section('title', 'จัดการโปรไฟล์')
 
 @section('content')
-<div class="space-y-6 pb-20 lg:pb-6">
-    <!-- Header -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h1 class="text-2xl font-bold text-gray-900">โปรไฟล์ของฉัน</h1>
-        <p class="text-sm text-gray-600 mt-1">จัดการข้อมูลส่วนตัวของคุณ</p>
+{{--
+/**
+ * User Profile Management - Arrow X Theme V3
+ *
+ * หน้าจัดการโปรไฟล์ผู้ใช้แบบ Arrow X Theme พร้อม:
+ * - Avatar Upload with Live Preview (WebP)
+ * - Profile Information Edit
+ * - Contact Information
+ * - Address Management
+ * - Shipping Address (NEW)
+ * - Password Change
+ * - Floating Save Button (NEW)
+ * - Dark Mode Support
+ *
+ * @version 3.1.0
+ * @theme Arrow X
+ */
+--}}
+
+<div class="space-y-6 pb-24" x-data="profileManager()" x-init="init()">
+    {{-- Page Header --}}
+    <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-3xl font-extrabold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent dark:from-purple-400 dark:via-pink-400 dark:to-orange-400">
+                    <i class="fas fa-user-edit mr-2"></i>จัดการโปรไฟล์
+                </h1>
+                <p class="mt-1 text-gray-600 dark:text-gray-400">
+                    แก้ไขข้อมูลส่วนตัวและการตั้งค่าของคุณ
+                </p>
+            </div>
+        </div>
     </div>
 
+    {{-- Success/Error Messages --}}
     @if(session('success'))
-        <div class="bg-green-50 border border-green-200 text-green-800 rounded-xl p-4">
-            <i class="fas fa-check-circle mr-2"></i>{{ session('success') }}
+        <div class="glass-fusion-card rounded-xl p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-l-4 border-green-500 shadow-lg" x-data="{ show: true }" x-show="show" x-transition>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl mr-3"></i>
+                    <span class="font-semibold text-green-800 dark:text-green-200">{{ session('success') }}</span>
+                </div>
+                <button @click="show = false" class="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
         </div>
     @endif
 
     @if(session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-800 rounded-xl p-4">
-            <i class="fas fa-exclamation-circle mr-2"></i>{{ session('error') }}
-        </div>
-    @endif
-
-    <!-- Profile Information -->
-    <div class="bg-white rounded-xl shadow-md p-6" x-data="{
-        editMode: false,
-        avatarPreview: null,
-        avatarFile: null,
-        handleAvatarClick() {
-            // Click the form's file input (only in edit mode)
-            if (this.editMode && this.$refs.profilePictureInput) {
-                this.$refs.profilePictureInput.click();
-            }
-        },
-        handleAvatarChange(event) {
-            const file = event.target.files[0];
-            if (file) {
-                // Validate file type
-                if (!file.type.startsWith('image/')) {
-                    alert('กรุณาเลือกไฟล์รูปภาพเท่านั้น');
-                    event.target.value = '';
-                    return;
-                }
-
-                // Validate file size (max 5MB)
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('ขนาดไฟล์ต้องไม่เกิน 5MB');
-                    event.target.value = '';
-                    return;
-                }
-
-                this.avatarFile = file;
-
-                // Create preview
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.avatarPreview = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        },
-        clearAvatar() {
-            this.avatarPreview = null;
-            this.avatarFile = null;
-            if (this.$refs.profilePictureInput) {
-                this.$refs.profilePictureInput.value = '';
-            }
-        },
-        toggleEditMode() {
-            this.editMode = !this.editMode;
-            // Clear avatar preview when exiting edit mode
-            if (!this.editMode) {
-                this.clearAvatar();
-            }
-        }
-    }">
-        <div class="flex items-center gap-6 mb-6">
-            <div class="relative group">
-                <div class="w-24 h-24 rounded-full overflow-hidden bg-gradient-primary flex items-center justify-center text-white text-4xl font-bold transition-all"
-                     :class="editMode ? 'cursor-pointer hover:ring-4 hover:ring-indigo-300' : ''"
-                     @click="editMode && handleAvatarClick()"
-                     :title="editMode ? 'คลิกเพื่อเปลี่ยนรูปโปรไฟล์' : ''">
-                    <!-- Show preview if new image selected -->
-                    <template x-if="avatarPreview">
-                        <img :src="avatarPreview"
-                             alt="Preview"
-                             class="w-full h-full object-cover">
-                    </template>
-                    <!-- Show existing avatar if no preview -->
-                    <template x-if="!avatarPreview">
-                        <div class="w-full h-full flex items-center justify-center">
-                            <img src="{{ $user->profile_picture_url }}"
-                                 alt="{{ $user->name }}"
-                                 class="w-full h-full object-cover">
-                        </div>
-                    </template>
+        <div class="glass-fusion-card rounded-xl p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border-l-4 border-red-500 shadow-lg" x-data="{ show: true }" x-show="show" x-transition>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400 text-xl mr-3"></i>
+                    <span class="font-semibold text-red-800 dark:text-red-200">{{ session('error') }}</span>
                 </div>
-                <!-- Camera overlay icon (only in edit mode) -->
-                <div x-show="editMode"
-                     class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-full cursor-pointer"
-                     @click="handleAvatarClick()">
-                    <i class="fas fa-camera text-white text-2xl"></i>
-                </div>
-                <!-- Clear button when preview is shown (only in edit mode) -->
-                <button type="button"
-                        x-show="avatarPreview && editMode"
-                        @click.stop="clearAvatar()"
-                        class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600 transition shadow-lg"
-                        title="ยกเลิก">
+                <button @click="show = false" class="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 transition">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="flex-1">
-                <h2 class="text-2xl font-bold text-gray-900">{{ $user->name }}</h2>
-                <p class="text-gray-600">{{ $user->email }}</p>
-                <p class="text-xs text-gray-500 mt-1" x-show="editMode">
-                    <i class="fas fa-info-circle mr-1"></i>คลิกที่รูปโปรไฟล์เพื่อเปลี่ยนรูป
-                </p>
-                <div class="flex gap-2 mt-2 flex-wrap">
-                    <span class="inline-block px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium">
-                        {{ ucfirst($user->role) }}
-                    </span>
-                    @if($user->line_verified)
-                        <span class="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                            <i class="fab fa-line mr-1"></i>LINE Verified
-                        </span>
-                    @endif
-                    @if($user->phone_verified)
-                        <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                            <i class="fas fa-phone mr-1"></i>Phone Verified
-                        </span>
-                    @endif
+        </div>
+    @endif
+
+    {{-- Main Profile Form --}}
+    <form action="{{ route('user.profile.update') }}" method="POST" enctype="multipart/form-data" x-ref="profileForm" @submit="formChanged = false">
+        @csrf
+        @method('PUT')
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {{-- Left Sidebar - Avatar Card --}}
+            <div class="lg:col-span-1">
+                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg sticky top-6">
+                    {{-- Avatar Section --}}
+                    <div class="text-center mb-6">
+                        <div class="relative inline-block group">
+                            {{-- Avatar Preview with Glow --}}
+                            <div class="relative w-40 h-40 mx-auto mb-4">
+                                <div class="absolute inset-0 bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 rounded-full blur-lg opacity-60 group-hover:opacity-80 transition"></div>
+                                <div class="relative w-full h-full bg-gradient-to-br from-purple-500 to-pink-500 rounded-full p-1 shadow-2xl">
+                                    <div class="w-full h-full bg-white dark:bg-gray-800 rounded-full p-1">
+                                        <img :src="avatarPreview || '{{ $user->profile_picture ? asset('storage/' . $user->profile_picture) : asset('images/default-avatar.png') }}'"
+                                             alt="{{ $user->name }}"
+                                             class="w-full h-full object-cover rounded-full ring-4 ring-white dark:ring-gray-700">
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Upload Button --}}
+                            <label for="avatar-upload"
+                                   class="block w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-0.5 transition-all duration-300 cursor-pointer text-center">
+                                <i class="fas fa-camera mr-2"></i>เปลี่ยนรูปโปรไฟล์
+                            </label>
+
+                            <input type="file"
+                                   id="avatar-upload"
+                                   name="profile_picture"
+                                   accept="image/jpeg,image/png,image/gif,image/webp"
+                                   class="hidden"
+                                   @change="handleAvatarChange($event)">
+
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                JPG, PNG, GIF หรือ WebP<br>
+                                ขนาดไม่เกิน 5MB<br>
+                                <span class="text-purple-600 dark:text-purple-400 font-semibold">จะแปลงเป็น WebP อัตโนมัติ</span>
+                            </p>
+                        </div>
+
+                        {{-- User Info --}}
+                        <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $user->name }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $user->email }}</p>
+                            @if($user->member_number)
+                                <div class="mt-3 inline-flex items-center px-3 py-1 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-lg text-xs font-bold shadow-lg">
+                                    <i class="fas fa-id-card mr-2"></i>{{ $user->member_number }}
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             </div>
-            <button @click="toggleEditMode()"
-                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                <span x-show="!editMode"><i class="fas fa-edit mr-2"></i>แก้ไขโปรไฟล์</span>
-                <span x-show="editMode"><i class="fas fa-times mr-2"></i>ยกเลิก</span>
-            </button>
-        </div>
 
-        <form method="POST" action="{{ route('user.profile.update') }}" enctype="multipart/form-data" x-show="editMode" style="display: none;">
-            @csrf
-            @method('PUT')
+            {{-- Right Content - Profile Forms --}}
+            <div class="lg:col-span-2 space-y-6">
+                {{-- Personal Information --}}
+                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                        ข้อมูลส่วนตัว
+                    </h2>
 
-            <!-- Hidden input for avatar file -->
-            <input type="file"
-                   name="profile_picture"
-                   x-ref="profilePictureInput"
-                   accept="image/jpeg,image/png,image/gif,image/webp"
-                   class="hidden"
-                   @change="handleAvatarChange($event)">
-
-            <div class="space-y-6">
-                <!-- Basic Information -->
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">ข้อมูลพื้นฐาน</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ-นามสกุล <span class="text-red-500">*</span></label>
-                            <input type="text" name="name" value="{{ old('name', $user->name) }}" required
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        {{-- Name --}}
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-signature mr-1 text-purple-600"></i>ชื่อ-นามสกุล <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text"
+                                   name="name"
+                                   value="{{ old('name', $user->name) }}"
+                                   required
+                                   class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                   @input="formChanged = true">
                             @error('name')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">อีเมล <span class="text-red-500">*</span></label>
-                            <input type="email" name="email" value="{{ old('email', $user->email) }}" required
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        {{-- Email --}}
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-envelope mr-1 text-purple-600"></i>อีเมล <span class="text-red-500">*</span>
+                            </label>
+                            <input type="email"
+                                   name="email"
+                                   value="{{ old('email', $user->email) }}"
+                                   required
+                                   class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                   @input="formChanged = true">
                             @error('email')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
 
+                        {{-- Phone --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">เบอร์โทรศัพท์</label>
-                            <input type="tel" name="phone" id="profilePhone" value="{{ old('phone', $user->phone) }}"
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-phone mr-1 text-purple-600"></i>เบอร์โทรศัพท์
+                            </label>
+                            <input type="tel"
+                                   name="phone"
+                                   value="{{ old('phone', $user->phone) }}"
                                    placeholder="0812345678"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                   class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                   @input="formChanged = true">
                             @error('phone')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                            @else
-                                <p class="mt-1 text-xs text-gray-500">รูปแบบ: 0812345678 หรือ +66812345678</p>
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
 
+                        {{-- Birth Date --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">วันเกิด</label>
-                            <input type="date" name="date_of_birth" value="{{ old('date_of_birth', $user->date_of_birth?->format('Y-m-d')) }}"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-birthday-cake mr-1 text-purple-600"></i>วันเกิด
+                            </label>
+                            <input type="date"
+                                   name="date_of_birth"
+                                   value="{{ old('date_of_birth', $user->date_of_birth) }}"
+                                   class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                   @input="formChanged = true">
                             @error('date_of_birth')
-                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                             @enderror
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">เพศ</label>
-                            <select name="gender" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        {{-- Gender --}}
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-venus-mars mr-1 text-purple-600"></i>เพศ
+                            </label>
+                            <select name="gender"
+                                    class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition"
+                                    @change="formChanged = true">
                                 <option value="">เลือกเพศ</option>
-                                <option value="male" {{ old('gender', $user->gender) == 'male' ? 'selected' : '' }}>ชาย</option>
-                                <option value="female" {{ old('gender', $user->gender) == 'female' ? 'selected' : '' }}>หญิง</option>
-                                <option value="other" {{ old('gender', $user->gender) == 'other' ? 'selected' : '' }}>อื่นๆ</option>
-                                <option value="prefer_not_to_say" {{ old('gender', $user->gender) == 'prefer_not_to_say' ? 'selected' : '' }}>ไม่ระบุ</option>
+                                <option value="male" {{ old('gender', $user->gender) === 'male' ? 'selected' : '' }}>ชาย</option>
+                                <option value="female" {{ old('gender', $user->gender) === 'female' ? 'selected' : '' }}>หญิง</option>
+                                <option value="other" {{ old('gender', $user->gender) === 'other' ? 'selected' : '' }}>อื่นๆ</option>
+                                <option value="prefer_not_to_say" {{ old('gender', $user->gender) === 'prefer_not_to_say' ? 'selected' : '' }}>ไม่ระบุ</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- Address Information -->
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">ที่อยู่</h3>
+                {{-- Billing Address --}}
+                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
+                            <i class="fas fa-map-marker-alt text-white"></i>
+                        </div>
+                        ที่อยู่ (สำหรับออกใบเสร็จ)
+                    </h2>
+
                     <div class="grid grid-cols-1 gap-4">
+                        {{-- Address --}}
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">ที่อยู่</label>
-                            <textarea name="address" rows="2"
-                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">{{ old('address', $user->address) }}</textarea>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">เมือง/อำเภอ</label>
-                                <input type="text" name="city" value="{{ old('city', $user->city) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">จังหวัด</label>
-                                <input type="text" name="state" value="{{ old('state', $user->state) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">รหัสไปรษณีย์</label>
-                                <input type="text" name="postal_code" value="{{ old('postal_code', $user->postal_code) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">ประเทศ</label>
-                            <select name="country" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="TH" {{ old('country', $user->country) == 'TH' ? 'selected' : '' }}>ไทย</option>
-                                <option value="US" {{ old('country', $user->country) == 'US' ? 'selected' : '' }}>United States</option>
-                                <option value="GB" {{ old('country', $user->country) == 'GB' ? 'selected' : '' }}>United Kingdom</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Shipping Address -->
-                <div>
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-bold text-gray-900">ที่อยู่จัดส่ง</h3>
-                        <button type="button" onclick="copyBillingAddress()"
-                                class="text-sm text-indigo-600 hover:text-indigo-700">
-                            <i class="fas fa-copy mr-1"></i>คัดลอกจากที่อยู่ด้านบน
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-1 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">ที่อยู่จัดส่ง</label>
-                            <textarea name="shipping_address" rows="2" id="shipping_address"
-                                      class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">{{ old('shipping_address', $user->shipping_address) }}</textarea>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">เมือง/อำเภอ</label>
-                                <input type="text" name="shipping_city" id="shipping_city" value="{{ old('shipping_city', $user->shipping_city) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">จังหวัด</label>
-                                <input type="text" name="shipping_state" id="shipping_state" value="{{ old('shipping_state', $user->shipping_state) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">รหัสไปรษณีย์</label>
-                                <input type="text" name="shipping_postal_code" id="shipping_postal_code" value="{{ old('shipping_postal_code', $user->shipping_postal_code) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                            </div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-home mr-1 text-green-600"></i>ที่อยู่
+                            </label>
+                            <textarea name="address"
+                                      rows="2"
+                                      placeholder="บ้านเลขที่ ถนน"
+                                      class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition resize-none"
+                                      @input="formChanged = true">{{ old('address', $user->address) }}</textarea>
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {{-- City --}}
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">ประเทศ</label>
-                                <select name="shipping_country" id="shipping_country" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="TH" {{ old('shipping_country', $user->shipping_country) == 'TH' ? 'selected' : '' }}>ไทย</option>
-                                    <option value="US" {{ old('shipping_country', $user->shipping_country) == 'US' ? 'selected' : '' }}>United States</option>
-                                    <option value="GB" {{ old('shipping_country', $user->shipping_country) == 'GB' ? 'selected' : '' }}>United Kingdom</option>
-                                </select>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-city mr-1 text-green-600"></i>เขต/อำเภอ
+                                </label>
+                                <input type="text"
+                                       name="city"
+                                       value="{{ old('city', $user->city) }}"
+                                       placeholder="เขต/อำเภอ"
+                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition"
+                                       @input="formChanged = true">
                             </div>
 
+                            {{-- State --}}
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">เบอร์โทรศัพท์จัดส่ง</label>
-                                <input type="tel" name="shipping_phone" id="shipping_phone" value="{{ old('shipping_phone', $user->shipping_phone) }}"
-                                       placeholder="0812345678"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-map mr-1 text-green-600"></i>จังหวัด
+                                </label>
+                                <input type="text"
+                                       name="state"
+                                       value="{{ old('state', $user->state) }}"
+                                       placeholder="จังหวัด"
+                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition"
+                                       @input="formChanged = true">
+                            </div>
+
+                            {{-- Postal Code --}}
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-mail-bulk mr-1 text-green-600"></i>รหัสไปรษณีย์
+                                </label>
+                                <input type="text"
+                                       name="postal_code"
+                                       value="{{ old('postal_code', $user->postal_code) }}"
+                                       placeholder="10100"
+                                       maxlength="5"
+                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition"
+                                       @input="formChanged = true">
+                            </div>
+
+                            {{-- Country --}}
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-globe mr-1 text-green-600"></i>ประเทศ
+                                </label>
+                                <select name="country"
+                                        class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-green-500 focus:ring-4 focus:ring-green-500/20 transition"
+                                        @change="formChanged = true">
+                                    <option value="TH" {{ old('country', $user->country ?? 'TH') === 'TH' ? 'selected' : '' }}>ประเทศไทย</option>
+                                    <option value="US" {{ old('country', $user->country) === 'US' ? 'selected' : '' }}>United States</option>
+                                    <option value="GB" {{ old('country', $user->country) === 'GB' ? 'selected' : '' }}>United Kingdom</option>
+                                </select>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Submit Button -->
-                <div class="flex gap-3 pt-4 border-t">
-                    <button type="submit"
-                            class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
-                        <i class="fas fa-save mr-2"></i>บันทึกข้อมูล
-                    </button>
-                    <button type="button" @click="toggleEditMode()"
-                            class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition font-medium">
-                        ยกเลิก
-                    </button>
-                </div>
-            </div>
-        </form>
+                {{-- Shipping Address --}}
+                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center">
+                            <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
+                                <i class="fas fa-shipping-fast text-white"></i>
+                            </div>
+                            ที่อยู่จัดส่ง
+                        </h2>
 
-        <!-- Read-only view -->
-        <div x-show="!editMode">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อ</label>
-                    <input type="text" value="{{ $user->name }}" readonly
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                </div>
+                        {{-- Copy from Billing Address --}}
+                        <button type="button"
+                                @click="copyBillingAddress()"
+                                class="px-4 py-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white text-sm font-bold rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all">
+                            <i class="fas fa-copy mr-2"></i>คัดลอกจากที่อยู่หลัก
+                        </button>
+                    </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">อีเมล</label>
-                    <input type="email" value="{{ $user->email }}" readonly
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                </div>
+                    <div class="grid grid-cols-1 gap-4">
+                        {{-- Shipping Address --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-home mr-1 text-orange-600"></i>ที่อยู่จัดส่ง
+                            </label>
+                            <textarea name="shipping_address"
+                                      rows="2"
+                                      placeholder="บ้านเลขที่ ถนน"
+                                      class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition resize-none"
+                                      x-ref="shippingAddress"
+                                      @input="formChanged = true">{{ old('shipping_address', $user->shipping_address) }}</textarea>
+                        </div>
 
-                @if($user->phone)
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">เบอร์โทรศัพท์</label>
-                    <div class="flex gap-2">
-                        <input type="text" value="{{ $user->phone }}" readonly
-                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                        @if($user->phone_verified)
-                            <span class="px-3 py-2 bg-green-100 text-green-800 rounded-lg text-sm">
-                                <i class="fas fa-check-circle"></i> ยืนยันแล้ว
-                            </span>
-                        @else
-                            <button type="button" onclick="verifyPhone()"
-                                    class="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-sm">
-                                ยืนยัน OTP
-                            </button>
-                        @endif
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {{-- Shipping City --}}
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-city mr-1 text-orange-600"></i>เขต/อำเภอ
+                                </label>
+                                <input type="text"
+                                       name="shipping_city"
+                                       value="{{ old('shipping_city', $user->shipping_city) }}"
+                                       placeholder="เขต/อำเภอ"
+                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
+                                       x-ref="shippingCity"
+                                       @input="formChanged = true">
+                            </div>
+
+                            {{-- Shipping State --}}
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-map mr-1 text-orange-600"></i>จังหวัด
+                                </label>
+                                <input type="text"
+                                       name="shipping_state"
+                                       value="{{ old('shipping_state', $user->shipping_state) }}"
+                                       placeholder="จังหวัด"
+                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
+                                       x-ref="shippingState"
+                                       @input="formChanged = true">
+                            </div>
+
+                            {{-- Shipping Postal Code --}}
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-mail-bulk mr-1 text-orange-600"></i>รหัสไปรษณีย์
+                                </label>
+                                <input type="text"
+                                       name="shipping_postal_code"
+                                       value="{{ old('shipping_postal_code', $user->shipping_postal_code) }}"
+                                       placeholder="10100"
+                                       maxlength="5"
+                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
+                                       x-ref="shippingPostalCode"
+                                       @input="formChanged = true">
+                            </div>
+
+                            {{-- Shipping Country --}}
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-globe mr-1 text-orange-600"></i>ประเทศ
+                                </label>
+                                <select name="shipping_country"
+                                        class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
+                                        x-ref="shippingCountry"
+                                        @change="formChanged = true">
+                                    <option value="TH" {{ old('shipping_country', $user->shipping_country ?? 'TH') === 'TH' ? 'selected' : '' }}>ประเทศไทย</option>
+                                    <option value="US" {{ old('shipping_country', $user->shipping_country) === 'US' ? 'selected' : '' }}>United States</option>
+                                    <option value="GB" {{ old('shipping_country', $user->shipping_country) === 'GB' ? 'selected' : '' }}>United Kingdom</option>
+                                </select>
+                            </div>
+
+                            {{-- Shipping Phone --}}
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                    <i class="fas fa-phone mr-1 text-orange-600"></i>เบอร์โทรติดต่อ (จัดส่ง)
+                                </label>
+                                <input type="tel"
+                                       name="shipping_phone"
+                                       value="{{ old('shipping_phone', $user->shipping_phone) }}"
+                                       placeholder="0812345678"
+                                       class="input-3d w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-orange-500 focus:ring-4 focus:ring-orange-500/20 transition"
+                                       x-ref="shippingPhone"
+                                       @input="formChanged = true">
+                            </div>
+                        </div>
                     </div>
                 </div>
-                @endif
 
-                @if($user->date_of_birth)
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">วันเกิด</label>
-                    <input type="text" value="{{ $user->date_of_birth->format('d/m/Y') }}" readonly
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                </div>
-                @endif
+                {{-- Password Change --}}
+                <div class="glass-fusion-card rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                        <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center mr-3 shadow-lg">
+                            <i class="fas fa-key text-white"></i>
+                        </div>
+                        เปลี่ยนรหัสผ่าน
+                    </h2>
 
-                @if($user->gender)
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">เพศ</label>
-                    <input type="text" value="{{ ['male' => 'ชาย', 'female' => 'หญิง', 'other' => 'อื่นๆ', 'prefer_not_to_say' => 'ไม่ระบุ'][$user->gender] ?? $user->gender }}" readonly
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                </div>
-                @endif
+                    <div class="grid grid-cols-1 gap-4">
+                        {{-- Current Password --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-lock mr-1 text-red-600"></i>รหัสผ่านปัจจุบัน
+                            </label>
+                            <div class="relative" x-data="{ showPassword: false }">
+                                <input :type="showPassword ? 'text' : 'password'"
+                                       name="current_password"
+                                       placeholder="ใส่รหัสผ่านปัจจุบัน (ถ้าต้องการเปลี่ยน)"
+                                       class="input-3d w-full px-4 py-3 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition">
+                                <button type="button"
+                                        @click="showPassword = !showPassword"
+                                        class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                    <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
+                            </div>
+                        </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">บทบาท</label>
-                    <input type="text" value="{{ ucfirst($user->role) }}" readonly
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                </div>
+                        {{-- New Password --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-key mr-1 text-red-600"></i>รหัสผ่านใหม่
+                            </label>
+                            <div class="relative" x-data="{ showPassword: false }">
+                                <input :type="showPassword ? 'text' : 'password'"
+                                       name="new_password"
+                                       placeholder="ใส่รหัสผ่านใหม่"
+                                       class="input-3d w-full px-4 py-3 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition">
+                                <button type="button"
+                                        @click="showPassword = !showPassword"
+                                        class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                    <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
+                            </div>
+                        </div>
 
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">สมัครสมาชิกเมื่อ</label>
-                    <input type="text" value="{{ $user->created_at->format('d/m/Y H:i') }}" readonly
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                </div>
+                        {{-- Confirm Password --}}
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                <i class="fas fa-check-circle mr-1 text-red-600"></i>ยืนยันรหัสผ่านใหม่
+                            </label>
+                            <div class="relative" x-data="{ showPassword: false }">
+                                <input :type="showPassword ? 'text' : 'password'"
+                                       name="new_password_confirmation"
+                                       placeholder="ยืนยันรหัสผ่านใหม่อีกครั้ง"
+                                       class="input-3d w-full px-4 py-3 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:border-red-500 focus:ring-4 focus:ring-red-500/20 transition">
+                                <button type="button"
+                                        @click="showPassword = !showPassword"
+                                        class="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+                                    <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
+                                </button>
+                            </div>
+                        </div>
 
-                @if($user->affiliate)
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสแนะนำ</label>
-                    <input type="text" value="{{ $user->affiliate->referral_code }}" readonly
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500 p-4 rounded-lg">
+                            <p class="text-sm text-blue-800 dark:text-blue-200">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข
+                            </p>
+                        </div>
+                    </div>
                 </div>
-                @endif
             </div>
         </div>
-    </div>
+    </form>
 
-    <!-- Change Password -->
-    <div id="change-password" class="bg-white rounded-xl shadow-md p-6" x-data="{ showPasswordForm: false }">
-        <div class="flex items-center justify-between mb-4">
-            <div>
-                <h2 class="text-xl font-bold text-gray-900">เปลี่ยนรหัสผ่าน</h2>
-                <p class="text-sm text-gray-600 mt-1">อัปเดตรหัสผ่านของคุณเพื่อความปลอดภัย</p>
-            </div>
-            <button @click="showPasswordForm = !showPasswordForm"
-                    class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                <span x-show="!showPasswordForm">เปลี่ยนรหัสผ่าน</span>
-                <span x-show="showPasswordForm">ยกเลิก</span>
+    {{-- Floating Save Button --}}
+    <div x-show="formChanged"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-4"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-4"
+         class="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
+         style="display: none;">
+        <div class="glass-fusion-card rounded-full shadow-2xl p-2 flex items-center gap-4 border-2 border-purple-500/50">
+            <button type="button"
+                    @click="$refs.profileForm.submit()"
+                    class="px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 hover:from-purple-700 hover:via-pink-700 hover:to-orange-700 text-white font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3">
+                <i class="fas fa-save text-2xl"></i>
+                <span>บันทึกการเปลี่ยนแปลง</span>
             </button>
-        </div>
-
-        <div x-show="showPasswordForm"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 transform -translate-y-2"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             style="display: none;">
-            <form method="POST" action="{{ route('user.profile.update-password') }}" class="space-y-4">
-                @csrf
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่านปัจจุบัน</label>
-                    <input type="password" name="current_password" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    @error('current_password')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">รหัสผ่านใหม่</label>
-                    <input type="password" name="new_password" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    <p class="mt-1 text-xs text-gray-500">รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข</p>
-                    @error('new_password')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ยืนยันรหัสผ่านใหม่</label>
-                    <input type="password" name="new_password_confirmation" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-
-                @if(config('turnstile.enabled') && config('turnstile.points.password_change'))
-                <div class="flex justify-center pt-2">
-                    <div class="cf-turnstile"
-                         data-sitekey="{{ config('turnstile.site_key') }}"
-                         data-theme="{{ config('turnstile.theme') }}"
-                         data-size="{{ config('turnstile.size') }}">
-                    </div>
-                </div>
-                @endif
-
-                <div class="flex gap-3 pt-4">
-                    <button type="submit"
-                            class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                        บันทึกรหัสผ่านใหม่
-                    </button>
-                    <button type="button" @click="showPasswordForm = false"
-                            class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
-                        ยกเลิก
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Account Statistics -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-4">สถิติบัญชี</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <p class="text-3xl font-bold text-indigo-600">{{ $user->commissions()->count() }}</p>
-                <p class="text-sm text-gray-600 mt-1">คอมมิชชั่นทั้งหมด</p>
-            </div>
-
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <p class="text-3xl font-bold text-green-600">
-                    ฿{{ number_format($user->commissions()->where('status', 'paid')->sum('amount'), 0) }}
-                </p>
-                <p class="text-sm text-gray-600 mt-1">จ่ายแล้ว</p>
-            </div>
-
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <p class="text-3xl font-bold text-yellow-600">
-                    {{ $user->commissions()->where('status', 'pending')->count() }}
-                </p>
-                <p class="text-sm text-gray-600 mt-1">รอดำเนินการ</p>
-            </div>
-
-            <div class="text-center p-4 bg-gray-50 rounded-lg">
-                <p class="text-3xl font-bold text-purple-600">
-                    {{ $user->affiliate ? $user->affiliate->children()->count() : 0 }}
-                </p>
-                <p class="text-sm text-gray-600 mt-1">ผู้แนะนำ</p>
-            </div>
+            <button type="button"
+                    @click="formChanged = false; window.location.reload()"
+                    class="px-6 py-4 bg-white/20 hover:bg-white/30 dark:bg-gray-800/50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300 font-semibold rounded-full transition-all">
+                <i class="fas fa-times mr-2"></i>ยกเลิก
+            </button>
         </div>
     </div>
 </div>
 
-<!-- OTP Verification Modal -->
-<div id="otpModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-    <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-xl font-bold text-gray-900">ยืนยันเบอร์โทรศัพท์</h3>
-            <button onclick="closeOtpModal()" class="text-gray-400 hover:text-gray-600">
-                <i class="fas fa-times text-xl"></i>
-            </button>
-        </div>
+@push('styles')
+<style>
+/* Glass Fusion Card */
+.glass-fusion-card {
+    background: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0.25) 0%,
+        rgba(255, 255, 255, 0.15) 100%
+    );
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
 
-        <div id="otpAlert" class="hidden mb-4 p-3 rounded-lg"></div>
+.dark .glass-fusion-card {
+    background: linear-gradient(
+        135deg,
+        rgba(31, 41, 55, 0.8) 0%,
+        rgba(17, 24, 39, 0.7) 100%
+    );
+    border-color: rgba(75, 85, 99, 0.5);
+}
 
-        <div id="sendOtpStep">
-            <p class="text-sm text-gray-600 mb-4">เราจะส่งรหัส OTP ไปยังเบอร์โทรศัพท์ของคุณ</p>
-            <p class="text-lg font-bold text-gray-900 mb-4">{{ $user->phone }}</p>
-            <button onclick="sendOtp()" class="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition font-medium">
-                <i class="fas fa-paper-plane mr-2"></i>ส่งรหัส OTP
-            </button>
-        </div>
+/* Input 3D Effect */
+.input-3d {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
 
-        <div id="verifyOtpStep" class="hidden">
-            <p class="text-sm text-gray-600 mb-4">กรุณากรอกรหัส OTP ที่ส่งไปยัง <strong>{{ $user->phone }}</strong></p>
-            <input type="text" id="otpCode" maxlength="8" placeholder="กรอกรหัส OTP"
-                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-center text-2xl font-bold mb-4">
-            <div class="flex gap-3">
-                <button onclick="verifyOtp()" class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-medium">
-                    <i class="fas fa-check mr-2"></i>ยืนยัน
-                </button>
-                <button onclick="resendOtp()" class="px-4 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
-                    ส่งอีกครั้ง
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+.input-3d:focus {
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2), 0 0 0 3px rgba(139, 92, 246, 0.1);
+    transform: translateY(-1px);
+}
 
+/* Spin Slow Animation */
+@keyframes spin-slow {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+}
+</style>
+@endpush
+
+@push('scripts')
 <script>
-// Copy billing address to shipping address
-function copyBillingAddress() {
-    document.querySelector('[name="shipping_address"]').value = document.querySelector('[name="address"]').value;
-    document.querySelector('[name="shipping_city"]').value = document.querySelector('[name="city"]').value;
-    document.querySelector('[name="shipping_state"]').value = document.querySelector('[name="state"]').value;
-    document.querySelector('[name="shipping_postal_code"]').value = document.querySelector('[name="postal_code"]').value;
-    document.querySelector('[name="shipping_country"]').value = document.querySelector('[name="country"]').value;
-    document.querySelector('[name="shipping_phone"]').value = document.querySelector('[name="phone"]').value;
-}
+/**
+ * Profile Manager - Alpine.js Component
+ */
+function profileManager() {
+    return {
+        avatarPreview: null,
+        formChanged: false,
 
-// OTP Modal Functions
-function verifyPhone() {
-    @if(!$user->phone)
-        alert('กรุณากรอกเบอร์โทรศัพท์ก่อนทำการยืนยัน');
-        return;
-    @endif
+        init() {
+            // Track form changes
+            const form = this.$refs.profileForm;
+            if (form) {
+                const inputs = form.querySelectorAll('input, select, textarea');
+                inputs.forEach(input => {
+                    input.addEventListener('input', () => {
+                        this.formChanged = true;
+                    });
+                });
+            }
+        },
 
-    document.getElementById('otpModal').classList.remove('hidden');
-    document.getElementById('otpModal').classList.add('flex');
-}
+        /**
+         * Handle Avatar Upload and Preview
+         */
+        handleAvatarChange(event) {
+            const file = event.target.files[0];
 
-function closeOtpModal() {
-    document.getElementById('otpModal').classList.add('hidden');
-    document.getElementById('otpModal').classList.remove('flex');
-    document.getElementById('sendOtpStep').classList.remove('hidden');
-    document.getElementById('verifyOtpStep').classList.add('hidden');
-    document.getElementById('otpAlert').classList.add('hidden');
-    document.getElementById('otpCode').value = '';
-}
+            if (!file) {
+                return;
+            }
 
-async function sendOtp() {
-    try {
-        showAlert('กำลังส่ง OTP...', 'info');
+            // Validate file type
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type)) {
+                alert('กรุณาเลือกไฟล์รูปภาพ (JPG, PNG, GIF, WebP) เท่านั้น');
+                event.target.value = '';
+                return;
+            }
 
-        const response = await fetch('{{ route("otp.send") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                phone: '{{ $user->phone }}',
-                purpose: 'phone_verification'
-            })
-        });
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('ขนาดไฟล์ต้องไม่เกิน 5MB');
+                event.target.value = '';
+                return;
+            }
 
-        const data = await response.json();
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.avatarPreview = e.target.result;
+                this.formChanged = true;
+            };
+            reader.readAsDataURL(file);
+        },
 
-        if (data.success) {
-            showAlert(data.message, 'success');
-            document.getElementById('sendOtpStep').classList.add('hidden');
-            document.getElementById('verifyOtpStep').classList.remove('hidden');
-        } else {
-            showAlert(data.message, 'error');
+        /**
+         * Copy Billing Address to Shipping Address
+         */
+        copyBillingAddress() {
+            // Get billing address values
+            const address = document.querySelector('textarea[name="address"]').value;
+            const city = document.querySelector('input[name="city"]').value;
+            const state = document.querySelector('input[name="state"]').value;
+            const postalCode = document.querySelector('input[name="postal_code"]').value;
+            const country = document.querySelector('select[name="country"]').value;
+            const phone = document.querySelector('input[name="phone"]').value;
+
+            // Set shipping address values
+            this.$refs.shippingAddress.value = address;
+            this.$refs.shippingCity.value = city;
+            this.$refs.shippingState.value = state;
+            this.$refs.shippingPostalCode.value = postalCode;
+            this.$refs.shippingCountry.value = country;
+            this.$refs.shippingPhone.value = phone;
+
+            this.formChanged = true;
+
+            // Show success message
+            this.showNotification('คัดลอกที่อยู่สำเร็จ!', 'success');
+        },
+
+        /**
+         * Show notification
+         */
+        showNotification(message, type = 'success') {
+            // Simple alert for now (can be enhanced with toast notification)
+            alert(message);
         }
-    } catch (error) {
-        showAlert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', 'error');
-    }
+    };
 }
-
-async function verifyOtp() {
-    const code = document.getElementById('otpCode').value;
-    if (!code) {
-        showAlert('กรุณากรอกรหัส OTP', 'error');
-        return;
-    }
-
-    try {
-        showAlert('กำลังยืนยัน...', 'info');
-
-        const response = await fetch('{{ route("otp.verify") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                phone: '{{ $user->phone }}',
-                code: code,
-                purpose: 'phone_verification'
-            })
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            showAlert(data.message, 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showAlert(data.message, 'error');
-        }
-    } catch (error) {
-        showAlert('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', 'error');
-    }
-}
-
-async function resendOtp() {
-    await sendOtp();
-}
-
-function showAlert(message, type) {
-    const alert = document.getElementById('otpAlert');
-    alert.classList.remove('hidden', 'bg-blue-100', 'text-blue-800', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
-
-    if (type === 'success') {
-        alert.classList.add('bg-green-100', 'text-green-800');
-    } else if (type === 'error') {
-        alert.classList.add('bg-red-100', 'text-red-800');
-    } else {
-        alert.classList.add('bg-blue-100', 'text-blue-800');
-    }
-
-    alert.textContent = message;
-    alert.classList.remove('hidden');
-}
-
-// Close modal on ESC key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeOtpModal();
-    }
-});
-
-// Close modal when clicking outside
-document.getElementById('otpModal')?.addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeOtpModal();
-    }
-});
 </script>
+@endpush
 @endsection

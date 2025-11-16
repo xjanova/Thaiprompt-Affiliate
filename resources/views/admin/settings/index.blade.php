@@ -1,1142 +1,360 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
-@section('title', 'ตั้งค่าระบบ')
+@section('title', 'ตั้งค่าระบบ - Arrow X')
 
 @section('content')
-<div x-data="{ activeTab: 'general' }" class="container-fluid px-4 py-6">
-    <!-- Animated Header -->
-    <div class="relative mb-8 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 dark:from-indigo-600 dark:via-purple-700 dark:to-pink-700 p-8 shadow-2xl">
-        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
-        <div class="relative flex items-center justify-between">
+<div class="container-fluid px-4 py-6" x-data="settingsManager()">
+    {{-- Arrow X Header --}}
+    <div class="mb-8">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-                <div class="flex items-center gap-3 mb-2">
-                    <div class="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl font-bold text-white mb-1">ตั้งค่าระบบ</h1>
-                        <p class="text-indigo-100 dark:text-purple-200">จัดการการตั้งค่าทั้งหมดของระบบ</p>
-                    </div>
-                </div>
+                <h1 class="text-4xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent mb-2">
+                    <i class="fas fa-cog mr-3"></i>ตั้งค่าระบบ
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400 text-lg">
+                    จัดการการตั้งค่าทั้งหมดของระบบ Arrow X Platform
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.dashboard') }}" class="px-6 py-3 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300 border-2 border-gray-200 dark:border-gray-700">
+                    <i class="fas fa-arrow-left mr-2"></i>กลับ
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Tab Navigation -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-gray-100 dark:border-slate-700 overflow-hidden mb-6">
-        <div class="border-b border-gray-200 dark:border-slate-700">
-            <nav class="flex overflow-x-auto -mb-px">
-                <button @click="activeTab = 'general'"
-                        :class="{ 'border-indigo-500 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20': activeTab === 'general', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'general' }"
-                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
-                    <span class="flex items-center gap-2">
-                        <i class="fas fa-cog text-lg"></i>
-                        <span>ตั้งค่าทั่วไป</span>
-                    </span>
-                </button>
+    {{-- Success/Error Messages --}}
+    @if(session('success'))
+        <div class="mb-6 p-4 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl shadow-lg flex items-center gap-3 animate-fade-in">
+            <i class="fas fa-check-circle text-2xl"></i>
+            <span class="font-semibold">{{ session('success') }}</span>
+        </div>
+    @endif
 
-                <button @click="activeTab = 'affiliate'"
-                        :class="{ 'border-purple-500 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20': activeTab === 'affiliate', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'affiliate' }"
-                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
-                    <span class="flex items-center gap-2">
-                        <i class="fas fa-network-wired text-lg"></i>
-                        <span>ตั้งค่า Affiliate</span>
-                    </span>
-                </button>
+    @if(session('error'))
+        <div class="mb-6 p-4 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl shadow-lg flex items-center gap-3 animate-fade-in">
+            <i class="fas fa-exclamation-circle text-2xl"></i>
+            <span class="font-semibold">{{ session('error') }}</span>
+        </div>
+    @endif
 
-                <button @click="activeTab = 'branding'"
-                        :class="{ 'border-pink-500 text-pink-600 dark:text-pink-400 bg-pink-50 dark:bg-pink-900/20': activeTab === 'branding', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'branding' }"
-                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
-                    <span class="flex items-center gap-2">
-                        <i class="fas fa-palette text-lg"></i>
-                        <span>โลโก้ & Favicon</span>
-                    </span>
-                </button>
+    {{-- Tabs Navigation --}}
+    <div class="glass-fusion-card rounded-2xl p-2 mb-6 shadow-2xl border border-white/20 dark:border-gray-700/50">
+        <div class="flex flex-wrap gap-2">
+            <button @click="activeTab = 'general'" :class="activeTab === 'general' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl' : 'bg-white/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-800/70'" class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-sliders-h"></i>
+                <span class="hidden sm:inline">ทั่วไป</span>
+            </button>
 
-                <button @click="activeTab = 'theme'"
-                        :class="{ 'border-cyan-500 text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20': activeTab === 'theme', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'theme' }"
-                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
-                    <span class="flex items-center gap-2">
-                        <i class="fas fa-fill-drip text-lg"></i>
-                        <span>สีธีม</span>
-                    </span>
-                </button>
+            <button @click="activeTab = 'permissions'" :class="activeTab === 'permissions' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl' : 'bg-white/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-800/70'" class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-shield-alt"></i>
+                <span class="hidden sm:inline">สิทธิ์การใช้งาน</span>
+            </button>
 
-                <button @click="activeTab = 'api'"
-                        :class="{ 'border-emerald-500 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20': activeTab === 'api', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'api' }"
-                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
-                    <span class="flex items-center gap-2">
-                        <i class="fas fa-key text-lg"></i>
-                        <span>การตั้งค่า API</span>
-                    </span>
-                </button>
+            <button @click="activeTab = 'affiliate'" :class="activeTab === 'affiliate' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl' : 'bg-white/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-800/70'" class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-network-wired"></i>
+                <span class="hidden sm:inline">Affiliate</span>
+            </button>
 
-                <button @click="activeTab = 'pageloader'"
-                        :class="{ 'border-orange-500 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20': activeTab === 'pageloader', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'pageloader' }"
-                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
-                    <span class="flex items-center gap-2">
-                        <i class="fas fa-spinner text-lg"></i>
-                        <span>อนิเมชั่นโหลดหน้า</span>
-                    </span>
-                </button>
+            <button @click="activeTab = 'api'" :class="activeTab === 'api' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl' : 'bg-white/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-800/70'" class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-key"></i>
+                <span class="hidden sm:inline">API Keys</span>
+            </button>
 
-                <button @click="activeTab = 'ocr'"
-                        :class="{ 'border-blue-500 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20': activeTab === 'ocr', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-slate-600': activeTab !== 'ocr' }"
-                        class="px-6 py-4 text-sm font-semibold border-b-2 transition-all duration-200 whitespace-nowrap">
-                    <span class="flex items-center gap-2">
-                        <i class="fas fa-camera text-lg"></i>
-                        <span>OCR / KYC</span>
-                    </span>
-                </button>
-            </nav>
+            <button @click="activeTab = 'advanced'" :class="activeTab === 'advanced' ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl' : 'bg-white/50 dark:bg-gray-800/50 text-gray-700 dark:text-gray-300 hover:bg-white/70 dark:hover:bg-gray-800/70'" class="px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center gap-2">
+                <i class="fas fa-tools"></i>
+                <span class="hidden sm:inline">ขั้นสูง</span>
+            </button>
+        </div>
+    </div>
+
+    {{-- Form --}}
+    <form action="{{ route('admin.settings.update') }}" method="POST" enctype="multipart/form-data" @change="formChanged = true" x-ref="settingsForm">
+        @csrf
+        @method('PUT')
+
+        {{-- Tab: General --}}
+        <div x-show="activeTab === 'general'" x-transition class="glass-fusion-card rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 dark:border-gray-700/50">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-sliders-h text-white text-xl"></i>
+                </div>
+                การตั้งค่าทั่วไป
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                @foreach($settings->get('general', []) as $setting)
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            {{ $setting->display_name }}
+                        </label>
+
+                        @if($setting->type === 'text')
+                            <input type="text" name="settings[{{ $setting->key }}]" value="{{ old('settings.' . $setting->key, $setting->value) }}" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all" placeholder="{{ $setting->details }}">
+
+                        @elseif($setting->type === 'textarea')
+                            <textarea name="settings[{{ $setting->key }}]" rows="4" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all" placeholder="{{ $setting->details }}">{{ old('settings.' . $setting->key, $setting->value) }}</textarea>
+
+                        @elseif($setting->type === 'checkbox')
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="settings[{{ $setting->key }}]" value="1" {{ old('settings.' . $setting->key, $setting->value) ? 'checked' : '' }} class="sr-only peer">
+                                <div class="w-14 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-purple-600 peer-checked:to-pink-600"></div>
+                            </label>
+
+                        @elseif($setting->type === 'select')
+                            <select name="settings[{{ $setting->key }}]" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all">
+                                @foreach(json_decode($setting->details, true) as $option)
+                                    <option value="{{ $option }}" {{ old('settings.' . $setting->key, $setting->value) == $option ? 'selected' : '' }}>{{ $option }}</option>
+                                @endforeach
+                            </select>
+                        @endif
+
+                        @if($setting->details && $setting->type !== 'select')
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>{{ $setting->details }}
+                            </p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
         </div>
 
-        <!-- Tab Contents -->
-        <div class="p-6 dark:bg-slate-800">
-            <!-- General Settings Tab -->
-            <div x-show="activeTab === 'general'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100">
-                <form method="POST" action="{{ route('admin.settings.update') }}">
-                    @csrf
-                    @method('PUT')
-
-                    <div class="space-y-6">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าทั่วไป</h3>
-
-                            <div class="mb-4">
-                                <label for="app_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ชื่อแอพพลิเคชั่น</label>
-                                <input type="text" name="app_name" id="app_name" value="{{ old('app_name', $settings->get('general')->firstWhere('key', 'app_name')->value ?? 'TP-Affiliate') }}"
-                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end">
-                            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
-                                <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Affiliate Settings Tab -->
-            <div x-show="activeTab === 'affiliate'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
-                <form method="POST" action="{{ route('admin.settings.update') }}">
-                    @csrf
-                    @method('PUT')
-
-                    <div class="space-y-6">
-                        <div>
-                            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่า Affiliate</h3>
-
-                            <div class="mb-4">
-                                <label for="commission_rate" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">อัตราคอมมิชชั่น (%)</label>
-                                <input type="number" name="commission_rate" id="commission_rate" min="0" max="100" step="0.01"
-                                       value="{{ old('commission_rate', $settings->get('affiliate')->firstWhere('key', 'commission_rate')->value ?? 10) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="multi_level_enabled" value="1"
-                                           {{ old('multi_level_enabled', $settings->get('affiliate')->firstWhere('key', 'multi_level_enabled')->value ?? true) ? 'checked' : '' }}
-                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-2 text-sm text-gray-700">เปิดใช้งานระบบหลายระดับ</span>
-                                </label>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="default_sponsor_referral_code" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รหัสแนะนำเริ่มต้น (Default Sponsor ID)</label>
-                                <input type="text" name="default_sponsor_referral_code" id="default_sponsor_referral_code"
-                                       value="{{ old('default_sponsor_referral_code', $settings->get('affiliate')->firstWhere('key', 'default_sponsor_referral_code')->value ?? '') }}"
-                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                       placeholder="กรอกรหัสแนะนำเริ่มต้น">
-                                <p class="text-xs text-gray-500 mt-1">ผู้สมัครที่ไม่มีรหัสแนะนำจะถูกต่อสายงานอัตโนมัติกับรหัสนี้</p>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="commission_depth" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ความลึกคอมมิชชั่น (Commission Depth)</label>
-                                <input type="number" name="commission_depth" id="commission_depth" min="1" max="100"
-                                       value="{{ old('commission_depth', $settings->get('affiliate')->firstWhere('key', 'commission_depth')->value ?? 10) }}"
-                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                <p class="text-xs text-gray-500 mt-1">กำหนดจำนวนชั้นสายงานที่สมาชิกจะมองเห็นและได้รับคอมมิชชั่น (ค่าเริ่มต้น: 10 ชั้น)</p>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end">
-                            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-500 dark:to-purple-500 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 dark:hover:from-indigo-600 dark:hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
-                                <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
-                            </button>
-                        </div>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Branding Settings Tab -->
-            <div x-show="activeTab === 'branding'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
-                <div x-data="{
-                    logoPreview: null,
-                    faviconPreview: null,
-                    isUploading: false,
-                    uploadError: null,
-                    sessionExpired: false,
-                    handleLogoUpload(event) {
-                        const file = event.target.files[0];
-                        if (file && file.type.startsWith('image/')) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                this.logoPreview = e.target.result;
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    },
-                    handleFaviconUpload(event) {
-                        const file = event.target.files[0];
-                        if (file && file.type.startsWith('image/')) {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                this.faviconPreview = e.target.result;
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    },
-                    async handleSubmit(event) {
-                        event.preventDefault();
-                        this.isUploading = true;
-                        this.uploadError = null;
-                        this.sessionExpired = false;
-
-                        const form = event.target;
-                        const formData = new FormData(form);
-
-                        try {
-                            // รีเฟรช CSRF token ก่อนส่งฟอร์ม
-                            const tokenResponse = await fetch('/admin/csrf-token', {
-                                method: 'GET',
-                                headers: {
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            });
-
-                            if (tokenResponse.ok) {
-                                const data = await tokenResponse.json();
-                                formData.set('_token', data.token);
-                            }
-
-                            // ส่งฟอร์มด้วย fetch
-                            const response = await fetch(form.action, {
-                                method: 'POST',
-                                body: formData,
-                                headers: {
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            });
-
-                            if (response.ok) {
-                                // สำเร็จ - รีเฟรชหน้า
-                                window.location.reload();
-                            } else if (response.status === 419) {
-                                // Session หมดอายุ
-                                this.sessionExpired = true;
-                                this.isUploading = false;
-                            } else {
-                                // Error อื่นๆ
-                                const errorData = await response.json();
-                                this.uploadError = errorData.message || 'เกิดข้อผิดพลาดในการอัพโหลด';
-                                this.isUploading = false;
-                            }
-                        } catch (error) {
-                            console.error('Upload error:', error);
-                            this.uploadError = 'เกิดข้อผิดพลาดในการเชื่อมต่อ กรุณาลองใหม่อีกครั้ง';
-                            this.isUploading = false;
-                        }
-                    }
-                }">
-                    <form method="POST" action="{{ route('admin.settings.branding') }}" enctype="multipart/form-data" @submit="handleSubmit">
-                        @csrf
-
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าโลโก้และ Favicon</h3>
-
-                        <!-- Session Expired Error -->
-                        <div x-show="sessionExpired" x-transition class="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-6 w-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-3 flex-1">
-                                    <h4 class="text-yellow-800 font-semibold mb-1">Session หมดอายุแล้ว (Error 419)</h4>
-                                    <p class="text-yellow-700 text-sm mb-3">คุณเปิดหน้านี้ทิ้งไว้นานเกินไป กรุณารีเฟรชหน้าและลองอัพโหลดใหม่อีกครั้ง</p>
-                                    <button @click="window.location.reload()"
-                                            class="px-4 py-2 bg-yellow-600 text-white text-sm font-semibold rounded-lg hover:bg-yellow-700 transition">
-                                        รีเฟรชหน้าเว็บ
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Upload Error -->
-                        <div x-show="uploadError" x-transition class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h4 class="text-red-800 font-semibold mb-1">เกิดข้อผิดพลาด</h4>
-                                    <p class="text-red-700 text-sm" x-text="uploadError"></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Error Messages -->
-                        @if($errors->has('storage'))
-                            <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0">
-                                        <svg class="h-6 w-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                        </svg>
-                                    </div>
-                                    <div class="ml-3">
-                                        <h4 class="text-red-800 font-semibold mb-1">Storage Link ไม่พร้อมใช้งาน</h4>
-                                        <p class="text-red-700 text-sm mb-2">{{ $errors->first('storage') }}</p>
-                                        <div class="bg-white border border-red-200 rounded p-3 mt-2">
-                                            <p class="text-gray-700 text-sm font-medium mb-2">วิธีแก้ไข:</p>
-                                            <ol class="list-decimal list-inside text-sm text-gray-600 space-y-1">
-                                                <li>เปิด Terminal/Command Line</li>
-                                                <li>ไปยังโฟลเดอร์โปรเจค</li>
-                                                <li>รันคำสั่ง: <code class="bg-gray-100 px-2 py-1 rounded text-red-600 font-mono">php artisan storage:fix</code></li>
-                                                <li>รีเฟรชหน้านี้และลองอัพโหลดใหม่</li>
-                                            </ol>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
-                        <!-- Success Message -->
-                        @if(session('success'))
-                            <div class="mb-6 bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0">
-                                        <svg class="h-6 w-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                        </svg>
-                                    </div>
-                                    <div class="ml-3">
-                                        <p class="text-green-800 font-semibold">{{ session('success') }}</p>
-                                        <p class="text-green-700 text-sm mt-1">หากโลโก้ยังไม่เปลี่ยน กรุณารีเฟรชหน้าเว็บ (Ctrl+F5 หรือ Cmd+Shift+R) เพื่อเคลียร์ cache</p>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
-                        <!-- Info Box -->
-                        <div class="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-                            <div class="flex items-start">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-6 w-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h4 class="text-blue-800 font-semibold mb-1">ข้อมูลสำคัญ</h4>
-                                    <ul class="text-blue-700 text-sm space-y-1 list-disc list-inside">
-                                        <li>ระบบจะแปลงรูปภาพเป็น WebP format โดยอัตโนมัติเพื่อความเร็วในการโหลด (ยกเว้น SVG)</li>
-                                        <li>โลโก้จะถูกบันทึกที่ <code class="bg-blue-100 px-1 rounded font-mono">/storage/branding/</code></li>
-                                        <li>หลังอัพโหลดเสร็จ หากโลโก้ไม่เปลี่ยน ให้กด Ctrl+F5 (Windows) หรือ Cmd+Shift+R (Mac) เพื่อเคลียร์ cache</li>
-                                        <li>ขนาดโลโก้แนะนำ: กว้าง 200-400px สูง 60-100px</li>
-                                    </ul>
-                                </div>
-                            </div>
-                        </div>
-
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Logo Upload -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โลโก้</label>
-                            @php
-                                $logo = $settings->get('branding')->firstWhere('key', 'logo')->value ?? '';
-                                $logoAdminPreviewWidth = \App\Models\Setting::get('logo_admin_preview_width', 80);
-                                $logoAdminPreviewHeight = \App\Models\Setting::get('logo_admin_preview_height', 80);
-                            @endphp
-                            @if($logo)
-                                <div class="mb-3">
-                                    <p class="text-xs text-gray-600 mb-1">โลโก้ปัจจุบัน:</p>
-                                    <img src="{{ asset($logo) }}" alt="Logo" style="width: {{ $logoAdminPreviewWidth }}px; height: {{ $logoAdminPreviewHeight }}px;" class="object-contain border rounded p-2">
-                                </div>
-                            @endif
-                            <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg,image/svg+xml" @change="handleLogoUpload"
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            <p class="text-xs text-gray-500 mt-1">รองรับ PNG, JPG, SVG (สูงสุด 2MB)</p>
-
-                            <!-- Logo Preview -->
-                            <div x-show="logoPreview" x-transition class="mt-4">
-                                <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่างโลโก้ใหม่:</p>
-                                <div class="border border-gray-300 dark:border-slate-600 rounded-lg p-4 bg-gray-50 dark:bg-slate-700">
-                                    <img :src="logoPreview" alt="Preview" class="h-20 object-contain">
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Favicon Upload -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Favicon</label>
-                            @php
-                                $favicon = $settings->get('branding')->firstWhere('key', 'favicon')->value ?? '';
-                            @endphp
-                            @if($favicon)
-                                <div class="mb-3">
-                                    <p class="text-xs text-gray-600 mb-1">Favicon ปัจจุบัน:</p>
-                                    <img src="{{ asset($favicon) }}" alt="Favicon" class="h-16 w-16 object-contain border rounded p-2">
-                                </div>
-                            @endif
-                            <input type="file" name="favicon" accept="image/png,image/jpeg,image/jpg,image/x-icon" @change="handleFaviconUpload"
-                                   class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            <p class="text-xs text-gray-500 mt-1">รองรับ PNG, JPG, ICO (สูงสุด 512KB)</p>
-
-                            <!-- Favicon Preview -->
-                            <div x-show="faviconPreview" x-transition class="mt-4">
-                                <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่าง Favicon ใหม่:</p>
-                                <div class="border border-gray-300 dark:border-slate-600 rounded-lg p-4 bg-gray-50 dark:bg-slate-700">
-                                    <img :src="faviconPreview" alt="Preview" class="h-16 w-16 object-contain">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end mt-6">
-                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-pink-600 to-rose-600 dark:from-pink-500 dark:to-rose-500 text-white rounded-xl hover:from-pink-700 hover:to-rose-700 dark:hover:from-pink-600 dark:hover:to-rose-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
-                            <i class="fas fa-upload mr-2"></i>อัพโหลด
-                        </button>
-                    </div>
-                </form>
-
-                <!-- Loading Overlay -->
-                <div x-show="isUploading" x-transition:enter="transition ease-out duration-300"
-                     x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-                     style="display: none;">
-                    <div class="bg-white rounded-lg p-8 max-w-sm mx-4 text-center shadow-2xl">
-                        <div class="mb-4">
-                            <svg class="animate-spin h-16 w-16 text-indigo-600 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                        </div>
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">กำลังอัพโหลด...</h3>
-                        <p class="text-gray-600">กรุณารอสักครู่ ระบบกำลังบันทึกข้อมูล</p>
-                    </div>
+        {{-- Tab: Permissions --}}
+        <div x-show="activeTab === 'permissions'" x-transition class="glass-fusion-card rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 dark:border-gray-700/50">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-shield-alt text-white text-xl"></i>
                 </div>
+                สิทธิ์การใช้งาน & Permissions
+            </h2>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                @foreach($availablePermissions as $category => $permissions)
+                    <div class="glass-fusion-card rounded-xl p-6 border border-white/20 dark:border-gray-700/50">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-folder text-purple-600 dark:text-purple-400"></i>
+                            {{ ucfirst($category) }}
+                        </h3>
+
+                        <div class="space-y-3">
+                            @foreach($permissions as $permission)
+                                <label class="flex items-center justify-between p-3 bg-white/50 dark:bg-gray-800/50 rounded-lg hover:bg-white/70 dark:hover:bg-gray-800/70 transition-all cursor-pointer">
+                                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ $permission }}</span>
+                                    <input type="checkbox" name="permissions[]" value="{{ $permission }}" class="w-5 h-5 text-purple-600 bg-gray-100 border-gray-300 rounded focus:ring-purple-500 dark:focus:ring-purple-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Tab: Affiliate --}}
+        <div x-show="activeTab === 'affiliate'" x-transition class="glass-fusion-card rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 dark:border-gray-700/50">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-network-wired text-white text-xl"></i>
                 </div>
-            </div>
+                การตั้งค่า Affiliate & MLM
+            </h2>
 
-            <!-- Theme Colors Tab -->
-            <div x-show="activeTab === 'theme'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
-                <form method="POST" action="{{ route('admin.settings.theme') }}" x-data="{
-                    primaryStart: '{{ $settings->get('theme')->firstWhere('key', 'theme_primary_start')->value ?? '#3B82F6' }}',
-                    primaryEnd: '{{ $settings->get('theme')->firstWhere('key', 'theme_primary_end')->value ?? '#1D4ED8' }}',
-                    secondaryStart: '{{ $settings->get('theme')->firstWhere('key', 'theme_secondary_start')->value ?? '#10B981' }}',
-                    secondaryEnd: '{{ $settings->get('theme')->firstWhere('key', 'theme_secondary_end')->value ?? '#059669' }}',
-                    accentStart: '{{ $settings->get('theme')->firstWhere('key', 'theme_accent_start')->value ?? '#8B5CF6' }}',
-                    accentEnd: '{{ $settings->get('theme')->firstWhere('key', 'theme_accent_end')->value ?? '#6D28D9' }}'
-                }">
-                    @csrf
-                    @method('PUT')
-
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">ตั้งค่าสีของทีม (Gradient)</h3>
-
-                    <div class="space-y-6">
-                        <!-- Primary Colors -->
-                        <div>
-                            <h4 class="font-medium text-gray-700 mb-3">สีหลัก (Primary)</h4>
-                            <div class="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-2">สีเริ่มต้น</label>
-                                    <div class="flex gap-2">
-                                        <input type="color" x-model="primaryStart" name="theme_primary_start"
-                                               class="h-10 w-20 border border-gray-300 rounded">
-                                        <input type="text" x-model="primaryStart"
-                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-2">สีสิ้นสุด</label>
-                                    <div class="flex gap-2">
-                                        <input type="color" x-model="primaryEnd" name="theme_primary_end"
-                                               class="h-10 w-20 border border-gray-300 rounded">
-                                        <input type="text" x-model="primaryEnd"
-                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-2 h-16 rounded-lg" :style="`background: linear-gradient(to right, ${primaryStart}, ${primaryEnd})`"></div>
-                        </div>
-
-                        <!-- Secondary Colors -->
-                        <div>
-                            <h4 class="font-medium text-gray-700 mb-3">สีรอง (Secondary)</h4>
-                            <div class="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-2">สีเริ่มต้น</label>
-                                    <div class="flex gap-2">
-                                        <input type="color" x-model="secondaryStart" name="theme_secondary_start"
-                                               class="h-10 w-20 border border-gray-300 rounded">
-                                        <input type="text" x-model="secondaryStart"
-                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-2">สีสิ้นสุด</label>
-                                    <div class="flex gap-2">
-                                        <input type="color" x-model="secondaryEnd" name="theme_secondary_end"
-                                               class="h-10 w-20 border border-gray-300 rounded">
-                                        <input type="text" x-model="secondaryEnd"
-                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-2 h-16 rounded-lg" :style="`background: linear-gradient(to right, ${secondaryStart}, ${secondaryEnd})`"></div>
-                        </div>
-
-                        <!-- Accent Colors -->
-                        <div>
-                            <h4 class="font-medium text-gray-700 mb-3">สีเน้น (Accent)</h4>
-                            <div class="grid md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-2">สีเริ่มต้น</label>
-                                    <div class="flex gap-2">
-                                        <input type="color" x-model="accentStart" name="theme_accent_start"
-                                               class="h-10 w-20 border border-gray-300 rounded">
-                                        <input type="text" x-model="accentStart"
-                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="block text-sm text-gray-600 mb-2">สีสิ้นสุด</label>
-                                    <div class="flex gap-2">
-                                        <input type="color" x-model="accentEnd" name="theme_accent_end"
-                                               class="h-10 w-20 border border-gray-300 rounded">
-                                        <input type="text" x-model="accentEnd"
-                                               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-2 h-16 rounded-lg" :style="`background: linear-gradient(to right, ${accentStart}, ${accentEnd})`"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end mt-6">
-                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-cyan-600 to-blue-600 dark:from-cyan-500 dark:to-blue-500 text-white rounded-xl hover:from-cyan-700 hover:to-blue-700 dark:hover:from-cyan-600 dark:hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
-                            <i class="fas fa-palette mr-2"></i>บันทึกสีธีม
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- API Settings Tab -->
-            <div x-show="activeTab === 'api'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
-                <form method="POST" action="{{ route('admin.settings.update') }}">
-                    @csrf
-                    @method('PUT')
-
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">การตั้งค่า API Keys</h3>
-                    <p class="text-gray-600 mb-6">จัดการ API Keys สำหรับบริการต่างๆ</p>
-
-                    <!-- Google Translate API -->
-                    <div class="mb-8 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                        <div class="flex items-center mb-4">
-                            <span class="text-2xl mr-3">🌐</span>
-                            <h4 class="text-lg font-semibold text-gray-900">Google Translate API</h4>
-                        </div>
-
-                        <div class="space-y-4">
-                            <!-- Enable/Disable -->
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="google_translate_enabled" value="1"
-                                           {{ old('google_translate_enabled', $settings->get('general')->firstWhere('key', 'google_translate_enabled')->value ?? false) ? 'checked' : '' }}
-                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-2 text-sm text-gray-700 font-medium">เปิดใช้งาน Google Translate</span>
-                                </label>
-                            </div>
-
-                            <!-- API Key -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">API Key</label>
-                                <input type="text" name="google_translate_api_key"
-                                       value="{{ old('google_translate_api_key', $settings->get('general')->firstWhere('key', 'google_translate_api_key')->value ?? '') }}"
-                                       placeholder="AIzaSy..."
-                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                <p class="text-xs text-gray-500 mt-1">ดูวิธีการสร้าง API Key ได้ที่ <a href="https://console.cloud.google.com" target="_blank" class="text-indigo-600 hover:underline">Google Cloud Console</a></p>
-                            </div>
-
-                            <!-- Project ID -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project ID (ไม่บังคับ)</label>
-                                <input type="text" name="google_translate_project_id"
-                                       value="{{ old('google_translate_project_id', $settings->get('general')->firstWhere('key', 'google_translate_project_id')->value ?? '') }}"
-                                       placeholder="my-project-id"
-                                       class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                            </div>
-
-                            <!-- Source Language -->
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ภาษาต้นทาง</label>
-                                <select name="translate_source_language"
-                                        class="w-full px-4 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                                    @php
-                                        $currentSource = $settings->get('general')->firstWhere('key', 'translate_source_language')->value ?? 'th';
-                                    @endphp
-                                    <option value="th" {{ $currentSource === 'th' ? 'selected' : '' }}>ไทย (Thai)</option>
-                                    <option value="en" {{ $currentSource === 'en' ? 'selected' : '' }}>English</option>
-                                </select>
-                            </div>
-
-                            <!-- Cache Settings -->
-                            <div>
-                                <label class="flex items-center">
-                                    <input type="checkbox" name="translate_cache_enabled" value="1"
-                                           {{ old('translate_cache_enabled', $settings->get('general')->firstWhere('key', 'translate_cache_enabled')->value ?? true) ? 'checked' : '' }}
-                                           class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
-                                    <span class="ml-2 text-sm text-gray-700">เปิดใช้งานแคช (ลด API Calls)</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Future API Sections (Placeholder) -->
-                    <div class="mb-8 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                        <div class="flex items-center mb-4">
-                            <span class="text-2xl mr-3">💳</span>
-                            <h4 class="text-lg font-semibold text-gray-900">Payment Gateway API</h4>
-                            <span class="ml-3 px-2 py-1 text-xs bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 rounded">Coming Soon</span>
-                        </div>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">การตั้งค่า API สำหรับระบบชำระเงิน (Stripe, PayPal, etc.)</p>
-                    </div>
-
-                    <div class="mb-8 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                        <div class="flex items-center mb-4">
-                            <span class="text-2xl mr-3">📧</span>
-                            <h4 class="text-lg font-semibold text-gray-900">Email Service API</h4>
-                            <span class="ml-3 px-2 py-1 text-xs bg-gray-200 dark:bg-slate-600 text-gray-600 dark:text-gray-300 rounded">Coming Soon</span>
-                        </div>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">การตั้งค่า API สำหรับบริการอีเมล (SendGrid, Mailgun, etc.)</p>
-                    </div>
-
-                    <div class="flex justify-end mt-6">
-                        <button type="submit" class="px-8 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 text-white rounded-xl hover:from-emerald-700 hover:to-teal-700 dark:hover:from-emerald-600 dark:hover:to-teal-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
-                            <i class="fas fa-key mr-2"></i>บันทึกการตั้งค่า API
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Page Loader Settings Tab -->
-            <div x-show="activeTab === 'pageloader'" style="display: none;">
-                <div x-data="{
-                    loaderEnabled: {{ \App\Models\Setting::get('page_loader_enabled', true) ? 'true' : 'false' }},
-                    loaderType: '{{ \App\Models\Setting::get('page_loader_type', 'spinner') }}',
-                    loaderColor: '{{ \App\Models\Setting::get('page_loader_color', '#6366f1') }}',
-                    loaderColorSecondary: '{{ \App\Models\Setting::get('page_loader_color_secondary', '#8b5cf6') }}',
-                    gifPreview: null,
-                    handleGifUpload(event) {
-                        const file = event.target.files[0];
-                        if (file && file.type === 'image/gif') {
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                this.gifPreview = e.target.result;
-                            };
-                            reader.readAsDataURL(file);
-                        }
-                    }
-                }">
-                    <form action="{{ route('admin.settings.update') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
-                        @csrf
-                        @method('PUT')
-
-                        <div class="mb-8">
-                            <h3 class="text-xl font-semibold text-gray-800 mb-4">การตั้งค่าอนิเมชั่นโหลดหน้า</h3>
-                            <p class="text-gray-600 mb-6">กำหนดรูปแบบและการแสดงผลของอนิเมชั่นโหลดหน้าแบบมืออาชีพ</p>
-
-                            <!-- Enable/Disable -->
-                            <div class="mb-6 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                                <label class="flex items-center cursor-pointer">
-                                    <input type="checkbox" name="page_loader_enabled" value="1" x-model="loaderEnabled"
-                                           class="form-checkbox h-5 w-5 text-indigo-600 rounded focus:ring-indigo-500 transition">
-                                    <span class="ml-3 text-gray-700 font-medium">เปิดใช้งานอนิเมชั่นโหลดหน้า</span>
-                                </label>
-                                <p class="ml-8 mt-2 text-sm text-gray-500">แสดงอนิเมชั่นขณะโหลดหน้าเว็บ</p>
-                            </div>
-
-                            <!-- Progress Mode Selection -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">โหมดการแสดงความคืบหน้า</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    @php
-                                        $currentProgressMode = \App\Models\Setting::get('page_loader_progress_mode', 'real');
-                                    @endphp
-
-                                    <!-- Real Progress -->
-                                    <label class="relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all {{ $currentProgressMode === 'real' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-green-300' }}">
-                                        <input type="radio" name="page_loader_progress_mode" value="real"
-                                               {{ $currentProgressMode === 'real' ? 'checked' : '' }}
-                                               class="form-radio h-5 w-5 text-green-600 focus:ring-green-500 mt-1">
-                                        <div class="ml-3">
-                                            <div class="flex items-center">
-                                                <span class="text-2xl mr-2">✅</span>
-                                                <span class="font-semibold text-gray-800">Real Progress</span>
-                                            </div>
-                                            <p class="text-sm text-gray-600 mt-1">ใช้ Performance API ติดตามการโหลดจริง</p>
-                                            <ul class="text-xs text-gray-500 mt-2 space-y-1 list-disc list-inside">
-                                                <li>แสดงเปอร์เซ็นต์จริง 100%</li>
-                                                <li>ติดตาม JS, CSS, รูปภาพ, ฟอนต์</li>
-                                                <li>แสดงสถานะและรายละเอียด</li>
-                                            </ul>
-                                        </div>
-                                    </label>
-
-                                    <!-- Fake Progress (Animation Only) -->
-                                    <label class="relative flex items-start p-4 border-2 rounded-lg cursor-pointer transition-all {{ $currentProgressMode === 'fake' ? 'border-purple-500 bg-purple-50' : 'border-gray-200 hover:border-purple-300' }}">
-                                        <input type="radio" name="page_loader_progress_mode" value="fake"
-                                               {{ $currentProgressMode === 'fake' ? 'checked' : '' }}
-                                               class="form-radio h-5 w-5 text-purple-600 focus:ring-purple-500 mt-1">
-                                        <div class="ml-3">
-                                            <div class="flex items-center">
-                                                <span class="text-2xl mr-2">🎭</span>
-                                                <span class="font-semibold text-gray-800">Fake Progress (Animation Only)</span>
-                                            </div>
-                                            <p class="text-sm text-gray-600 mt-1">แสดงแค่ animation ไม่ติดตามการโหลด</p>
-                                            <ul class="text-xs text-gray-500 mt-2 space-y-1 list-disc list-inside">
-                                                <li>แสดง Loader Animation เฉยๆ</li>
-                                                <li>ไม่แสดงเปอร์เซ็นต์และสถานะ</li>
-                                                <li>เบาและรวดเร็วกว่า Real Progress</li>
-                                            </ul>
-                                        </div>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <!-- Loader Type -->
-                            <div class="mb-6">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">รูปแบบอนิเมชั่น</label>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    @php
-                                        $types = [
-                                            'spinner' => ['name' => 'วงล้อหมุน', 'icon' => '🔄'],
-                                            'gradient_spinner' => ['name' => 'วงล้อ Gradient', 'icon' => '🌈'],
-                                            'dots' => ['name' => 'จุดกระโดด', 'icon' => '⚫'],
-                                            'pulse' => ['name' => 'พัลส์', 'icon' => '💫'],
-                                            'progress' => ['name' => 'แถบความคืบหน้า', 'icon' => '📊'],
-                                            'wave' => ['name' => 'คลื่น', 'icon' => '〰️'],
-                                            'bouncing_balls' => ['name' => 'ลูกบอลกระเด้ง', 'icon' => '⚽'],
-                                            'custom_gif' => ['name' => 'GIF ที่กำหนดเอง', 'icon' => '🎬']
-                                        ];
-                                    @endphp
-
-                                    @foreach($types as $type => $info)
-                                    <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
-                                           :class="loaderType === '{{ $type }}' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 hover:border-indigo-300'">
-                                        <input type="radio" name="page_loader_type" value="{{ $type }}" x-model="loaderType"
-                                               class="form-radio h-5 w-5 text-indigo-600 focus:ring-indigo-500">
-                                        <span class="ml-3 flex items-center">
-                                            <span class="text-2xl mr-2">{{ $info['icon'] }}</span>
-                                            <span class="font-medium text-gray-700">{{ $info['name'] }}</span>
-                                        </span>
-                                    </label>
-                                    @endforeach
-                                </div>
-                            </div>
-
-                            <!-- Color Settings -->
-                            <div class="mb-6 p-6 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">การตั้งค่าสี</label>
-
-                                <!-- Primary Color -->
-                                <div class="mb-4">
-                                    <label class="block text-sm text-gray-600 mb-2">สีหลัก</label>
-                                    <div class="flex items-center space-x-4">
-                                        <input type="color" name="page_loader_color" x-model="loaderColor"
-                                               class="h-12 w-24 rounded cursor-pointer border-2 border-gray-300">
-                                        <input type="text" x-model="loaderColor"
-                                               placeholder="#6366f1"
-                                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                                    </div>
-                                </div>
-
-                                <!-- Secondary Color (for gradients) -->
-                                <div x-show="['gradient_spinner', 'wave', 'progress'].includes(loaderType)" x-transition>
-                                    <label class="block text-sm text-gray-600 mb-2">สีรอง (สำหรับ Gradient)</label>
-                                    <div class="flex items-center space-x-4">
-                                        <input type="color" name="page_loader_color_secondary" x-model="loaderColorSecondary"
-                                               class="h-12 w-24 rounded cursor-pointer border-2 border-gray-300">
-                                        <input type="text" x-model="loaderColorSecondary"
-                                               placeholder="#8b5cf6"
-                                               class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                                    </div>
-                                    <p class="mt-2 text-xs text-gray-500">สีนี้จะถูกใช้เป็นสีที่สองใน gradient effect</p>
-                                </div>
-                            </div>
-
-                            <!-- GIF Upload (shown only when custom_gif is selected) -->
-                            <div x-show="loaderType === 'custom_gif'" x-transition class="mb-6 p-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border-2 border-purple-200">
-                                <label class="block text-sm font-medium text-gray-700 mb-3">อัพโหลด GIF</label>
-                                <input type="file" name="page_loader_gif" accept="image/gif" @change="handleGifUpload"
-                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                                <p class="mt-2 text-xs text-gray-500">รองรับไฟล์ GIF เท่านั้น (สูงสุด 2MB)</p>
-
-                                @php
-                                    $existingGif = \App\Models\Setting::get('page_loader_gif');
-                                @endphp
-                                @if($existingGif)
-                                <div class="mt-4">
-                                    <p class="text-sm font-medium text-gray-700 mb-2">GIF ปัจจุบัน:</p>
-                                    <img src="{{ asset($existingGif) }}" alt="Current GIF" class="max-w-xs rounded-lg border-2 border-gray-300">
-                                </div>
-                                @endif
-
-                                <!-- GIF Preview -->
-                                <div x-show="gifPreview" x-transition class="mt-4">
-                                    <p class="text-sm font-medium text-gray-700 mb-2">ตัวอย่าง GIF ใหม่:</p>
-                                    <img :src="gifPreview" alt="Preview" class="max-w-xs rounded-lg border-2 border-purple-300">
-                                </div>
-                            </div>
-
-                            <!-- Live Preview Section -->
-                            <div class="mb-6 p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-lg border-2 border-gray-700">
-                                <h4 class="text-sm font-medium text-white mb-4 flex items-center">
-                                    <span class="mr-2">👁️</span>
-                                    ตัวอย่างแบบ Real-time
-                                </h4>
-                                <div class="flex items-center justify-center h-48 bg-white dark:bg-gray-900 rounded-lg relative overflow-hidden">
-                                    <!-- Spinner -->
-                                    <div x-show="loaderType === 'spinner'" class="relative">
-                                        <div class="w-20 h-20 border-4 border-gray-200 rounded-full animate-spin"
-                                             :style="`border-top-color: ${loaderColor}`">
-                                        </div>
-                                    </div>
-
-                                    <!-- Gradient Spinner -->
-                                    <div x-show="loaderType === 'gradient_spinner'" class="relative">
-                                        <div class="w-20 h-20 rounded-full animate-spin"
-                                             :style="`background: conic-gradient(from 0deg, ${loaderColor}, ${loaderColorSecondary}, ${loaderColor}); mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 4px))`">
-                                        </div>
-                                    </div>
-
-                                    <!-- Dots -->
-                                    <div x-show="loaderType === 'dots'" class="flex space-x-2">
-                                        <div class="w-4 h-4 rounded-full animate-bounce" :style="`background-color: ${loaderColor}`"></div>
-                                        <div class="w-4 h-4 rounded-full animate-bounce" :style="`background-color: ${loaderColor}; animation-delay: 0.2s`"></div>
-                                        <div class="w-4 h-4 rounded-full animate-bounce" :style="`background-color: ${loaderColor}; animation-delay: 0.4s`"></div>
-                                    </div>
-
-                                    <!-- Pulse -->
-                                    <div x-show="loaderType === 'pulse'" class="relative">
-                                        <div class="w-20 h-20 rounded-full animate-ping absolute" :style="`background-color: ${loaderColor}; opacity: 0.3`"></div>
-                                        <div class="w-20 h-20 rounded-full animate-pulse" :style="`background-color: ${loaderColor}`"></div>
-                                    </div>
-
-                                    <!-- Progress Bar -->
-                                    <div x-show="loaderType === 'progress'" class="w-64">
-                                        <div class="h-3 bg-gray-200 rounded-full overflow-hidden">
-                                            <div class="h-full rounded-full animate-pulse" :style="`background: linear-gradient(90deg, ${loaderColor}, ${loaderColorSecondary}); width: 70%`"></div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Wave -->
-                                    <div x-show="loaderType === 'wave'" class="flex items-end space-x-1">
-                                        <div class="w-2 h-8 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0s`"></div>
-                                        <div class="w-2 h-12 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0.1s`"></div>
-                                        <div class="w-2 h-16 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0.2s`"></div>
-                                        <div class="w-2 h-12 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0.3s`"></div>
-                                        <div class="w-2 h-8 rounded-full animate-pulse" :style="`background: linear-gradient(180deg, ${loaderColor}, ${loaderColorSecondary}); animation-delay: 0.4s`"></div>
-                                    </div>
-
-                                    <!-- Bouncing Balls -->
-                                    <div x-show="loaderType === 'bouncing_balls'" class="flex space-x-1">
-                                        <div class="w-5 h-5 rounded-full animate-bounce" :style="`background-color: ${loaderColor}`"></div>
-                                        <div class="w-5 h-5 rounded-full animate-bounce" :style="`background-color: ${loaderColor}; animation-delay: 0.1s; opacity: 0.8`"></div>
-                                        <div class="w-5 h-5 rounded-full animate-bounce" :style="`background-color: ${loaderColor}; animation-delay: 0.2s; opacity: 0.6`"></div>
-                                    </div>
-
-                                    <!-- Custom GIF -->
-                                    <div x-show="loaderType === 'custom_gif'" class="text-center">
-                                        <template x-if="gifPreview">
-                                            <img :src="gifPreview" alt="Custom GIF" class="max-h-32 rounded-lg">
-                                        </template>
-                                        <template x-if="!gifPreview">
-                                            @if($existingGif ?? false)
-                                            <img src="{{ asset($existingGif) }}" alt="Current GIF" class="max-h-32 rounded-lg">
-                                            @else
-                                            <p class="text-gray-500">กรุณาอัพโหลด GIF</p>
-                                            @endif
-                                        </template>
-                                    </div>
-
-                                    <!-- Disabled Overlay -->
-                                    <div x-show="!loaderEnabled" class="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                                        <p class="text-white font-semibold">ปิดใช้งาน</p>
-                                    </div>
-                                </div>
-                                <p class="mt-3 text-xs text-gray-400">ตัวอย่างจะเปลี่ยนแปลงแบบ real-time ตามการตั้งค่าของคุณ</p>
-                            </div>
-                        </div>
-
-                        <div class="flex justify-end mt-6">
-                            <button type="submit" class="px-8 py-3 bg-gradient-to-r from-orange-600 to-red-600 dark:from-orange-500 dark:to-red-500 text-white rounded-xl hover:from-orange-700 hover:to-red-700 dark:hover:from-orange-600 dark:hover:to-red-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 font-bold">
-                                <i class="fas fa-save mr-2"></i>บันทึกการตั้งค่า
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-
-            <!-- OCR Settings Tab -->
-            <div x-show="activeTab === 'ocr'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" style="display: none;">
-                <div class="space-y-6">
+            <div class="grid grid-cols-1 gap-6">
+                @foreach($settings->get('affiliate', []) as $setting)
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">การตั้งค่า OCR (Optical Character Recognition)</h3>
-                        <p class="text-gray-600 dark:text-gray-400">ระบบอ่านข้อความจากภาพ สำหรับการตรวจจับข้อมูลบัตรประชาชนและใบขับขี่</p>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            {{ $setting->display_name }}
+                        </label>
+
+                        @if($setting->type === 'text')
+                            <input type="text" name="settings[{{ $setting->key }}]" value="{{ old('settings.' . $setting->key, $setting->value) }}" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all">
+
+                        @elseif($setting->type === 'number')
+                            <input type="number" name="settings[{{ $setting->key }}]" value="{{ old('settings.' . $setting->key, $setting->value) }}" step="0.01" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all">
+
+                        @elseif($setting->type === 'checkbox')
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="settings[{{ $setting->key }}]" value="1" {{ old('settings.' . $setting->key, $setting->value) ? 'checked' : '' }} class="sr-only peer">
+                                <div class="w-14 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-green-600 peer-checked:to-teal-600"></div>
+                            </label>
+                        @endif
+
+                        @if($setting->details)
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>{{ $setting->details }}
+                            </p>
+                        @endif
                     </div>
+                @endforeach
+            </div>
+        </div>
 
-                    <!-- Status Card -->
-                    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-700 rounded-lg p-6 border border-blue-200 dark:border-slate-600">
-                        <div class="flex items-start justify-between">
-                            <div class="flex items-start space-x-4">
-                                <div class="flex-shrink-0">
-                                    <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-                                        <span class="text-3xl">📸</span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Google Cloud Vision API</h4>
-                                    <p class="text-gray-700 dark:text-gray-300 mb-4">
-                                        ใช้สำหรับอ่านข้อมูลจากบัตรประชาชนและใบขับขี่แบบอัตโนมัติในระบบ KYC (Know Your Customer)
-                                    </p>
+        {{-- Tab: API Keys --}}
+        <div x-show="activeTab === 'api'" x-transition class="glass-fusion-card rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 dark:border-gray-700/50">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-key text-white text-xl"></i>
+                </div>
+                API Keys & Integration
+            </h2>
 
-                                    <!-- Status Badge -->
-                                    <div class="flex items-center space-x-3 mb-4">
-                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">สถานะ:</span>
-                                        @if(\App\Models\Setting::get('google_vision_enabled'))
-                                            <span class="px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm font-semibold">
-                                                <i class="fas fa-check-circle mr-1"></i>เปิดใช้งาน
-                                            </span>
-                                        @else
-                                            <span class="px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm font-semibold">
-                                                <i class="fas fa-times-circle mr-1"></i>ปิดใช้งาน
-                                            </span>
-                                        @endif
-                                    </div>
+            <div class="grid grid-cols-1 gap-6">
+                @foreach($settings->get('api', []) as $setting)
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            {{ $setting->display_name }}
+                        </label>
 
-                                    <!-- Features List -->
-                                    <div class="bg-white dark:bg-slate-800 rounded-lg p-4 mb-4">
-                                        <p class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ฟีเจอร์:</p>
-                                        <ul class="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                                            <li class="flex items-center">
-                                                <i class="fas fa-check text-green-600 mr-2"></i>
-                                                อ่านข้อมูลบัตรประชาชนไทย (เลขบัตร, ชื่อ-นามสกุล, วันเกิด, ที่อยู่)
-                                            </li>
-                                            <li class="flex items-center">
-                                                <i class="fas fa-check text-green-600 mr-2"></i>
-                                                อ่านข้อมูลใบขับขี่ (เลขใบขับขี่, ประเภทรถ, วันหมดอายุ)
-                                            </li>
-                                            <li class="flex items-center">
-                                                <i class="fas fa-check text-green-600 mr-2"></i>
-                                                ตรวจจับประเภทเอกสารอัตโนมัติ
-                                            </li>
-                                            <li class="flex items-center">
-                                                <i class="fas fa-check text-green-600 mr-2"></i>
-                                                รองรับทั้งภาษาไทยและภาษาอังกฤษ
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
+                        @if($setting->type === 'text' || $setting->type === 'password')
+                            <div class="relative">
+                                <input type="{{ $setting->type }}" name="settings[{{ $setting->key }}]" value="{{ old('settings.' . $setting->key, $setting->value) }}" class="w-full px-4 py-3 pr-12 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all font-mono text-sm" placeholder="Enter {{ $setting->display_name }}">
+                                <button type="button" @click="copyToClipboard($event.target.previousElementSibling.value)" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                                    <i class="fas fa-copy"></i>
+                                </button>
                             </div>
-                        </div>
+
+                        @elseif($setting->type === 'textarea')
+                            <textarea name="settings[{{ $setting->key }}]" rows="4" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all font-mono text-sm">{{ old('settings.' . $setting->key, $setting->value) }}</textarea>
+                        @endif
+
+                        @if($setting->details)
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>{{ $setting->details }}
+                            </p>
+                        @endif
                     </div>
+                @endforeach
 
-                    <!-- Configuration Quick Info -->
-                    <div class="grid md:grid-cols-2 gap-6">
-                        <!-- Credentials Status -->
-                        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-                            <div class="flex items-center mb-4">
-                                <i class="fas fa-key text-2xl text-indigo-600 mr-3"></i>
-                                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">Service Account</h4>
-                            </div>
-                            @php
-                                $credentialsPath = \App\Models\Setting::get('google_vision_credentials_path');
-                                $credentialsExists = !empty($credentialsPath) && file_exists($credentialsPath);
-                            @endphp
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600 dark:text-gray-400">ไฟล์ Credentials:</span>
-                                    @if($credentialsExists)
-                                        <span class="text-green-600 dark:text-green-400 font-semibold">
-                                            <i class="fas fa-check-circle"></i> พบไฟล์แล้ว
-                                        </span>
-                                    @else
-                                        <span class="text-yellow-600 dark:text-yellow-400 font-semibold">
-                                            <i class="fas fa-exclamation-triangle"></i> ยังไม่ได้อัปโหลด
-                                        </span>
-                                    @endif
-                                </div>
-                                @if($credentialsExists)
-                                    @php
-                                        try {
-                                            $content = file_get_contents($credentialsPath);
-                                            $json = json_decode($content, true);
-                                            $projectId = $json['project_id'] ?? 'N/A';
-                                        } catch (\Exception $e) {
-                                            $projectId = 'N/A';
-                                        }
-                                    @endphp
-                                    <div class="mt-2 p-3 bg-gray-50 dark:bg-slate-700 rounded">
-                                        <p class="text-xs text-gray-600 dark:text-gray-400">Project ID:</p>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white break-all">{{ $projectId }}</p>
-                                    </div>
-                                @endif
-                            </div>
+                <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-500 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 dark:text-yellow-400 mt-1"></i>
+                        <div>
+                            <h4 class="font-bold text-yellow-800 dark:text-yellow-300 mb-1">คำเตือนด้านความปลอดภัย</h4>
+                            <p class="text-sm text-yellow-700 dark:text-yellow-400">
+                                กรุณาเก็บ API Keys ของคุณให้ปลอดภัย ไม่ควรแชร์หรือเปิดเผยต่อบุคคลอื่น
+                            </p>
                         </div>
-
-                        <!-- Quick Actions -->
-                        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-                            <div class="flex items-center mb-4">
-                                <i class="fas fa-cog text-2xl text-indigo-600 mr-3"></i>
-                                <h4 class="text-lg font-semibold text-gray-900 dark:text-white">การจัดการ</h4>
-                            </div>
-                            <div class="space-y-3">
-                                <a href="{{ route('admin.settings.ocr') }}"
-                                   class="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900/20 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 rounded-lg transition group">
-                                    <span class="flex items-center text-indigo-700 dark:text-indigo-300 font-medium">
-                                        <i class="fas fa-tools mr-2"></i>
-                                        ตั้งค่า OCR แบบเต็ม
-                                    </span>
-                                    <i class="fas fa-arrow-right text-indigo-600 dark:text-indigo-400 group-hover:translate-x-1 transition"></i>
-                                </a>
-
-                                <a href="{{ route('admin.settings.ocr.setup-guide') }}"
-                                   target="_blank"
-                                   class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition group">
-                                    <span class="flex items-center text-blue-700 dark:text-blue-300 font-medium">
-                                        <i class="fas fa-book mr-2"></i>
-                                        คู่มือการติดตั้ง
-                                    </span>
-                                    <i class="fas fa-external-link-alt text-blue-600 dark:text-blue-400"></i>
-                                </a>
-
-                                <a href="{{ route('admin.kyc.index') }}"
-                                   class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition group">
-                                    <span class="flex items-center text-green-700 dark:text-green-300 font-medium">
-                                        <i class="fas fa-users mr-2"></i>
-                                        จัดการ KYC
-                                    </span>
-                                    <i class="fas fa-arrow-right text-green-600 dark:text-green-400 group-hover:translate-x-1 transition"></i>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Setup Guide Preview -->
-                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
-                        <h4 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                            <i class="fas fa-list-ol text-indigo-600 mr-2"></i>
-                            ขั้นตอนการตั้งค่า Google Cloud Vision API
-                        </h4>
-                        <div class="grid md:grid-cols-2 gap-4">
-                            <div class="space-y-3">
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
-                                        1
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">สร้างโปรเจกต์ใน Google Cloud Console</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">เลือกหรือสร้างโปรเจกต์ใหม่</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
-                                        2
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">เปิดใช้งาน Cloud Vision API</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">ค้นหาและเปิดใช้งาน API</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
-                                        3
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">สร้าง Service Account</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">ใน IAM & Admin</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="space-y-3">
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
-                                        4
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">ดาวน์โหลดไฟล์ Key (JSON)</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">สร้างและดาวน์โหลด JSON key</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
-                                        5
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">อัปโหลดไฟล์ในหน้าตั้งค่า</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">อัปโหลดไฟล์ที่ดาวน์โหลดมา</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 w-8 h-8 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full flex items-center justify-center font-bold mr-3">
-                                        6
-                                    </div>
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-900 dark:text-white">ทดสอบการเชื่อมต่อ</p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">ตรวจสอบว่าทำงานได้ถูกต้อง</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                            <div class="flex items-start">
-                                <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 mt-1 mr-3"></i>
-                                <div class="text-sm text-blue-800 dark:text-blue-300">
-                                    <p class="font-semibold mb-1">หมายเหตุ:</p>
-                                    <p>การใช้งาน Google Cloud Vision API อาจมีค่าใช้จ่าย กรุณาตรวจสอบราคาที่ <a href="https://cloud.google.com/vision/pricing" target="_blank" class="underline hover:text-blue-900">Google Cloud Pricing</a></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- CTA Button -->
-                    <div class="flex justify-center">
-                        <a href="{{ route('admin.settings.ocr') }}"
-                           class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-lg hover:from-indigo-700 hover:to-blue-700 transition shadow-lg flex items-center space-x-2">
-                            <i class="fas fa-cog"></i>
-                            <span>เข้าสู่หน้าตั้งค่า OCR แบบเต็ม</span>
-                            <i class="fas fa-arrow-right"></i>
-                        </a>
                     </div>
                 </div>
             </div>
+        </div>
+
+        {{-- Tab: Advanced --}}
+        <div x-show="activeTab === 'advanced'" x-transition class="glass-fusion-card rounded-2xl p-6 md:p-8 shadow-2xl border border-white/20 dark:border-gray-700/50">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-tools text-white text-xl"></i>
+                </div>
+                การตั้งค่าขั้นสูง
+            </h2>
+
+            <div class="grid grid-cols-1 gap-6">
+                @foreach($settings->get('advanced', []) as $setting)
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                            {{ $setting->display_name }}
+                        </label>
+
+                        @if($setting->type === 'textarea')
+                            <textarea name="settings[{{ $setting->key }}]" rows="6" class="w-full px-4 py-3 bg-gray-900 text-green-400 border-2 border-gray-700 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 transition-all font-mono text-sm">{{ old('settings.' . $setting->key, $setting->value) }}</textarea>
+
+                        @elseif($setting->type === 'checkbox')
+                            <div class="glass-fusion-card rounded-xl p-6 border border-white/20 dark:border-gray-700/50">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <h3 class="font-bold text-gray-900 dark:text-white text-lg">{{ $setting->display_name }}</h3>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ $setting->details }}</p>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="settings[{{ $setting->key }}]" value="1" {{ old('settings.' . $setting->key, $setting->value) ? 'checked' : '' }} class="sr-only peer">
+                                        <div class="w-14 h-8 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-gradient-to-r peer-checked:from-red-600 peer-checked:to-orange-600"></div>
+                                    </label>
+                                </div>
+                            </div>
+
+                        @else
+                            <input type="{{ $setting->type }}" name="settings[{{ $setting->key }}]" value="{{ old('settings.' . $setting->key, $setting->value) }}" class="w-full px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all">
+                        @endif
+
+                        @if($setting->details && $setting->type !== 'checkbox')
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-exclamation-triangle text-yellow-500 mr-1"></i>{{ $setting->details }}
+                            </p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Static Save Button (Mobile) --}}
+        <div class="mt-8 lg:hidden">
+            <button type="submit" class="w-full px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 hover:from-purple-700 hover:via-pink-700 hover:to-orange-700 text-white font-bold text-lg rounded-xl shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center justify-center gap-3">
+                <i class="fas fa-save text-2xl"></i>
+                <span>บันทึกการตั้งค่า</span>
+            </button>
+        </div>
+    </form>
+
+    {{-- Floating Save Button (Desktop) --}}
+    <div x-show="formChanged" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" class="hidden lg:block fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50" style="display: none;">
+        <div class="glass-fusion-card rounded-full shadow-2xl p-2 flex items-center gap-4 border-2 border-purple-500/50">
+            <button type="button" @click="$refs.settingsForm.submit()" class="px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 hover:from-purple-700 hover:via-pink-700 hover:to-orange-700 text-white font-bold text-lg rounded-full shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 flex items-center gap-3">
+                <i class="fas fa-save text-2xl"></i>
+                <span>บันทึกการตั้งค่า</span>
+            </button>
+            <button type="button" @click="formChanged = false; window.location.reload()" class="px-6 py-4 bg-white/20 hover:bg-white/30 dark:bg-gray-800/50 dark:hover:bg-gray-800/70 text-gray-700 dark:text-gray-300 font-semibold rounded-full transition-all">
+                <i class="fas fa-times mr-2"></i>ยกเลิก
+            </button>
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function settingsManager() {
+    return {
+        activeTab: 'general',
+        formChanged: false,
+
+        /**
+         * คัดลอกข้อความไปยัง Clipboard
+         */
+        copyToClipboard(text) {
+            if (!text) {
+                alert('ไม่มีข้อความให้คัดลอก');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(() => {
+                this.showNotification('คัดลอกสำเร็จ!', 'success');
+            }).catch(() => {
+                alert('เกิดข้อผิดพลาดในการคัดลอก');
+            });
+        },
+
+        /**
+         * แสดงการแจ้งเตือน
+         */
+        showNotification(message, type = 'success') {
+            // ใช้ระบบ notification ของ Arrow X
+            const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+            const bgColor = type === 'success' ? 'from-green-500 to-emerald-500' : 'from-red-500 to-pink-500';
+
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 p-4 bg-gradient-to-r ${bgColor} text-white rounded-xl shadow-lg flex items-center gap-3 z-50 animate-fade-in`;
+            notification.innerHTML = `
+                <i class="fas ${icon} text-2xl"></i>
+                <span class="font-semibold">${message}</span>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+    };
+}
+</script>
+@endpush
 @endsection
