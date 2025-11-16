@@ -42,65 +42,104 @@
          * Glass Fusion + Gradient Mesh + Dark Mode
          */
 
-        /* Gradient Mesh Background */
+        /* Gradient Mesh Background - รองรับ CSS Variables */
         .gradient-mesh-bg {
             background:
-                radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at top right, rgba(236, 72, 153, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom left, rgba(59, 130, 246, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom right, rgba(251, 146, 60, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at top left, rgba(139, 92, 246, calc(var(--glass-opacity, 0.15) * 0.5)) 0%, transparent 50%),
+                radial-gradient(ellipse at top right, rgba(236, 72, 153, calc(var(--glass-opacity, 0.15) * 0.5)) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom left, rgba(59, 130, 246, calc(var(--glass-opacity, 0.15) * 0.5)) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(251, 146, 60, calc(var(--glass-opacity, 0.15) * 0.5)) 0%, transparent 50%),
                 #f8fafc;
+            transition: background var(--animation-speed, 300ms) ease;
         }
 
         .dark .gradient-mesh-bg {
             background:
-                radial-gradient(ellipse at top left, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at top right, rgba(236, 72, 153, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom left, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at bottom right, rgba(251, 146, 60, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at top left, rgba(139, 92, 246, calc(var(--glass-opacity, 0.15) * 0.3)) 0%, transparent 50%),
+                radial-gradient(ellipse at top right, rgba(236, 72, 153, calc(var(--glass-opacity, 0.15) * 0.3)) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom left, rgba(59, 130, 246, calc(var(--glass-opacity, 0.15) * 0.3)) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom right, rgba(251, 146, 60, calc(var(--glass-opacity, 0.15) * 0.3)) 0%, transparent 50%),
                 #0f172a;
         }
 
-        /* Glass Fusion Card */
+        /* Classic Theme - ปิด gradient background */
+        body.theme-classic .gradient-mesh-bg {
+            background: #f8fafc !important;
+        }
+
+        body.theme-classic.dark .gradient-mesh-bg {
+            background: #0f172a !important;
+        }
+
+        /* Glass Fusion Card - รองรับ CSS Variables */
         .glass-fusion-card {
             background: linear-gradient(
                 135deg,
-                rgba(255, 255, 255, 0.25) 0%,
-                rgba(255, 255, 255, 0.15) 100%
+                rgba(255, 255, 255, calc(var(--glass-opacity, 0.15) + 0.1)) 0%,
+                rgba(255, 255, 255, var(--glass-opacity, 0.15)) 100%
             );
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--backdrop-saturate, 180%));
+            -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--backdrop-saturate, 180%));
+            border: 1px solid rgba(255, 255, 255, var(--border-opacity, 0.3));
+            border-radius: var(--card-roundness, 16px);
+            transition: all var(--animation-speed, 300ms) ease;
         }
 
         .dark .glass-fusion-card {
             background: linear-gradient(
                 135deg,
-                rgba(31, 41, 55, 0.8) 0%,
-                rgba(17, 24, 39, 0.7) 100%
+                rgba(31, 41, 55, calc(var(--glass-opacity, 0.15) * 5 + 0.05)) 0%,
+                rgba(17, 24, 39, calc(var(--glass-opacity, 0.15) * 4 + 0.1)) 100%
             );
-            border-color: rgba(75, 85, 99, 0.5);
+            border-color: rgba(75, 85, 99, var(--border-opacity, 0.5));
         }
 
-        /* Sidebar Glass Effect */
+        /* Classic Theme - ปิด glass effect สำหรับ card */
+        body.theme-classic .glass-fusion-card {
+            background: #ffffff !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border: 1px solid #e5e7eb !important;
+        }
+
+        body.theme-classic.dark .glass-fusion-card {
+            background: #1f2937 !important;
+            border-color: #374151 !important;
+        }
+
+        /* Sidebar Glass Effect - รองรับ CSS Variables */
         .sidebar-glass {
             background: linear-gradient(
                 180deg,
-                rgba(255, 255, 255, 0.95) 0%,
-                rgba(255, 255, 255, 0.9) 100%
+                rgba(255, 255, 255, calc(0.9 + var(--glass-opacity, 0.15) * 0.3)) 0%,
+                rgba(255, 255, 255, calc(0.85 + var(--glass-opacity, 0.15) * 0.3)) 100%
             );
-            backdrop-filter: blur(30px) saturate(200%);
-            -webkit-backdrop-filter: blur(30px) saturate(200%);
-            border-right: 1px solid rgba(229, 231, 235, 0.8);
+            backdrop-filter: blur(calc(var(--glass-blur, 20px) * 1.5)) saturate(var(--backdrop-saturate, 200%));
+            -webkit-backdrop-filter: blur(calc(var(--glass-blur, 20px) * 1.5)) saturate(var(--backdrop-saturate, 200%));
+            border-right: 1px solid rgba(229, 231, 235, var(--border-opacity, 0.8));
+            transition: all var(--animation-speed, 300ms) ease;
         }
 
         .dark .sidebar-glass {
             background: linear-gradient(
                 180deg,
-                rgba(15, 23, 42, 0.95) 0%,
-                rgba(15, 23, 42, 0.9) 100%
+                rgba(15, 23, 42, calc(0.9 + var(--glass-opacity, 0.15) * 0.3)) 0%,
+                rgba(15, 23, 42, calc(0.85 + var(--glass-opacity, 0.15) * 0.3)) 100%
             );
-            border-right-color: rgba(51, 65, 85, 0.8);
+            border-right-color: rgba(51, 65, 85, var(--border-opacity, 0.8));
+        }
+
+        /* Classic Theme - ปิด glass effect สำหรับ sidebar */
+        body.theme-classic .sidebar-glass {
+            background: #f9fafb !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            border-right: 1px solid #e5e7eb !important;
+        }
+
+        body.theme-classic.dark .sidebar-glass {
+            background: #1f2937 !important;
+            border-right-color: #374151 !important;
         }
 
         /* Custom Scrollbar */
@@ -125,10 +164,11 @@
             background: rgba(139, 92, 246, 0.4);
         }
 
-        /* Menu Item Hover Effect */
+        /* Menu Item Hover Effect - รองรับ CSS Variables */
         .menu-item {
             position: relative;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all var(--animation-speed, 300ms) cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: var(--button-roundness, 8px);
         }
 
         .menu-item::before {
@@ -139,9 +179,12 @@
             transform: translateY(-50%);
             width: 4px;
             height: 0;
-            background: linear-gradient(180deg, #8B5CF6, #EC4899);
-            border-radius: 0 4px 4px 0;
-            transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(180deg,
+                hsl(var(--primary-hue, 260), 70%, 60%),
+                hsl(var(--accent-hue, 340), 70%, 60%)
+            );
+            border-radius: 0 calc(var(--button-roundness, 8px) / 2) calc(var(--button-roundness, 8px) / 2) 0;
+            transition: height var(--animation-speed, 300ms) cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .menu-item:hover::before,
@@ -152,15 +195,16 @@
         .menu-item:hover {
             background: linear-gradient(
                 90deg,
-                rgba(139, 92, 246, 0.1) 0%,
+                hsla(var(--primary-hue, 260), 70%, 60%, calc(var(--glass-opacity, 0.15) * 0.7)) 0%,
                 transparent 100%
             );
+            transform: scale(var(--hover-scale, 1.0));
         }
 
         .dark .menu-item:hover {
             background: linear-gradient(
                 90deg,
-                rgba(139, 92, 246, 0.15) 0%,
+                hsla(var(--primary-hue, 260), 70%, 60%, calc(var(--glass-opacity, 0.15) * 1.0)) 0%,
                 transparent 100%
             );
         }
@@ -168,7 +212,7 @@
         .menu-item.active {
             background: linear-gradient(
                 90deg,
-                rgba(139, 92, 246, 0.15) 0%,
+                hsla(var(--primary-hue, 260), 70%, 60%, calc(var(--glass-opacity, 0.15) * 1.0)) 0%,
                 transparent 100%
             );
         }
@@ -176,9 +220,26 @@
         .dark .menu-item.active {
             background: linear-gradient(
                 90deg,
-                rgba(139, 92, 246, 0.2) 0%,
+                hsla(var(--primary-hue, 260), 70%, 60%, calc(var(--glass-opacity, 0.15) * 1.3)) 0%,
                 transparent 100%
             );
+        }
+
+        /* Classic Theme - ทำให้ menu item ทึบ */
+        body.theme-classic .menu-item:hover {
+            background: #f3f4f6 !important;
+        }
+
+        body.theme-classic.dark .menu-item:hover {
+            background: #374151 !important;
+        }
+
+        body.theme-classic .menu-item.active {
+            background: #e5e7eb !important;
+        }
+
+        body.theme-classic.dark .menu-item.active {
+            background: #4b5563 !important;
         }
     </style>
 

@@ -2,6 +2,66 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.39.6] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1270 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (83c0421a)
+- fix: correct rank column name from required_points to min_points (8dc64e95)
+### 🔧 Other Changes
+
+
+## [v3.39.5] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1269 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (7fd92313)
+- fix: add missing variables to dashboard and fix activity display (a584f8d3)
+### 🔧 Other Changes
+
+
+## [v3.39.4] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1268 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (f1c68767)
+- fix: correct multiple route names in user dashboard (91002cc8)
+### 🔧 Other Changes
+
+
+## [v3.39.3] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1267 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (fc16a342)
+- fix: correct rank route name from singular to plural (357c6cf2)
+### 🔧 Other Changes
+
+
+## [v3.39.2] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1266 from xjanova/claude/dashboard-color-theme-01WrWZDEhywL1zQkJKkpjgDo (9778a6c8)
+- fix: apply CSS Variables to all User Dashboard elements (e3a3db41)
+### 🔧 Other Changes
+
+
+## [v3.39.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1265 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (ca97c791)
+- fix: correct route names for commissions and team pages (859404b5)
+### 🔧 Other Changes
+
+
 ## [v3.39.0] - 2025-11-16
 
 ### ✨ Features
