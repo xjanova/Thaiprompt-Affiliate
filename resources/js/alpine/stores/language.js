@@ -192,9 +192,18 @@ Alpine.store('language', {
             selectElement.value = targetLang;
             selectElement.dispatchEvent(new Event('change'));
 
+            // แปลอีกครั้งหลัง 1 วินาที เพื่อแปลส่วนที่ค้างไว้
             setTimeout(() => {
-                this.isTranslating = false;
+                selectElement.value = targetLang;
+                selectElement.dispatchEvent(new Event('change'));
             }, 1000);
+
+            // แปลอีกครั้งหลัง 2 วินาที เพื่อให้แน่ใจ (final pass)
+            setTimeout(() => {
+                selectElement.value = targetLang;
+                selectElement.dispatchEvent(new Event('change'));
+                this.isTranslating = false;
+            }, 2000);
         } else {
             if (this.translateRetryCount < this.maxTranslateRetries) {
                 this.translateRetryCount++;
