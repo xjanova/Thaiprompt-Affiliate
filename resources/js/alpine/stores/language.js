@@ -91,7 +91,7 @@ Alpine.store('language', {
                 pageLanguage: 'th',
                 includedLanguages: 'th,en,zh-CN,ja,ko,vi,de,fr,es',
                 autoDisplay: false,
-                layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE
+                layout: window.google.translate.TranslateElement.InlineLayout.VERTICAL  // เปลี่ยนจาก SIMPLE เป็น VERTICAL
             }, 'google_translate_element');
 
             this.isGoogleTranslateReady = true;
