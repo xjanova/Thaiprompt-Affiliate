@@ -73,10 +73,8 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
         {{-- Revenue Chart (2/3 width) --}}
         <div class="lg:col-span-2"
-             x-data="{
-                 chartReady: false,
-                 chart: null,
-                 initChart() {
+             x-data
+             x-init="() => {
                      console.log('🚀 กำลังโหลดกราฟรายได้...');
 
                      // ตรวจสอบว่า ApexCharts โหลดสำเร็จหรือไม่
@@ -234,16 +232,13 @@
 
                      // สร้าง chart
                      try {
-                         this.chart = new ApexCharts(chartElement, options);
-                         this.chart.render();
-                         this.chartReady = true;
+                         const chart = new ApexCharts(chartElement, options);
+                         chart.render();
                          console.log('✅ กราฟแสดงผลสำเร็จ!');
                      } catch (error) {
                          console.error('❌ เกิดข้อผิดพลาดในการสร้างกราฟ:', error);
                      }
-                 }
-             }"
-             x-init="$nextTick(() => { setTimeout(() => initChart(), 100); })">
+             }">
             <x-arrow-x.charts.line
                 id="revenue-chart"
                 title="สถิติรายได้รายเดือน"

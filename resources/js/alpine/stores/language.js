@@ -48,11 +48,9 @@ Alpine.store('language', {
         if (savedLang && this.languages.find(l => l.code === savedLang)) {
             this.current = savedLang;
         } else {
-            // ตรวจจากบราวเซอร์
-            const browserLang = navigator.language.split('-')[0];
-            if (this.languages.find(l => l.code === browserLang)) {
-                this.current = browserLang;
-            }
+            // Default เป็นภาษาไทยเสมอ (ไม่เช็คจากบราวเซอร์)
+            this.current = 'th';
+            localStorage.setItem('app_language', 'th');
         }
 
         console.log('🌐 Language Store initialized:', this.current);
