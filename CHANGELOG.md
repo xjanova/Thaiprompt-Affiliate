@@ -2,6 +2,18 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.36.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: แก้ไข Users Create/Edit/Show ให้ใช้ Pure Tailwind + inline styles (805f4fa8)
+- fix: แก้ไข Users Index ให้ใช้ Pure Tailwind + inline styles (c13b177e)
+- fix: แก้ไข Dashboard และ theme-styles ให้ใช้ Pure Tailwind + inline styles (6efea5df)
+- fix: เพิ่ม Dynamic Theme Color Utilities ใน theme-styles component (2410872a)
+### 🔧 Other Changes
+- Merge pull request #1261 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (16c8b50a)
+
 ## [v3.36.0] - 2025-11-16
 
 ### ✨ Features
