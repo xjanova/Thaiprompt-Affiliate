@@ -32,6 +32,7 @@ document.addEventListener('alpine:init', () => {
                     buttonRoundness: 4,
                     primaryHue: 260,
                     accentHue: 340,
+                    contrast: 100,
                     backdropSaturate: 100,
                     perspectiveDepth: 0,
                 }
@@ -53,6 +54,7 @@ document.addEventListener('alpine:init', () => {
                     buttonRoundness: 8,
                     primaryHue: 220,
                     accentHue: 200,
+                    contrast: 100,
                     backdropSaturate: 100,
                     perspectiveDepth: 500,
                 }
@@ -74,6 +76,7 @@ document.addEventListener('alpine:init', () => {
                     buttonRoundness: 12,
                     primaryHue: 260,
                     accentHue: 340,
+                    contrast: 100,
                     backdropSaturate: 100,
                     perspectiveDepth: 1000,
                 }
@@ -95,6 +98,7 @@ document.addEventListener('alpine:init', () => {
                     buttonRoundness: 12,
                     primaryHue: 180,
                     accentHue: 300,
+                    contrast: 100,
                     backdropSaturate: 150,
                     perspectiveDepth: 1000,
                 }

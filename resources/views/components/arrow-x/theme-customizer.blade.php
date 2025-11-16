@@ -31,6 +31,7 @@
         // Colors
         primaryHue: 260, // Purple
         accentHue: 340, // Pink
+        contrast: 100, // ความตัดกันของสี
 
         // Advanced
         backdropSaturate: 100,
@@ -73,6 +74,7 @@
         root.style.setProperty('--button-roundness', this.settings.buttonRoundness + 'px');
         root.style.setProperty('--primary-hue', this.settings.primaryHue);
         root.style.setProperty('--accent-hue', this.settings.accentHue);
+        root.style.setProperty('--contrast', this.settings.contrast + '%');
         root.style.setProperty('--backdrop-saturate', this.settings.backdropSaturate + '%');
         root.style.setProperty('--perspective-depth', this.settings.perspectiveDepth + 'px');
 
@@ -100,6 +102,7 @@
                 buttonRoundness: 12,
                 primaryHue: 260,
                 accentHue: 340,
+                contrast: 100,
                 backdropSaturate: 100,
                 perspectiveDepth: 1000,
             };
@@ -340,6 +343,18 @@
                          :style="`background: hsl(${settings.accentHue}, 70%, 60%)`"></div>
                 </div>
 
+                {{-- Contrast --}}
+                <div>
+                    <label class="flex items-center justify-between text-white text-sm font-medium mb-2">
+                        <span><i class="fas fa-adjust mr-2"></i>ความตัดกันของสี (Contrast)</span>
+                        <span x-text="settings.contrast + '%'" class="text-blue-300"></span>
+                    </label>
+                    <input type="range" min="50" max="150" step="5"
+                           x-model="settings.contrast"
+                           @input="saveSettings()"
+                           class="w-full">
+                </div>
+
                 {{-- Backdrop Saturate --}}
                 <div>
                     <label class="flex items-center justify-between text-white text-sm font-medium mb-2">
@@ -451,6 +466,72 @@ body.theme-classic aside.glass-fusion {
 body.theme-classic .glass-dropdown {
     background: rgba(30, 41, 59, 0.98) !important; /* Dropdown solid */
     box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+/**
+ * Dynamic Color System - ใช้ CSS variables สำหรับสี
+ * ปรับ primaryHue, accentHue และ contrast แบบ real-time
+ */
+:root {
+    --primary-hue: 260;
+    --accent-hue: 340;
+    --contrast: 100%;
+}
+
+/* Gradient Backgrounds ที่ใช้ primary/accent hue */
+.bg-gradient-to-r {
+    filter: contrast(var(--contrast));
+}
+
+/* Stats cards gradients - ใช้ primary hue */
+.from-purple-500 {
+    --tw-gradient-from: hsl(var(--primary-hue), 70%, 55%) !important;
+}
+
+.to-purple-600 {
+    --tw-gradient-to: hsl(var(--primary-hue), 70%, 45%) !important;
+}
+
+/* Stats cards gradients - ใช้ accent hue */
+.from-pink-500 {
+    --tw-gradient-from: hsl(var(--accent-hue), 70%, 55%) !important;
+}
+
+.to-pink-600 {
+    --tw-gradient-to: hsl(var(--accent-hue), 70%, 45%) !important;
+}
+
+/* Blue gradients - adjustable */
+.from-blue-500 {
+    --tw-gradient-from: hsl(calc(var(--primary-hue) - 40), 70%, 55%) !important;
+}
+
+.to-blue-600 {
+    --tw-gradient-to: hsl(calc(var(--primary-hue) - 40), 70%, 45%) !important;
+}
+
+/* Orange gradients */
+.from-orange-500 {
+    --tw-gradient-from: hsl(25, 90%, 55%) !important;
+}
+
+.to-red-600 {
+    --tw-gradient-to: hsl(0, 75%, 45%) !important;
+}
+
+/* Green gradients */
+.from-green-500 {
+    --tw-gradient-from: hsl(142, 70%, 45%) !important;
+}
+
+.to-emerald-600 {
+    --tw-gradient-to: hsl(160, 75%, 38%) !important;
+}
+
+/* Buttons และ interactive elements */
+button.bg-gradient-to-r,
+a.bg-gradient-to-r {
+    filter: contrast(var(--contrast)) brightness(calc(100% + (var(--contrast) - 100%) * 0.2));
 }
 
 /**
