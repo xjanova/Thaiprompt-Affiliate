@@ -330,7 +330,40 @@ function userDashboard() {
          */
         init() {
             this.initRevenueChart();
+            this.setupThemeListener();
             this.loading = false;
+        },
+
+        /**
+         * ฟัง theme change events และอัพเดท chart
+         */
+        setupThemeListener() {
+            window.addEventListener('theme-changed', (event) => {
+                if (this.revenueChart) {
+                    this.updateChartColors(event.detail.isDark);
+                }
+            });
+        },
+
+        /**
+         * อัพเดทสีของ Chart เมื่อเปลี่ยน theme
+         */
+        updateChartColors(isDark) {
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            const textColor = isDark ? 'rgba(255, 255, 255, 0.7)' : 'rgba(0, 0, 0, 0.7)';
+
+            // อัพเดท grid และ text colors
+            this.revenueChart.options.scales.y.grid.color = gridColor;
+            this.revenueChart.options.scales.y.ticks.color = textColor;
+            this.revenueChart.options.scales.x.ticks.color = textColor;
+
+            // อัพเดท tooltip
+            this.revenueChart.options.plugins.tooltip.backgroundColor = isDark ? 'rgba(17, 24, 39, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+            this.revenueChart.options.plugins.tooltip.titleColor = isDark ? '#fff' : '#000';
+            this.revenueChart.options.plugins.tooltip.bodyColor = isDark ? '#fff' : '#000';
+
+            // Re-render chart
+            this.revenueChart.update('none'); // 'none' = ไม่มี animation
         },
 
         /**
