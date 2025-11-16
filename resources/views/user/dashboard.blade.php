@@ -256,7 +256,7 @@
             icon="fas fa-money-bill-wave"
             gradient="from-blue-500 to-cyan-600"
             :change="$stats['commission_change'] ?? 0"
-            href="{{ route('user.commissions.index') }}"
+            href="{{ route('user.commissions') }}"
         />
 
         {{-- Referrals Card --}}
@@ -266,7 +266,7 @@
             icon="fas fa-users"
             gradient="from-green-500 to-teal-600"
             :change="$stats['referrals_change'] ?? 0"
-            href="{{ route('user.affiliates.team') }}"
+            href="{{ route('user.mlm.team') }}"
         />
 
         {{-- Rank Points Card --}}
