@@ -254,15 +254,17 @@
             {{-- License Icon Only (แสดงในโหมด Auto-hide) --}}
             <div x-show="!sidebarOpen && !hovered && autoHideMode"
                  x-transition
-                 class="flex flex-col items-center gap-1"
+                 class="flex flex-col items-center gap-1.5 py-1"
                  title="Licensed - v{{ $version }}">
                 {{-- Shield Icon with Badge --}}
                 <div class="relative">
-                    <i class="fas fa-shield-check text-emerald-300 text-xl drop-shadow-lg animate-pulse"></i>
+                    <i class="fas fa-shield-check text-emerald-300 text-2xl drop-shadow-lg animate-pulse"></i>
                     <div class="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
                 </div>
-                {{-- Small Version Text --}}
-                <span class="text-[8px] font-mono text-white/70 drop-shadow">v{{ $version }}</span>
+                {{-- Version Text - Larger & More Visible --}}
+                <span class="text-[10px] font-bold text-white drop-shadow-lg bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
+                    v{{ $version }}
+                </span>
             </div>
         </div>
 

@@ -75,6 +75,14 @@
         root.style.setProperty('--accent-hue', this.settings.accentHue);
         root.style.setProperty('--backdrop-saturate', this.settings.backdropSaturate + '%');
         root.style.setProperty('--perspective-depth', this.settings.perspectiveDepth + 'px');
+
+        // ถ้าเป็นโหมด Classic (ไม่มี glass effects) ให้เพิ่ม class พิเศษ
+        const isClassicMode = this.settings.glassOpacity === 0 && this.settings.glassBlur === 0;
+        if (isClassicMode) {
+            document.body.classList.add('theme-classic');
+        } else {
+            document.body.classList.remove('theme-classic');
+        }
     },
 
     resetSettings() {
@@ -421,6 +429,28 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background: rgba(255, 255, 255, var(--glass-opacity, 0.15));
     backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--backdrop-saturate, 100%));
     -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--backdrop-saturate, 100%));
+}
+
+/**
+ * Classic Mode - ทึบหมด ไม่มี Glass Effects
+ * เมื่อ body มี class "theme-classic" จะ override glass effects ทั้งหมด
+ */
+body.theme-classic .glass-fusion,
+body.theme-classic .glass-neu,
+body.theme-classic .glass-dropdown {
+    background: rgba(30, 41, 59, 0.95) !important; /* Dark solid background */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(71, 85, 105, 0.5) !important;
+}
+
+body.theme-classic aside.glass-fusion {
+    background: rgba(15, 23, 42, 0.98) !important; /* Sidebar darker */
+}
+
+body.theme-classic .glass-dropdown {
+    background: rgba(30, 41, 59, 0.98) !important; /* Dropdown solid */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
 }
 
 /**
