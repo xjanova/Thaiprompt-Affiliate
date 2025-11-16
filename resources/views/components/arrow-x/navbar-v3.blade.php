@@ -261,6 +261,11 @@
                         <i class="fas fa-cog w-4 drop-shadow"></i>
                         <span class="drop-shadow">ตั้งค่า</span>
                     </a>
+                    <a href="{{ route('admin.user-guide.index') }}"
+                       class="flex items-center gap-3 px-4 py-2 hover:bg-white/10 transition-colors text-white text-sm">
+                        <i class="fas fa-book-open w-4 drop-shadow"></i>
+                        <span class="drop-shadow">คู่มือการใช้งาน</span>
+                    </a>
                 </div>
 
                 {{-- Logout --}}
