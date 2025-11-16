@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.37.0] - 2025-11-16
+
+### ✨ Features
+- feat: อัพเกรด Commissions (Index/Create/Edit/Show) เป็น V3 Standards (378b83c5)
+- feat: อัพเกรด Affiliates Tree views (5 ไฟล์) เป็น V3 Standards (91bbbf1d)
+- feat: อัพเกรด Affiliates (Index/Create/Edit/Show) เป็น V3 Standards (05b90b39)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1262 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (becbd422)
+
 ## [v3.36.1] - 2025-11-16
 
 ### ✨ Features
