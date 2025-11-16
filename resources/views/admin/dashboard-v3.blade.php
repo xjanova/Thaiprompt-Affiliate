@@ -228,183 +228,198 @@
 
 {{-- Revenue Chart Initialization --}}
 <script>
-// รอให้ทุกอย่างโหลดเสร็จ (window.load event)
-window.addEventListener('load', function() {
-    console.log('🌟 Window loaded - เริ่มโหลดกราฟ...');
+(function() {
+    console.log('📊 [Chart] เริ่มต้น IIFE...');
 
-    // รอ 500ms เพื่อให้ Alpine.js และ Sortable.js เสร็จก่อน
-    setTimeout(initRevenueChart, 500);
-});
+    var retryCount = 0;
+    var maxRetries = 10;
 
-function initRevenueChart() {
-    console.log('🚀 initRevenueChart() เริ่มทำงาน...');
+    function initChart() {
+        console.log('📊 [Chart] initChart() called (attempt ' + (retryCount + 1) + '/' + maxRetries + ')');
 
-    // ตรวจสอบว่า ApexCharts โหลดสำเร็จหรือไม่
-    if (typeof ApexCharts === 'undefined') {
-        console.error('❌ ApexCharts library ไม่โหลด - ลองใหม่ใน 500ms');
-        setTimeout(initRevenueChart, 500);
-        return;
-    }
-    console.log('✅ ApexCharts library พร้อมแล้ว');
-
-    // ตรวจสอบว่ามี element สำหรับกราฟหรือไม่
-    const chartElement = document.querySelector('#revenue-chart');
-    if (!chartElement) {
-        console.error('❌ ไม่พบ element #revenue-chart - ลองใหม่ใน 300ms');
-        setTimeout(initRevenueChart, 300);
-        return;
-    }
-    console.log('✅ พบ element #revenue-chart:', chartElement);
-
-    // ข้อมูลจริงจากฐานข้อมูล
-    let monthlyData = @json($monthlyRevenue);
-
-    // ถ้าไม่มีข้อมูล ใช้ข้อมูลจริง 12 เดือนที่ผ่านมา
-    if (!monthlyData || monthlyData.length === 0) {
-        console.log('⚠️ ไม่มีข้อมูลรายได้ ใช้ข้อมูลเริ่มต้น');
-        const now = new Date();
-        monthlyData = [];
-        for (let i = 11; i >= 0; i--) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            monthlyData.push({
-                month: year + '-' + month,
-                total: '0.00'
-            });
+        // ตรวจสอบว่า ApexCharts โหลดสำเร็จหรือไม่
+        if (typeof ApexCharts === 'undefined') {
+            console.error('❌ ApexCharts library ไม่โหลด - ลองใหม่ใน 500ms');
+            retryCount++;
+            if (retryCount < maxRetries) {
+                setTimeout(initChart, 500);
+            } else {
+                console.error('❌ ApexCharts ไม่โหลดหลังจากพยายาม ' + maxRetries + ' ครั้ง');
+            }
+            return;
         }
-    }
+        console.log('✅ ApexCharts library พร้อมแล้ว');
 
-    // เตรียม labels และ data สำหรับ ApexCharts
-    const categories = monthlyData.map(item => {
-        const parts = item.month.split('-');
-        const year = parts[0];
-        const month = parts[1];
-        const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-        return monthNames[parseInt(month) - 1] + ' ' + year;
-    });
-
-    const seriesData = monthlyData.map(item => parseFloat(item.total || 0));
-
-    console.log('📊 ข้อมูลกราฟ:', {
-        categories: categories,
-        data: seriesData,
-        rawData: monthlyData
-    });
-
-    // ตั้งค่า ApexCharts
-    const options = {
-        series: [{
-            name: 'รายได้',
-            data: seriesData
-        }],
-        chart: {
-            type: 'area',
-            height: 350,
-            fontFamily: 'Inter, Noto Sans Thai, sans-serif',
-            toolbar: { show: false },
-            zoom: { enabled: false },
-            animations: {
-                enabled: true,
-                easing: 'easeinout',
-                speed: 800,
-                animateGradually: { enabled: true, delay: 150 },
-                dynamicAnimation: { enabled: true, speed: 350 }
+        // ตรวจสอบว่ามี element สำหรับกราฟหรือไม่
+        const chartElement = document.querySelector('#revenue-chart');
+        if (!chartElement) {
+            console.error('❌ ไม่พบ element #revenue-chart - ลองใหม่ใน 300ms');
+            retryCount++;
+            if (retryCount < maxRetries) {
+                setTimeout(initChart, 300);
+            } else {
+                console.error('❌ ไม่พบ element หลังจากพยายาม ' + maxRetries + ' ครั้ง');
             }
-        },
-        dataLabels: { enabled: false },
-        stroke: {
-            curve: 'smooth',
-            width: 3,
-            colors: ['#3b82f6']
-        },
-        fill: {
-            type: 'gradient',
-            gradient: {
-                shadeIntensity: 1,
-                opacityFrom: 0.6,
-                opacityTo: 0.1,
-                stops: [0, 90, 100],
-                colorStops: [
-                    { offset: 0, color: '#3b82f6', opacity: 0.6 },
-                    { offset: 50, color: '#8b5cf6', opacity: 0.4 },
-                    { offset: 100, color: '#ec4899', opacity: 0.1 }
-                ]
+            return;
+        }
+        console.log('✅ พบ element #revenue-chart:', chartElement);
+
+        // รีเซ็ต retryCount เมื่อพบทั้ง library และ element
+        retryCount = 0;
+
+        // ข้อมูลจริงจากฐานข้อมูล
+        let monthlyData = @json($monthlyRevenue);
+
+        // ถ้าไม่มีข้อมูล ใช้ข้อมูลจริง 12 เดือนที่ผ่านมา
+        if (!monthlyData || monthlyData.length === 0) {
+            console.log('⚠️ ไม่มีข้อมูลรายได้ ใช้ข้อมูลเริ่มต้น');
+            const now = new Date();
+            monthlyData = [];
+            for (let i = 11; i >= 0; i--) {
+                const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                monthlyData.push({
+                    month: year + '-' + month,
+                    total: '0.00'
+                });
             }
-        },
-        xaxis: {
+        }
+
+        // เตรียม labels และ data สำหรับ ApexCharts
+        const categories = monthlyData.map(item => {
+            const parts = item.month.split('-');
+            const year = parts[0];
+            const month = parts[1];
+            const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+            return monthNames[parseInt(month) - 1] + ' ' + year;
+        });
+
+        const seriesData = monthlyData.map(item => parseFloat(item.total || 0));
+
+        console.log('📊 ข้อมูลกราฟ:', {
             categories: categories,
-            labels: {
-                style: {
-                    colors: 'rgba(255, 255, 255, 0.9)',
-                    fontSize: '11px',
-                    fontWeight: 500
-                },
-                rotate: -45,
-                rotateAlways: false
-            },
-            axisBorder: { show: false },
-            axisTicks: { show: false }
-        },
-        yaxis: {
-            labels: {
-                style: {
-                    colors: 'rgba(255, 255, 255, 0.9)',
-                    fontSize: '12px',
-                    fontWeight: 500
-                },
-                formatter: function(value) {
-                    if (value >= 1000000) {
-                        return '฿' + (value / 1000000).toFixed(1) + 'M';
-                    } else if (value >= 1000) {
-                        return '฿' + (value / 1000).toFixed(0) + 'K';
-                    }
-                    return '฿' + value.toLocaleString('th-TH');
-                }
-            }
-        },
-        grid: {
-            borderColor: 'rgba(255, 255, 255, 0.1)',
-            strokeDashArray: 3,
-            xaxis: { lines: { show: false } },
-            yaxis: { lines: { show: true } },
-            padding: { top: 0, right: 10, bottom: 0, left: 10 }
-        },
-        tooltip: {
-            theme: 'dark',
-            style: {
-                fontSize: '13px',
-                fontFamily: 'Inter, Noto Sans Thai, sans-serif'
-            },
-            x: { show: true },
-            y: {
-                formatter: function(value) {
-                    return '฿' + value.toLocaleString('th-TH', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    });
-                }
-            },
-            marker: { show: true }
-        },
-        markers: {
-            size: 5,
-            colors: ['#3b82f6'],
-            strokeColors: '#fff',
-            strokeWidth: 2,
-            hover: { size: 8 }
-        }
-    };
+            data: seriesData,
+            rawData: monthlyData
+        });
 
-    // สร้าง chart
-    try {
-        const chart = new ApexCharts(chartElement, options);
-        chart.render();
-        console.log('✅ กราฟแสดงผลสำเร็จ!');
-    } catch (error) {
-        console.error('❌ เกิดข้อผิดพลาดในการสร้างกราฟ:', error);
+        // ตั้งค่า ApexCharts
+        const options = {
+            series: [{
+                name: 'รายได้',
+                data: seriesData
+            }],
+            chart: {
+                type: 'area',
+                height: 350,
+                fontFamily: 'Inter, Noto Sans Thai, sans-serif',
+                toolbar: { show: false },
+                zoom: { enabled: false },
+                animations: {
+                    enabled: true,
+                    easing: 'easeinout',
+                    speed: 800,
+                    animateGradually: { enabled: true, delay: 150 },
+                    dynamicAnimation: { enabled: true, speed: 350 }
+                }
+            },
+            dataLabels: { enabled: false },
+            stroke: {
+                curve: 'smooth',
+                width: 3,
+                colors: ['#3b82f6']
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.6,
+                    opacityTo: 0.1,
+                    stops: [0, 90, 100],
+                    colorStops: [
+                        { offset: 0, color: '#3b82f6', opacity: 0.6 },
+                        { offset: 50, color: '#8b5cf6', opacity: 0.4 },
+                        { offset: 100, color: '#ec4899', opacity: 0.1 }
+                    ]
+                }
+            },
+            xaxis: {
+                categories: categories,
+                labels: {
+                    style: {
+                        colors: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: '11px',
+                        fontWeight: 500
+                    },
+                    rotate: -45,
+                    rotateAlways: false
+                },
+                axisBorder: { show: false },
+                axisTicks: { show: false }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: 'rgba(255, 255, 255, 0.9)',
+                        fontSize: '12px',
+                        fontWeight: 500
+                    },
+                    formatter: function(value) {
+                        if (value >= 1000000) {
+                            return '฿' + (value / 1000000).toFixed(1) + 'M';
+                        } else if (value >= 1000) {
+                            return '฿' + (value / 1000).toFixed(0) + 'K';
+                        }
+                        return '฿' + value.toLocaleString('th-TH');
+                    }
+                }
+            },
+            grid: {
+                borderColor: 'rgba(255, 255, 255, 0.1)',
+                strokeDashArray: 3,
+                xaxis: { lines: { show: false } },
+                yaxis: { lines: { show: true } },
+                padding: { top: 0, right: 10, bottom: 0, left: 10 }
+            },
+            tooltip: {
+                theme: 'dark',
+                style: {
+                    fontSize: '13px',
+                    fontFamily: 'Inter, Noto Sans Thai, sans-serif'
+                },
+                x: { show: true },
+                y: {
+                    formatter: function(value) {
+                        return '฿' + value.toLocaleString('th-TH', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                    }
+                },
+                marker: { show: true }
+            },
+            markers: {
+                size: 5,
+                colors: ['#3b82f6'],
+                strokeColors: '#fff',
+                strokeWidth: 2,
+                hover: { size: 8 }
+            }
+        };
+
+        // สร้าง chart
+        try {
+            const chart = new ApexCharts(chartElement, options);
+            chart.render();
+            console.log('✅ กราฟแสดงผลสำเร็จ!');
+        } catch (error) {
+            console.error('❌ เกิดข้อผิดพลาดในการสร้างกราฟ:', error);
+        }
     }
-}
+
+    // เริ่มต้น chart ทันทีเมื่อ IIFE รัน
+    initChart();
+})();
 </script>
 @endpush
 
