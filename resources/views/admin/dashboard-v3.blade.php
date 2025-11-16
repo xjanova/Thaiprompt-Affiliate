@@ -28,45 +28,54 @@
 
 @section('content')
 <div class="space-y-6">
-    {{-- Stats Cards Grid --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+    {{-- Stats Cards Grid (Drag & Drop) --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6"
+         x-sortable="{ storageKey: 'dashboard-stats-order', animation: 300, ghostClass: 'opacity-30' }">
         {{-- Total Users --}}
-        <x-arrow-x.stats.card-3d
-            :value="number_format($stats['total_users'])"
-            label="ผู้ใช้งานทั้งหมด"
-            icon="fas fa-users"
-            gradient="from-blue-500 to-cyan-600"
-            :change="$userGrowth"
-            href="{{ route('admin.users.index') }}"
-        />
+        <div data-id="card-users">
+            <x-arrow-x.stats.card-3d
+                :value="number_format($stats['total_users'])"
+                label="ผู้ใช้งานทั้งหมด"
+                icon="fas fa-users"
+                gradient="from-blue-500 to-cyan-600"
+                :change="$userGrowth"
+                href="{{ route('admin.users.index') }}"
+            />
+        </div>
 
         {{-- Total Affiliates --}}
-        <x-arrow-x.stats.card-3d
-            :value="number_format($stats['active_affiliates'])"
-            label="Affiliate ที่ใช้งาน"
-            icon="fas fa-network-wired"
-            gradient="from-green-500 to-emerald-600"
-            href="{{ route('admin.affiliates.index') }}"
-        />
+        <div data-id="card-affiliates">
+            <x-arrow-x.stats.card-3d
+                :value="number_format($stats['active_affiliates'])"
+                label="Affiliate ที่ใช้งาน"
+                icon="fas fa-network-wired"
+                gradient="from-green-500 to-emerald-600"
+                href="{{ route('admin.affiliates.index') }}"
+            />
+        </div>
 
         {{-- Total Commissions --}}
-        <x-arrow-x.stats.card-3d
-            :value="'฿' . number_format($stats['total_commissions'], 2)"
-            label="คอมมิชชั่นทั้งหมด"
-            icon="fas fa-coins"
-            gradient="from-purple-500 to-pink-600"
-            :change="$revenueGrowth"
-            href="{{ route('admin.commissions.index') }}"
-        />
+        <div data-id="card-commissions">
+            <x-arrow-x.stats.card-3d
+                :value="'฿' . number_format($stats['total_commissions'], 2)"
+                label="คอมมิชชั่นทั้งหมด"
+                icon="fas fa-coins"
+                gradient="from-purple-500 to-pink-600"
+                :change="$revenueGrowth"
+                href="{{ route('admin.commissions.index') }}"
+            />
+        </div>
 
         {{-- Paid Commissions --}}
-        <x-arrow-x.stats.card-3d
-            :value="'฿' . number_format($stats['paid_commissions'], 2)"
-            label="จ่ายแล้ว"
-            icon="fas fa-check-circle"
-            gradient="from-orange-500 to-red-600"
-            href="{{ route('admin.commissions.index', ['status' => 'paid']) }}"
-        />
+        <div data-id="card-paid">
+            <x-arrow-x.stats.card-3d
+                :value="'฿' . number_format($stats['paid_commissions'], 2)"
+                label="จ่ายแล้ว"
+                icon="fas fa-check-circle"
+                gradient="from-orange-500 to-red-600"
+                href="{{ route('admin.commissions.index', ['status' => 'paid']) }}"
+            />
+        </div>
     </div>
 
     {{-- Charts & Activity Section --}}
@@ -228,19 +237,22 @@
 
 {{-- Revenue Chart Initialization --}}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// รอให้ DOM และ ApexCharts โหลดเสร็จ
+function initRevenueChart() {
     console.log('🚀 กำลังโหลดกราฟรายได้...');
 
     // ตรวจสอบว่า ApexCharts โหลดสำเร็จหรือไม่
     if (typeof ApexCharts === 'undefined') {
-        console.error('❌ ApexCharts library ไม่โหลด');
+        console.error('❌ ApexCharts library ไม่โหลด - ลองใหม่ใน 500ms');
+        setTimeout(initRevenueChart, 500);
         return;
     }
 
     // ตรวจสอบว่ามี element สำหรับกราฟหรือไม่
     const chartElement = document.querySelector('#revenue-chart');
     if (!chartElement) {
-        console.error('❌ ไม่พบ element #revenue-chart');
+        console.error('❌ ไม่พบ element #revenue-chart - ลองใหม่ใน 300ms');
+        setTimeout(initRevenueChart, 300);
         return;
     }
 
@@ -394,7 +406,15 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
         console.error('❌ เกิดข้อผิดพลาดในการสร้างกราฟ:', error);
     }
-});
+}
+
+// เรียก function เมื่อ DOM พร้อม
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRevenueChart);
+} else {
+    // DOM พร้อมแล้ว เรียกทันที
+    initRevenueChart();
+}
 </script>
 @endpush
 
@@ -415,5 +435,48 @@ document.addEventListener('DOMContentLoaded', function() {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+}
+
+/**
+ * Sortable Drag & Drop Effects (SortableJS)
+ */
+/* Cursor ที่บอกว่าลากได้ */
+[x-sortable] > * {
+    cursor: grab;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+[x-sortable] > *:active {
+    cursor: grabbing;
+}
+
+/* Ghost element (ตัวแรเงาขณะลาก) */
+.sortable-ghost {
+    opacity: 0.3 !important;
+    transform: scale(0.95);
+}
+
+/* Element ที่กำลังถูกเลือก */
+.sortable-chosen {
+    transform: scale(1.02);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3) !important;
+    z-index: 1000;
+}
+
+/* Element ขณะลาก */
+.sortable-drag {
+    opacity: 1;
+    transform: rotate(2deg);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Fallback class */
+.sortable-fallback {
+    opacity: 0;
+}
+
+/* Hover effect เพิ่มความชัดเจน */
+[x-sortable] > *:hover {
+    transform: translateY(-2px);
 }
 </style>
