@@ -183,7 +183,15 @@
         <a href="{{ route('admin.site-settings.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.site-settings.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-palette w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">ตั้งค่าเว็บไซต์</span>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่าเว็บไซต์</span>
+        </a>
+
+        {{-- Arrow X Theme Customizer ⭐ NEW --}}
+        <a href="{{ route('admin.arrow-x-theme.index') }}"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.arrow-x-theme.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-paint-brush w-5 text-center drop-shadow"></i>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ปรับแต่งทีม Arrow X</span>
         </a>
 
         {{-- Help --}}
