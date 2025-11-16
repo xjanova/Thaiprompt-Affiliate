@@ -223,24 +223,35 @@
 @endsection
 
 @push('scripts')
-{{-- Chart.js Library --}}
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{{-- ApexCharts Library --}}
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js"></script>
 
+{{-- Revenue Chart Initialization --}}
 <script>
-/**
- * Revenue Chart - กราฟแสดงรายได้รายเดือนตามข้อมูลจริง
- */
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('revenue-chart');
-    if (!ctx) {
-        console.error('Canvas element "revenue-chart" not found');
+// รอให้ DOM และ ApexCharts โหลดเสร็จ
+function initRevenueChart() {
+    // ตรวจสอบว่า ApexCharts โหลดสำเร็จหรือไม่
+    if (typeof ApexCharts === 'undefined') {
+        setTimeout(initRevenueChart, 500);
+        return;
+    }
+
+    // ตรวจสอบว่ามี element สำหรับกราฟหรือไม่
+    const chartElement = document.querySelector('#revenue-chart');
+    if (!chartElement) {
+        setTimeout(initRevenueChart, 300);
         return;
     }
 
     // ข้อมูลจริงจากฐานข้อมูล
     let monthlyData = @json($monthlyRevenue);
 
-    // ถ้าไม่มีข้อมูล ใช้ข้อมูลจริง 12 เดือนที่ผ่านมา (ค่าเริ่มต้นเป็น 0)
+    // แปลง object เป็น array ถ้าจำเป็น
+    if (!Array.isArray(monthlyData)) {
+        monthlyData = Object.values(monthlyData);
+    }
+
+    // ถ้าไม่มีข้อมูล ใช้ข้อมูลจริง 12 เดือนที่ผ่านมา
     if (!monthlyData || monthlyData.length === 0) {
         const now = new Date();
         monthlyData = [];
@@ -249,152 +260,143 @@ document.addEventListener('DOMContentLoaded', function() {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             monthlyData.push({
-                month: `${year}-${month}`,
-                total: '0.00'  // ถ้าไม่มีข้อมูลจริง จะเป็น 0
+                month: year + '-' + month,
+                total: '0.00'
             });
         }
     }
 
-    // เตรียม labels และ data
-    const labels = monthlyData.map(item => {
-        const [year, month] = item.month.split('-');
+    // เตรียม labels และ data สำหรับ ApexCharts
+    const categories = monthlyData.map(item => {
+        const parts = item.month.split('-');
+        const year = parts[0];
+        const month = parts[1];
         const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
         return monthNames[parseInt(month) - 1] + ' ' + year;
     });
 
-    const data = monthlyData.map(item => parseFloat(item.total || 0));
+    const seriesData = monthlyData.map(item => parseFloat(item.total || 0));
 
-    console.log('📊 Revenue Chart Data:', {
-        labels: labels,
-        data: data,
-        rawData: monthlyData
-    });
-
-    // สร้าง gradient แบบสวยงาม (ใช้ context 2d)
-    const chartCtx = ctx.getContext('2d');
-    const gradient = chartCtx.createLinearGradient(0, 0, 0, 350);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.6)');    // Blue เข้ม
-    gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.4)');  // Purple กลาง
-    gradient.addColorStop(1, 'rgba(236, 72, 153, 0.1)');    // Pink อ่อน
-
-    // สร้าง gradient สำหรับเส้น
-    const lineGradient = chartCtx.createLinearGradient(0, 0, ctx.width, 0);
-    lineGradient.addColorStop(0, 'rgb(59, 130, 246)');
-    lineGradient.addColorStop(0.5, 'rgb(139, 92, 246)');
-    lineGradient.addColorStop(1, 'rgb(236, 72, 153)');
+    // ตั้งค่า ApexCharts
+    const options = {
+        series: [{
+            name: 'รายได้',
+            data: seriesData
+        }],
+        chart: {
+            type: 'area',
+            height: 350,
+            fontFamily: 'Inter, Noto Sans Thai, sans-serif',
+            toolbar: { show: false },
+            zoom: { enabled: false },
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 800,
+                animateGradually: { enabled: true, delay: 150 },
+                dynamicAnimation: { enabled: true, speed: 350 }
+            }
+        },
+        dataLabels: { enabled: false },
+        stroke: {
+            curve: 'smooth',
+            width: 3,
+            colors: ['#3b82f6']
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.6,
+                opacityTo: 0.1,
+                stops: [0, 90, 100],
+                colorStops: [
+                    { offset: 0, color: '#3b82f6', opacity: 0.6 },
+                    { offset: 50, color: '#8b5cf6', opacity: 0.4 },
+                    { offset: 100, color: '#ec4899', opacity: 0.1 }
+                ]
+            }
+        },
+        xaxis: {
+            categories: categories,
+            labels: {
+                style: {
+                    colors: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '11px',
+                    fontWeight: 500
+                },
+                rotate: -45,
+                rotateAlways: false
+            },
+            axisBorder: { show: false },
+            axisTicks: { show: false }
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    colors: 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '12px',
+                    fontWeight: 500
+                },
+                formatter: function(value) {
+                    if (value >= 1000000) {
+                        return '฿' + (value / 1000000).toFixed(1) + 'M';
+                    } else if (value >= 1000) {
+                        return '฿' + (value / 1000).toFixed(0) + 'K';
+                    }
+                    return '฿' + value.toLocaleString('th-TH');
+                }
+            }
+        },
+        grid: {
+            borderColor: 'rgba(255, 255, 255, 0.1)',
+            strokeDashArray: 3,
+            xaxis: { lines: { show: false } },
+            yaxis: { lines: { show: true } },
+            padding: { top: 0, right: 10, bottom: 0, left: 10 }
+        },
+        tooltip: {
+            theme: 'dark',
+            style: {
+                fontSize: '13px',
+                fontFamily: 'Inter, Noto Sans Thai, sans-serif'
+            },
+            x: { show: true },
+            y: {
+                formatter: function(value) {
+                    return '฿' + value.toLocaleString('th-TH', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                }
+            },
+            marker: { show: true }
+        },
+        markers: {
+            size: 5,
+            colors: ['#3b82f6'],
+            strokeColors: '#fff',
+            strokeWidth: 2,
+            hover: { size: 8 }
+        }
+    };
 
     // สร้าง chart
-    const chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'รายได้ (บาท)',
-                data: data,
-                borderColor: lineGradient,
-                backgroundColor: gradient,
-                borderWidth: 3,
-                tension: 0.4,
-                fill: true,
-                pointBackgroundColor: 'rgb(59, 130, 246)',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointRadius: 5,
-                pointHoverRadius: 8,
-                pointHoverBackgroundColor: 'rgb(139, 92, 246)',
-                pointHoverBorderWidth: 3,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                    padding: 16,
-                    titleColor: '#fff',
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyColor: '#fff',
-                    bodyFont: {
-                        size: 13
-                    },
-                    borderColor: 'rgba(59, 130, 246, 0.5)',
-                    borderWidth: 2,
-                    displayColors: false,
-                    callbacks: {
-                        label: function(context) {
-                            const value = context.parsed.y;
-                            return 'รายได้: ฿' + value.toLocaleString('th-TH', {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            });
-                        },
-                        afterLabel: function(context) {
-                            const total = data.reduce((a, b) => a + b, 0);
-                            const percentage = total > 0 ? ((context.parsed.y / total) * 100).toFixed(1) : 0;
-                            return percentage + '% ของรายได้รวม';
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(255, 255, 255, 0.1)',
-                        drawBorder: false,
-                    },
-                    ticks: {
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        font: {
-                            size: 12,
-                            weight: '500'
-                        },
-                        callback: function(value) {
-                            if (value >= 1000000) {
-                                return '฿' + (value / 1000000).toFixed(1) + 'M';
-                            } else if (value >= 1000) {
-                                return '฿' + (value / 1000).toFixed(0) + 'K';
-                            }
-                            return '฿' + value.toLocaleString('th-TH');
-                        },
-                        padding: 10
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false,
-                        drawBorder: false,
-                    },
-                    ticks: {
-                        color: 'rgba(255, 255, 255, 0.9)',
-                        font: {
-                            size: 11,
-                            weight: '500'
-                        },
-                        padding: 10
-                    }
-                }
-            },
-            interaction: {
-                intersect: false,
-                mode: 'index',
-            },
-            animation: {
-                duration: 1500,
-                easing: 'easeInOutQuart'
-            }
-        }
-    });
+    try {
+        const chart = new ApexCharts(chartElement, options);
+        chart.render();
+    } catch (error) {
+        console.error('❌ เกิดข้อผิดพลาดในการสร้างกราฟ:', error);
+    }
+}
 
-    console.log('✅ Chart initialized successfully');
-});
+// เรียก function เมื่อ DOM พร้อม
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRevenueChart);
+} else {
+    // DOM พร้อมแล้ว เรียกทันที
+    initRevenueChart();
+}
 </script>
 @endpush
 

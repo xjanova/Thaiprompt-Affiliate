@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\TreeController;
+use App\Http\Controllers\Api\V1\TranslateController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\CryptoWalletApiController;
@@ -104,6 +105,15 @@ Route::prefix('v1')->group(function () {
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);
         Route::get('/dashboard/commissions', [DashboardController::class, 'commissions']);
         Route::get('/dashboard/referrals', [DashboardController::class, 'referrals']);
+
+        // Translation (Google Translate API)
+        Route::prefix('translate')->group(function () {
+            Route::post('/', [TranslateController::class, 'translate']);
+            Route::post('/batch', [TranslateController::class, 'translateBatch']);
+            Route::post('/detect', [TranslateController::class, 'detect']);
+            Route::get('/languages', [TranslateController::class, 'languages']);
+            Route::get('/status', [TranslateController::class, 'status']);
+        });
 
         // Tree (Organization Chart)
         Route::prefix('tree')->group(function () {

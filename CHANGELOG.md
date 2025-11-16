@@ -2,6 +2,399 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.30.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่ม Chart.js Integration สำหรับ User Dashboard (d269fedc)
+- feat: เพิ่ม Controllers และ Routes สำหรับ User Dashboard System (fe12e48f)
+- feat: เพิ่ม User Layout แบบ Arrow X Theme พร้อม Sidebar Navigation (32e66d0b)
+- feat: เพิ่ม User Settings แบบ Arrow X Theme (003e7b9e)
+- feat: เพิ่ม User Profile Management แบบ Arrow X Theme (20031d83)
+- feat: เพิ่ม User Dashboard แบบ Arrow X Theme (15565555)
+- feat: เพิ่ม Authentication Views แบบ Arrow X Theme (f197fff2)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1250 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (2dd2773e)
+- refactor: รวม user migrations เป็น V3 comprehensive และลบไฟล์เก่า (0f807556)
+
+## [v3.29.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1249 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (a253cc43)
+- fix: แก้ไข z-index ของ Top Bar และ Language Switcher ให้อยู่เหนือทุกเลเยอร์ (6e977c43)
+### 🔧 Other Changes
+
+
+## [v3.29.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1248 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (155b9053)
+- feat: เพิ่มหน้าคู่มือการใช้งาน (User Guide V3) (0db28ff7)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.28.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1247 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (54c2972b)
+- fix: แก้ไข Settings V3 + เพิ่มลิงก์ Profile ในเมนู (40bafc44)
+### 🔧 Other Changes
+
+
+## [v3.28.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1246 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (5ccc041c)
+- feat: migrate Settings and Profile to V3 theme + fix language dropdown opacity (a9ab40d9)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.27.0] - 2025-11-16
+
+### ✨ Features
+- feat: ระบบแปลภาษาใช้งานได้ + บันทึกการแก้ปัญหา (1b967e68)
+### 🐛 Bug Fixes
+- fix: แปลภาษาอัตโนมัติ 3 ครั้งเพื่อให้ครบ (31ac736e)
+### 🔧 Other Changes
+- Merge pull request #1245 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (22f90e44)
+
+## [v3.26.4] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1244 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (43fa0ef9)
+- fix: เปลี่ยน Google Translate layout จาก SIMPLE → VERTICAL (c82db0ce)
+### 🔧 Other Changes
+
+
+## [v3.26.3] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1243 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (5ebd6c91)
+- debug: แสดง innerHTML เต็ม + ทุก select ในหน้า (45684e7c)
+
+## [v3.26.2] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1242 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (ed41a58b)
+- fix: แก้วนลูปไม่รู้จบ + ลอง selector หลายแบบ (e1097353)
+### 🔧 Other Changes
+
+
+## [v3.26.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1241 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (66800628)
+- debug: เพิ่ม debug logging สำหรับระบบแปลภาษา (fdc19d31)
+
+## [v3.26.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1240 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (e0f469ef)
+- feat: ลบ debug logs + เพิ่มระบบแปลภาษาอัตโนมัติด้วย Google Translate (095d6c2b)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.25.6] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1239 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (9fe2b4c1)
+- fix: แก้ monthlyData เป็น object แทน array จาก Laravel (10667876)
+### 🔧 Other Changes
+
+
+## [v3.25.5] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1238 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (2bc9294e)
+### 🔧 Other Changes
+- debug: เพิ่ม debug logging สำหรับ chart initialization (b10010cb)
+
+## [v3.25.4] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1237 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (27518761)
+- fix: เพิ่ม height ให้ chart container (#revenue-chart) (0a62f2e9)
+### 🔧 Other Changes
+
+
+## [v3.25.3] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1236 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (9269da52)
+- fix: คืนโค้ดกราฟเป็นเวอร์ชันที่ใช้งานได้ (commit 13c6340) (f29e08fb)
+### 🔧 Other Changes
+
+
+## [v3.25.2] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1235 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (29ec8b71)
+- fix: แก้กราฟและเปลี่ยนระบบแปลภาษาฟรี + ลบ Drag & Drop (43771be7)
+### 🔧 Other Changes
+
+
+## [v3.25.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1234 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (96672c5e)
+- fix: แก้กราฟและเปลี่ยนระบบแปลภาษาฟรี + ลบ Drag & Drop (e016e29b)
+### 🔧 Other Changes
+
+
+## [v3.25.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่ม Drag & Drop สำหรับ Dashboard Cards ด้วย SortableJS (75a9b034)
+### 🐛 Bug Fixes
+- fix: แก้กราฟไม่แสดงและปุ่มเลือกภาษาหาย (13c6340e)
+### 🔧 Other Changes
+- Merge pull request #1233 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (8d7b2991)
+
+## [v3.24.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1232 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (851dcd96)
+- feat: เพิ่ม Contrast slider และแก้กราฟ + Dynamic color system (ce88b500)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
+## [v3.23.2] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1231 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (7c2c74fd)
+- fix: แก้ไขข้อความเวอร์ชั่นไลเซ่นในโหมด auto-hide และเพิ่ม CSS สำหรับโหมด Classic (380a2e0e)
+### 🔧 Other Changes
+
+
+## [v3.23.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1230 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (3ce49f73)
+- fix: แก้กราฟ + แก้ภาษา default เป็นไทย (c8f4e35b)
+- fix: แก้ sidebar desktop icon-only ให้ถูกต้อง และ revert chart script (04cc0742)
+### 🔧 Other Changes
+
+
+## [v3.23.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่ม Theme Customizer + แก้ sidebar desktop icon-only + hover expand (f31967c6)
+### 🐛 Bug Fixes
+- Merge pull request #1229 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (dda2a403)
+### 🔧 Other Changes
+
+
+## [v3.22.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่ม Theme Customizer + แก้ sidebar desktop icon-only + hover expand (e16baea8)
+### 🐛 Bug Fixes
+- Merge pull request #1228 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (d9e245b1)
+- fix: เปลี่ยนกราฟจาก Chart.js เป็น ApexCharts เพื่อแก้ปัญหาการแสดงผล (f44f3a0b)
+### 🔧 Other Changes
+
+
+## [v3.21.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1224 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (afed0782)
+- feat: add real-time translation system with Google Translate API (dc25db34)
+- Merge pull request #1222 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (588a7617)
+- feat: add ultra premium footer and real-time chart with actual data (896e7dd7)
+- Merge pull request #1221 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (a7357b4e)
+- feat: improve V3 dashboard with enhanced features (6b17e756)
+### 🐛 Bug Fixes
+- Merge pull request #1227 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (f2734709)
+- fix: แก้ sidebar toggle บน desktop ให้ถูกต้อง และ revert chart script (b4edcfee)
+- Merge pull request #1226 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (5e23459c)
+- fix: แก้ sidebar ให้ขยายพื้นที่เต็มหน้าจอเมื่อปิด และแก้กราฟให้แสดงผล (2dba6c8d)
+- Merge pull request #1225 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (3b8da258)
+- fix: แก้ไขเลย์เอาต์ sidebar และกราฟรายได้ (f5a1b201)
+- Merge pull request #1223 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (8aa0a6ae)
+- fix: mobile sidebar drawer with overlay (no duplicate burger menu) (7391fc80)
+### 🔧 Other Changes
+- chore: bump version to 3.20.0 [skip ci] (63e59ced)
+- chore: bump version to 3.19.0 [skip ci] (0d626a04)
+- chore: bump version to 3.18.0 [skip ci] (584b2d13)
+- chore: bump version to 3.17.0 [skip ci] (48324c48)
+- chore: bump version to 3.16.0 [skip ci] (c0b2ef7f)
+- chore: bump version to 3.15.0 [skip ci] (ad82efd2)
+- chore: bump version to 3.14.0 [skip ci] (b6c4fce4)
+- Merge pull request #1220 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (962b2fa3)
+- revert: restore to V3 before theme customizer (commit 5d4d286) (1463c3ca)
+
+## [v3.20.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1224 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (afed0782)
+- feat: add real-time translation system with Google Translate API (dc25db34)
+- Merge pull request #1222 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (588a7617)
+- feat: add ultra premium footer and real-time chart with actual data (896e7dd7)
+- Merge pull request #1221 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (a7357b4e)
+- feat: improve V3 dashboard with enhanced features (6b17e756)
+- Merge pull request #1219 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (6e4034cf)
+- feat: complete V3 dashboard with all requested features (29a20b48)
+### 🐛 Bug Fixes
+- Merge pull request #1226 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (5e23459c)
+- fix: แก้ sidebar ให้ขยายพื้นที่เต็มหน้าจอเมื่อปิด และแก้กราฟให้แสดงผล (2dba6c8d)
+- Merge pull request #1225 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (3b8da258)
+- fix: แก้ไขเลย์เอาต์ sidebar และกราฟรายได้ (f5a1b201)
+- Merge pull request #1223 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (8aa0a6ae)
+- fix: mobile sidebar drawer with overlay (no duplicate burger menu) (7391fc80)
+### 🔧 Other Changes
+- chore: bump version to 3.19.0 [skip ci] (0d626a04)
+- chore: bump version to 3.18.0 [skip ci] (584b2d13)
+- chore: bump version to 3.17.0 [skip ci] (48324c48)
+- chore: bump version to 3.16.0 [skip ci] (c0b2ef7f)
+- chore: bump version to 3.15.0 [skip ci] (ad82efd2)
+- chore: bump version to 3.14.0 [skip ci] (b6c4fce4)
+- Merge pull request #1220 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (962b2fa3)
+- revert: restore to V3 before theme customizer (commit 5d4d286) (1463c3ca)
+- chore: bump version to 3.20.0 [skip ci] (7ba1953b)
+
+## [v3.19.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1224 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (afed0782)
+- feat: add real-time translation system with Google Translate API (dc25db34)
+- Merge pull request #1222 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (588a7617)
+- feat: add ultra premium footer and real-time chart with actual data (896e7dd7)
+- Merge pull request #1221 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (a7357b4e)
+- feat: improve V3 dashboard with enhanced features (6b17e756)
+- Merge pull request #1219 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (6e4034cf)
+- Merge pull request #1218 from xjanova/claude/v3-dashboard-clean-01TtAB5ggsWWBNA2HGTG3GRG (62896769)
+- feat: complete V3 dashboard with all requested features (1ca92a6b)
+- feat: complete V3 dashboard with all requested features (29a20b48)
+### 🐛 Bug Fixes
+- Merge pull request #1225 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (3b8da258)
+- fix: แก้ไขเลย์เอาต์ sidebar และกราฟรายได้ (f5a1b201)
+- Merge pull request #1223 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (8aa0a6ae)
+- fix: mobile sidebar drawer with overlay (no duplicate burger menu) (7391fc80)
+- Merge pull request #1216 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (e870cecc)
+- fix: revert to correct implementation - keep only approved features (96bf154e)
+### 🔧 Other Changes
+- chore: bump version to 3.18.0 [skip ci] (584b2d13)
+- chore: bump version to 3.17.0 [skip ci] (48324c48)
+- chore: bump version to 3.16.0 [skip ci] (c0b2ef7f)
+- chore: bump version to 3.15.0 [skip ci] (ad82efd2)
+- chore: bump version to 3.14.0 [skip ci] (b6c4fce4)
+- Merge pull request #1220 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (962b2fa3)
+- revert: restore to V3 before theme customizer (commit 5d4d286) (1463c3ca)
+- chore: bump version to 3.20.0 [skip ci] (7ba1953b)
+- chore: bump version to 3.19.0 [skip ci] (5915dc91)
+- chore: bump version to 3.18.1 [skip ci] (ec20f229)
+
+## [v3.18.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1224 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (afed0782)
+- feat: add real-time translation system with Google Translate API (dc25db34)
+- Merge pull request #1222 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (588a7617)
+- feat: add ultra premium footer and real-time chart with actual data (896e7dd7)
+- Merge pull request #1221 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (a7357b4e)
+- feat: improve V3 dashboard with enhanced features (6b17e756)
+- Merge pull request #1219 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (6e4034cf)
+- Merge pull request #1218 from xjanova/claude/v3-dashboard-clean-01TtAB5ggsWWBNA2HGTG3GRG (62896769)
+- feat: complete V3 dashboard with all requested features (1ca92a6b)
+- feat: complete V3 dashboard with all requested features (29a20b48)
+- Merge pull request #1215 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (23184b76)
+- feat: add multi-language support, mobile improvements, and UI enhancements (e0856c30)
+### 🐛 Bug Fixes
+- Merge pull request #1223 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (8aa0a6ae)
+- fix: mobile sidebar drawer with overlay (no duplicate burger menu) (7391fc80)
+- Merge pull request #1216 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (e870cecc)
+- fix: revert to correct implementation - keep only approved features (96bf154e)
+- Merge pull request #1214 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (3fda6201)
+- fix: apply theme customizer settings to all components (0c86e03e)
+### 🔧 Other Changes
+- chore: bump version to 3.17.0 [skip ci] (48324c48)
+- chore: bump version to 3.16.0 [skip ci] (c0b2ef7f)
+- chore: bump version to 3.15.0 [skip ci] (ad82efd2)
+- chore: bump version to 3.14.0 [skip ci] (b6c4fce4)
+- Merge pull request #1220 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (962b2fa3)
+- revert: restore to V3 before theme customizer (commit 5d4d286) (1463c3ca)
+- chore: bump version to 3.20.0 [skip ci] (7ba1953b)
+- chore: bump version to 3.19.0 [skip ci] (5915dc91)
+- chore: bump version to 3.18.1 [skip ci] (ec20f229)
+- chore: bump version to 3.18.0 [skip ci] (3d096adc)
+- chore: bump version to 3.17.1 [skip ci] (b3bef533)
+
+## [v3.17.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1222 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (588a7617)
+- feat: add ultra premium footer and real-time chart with actual data (896e7dd7)
+- Merge pull request #1221 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (a7357b4e)
+- feat: improve V3 dashboard with enhanced features (6b17e756)
+- Merge pull request #1219 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (6e4034cf)
+- Merge pull request #1218 from xjanova/claude/v3-dashboard-clean-01TtAB5ggsWWBNA2HGTG3GRG (62896769)
+- feat: complete V3 dashboard with all requested features (1ca92a6b)
+- feat: complete V3 dashboard with all requested features (29a20b48)
+- Merge pull request #1215 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (23184b76)
+- feat: add multi-language support, mobile improvements, and UI enhancements (e0856c30)
+- Merge pull request #1213 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (5322574b)
+- feat: add advanced theme customizer and fix dark mode + chart (39319ba2)
+### 🐛 Bug Fixes
+- Merge pull request #1223 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (8aa0a6ae)
+- fix: mobile sidebar drawer with overlay (no duplicate burger menu) (7391fc80)
+- Merge pull request #1216 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (e870cecc)
+- fix: revert to correct implementation - keep only approved features (96bf154e)
+- Merge pull request #1214 from xjanova/claude/dashboard-theme-restructure-01TtAB5ggsWWBNA2HGTG3GRG (3fda6201)
+- fix: apply theme customizer settings to all components (0c86e03e)
+### 🔧 Other Changes
+- chore: bump version to 3.16.0 [skip ci] (c0b2ef7f)
+- chore: bump version to 3.15.0 [skip ci] (ad82efd2)
+- chore: bump version to 3.14.0 [skip ci] (b6c4fce4)
+- Merge pull request #1220 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (962b2fa3)
+- revert: restore to V3 before theme customizer (commit 5d4d286) (1463c3ca)
+- chore: bump version to 3.20.0 [skip ci] (7ba1953b)
+- chore: bump version to 3.19.0 [skip ci] (5915dc91)
+- chore: bump version to 3.18.1 [skip ci] (ec20f229)
+- chore: bump version to 3.18.0 [skip ci] (3d096adc)
+- chore: bump version to 3.17.1 [skip ci] (b3bef533)
+- chore: bump version to 3.17.0 [skip ci] (d3a9ae6b)
+
 ## [v3.16.0] - 2025-11-16
 
 ### ✨ Features

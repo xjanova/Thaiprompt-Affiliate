@@ -23,14 +23,21 @@
 
     @stack('styles')
 </head>
-<body class="h-full font-sans overflow-hidden"
+<body class="h-full font-sans overflow-hidden flex"
       x-data="{
-          sidebarOpen: true,
+          sidebarOpen: window.innerWidth >= 768,
           profileOpen: false
       }"
       x-init="
           // เริ่มต้น theme store
           $store.theme.init();
+
+          // ปิด sidebar อัตโนมัติบนมือถือเมื่อเปลี่ยนขนาดหน้าจอ
+          window.addEventListener('resize', () => {
+              if (window.innerWidth < 768) {
+                  sidebarOpen = false;
+              }
+          });
       ">
 
     {{-- Background Gradient พื้นหลังแบบ Dashboard4 - สลับตาม dark mode --}}
@@ -63,21 +70,22 @@
         </div>
     </div>
 
-    <div class="flex h-full">
-        {{-- Sidebar Component --}}
-        <x-arrow-x.sidebar-v3 />
+    {{-- Sidebar Component (Fixed overlay บน mobile, Relative บน desktop) --}}
+    <x-arrow-x.sidebar-v3 />
 
-        {{-- Main Content Area --}}
-        <div class="flex-1 flex flex-col overflow-hidden">
-            {{-- Top Navbar Component --}}
-            <x-arrow-x.navbar-v3 />
+    {{-- Main Content Area (Flex-1 เพื่อขยายเต็มพื้นที่) --}}
+    <div class="flex flex-col flex-1 h-full overflow-hidden">
+        {{-- Top Navbar Component --}}
+        <x-arrow-x.navbar-v3 />
 
-            {{-- Page Content --}}
-            <main class="flex-1 overflow-y-auto p-4 md:p-6">
-                @yield('content')
-            </main>
-        </div>
+        {{-- Page Content --}}
+        <main class="flex-1 overflow-y-auto p-4 md:p-6">
+            @yield('content')
+        </main>
     </div>
+
+    {{-- Theme Customizer --}}
+    <x-arrow-x.theme-customizer />
 
     {{-- Toast Notifications --}}
     <div class="fixed bottom-4 right-4 z-50 space-y-2"

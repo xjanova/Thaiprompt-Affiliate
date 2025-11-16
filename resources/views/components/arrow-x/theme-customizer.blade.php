@@ -31,6 +31,7 @@
         // Colors
         primaryHue: 260, // Purple
         accentHue: 340, // Pink
+        contrast: 100, // ความตัดกันของสี
 
         // Advanced
         backdropSaturate: 100,
@@ -73,8 +74,17 @@
         root.style.setProperty('--button-roundness', this.settings.buttonRoundness + 'px');
         root.style.setProperty('--primary-hue', this.settings.primaryHue);
         root.style.setProperty('--accent-hue', this.settings.accentHue);
+        root.style.setProperty('--contrast', this.settings.contrast + '%');
         root.style.setProperty('--backdrop-saturate', this.settings.backdropSaturate + '%');
         root.style.setProperty('--perspective-depth', this.settings.perspectiveDepth + 'px');
+
+        // ถ้าเป็นโหมด Classic (ไม่มี glass effects) ให้เพิ่ม class พิเศษ
+        const isClassicMode = this.settings.glassOpacity === 0 && this.settings.glassBlur === 0;
+        if (isClassicMode) {
+            document.body.classList.add('theme-classic');
+        } else {
+            document.body.classList.remove('theme-classic');
+        }
     },
 
     resetSettings() {
@@ -92,6 +102,7 @@
                 buttonRoundness: 12,
                 primaryHue: 260,
                 accentHue: 340,
+                contrast: 100,
                 backdropSaturate: 100,
                 perspectiveDepth: 1000,
             };
@@ -150,6 +161,27 @@
                 <i class="fas fa-cog mr-2"></i>
                 ขั้นสูง
             </button>
+        </div>
+
+        {{-- Preset Themes --}}
+        <div class="p-4 border-b border-white/30 bg-white/5">
+            <h3 class="text-xs font-bold text-white/80 mb-3 uppercase tracking-wider">
+                <i class="fas fa-palette mr-2"></i>ธีมสำเร็จรูป
+            </h3>
+            <div class="grid grid-cols-2 gap-2">
+                <template x-for="(preset, key) in $store.themePresets.presets" :key="key">
+                    <button
+                        @click="settings = { ...preset.settings }; saveSettings();"
+                        class="px-3 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 transition-all text-left group"
+                        :title="preset.description">
+                        <div class="flex items-center gap-2">
+                            <i :class="preset.icon + ' text-blue-300 group-hover:text-blue-200 transition'"></i>
+                            <span class="text-xs font-medium text-white" x-text="preset.name"></span>
+                        </div>
+                        <p class="text-[10px] text-white/60 mt-0.5 line-clamp-1" x-text="preset.description"></p>
+                    </button>
+                </template>
+            </div>
         </div>
 
         {{-- Content --}}
@@ -311,6 +343,18 @@
                          :style="`background: hsl(${settings.accentHue}, 70%, 60%)`"></div>
                 </div>
 
+                {{-- Contrast --}}
+                <div>
+                    <label class="flex items-center justify-between text-white text-sm font-medium mb-2">
+                        <span><i class="fas fa-adjust mr-2"></i>ความตัดกันของสี (Contrast)</span>
+                        <span x-text="settings.contrast + '%'" class="text-blue-300"></span>
+                    </label>
+                    <input type="range" min="50" max="150" step="5"
+                           x-model="settings.contrast"
+                           @input="saveSettings()"
+                           class="w-full">
+                </div>
+
                 {{-- Backdrop Saturate --}}
                 <div>
                     <label class="flex items-center justify-between text-white text-sm font-medium mb-2">
@@ -400,6 +444,94 @@ input[type="range"]::-webkit-slider-thumb:hover {
     background: rgba(255, 255, 255, var(--glass-opacity, 0.15));
     backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--backdrop-saturate, 100%));
     -webkit-backdrop-filter: blur(var(--glass-blur, 12px)) saturate(var(--backdrop-saturate, 100%));
+}
+
+/**
+ * Classic Mode - ทึบหมด ไม่มี Glass Effects
+ * เมื่อ body มี class "theme-classic" จะ override glass effects ทั้งหมด
+ */
+body.theme-classic .glass-fusion,
+body.theme-classic .glass-neu,
+body.theme-classic .glass-dropdown {
+    background: rgba(30, 41, 59, 0.95) !important; /* Dark solid background */
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid rgba(71, 85, 105, 0.5) !important;
+}
+
+body.theme-classic aside.glass-fusion {
+    background: rgba(15, 23, 42, 0.98) !important; /* Sidebar darker */
+}
+
+body.theme-classic .glass-dropdown {
+    background: rgba(30, 41, 59, 0.98) !important; /* Dropdown solid */
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3) !important;
+}
+
+/**
+ * Dynamic Color System - ใช้ CSS variables สำหรับสี
+ * ปรับ primaryHue, accentHue และ contrast แบบ real-time
+ */
+:root {
+    --primary-hue: 260;
+    --accent-hue: 340;
+    --contrast: 100%;
+}
+
+/* Gradient Backgrounds ที่ใช้ primary/accent hue */
+.bg-gradient-to-r {
+    filter: contrast(var(--contrast));
+}
+
+/* Stats cards gradients - ใช้ primary hue */
+.from-purple-500 {
+    --tw-gradient-from: hsl(var(--primary-hue), 70%, 55%) !important;
+}
+
+.to-purple-600 {
+    --tw-gradient-to: hsl(var(--primary-hue), 70%, 45%) !important;
+}
+
+/* Stats cards gradients - ใช้ accent hue */
+.from-pink-500 {
+    --tw-gradient-from: hsl(var(--accent-hue), 70%, 55%) !important;
+}
+
+.to-pink-600 {
+    --tw-gradient-to: hsl(var(--accent-hue), 70%, 45%) !important;
+}
+
+/* Blue gradients - adjustable */
+.from-blue-500 {
+    --tw-gradient-from: hsl(calc(var(--primary-hue) - 40), 70%, 55%) !important;
+}
+
+.to-blue-600 {
+    --tw-gradient-to: hsl(calc(var(--primary-hue) - 40), 70%, 45%) !important;
+}
+
+/* Orange gradients */
+.from-orange-500 {
+    --tw-gradient-from: hsl(25, 90%, 55%) !important;
+}
+
+.to-red-600 {
+    --tw-gradient-to: hsl(0, 75%, 45%) !important;
+}
+
+/* Green gradients */
+.from-green-500 {
+    --tw-gradient-from: hsl(142, 70%, 45%) !important;
+}
+
+.to-emerald-600 {
+    --tw-gradient-to: hsl(160, 75%, 38%) !important;
+}
+
+/* Buttons และ interactive elements */
+button.bg-gradient-to-r,
+a.bg-gradient-to-r {
+    filter: contrast(var(--contrast)) brightness(calc(100% + (var(--contrast) - 100%) * 0.2));
 }
 
 /**
