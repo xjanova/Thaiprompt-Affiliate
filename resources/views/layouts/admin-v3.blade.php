@@ -25,64 +25,39 @@
 </head>
 <body class="h-full font-sans overflow-hidden"
       x-data="{
-          sidebarOpen: window.innerWidth >= 768,
-          profileOpen: false,
-          showScrollTop: false
+          sidebarOpen: true,
+          profileOpen: false
       }"
       x-init="
           // เริ่มต้น theme store
           $store.theme.init();
-
-          // ตรวจสอบ scroll position สำหรับปุ่มกลับด้านบน
-          $nextTick(() => {
-              const mainContent = document.querySelector('main.overflow-y-auto');
-              if (mainContent) {
-                  mainContent.addEventListener('scroll', () => {
-                      showScrollTop = mainContent.scrollTop > 300;
-                  });
-              }
-          });
-
-          // ปรับ sidebar ตามขนาดหน้าจอ (มือถือซ่อน, desktop แสดง)
-          window.addEventListener('resize', () => {
-              if (window.innerWidth >= 768) {
-                  sidebarOpen = true;
-              } else {
-                  sidebarOpen = false;
-              }
-          });
       ">
 
-    {{-- Background Gradient - โหมดสว่าง=สีสัน, โหมดมืด=มืด+ทึบ --}}
+    {{-- Background Gradient พื้นหลังแบบ Dashboard4 - สลับตาม dark mode --}}
     <div class="fixed inset-0 -z-10 transition-colors duration-500"
          :class="$store.theme.isDark
-             ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
-             : 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500'">
+             ? 'bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500'
+             : 'bg-gradient-to-br from-gray-100 via-gray-200 to-gray-300'">
     </div>
-
-    {{-- Dark Mode Overlay - เพิ่มความทึบ 95% เมื่อโหมดมืด --}}
-    <div x-show="$store.theme.isDark"
-         x-transition
-         class="fixed inset-0 bg-black/40 -z-10"></div>
 
     {{-- Animated Background Circles วงกลมเคลื่อนไหวพื้นหลัง --}}
     <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div class="absolute top-1/4 left-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-blue-600 to-cyan-700 opacity-15'
-                 : 'bg-gradient-to-br from-cyan-400 to-blue-600 opacity-30'">
+                 ? 'bg-gradient-to-br from-cyan-400 to-blue-600 opacity-30'
+                 : 'bg-gradient-to-br from-cyan-300 to-blue-400 opacity-10'">
         </div>
         <div class="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              style="animation-delay: 1s;"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-purple-700 to-pink-800 opacity-15'
-                 : 'bg-gradient-to-br from-pink-400 to-purple-600 opacity-30'">
+                 ? 'bg-gradient-to-br from-pink-400 to-purple-600 opacity-30'
+                 : 'bg-gradient-to-br from-pink-300 to-purple-400 opacity-10'">
         </div>
         <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full blur-3xl animate-pulse transition-all duration-500"
              style="animation-delay: 2s;"
              :class="$store.theme.isDark
-                 ? 'bg-gradient-to-br from-orange-800 to-yellow-900 opacity-15'
-                 : 'bg-gradient-to-br from-yellow-400 to-orange-600 opacity-30'">
+                 ? 'bg-gradient-to-br from-yellow-400 to-orange-600 opacity-30'
+                 : 'bg-gradient-to-br from-yellow-300 to-orange-400 opacity-10'">
         </div>
     </div>
 
@@ -141,24 +116,6 @@
             </div>
         </template>
     </div>
-
-    {{-- Theme Customizer - ปรับแต่งธีมแบบละเอียด --}}
-    <x-arrow-x.theme-customizer />
-
-    {{-- Scroll to Top Button - ปุ่มกลับขึ้นด้านบน (มุมขวาล่าง) --}}
-    <button @click="document.querySelector('main.overflow-y-auto').scrollTo({ top: 0, behavior: 'smooth' })"
-            x-show="showScrollTop"
-            x-transition:enter="transition ease-out duration-300 transform"
-            x-transition:enter-start="translate-y-16 opacity-0 scale-75"
-            x-transition:enter-end="translate-y-0 opacity-100 scale-100"
-            x-transition:leave="transition ease-in duration-200 transform"
-            x-transition:leave-start="translate-y-0 opacity-100 scale-100"
-            x-transition:leave-end="translate-y-16 opacity-0 scale-75"
-            type="button"
-            class="fixed bottom-6 right-6 z-50 p-4 rounded-2xl glass-fusion shadow-2xl border border-white/30 hover:scale-110 transition-all group"
-            title="กลับขึ้นด้านบน">
-        <i class="fas fa-arrow-up text-white text-xl drop-shadow group-hover:scale-110 group-hover:-translate-y-1 transition-transform"></i>
-    </button>
 
     @stack('scripts')
 </body>
