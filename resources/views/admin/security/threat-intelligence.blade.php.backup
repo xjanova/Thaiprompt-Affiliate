@@ -1,4 +1,4 @@
-@extends('layouts.admin-v3')
+@extends('layouts.admin')
 
 @section('title', 'Threat Intelligence Dashboard')
 
@@ -8,16 +8,16 @@
     <div class="flex justify-between items-center mb-6">
         <div>
             <h1 class="text-3xl font-bold text-gray-900">🛡️ Threat Intelligence Dashboard</h1>
-            <p class="text-gray-600 dark:text-gray-400 mt-1">รายงานและข้อมูล IP ที่เป็นภัยคุกคามจากทั่วโลก</p>
+            <p class="text-gray-600 mt-1">รายงานและข้อมูล IP ที่เป็นภัยคุกคามจากทั่วโลก</p>
         </div>
         <div class="flex gap-3">
-            <a href="{{ route('admin.security.index') }}" class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 transition flex items-center gap-2">
+            <a href="{{ route('admin.security.index') }}" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                 </svg>
                 <span>กลับ</span>
             </a>
-            <button type="button" id="updateThreatBtn" class="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 transition shadow-lg flex items-center gap-2">
+            <button type="button" id="updateThreatBtn" class="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-lg hover:from-green-700 hover:to-emerald-700 transition shadow-lg flex items-center gap-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                 </svg>
@@ -27,26 +27,26 @@
     </div>
 
     <!-- Progress Bar (Hidden by default) -->
-    <div id="updateProgress" class="mb-6 glass-fusion rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 hidden" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+    <div id="updateProgress" class="mb-6 bg-white rounded-lg border border-gray-200 shadow-sm p-6 hidden">
         <div class="flex items-center gap-4 mb-4">
             <div class="flex-shrink-0">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
             </div>
             <div class="flex-1">
                 <h3 class="text-lg font-semibold text-gray-900">กำลังอัปเดต Threat Intelligence</h3>
-                <p id="progressMessage" class="text-sm text-gray-600 dark:text-gray-400 mt-1">เริ่มต้นการอัปเดต...</p>
+                <p id="progressMessage" class="text-sm text-gray-600 mt-1">เริ่มต้นการอัปเดต...</p>
             </div>
             <div class="text-right">
                 <p id="progressPercentage" class="text-2xl font-bold text-green-600">0%</p>
             </div>
         </div>
-        <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
             <div id="progressBar" class="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
         </div>
     </div>
 
     @if(session('success'))
-    <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl flex items-center gap-2">
+    <div class="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center gap-2">
         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
         </svg>
@@ -55,7 +55,7 @@
     @endif
 
     @if($errors->any())
-    <div class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl">
+    <div class="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
         <ul class="list-disc list-inside">
             @foreach($errors->all() as $error)
             <li>{{ $error }}</li>
@@ -136,7 +136,7 @@
     <!-- Charts Row -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <!-- Threats by Type -->
-        <div class="glass-fusion rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M2 10a8 8 0 018-8v8h8a8 8 0 11-16 0z"/>
@@ -149,7 +149,7 @@
                 @foreach($threatsByType as $threat)
                 <div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        <span class="text-sm font-medium text-gray-700">
                             @switch($threat->threat_type)
                                 @case('proxy') 🔀 Proxy @break
                                 @case('vpn') 🔒 VPN @break
@@ -163,7 +163,7 @@
                         </span>
                         <span class="text-sm font-bold text-gray-900">{{ number_format($threat->count) }}</span>
                     </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
                         <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all"
                              style="width: {{ $stats['total_threats'] > 0 ? ($threat->count / $stats['total_threats']) * 100 : 0 }}%"></div>
                     </div>
@@ -171,12 +171,12 @@
                 @endforeach
             </div>
             @else
-            <p class="text-gray-500 dark:text-gray-400 text-center py-8">No threat data available</p>
+            <p class="text-gray-500 text-center py-8">No threat data available</p>
             @endif
         </div>
 
         <!-- Threats by Source -->
-        <div class="glass-fusion rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <svg class="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11 4a1 1 0 10-2 0v4a1 1 0 102 0V7zm-3 1a1 1 0 10-2 0v3a1 1 0 102 0V8zM8 9a1 1 0 00-2 0v2a1 1 0 102 0V9z" clip-rule="evenodd"/>
@@ -188,7 +188,7 @@
                 @foreach($threatsBySource as $source)
                 <div>
                     <div class="flex justify-between items-center mb-1">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                        <span class="text-sm font-medium text-gray-700 capitalize">
                             @if($source->source === 'firehol')
                                 🔥 Firehol
                             @elseif($source->source === 'abuseipdb')
@@ -201,7 +201,7 @@
                         </span>
                         <span class="text-sm font-bold text-gray-900">{{ number_format($source->count) }}</span>
                     </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
                         <div class="bg-gradient-to-r from-blue-500 to-cyan-600 h-2 rounded-full transition-all"
                              style="width: {{ $stats['total_threats'] > 0 ? ($source->count / $stats['total_threats']) * 100 : 0 }}%"></div>
                     </div>
@@ -209,7 +209,7 @@
                 @endforeach
             </div>
             @else
-            <p class="text-gray-500 dark:text-gray-400 text-center py-8">No source data available</p>
+            <p class="text-gray-500 text-center py-8">No source data available</p>
             @endif
         </div>
     </div>
@@ -238,16 +238,16 @@
             .catch(e => { checking = false; alert('Error: ' + e.message); })
         " class="flex gap-3">
             <input type="text" x-ref="ipInput" placeholder="192.168.1.1"
-                   class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
             <button type="submit" :disabled="checking"
-                    class="px-6 py-2 bg-purple-600 text-white font-semibold rounded-xl hover:bg-purple-700 transition disabled:opacity-50 shadow">
+                    class="px-6 py-2 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition disabled:opacity-50 shadow">
                 <span x-show="!checking">ตรวจสอบ</span>
                 <span x-show="checking">⏳ กำลังตรวจสอบ...</span>
             </button>
         </form>
 
         <!-- Result -->
-        <div x-show="result" x-transition class="mt-4 p-4 glass-fusion border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm" border border-white/20 dark:border-white/10>
+        <div x-show="result" x-transition class="mt-4 p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
             <template x-if="result">
                 <div>
                     <div class="flex items-center gap-2 mb-3">
@@ -256,7 +256,7 @@
                         <span x-show="!result?.is_threat" class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">✅ SAFE</span>
                     </div>
                     <template x-if="result?.local_threat">
-                        <div class="text-sm text-gray-700 dark:text-gray-300">
+                        <div class="text-sm text-gray-700">
                             <p><strong>Type:</strong> <span x-text="result.local_threat.threat_type"></span></p>
                             <p><strong>Source:</strong> <span x-text="result.local_threat.source"></span></p>
                             <p><strong>Confidence:</strong> <span x-text="result.local_threat.confidence_score"></span>%</p>
@@ -268,10 +268,10 @@
     </div>
 
     <!-- Filters Section -->
-    <div class="glass-fusion rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 mb-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10 x-data="{ showFilters: {{ request()->hasAny(['ip_address', 'threat_type', 'source', 'confidence_min', 'confidence_max', 'date_from', 'date_to']) ? 'true' : 'false' }} }">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6" x-data="{ showFilters: {{ request()->hasAny(['ip_address', 'threat_type', 'source', 'confidence_min', 'confidence_max', 'date_from', 'date_to']) ? 'true' : 'false' }} }">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
-                <svg class="w-5 h-5 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-5 h-5 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd"/>
                 </svg>
                 ตัวกรองข้อมูล
@@ -288,16 +288,16 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <!-- IP Address -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">IP Address</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">IP Address</label>
                     <input type="text" name="ip_address" value="{{ request('ip_address') }}"
                            placeholder="Search IP..."
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
                 </div>
 
                 <!-- Threat Type -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Threat Type</label>
-                    <select name="threat_type" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Threat Type</label>
+                    <select name="threat_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
                         <option value="">-- ทั้งหมด --</option>
                         @foreach($threatTypes as $type)
                         <option value="{{ $type }}" {{ request('threat_type') == $type ? 'selected' : '' }}>
@@ -309,8 +309,8 @@
 
                 <!-- Source -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Source</label>
-                    <select name="source" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Source</label>
+                    <select name="source" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
                         <option value="">-- ทั้งหมด --</option>
                         @foreach($sources as $source)
                         <option value="{{ $source }}" {{ request('source') == $source ? 'selected' : '' }}>
@@ -322,8 +322,8 @@
 
                 <!-- Per Page -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">แสดงต่อหน้า</label>
-                    <select name="per_page" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">แสดงต่อหน้า</label>
+                    <select name="per_page" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
                         <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
                         <option value="20" {{ request('per_page', 20) == 20 ? 'selected' : '' }}>20</option>
                         <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
@@ -333,44 +333,44 @@
 
                 <!-- Confidence Min -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confidence (Min)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confidence (Min)</label>
                     <input type="number" name="confidence_min" value="{{ request('confidence_min') }}"
                            min="0" max="100" placeholder="0"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
                 </div>
 
                 <!-- Confidence Max -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confidence (Max)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Confidence (Max)</label>
                     <input type="number" name="confidence_max" value="{{ request('confidence_max') }}"
                            min="0" max="100" placeholder="100"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
                 </div>
 
                 <!-- Date From -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date From</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date From</label>
                     <input type="date" name="date_from" value="{{ request('date_from') }}"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
                 </div>
 
                 <!-- Date To -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date To</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date To</label>
                     <input type="date" name="date_to" value="{{ request('date_to') }}"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm">
                 </div>
             </div>
 
             <!-- Filter Actions -->
             <div class="flex gap-3 pt-2">
-                <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition shadow flex items-center gap-2">
+                <button type="submit" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition shadow flex items-center gap-2">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
                     </svg>
                     ค้นหา
                 </button>
-                <a href="{{ route('admin.security.threat-intelligence') }}" class="px-6 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl hover:bg-gray-300 transition flex items-center gap-2">
+                <a href="{{ route('admin.security.threat-intelligence') }}" class="px-6 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition flex items-center gap-2">
                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
                     </svg>
@@ -381,8 +381,8 @@
     </div>
 
     <!-- Recent Threats Table -->
-    <div class="glass-fusion rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden" border border-white/20 dark:border-white/10>
-        <div class="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
             <div>
                 <h3 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
                     <svg class="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
@@ -390,17 +390,17 @@
                     </svg>
                     Recent Threats
                 </h3>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">แสดง {{ $recentThreats->count() }} จาก {{ number_format($recentThreats->total()) }} รายการ</p>
+                <p class="text-sm text-gray-500 mt-1">แสดง {{ $recentThreats->count() }} จาก {{ number_format($recentThreats->total()) }} รายการ</p>
             </div>
         </div>
 
         @if($recentThreats->count() > 0)
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50">
+                <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'ip_address', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700 dark:text-gray-300">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'ip_address', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700">
                                 IP Address
                                 @if(request('sort_by') === 'ip_address')
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -413,8 +413,8 @@
                                 @endif
                             </a>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'threat_type', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700 dark:text-gray-300">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'threat_type', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700">
                                 Type
                                 @if(request('sort_by') === 'threat_type')
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -427,8 +427,8 @@
                                 @endif
                             </a>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'source', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700 dark:text-gray-300">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'source', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700">
                                 Source
                                 @if(request('sort_by') === 'source')
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -441,8 +441,8 @@
                                 @endif
                             </a>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'confidence_score', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700 dark:text-gray-300">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'confidence_score', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700">
                                 Confidence
                                 @if(request('sort_by') === 'confidence_score')
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -455,8 +455,8 @@
                                 @endif
                             </a>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'last_seen', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700 dark:text-gray-300">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'last_seen', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700">
                                 Last Seen
                                 @if(request('sort_by') === 'last_seen' || !request('sort_by'))
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -469,8 +469,8 @@
                                 @endif
                             </a>
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'expires_at', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700 dark:text-gray-300">
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'expires_at', 'sort_order' => request('sort_order') === 'asc' ? 'desc' : 'asc']) }}" class="flex items-center gap-1 hover:text-gray-700">
                                 Expires
                                 @if(request('sort_by') === 'expires_at')
                                     <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -485,9 +485,9 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody class="glass-fusion divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-200">
                     @foreach($recentThreats as $threat)
-                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 transition">
+                    <tr class="hover:bg-gray-50 transition">
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="text-sm font-mono font-medium text-gray-900">{{ $threat->ip_address }}</span>
                         </td>
@@ -497,18 +497,18 @@
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="text-sm text-gray-700 dark:text-gray-300 capitalize font-medium">{{ $threat->source }}</span>
+                            <span class="text-sm text-gray-700 capitalize font-medium">{{ $threat->source }}</span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center gap-2">
-                                <div class="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                                <div class="w-16 bg-gray-200 rounded-full h-2">
                                     <div class="h-2 rounded-full transition-all {{ $threat->confidence_score >= 70 ? 'bg-gradient-to-r from-red-500 to-red-600' : ($threat->confidence_score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-green-500 to-blue-500') }}"
                                          style="width: {{ $threat->confidence_score }}%"></div>
                                 </div>
                                 <span class="text-sm font-semibold text-gray-900">{{ $threat->confidence_score }}%</span>
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             <div class="flex items-center gap-1">
                                 <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
@@ -516,7 +516,7 @@
                                 {{ $threat->last_seen->diffForHumans() }}
                             </div>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                             @if($threat->expires_at)
                                 <div class="flex items-center gap-1">
                                     <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
@@ -535,13 +535,13 @@
         </div>
 
         <!-- Pagination -->
-        <div class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 px-6 py-4 border-t border-gray-200 dark:border-gray-700">
+        <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
             {{ $recentThreats->links() }}
         </div>
         @else
         <div class="p-12 text-center">
             <div class="text-6xl mb-4">🔍</div>
-            <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">No threat data available yet</p>
+            <p class="text-gray-500 text-lg font-medium">No threat data available yet</p>
             <p class="text-gray-400 text-sm mt-2">Click "อัปเดตข้อมูล" to fetch threat intelligence data</p>
         </div>
         @endif
@@ -658,7 +658,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Show error alert
         const errorDiv = document.createElement('div');
-        errorDiv.className = 'mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl';
+        errorDiv.className = 'mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg';
         errorDiv.textContent = message;
 
         // Insert after header

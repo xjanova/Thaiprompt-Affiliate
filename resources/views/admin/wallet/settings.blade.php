@@ -1,17 +1,17 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'การตั้งค่ากระเป๋าเงิน')
 
 @section('content')
 <div class="space-y-6">
     <!-- Header -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
+    <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-800">การตั้งค่ากระเป๋าเงิน</h2>
-                <p class="text-gray-600 mt-1">จัดการความปลอดภัยและการตั้งค่าต่างๆ</p>
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">การตั้งค่ากระเป๋าเงิน</h2>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">จัดการความปลอดภัยและการตั้งค่าต่างๆ</p>
             </div>
-            <a href="{{ route('admin.wallet.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition">
+            <a href="{{ route('admin.wallet.index') }}" class="inline-flex items-center px-4 py-2 bg-gray-100/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl transition">
                 ← กลับ
             </a>
         </div>
@@ -28,7 +28,7 @@
                 </div>
             </div>
             <div class="text-right">
-                <div class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full">
+                <div class="inline-flex items-center px-4 py-2 glass-fusion backdrop-blur-sm rounded-full" border border-white/20 dark:border-white/10>
                     <span class="text-sm font-medium">สถานะ:</span>
                     <span class="ml-2 text-sm font-bold">
                         @if($wallet->isActive())
@@ -46,12 +46,12 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- PIN Settings -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center mb-6">
                 <span class="text-3xl mr-3">🔑</span>
                 <div>
-                    <h3 class="text-lg font-bold text-gray-800">ตั้งค่า PIN</h3>
-                    <p class="text-sm text-gray-600">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">ตั้งค่า PIN</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
                         @if($wallet->hasPIN())
                             PIN ของคุณถูกตั้งค่าแล้ว
                         @else
@@ -64,23 +64,23 @@
             <form action="{{ route('admin.wallet.set-pin') }}" method="POST" class="space-y-4">
                 @csrf
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">PIN (4-6 หลัก)</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">PIN (4-6 หลัก)</label>
                     <input type="password" name="pin" maxlength="6" pattern="[0-9]{4,6}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                            placeholder="กรอก PIN ตัวเลข 4-6 หลัก">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">ยืนยัน PIN</label>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ยืนยัน PIN</label>
                     <input type="password" name="pin_confirmation" maxlength="6" pattern="[0-9]{4,6}" required
-                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                            placeholder="กรอก PIN อีกครั้ง">
                 </div>
-                <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105">
+                <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-105">
                     {{ $wallet->hasPIN() ? 'เปลี่ยน PIN' : 'ตั้งค่า PIN' }}
                 </button>
             </form>
 
-            <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div class="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <div class="flex">
                     <span class="text-yellow-600 mr-2">⚠️</span>
                     <div class="text-xs text-yellow-800">
@@ -96,17 +96,17 @@
         </div>
 
         <!-- Wallet Lock/Unlock -->
-        <div class="bg-white rounded-xl shadow-lg p-6">
+        <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center mb-6">
                 <span class="text-3xl mr-3">🔒</span>
                 <div>
-                    <h3 class="text-lg font-bold text-gray-800">ล็อกกระเป๋าเงิน</h3>
-                    <p class="text-sm text-gray-600">ป้องกันการทำธุรกรรมโดยไม่ได้รับอนุญาต</p>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">ล็อกกระเป๋าเงิน</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">ป้องกันการทำธุรกรรมโดยไม่ได้รับอนุญาต</p>
                 </div>
             </div>
 
             @if($wallet->isLocked())
-                <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
                     <div class="flex items-center">
                         <span class="text-red-600 text-2xl mr-3">🚫</span>
                         <div>
@@ -124,12 +124,12 @@
 
                 <form action="{{ route('admin.wallet.unlock') }}" method="POST">
                     @csrf
-                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105">
+                    <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-105">
                         🔓 ปลดล็อกกระเป๋าเงิน
                     </button>
                 </form>
             @else
-                <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl">
                     <div class="flex items-center">
                         <span class="text-green-600 text-2xl mr-3">✅</span>
                         <div>
@@ -142,13 +142,13 @@
                 <form action="{{ route('admin.wallet.lock') }}" method="POST"
                       onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะล็อกกระเป๋าเงิน? การล็อกจะป้องกันการทำธุรกรรมทั้งหมด')">
                     @csrf
-                    <button type="submit" class="w-full bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all transform hover:scale-105">
+                    <button type="submit" class="w-full bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-xl transition-all transform hover:scale-105">
                         🔒 ล็อกกระเป๋าเงิน
                     </button>
                 </form>
             @endif
 
-            <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
                 <div class="flex">
                     <span class="text-blue-600 mr-2">ℹ️</span>
                     <div class="text-xs text-blue-800">
@@ -166,28 +166,28 @@
     </div>
 
     <!-- Security Statistics -->
-    <div class="bg-white rounded-xl shadow-lg p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-6">📊 สถิติความปลอดภัย</h3>
+    <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-6">📊 สถิติความปลอดภัย</h3>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="text-center p-4 bg-blue-50 rounded-lg">
+            <div class="text-center p-4 bg-blue-50 rounded-xl">
                 <span class="text-3xl block mb-2">🔐</span>
                 <p class="text-2xl font-bold text-blue-600">{{ $wallet->hasPIN() ? 'เปิด' : 'ปิด' }}</p>
-                <p class="text-sm text-gray-600">PIN Protection</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">PIN Protection</p>
             </div>
-            <div class="text-center p-4 bg-purple-50 rounded-lg">
+            <div class="text-center p-4 bg-purple-50 rounded-xl">
                 <span class="text-3xl block mb-2">🛡️</span>
                 <p class="text-2xl font-bold text-purple-600">{{ $wallet->two_factor_enabled ? 'เปิด' : 'ปิด' }}</p>
-                <p class="text-sm text-gray-600">2FA (เร็วๆ นี้)</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">2FA (เร็วๆ นี้)</p>
             </div>
-            <div class="text-center p-4 bg-green-50 rounded-lg">
+            <div class="text-center p-4 bg-green-50 rounded-xl">
                 <span class="text-3xl block mb-2">✅</span>
                 <p class="text-2xl font-bold text-green-600">{{ $wallet->transactions()->where('status', 'completed')->count() }}</p>
-                <p class="text-sm text-gray-600">ธุรกรรมสำเร็จ</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">ธุรกรรมสำเร็จ</p>
             </div>
-            <div class="text-center p-4 bg-red-50 rounded-lg">
+            <div class="text-center p-4 bg-red-50 rounded-xl">
                 <span class="text-3xl block mb-2">❌</span>
                 <p class="text-2xl font-bold text-red-600">{{ $wallet->failed_attempts }}</p>
-                <p class="text-sm text-gray-600">ความพยายามที่ล้มเหลว</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">ความพยายามที่ล้มเหลว</p>
             </div>
         </div>
     </div>
