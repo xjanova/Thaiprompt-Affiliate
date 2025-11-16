@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.23.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1230 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (3ce49f73)
+- fix: แก้กราฟ + แก้ภาษา default เป็นไทย (c8f4e35b)
+- fix: แก้ sidebar desktop icon-only ให้ถูกต้อง และ revert chart script (04cc0742)
+### 🔧 Other Changes
+
+
 ## [v3.23.0] - 2025-11-16
 
 ### ✨ Features
