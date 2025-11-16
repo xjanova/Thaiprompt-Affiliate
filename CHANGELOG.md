@@ -2,6 +2,22 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.30.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่ม Chart.js Integration สำหรับ User Dashboard (d269fedc)
+- feat: เพิ่ม Controllers และ Routes สำหรับ User Dashboard System (fe12e48f)
+- feat: เพิ่ม User Layout แบบ Arrow X Theme พร้อม Sidebar Navigation (32e66d0b)
+- feat: เพิ่ม User Settings แบบ Arrow X Theme (003e7b9e)
+- feat: เพิ่ม User Profile Management แบบ Arrow X Theme (20031d83)
+- feat: เพิ่ม User Dashboard แบบ Arrow X Theme (15565555)
+- feat: เพิ่ม Authentication Views แบบ Arrow X Theme (f197fff2)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1250 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (2dd2773e)
+- refactor: รวม user migrations เป็น V3 comprehensive และลบไฟล์เก่า (0f807556)
+
 ## [v3.29.1] - 2025-11-16
 
 ### ✨ Features
