@@ -18,7 +18,7 @@
  *
  * @tip Component นี้ใช้ Alpine.js store สำหรับ sidebar state
  * @tip รองรับ dark mode อัตโนมัติผ่าน Tailwind dark: utilities
- * @tip Responsive: Mobile (drawer), Desktop (fixed sidebar)
+ * @tip Responsive: Mobile (drawer overlay), Desktop (fixed sidebar)
  */
 --}}
 
@@ -27,9 +27,30 @@
     'logo' => null,
 ])
 
+{{-- Mobile Overlay (แสดงเมื่อ sidebarOpen = true บนมือถือ) --}}
+<div x-show="sidebarOpen"
+     @click="sidebarOpen = false"
+     x-transition:enter="transition-opacity ease-linear duration-300"
+     x-transition:enter-start="opacity-0"
+     x-transition:enter-end="opacity-100"
+     x-transition:leave="transition-opacity ease-linear duration-300"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed inset-0 bg-black/50 z-30 md:hidden"
+     x-cloak>
+</div>
+
+{{-- Sidebar Container --}}
 <aside
-    :class="sidebarOpen ? 'w-64' : 'w-20'"
-    class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 relative z-20"
+    class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 relative z-40
+           fixed md:relative inset-y-0 left-0 w-64
+           transform md:transform-none"
+    :class="{
+        'translate-x-0': sidebarOpen,
+        '-translate-x-full': !sidebarOpen,
+        'md:w-64': sidebarOpen,
+        'md:w-20': !sidebarOpen
+    }"
     x-cloak
 >
     {{-- Logo Section --}}
@@ -49,11 +70,18 @@
             </div>
         </div>
 
-        {{-- Toggle Button --}}
+        {{-- Toggle Button (แสดงเฉพาะบน Desktop) --}}
         <button @click="sidebarOpen = !sidebarOpen"
-                class="p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
+                class="hidden md:block p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
                 type="button">
             <i class="fas fa-bars text-white drop-shadow"></i>
+        </button>
+
+        {{-- Close Button (แสดงเฉพาะบน Mobile) --}}
+        <button @click="sidebarOpen = false"
+                class="md:hidden p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
+                type="button">
+            <i class="fas fa-times text-white drop-shadow"></i>
         </button>
     </div>
 
