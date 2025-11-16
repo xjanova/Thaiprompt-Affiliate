@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.39.7] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1271 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (c17df5ea)
+### 🔧 Other Changes
+- chore: merge claude/Main and resolve conflicts (ab006322)
+- refactor: redesign dashboard completely (V3 standards) (3c8af955)
+
 ## [v3.39.6] - 2025-11-16
 
 ### ✨ Features
