@@ -12,10 +12,10 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
     <div class="bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
                     ← กลับ
                 </a>
                 <h1 class="text-3xl md:text-4xl font-bold">💸 ถอนเงิน</h1>
@@ -23,7 +23,7 @@
             <p class="text-red-100">ถอนเงินจากกระเป๋าของคุณ</p>
 
             <!-- Current Balance -->
-            <div class="mt-6 bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            <div class="mt-6 bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                 <p class="text-red-100 text-sm mb-1">ยอดเงินที่สามารถถอนได้</p>
                 <p class="text-3xl font-bold">฿{{ number_format($wallet->balance, 2) }}</p>
             </div>
@@ -38,7 +38,7 @@
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
                 <span class="text-5xl block mb-3">🏦</span>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">ยังไม่มีช่องทางรับเงิน</h3>
-                <p class="text-gray-600 mb-4">กรุณาเพิ่มช่องทางรับเงินก่อนทำการถอน</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">กรุณาเพิ่มช่องทางรับเงินก่อนทำการถอน</p>
                 <a href="{{ route('user.wallet.payment-methods') }}"
                    class="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
                     เพิ่มช่องทางรับเงิน
@@ -49,7 +49,7 @@
                 @csrf
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">เลือกช่องทางรับเงิน</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">เลือกช่องทางรับเงิน</label>
                     <select name="payment_method_id"
                             required
                             class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
@@ -72,7 +72,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">จำนวนเงิน (บาท)</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (บาท)</label>
                     <input type="number"
                            name="amount"
                            step="0.01"
@@ -81,11 +81,11 @@
                            required
                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                            placeholder="ระบุจำนวนเงินที่ต้องการถอน">
-                    <p class="text-xs text-gray-500 mt-1">ยอดเงินสูงสุดที่ถอนได้: ฿{{ number_format($wallet->balance, 2) }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ยอดเงินสูงสุดที่ถอนได้: ฿{{ number_format($wallet->balance, 2) }}</p>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">PIN กระเป๋าเงิน (6 หลัก)</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">PIN กระเป๋าเงิน (6 หลัก)</label>
                     <input type="password"
                            name="pin"
                            maxlength="6"
@@ -93,11 +93,11 @@
                            required
                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                            placeholder="ระบุ PIN 6 หลัก">
-                    <p class="text-xs text-gray-500 mt-1">กรอก PIN เพื่อยืนยันการถอนเงิน</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">กรอก PIN เพื่อยืนยันการถอนเงิน</p>
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">หมายเหตุ (ถ้ามี)</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">หมายเหตุ (ถ้ามี)</label>
                     <textarea name="user_note"
                               rows="3"
                               maxlength="500"
@@ -148,7 +148,7 @@
             </a>
         </div>
 
-        <div class="text-center text-gray-500 py-8">
+        <div class="text-center text-gray-500 dark:text-gray-400 py-8">
             <span class="text-4xl block mb-2">💸</span>
             <p class="text-sm">คลิก "ดูทั้งหมด" เพื่อดูประวัติการถอนเงิน</p>
         </div>

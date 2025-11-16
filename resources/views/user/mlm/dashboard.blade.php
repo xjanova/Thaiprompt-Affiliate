@@ -31,7 +31,7 @@
 <div class="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-8">
     <div class="max-w-7xl mx-auto px-4">
         <!-- Welcome Header -->
-        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 bg-gradient-to-r from-purple-600 to-pink-600">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 bg-gradient-to-r from-purple-600 to-pink-600">
             <div class="flex items-center justify-between text-white">
                 <div>
                     <h1 class="text-4xl font-black mb-2">
@@ -55,14 +55,14 @@
                 <div class="flex items-center justify-between mb-4">
                     <div class="text-4xl">⭐</div>
                     <div class="text-right">
-                        <div class="text-sm text-gray-600">PV รวม</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">PV รวม</div>
                         <div class="text-3xl font-bold text-purple-600">{{ number_format($member->total_pv ?? 0) }}</div>
                     </div>
                 </div>
                 <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
                     <div class="h-full bg-gradient-to-r from-purple-500 to-pink-500" style="width: {{ min(($member->total_pv ?? 0) / 10000 * 100, 100) }}%"></div>
                 </div>
-                <div class="text-xs text-gray-500 mt-2">เป้า: 10,000 PV</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">เป้า: 10,000 PV</div>
             </div>
 
             <!-- Direct Referrals -->
@@ -70,12 +70,12 @@
                 <div class="flex items-center justify-between mb-4">
                     <div class="text-4xl">👥</div>
                     <div class="text-right">
-                        <div class="text-sm text-gray-600">สมาชิกโดยตรง</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">สมาชิกโดยตรง</div>
                         <div class="text-3xl font-bold text-blue-600">{{ $member->total_direct_referrals ?? 0 }}</div>
                     </div>
                 </div>
-                <div class="text-sm text-gray-600 mt-4">
-                    ทีมทั้งหมด: <span class="font-bold text-gray-800">{{ $member->total_team_members ?? 0 }}</span> คน
+                <div class="text-sm text-gray-600 dark:text-gray-400 mt-4">
+                    ทีมทั้งหมด: <span class="font-bold text-gray-800 dark:text-white">{{ $member->total_team_members ?? 0 }}</span> คน
                 </div>
             </div>
 
@@ -84,11 +84,11 @@
                 <div class="flex items-center justify-between mb-4">
                     <div class="text-4xl">💰</div>
                     <div class="text-right">
-                        <div class="text-sm text-gray-600">รายได้รวม</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">รายได้รวม</div>
                         <div class="text-3xl font-bold text-green-600">฿{{ number_format($member->total_earnings ?? 0, 2) }}</div>
                     </div>
                 </div>
-                <div class="text-xs text-gray-500 mt-4">
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-4">
                     <span class="inline-block px-2 py-1 bg-green-100 text-green-700 rounded-full">
                         +12% จากเดือนที่แล้ว
                     </span>
@@ -100,11 +100,11 @@
                 <div class="flex items-center justify-between mb-4">
                     <div class="text-4xl">🏆</div>
                     <div class="text-right">
-                        <div class="text-sm text-gray-600">ระดับปัจจุบัน</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400">ระดับปัจจุบัน</div>
                         <div class="text-2xl font-bold text-yellow-600">{{ $member->rank->name ?? 'Starter' }}</div>
                     </div>
                 </div>
-                <div class="text-xs text-gray-500 mt-4">
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-4">
                     ระดับถัดไป: <span class="font-bold">Silver</span>
                 </div>
             </div>
@@ -115,8 +115,8 @@
             <div class="lg:col-span-2 space-y-8">
                 <!-- Binary Legs Stats -->
                 @if($member->plan->type === 'binary' || $member->plan->type === 'hybrid')
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                         <span class="mr-3">🔀</span>
                         Binary Legs
                     </h2>
@@ -129,15 +129,15 @@
                             </div>
                             <div class="space-y-3">
                                 <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600">PV:</span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">PV:</span>
                                     <span class="font-bold text-green-600">{{ number_format($member->left_leg_pv ?? 0) }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600">Sales:</span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Sales:</span>
                                     <span class="font-bold text-green-600">฿{{ number_format($member->left_leg_sales ?? 0, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600">Members:</span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Members:</span>
                                     <span class="font-bold text-green-600">{{ $member->left_leg_members ?? 0 }}</span>
                                 </div>
                             </div>
@@ -150,15 +150,15 @@
                             </div>
                             <div class="space-y-3">
                                 <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600">PV:</span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">PV:</span>
                                     <span class="font-bold text-red-600">{{ number_format($member->right_leg_pv ?? 0) }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600">Sales:</span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Sales:</span>
                                     <span class="font-bold text-red-600">฿{{ number_format($member->right_leg_sales ?? 0, 2) }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-sm text-gray-600">Members:</span>
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Members:</span>
                                     <span class="font-bold text-red-600">{{ $member->right_leg_members ?? 0 }}</span>
                                 </div>
                             </div>
@@ -170,19 +170,19 @@
                         <h3 class="font-bold text-purple-800 mb-4">📊 Pair Matching Today</h3>
                         <div class="grid grid-cols-3 gap-4 text-center">
                             <div>
-                                <div class="text-sm text-gray-600">Weak Leg PV</div>
+                                <div class="text-sm text-gray-600 dark:text-gray-400">Weak Leg PV</div>
                                 <div class="text-2xl font-bold text-purple-600">
                                     {{ number_format(min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0)) }}
                                 </div>
                             </div>
                             <div>
-                                <div class="text-sm text-gray-600">Pairs</div>
+                                <div class="text-sm text-gray-600 dark:text-gray-400">Pairs</div>
                                 <div class="text-2xl font-bold text-purple-600">
                                     {{ floor(min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0)) }}
                                 </div>
                             </div>
                             <div>
-                                <div class="text-sm text-gray-600">Est. Commission</div>
+                                <div class="text-sm text-gray-600 dark:text-gray-400">Est. Commission</div>
                                 <div class="text-2xl font-bold text-green-600">
                                     ฿{{ number_format(floor(min($member->left_leg_pv ?? 0, $member->right_leg_pv ?? 0)) * ($member->plan->binary_pair_commission ?? 100), 2) }}
                                 </div>
@@ -193,8 +193,8 @@
                 @endif
 
                 <!-- Recent Commissions -->
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center justify-between">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center justify-between">
                         <span><span class="mr-3">💸</span>คอมมิชชันล่าสุด</span>
                         <a href="{{ route('user.mlm.commissions') }}" class="text-sm text-purple-600 hover:text-purple-700">
                             ดูทั้งหมด →
@@ -203,14 +203,14 @@
 
                     <div class="space-y-3">
                         @forelse($recentCommissions ?? [] as $commission)
-                        <div class="p-4 bg-gray-50 rounded-xl flex items-center justify-between">
+                        <div class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl flex items-center justify-between">
                             <div>
-                                <div class="font-semibold text-gray-800">{{ $commission->type_display }}</div>
-                                <div class="text-xs text-gray-500">{{ $commission->created_at->diffForHumans() }}</div>
+                                <div class="font-semibold text-gray-800 dark:text-white">{{ $commission->type_display }}</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $commission->created_at->diffForHumans() }}</div>
                             </div>
                             <div class="text-right">
                                 <div class="text-lg font-bold text-green-600">฿{{ number_format($commission->commission_amount, 2) }}</div>
-                                <div class="text-xs text-gray-500">
+                                <div class="text-xs text-gray-500 dark:text-gray-400">
                                     <span class="inline-block px-2 py-0.5 rounded-full {{ $commission->status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
                                         {{ ucfirst($commission->status) }}
                                     </span>
@@ -218,7 +218,7 @@
                             </div>
                         </div>
                         @empty
-                        <div class="text-center py-8 text-gray-500">
+                        <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                             <div class="text-4xl mb-2">💰</div>
                             <p>ยังไม่มีคอมมิชชัน</p>
                         </div>
@@ -227,8 +227,8 @@
                 </div>
 
                 <!-- Quick Actions -->
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                         <span class="mr-3">🚀</span>
                         Quick Actions
                     </h2>
@@ -236,22 +236,22 @@
                     <div class="grid grid-cols-2 gap-4">
                         <a href="{{ route('user.mlm.genealogy') }}" class="p-6 bg-purple-50 hover:bg-purple-100 rounded-xl text-center transition-all">
                             <div class="text-4xl mb-2">🌳</div>
-                            <div class="font-bold text-gray-800">ดูผังสายงาน</div>
+                            <div class="font-bold text-gray-800 dark:text-white">ดูผังสายงาน</div>
                         </a>
 
                         <a href="{{ route('user.mlm.referral') }}" class="p-6 bg-blue-50 hover:bg-blue-100 rounded-xl text-center transition-all">
                             <div class="text-4xl mb-2">🔗</div>
-                            <div class="font-bold text-gray-800">Referral Link</div>
+                            <div class="font-bold text-gray-800 dark:text-white">Referral Link</div>
                         </a>
 
                         <a href="{{ route('user.mlm.commissions') }}" class="p-6 bg-green-50 hover:bg-green-100 rounded-xl text-center transition-all">
                             <div class="text-4xl mb-2">💸</div>
-                            <div class="font-bold text-gray-800">ประวัติคอมมิชชัน</div>
+                            <div class="font-bold text-gray-800 dark:text-white">ประวัติคอมมิชชัน</div>
                         </a>
 
                         <a href="{{ route('user.mlm.team') }}" class="p-6 bg-pink-50 hover:bg-pink-100 rounded-xl text-center transition-all">
                             <div class="text-4xl mb-2">👥</div>
-                            <div class="font-bold text-gray-800">ทีมของฉัน</div>
+                            <div class="font-bold text-gray-800 dark:text-white">ทีมของฉัน</div>
                         </a>
                     </div>
                 </div>
@@ -260,8 +260,8 @@
             <!-- Right Column: Additional Info -->
             <div class="space-y-8">
                 <!-- Rank Progress -->
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center">
                         <span class="mr-3">🎯</span>
                         Rank Progress
                     </h3>
@@ -284,15 +284,15 @@
 
                     <div class="space-y-3 text-sm">
                         <div class="flex justify-between">
-                            <span class="text-gray-600">✓ PV Requirement:</span>
+                            <span class="text-gray-600 dark:text-gray-400">✓ PV Requirement:</span>
                             <span class="font-bold text-green-600">5,000 / 5,000</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">○ Team PV:</span>
-                            <span class="font-bold text-gray-800">12,000 / 20,000</span>
+                            <span class="text-gray-600 dark:text-gray-400">○ Team PV:</span>
+                            <span class="font-bold text-gray-800 dark:text-white">12,000 / 20,000</span>
                         </div>
                         <div class="flex justify-between">
-                            <span class="text-gray-600">✓ Direct Referrals:</span>
+                            <span class="text-gray-600 dark:text-gray-400">✓ Direct Referrals:</span>
                             <span class="font-bold text-green-600">3 / 3</span>
                         </div>
                     </div>
@@ -305,15 +305,15 @@
                 </div>
 
                 <!-- Referral Link -->
-                <div class="bg-white rounded-2xl shadow-xl p-8">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
                         <span class="mr-3">🔗</span>
                         Referral Link
                     </h3>
 
                     <div class="mb-4">
                         <input type="text" id="referral-link" value="{{ route('register', ['ref' => $member->member_code]) }}" readonly
-                               class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-50 text-sm">
+                               class="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900/50 text-sm">
                     </div>
 
                     <div class="grid grid-cols-2 gap-2">
@@ -327,17 +327,17 @@
 
                     <!-- QR Code -->
                     <div class="mt-6 text-center">
-                        <div class="inline-block p-4 bg-gray-100 rounded-xl">
+                        <div class="inline-block p-4 bg-gray-100 dark:bg-gray-700 rounded-xl">
                             <div id="qr-code"></div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2">Scan QR Code to Register</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">Scan QR Code to Register</div>
                     </div>
                 </div>
 
                 <!-- Tips -->
                 <div class="bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl p-8">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">💡 Tips</h3>
-                    <ul class="space-y-2 text-sm text-gray-700">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">💡 Tips</h3>
+                    <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
                         <li class="flex items-start">
                             <span class="mr-2">•</span>
                             <span>สร้างสมดุลระหว่างขาซ้ายและขวาเพื่อเพิ่มคอมมิชชัน Binary</span>

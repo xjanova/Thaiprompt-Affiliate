@@ -28,8 +28,8 @@
         </div>
 
         <!-- Quick Navigation -->
-        <div class="bg-white rounded-2xl shadow-xl p-6 mb-8">
-            <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <span>🧭</span> สารบัญด่วน
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -107,7 +107,7 @@
         </div>
 
         <!-- Chapter 1: Getting Started -->
-        <div id="chapter-1" class="bg-white rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
+        <div id="chapter-1" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
             <div class="flex items-center gap-4 mb-6">
                 <div class="text-6xl">🚀</div>
                 <div>
@@ -125,46 +125,46 @@
                     </p>
                 </div>
 
-                <h3 class="text-2xl font-bold text-gray-800 mb-4">📝 ขั้นตอนเริ่มต้น 5 ขั้นตอน</h3>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">📝 ขั้นตอนเริ่มต้น 5 ขั้นตอน</h3>
 
                 <div class="space-y-4">
                     <div class="flex gap-4 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
                         <div class="flex-shrink-0 w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xl">1</div>
                         <div class="flex-1">
-                            <h4 class="font-bold text-lg text-gray-800 mb-2">สมัครสมาชิก</h4>
-                            <p class="text-gray-700">กรอกข้อมูลให้ครบถ้วน ใช้ลิงก์แนะนำจากผู้สปอนเซอร์ของคุณ (ถ้ามี) เพื่อเชื่อมโยงเข้ากับทีม</p>
+                            <h4 class="font-bold text-lg text-gray-800 dark:text-white mb-2">สมัครสมาชิก</h4>
+                            <p class="text-gray-700 dark:text-gray-300">กรอกข้อมูลให้ครบถ้วน ใช้ลิงก์แนะนำจากผู้สปอนเซอร์ของคุณ (ถ้ามี) เพื่อเชื่อมโยงเข้ากับทีม</p>
                         </div>
                     </div>
 
                     <div class="flex gap-4 p-5 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border-2 border-purple-200">
                         <div class="flex-shrink-0 w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center font-bold text-xl">2</div>
                         <div class="flex-1">
-                            <h4 class="font-bold text-lg text-gray-800 mb-2">ยืนยันตัวตน (KYC)</h4>
-                            <p class="text-gray-700">อัพโหลดบัตรประชาชนและรูปถ่ายเพื่อยืนยันตัวตน จะช่วยเพิ่มความน่าเชื่อถือและปลดล็อคฟีเจอร์เต็มรูปแบบ</p>
+                            <h4 class="font-bold text-lg text-gray-800 dark:text-white mb-2">ยืนยันตัวตน (KYC)</h4>
+                            <p class="text-gray-700 dark:text-gray-300">อัพโหลดบัตรประชาชนและรูปถ่ายเพื่อยืนยันตัวตน จะช่วยเพิ่มความน่าเชื่อถือและปลดล็อคฟีเจอร์เต็มรูปแบบ</p>
                         </div>
                     </div>
 
                     <div class="flex gap-4 p-5 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border-2 border-green-200">
                         <div class="flex-shrink-0 w-12 h-12 bg-green-600 text-white rounded-full flex items-center justify-center font-bold text-xl">3</div>
                         <div class="flex-1">
-                            <h4 class="font-bold text-lg text-gray-800 mb-2">ทำความเข้าใจระบบ</h4>
-                            <p class="text-gray-700">อ่านคู่มือนี้ให้จบ ดูวิดีโอสอนใช้งาน และทดลองใช้เครื่องมือต่างๆ เช่น ตัวคำนวณรายได้</p>
+                            <h4 class="font-bold text-lg text-gray-800 dark:text-white mb-2">ทำความเข้าใจระบบ</h4>
+                            <p class="text-gray-700 dark:text-gray-300">อ่านคู่มือนี้ให้จบ ดูวิดีโอสอนใช้งาน และทดลองใช้เครื่องมือต่างๆ เช่น ตัวคำนวณรายได้</p>
                         </div>
                     </div>
 
                     <div class="flex gap-4 p-5 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-200">
                         <div class="flex-shrink-0 w-12 h-12 bg-yellow-600 text-white rounded-full flex items-center justify-center font-bold text-xl">4</div>
                         <div class="flex-1">
-                            <h4 class="font-bold text-lg text-gray-800 mb-2">เริ่มแชร์และขาย</h4>
-                            <p class="text-gray-700">คัดลอกลิงก์แนะนำของคุณ แชร์ให้เพื่อนและคนรู้จัก เริ่มสร้างยอดขายแรกของคุณ</p>
+                            <h4 class="font-bold text-lg text-gray-800 dark:text-white mb-2">เริ่มแชร์และขาย</h4>
+                            <p class="text-gray-700 dark:text-gray-300">คัดลอกลิงก์แนะนำของคุณ แชร์ให้เพื่อนและคนรู้จัก เริ่มสร้างยอดขายแรกของคุณ</p>
                         </div>
                     </div>
 
                     <div class="flex gap-4 p-5 bg-gradient-to-r from-red-50 to-pink-50 rounded-xl border-2 border-red-200">
                         <div class="flex-shrink-0 w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center font-bold text-xl">5</div>
                         <div class="flex-1">
-                            <h4 class="font-bold text-lg text-gray-800 mb-2">สร้างทีมและเติบโต</h4>
-                            <p class="text-gray-700">เชิญคนอื่นมาร่วมทีม สอนพวกเขาให้ประสบความสำเร็จ และรับค่าคอมจากทั้งทีม</p>
+                            <h4 class="font-bold text-lg text-gray-800 dark:text-white mb-2">สร้างทีมและเติบโต</h4>
+                            <p class="text-gray-700 dark:text-gray-300">เชิญคนอื่นมาร่วมทีม สอนพวกเขาให้ประสบความสำเร็จ และรับค่าคอมจากทั้งทีม</p>
                         </div>
                     </div>
                 </div>
@@ -196,7 +196,7 @@
         </div>
 
         <!-- Chapter 2: How the System Works -->
-        <div id="chapter-2" class="bg-white rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
+        <div id="chapter-2" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
             <div class="flex items-center gap-4 mb-6">
                 <div class="text-6xl">💡</div>
                 <div>
@@ -206,12 +206,12 @@
             </div>
 
             <div class="prose prose-lg max-w-none">
-                <p class="text-xl text-gray-700 leading-relaxed mb-6">
+                <p class="text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
                     ระบบของเราใช้โมเดล <strong>MLM (Multi-Level Marketing)</strong> แบบผสมผสาน
                     ที่ให้คุณได้รับค่าตอบแทนทั้งจากยอดขายตัวเองและจากทีมงาน
                 </p>
 
-                <h3 class="text-2xl font-bold text-gray-800 mb-4">🔄 2 ระบบหลัก</h3>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">🔄 2 ระบบหลัก</h3>
 
                 <div class="grid md:grid-cols-2 gap-6 mb-8">
                     <div class="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-2xl border-2 border-blue-300">
@@ -219,7 +219,7 @@
                             <span>📊</span> 1. Unilevel (แนวตั้ง)
                         </h4>
                         <p class="text-blue-800 mb-4">คุณได้ค่าคอมจากยอดขายของทีมลูกสาขาลงไปหลายระดับ (ขึ้นอยู่กับแผน)</p>
-                        <div class="bg-white p-4 rounded-xl">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                             <div class="text-center mb-2">
                                 <div class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg font-bold">คุณ</div>
                             </div>
@@ -246,7 +246,7 @@
                             <span>⚖️</span> 2. Binary (แนวคู่)
                         </h4>
                         <p class="text-purple-800 mb-4">คุณได้โบนัสเมื่อทีมซ้าย-ขวาจับคู่กัน (Pair Matching)</p>
-                        <div class="bg-white p-4 rounded-xl">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
                             <div class="text-center mb-3">
                                 <div class="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg font-bold">คุณ</div>
                             </div>
@@ -272,13 +272,13 @@
                 <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300 rounded-xl p-6">
                     <h4 class="font-bold text-xl text-indigo-900 mb-4">📈 ตัวอย่างการคำนวณ</h4>
                     <div class="space-y-3 text-indigo-800">
-                        <div class="bg-white p-4 rounded-lg">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
                             <div class="font-bold mb-2">สมมติ: ลูกทีม Level 1 ขายได้ 10,000 บาท</div>
                             <div class="ml-4">
                                 <div>💰 คุณได้ค่าคอม Unilevel = 10,000 × 30% = <strong class="text-green-600">3,000 บาท</strong></div>
                             </div>
                         </div>
-                        <div class="bg-white p-4 rounded-lg">
+                        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg">
                             <div class="font-bold mb-2">สมมติ: ทีมซ้าย-ขวาจับคู่กันได้ 5 คู่</div>
                             <div class="ml-4">
                                 <div>💰 คุณได้โบนัส Binary = 5 × 1,000 = <strong class="text-green-600">5,000 บาท</strong></div>
@@ -293,7 +293,7 @@
         </div>
 
         <!-- Chapter 3: Income Streams -->
-        <div id="chapter-3" class="bg-white rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
+        <div id="chapter-3" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
             <div class="flex items-center gap-4 mb-6">
                 <div class="text-6xl">💰</div>
                 <div>
@@ -303,7 +303,7 @@
             </div>
 
             <div class="prose prose-lg max-w-none">
-                <p class="text-xl text-gray-700 leading-relaxed mb-6">
+                <p class="text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
                     คุณสามารถสร้างรายได้จาก <strong>4 ช่องทางหลัก</strong> ที่ทำงานไปพร้อมกัน
                     ยิ่งคุณพัฒนาทีมมากเท่าไร รายได้ก็จะเพิ่มขึ้นทวีคูณ!
                 </p>
@@ -317,7 +317,7 @@
                                 <h3 class="text-2xl font-bold text-blue-900 mb-3">1. ค่าคอมมิชชั่นตรง (Direct Commission)</h3>
                                 <p class="text-blue-800 mb-4">รับค่าคอมทันทีจากยอดขายของลูกทีมโดยตรง ตามระบบ Unilevel</p>
 
-                                <div class="bg-white p-4 rounded-xl mb-4">
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl mb-4">
                                     <h4 class="font-bold text-blue-900 mb-3">อัตราค่าคอมตามระดับ:</h4>
                                     <div class="space-y-2">
                                         <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
@@ -354,7 +354,7 @@
                                 <h3 class="text-2xl font-bold text-purple-900 mb-3">2. โบนัสจับคู่ (Binary Matching Bonus)</h3>
                                 <p class="text-purple-800 mb-4">รับโบนัสพิเศษเมื่อทีมซ้าย-ขวาของคุณจับคู่กัน</p>
 
-                                <div class="bg-white p-4 rounded-xl mb-4">
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl mb-4">
                                     <h4 class="font-bold text-purple-900 mb-3">วิธีการคำนวณ:</h4>
                                     <div class="space-y-3">
                                         <div class="p-3 bg-purple-50 rounded-lg">
@@ -391,16 +391,16 @@
                                 <h3 class="text-2xl font-bold text-yellow-900 mb-3">3. โบนัสยศ (Rank Bonus)</h3>
                                 <p class="text-yellow-800 mb-4">รับโบนัสพิเศษเมื่อขึ้นยศใหม่ และรายได้ประจำทุกเดือน</p>
 
-                                <div class="bg-white p-4 rounded-xl mb-4">
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl mb-4">
                                     <h4 class="font-bold text-yellow-900 mb-3">โบนัสตามยศ:</h4>
                                     <div class="space-y-2">
                                         <div class="flex justify-between items-center p-3 bg-gradient-to-r from-gray-100 to-gray-200 rounded-lg">
                                             <span class="font-semibold">🥉 Bronze</span>
-                                            <span class="font-bold text-gray-700">5,000 บาท (ครั้งเดียว) + 500 บาท/เดือน</span>
+                                            <span class="font-bold text-gray-700 dark:text-gray-300">5,000 บาท (ครั้งเดียว) + 500 บาท/เดือน</span>
                                         </div>
                                         <div class="flex justify-between items-center p-3 bg-gradient-to-r from-gray-300 to-gray-400 rounded-lg">
                                             <span class="font-semibold">🥈 Silver</span>
-                                            <span class="font-bold text-gray-800">15,000 บาท (ครั้งเดียว) + 2,000 บาท/เดือน</span>
+                                            <span class="font-bold text-gray-800 dark:text-white">15,000 บาท (ครั้งเดียว) + 2,000 บาท/เดือน</span>
                                         </div>
                                         <div class="flex justify-between items-center p-3 bg-gradient-to-r from-yellow-200 to-yellow-400 rounded-lg">
                                             <span class="font-semibold">🥇 Gold</span>
@@ -435,7 +435,7 @@
                                 <h3 class="text-2xl font-bold text-pink-900 mb-3">4. โบนัสสปอนเซอร์ (Sponsorship Bonus)</h3>
                                 <p class="text-pink-800 mb-4">รับโบนัสพิเศษเมื่อเชิญคนใหม่เข้ามาซื้อสินค้า</p>
 
-                                <div class="bg-white p-4 rounded-xl mb-4">
+                                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl mb-4">
                                     <h4 class="font-bold text-pink-900 mb-3">อัตราโบนัส:</h4>
                                     <div class="space-y-2">
                                         <div class="p-3 bg-pink-50 rounded-lg">
@@ -492,7 +492,7 @@
         </div>
 
         <!-- Chapter 4: Rank System -->
-        <div id="chapter-4" class="bg-white rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
+        <div id="chapter-4" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
             <div class="flex items-center gap-4 mb-6">
                 <div class="text-6xl">⭐</div>
                 <div>
@@ -502,7 +502,7 @@
             </div>
 
             <div class="prose prose-lg max-w-none">
-                <p class="text-xl text-gray-700 leading-relaxed mb-6">
+                <p class="text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
                     ระบบยศช่วยให้คุณมีเป้าหมายที่ชัดเจน และรับสิทธิพิเศษมากขึ้นเมื่อคุณพัฒนาทีม
                 </p>
 
@@ -512,30 +512,30 @@
                         <div class="flex items-start gap-4 mb-4">
                             <div class="text-5xl">🥉</div>
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-800">Bronze (บรอนซ์)</h3>
-                                <p class="text-gray-600">ยศเริ่มต้นสำหรับผู้มุ่งมั่น</p>
+                                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Bronze (บรอนซ์)</h3>
+                                <p class="text-gray-600 dark:text-gray-400">ยศเริ่มต้นสำหรับผู้มุ่งมั่น</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">📊 เงื่อนไข</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• ทีมอย่างน้อย 10 คน</li>
                                     <li>• ยอดขายทีม 50,000 บาท/เดือน</li>
                                     <li>• ลูกทีมตรง 3 คน</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">💰 รางวัล</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• โบนัส 5,000 บาท (ครั้งเดียว)</li>
                                     <li>• รายได้ 500 บาท/เดือน</li>
                                     <li>• ค่าคอม +5%</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">🎁 สิทธิพิเศษ</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• กรอบโปรไฟล์พิเศษ</li>
                                     <li>• เข้าร่วมกลุ่ม VIP</li>
                                     <li>• ใบประกาศนียบัตร</li>
@@ -549,32 +549,32 @@
                         <div class="flex items-start gap-4 mb-4">
                             <div class="text-5xl">🥈</div>
                             <div>
-                                <h3 class="text-2xl font-bold text-gray-900">Silver (ซิลเวอร์)</h3>
-                                <p class="text-gray-700">ก้าวสู่ระดับกลาง มั่นคงขึ้น</p>
+                                <h3 class="text-2xl font-bold text-gray-900 dark:text-white">Silver (ซิลเวอร์)</h3>
+                                <p class="text-gray-700 dark:text-gray-300">ก้าวสู่ระดับกลาง มั่นคงขึ้น</p>
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">📊 เงื่อนไข</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• ทีมอย่างน้อย 30 คน</li>
                                     <li>• ยอดขายทีม 150,000 บาท/เดือน</li>
                                     <li>• ลูกทีมตรง 5 คน</li>
                                     <li>• มีลูกทีม Bronze 2 คน</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">💰 รางวัล</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• โบนัส 15,000 บาท (ครั้งเดียว)</li>
                                     <li>• รายได้ 2,000 บาท/เดือน</li>
                                     <li>• ค่าคอม +10%</li>
                                     <li>• Multiplier 1.2x</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">🎁 สิทธิพิเศษ</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• กรอบโปรไฟล์เงิน</li>
                                     <li>• เครื่องมือวิเคราะห์ขั้นสูง</li>
                                     <li>• ส่วนลดสินค้า 10%</li>
@@ -594,27 +594,27 @@
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">📊 เงื่อนไข</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• ทีมอย่างน้อย 100 คน</li>
                                     <li>• ยอดขายทีม 500,000 บาท/เดือน</li>
                                     <li>• ลูกทีมตรง 10 คน</li>
                                     <li>• มีลูกทีม Silver 3 คน</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">💰 รางวัล</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• โบนัส 50,000 บาท (ครั้งเดียว)</li>
                                     <li>• รายได้ 10,000 บาท/เดือน</li>
                                     <li>• ค่าคอม +15%</li>
                                     <li>• Multiplier 1.5x</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">🎁 สิทธิพิเศษ</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• กรอบโปรไฟล์ทอง</li>
                                     <li>• ทริปต่างประเทศ</li>
                                     <li>• ส่วนลดสินค้า 20%</li>
@@ -634,27 +634,27 @@
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">📊 เงื่อนไข</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• ทีมอย่างน้อย 300 คน</li>
                                     <li>• ยอดขายทีม 1,500,000 บาท/เดือน</li>
                                     <li>• ลูกทีมตรง 15 คน</li>
                                     <li>• มีลูกทีม Gold 5 คน</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">💰 รางวัล</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• โบนัส 150,000 บาท (ครั้งเดียว)</li>
                                     <li>• รายได้ 30,000 บาท/เดือน</li>
                                     <li>• ค่าคอม +20%</li>
                                     <li>• Multiplier 2.0x</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">🎁 สิทธิพิเศษ</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• กรอบโปรไฟล์แพลทินัม</li>
                                     <li>• ทริปหรูทั่วโลก</li>
                                     <li>• ส่วนลดสินค้า 30%</li>
@@ -674,27 +674,27 @@
                             </div>
                         </div>
                         <div class="grid md:grid-cols-3 gap-4">
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">📊 เงื่อนไข</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">📊 เงื่อนไข</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• ทีมอย่างน้อย 1,000 คน</li>
                                     <li>• ยอดขายทีม 5,000,000 บาท/เดือน</li>
                                     <li>• ลูกทีมตรง 25 คน</li>
                                     <li>• มีลูกทีม Platinum 7 คน</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">💰 รางวัล</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">💰 รางวัล</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• โบนัส 500,000 บาท (ครั้งเดียว)</li>
                                     <li>• รายได้ 100,000 บาท/เดือน</li>
                                     <li>• ค่าคอม +25%</li>
                                     <li>• Multiplier 3.0x</li>
                                 </ul>
                             </div>
-                            <div class="bg-white p-4 rounded-xl">
-                                <div class="font-semibold text-gray-700 mb-2">🎁 สิทธิพิเศษ</div>
-                                <ul class="text-sm text-gray-600 space-y-1">
+                            <div class="bg-white dark:bg-gray-800 p-4 rounded-xl">
+                                <div class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🎁 สิทธิพิเศษ</div>
+                                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                                     <li>• กรอบโปรไฟล์เพชร</li>
                                     <li>• รถยนต์หรู</li>
                                     <li>• ส่วนลดสินค้า 40%</li>
@@ -732,7 +732,7 @@
         </div>
 
         <!-- Chapter 5: Team Building -->
-        <div id="chapter-5" class="bg-white rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
+        <div id="chapter-5" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
             <div class="flex items-center gap-4 mb-6">
                 <div class="text-6xl">👥</div>
                 <div>
@@ -742,12 +742,12 @@
             </div>
 
             <div class="prose prose-lg max-w-none">
-                <p class="text-xl text-gray-700 leading-relaxed mb-6">
+                <p class="text-xl text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
                     ความสำเร็จในระบบ MLM ไม่ได้มาจากคุณคนเดียว แต่มาจาก<strong>ความแข็งแกร่งของทีม</strong>
                     ยิ่งทีมแข็งแกร่ง คุณก็ยิ่งร่ำรวย!
                 </p>
 
-                <h3 class="text-2xl font-bold text-gray-800 mb-4">🎯 7 ขั้นตอนสร้างทีมแข็งแกร่ง</h3>
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">🎯 7 ขั้นตอนสร้างทีมแข็งแกร่ง</h3>
 
                 <div class="space-y-4">
                     <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border-l-4 border-blue-500 p-6 rounded-r-xl">
@@ -833,17 +833,17 @@
                         <span>👑</span> กฎทอง 3 ข้อของการสร้างทีม
                     </h4>
                     <div class="space-y-4">
-                        <div class="bg-white p-5 rounded-xl">
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl">
                             <div class="font-bold text-lg text-pink-800 mb-2">1. เป็นแบบอย่างที่ดี</div>
-                            <p class="text-gray-700">คุณต้องทำในสิ่งที่สอน ถ้าคุณไม่ขาย ลูกทีมก็จะไม่ขาย</p>
+                            <p class="text-gray-700 dark:text-gray-300">คุณต้องทำในสิ่งที่สอน ถ้าคุณไม่ขาย ลูกทีมก็จะไม่ขาย</p>
                         </div>
-                        <div class="bg-white p-5 rounded-xl">
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl">
                             <div class="font-bold text-lg text-pink-800 mb-2">2. สอนให้เก่งกว่าคุณ</div>
-                            <p class="text-gray-700">อย่ากลัวลูกทีมเก่งกว่า ยิ่งเขาเก่ง คุณยิ่งได้ประโยชน์</p>
+                            <p class="text-gray-700 dark:text-gray-300">อย่ากลัวลูกทีมเก่งกว่า ยิ่งเขาเก่ง คุณยิ่งได้ประโยชน์</p>
                         </div>
-                        <div class="bg-white p-5 rounded-xl">
+                        <div class="bg-white dark:bg-gray-800 p-5 rounded-xl">
                             <div class="font-bold text-lg text-pink-800 mb-2">3. ช่วยพวกเขาประสบความสำเร็จ</div>
-                            <p class="text-gray-700">เมื่อทีมสำเร็จ คุณก็จะสำเร็จไปด้วย นี่คือ Win-Win แท้ๆ</p>
+                            <p class="text-gray-700 dark:text-gray-300">เมื่อทีมสำเร็จ คุณก็จะสำเร็จไปด้วย นี่คือ Win-Win แท้ๆ</p>
                         </div>
                     </div>
                 </div>
@@ -853,15 +853,15 @@
         <!-- Chapter 6-10 Summary Cards -->
         <div class="grid md:grid-cols-2 gap-6 mb-8">
             <!-- Chapter 6 -->
-            <div id="chapter-6" class="bg-white rounded-2xl shadow-xl p-6 scroll-mt-8">
+            <div id="chapter-6" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 scroll-mt-8">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="text-4xl">📈</div>
                     <div>
                         <div class="text-xs text-indigo-600 font-semibold">CHAPTER 6</div>
-                        <h3 class="text-2xl font-bold text-gray-800">กลยุทธ์ขายที่ได้ผล</h3>
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white">กลยุทธ์ขายที่ได้ผล</h3>
                     </div>
                 </div>
-                <div class="space-y-3 text-gray-700">
+                <div class="space-y-3 text-gray-700 dark:text-gray-300">
                     <div class="bg-indigo-50 p-4 rounded-xl">
                         <div class="font-bold mb-2">🎯 เข้าใจลูกค้า</div>
                         <p class="text-sm">ถามปัญหา ฟังให้ดี แล้วเสนอโซลูชั่น ไม่ใช่ยัดเยียดขาย</p>
@@ -882,15 +882,15 @@
             </div>
 
             <!-- Chapter 7 -->
-            <div id="chapter-7" class="bg-white rounded-2xl shadow-xl p-6 scroll-mt-8">
+            <div id="chapter-7" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 scroll-mt-8">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="text-4xl">💳</div>
                     <div>
                         <div class="text-xs text-red-600 font-semibold">CHAPTER 7</div>
-                        <h3 class="text-2xl font-bold text-gray-800">กระเป๋าเงินและถอนเงิน</h3>
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white">กระเป๋าเงินและถอนเงิน</h3>
                     </div>
                 </div>
-                <div class="space-y-3 text-gray-700">
+                <div class="space-y-3 text-gray-700 dark:text-gray-300">
                     <div class="bg-red-50 p-4 rounded-xl">
                         <div class="font-bold mb-2">💰 ยอดคงเหลือ</div>
                         <p class="text-sm">เช็คยอดเงินแบบ realtime มีทั้งเงินหลัก, โบนัส, คอมมิชชั่น</p>
@@ -911,15 +911,15 @@
             </div>
 
             <!-- Chapter 8 -->
-            <div id="chapter-8" class="bg-white rounded-2xl shadow-xl p-6 scroll-mt-8">
+            <div id="chapter-8" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 scroll-mt-8">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="text-4xl">👑</div>
                     <div>
                         <div class="text-xs text-teal-600 font-semibold">CHAPTER 8</div>
-                        <h3 class="text-2xl font-bold text-gray-800">เป็นแม่ทีมมืออาชีพ</h3>
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white">เป็นแม่ทีมมืออาชีพ</h3>
                     </div>
                 </div>
-                <div class="space-y-3 text-gray-700">
+                <div class="space-y-3 text-gray-700 dark:text-gray-300">
                     <div class="bg-teal-50 p-4 rounded-xl">
                         <div class="font-bold mb-2">📚 เรียนรู้ไม่หยุด</div>
                         <p class="text-sm">เข้าอบรม อ่านหนังสือ ติดตามเทรนด์ใหม่ๆ</p>
@@ -940,15 +940,15 @@
             </div>
 
             <!-- Chapter 9 -->
-            <div id="chapter-9" class="bg-white rounded-2xl shadow-xl p-6 scroll-mt-8">
+            <div id="chapter-9" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 scroll-mt-8">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="text-4xl">🎓</div>
                     <div>
                         <div class="text-xs text-orange-600 font-semibold">CHAPTER 9</div>
-                        <h3 class="text-2xl font-bold text-gray-800">เคล็ดลับและคำแนะนำ</h3>
+                        <h3 class="text-2xl font-bold text-gray-800 dark:text-white">เคล็ดลับและคำแนะนำ</h3>
                     </div>
                 </div>
-                <div class="space-y-3 text-gray-700">
+                <div class="space-y-3 text-gray-700 dark:text-gray-300">
                     <div class="bg-orange-50 p-4 rounded-xl">
                         <div class="font-bold mb-2">⏰ เริ่มทำเลย</div>
                         <p class="text-sm">อย่ารอวันที่ "พร้อม" เพราะไม่มีวันนั้น เริ่มตอนนี้</p>
@@ -970,7 +970,7 @@
         </div>
 
         <!-- Chapter 10: FAQ -->
-        <div id="chapter-10" class="bg-white rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
+        <div id="chapter-10" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 mb-8 scroll-mt-8">
             <div class="flex items-center gap-4 mb-6">
                 <div class="text-6xl">❓</div>
                 <div>
@@ -1030,7 +1030,7 @@
                 คุณมีทุกอย่างที่ต้องการแล้ว ขาดแค่การเริ่มต้น!
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('user.dashboard') }}" class="px-10 py-5 bg-white text-purple-600 rounded-full text-xl font-bold shadow-2xl hover:bg-gray-100 transform hover:scale-105 transition-all">
+                <a href="{{ route('user.dashboard') }}" class="px-10 py-5 bg-white dark:bg-gray-800 text-purple-600 rounded-full text-xl font-bold shadow-2xl hover:bg-gray-100 dark:bg-gray-700 transform hover:scale-105 transition-all">
                     📊 ไปที่แดชบอร์ด
                 </a>
                 <a href="{{ route('user.mlm.income-simulator') }}" class="px-10 py-5 bg-yellow-400 text-purple-900 rounded-full text-xl font-bold shadow-2xl hover:bg-yellow-300 transform hover:scale-105 transition-all">
@@ -1043,7 +1043,7 @@
         </div>
 
         <!-- Footer -->
-        <div class="text-center mt-12 text-gray-600">
+        <div class="text-center mt-12 text-gray-600 dark:text-gray-400">
             <p class="text-sm">© {{ date('Y') }} Thaiprompt-Affiliate - เส้นทางเศรษฐี เวอร์ชั่น 1.0</p>
             <p class="text-xs mt-2">สงวนลิขสิทธิ์ ห้ามทำซ้ำหรือเผยแพร่โดยไม่ได้รับอนุญาต</p>
         </div>

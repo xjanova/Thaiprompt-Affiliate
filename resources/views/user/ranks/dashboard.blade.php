@@ -6,9 +6,9 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Rank Header -->
     <div class="bg-gradient-to-r from-orange-500 via-amber-600 to-yellow-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute top-1/2 right-1/4 w-24 h-24 bg-white opacity-5 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
+        <div class="absolute top-1/2 right-1/4 w-24 h-24 bg-white dark:bg-gray-800 opacity-5 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center gap-3 mb-2">
                 <i class="fas fa-trophy text-4xl"></i>
@@ -21,9 +21,9 @@
     <!-- Current Rank Display -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Current Rank Card -->
-        <div class="bg-white rounded-2xl shadow-xl p-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold text-gray-900">🎖️ ระดับปัจจุบัน</h2>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">🎖️ ระดับปัจจุบัน</h2>
                 <span class="px-4 py-2 bg-orange-100 text-orange-800 rounded-lg text-sm font-semibold">
                     Level {{ $currentRank->level ?? 0 }}
                 </span>
@@ -36,24 +36,24 @@
                     </div>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-3xl font-bold text-gray-900 mb-1">
+                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
                         {{ app()->getLocale() === 'th' ? ($currentRank->name_th ?? $currentRank->name ?? 'ไม่มีระดับ') : ($currentRank->name ?? 'No Rank') }}
                     </h3>
-                    <p class="text-gray-600">{{ __('Current Rank') }}</p>
+                    <p class="text-gray-600 dark:text-gray-400">{{ __('Current Rank') }}</p>
                 </div>
             </div>
 
             @if($currentRank && $currentRank->description)
-            <div class="bg-gray-50 rounded-lg p-4">
-                <p class="text-sm text-gray-600">{{ $currentRank->description }}</p>
+            <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $currentRank->description }}</p>
             </div>
             @endif
         </div>
 
         <!-- Next Rank Card -->
-        <div class="bg-white rounded-2xl shadow-xl p-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold text-gray-900">🎯 ระดับถัดไป</h2>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white">🎯 ระดับถัดไป</h2>
                 @if($nextRank)
                 <span class="px-4 py-2 bg-green-100 text-green-800 rounded-lg text-sm font-semibold">
                     Level {{ $nextRank->level }}
@@ -69,23 +69,23 @@
                     </div>
                 </div>
                 <div class="flex-1">
-                    <h3 class="text-3xl font-bold text-gray-900 mb-1">
+                    <h3 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
                         {{ app()->getLocale() === 'th' ? ($nextRank->name_th ?? $nextRank->name) : $nextRank->name }}
                     </h3>
-                    <p class="text-gray-600">{{ __('Next Rank') }}</p>
+                    <p class="text-gray-600 dark:text-gray-400">{{ __('Next Rank') }}</p>
                 </div>
             </div>
 
             @if($nextRank->description)
-            <div class="bg-gray-50 rounded-lg p-4">
-                <p class="text-sm text-gray-600">{{ $nextRank->description }}</p>
+            <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $nextRank->description }}</p>
             </div>
             @endif
             @else
             <div class="text-center py-8">
                 <div class="text-6xl mb-4">🏆</div>
-                <p class="text-xl font-semibold text-gray-900 mb-2">ยินดีด้วย!</p>
-                <p class="text-gray-600">คุณอยู่ในระดับสูงสุดแล้ว</p>
+                <p class="text-xl font-semibold text-gray-900 dark:text-white mb-2">ยินดีด้วย!</p>
+                <p class="text-gray-600 dark:text-gray-400">คุณอยู่ในระดับสูงสุดแล้ว</p>
             </div>
             @endif
         </div>
@@ -93,8 +93,8 @@
 
     <!-- Progress Section -->
     @if($nextRank && $nextRankProgress)
-    <div class="bg-white rounded-2xl shadow-xl p-8">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">📊 ความคืบหน้าไประดับถัดไป</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">📊 ความคืบหน้าไประดับถัดไป</h2>
 
         <!-- Points Display -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -128,7 +128,7 @@
         <!-- Progress Bar -->
         <div class="mb-4">
             <div class="flex justify-between items-center mb-2">
-                <span class="text-sm font-semibold text-gray-700">ความคืบหน้า</span>
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">ความคืบหน้า</span>
                 <span class="text-sm font-bold text-orange-600">
                     {{ number_format($nextRankProgress->progress_percentage ?? 0, 2) }}%
                 </span>
@@ -144,7 +144,7 @@
         </div>
 
         @if(($nextRankProgress->target_points ?? 0) > 0)
-        <p class="text-center text-gray-600 text-sm">
+        <p class="text-center text-gray-600 dark:text-gray-400 text-sm">
             อีก {{ number_format(max(0, ($nextRankProgress->target_points ?? 0) - ($user->rank_points ?? 0))) }} แต้มจะถึงระดับ
             <span class="font-semibold text-orange-600">{{ app()->getLocale() === 'th' ? ($nextRank->name_th ?? $nextRank->name) : $nextRank->name }}</span>
         </p>
@@ -153,16 +153,16 @@
     @endif
 
     <!-- Leaderboard Position -->
-    <div class="bg-white rounded-2xl shadow-xl p-8">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">🏅 อันดับของคุณ</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">🏅 อันดับของคุณ</h2>
 
         <div class="flex items-center justify-center gap-8 mb-6">
             <div class="text-center">
                 <div class="w-32 h-32 bg-gradient-to-br from-yellow-400 to-orange-600 rounded-full flex items-center justify-center text-white shadow-2xl mb-4">
                     <span class="text-5xl font-bold">#{{ $leaderboardPosition }}</span>
                 </div>
-                <p class="text-lg font-semibold text-gray-900">อันดับของคุณในกระดานผู้นำ</p>
-                <p class="text-sm text-gray-600">จาก {{ \App\Models\User::whereNotNull('current_rank_id')->count() }} ผู้ใช้</p>
+                <p class="text-lg font-semibold text-gray-900 dark:text-white">อันดับของคุณในกระดานผู้นำ</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">จาก {{ \App\Models\User::whereNotNull('current_rank_id')->count() }} ผู้ใช้</p>
             </div>
         </div>
 
@@ -180,7 +180,7 @@
         <a href="{{ route('user.ranks.progress') }}"
            class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-xl p-8 text-white hover:opacity-90 transition block">
             <div class="flex items-center gap-4 mb-4">
-                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <div class="w-16 h-16 bg-white dark:bg-gray-800 bg-opacity-20 rounded-full flex items-center justify-center">
                     <i class="fas fa-tasks text-3xl"></i>
                 </div>
                 <div>
@@ -194,7 +194,7 @@
         <a href="{{ route('user.ranks.leaderboard') }}"
            class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl shadow-xl p-8 text-white hover:opacity-90 transition block">
             <div class="flex items-center gap-4 mb-4">
-                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <div class="w-16 h-16 bg-white dark:bg-gray-800 bg-opacity-20 rounded-full flex items-center justify-center">
                     <i class="fas fa-trophy text-3xl"></i>
                 </div>
                 <div>
@@ -207,8 +207,8 @@
     </div>
 
     <!-- How to Earn Points -->
-    <div class="bg-white rounded-2xl shadow-xl p-8">
-        <h2 class="text-xl font-bold text-gray-900 mb-6">💡 วิธีการเพิ่มแต้ม</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">💡 วิธีการเพิ่มแต้ม</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div class="flex items-start gap-4 p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl">

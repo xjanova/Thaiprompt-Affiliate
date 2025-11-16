@@ -99,7 +99,7 @@
                 <div class="flex-1">
                     <div class="flex items-center justify-between mb-2">
                         <div>
-                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $ticket->user->name }} <span class="text-sm font-normal text-gray-500">(คุณ)</span></h3>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ $ticket->user->name }} <span class="text-sm font-normal text-gray-500 dark:text-gray-400">(คุณ)</span></h3>
                         </div>
                         <span class="text-sm text-gray-500 dark:text-gray-400">{{ $ticket->created_at->format('d/m/Y H:i') }}</span>
                     </div>
@@ -130,7 +130,7 @@
                                             ทีมงาน
                                         </span>
                                     @else
-                                        <span class="text-sm font-normal text-gray-500">(คุณ)</span>
+                                        <span class="text-sm font-normal text-gray-500 dark:text-gray-400">(คุณ)</span>
                                     @endif
                                 </h3>
                             </div>

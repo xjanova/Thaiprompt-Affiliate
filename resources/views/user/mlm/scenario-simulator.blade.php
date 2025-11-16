@@ -10,8 +10,8 @@
             <h1 class="text-5xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
                 🎯 จำลองสถานการณ์ MLM
             </h1>
-            <p class="text-xl text-gray-700 mb-2">ทดสอบสถานการณ์ต่างๆ และดูการไหลของรายได้แบบเรียลไทม์</p>
-            <p class="text-gray-600">เครื่องมือสำหรับนำเสนอแผน MLM แบบมืออาชีพ</p>
+            <p class="text-xl text-gray-700 dark:text-gray-300 mb-2">ทดสอบสถานการณ์ต่างๆ และดูการไหลของรายได้แบบเรียลไทม์</p>
+            <p class="text-gray-600 dark:text-gray-400">เครื่องมือสำหรับนำเสนอแผน MLM แบบมืออาชีพ</p>
         </div>
 
         <!-- Control Panel -->
@@ -19,8 +19,8 @@
             <!-- Left Panel: Controls -->
             <div class="lg:col-span-1 space-y-6">
                 <!-- Preset Scenarios -->
-                <div class="bg-white rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">📋 สถานการณ์ตัวอย่าง</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">📋 สถานการณ์ตัวอย่าง</h3>
                     <div class="space-y-2">
                         <button onclick="loadPreset('perfect')" class="w-full px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-600 transition-all">
                             ✨ ทุกคนแอคทีฟ (100%)
@@ -38,12 +38,12 @@
                 </div>
 
                 <!-- Settings -->
-                <div class="bg-white rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">⚙️ ตั้งค่า</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">⚙️ ตั้งค่า</h3>
 
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                 💰 ยอดขายต่อคน (บาท)
                             </label>
                             <input type="number" id="perPersonSales" value="5000" step="1000" min="0"
@@ -52,7 +52,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">
+                            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                                 📊 จำนวนชั้น
                             </label>
                             <select id="treeDepth" onchange="generateTree()"
@@ -68,7 +68,7 @@
                             <label class="flex items-center space-x-2 cursor-pointer">
                                 <input type="checkbox" id="showRollup" onchange="toggleRollupView()" checked
                                        class="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-400">
-                                <span class="text-sm font-semibold text-gray-700">แสดงเส้น Rollup</span>
+                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">แสดงเส้น Rollup</span>
                             </label>
                         </div>
 
@@ -76,12 +76,12 @@
                             <label class="flex items-center space-x-2 cursor-pointer">
                                 <input type="checkbox" id="animateFlow" onchange="toggleAnimation()" checked
                                        class="w-5 h-5 text-purple-600 rounded focus:ring-2 focus:ring-purple-400">
-                                <span class="text-sm font-semibold text-gray-700">แอนิเมชั่น</span>
+                                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">แอนิเมชั่น</span>
                             </label>
                         </div>
                     </div>
 
-                    <div class="mt-4 pt-4 border-t border-gray-200">
+                    <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button onclick="playAnimation()"
                                 class="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all shadow-lg">
                             ▶️ เล่นแอนิเมชั่น
@@ -90,8 +90,8 @@
                 </div>
 
                 <!-- Legend -->
-                <div class="bg-white rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">📌 คำอธิบาย</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">📌 คำอธิบาย</h3>
                     <div class="space-y-3 text-sm">
                         <div class="flex items-center space-x-2">
                             <div class="w-6 h-6 bg-green-500 rounded-full border-2 border-green-700"></div>
@@ -115,8 +115,8 @@
 
             <!-- Center Panel: Tree Visualization -->
             <div class="lg:col-span-2">
-                <div class="bg-white rounded-2xl shadow-xl p-6 relative">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 relative">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 text-center">
                         🌳 ผังโครงสร้างทีม (คลิกเพื่อเปลี่ยนสถานะ)
                     </h3>
 
@@ -143,15 +143,15 @@
                 <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl shadow-xl p-6 text-white">
                     <h3 class="text-lg font-bold mb-4">💰 สรุปรายได้</h3>
                     <div class="space-y-3">
-                        <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-3">
                             <div class="text-sm opacity-90 mb-1">รายได้รวมทั้งหมด</div>
                             <div class="text-3xl font-bold">฿<span id="total-commission">0</span></div>
                         </div>
-                        <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-3">
                             <div class="text-sm opacity-90 mb-1">จำนวนคนแอคทีฟ</div>
                             <div class="text-2xl font-bold"><span id="active-count">0</span>/<span id="total-count">0</span></div>
                         </div>
-                        <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                        <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-3">
                             <div class="text-sm opacity-90 mb-1">อัตราแอคทีฟ</div>
                             <div class="text-2xl font-bold"><span id="active-rate">0</span>%</div>
                         </div>
@@ -159,8 +159,8 @@
                 </div>
 
                 <!-- Level Breakdown -->
-                <div class="bg-white rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">📊 แยกตามชั้น</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">📊 แยกตามชั้น</h3>
                     <div id="level-breakdown" class="space-y-3">
                         <!-- Will be populated by JavaScript -->
                     </div>
@@ -170,13 +170,13 @@
                 <div id="rollup-details" class="bg-gradient-to-br from-orange-100 to-yellow-100 rounded-2xl shadow-xl p-6 border-2 border-orange-300">
                     <h3 class="text-lg font-bold text-orange-800 mb-4">🔄 Rollup Details</h3>
                     <div id="rollup-list" class="space-y-2 text-sm">
-                        <p class="text-gray-600">คลิก member ที่ไม่แอคทีฟเพื่อดู rollup path</p>
+                        <p class="text-gray-600 dark:text-gray-400">คลิก member ที่ไม่แอคทีฟเพื่อดู rollup path</p>
                     </div>
                 </div>
 
                 <!-- Export/Share -->
-                <div class="bg-white rounded-2xl shadow-xl p-6">
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">📤 แชร์/บันทึก</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                    <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">📤 แชร์/บันทึก</h3>
                     <div class="space-y-2">
                         <button onclick="captureScenario()"
                                 class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-all">
@@ -532,8 +532,8 @@ function updateSummary() {
         levelHtml += `
             <div class="bg-gradient-to-r from-purple-100 to-pink-100 rounded-lg p-3">
                 <div class="flex justify-between items-center mb-1">
-                    <span class="font-semibold text-gray-800">ชั้น ${level}</span>
-                    <span class="text-xs text-gray-600">${activeInLevel}/${membersInLevel.length} คน</span>
+                    <span class="font-semibold text-gray-800 dark:text-white">ชั้น ${level}</span>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">${activeInLevel}/${membersInLevel.length} คน</span>
                 </div>
                 <div class="text-lg font-bold text-purple-600">฿${Math.floor(commissionInLevel).toLocaleString()}</div>
             </div>
@@ -550,7 +550,7 @@ function updateSummary() {
             const skippedMember = treeData.members[path.skipped];
             const toMember = treeData.members[path.to];
             rollupHtml += `
-                <div class="bg-white rounded-lg p-2 text-xs">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 text-xs">
                     <span class="font-semibold text-green-600">${fromMember.name}</span>
                     →
                     <span class="font-semibold text-red-600 line-through">${skippedMember.name}</span>
@@ -562,7 +562,7 @@ function updateSummary() {
         rollupHtml += '</div>';
         document.getElementById('rollup-list').innerHTML = rollupHtml;
     } else {
-        document.getElementById('rollup-list').innerHTML = '<p class="text-gray-600 text-sm">ไม่มี rollup (ทุกคนแอคทีฟ)</p>';
+        document.getElementById('rollup-list').innerHTML = '<p class="text-gray-600 dark:text-gray-400 text-sm">ไม่มี rollup (ทุกคนแอคทีฟ)</p>';
     }
 }
 

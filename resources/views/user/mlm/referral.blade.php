@@ -18,8 +18,8 @@
     </div>
 
     <!-- Referral Link Card -->
-    <div class="bg-white rounded-2xl shadow-2xl p-8">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
             <span>📎</span> ลิงก์แนะนำของคุณ
         </h2>
 
@@ -27,8 +27,8 @@
         <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200 mb-6">
             <div class="flex items-center gap-4">
                 <div class="flex-1">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">URL ของคุณ:</label>
-                    <div class="bg-white rounded-lg p-4 font-mono text-sm break-all border border-blue-300">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URL ของคุณ:</label>
+                    <div class="bg-white dark:bg-gray-800 rounded-lg p-4 font-mono text-sm break-all border border-blue-300">
                         {{ $referralUrl }}
                     </div>
                 </div>
@@ -40,9 +40,9 @@
 
         <!-- Member Code -->
         <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200 mb-6">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">รหัสสมาชิกของคุณ:</label>
+            <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">รหัสสมาชิกของคุณ:</label>
             <div class="flex items-center gap-4">
-                <div class="flex-1 bg-white rounded-lg p-4 font-mono text-2xl font-bold text-purple-600 border border-purple-300">
+                <div class="flex-1 bg-white dark:bg-gray-800 rounded-lg p-4 font-mono text-2xl font-bold text-purple-600 border border-purple-300">
                     {{ $member->member_code }}
                 </div>
                 <button onclick="copyMemberCode()" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors flex-shrink-0">
@@ -52,20 +52,20 @@
         </div>
 
         <!-- QR Code -->
-        <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border-2 border-gray-200">
-            <h3 class="text-lg font-bold text-gray-800 mb-4 text-center">QR Code สำหรับแชร์</h3>
+        <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-6 border-2 border-gray-200 dark:border-gray-700">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 text-center">QR Code สำหรับแชร์</h3>
             <div class="flex justify-center">
-                <div class="bg-white p-6 rounded-xl shadow-lg">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                     <div id="qrcode" class="mx-auto"></div>
                 </div>
             </div>
-            <p class="text-center text-sm text-gray-600 mt-4">สแกน QR Code เพื่อเข้าสู่หน้าสมัครสมาชิก</p>
+            <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">สแกน QR Code เพื่อเข้าสู่หน้าสมัครสมาชิก</p>
         </div>
     </div>
 
     <!-- Share Options -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
             <span>📤</span> แชร์ผ่าน
         </h2>
         <div class="grid md:grid-cols-4 gap-4">
@@ -97,29 +97,29 @@
 
     <!-- Tips -->
     <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-xl p-6 border border-yellow-200">
-        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
             <span>💡</span> เคล็ดลับการแนะนำ
         </h3>
         <div class="space-y-3">
             <div class="flex gap-3">
                 <span class="text-2xl flex-shrink-0">✅</span>
                 <div>
-                    <div class="font-semibold text-gray-800">แชร์ในช่องทางที่เหมาะสม</div>
-                    <div class="text-sm text-gray-600">เลือกช่องทางที่กลุ่มเป้าหมายของคุณใช้งานมากที่สุด</div>
+                    <div class="font-semibold text-gray-800 dark:text-white">แชร์ในช่องทางที่เหมาะสม</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">เลือกช่องทางที่กลุ่มเป้าหมายของคุณใช้งานมากที่สุด</div>
                 </div>
             </div>
             <div class="flex gap-3">
                 <span class="text-2xl flex-shrink-0">✅</span>
                 <div>
-                    <div class="font-semibold text-gray-800">อธิบายประโยชน์ที่จะได้รับ</div>
-                    <div class="text-sm text-gray-600">บอกเล่าประสบการณ์และผลลัพธ์ที่คุณได้รับจากโปรแกรม</div>
+                    <div class="font-semibold text-gray-800 dark:text-white">อธิบายประโยชน์ที่จะได้รับ</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">บอกเล่าประสบการณ์และผลลัพธ์ที่คุณได้รับจากโปรแกรม</div>
                 </div>
             </div>
             <div class="flex gap-3">
                 <span class="text-2xl flex-shrink-0">✅</span>
                 <div>
-                    <div class="font-semibold text-gray-800">ติดตามและให้คำแนะนำ</div>
-                    <div class="text-sm text-gray-600">ช่วยเหลือและให้คำปรึกษากับสมาชิกใหม่ที่เข้าร่วม</div>
+                    <div class="font-semibold text-gray-800 dark:text-white">ติดตามและให้คำแนะนำ</div>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">ช่วยเหลือและให้คำปรึกษากับสมาชิกใหม่ที่เข้าร่วม</div>
                 </div>
             </div>
         </div>

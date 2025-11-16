@@ -221,25 +221,17 @@
                     </div>
                 </div>
 
-                {{-- Primary Color --}}
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        สีหลัก (Primary Color)
-                    </label>
-                    <div class="flex gap-3">
-                        <input type="color" name="primary_color" value="{{ old('primary_color', $settings->primary_color) }}" class="h-14 w-20 rounded-xl border-2 border-gray-300 dark:border-gray-600 cursor-pointer">
-                        <input type="text" value="{{ old('primary_color', $settings->primary_color) }}" class="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all font-mono" readonly>
-                    </div>
-                </div>
-
-                {{-- Secondary Color --}}
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
-                        สีรอง (Secondary Color)
-                    </label>
-                    <div class="flex gap-3">
-                        <input type="color" name="secondary_color" value="{{ old('secondary_color', $settings->secondary_color) }}" class="h-14 w-20 rounded-xl border-2 border-gray-300 dark:border-gray-600 cursor-pointer">
-                        <input type="text" value="{{ old('secondary_color', $settings->secondary_color) }}" class="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-4 focus:ring-purple-500/50 focus:border-purple-500 dark:focus:border-purple-400 text-gray-900 dark:text-white transition-all font-mono" readonly>
+                {{-- หมายเหตุ: ระบบสีถูกจัดการโดย Custom Theme (ThemeSetting) แล้ว --}}
+                <div class="bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-700 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-blue-600 dark:text-blue-400 text-xl mt-1"></i>
+                        <div>
+                            <h4 class="font-bold text-blue-900 dark:text-blue-300 mb-1">การตั้งค่าสี & Theme</h4>
+                            <p class="text-sm text-blue-800 dark:text-blue-400">
+                                ระบบใช้ <strong>Custom Theme (Arrow X)</strong> สำหรับจัดการสีและรูปแบบการแสดงผล
+                                <br>สามารถปรับแต่งได้ที่ <strong>ตั้งค่า > Theme Settings</strong>
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

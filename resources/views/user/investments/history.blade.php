@@ -6,8 +6,8 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Investment History Header -->
     <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -15,7 +15,7 @@
                     <p class="text-purple-100">ดูข้อมูลการลงทุนทั้งหมดของคุณ</p>
                 </div>
                 <a href="{{ route('user.investments.index') }}"
-                   class="bg-white bg-opacity-20 hover:bg-opacity-30 px-6 py-3 rounded-xl transition font-semibold hidden md:block">
+                   class="bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 px-6 py-3 rounded-xl transition font-semibold hidden md:block">
                     ← กลับ
                 </a>
             </div>

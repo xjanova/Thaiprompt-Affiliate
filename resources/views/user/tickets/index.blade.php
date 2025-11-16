@@ -11,7 +11,7 @@
                 <h2 class="text-3xl font-bold mb-2">Ticket Support</h2>
                 <p class="text-blue-100 text-sm">ติดตามและจัดการคำขอความช่วยเหลือของคุณ</p>
             </div>
-            <a href="{{ route('user.tickets.create') }}" class="px-6 py-3 bg-white hover:bg-gray-100 text-blue-600 font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105">
+            <a href="{{ route('user.tickets.create') }}" class="px-6 py-3 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-700 text-blue-600 font-semibold rounded-lg shadow-lg transition-all transform hover:scale-105">
                 <i class="fa-solid fa-plus mr-2"></i>
                 สร้าง Ticket ใหม่
             </a>

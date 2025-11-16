@@ -6,8 +6,8 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Investment Header -->
     <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -18,19 +18,19 @@
 
             <!-- Summary Stats -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-                <div class="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                     <p class="text-pink-100 text-xs mb-1">ลงทุนทั้งหมด</p>
                     <p class="text-2xl font-bold">฿{{ number_format($summary['total_invested'], 2) }}</p>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                     <p class="text-pink-100 text-xs mb-1">ROI ที่ได้รับ</p>
                     <p class="text-2xl font-bold">฿{{ number_format($summary['total_earned_roi'], 2) }}</p>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                     <p class="text-pink-100 text-xs mb-1">ROI คาดหวัง</p>
                     <p class="text-2xl font-bold">฿{{ number_format($summary['total_expected_roi'], 2) }}</p>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                     <p class="text-pink-100 text-xs mb-1">ตำแหน่งทั้งหมด</p>
                     <p class="text-2xl font-bold">{{ $summary['total_positions'] }}</p>
                 </div>
@@ -40,29 +40,29 @@
 
     <!-- Quick Actions -->
     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <a href="{{ route('user.investments.plans') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.investments.plans') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
             <div class="text-4xl mb-3">💎</div>
-            <p class="text-gray-800 font-semibold">แผนการลงทุน</p>
-            <p class="text-xs text-gray-500 mt-1">Investment Plans</p>
+            <p class="text-gray-800 dark:text-white font-semibold">แผนการลงทุน</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Investment Plans</p>
         </a>
 
-        <a href="{{ route('user.wallet.index') }}" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="{{ route('user.wallet.index') }}" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
             <div class="text-4xl mb-3">💳</div>
-            <p class="text-gray-800 font-semibold">กระเป๋าเงิน</p>
-            <p class="text-xs text-gray-500 mt-1">Wallet</p>
+            <p class="text-gray-800 dark:text-white font-semibold">กระเป๋าเงิน</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Wallet</p>
         </a>
 
-        <a href="#roi-distributions" class="bg-white rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
+        <a href="#roi-distributions" class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl p-6 text-center transition transform hover:scale-105">
             <div class="text-4xl mb-3">📊</div>
-            <p class="text-gray-800 font-semibold">ประวัติ ROI</p>
-            <p class="text-xs text-gray-500 mt-1">ROI History</p>
+            <p class="text-gray-800 dark:text-white font-semibold">ประวัติ ROI</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ROI History</p>
         </a>
     </div>
 
     <!-- Active Positions -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
         <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-gray-800">📍 ตำแหน่งการลงทุน</h2>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white">📍 ตำแหน่งการลงทุน</h2>
             <span class="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
                 {{ $positions->total() }} รายการ
             </span>
@@ -71,11 +71,11 @@
         @if($positions->count() > 0)
             <div class="space-y-4">
                 @foreach($positions as $position)
-                <div class="border border-gray-200 rounded-xl p-6 hover:shadow-md transition">
+                <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-md transition">
                     <div class="flex items-start justify-between mb-4">
                         <div>
                             <div class="flex items-center gap-2 mb-2">
-                                <h3 class="text-lg font-bold text-gray-800">{{ $position->investmentPlan->display_name }}</h3>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white">{{ $position->investmentPlan->display_name }}</h3>
                                 @if($position->status == 'active')
                                     <span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold">Active</span>
                                 @elseif($position->status == 'pending')
@@ -83,33 +83,33 @@
                                 @elseif($position->status == 'matured')
                                     <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">ครบกำหนด</span>
                                 @elseif($position->status == 'withdrawn')
-                                    <span class="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs font-semibold">ถอนแล้ว</span>
+                                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-xs font-semibold">ถอนแล้ว</span>
                                 @endif
                             </div>
-                            <p class="text-sm text-gray-500">{{ $position->position_number }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">{{ $position->position_number }}</p>
                         </div>
                         <div class="text-right">
                             <p class="text-2xl font-bold text-purple-600">฿{{ number_format($position->amount, 2) }}</p>
-                            <p class="text-xs text-gray-500">{{ $position->roi_rate }}% {{ $position->roi_frequency === 'daily' ? 'รายวัน' : 'รายสัปดาห์' }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">{{ $position->roi_rate }}% {{ $position->roi_frequency === 'daily' ? 'รายวัน' : 'รายสัปดาห์' }}</p>
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                         <div>
-                            <p class="text-xs text-gray-500 mb-1">ROI ที่ได้รับ</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ROI ที่ได้รับ</p>
                             <p class="font-semibold text-green-600">฿{{ number_format($position->earned_roi, 2) }}</p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500 mb-1">ROI คาดหวัง</p>
-                            <p class="font-semibold text-gray-800">฿{{ number_format($position->expected_roi, 2) }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ROI คาดหวัง</p>
+                            <p class="font-semibold text-gray-800 dark:text-white">฿{{ number_format($position->expected_roi, 2) }}</p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500 mb-1">ความคืบหน้า</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ความคืบหน้า</p>
                             <p class="font-semibold text-blue-600">{{ number_format($position->progress_percentage, 1) }}%</p>
                         </div>
                         <div>
-                            <p class="text-xs text-gray-500 mb-1">วันที่เหลือ</p>
-                            <p class="font-semibold text-gray-800">{{ $position->days_remaining }} วัน</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">วันที่เหลือ</p>
+                            <p class="font-semibold text-gray-800 dark:text-white">{{ $position->days_remaining }} วัน</p>
                         </div>
                     </div>
 
@@ -140,7 +140,7 @@
         @else
             <div class="text-center py-12">
                 <div class="text-6xl mb-4">📊</div>
-                <p class="text-gray-500 mb-4">ยังไม่มีการลงทุน</p>
+                <p class="text-gray-500 dark:text-gray-400 mb-4">ยังไม่มีการลงทุน</p>
                 <a href="{{ route('user.investments.plans') }}" class="inline-block px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition font-semibold">
                     เริ่มลงทุนเลย
                 </a>
@@ -149,16 +149,16 @@
     </div>
 
     <!-- Recent ROI Distributions -->
-    <div id="roi-distributions" class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">💰 ROI ล่าสุด</h2>
+    <div id="roi-distributions" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">💰 ROI ล่าสุด</h2>
 
         @if($recentDistributions->count() > 0)
             <div class="space-y-3">
                 @foreach($recentDistributions as $distribution)
-                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg hover:bg-gray-100 dark:bg-gray-700 transition">
                     <div class="flex-1">
-                        <p class="font-semibold text-gray-800">{{ $distribution->stakingPosition->investmentPlan->display_name }}</p>
-                        <p class="text-sm text-gray-500">{{ $distribution->distribution_date->format('d M Y') }} - {{ $distribution->display_type }}</p>
+                        <p class="font-semibold text-gray-800 dark:text-white">{{ $distribution->stakingPosition->investmentPlan->display_name }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ $distribution->distribution_date->format('d M Y') }} - {{ $distribution->display_type }}</p>
                     </div>
                     <div class="text-right">
                         <p class="text-lg font-bold text-green-600">+฿{{ number_format($distribution->roi_amount, 2) }}</p>
@@ -174,7 +174,7 @@
                 @endforeach
             </div>
         @else
-            <div class="text-center py-8 text-gray-500">
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                 ยังไม่มีประวัติการจ่าย ROI
             </div>
         @endif

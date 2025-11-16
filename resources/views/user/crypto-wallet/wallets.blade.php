@@ -79,7 +79,7 @@
                             @elseif($wallet->status === 'locked')
                                 <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">🔒 ล็อค</span>
                             @else
-                                <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium">{{ $wallet->status }}</span>
+                                <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full text-sm font-medium">{{ $wallet->status }}</span>
                             @endif
                         </div>
                     </div>

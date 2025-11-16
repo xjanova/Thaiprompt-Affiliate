@@ -20,8 +20,6 @@ use Illuminate\Support\Facades\Storage;
  * @property string|null $favicon Path ของ favicon
  * @property string|null $meta_keywords คำค้นหา SEO
  * @property string|null $meta_description คำอธิบาย SEO
- * @property string $primary_color สีหลัก
- * @property string $secondary_color สีรอง
  * @property string|null $contact_email อีเมลติดต่อ
  * @property string|null $contact_phone เบอร์ติดต่อ
  * @property string|null $contact_address ที่อยู่ติดต่อ
@@ -52,6 +50,8 @@ class SiteSetting extends Model
     /**
      * The attributes that are mass assignable.
      *
+     * หมายเหตุ: สี Theme ถูกจัดการโดย ThemeSetting model (Custom Theme)
+     *
      * @var array<string>
      */
     protected $fillable = [
@@ -63,8 +63,8 @@ class SiteSetting extends Model
         'favicon',
         'meta_keywords',
         'meta_description',
-        'primary_color',
-        'secondary_color',
+        // 'primary_color',   // ลบออก - ใช้ Custom Theme แทน
+        // 'secondary_color', // ลบออก - ใช้ Custom Theme แทน
         'contact_email',
         'contact_phone',
         'contact_address',
@@ -111,8 +111,7 @@ class SiteSetting extends Model
                     'site_name' => 'TP-Affiliate',
                     'site_description' => 'ระบบ Affiliate Marketing ที่ทรงพลังที่สุด',
                     'logo_spin' => false,
-                    'primary_color' => '#8B5CF6',
-                    'secondary_color' => '#EC4899',
+                    // สีถูกจัดการโดย ThemeSetting model (Custom Theme)
                     'maintenance_mode' => false,
                 ]);
             }

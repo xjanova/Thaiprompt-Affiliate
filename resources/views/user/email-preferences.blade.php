@@ -22,15 +22,15 @@
         @method('PUT')
 
         <!-- Master Switch -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
             <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center">
                         <span class="text-2xl">🔔</span>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-gray-800">การแจ้งเตือนทั้งหมด</h2>
-                        <p class="text-sm text-gray-600">เปิด/ปิดการรับอีเมลทั้งหมด</p>
+                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">การแจ้งเตือนทั้งหมด</h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">เปิด/ปิดการรับอีเมลทั้งหมด</p>
                     </div>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
@@ -40,7 +40,7 @@
                            {{ old('all_emails', $preference->all_emails ?? true) ? 'checked' : '' }}
                            class="sr-only peer"
                            onchange="toggleAllEmails(this)">
-                    <div class="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
+                    <div class="w-14 h-8 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
             </div>
         </div>
@@ -48,16 +48,16 @@
         <!-- Email Categories -->
         <div id="emailCategories" class="space-y-4">
             <!-- Security Alerts -->
-            <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div class="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">🔐</span>
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between mb-2">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-800">แจ้งเตือนความปลอดภัย</h3>
-                                <p class="text-sm text-gray-600 mt-1">การเข้าสู่ระบบ, เปลี่ยนรหัสผ่าน, เปลี่ยนการตั้งค่าสำคัญ</p>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white">แจ้งเตือนความปลอดภัย</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">การเข้าสู่ระบบ, เปลี่ยนรหัสผ่าน, เปลี่ยนการตั้งค่าสำคัญ</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -65,28 +65,28 @@
                                        value="1"
                                        {{ old('security_alerts', $preference->security_alerts ?? true) ? 'checked' : '' }}
                                        class="sr-only peer email-toggle">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
                             </label>
                         </div>
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
-                            <span class="font-semibold text-red-800">แนะนำให้เปิด:</span>
-                            <span class="text-red-700">เพื่อความปลอดภัยของบัญชีคุณ</span>
+                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm">
+                            <span class="font-semibold text-red-800 dark:text-red-300">แนะนำให้เปิด:</span>
+                            <span class="text-red-700 dark:text-red-400">เพื่อความปลอดภัยของบัญชีคุณ</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Commission Notifications -->
-            <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div class="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">💰</span>
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-800">แจ้งเตือนค่าคอมมิชชั่น</h3>
-                                <p class="text-sm text-gray-600 mt-1">การรับค่าคอมมิชชั่น, โบนัส, รายได้</p>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white">แจ้งเตือนค่าคอมมิชชั่น</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">การรับค่าคอมมิชชั่น, โบนัส, รายได้</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -94,7 +94,7 @@
                                        value="1"
                                        {{ old('commission_notifications', $preference->commission_notifications ?? true) ? 'checked' : '' }}
                                        class="sr-only peer email-toggle">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
                             </label>
                         </div>
                     </div>
@@ -102,16 +102,16 @@
             </div>
 
             <!-- Withdrawal Notifications -->
-            <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">🏦</span>
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-800">แจ้งเตือนการถอนเงิน</h3>
-                                <p class="text-sm text-gray-600 mt-1">สถานะการถอนเงิน, ยืนยันการโอน</p>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white">แจ้งเตือนการถอนเงิน</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">สถานะการถอนเงิน, ยืนยันการโอน</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -119,7 +119,7 @@
                                        value="1"
                                        {{ old('withdrawal_notifications', $preference->withdrawal_notifications ?? true) ? 'checked' : '' }}
                                        class="sr-only peer email-toggle">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                             </label>
                         </div>
                     </div>
@@ -127,16 +127,16 @@
             </div>
 
             <!-- System Announcements -->
-            <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">📢</span>
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-800">ประกาศระบบ</h3>
-                                <p class="text-sm text-gray-600 mt-1">ข่าวสารสำคัญ, การปรับปรุงระบบ, กิจกรรมพิเศษ</p>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white">ประกาศระบบ</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ข่าวสารสำคัญ, การปรับปรุงระบบ, กิจกรรมพิเศษ</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -144,7 +144,7 @@
                                        value="1"
                                        {{ old('system_announcements', $preference->system_announcements ?? true) ? 'checked' : '' }}
                                        class="sr-only peer email-toggle">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                             </label>
                         </div>
                     </div>
@@ -152,16 +152,16 @@
             </div>
 
             <!-- Weekly Reports -->
-            <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">📊</span>
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-800">รายงานประจำสัปดาห์</h3>
-                                <p class="text-sm text-gray-600 mt-1">สรุปรายได้, สถิติการขาย, ยอดคอมมิชชั่น</p>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white">รายงานประจำสัปดาห์</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">สรุปรายได้, สถิติการขาย, ยอดคอมมิชชั่น</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -169,7 +169,7 @@
                                        value="1"
                                        {{ old('weekly_reports', $preference->weekly_reports ?? true) ? 'checked' : '' }}
                                        class="sr-only peer email-toggle">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                             </label>
                         </div>
                     </div>
@@ -177,16 +177,16 @@
             </div>
 
             <!-- Marketing Emails -->
-            <div class="bg-white rounded-2xl shadow-xl p-6">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
                 <div class="flex items-start gap-4">
-                    <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl flex items-center justify-center flex-shrink-0">
                         <span class="text-2xl">🎯</span>
                     </div>
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
                             <div>
-                                <h3 class="text-lg font-bold text-gray-800">อีเมลการตลาด</h3>
-                                <p class="text-sm text-gray-600 mt-1">โปรโมชั่น, ข้อเสนอพิเศษ, เคล็ดลับการขาย</p>
+                                <h3 class="text-lg font-bold text-gray-800 dark:text-white">อีเมลการตลาด</h3>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">โปรโมชั่น, ข้อเสนอพิเศษ, เคล็ดลับการขาย</p>
                             </div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
@@ -194,7 +194,7 @@
                                        value="1"
                                        {{ old('marketing_emails', $preference->marketing_emails ?? false) ? 'checked' : '' }}
                                        class="sr-only peer email-toggle">
-                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:bg-gray-800 after:border-gray-300 dark:border-gray-600 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
                             </label>
                         </div>
                     </div>
@@ -203,14 +203,14 @@
         </div>
 
         <!-- Language Preference -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
             <div class="flex items-center gap-4 mb-4">
                 <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl flex items-center justify-center">
                     <span class="text-2xl">🌐</span>
                 </div>
                 <div>
-                    <h2 class="text-xl font-bold text-gray-800">ภาษาที่ต้องการ</h2>
-                    <p class="text-sm text-gray-600">เลือกภาษาสำหรับอีเมลที่ได้รับ</p>
+                    <h2 class="text-xl font-bold text-gray-800 dark:text-white">ภาษาที่ต้องการ</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">เลือกภาษาสำหรับอีเมลที่ได้รับ</p>
                 </div>
             </div>
             <div class="grid md:grid-cols-2 gap-4">
@@ -220,12 +220,12 @@
                            value="th"
                            {{ old('preferred_language', $preference->preferred_language ?? 'th') === 'th' ? 'checked' : '' }}
                            class="peer sr-only">
-                    <div class="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all">
+                    <div class="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-blue-400 dark:hover:border-blue-500 peer-checked:border-blue-600 dark:peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 transition-all">
                         <div class="flex items-center gap-3">
                             <span class="text-3xl">🇹🇭</span>
                             <div>
-                                <div class="font-bold text-gray-800">ภาษาไทย</div>
-                                <div class="text-sm text-gray-600">Thai Language</div>
+                                <div class="font-bold text-gray-800 dark:text-white">ภาษาไทย</div>
+                                <div class="text-sm text-gray-600 dark:text-gray-400">Thai Language</div>
                             </div>
                         </div>
                     </div>
@@ -242,12 +242,12 @@
                            value="en"
                            {{ old('preferred_language', $preference->preferred_language ?? 'th') === 'en' ? 'checked' : '' }}
                            class="peer sr-only">
-                    <div class="border-2 border-gray-200 rounded-xl p-4 hover:border-blue-400 peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all">
+                    <div class="border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-blue-400 dark:hover:border-blue-500 peer-checked:border-blue-600 dark:peer-checked:border-blue-500 peer-checked:bg-blue-50 dark:peer-checked:bg-blue-900/30 transition-all">
                         <div class="flex items-center gap-3">
                             <span class="text-3xl">🇬🇧</span>
                             <div>
-                                <div class="font-bold text-gray-800">English</div>
-                                <div class="text-sm text-gray-600">English Language</div>
+                                <div class="font-bold text-gray-800 dark:text-white">English</div>
+                                <div class="text-sm text-gray-600 dark:text-gray-400">English Language</div>
                             </div>
                         </div>
                     </div>
@@ -282,15 +282,15 @@
     </form>
 
     <!-- Info Box -->
-    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border border-blue-100">
+    <div class="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl shadow-xl p-6 border border-blue-100 dark:border-blue-800">
         <div class="flex gap-3">
             <span class="text-2xl">💡</span>
             <div class="flex-1">
-                <h3 class="font-bold text-gray-800 mb-2">เกี่ยวกับการตั้งค่าอีเมล</h3>
-                <ul class="text-sm text-gray-600 space-y-1">
+                <h3 class="font-bold text-gray-800 dark:text-white mb-2">เกี่ยวกับการตั้งค่าอีเมล</h3>
+                <ul class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
                     <li>• คุณสามารถเปลี่ยนการตั้งค่าได้ทุกเมื่อ</li>
                     <li>• การแจ้งเตือนความปลอดภัยแนะนำให้เปิดไว้เสมอ</li>
-                    <li>• อีเมลสำคัญจะถูกส่งไปยังอีเมลที่ลงทะเบียนไว้: <strong>{{ auth()->user()->email }}</strong></li>
+                    <li>• อีเมลสำคัญจะถูกส่งไปยังอีเมลที่ลงทะเบียนไว้: <strong class="text-gray-800 dark:text-white">{{ auth()->user()->email }}</strong></li>
                     <li>• การตั้งค่าจะมีผลทันทีหลังบันทึก</li>
                 </ul>
             </div>

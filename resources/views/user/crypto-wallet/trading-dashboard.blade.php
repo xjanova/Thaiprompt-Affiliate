@@ -267,7 +267,7 @@
                         <div class="flex justify-between text-xs p-2 rounded bg-red-500/10 hover:bg-red-500/20 transition">
                             <span class="text-red-400">฿{{ number_format(1234567 + ($i * 100), 2) }}</span>
                             <span class="text-gray-400">{{ number_format(rand(1, 10) / 10, 4) }}</span>
-                            <span class="text-gray-500">฿{{ number_format(rand(1000, 5000), 2) }}</span>
+                            <span class="text-gray-500 dark:text-gray-400">฿{{ number_format(rand(1000, 5000), 2) }}</span>
                         </div>
                         @endfor
                     </div>
@@ -284,7 +284,7 @@
                         <div class="flex justify-between text-xs p-2 rounded bg-green-500/10 hover:bg-green-500/20 transition">
                             <span class="text-green-400">฿{{ number_format(1234567 - ($i * 100), 2) }}</span>
                             <span class="text-gray-400">{{ number_format(rand(1, 10) / 10, 4) }}</span>
-                            <span class="text-gray-500">฿{{ number_format(rand(1000, 5000), 2) }}</span>
+                            <span class="text-gray-500 dark:text-gray-400">฿{{ number_format(rand(1000, 5000), 2) }}</span>
                         </div>
                         @endfor
                     </div>
@@ -303,7 +303,7 @@
                             ฿{{ number_format(rand(1234000, 1235000), 2) }}
                         </span>
                         <span class="text-gray-400">{{ number_format(rand(1, 100) / 100, 4) }}</span>
-                        <span class="text-gray-500">{{ date('H:i:s') }}</span>
+                        <span class="text-gray-500 dark:text-gray-400">{{ date('H:i:s') }}</span>
                     </div>
                     @endfor
                 </div>

@@ -12,7 +12,7 @@
                 <p class="mt-1 text-sm text-purple-100">ติดตามผู้ที่คุณเชิญให้สมัครผ่าน LINE</p>
             </div>
             <a href="{{ route('user.prospects.create') }}"
-               class="px-4 py-2 bg-white hover:bg-gray-100 text-indigo-700 font-semibold rounded-lg transition flex items-center shadow-lg">
+               class="px-4 py-2 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-700 text-indigo-700 font-semibold rounded-lg transition flex items-center shadow-lg">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                 </svg>

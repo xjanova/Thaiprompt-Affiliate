@@ -174,7 +174,7 @@
                                     ฿{{ number_format($product->price, 2) }}
                                 </span>
                                 @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                                    <span class="text-sm text-gray-500 line-through">
+                                    <span class="text-sm text-gray-500 dark:text-gray-400 line-through">
                                         ฿{{ number_format($product->compare_at_price, 2) }}
                                     </span>
                                     <span class="text-xs bg-red-500/20 text-red-400 px-2 py-1 rounded-full font-bold">

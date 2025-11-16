@@ -21,7 +21,7 @@
 
                 <div class="mt-6 md:mt-0">
                     <button @click="showCreateModal = true"
-                            class="px-8 py-4 bg-white hover:bg-gray-100 text-purple-600 font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center">
+                            class="px-8 py-4 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:bg-gray-700 text-purple-600 font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center">
                         <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -143,7 +143,7 @@
                         <div class="text-sm font-bold text-white mt-1">{{ number_format($balance['balance'], 4) }}</div>
                     </div>
                     @empty
-                    <div class="col-span-3 text-center text-gray-500 text-sm py-4">
+                    <div class="col-span-3 text-center text-gray-500 dark:text-gray-400 text-sm py-4">
                         No assets in this wallet
                     </div>
                     @endforelse
