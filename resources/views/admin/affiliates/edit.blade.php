@@ -1,15 +1,15 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'แก้ไข Affiliate - ' . $affiliate->user->name)
 
 @section('content')
 <div class="mb-6">
-    <a href="{{ route('admin.affiliates.show', $affiliate) }}" class="text-indigo-600 hover:text-indigo-900">
+    <a href="{{ route('admin.affiliates.show', $affiliate) }}" style="color: var(--color-theme-primary);" onmouseover="this.style.color='var(--color-theme-hover)'" onmouseout="this.style.color='var(--color-theme-primary)'">
         ← กลับไปรายละเอียด
     </a>
 </div>
 
-<div class="max-w-2xl mx-auto">
+<div class="max-w-2xl mx-auto" x-data="affiliateEdit()">
     <div class="bg-white rounded-lg shadow-md p-6">
         <h2 class="text-2xl font-bold text-gray-900 mb-6">แก้ไข Affiliate</h2>
 
@@ -53,7 +53,8 @@
                 <select id="status"
                         name="status"
                         required
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('status') border-red-500 @enderror">
+                        x-model="status"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 @error('status') border-red-500 @enderror">
                     <option value="active" {{ $affiliate->status === 'active' ? 'selected' : '' }}>
                         Active - ใช้งานปกติ
                     </option>
@@ -78,7 +79,7 @@
             </div>
 
             <!-- Warning for Suspended -->
-            <div id="suspend-warning" class="hidden p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+            <div x-show="status === 'suspended'" x-cloak class="p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded">
                 <div class="flex">
                     <div class="flex-shrink-0">
                         <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
@@ -106,7 +107,10 @@
                 </a>
 
                 <button type="submit"
-                        class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        class="px-6 py-2 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2"
+                        style="background-color: var(--color-theme-primary);"
+                        onmouseover="this.style.backgroundColor='var(--color-theme-hover)'"
+                        onmouseout="this.style.backgroundColor='var(--color-theme-primary)'">
                     บันทึกการเปลี่ยนแปลง
                 </button>
             </div>
@@ -129,7 +133,7 @@
                         @csrf
                         @method('DELETE')
                         <button type="submit"
-                                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2">
                             ลบ Affiliate
                         </button>
                     </form>
@@ -139,22 +143,17 @@
     </div>
 </div>
 
-<!-- JavaScript for Status Warning -->
+@push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const statusSelect = document.getElementById('status');
-    const suspendWarning = document.getElementById('suspend-warning');
+function affiliateEdit() {
+    return {
+        status: '{{ $affiliate->status }}',
 
-    function toggleWarning() {
-        if (statusSelect.value === 'suspended') {
-            suspendWarning.classList.remove('hidden');
-        } else {
-            suspendWarning.classList.add('hidden');
+        init() {
+            // Component initialized
         }
     }
-
-    statusSelect.addEventListener('change', toggleWarning);
-    toggleWarning(); // Check initial state
-});
+}
 </script>
+@endpush
 @endsection
