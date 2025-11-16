@@ -180,6 +180,11 @@ Route::put('settings', [SettingsController::class, 'update'])->name('settings.up
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
 Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
 
+// Profile (V3)
+Route::get('profile', [SettingsController::class, 'profile'])->name('profile.index');
+Route::post('profile/update', [SettingsController::class, 'updateProfile'])->name('profile.update');
+Route::post('profile/change-password', [SettingsController::class, 'changePassword'])->name('profile.change-password');
+
 // Header Settings
 Route::prefix('header-settings')->name('header-settings.')->group(function () {
     Route::get('/', [HeaderSettingsController::class, 'index'])->name('index');
