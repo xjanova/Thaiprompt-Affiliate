@@ -79,8 +79,8 @@
                     {{-- Search Results Dropdown --}}
                     <div x-show="searchOpen && searchQuery.length > 0"
                          x-transition
-                         class="absolute top-full left-0 right-0 mt-2 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden max-h-96 overflow-y-auto">
-                        <div class="p-4">
+                         class="absolute top-full left-0 right-0 mt-2 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden max-h-96 overflow-y-auto">
+                        <div class="p-4 bg-black/20">
                             <p class="text-white/80 text-sm">
                                 <i class="fas fa-search mr-2"></i>
                                 ค้นหา: <span x-text="searchQuery" class="font-bold"></span>
@@ -111,9 +111,9 @@
             <div x-show="notificationOpen"
                  @click.outside="notificationOpen = false"
                  x-transition
-                 class="absolute top-full right-0 mt-2 w-80 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden">
+                 class="absolute top-full right-0 mt-2 w-80 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden">
                 {{-- Header --}}
-                <div class="px-4 py-3 border-b border-white/20">
+                <div class="px-4 py-3 border-b border-white/20 bg-black/20">
                     <div class="flex items-center justify-between">
                         <h3 class="font-bold text-white drop-shadow">การแจ้งเตือน</h3>
                         @if($unreadNotifications > 0)
@@ -170,6 +170,14 @@
         {{-- Language Switcher --}}
         <x-arrow-x.language-switcher />
 
+        {{-- Theme Customizer --}}
+        <button @click="$dispatch('toggle-customizer')"
+                type="button"
+                class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
+                title="ปรับแต่งธีม">
+            <i class="fas fa-paint-brush text-white drop-shadow"></i>
+        </button>
+
         {{-- Dark Mode Toggle --}}
         <button @click="$store.theme.toggle()"
                 type="button"
@@ -195,9 +203,9 @@
             <div x-show="profileOpen"
                  @click.outside="profileOpen = false"
                  x-transition
-                 class="absolute top-full right-0 mt-2 w-56 glass-fusion rounded-xl shadow-2xl border border-white/30 overflow-hidden">
+                 class="absolute top-full right-0 mt-2 w-56 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden">
                 {{-- User Info --}}
-                <div class="px-4 py-3 border-b border-white/20">
+                <div class="px-4 py-3 border-b border-white/20 bg-black/20">
                     <p class="font-medium text-white text-sm drop-shadow">{{ Auth::user()->name }}</p>
                     <p class="text-xs text-white/70 truncate">{{ Auth::user()->email }}</p>
                 </div>
@@ -240,6 +248,15 @@
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+}
+
+/**
+ * Glass Dropdown Effect - เข้มขึ้นสำหรับ dropdown menus
+ */
+.glass-dropdown {
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
 }
 
 /**

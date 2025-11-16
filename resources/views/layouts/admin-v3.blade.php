@@ -84,6 +84,9 @@
         </main>
     </div>
 
+    {{-- Theme Customizer --}}
+    <x-arrow-x.theme-customizer />
+
     {{-- Toast Notifications --}}
     <div class="fixed bottom-4 right-4 z-50 space-y-2"
          x-data="{ notifications: [] }"
