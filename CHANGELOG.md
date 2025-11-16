@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.36.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1260 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (d315592c)
+- feat: แก้ไข Users Index ให้ใช้ Dynamic Theme Colors (55dd2170)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.35.0] - 2025-11-16
 
 ### ✨ Features
