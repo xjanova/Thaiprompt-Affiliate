@@ -12,6 +12,10 @@ import Alpine from 'alpinejs';
 // Import Alpine Stores (V3)
 import './alpine/stores/theme';
 import './alpine/stores/sidebar';
+import './alpine/stores/language';
+
+// Import Additional Stores (Theme Presets)
+import './alpine-stores';
 
 // Make Alpine available globally
 window.Alpine = Alpine;
@@ -19,4 +23,4 @@ window.Alpine = Alpine;
 // Start Alpine.js
 Alpine.start();
 
-console.log('✅ Thaiprompt Affiliate App V3 loaded');
+console.log('✅ Thaiprompt Affiliate App V3 loaded (Google Translate Widget - ฟรี!)');

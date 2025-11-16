@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SiteSettingsController;
+use App\Http\Controllers\Admin\UserGuideController;
 use App\Http\Controllers\Admin\HeaderSettingsController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\PageController;
@@ -180,6 +181,14 @@ Route::get('settings', [SettingsController::class, 'index'])->name('settings.ind
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
 Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
+
+// Profile (V3)
+Route::get('profile', [SettingsController::class, 'profile'])->name('profile.index');
+Route::post('profile/update', [SettingsController::class, 'updateProfile'])->name('profile.update');
+Route::post('profile/change-password', [SettingsController::class, 'changePassword'])->name('profile.change-password');
+
+// User Guide (V3)
+Route::get('user-guide', [UserGuideController::class, 'index'])->name('user-guide.index');
 
 // Site Settings (โลโก้, Favicon, ชื่อเว็บไซต์, SEO, Social Media)
 Route::prefix('site-settings')->name('site-settings.')->group(function () {
