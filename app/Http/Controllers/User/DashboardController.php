@@ -22,221 +22,273 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
 
-        // ดึงข้อมูล affiliate ของ user
+        // ===============================================
+        // 1. ข้อมูลพื้นฐาน
+        // ===============================================
+
         $affiliate = $user->affiliate;
 
-        // ดึงข้อมูล commissions ล่าสุด
-        $commissions = $user->commissions()
-            ->latest()
-            ->limit(10)
-            ->get();
+        // ===============================================
+        // 2. สถิติ Wallet
+        // ===============================================
 
-        // คำนวณสถิติต่างๆ
-        $totalEarnings = $user->commissions()
-            ->where('status', 'approved')
-            ->sum('amount');
+        $walletBalance = $user->wallet_balance ?? 0;
 
-        $pendingEarnings = $user->commissions()
+        // ===============================================
+        // 3. สถิติ Commission
+        // ===============================================
+
+        $pendingCommission = $user->commissions()
             ->where('status', 'pending')
-            ->sum('amount');
+            ->sum('amount') ?? 0;
 
-        $paidEarnings = $user->commissions()
+        $approvedCommission = $user->commissions()
+            ->where('status', 'approved')
+            ->sum('amount') ?? 0;
+
+        $paidCommission = $user->commissions()
             ->where('status', 'paid')
-            ->sum('amount');
+            ->sum('amount') ?? 0;
 
-        $totalReferrals = $affiliate ? $affiliate->children()->count() : 0;
-        $activeReferrals = $affiliate ? $affiliate->children()->where('status', 'active')->count() : 0;
+        $totalEarnings = $approvedCommission + $paidCommission;
 
-        // รายได้รายเดือนย้อนหลัง 12 เดือน
-        $monthlyRevenue = collect();
-        for ($i = 11; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
-            $total = $user->commissions()
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->whereIn('status', ['approved', 'paid'])
-                ->sum('amount');
-
-            $monthlyRevenue->push([
-                'month' => $date->format('M Y'),
-                'total' => $total
-            ]);
-        }
-
-        // คำนวณอัตราการเติบโต
-        $currentMonthEarnings = $user->commissions()
+        // คอมมิชชั่นเดือนนี้
+        $thisMonthCommission = $user->commissions()
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->whereIn('status', ['approved', 'paid'])
-            ->sum('amount');
+            ->sum('amount') ?? 0;
 
-        $lastMonthEarnings = $user->commissions()
+        // คอมมิชชั่นเดือนที่แล้ว
+        $lastMonthCommission = $user->commissions()
             ->whereYear('created_at', now()->subMonth()->year)
             ->whereMonth('created_at', now()->subMonth()->month)
             ->whereIn('status', ['approved', 'paid'])
-            ->sum('amount');
+            ->sum('amount') ?? 0;
 
-        $earningsGrowth = $lastMonthEarnings > 0
-            ? (($currentMonthEarnings - $lastMonthEarnings) / $lastMonthEarnings) * 100
-            : 0;
+        // คำนวณอัตราการเติบโต
+        $commissionGrowth = 0;
+        if ($lastMonthCommission > 0) {
+            $commissionGrowth = (($thisMonthCommission - $lastMonthCommission) / $lastMonthCommission) * 100;
+        } elseif ($thisMonthCommission > 0) {
+            $commissionGrowth = 100;
+        }
 
-        // สถานะ commission แยกตามประเภท
-        $commissionStatus = [
-            'pending' => $user->commissions()->where('status', 'pending')->count(),
-            'approved' => $user->commissions()->where('status', 'approved')->count(),
-            'paid' => $user->commissions()->where('status', 'paid')->count(),
-            'rejected' => $user->commissions()->where('status', 'rejected')->count(),
-        ];
+        // ===============================================
+        // 4. สถิติ Referrals / Team
+        // ===============================================
 
-        // Commission แยกตามประเภท
-        $commissionTypes = $user->commissions()
-            ->selectRaw('type, SUM(amount) as total')
-            ->whereIn('status', ['approved', 'paid'])
-            ->groupBy('type')
-            ->get();
+        $totalReferrals = 0;
+        $activeReferrals = 0;
 
-        // Commission รายวันย้อนหลัง 30 วัน
-        $dailyCommissions = collect();
-        for ($i = 29; $i >= 0; $i--) {
-            $date = now()->subDays($i);
-            $count = $user->commissions()
-                ->whereDate('created_at', $date->toDateString())
+        if ($affiliate) {
+            $totalReferrals = $affiliate->children()->count();
+            $activeReferrals = $affiliate->children()
+                ->where('status', 'active')
+                ->count();
+        }
+
+        // Referrals เดือนนี้
+        $thisMonthReferrals = 0;
+        $lastMonthReferrals = 0;
+
+        if ($affiliate) {
+            $thisMonthReferrals = $affiliate->children()
+                ->whereYear('created_at', now()->year)
+                ->whereMonth('created_at', now()->month)
                 ->count();
 
-            $dailyCommissions->push([
-                'date' => $date->format('d/m'),
-                'count' => $count
-            ]);
+            $lastMonthReferrals = $affiliate->children()
+                ->whereYear('created_at', now()->subMonth()->year)
+                ->whereMonth('created_at', now()->subMonth()->month)
+                ->count();
         }
 
-        // ความลึกของโครงสร้าง referral (จำนวนระดับสูงสุด)
-        $maxLevel = 0;
-        if ($affiliate) {
-            $maxLevel = $this->getMaxLevel($affiliate);
+        // อัตราการเติบโตของ referrals
+        $referralsGrowth = 0;
+        if ($lastMonthReferrals > 0) {
+            $referralsGrowth = (($thisMonthReferrals - $lastMonthReferrals) / $lastMonthReferrals) * 100;
+        } elseif ($thisMonthReferrals > 0) {
+            $referralsGrowth = 100;
         }
 
-        // Top referrers ใน downline
-        $topReferrers = [];
-        if ($affiliate) {
-            $topReferrers = $affiliate->children()
-                ->with('user')
-                ->withCount('children')
-                ->orderBy('children_count', 'desc')
-                ->limit(5)
-                ->get();
-        }
+        // ===============================================
+        // 5. Rank System
+        // ===============================================
 
-        // กิจกรรมล่าสุด (10 รายการล่าสุด)
-        $recentActivity = $user->commissions()
-            ->with('affiliate.user')
-            ->latest()
-            ->limit(10)
-            ->get();
-
-        // รายได้ตลอดอายุการใช้งาน
-        $lifetimeEarnings = $user->commissions()
-            ->whereIn('status', ['approved', 'paid'])
-            ->sum('amount');
-
-        // ค่าเฉลี่ย commission ต่อรายการ
-        $avgCommission = $user->commissions()
-            ->whereIn('status', ['approved', 'paid'])
-            ->avg('amount') ?? 0;
-
-        // สถิติเดือนนี้
-        $thisMonthCommissions = $user->commissions()
-            ->whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
-            ->count();
-
-        // อัตราการแปลง referral
-        $totalClicks = $affiliate ? ($affiliate->click_count ?? 0) : 0;
-        $conversionRate = $totalClicks > 0 ? ($totalReferrals / $totalClicks) * 100 : 0;
-
-        // ดึงข้อมูล Rank
         $currentRank = $user->currentRank;
         $nextRank = null;
         $rankProgress = 0;
+        $pointsNeeded = 0;
 
         if ($currentRank) {
-            // หา rank ถัดไป (ใช้ level แทน min_points เพราะ accurate กว่า)
+            // หา rank ถัดไป
             $nextRank = \App\Models\Rank::where('level', '>', $currentRank->level)
                 ->where('is_active', true)
                 ->orderBy('level', 'asc')
                 ->first();
 
-            // คำนวณความคืบหน้า
             if ($nextRank) {
                 $currentPoints = $user->rank_points ?? 0;
-                $currentRankPoints = $currentRank->min_points;
-                $nextRankPoints = $nextRank->min_points;
-                $pointsNeeded = $nextRankPoints - $currentRankPoints;
+                $currentRankPoints = $currentRank->min_points ?? 0;
+                $nextRankPoints = $nextRank->min_points ?? 0;
+
+                $totalPointsNeeded = $nextRankPoints - $currentRankPoints;
                 $pointsProgress = max(0, $currentPoints - $currentRankPoints);
-                $rankProgress = $pointsNeeded > 0 ? min(100, ($pointsProgress / $pointsNeeded) * 100) : 0;
+
+                $rankProgress = $totalPointsNeeded > 0
+                    ? min(100, ($pointsProgress / $totalPointsNeeded) * 100)
+                    : 0;
+
+                $pointsNeeded = max(0, $nextRankPoints - $currentPoints);
             }
         } else {
-            // ถ้ายังไม่มี rank ให้หา rank แรก (level ต่ำสุด)
+            // ยังไม่มี rank - หา rank แรก
             $nextRank = \App\Models\Rank::where('is_active', true)
                 ->orderBy('level', 'asc')
                 ->first();
+
             if ($nextRank) {
                 $currentPoints = $user->rank_points ?? 0;
-                $rankProgress = $nextRank->min_points > 0
-                    ? min(100, ($currentPoints / $nextRank->min_points) * 100)
+                $nextRankPoints = $nextRank->min_points ?? 0;
+
+                $rankProgress = $nextRankPoints > 0
+                    ? min(100, ($currentPoints / $nextRankPoints) * 100)
                     : 0;
+
+                $pointsNeeded = max(0, $nextRankPoints - $currentPoints);
             }
         }
 
-        // กิจกรรมล่าสุด (แปลงชื่อเป็น recentActivities)
-        $recentActivities = $recentActivity;
+        // ===============================================
+        // 6. กิจกรรมล่าสุด (Recent Activity)
+        // ===============================================
 
-        // สถิติสำหรับ Arrow X Dashboard
+        $recentActivities = $user->commissions()
+            ->with('affiliate.user')
+            ->latest()
+            ->limit(10)
+            ->get()
+            ->map(function ($commission) {
+                return [
+                    'type' => 'commission',
+                    'status' => $commission->status,
+                    'amount' => $commission->amount,
+                    'commission_type' => $commission->type ?? 'general',
+                    'created_at' => $commission->created_at,
+                ];
+            });
+
+        // ===============================================
+        // 7. ข้อมูลกราฟ - รายได้ 12 เดือนย้อนหลัง
+        // ===============================================
+
+        $chartLabels = [];
+        $chartValues = [];
+
+        for ($i = 11; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $monthName = $date->locale('th')->translatedFormat('M Y');
+
+            $monthTotal = $user->commissions()
+                ->whereYear('created_at', $date->year)
+                ->whereMonth('created_at', $date->month)
+                ->whereIn('status', ['approved', 'paid'])
+                ->sum('amount') ?? 0;
+
+            $chartLabels[] = $monthName;
+            $chartValues[] = (float) $monthTotal;
+        }
+
+        // ===============================================
+        // 8. สถิติสำหรับการ์ด (Stats Cards)
+        // ===============================================
+
         $stats = [
-            'wallet_balance' => $user->wallet_balance ?? 0,
-            'wallet_change' => $earningsGrowth,
-            'total_earnings' => $lifetimeEarnings,
-            'earnings_change' => $earningsGrowth,
-            'team_members' => $totalReferrals,
-            'team_change' => 0, // TODO: คำนวณอัตราการเติบโตของทีม
-            'total_referrals' => $totalReferrals, // เพิ่มเพื่อความชัดเจน
-            'referrals_change' => 0, // TODO: คำนวณอัตราการเติบโตของ referrals
-            'pending_commission' => $pendingEarnings,
-            'commission_change' => 0, // TODO: คำนวณอัตราการเปลี่ยนแปลงของ commission
-            'points_change' => 0, // TODO: คำนวณอัตราการเปลี่ยนแปลงของ rank points
+            'wallet_balance' => (float) $walletBalance,
+            'wallet_change' => round($commissionGrowth, 1),
+
+            'pending_commission' => (float) $pendingCommission,
+            'commission_change' => round($commissionGrowth, 1),
+
+            'total_referrals' => (int) $totalReferrals,
+            'referrals_change' => round($referralsGrowth, 1),
+
+            'rank_points' => (int) ($user->rank_points ?? 0),
+            'points_change' => 0, // TODO: คำนวณจากประวัติ
+
+            'total_earnings' => (float) $totalEarnings,
+            'active_referrals' => (int) $activeReferrals,
         ];
 
-        // ข้อมูลสำหรับ Chart.js
+        // ===============================================
+        // 9. ข้อมูลกราฟสำหรับ frontend
+        // ===============================================
+
         $chartData = [
-            'labels' => $monthlyRevenue->pluck('month')->toArray(),
-            'values' => $monthlyRevenue->pluck('total')->toArray(), // เปลี่ยนจาก 'data' เป็น 'values'
+            'labels' => $chartLabels,
+            'values' => $chartValues,
         ];
+
+        // ===============================================
+        // 10. Commission ล่าสุดสำหรับแสดงในตาราง
+        // ===============================================
+
+        $recentCommissions = $user->commissions()
+            ->with('affiliate.user')
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        // ===============================================
+        // 11. ข้อมูล KYC สำหรับแจ้งเตือน
+        // ===============================================
+
+        $kycStatus = $user->kyc_status ?? 'not_submitted';
+        $showKycAlert = in_array($kycStatus, ['not_submitted', 'rejected']);
+
+        // ===============================================
+        // Return View พร้อมข้อมูลทั้งหมด
+        // ===============================================
 
         return view('user.dashboard', compact(
+            // User & Affiliate
             'user',
             'affiliate',
-            'commissions',
+
+            // Wallet
+            'walletBalance',
+
+            // Commission
+            'pendingCommission',
+            'approvedCommission',
+            'paidCommission',
             'totalEarnings',
-            'pendingEarnings',
-            'paidEarnings',
+            'thisMonthCommission',
+            'commissionGrowth',
+
+            // Referrals
             'totalReferrals',
             'activeReferrals',
-            'monthlyRevenue',
-            'earningsGrowth',
-            'commissionStatus',
-            'commissionTypes',
-            'dailyCommissions',
-            'maxLevel',
-            'topReferrers',
-            'recentActivity',
+            'referralsGrowth',
+
+            // Rank
+            'currentRank',
+            'nextRank',
+            'rankProgress',
+            'pointsNeeded',
+
+            // Activities
             'recentActivities',
-            'lifetimeEarnings',
-            'avgCommission',
-            'thisMonthCommissions',
-            'conversionRate',
+            'recentCommissions',
+
+            // Charts & Stats
             'stats',
             'chartData',
-            'nextRank',
-            'rankProgress'
+
+            // KYC
+            'kycStatus',
+            'showKycAlert'
         ));
     }
 
@@ -397,32 +449,5 @@ class DashboardController extends Controller
         $user->save();
 
         return back()->with('success', 'เปลี่ยนรหัสผ่านสำเร็จ');
-    }
-
-    /**
-     * คำนวณความลึกสูงสุดของโครงสร้าง affiliate (Recursive)
-     *
-     * @param mixed $affiliate Affiliate object
-     * @param int $currentLevel ระดับปัจจุบัน
-     * @return int ความลึกสูงสุด
-     */
-    private function getMaxLevel($affiliate, $currentLevel = 1): int
-    {
-        // ดึง children ของ affiliate นี้
-        $children = $affiliate->children;
-
-        // ถ้าไม่มี children แสดงว่าถึงระดับสุดท้ายแล้ว
-        if ($children->isEmpty()) {
-            return $currentLevel;
-        }
-
-        // คำนวณระดับสูงสุดของแต่ละ child
-        $maxChildLevel = $currentLevel;
-        foreach ($children as $child) {
-            $childLevel = $this->getMaxLevel($child, $currentLevel + 1);
-            $maxChildLevel = max($maxChildLevel, $childLevel);
-        }
-
-        return $maxChildLevel;
     }
 }
