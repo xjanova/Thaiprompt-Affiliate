@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ผังสายงาน Affiliate (Interactive)')
 
@@ -20,7 +20,7 @@
             <!-- Affiliate Selection -->
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">เลือก Affiliate</label>
-                <select id="affiliate-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <select id="affiliate-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                     <option value="">ทั้งหมด (All Networks)</option>
                     @foreach($rootAffiliates as $aff)
                         <option value="{{ $aff->id }}">{{ $aff->user->name }} ({{ $aff->referral_code }})</option>

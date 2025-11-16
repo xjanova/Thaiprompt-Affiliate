@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Interactive Affiliate Tree')
 
@@ -31,7 +31,7 @@
                 <button class="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition">Reset View</button>
             </div>
             <div>
-                <input type="text" placeholder="Search affiliate..." class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500">
+                <input type="text" placeholder="Search affiliate..." class="px-4 py-2 border border-gray-300 rounded-lg">
             </div>
         </div>
         <div class="h-96 bg-gray-50 rounded-lg flex items-center justify-center">
