@@ -32,7 +32,7 @@
                 </p>
 
                 {{-- CTA Button --}}
-                <a href="{{ route('user.dex.add-liquidity') }}" class="inline-flex items-center px-8 py-4 bg-white text-blue-600 font-bold rounded-xl hover:bg-gray-100 transform hover:scale-105 transition-all duration-200 shadow-2xl hover:shadow-white/20">
+                <a href="{{ route('user.dex.add-liquidity') }}" class="inline-flex items-center px-8 py-4 bg-white dark:bg-gray-800 text-blue-600 font-bold rounded-xl hover:bg-gray-100 dark:bg-gray-700 transform hover:scale-105 transition-all duration-200 shadow-2xl hover:shadow-white/20">
                     <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
@@ -179,7 +179,7 @@
                     <div class="relative">
                         <input type="checkbox" id="myPoolsOnly" class="sr-only peer">
                         <div class="w-14 h-8 bg-gray-300 dark:bg-gray-600 rounded-full peer peer-checked:bg-blue-600 dark:peer-checked:bg-blue-500 transition-all duration-300"></div>
-                        <div class="absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-all duration-300 peer-checked:translate-x-6 shadow-md"></div>
+                        <div class="absolute left-1 top-1 bg-white dark:bg-gray-800 w-6 h-6 rounded-full transition-all duration-300 peer-checked:translate-x-6 shadow-md"></div>
                     </div>
                     <span class="ml-3 text-gray-700 dark:text-gray-300 font-medium">Pool ของฉันเท่านั้น</span>
                 </label>

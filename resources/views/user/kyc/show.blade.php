@@ -5,26 +5,26 @@
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
-    <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
         <div class="flex items-center gap-4">
             <a href="{{ route('user.kyc.index') }}"
-               class="text-gray-600 hover:text-gray-900 transition">
+               class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white transition">
                 <i class="fas fa-arrow-left text-xl"></i>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">รายละเอียดการยืนยันตัวตน</h1>
-                <p class="text-sm text-gray-600 mt-1">ตรวจสอบสถานะและรายละเอียดการยืนยันตัวตน</p>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">รายละเอียดการยืนยันตัวตน</h1>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ตรวจสอบสถานะและรายละเอียดการยืนยันตัวตน</p>
             </div>
         </div>
     </div>
 
     <!-- Status Card -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-4">สถานะการยืนยันตัวตน</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">สถานะการยืนยันตัวตน</h2>
 
         <div class="space-y-4">
             <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">สถานะ:</span>
+                <span class="text-sm text-gray-600 dark:text-gray-400">สถานะ:</span>
                 @if($kycVerification->status === 'pending')
                     <span class="inline-block px-4 py-2 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
                         <i class="fas fa-clock mr-1"></i>รอการตรวจสอบ
@@ -41,16 +41,16 @@
             </div>
 
             <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">วันที่ส่ง:</span>
-                <span class="text-sm font-medium text-gray-900">
+                <span class="text-sm text-gray-600 dark:text-gray-400">วันที่ส่ง:</span>
+                <span class="text-sm font-medium text-gray-900 dark:text-white">
                     {{ $kycVerification->submitted_at ? $kycVerification->submitted_at->format('d/m/Y H:i') : '-' }}
                 </span>
             </div>
 
             @if($kycVerification->reviewed_at)
                 <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-600">วันที่ตรวจสอบ:</span>
-                    <span class="text-sm font-medium text-gray-900">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">วันที่ตรวจสอบ:</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">
                         {{ $kycVerification->reviewed_at->format('d/m/Y H:i') }}
                     </span>
                 </div>
@@ -58,8 +58,8 @@
 
             @if($kycVerification->reviewer)
                 <div class="flex items-center justify-between">
-                    <span class="text-sm text-gray-600">ตรวจสอบโดย:</span>
-                    <span class="text-sm font-medium text-gray-900">
+                    <span class="text-sm text-gray-600 dark:text-gray-400">ตรวจสอบโดย:</span>
+                    <span class="text-sm font-medium text-gray-900 dark:text-white">
                         {{ $kycVerification->reviewer->name }}
                     </span>
                 </div>
@@ -67,7 +67,7 @@
 
             @if($kycVerification->status === 'rejected' && $kycVerification->rejection_reason)
                 <div class="pt-4 border-t">
-                    <p class="text-sm text-gray-600 mb-2">เหตุผลในการปฏิเสธ:</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">เหตุผลในการปฏิเสธ:</p>
                     <div class="bg-red-50 border border-red-200 rounded-lg p-4">
                         <p class="text-sm text-red-800">{{ $kycVerification->rejection_reason }}</p>
                     </div>
@@ -77,8 +77,8 @@
     </div>
 
     <!-- Documents Card -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h2 class="text-lg font-bold text-gray-900 mb-4">เอกสารที่ส่ง</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-white mb-4">เอกสารที่ส่ง</h2>
 
         <!-- Document Type Badge -->
         @if(!empty($kycVerification->extracted_data['document_type']))
@@ -98,7 +98,7 @@
         <div class="grid md:grid-cols-2 gap-6">
             <!-- ID Card Image -->
             <div>
-                <h3 class="text-sm font-medium text-gray-700 mb-3">
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
                         <i class="fas fa-id-card-alt mr-1"></i>รูปใบขับขี่
                     @else
@@ -115,7 +115,7 @@
 
             <!-- Selfie Image -->
             <div>
-                <h3 class="text-sm font-medium text-gray-700 mb-3">
+                <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     @if(!empty($kycVerification->extracted_data['document_type']) && $kycVerification->extracted_data['document_type'] === 'driver_license')
                         <i class="fas fa-user-circle mr-1"></i>รูปถ่ายตัวเองพร้อมใบขับขี่
                     @else
@@ -131,14 +131,14 @@
             </div>
         </div>
 
-        <p class="text-xs text-gray-500 mt-4 text-center">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-4 text-center">
             <i class="fas fa-info-circle mr-1"></i>คลิกที่รูปภาพเพื่อดูขนาดเต็म
         </p>
     </div>
 
     @if($kycVerification->status === 'rejected')
-        <div class="bg-white rounded-xl shadow-md p-6 text-center">
-            <p class="text-gray-600 mb-4">หากคุณต้องการส่งเอกสารใหม่ กรุณากดปุ่มด้านล่าง</p>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 text-center">
+            <p class="text-gray-600 dark:text-gray-400 mb-4">หากคุณต้องการส่งเอกสารใหม่ กรุณากดปุ่มด้านล่าง</p>
             <a href="{{ route('user.kyc.create') }}"
                class="inline-flex items-center px-6 py-3 bg-gradient-primary text-white rounded-lg hover:opacity-90 transition">
                 <i class="fas fa-redo mr-2"></i>

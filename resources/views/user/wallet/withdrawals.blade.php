@@ -6,10 +6,10 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
     <div class="bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
                     ← กลับ
                 </a>
                 <h1 class="text-3xl md:text-4xl font-bold">📋 ประวัติการถอนเงิน</h1>
@@ -71,7 +71,7 @@
                 <p class="text-sm text-green-100">สร้างคำขอถอนเงินใหม่ได้ทันที</p>
             </div>
             <a href="{{ route('user.wallet.withdraw') }}"
-               class="px-6 py-3 bg-white text-green-600 font-semibold rounded-lg hover:bg-green-50 transition whitespace-nowrap">
+               class="px-6 py-3 bg-white dark:bg-gray-800 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition whitespace-nowrap">
                 💸 ถอนเงิน
             </a>
         </div>
@@ -99,7 +99,7 @@
                             <td class="py-4 px-4">
                                 <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $withdrawal->request_id }}</p>
                                 @if($withdrawal->user_note)
-                                    <p class="text-xs text-gray-500 mt-1">{{ Str::limit($withdrawal->user_note, 30) }}</p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ Str::limit($withdrawal->user_note, 30) }}</p>
                                 @endif
                             </td>
                             <td class="py-4 px-4">

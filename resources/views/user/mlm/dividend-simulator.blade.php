@@ -10,16 +10,16 @@
             <h1 class="text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
                 💎 จำลองการปันผล
             </h1>
-            <p class="text-xl text-gray-700 mb-2">คำนวณผลตอบแทนจากการปันผลบริษัท</p>
-            <p class="text-gray-600">เครื่องมือสำหรับนักธุรกิจและนักการตลาด</p>
+            <p class="text-xl text-gray-700 dark:text-gray-300 mb-2">คำนวณผลตอบแทนจากการปันผลบริษัท</p>
+            <p class="text-gray-600 dark:text-gray-400">เครื่องมือสำหรับนักธุรกิจและนักการตลาด</p>
         </div>
 
         <!-- Control Panel -->
-        <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <!-- Initial Investment -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         💵 เงินลงทุนเริ่มต้น (บาท)
                     </label>
                     <input type="number" id="initial_investment" value="100000" step="10000" min="0"
@@ -28,7 +28,7 @@
 
                 <!-- Dividend Rate -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         📈 อัตราปันผล (%/ปี)
                     </label>
                     <input type="number" id="dividend_rate" value="5" step="0.5" min="0" max="100"
@@ -37,7 +37,7 @@
 
                 <!-- Years -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         📅 ระยะเวลา (ปี)
                     </label>
                     <input type="number" id="years" value="10" step="1" min="1" max="50"
@@ -46,7 +46,7 @@
 
                 <!-- Reinvestment -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         🔄 นำปันผลกลับไปลงทุน
                     </label>
                     <select id="reinvestment" class="w-full px-4 py-3 text-lg font-semibold border-2 border-indigo-300 rounded-xl focus:ring-4 focus:ring-indigo-200 focus:border-indigo-500">
@@ -85,8 +85,8 @@
             </div>
 
             <!-- Investment Flow Animation -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
-                <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">💰 การไหลของเงินปันผล</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mb-6">
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">💰 การไหลของเงินปันผล</h3>
 
                 <div class="relative" style="height: 400px;">
                     <!-- Investment (Center) -->
@@ -96,7 +96,7 @@
                                 <span class="text-5xl">💎</span>
                             </div>
                             <div class="font-bold text-lg">เงินลงทุน</div>
-                            <div class="text-sm text-gray-600">฿<span id="current-principal">0</span></div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">฿<span id="current-principal">0</span></div>
                         </div>
                     </div>
 
@@ -137,8 +137,8 @@
             </div>
 
             <!-- Progress Bar -->
-            <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
-                <div class="flex justify-between text-sm font-semibold text-gray-700 mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 mb-6">
+                <div class="flex justify-between text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <span>ความคืบหน้า</span>
                     <span id="progress-percent">0%</span>
                 </div>
@@ -151,8 +151,8 @@
         <!-- Results Summary -->
         <div id="results-container" class="hidden">
             <!-- Yearly Breakdown Table -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
-                <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">📊 สรุปการปันผลแต่ละปี</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mb-6">
+                <h3 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 text-center">📊 สรุปการปันผลแต่ละปี</h3>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
@@ -167,7 +167,7 @@
                                 <th class="px-4 py-4 text-right font-bold">สะสมเงินสด</th>
                             </tr>
                         </thead>
-                        <tbody id="yearly-breakdown" class="divide-y divide-gray-200">
+                        <tbody id="yearly-breakdown" class="divide-y divide-gray-200 dark:divide-gray-700">
                         </tbody>
                         <tfoot class="bg-gradient-to-r from-green-100 to-blue-100 font-bold text-lg">
                             <tr>
@@ -184,16 +184,16 @@
             <!-- Charts -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <!-- Principal Growth Chart -->
-                <div class="bg-white rounded-2xl shadow-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">📈 กราฟการเติบโตของเงินต้น</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">📈 กราฟการเติบโตของเงินต้น</h3>
                     <div style="position: relative; height: 300px;">
                         <canvas id="principal-chart"></canvas>
                     </div>
                 </div>
 
                 <!-- Dividend Breakdown -->
-                <div class="bg-white rounded-2xl shadow-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">🥧 สัดส่วนผลตอบแทน</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">🥧 สัดส่วนผลตอบแทน</h3>
                     <div style="position: relative; height: 300px;">
                         <canvas id="dividend-breakdown-chart"></canvas>
                     </div>
@@ -233,7 +233,7 @@
                 <p class="text-xl mb-6 opacity-90">สร้างรายได้แบบ Passive Income ด้วยการปันผล</p>
                 <div class="flex gap-4 justify-center">
                     <button onclick="window.location.href='{{ route('user.mlm.dashboard') }}'"
-                            class="bg-white text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105">
+                            class="bg-white dark:bg-gray-800 text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 dark:bg-gray-700 transition-all duration-300 transform hover:scale-105">
                         เริ่มต้นเลย!
                     </button>
                     <button onclick="startSimulation()"
@@ -409,7 +409,7 @@ function showResults() {
             <td class="px-4 py-3 text-right text-purple-600">฿${Math.floor(year.reinvestedAmount).toLocaleString()}</td>
             <td class="px-4 py-3 text-right text-green-600 font-semibold">฿${Math.floor(year.cashOut).toLocaleString()}</td>
             <td class="px-4 py-3 text-right text-purple-600 font-bold text-lg">฿${Math.floor(year.endPrincipal).toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-gray-600">฿${Math.floor(year.totalCashOut).toLocaleString()}</td>
+            <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">฿${Math.floor(year.totalCashOut).toLocaleString()}</td>
         </tr>
     `).join('');
 

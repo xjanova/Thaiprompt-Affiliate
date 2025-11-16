@@ -6,10 +6,10 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
     <div class="bg-gradient-to-r from-orange-600 via-amber-600 to-yellow-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
                     ← กลับ
                 </a>
                 <h1 class="text-3xl md:text-4xl font-bold">🏦 ช่องทางรับเงิน</h1>
@@ -26,21 +26,21 @@
                 <p class="text-sm text-green-100">เพิ่มบัญชีธนาคารหรือช่องทางรับเงินอื่นๆ</p>
             </div>
             <button onclick="showAddForm()"
-                    class="px-6 py-3 bg-white text-green-600 font-semibold rounded-lg hover:bg-green-50 transition whitespace-nowrap">
+                    class="px-6 py-3 bg-white dark:bg-gray-800 text-green-600 font-semibold rounded-lg hover:bg-green-50 transition whitespace-nowrap">
                 ➕ เพิ่มช่องทาง
             </button>
         </div>
     </div>
 
     <!-- Add Payment Method Form -->
-    <div id="add-form" class="bg-white rounded-2xl shadow-xl p-6 hidden">
+    <div id="add-form" class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 hidden">
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">เพิ่มช่องทางรับเงินใหม่</h2>
 
         <form method="POST" action="{{ route('user.wallet.payment-method.store') }}" class="space-y-6">
             @csrf
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">ประเภทช่องทางรับเงิน</label>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ประเภทช่องทางรับเงิน</label>
                 <select name="type"
                         id="payment-type"
                         required
@@ -54,7 +54,7 @@
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อช่องทาง</label>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ชื่อช่องทาง</label>
                 <input type="text"
                        name="name"
                        required
@@ -65,7 +65,7 @@
             <!-- PromptPay & Bank Transfer Fields -->
             <div id="promptpay-fields" class="space-y-4 hidden">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อบัญชี</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ชื่อบัญชี</label>
                     <input type="text"
                            name="account_name"
                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -73,7 +73,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">หมายเลขบัญชี / เบอร์โทรศัพท์</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">หมายเลขบัญชี / เบอร์โทรศัพท์</label>
                     <input type="text"
                            name="account_number"
                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -84,7 +84,7 @@
             <!-- Bank Transfer Additional Fields -->
             <div id="bank-fields" class="hidden">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">ชื่อธนาคาร</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ชื่อธนาคาร</label>
                     <select name="bank_name"
                             class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         <option value="">-- เลือกธนาคาร --</option>
@@ -110,7 +110,7 @@
             <!-- PayPal Fields -->
             <div id="paypal-fields" class="hidden">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">อีเมล PayPal</label>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">อีเมล PayPal</label>
                     <input type="email"
                            name="paypal_email"
                            class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -123,7 +123,7 @@
                        name="is_default"
                        value="1"
                        id="is_default"
-                       class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                       class="w-4 h-4 text-indigo-600 border-gray-300 dark:border-gray-600 rounded focus:ring-indigo-500">
                 <label for="is_default" class="text-sm font-medium text-gray-700 dark:text-gray-300">ตั้งเป็นช่องทางเริ่มต้น</label>
             </div>
 
@@ -149,7 +149,7 @@
             <div class="text-center py-12">
                 <span class="text-6xl block mb-4">🏦</span>
                 <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100 mb-2">ยังไม่มีช่องทางรับเงิน</h3>
-                <p class="text-gray-600 mb-4">เพิ่มช่องทางรับเงินเพื่อสามารถถอนเงินได้</p>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">เพิ่มช่องทางรับเงินเพื่อสามารถถอนเงินได้</p>
                 <button onclick="showAddForm()"
                         class="inline-block px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-lg hover:opacity-90 transition">
                     ➕ เพิ่มช่องทางรับเงิน
@@ -158,7 +158,7 @@
         @else
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 @foreach($paymentMethods as $method)
-                    <div class="border-2 {{ $method->is_default ? 'border-green-500' : 'border-gray-200' }} rounded-xl p-6 relative">
+                    <div class="border-2 {{ $method->is_default ? 'border-green-500' : 'border-gray-200 dark:border-gray-700' }} rounded-xl p-6 relative">
                         @if($method->is_default)
                             <div class="absolute top-3 right-3">
                                 <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
@@ -180,19 +180,19 @@
 
                                 @if($method->type === 'bank_transfer')
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->bank_name }}</p>
-                                    <p class="text-sm font-medium text-gray-800 mt-2">{{ $method->account_name }}</p>
+                                    <p class="text-sm font-medium text-gray-800 dark:text-white mt-2">{{ $method->account_name }}</p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
                                 @elseif($method->type === 'promptpay')
                                     <p class="text-sm text-gray-600 dark:text-gray-400">พร้อมเพย์</p>
-                                    <p class="text-sm font-medium text-gray-800 mt-2">{{ $method->account_name }}</p>
+                                    <p class="text-sm font-medium text-gray-800 dark:text-white mt-2">{{ $method->account_name }}</p>
                                     <p class="text-sm text-gray-600 dark:text-gray-400">{{ $method->account_number }}</p>
                                 @elseif($method->type === 'paypal')
                                     <p class="text-sm text-gray-600 dark:text-gray-400">PayPal</p>
-                                    <p class="text-sm font-medium text-gray-800 mt-2">{{ $method->paypal_email }}</p>
+                                    <p class="text-sm font-medium text-gray-800 dark:text-white mt-2">{{ $method->paypal_email }}</p>
                                 @endif
 
                                 <div class="flex items-center gap-2 mt-3">
-                                    <span class="px-2 py-1 rounded text-xs font-semibold {{ $method->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                    <span class="px-2 py-1 rounded text-xs font-semibold {{ $method->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white' }}">
                                         {{ $method->status === 'active' ? '✓ ใช้งาน' : '✗ ปิดใช้งาน' }}
                                     </span>
                                     <span class="text-xs text-gray-600 dark:text-gray-400">

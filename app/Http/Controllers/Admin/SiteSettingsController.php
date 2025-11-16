@@ -54,9 +54,7 @@ class SiteSettingsController extends Controller
             'meta_keywords' => 'nullable|string',
             'meta_description' => 'nullable|string',
 
-            // Theme Colors
-            'primary_color' => 'nullable|string|max:7', // #RRGGBB
-            'secondary_color' => 'nullable|string|max:7',
+            // Note: Theme colors managed by ThemeSetting model (Custom Theme)
 
             // Contact Info
             'contact_email' => 'nullable|email',

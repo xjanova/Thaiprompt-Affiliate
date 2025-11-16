@@ -5,15 +5,15 @@
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
-    <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
         <div class="flex items-center gap-4">
             <a href="{{ route('user.kyc.index') }}"
-               class="text-gray-600 hover:text-gray-900 transition">
+               class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:text-white transition">
                 <i class="fas fa-arrow-left text-xl"></i>
             </a>
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">ส่งเอกสารยืนยันตัวตน</h1>
-                <p class="text-sm text-gray-600 mt-1">กรุณาอัปโหลดเอกสารเพื่อยืนยันตัวตน</p>
+                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ส่งเอกสารยืนยันตัวตน</h1>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">กรุณาอัปโหลดเอกสารเพื่อยืนยันตัวตน</p>
             </div>
         </div>
     </div>
@@ -48,11 +48,11 @@
 
         <div class="grid md:grid-cols-2 gap-6">
             <!-- ID Card Example -->
-            <div class="bg-white rounded-lg p-4 shadow-sm">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                 <h4 class="font-semibold text-indigo-900 mb-3 text-center">
                     <i class="fas fa-id-card text-indigo-600 mr-2"></i>รูปบัตรประชาชน / ใบขับขี่
                 </h4>
-                <div class="bg-gray-100 rounded-lg p-6 mb-3 border-2 border-dashed border-gray-300">
+                <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-6 mb-3 border-2 border-dashed border-gray-300 dark:border-gray-600">
                     <svg class="w-full h-32" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="320" height="180" rx="8" fill="white"/>
                         <rect x="10" y="10" width="300" height="160" rx="4" fill="#E5E7EB"/>
@@ -67,7 +67,7 @@
                         <text x="160" y="152" text-anchor="middle" font-size="12" fill="#1E40AF">เลขบัตรประชาชน 13 หลัก</text>
                     </svg>
                 </div>
-                <div class="space-y-1 text-xs text-gray-700">
+                <div class="space-y-1 text-xs text-gray-700 dark:text-gray-300">
                     <div class="flex items-start">
                         <i class="fas fa-check text-green-600 mr-2 mt-0.5"></i>
                         <span>ถ่ายทั้งหน้าบัตรให้เห็นชัดเจน</span>
@@ -84,11 +84,11 @@
             </div>
 
             <!-- Selfie with ID Example -->
-            <div class="bg-white rounded-lg p-4 shadow-sm">
+            <div class="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm">
                 <h4 class="font-semibold text-indigo-900 mb-3 text-center">
                     <i class="fas fa-user-circle text-indigo-600 mr-2"></i>รูปถ่ายตัวเอง + บัตร
                 </h4>
-                <div class="bg-gray-100 rounded-lg p-6 mb-3 border-2 border-dashed border-gray-300">
+                <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-6 mb-3 border-2 border-dashed border-gray-300 dark:border-gray-600">
                     <svg class="w-full h-32" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="320" height="180" rx="8" fill="white"/>
                         <rect x="10" y="10" width="300" height="160" rx="4" fill="#E5E7EB"/>
@@ -105,7 +105,7 @@
                         <rect x="225" y="130" width="30" height="3" rx="1" fill="#93C5FD"/>
                     </svg>
                 </div>
-                <div class="space-y-1 text-xs text-gray-700">
+                <div class="space-y-1 text-xs text-gray-700 dark:text-gray-300">
                     <div class="flex items-start">
                         <i class="fas fa-check text-green-600 mr-2 mt-0.5"></i>
                         <span>ถือบัตรไว้ใกล้ใบหน้า</span>
@@ -161,24 +161,24 @@
     </div>
 
     <!-- Upload Form -->
-    <div class="bg-white rounded-xl shadow-md p-6" x-data="kycUpload()">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6" x-data="kycUpload()">
         <form action="{{ route('user.kyc.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
 
             <!-- ID Card Image -->
             <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-id-card mr-1"></i>
                     รูปบัตรประชาชน / ใบขับขี่ <span class="text-red-500">*</span>
                 </label>
 
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition"
+                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition"
                      @click="$refs.idCardInput.click()">
                     <template x-if="!idCardPreview">
                         <div>
                             <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                            <p class="text-sm text-gray-600 mb-2">คลิกเพื่ออัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่</p>
-                            <p class="text-xs text-gray-500">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">คลิกเพื่ออัปโหลดรูปบัตรประชาชน หรือ ใบขับขี่</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
                         </div>
                     </template>
 
@@ -210,18 +210,18 @@
 
             <!-- Selfie Image -->
             <div class="mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     <i class="fas fa-user-circle mr-1"></i>
                     รูปถ่ายตัวเองพร้อมบัตรประชาชน <span class="text-red-500">*</span>
                 </label>
 
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition"
+                <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-indigo-500 transition"
                      @click="$refs.selfieInput.click()">
                     <template x-if="!selfiePreview">
                         <div>
                             <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                            <p class="text-sm text-gray-600 mb-2">คลิกเพื่ออัปโหลดรูปถ่ายตัวเอง</p>
-                            <p class="text-xs text-gray-500">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">คลิกเพื่ออัปโหลดรูปถ่ายตัวเอง</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">JPEG, JPG, PNG (ไม่เกิน 5 MB)</p>
                         </div>
                     </template>
 
@@ -254,7 +254,7 @@
             <!-- Submit Button -->
             <div class="flex gap-4">
                 <a href="{{ route('user.kyc.index') }}"
-                   class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-center">
+                   class="flex-1 px-6 py-3 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition text-center">
                     <i class="fas fa-times mr-2"></i>ยกเลิก
                 </a>
                 <button type="submit"

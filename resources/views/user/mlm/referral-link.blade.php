@@ -18,20 +18,20 @@
     </div>
 
     <!-- Main Referral Card -->
-    <div class="bg-white rounded-2xl shadow-2xl p-8">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
         <!-- Referral URL -->
         <div class="mb-8">
-            <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <span>🔗</span> ลิงก์แนะนำของคุณ
             </h2>
             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border-2 border-blue-200">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">URL:</label>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">URL:</label>
                 <div class="flex gap-3">
                     <input type="text"
                            id="referralUrl"
                            value="{{ $referralUrl }}"
                            readonly
-                           class="flex-1 px-4 py-3 bg-white border-2 border-blue-300 rounded-lg font-mono text-sm">
+                           class="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-blue-300 rounded-lg font-mono text-sm">
                     <button onclick="copyUrl()"
                             class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors">
                         📋 คัดลอก
@@ -42,7 +42,7 @@
 
         <!-- Member Code -->
         <div class="mb-8">
-            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <span>🎫</span> รหัสสมาชิกของคุณ
             </h3>
             <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200">
@@ -51,7 +51,7 @@
                            id="memberCode"
                            value="{{ $member->member_code }}"
                            readonly
-                           class="flex-1 px-4 py-3 bg-white border-2 border-purple-300 rounded-lg font-mono text-2xl font-bold text-center">
+                           class="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border-2 border-purple-300 rounded-lg font-mono text-2xl font-bold text-center">
                     <button onclick="copyCode()"
                             class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold transition-colors">
                         📋 คัดลอก
@@ -62,16 +62,16 @@
 
         <!-- QR Code Section -->
         <div class="mb-8">
-            <h3 class="text-lg font-bold text-gray-800 mb-4 text-center flex items-center justify-center gap-2">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 text-center flex items-center justify-center gap-2">
                 <span>📱</span> QR Code
             </h3>
-            <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-8 border-2 border-gray-200">
+            <div class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-8 border-2 border-gray-200 dark:border-gray-700">
                 <div class="flex justify-center mb-4">
-                    <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                         <div id="qrcode"></div>
                     </div>
                 </div>
-                <p class="text-center text-sm text-gray-600">สแกน QR Code เพื่อเข้าสู่หน้าสมัครสมาชิก</p>
+                <p class="text-center text-sm text-gray-600 dark:text-gray-400">สแกน QR Code เพื่อเข้าสู่หน้าสมัครสมาชิก</p>
                 <div class="mt-4 text-center">
                     <button onclick="downloadQR()" class="px-6 py-2 bg-gray-700 hover:bg-gray-800 text-white rounded-lg font-semibold transition-colors">
                         💾 ดาวน์โหลด QR Code
@@ -82,7 +82,7 @@
 
         <!-- Share Buttons -->
         <div>
-            <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <span>📤</span> แชร์ผ่าน
             </h3>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -115,10 +115,10 @@
 
     <!-- Tips -->
     <div class="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-2xl shadow-xl p-6 border border-amber-200">
-        <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
             <span>💡</span> วิธีใช้งาน
         </h3>
-        <ul class="space-y-2 text-sm text-gray-700">
+        <ul class="space-y-2 text-sm text-gray-700 dark:text-gray-300">
             <li class="flex gap-2">
                 <span>✅</span>
                 <span>คัดลอกลิงก์หรือ QR Code เพื่อแชร์ให้เพื่อน</span>

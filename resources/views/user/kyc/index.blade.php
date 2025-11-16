@@ -5,9 +5,9 @@
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h1 class="text-2xl font-bold text-gray-900">ยืนยันตัวตน (KYC)</h1>
-        <p class="text-sm text-gray-600 mt-1">ยืนยันตัวตนเพื่อความปลอดภัยและเพิ่มความน่าเชื่อถือของบัญชี</p>
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">ยืนยันตัวตน (KYC)</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">ยืนยันตัวตนเพื่อความปลอดภัยและเพิ่มความน่าเชื่อถือของบัญชี</p>
     </div>
 
     @if(session('success'))
@@ -69,7 +69,7 @@
                             <i class="fas fa-lightbulb mr-1"></i><strong>คำแนะนำ:</strong> {{ session('ocr_suggestion') }}
                         </p>
                     @endif
-                    <div class="mt-3 p-2 bg-white bg-opacity-60 rounded text-xs text-gray-700">
+                    <div class="mt-3 p-2 bg-white dark:bg-gray-800 bg-opacity-60 rounded text-xs text-gray-700 dark:text-gray-300">
                         <i class="fas fa-info-circle mr-1"></i>
                         <strong>หมายเหตุ:</strong> คำขอของคุณถูกส่งเรียบร้อยแล้ว แต่ระบบไม่สามารถอ่านข้อมูลจากบัตรอัตโนมัติได้
                         แอดมินจะกรอกข้อมูลด้วยตนเองในขั้นตอนการตรวจสอบ
@@ -80,14 +80,14 @@
     @endif
 
     <!-- KYC Status Card -->
-    <div class="bg-white rounded-xl shadow-md p-6">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md p-6">
         @if(auth()->user()->kyc_status === 'not_submitted')
             <div class="text-center py-8">
-                <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
                     <i class="fas fa-id-card text-4xl text-gray-400"></i>
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 mb-2">คุณยังไม่ได้ยืนยันตัวตน</h2>
-                <p class="text-gray-600 mb-6">ยืนยันตัวตนเพื่อเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชีของคุณ</p>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">คุณยังไม่ได้ยืนยันตัวตน</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">ยืนยันตัวตนเพื่อเพิ่มความปลอดภัยและความน่าเชื่อถือของบัญชีของคุณ</p>
                 <a href="{{ route('user.kyc.create') }}"
                    class="inline-flex items-center px-6 py-3 bg-gradient-primary text-white rounded-lg hover:opacity-90 transition">
                     <i class="fas fa-upload mr-2"></i>
@@ -99,19 +99,19 @@
                 <div class="w-24 h-24 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
                     <i class="fas fa-clock text-4xl text-yellow-600"></i>
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 mb-2">กำลังรอการตรวจสอบ</h2>
-                <p class="text-gray-600 mb-4">เอกสารของคุณกำลังอยู่ระหว่างการตรวจสอบโดยแอดมิน</p>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">กำลังรอการตรวจสอบ</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">เอกสารของคุณกำลังอยู่ระหว่างการตรวจสอบโดยแอดมิน</p>
 
                 @if($kycVerification)
-                    <div class="bg-gray-50 rounded-lg p-4 max-w-md mx-auto text-left">
+                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4 max-w-md mx-auto text-left">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-600">วันที่ส่ง:</span>
-                            <span class="text-sm font-medium text-gray-900">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">วันที่ส่ง:</span>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $kycVerification->submitted_at ? $kycVerification->submitted_at->format('d/m/Y H:i') : '-' }}
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">สถานะ:</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">สถานะ:</span>
                             <span class="inline-block px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium">
                                 รอการตรวจสอบ
                             </span>
@@ -119,7 +119,7 @@
                     </div>
 
                     <a href="{{ route('user.kyc.show', $kycVerification) }}"
-                       class="inline-flex items-center px-4 py-2 mt-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                       class="inline-flex items-center px-4 py-2 mt-4 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">
                         <i class="fas fa-eye mr-2"></i>
                         ดูรายละเอียด
                     </a>
@@ -130,19 +130,19 @@
                 <div class="w-24 h-24 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
                     <i class="fas fa-check-circle text-4xl text-green-600"></i>
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 mb-2">ยืนยันตัวตนสำเร็จ</h2>
-                <p class="text-gray-600 mb-4">บัญชีของคุณได้รับการยืนยันตัวตนเรียบร้อยแล้ว</p>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ยืนยันตัวตนสำเร็จ</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">บัญชีของคุณได้รับการยืนยันตัวตนเรียบร้อยแล้ว</p>
 
                 @if($kycVerification)
                     <div class="bg-green-50 rounded-lg p-4 max-w-md mx-auto text-left">
                         <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-600">วันที่อนุมัติ:</span>
-                            <span class="text-sm font-medium text-gray-900">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">วันที่อนุมัติ:</span>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">
                                 {{ auth()->user()->kyc_verified_at ? auth()->user()->kyc_verified_at->format('d/m/Y H:i') : '-' }}
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-600">สถานะ:</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">สถานะ:</span>
                             <span class="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
                                 <i class="fas fa-check mr-1"></i>อนุมัติแล้ว
                             </span>
@@ -150,7 +150,7 @@
                     </div>
 
                     <a href="{{ route('user.kyc.show', $kycVerification) }}"
-                       class="inline-flex items-center px-4 py-2 mt-4 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                       class="inline-flex items-center px-4 py-2 mt-4 bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 transition">
                         <i class="fas fa-eye mr-2"></i>
                         ดูรายละเอียด
                     </a>
@@ -161,12 +161,12 @@
                 <div class="w-24 h-24 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
                     <i class="fas fa-times-circle text-4xl text-red-600"></i>
                 </div>
-                <h2 class="text-xl font-bold text-gray-900 mb-2">ไม่ผ่านการยืนยัน</h2>
-                <p class="text-gray-600 mb-4">เอกสารของคุณไม่ผ่านการตรวจสอบ</p>
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">ไม่ผ่านการยืนยัน</h2>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">เอกสารของคุณไม่ผ่านการตรวจสอบ</p>
 
                 @if($kycVerification && $kycVerification->rejection_reason)
                     <div class="bg-red-50 rounded-lg p-4 max-w-md mx-auto text-left mb-4">
-                        <p class="text-sm text-gray-600 mb-2">เหตุผลในการปฏิเสธ:</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">เหตุผลในการปฏิเสธ:</p>
                         <p class="text-sm text-red-800">{{ $kycVerification->rejection_reason }}</p>
                     </div>
                 @endif

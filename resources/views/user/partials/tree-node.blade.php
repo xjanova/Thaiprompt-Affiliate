@@ -29,8 +29,8 @@
 
                     <!-- Name & Basic Info -->
                     <div class="flex-1 min-w-0">
-                        <h3 class="text-base lg:text-lg font-bold text-gray-900 truncate">{{ $node->user->name }}</h3>
-                        <p class="text-xs lg:text-sm text-gray-600 truncate">{{ $node->user->email }}</p>
+                        <h3 class="text-base lg:text-lg font-bold text-gray-900 dark:text-white truncate">{{ $node->user->name }}</h3>
+                        <p class="text-xs lg:text-sm text-gray-600 dark:text-gray-400 truncate">{{ $node->user->email }}</p>
                     </div>
 
                     <!-- Level Badge -->
@@ -40,10 +40,10 @@
                 </div>
 
                 <!-- Stats Row -->
-                <div class="grid grid-cols-2 lg:flex lg:flex-wrap gap-2 lg:gap-4 text-xs lg:text-sm text-gray-600 ml-0 lg:ml-14">
+                <div class="grid grid-cols-2 lg:flex lg:flex-wrap gap-2 lg:gap-4 text-xs lg:text-sm text-gray-600 dark:text-gray-400 ml-0 lg:ml-14">
                     <div class="flex items-center gap-1">
                         <span class="text-base lg:text-lg">🆔</span>
-                        <code class="px-2 py-0.5 bg-white rounded text-xs font-mono">{{ $node->referral_code }}</code>
+                        <code class="px-2 py-0.5 bg-white dark:bg-gray-800 rounded text-xs font-mono">{{ $node->referral_code }}</code>
                     </div>
                     <div class="flex items-center gap-1">
                         <span class="text-base lg:text-lg">👥</span>
@@ -69,7 +69,7 @@
                         ✅ ใช้งาน
                     </span>
                 @else
-                    <span class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+                    <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded-full text-xs font-medium">
                         ⏸️ ไม่ใช้งาน
                     </span>
                 @endif
@@ -77,7 +77,7 @@
                 <!-- Expand/Collapse Button for Mobile -->
                 @if($node->children && $node->children->count() > 0)
                     <button
-                        class="lg:hidden px-2 py-1 bg-white border {{ $colorScheme['border'] }} rounded-lg text-xs font-medium expand-toggle"
+                        class="lg:hidden px-2 py-1 bg-white dark:bg-gray-800 border {{ $colorScheme['border'] }} rounded-lg text-xs font-medium expand-toggle"
                         data-target="children-{{ $node->id }}">
                         ▼
                     </button>
@@ -88,20 +88,20 @@
         <!-- Additional Info (Expandable on mobile) -->
         <div class="mt-3 pt-3 border-t {{ $colorScheme['border'] }} hidden lg:block">
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
-                <div class="bg-white rounded-lg p-2 text-center">
-                    <p class="text-gray-500">สมัคร</p>
-                    <p class="font-semibold text-gray-900">{{ $node->created_at->format('d/m/Y') }}</p>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 text-center">
+                    <p class="text-gray-500 dark:text-gray-400">สมัคร</p>
+                    <p class="font-semibold text-gray-900 dark:text-white">{{ $node->created_at->format('d/m/Y') }}</p>
                 </div>
-                <div class="bg-white rounded-lg p-2 text-center">
-                    <p class="text-gray-500">ระดับ</p>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 text-center">
+                    <p class="text-gray-500 dark:text-gray-400">ระดับ</p>
                     <p class="font-semibold {{ $colorScheme['text'] }}">{{ $node->level }}</p>
                 </div>
-                <div class="bg-white rounded-lg p-2 text-center">
-                    <p class="text-gray-500">ลูกทีมโดยตรง</p>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 text-center">
+                    <p class="text-gray-500 dark:text-gray-400">ลูกทีมโดยตรง</p>
                     <p class="font-semibold text-blue-600">{{ $node->children->count() }}</p>
                 </div>
-                <div class="bg-white rounded-lg p-2 text-center">
-                    <p class="text-gray-500">อัตราเติบโต</p>
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-2 text-center">
+                    <p class="text-gray-500 dark:text-gray-400">อัตราเติบโต</p>
                     <p class="font-semibold text-green-600">
                         @if($node->total_referrals > 0)
                             {{ number_format(($node->children->count() / max($node->total_referrals, 1)) * 100, 1) }}%
@@ -121,7 +121,7 @@
             @if($node->children->count() > 3 && $level >= 2)
                 <div class="flex items-center gap-2 mb-2" style="margin-left: {{ ($level + 1) * 20 }}px;">
                     <button
-                        class="px-3 py-1 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded-lg text-xs font-medium transition expand-toggle"
+                        class="px-3 py-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-medium transition expand-toggle"
                         data-target="deep-children-{{ $node->id }}">
                         ▶ แสดง {{ $node->children->count() }} คน
                     </button>

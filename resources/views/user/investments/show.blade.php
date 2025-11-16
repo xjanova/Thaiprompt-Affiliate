@@ -33,19 +33,19 @@
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div class="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                 <p class="text-pink-100 text-xs mb-1">จำนวนลงทุน</p>
                 <p class="text-2xl font-bold">฿{{ number_format($position->amount, 2) }}</p>
             </div>
-            <div class="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                 <p class="text-pink-100 text-xs mb-1">ROI ที่ได้รับ</p>
                 <p class="text-2xl font-bold text-green-300">฿{{ number_format($position->earned_roi, 2) }}</p>
             </div>
-            <div class="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                 <p class="text-pink-100 text-xs mb-1">ROI คาดหวัง</p>
                 <p class="text-2xl font-bold">฿{{ number_format($position->expected_roi, 2) }}</p>
             </div>
-            <div class="bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                 <p class="text-pink-100 text-xs mb-1">มูลค่ารวม</p>
                 <p class="text-2xl font-bold text-yellow-300">฿{{ number_format($position->total_value, 2) }}</p>
             </div>
@@ -53,12 +53,12 @@
     </div>
 
     <!-- Progress Section -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 ความคืบหน้า</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">📊 ความคืบหน้า</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="text-center">
-                <p class="text-sm text-gray-500 mb-2">ความคืบหน้า</p>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">ความคืบหน้า</p>
                 <div class="relative inline-flex items-center justify-center">
                     <svg class="w-32 h-32 transform -rotate-90">
                         <circle cx="64" cy="64" r="56" stroke="#e5e7eb" stroke-width="8" fill="none"></circle>
@@ -73,38 +73,38 @@
 
             <div class="space-y-3">
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">วันที่เริ่มต้น</p>
-                    <p class="font-semibold text-gray-800">{{ $position->invested_at ? $position->invested_at->format('d M Y') : '-' }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">วันที่เริ่มต้น</p>
+                    <p class="font-semibold text-gray-800 dark:text-white">{{ $position->invested_at ? $position->invested_at->format('d M Y') : '-' }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">วันครบกำหนด</p>
-                    <p class="font-semibold text-gray-800">{{ $position->maturity_date ? $position->maturity_date->format('d M Y') : '-' }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">วันครบกำหนด</p>
+                    <p class="font-semibold text-gray-800 dark:text-white">{{ $position->maturity_date ? $position->maturity_date->format('d M Y') : '-' }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">วันปลดล็อค</p>
-                    <p class="font-semibold text-gray-800">{{ $position->unlock_date ? $position->unlock_date->format('d M Y') : '-' }}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">วันปลดล็อค</p>
+                    <p class="font-semibold text-gray-800 dark:text-white">{{ $position->unlock_date ? $position->unlock_date->format('d M Y') : '-' }}</p>
                 </div>
             </div>
 
             <div class="space-y-3">
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">วันที่ผ่านไป</p>
-                    <p class="font-semibold text-gray-800">{{ $position->days_elapsed }} วัน</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">วันที่ผ่านไป</p>
+                    <p class="font-semibold text-gray-800 dark:text-white">{{ $position->days_elapsed }} วัน</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">วันที่เหลือ</p>
-                    <p class="font-semibold text-gray-800">{{ $position->days_remaining }} วัน</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">วันที่เหลือ</p>
+                    <p class="font-semibold text-gray-800 dark:text-white">{{ $position->days_remaining }} วัน</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500 mb-1">วันถึงปลดล็อค</p>
-                    <p class="font-semibold text-gray-800">{{ $position->days_until_unlock }} วัน</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">วันถึงปลดล็อค</p>
+                    <p class="font-semibold text-gray-800 dark:text-white">{{ $position->days_until_unlock }} วัน</p>
                 </div>
             </div>
         </div>
 
         <!-- Progress Bar -->
         <div class="mb-6">
-            <div class="flex justify-between text-sm text-gray-600 mb-2">
+            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
                 <span>วันที่ {{ $position->days_elapsed }}/{{ $position->term_days }}</span>
                 <span>{{ number_format($position->progress_percentage, 1) }}%</span>
             </div>
@@ -115,7 +115,7 @@
 
         <!-- ROI Progress -->
         <div>
-            <div class="flex justify-between text-sm text-gray-600 mb-2">
+            <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
                 <span>ROI ที่ได้รับ</span>
                 <span>฿{{ number_format($position->earned_roi, 2) }} / ฿{{ number_format($position->expected_roi, 2) }}</span>
             </div>
@@ -127,26 +127,26 @@
 
     <!-- Withdrawal Section -->
     @if($withdrawalInfo)
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">💸 ข้อมูลการถอนเงิน</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">💸 ข้อมูลการถอนเงิน</h2>
 
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-gray-50 rounded-lg p-4">
-                <p class="text-xs text-gray-500 mb-1">เงินต้น</p>
-                <p class="font-semibold text-gray-800">฿{{ number_format($withdrawalInfo['principal'], 2) }}</p>
+            <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">เงินต้น</p>
+                <p class="font-semibold text-gray-800 dark:text-white">฿{{ number_format($withdrawalInfo['principal'], 2) }}</p>
             </div>
             <div class="bg-green-50 rounded-lg p-4">
-                <p class="text-xs text-gray-500 mb-1">ROI ที่ได้รับ</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ROI ที่ได้รับ</p>
                 <p class="font-semibold text-green-600">฿{{ number_format($withdrawalInfo['earned_roi'], 2) }}</p>
             </div>
             @if($withdrawalInfo['penalty'] > 0)
             <div class="bg-red-50 rounded-lg p-4">
-                <p class="text-xs text-gray-500 mb-1">ค่าปรับ</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ค่าปรับ</p>
                 <p class="font-semibold text-red-600">-฿{{ number_format($withdrawalInfo['penalty'], 2) }}</p>
             </div>
             @endif
             <div class="bg-purple-50 rounded-lg p-4">
-                <p class="text-xs text-gray-500 mb-1">ยอดสุทธิ</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">ยอดสุทธิ</p>
                 <p class="font-semibold text-purple-600">฿{{ number_format($withdrawalInfo['net_amount'], 2) }}</p>
             </div>
         </div>
@@ -162,8 +162,8 @@
         <form action="{{ route('user.investments.withdraw', $position) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ที่จะถอนเงิน?');">
             @csrf
             <div class="mb-4">
-                <label class="block text-sm font-semibold text-gray-700 mb-2">เหตุผลในการถอน (ถ้ามี):</label>
-                <textarea name="reason" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="ระบุเหตุผล..."></textarea>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">เหตุผลในการถอน (ถ้ามี):</label>
+                <textarea name="reason" rows="3" class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="ระบุเหตุผล..."></textarea>
             </div>
             <button type="submit" class="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-semibold">
                 ถอนเงินเลย
@@ -173,27 +173,27 @@
     @endif
 
     <!-- ROI Distribution History -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">💰 ประวัติการจ่าย ROI</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">💰 ประวัติการจ่าย ROI</h2>
 
         @if($position->roiDistributions->count() > 0)
             <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead>
-                        <tr class="border-b border-gray-200">
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">วันที่</th>
-                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700">ประเภท</th>
-                            <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700">จำนวน</th>
-                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700">สถานะ</th>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">วันที่</th>
+                            <th class="text-left py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">ประเภท</th>
+                            <th class="text-right py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">จำนวน</th>
+                            <th class="text-center py-3 px-4 text-sm font-semibold text-gray-700 dark:text-gray-300">สถานะ</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($position->roiDistributions as $distribution)
-                        <tr class="border-b border-gray-100 hover:bg-gray-50">
-                            <td class="py-3 px-4 text-sm text-gray-800">
+                        <tr class="border-b border-gray-100 hover:bg-gray-50 dark:bg-gray-900/50">
+                            <td class="py-3 px-4 text-sm text-gray-800 dark:text-white">
                                 {{ $distribution->distribution_date->format('d M Y') }}
                             </td>
-                            <td class="py-3 px-4 text-sm text-gray-600">
+                            <td class="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                                 {{ $distribution->display_type }}
                                 @if($distribution->day_number)
                                     <span class="text-xs text-gray-400">(วันที่ {{ $distribution->day_number }})</span>
@@ -219,42 +219,42 @@
                 </table>
             </div>
         @else
-            <div class="text-center py-8 text-gray-500">
+            <div class="text-center py-8 text-gray-500 dark:text-gray-400">
                 ยังไม่มีประวัติการจ่าย ROI
             </div>
         @endif
     </div>
 
     <!-- Plan Details -->
-    <div class="bg-white rounded-2xl shadow-xl p-6">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">📋 รายละเอียดแผน</h2>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">📋 รายละเอียดแผน</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="flex justify-between py-2 border-b border-gray-100">
-                <span class="text-gray-600">อัตรา ROI:</span>
-                <span class="font-semibold text-gray-800">{{ $position->roi_rate }}% {{ $position->roi_frequency === 'daily' ? 'ต่อวัน' : 'ต่อสัปดาห์' }}</span>
+                <span class="text-gray-600 dark:text-gray-400">อัตรา ROI:</span>
+                <span class="font-semibold text-gray-800 dark:text-white">{{ $position->roi_rate }}% {{ $position->roi_frequency === 'daily' ? 'ต่อวัน' : 'ต่อสัปดาห์' }}</span>
             </div>
             <div class="flex justify-between py-2 border-b border-gray-100">
-                <span class="text-gray-600">ระยะเวลา:</span>
-                <span class="font-semibold text-gray-800">{{ $position->term_days }} วัน</span>
+                <span class="text-gray-600 dark:text-gray-400">ระยะเวลา:</span>
+                <span class="font-semibold text-gray-800 dark:text-white">{{ $position->term_days }} วัน</span>
             </div>
             <div class="flex justify-between py-2 border-b border-gray-100">
-                <span class="text-gray-600">ระยะล็อค:</span>
-                <span class="font-semibold text-gray-800">{{ $position->lock_days }} วัน</span>
+                <span class="text-gray-600 dark:text-gray-400">ระยะล็อค:</span>
+                <span class="font-semibold text-gray-800 dark:text-white">{{ $position->lock_days }} วัน</span>
             </div>
             <div class="flex justify-between py-2 border-b border-gray-100">
-                <span class="text-gray-600">ตัวคูณโบนัส:</span>
-                <span class="font-semibold text-gray-800">×{{ $position->rank_bonus_multiplier }}</span>
+                <span class="text-gray-600 dark:text-gray-400">ตัวคูณโบนัส:</span>
+                <span class="font-semibold text-gray-800 dark:text-white">×{{ $position->rank_bonus_multiplier }}</span>
             </div>
             @if($position->auto_compound)
             <div class="flex justify-between py-2 border-b border-gray-100">
-                <span class="text-gray-600">รีลงทุนอัตโนมัติ:</span>
+                <span class="text-gray-600 dark:text-gray-400">รีลงทุนอัตโนมัติ:</span>
                 <span class="font-semibold text-green-600">✓ เปิดใช้งาน</span>
             </div>
             @endif
             @if($position->referral_bonus > 0)
             <div class="flex justify-between py-2 border-b border-gray-100">
-                <span class="text-gray-600">โบนัสแนะนำเพื่อน:</span>
+                <span class="text-gray-600 dark:text-gray-400">โบนัสแนะนำเพื่อน:</span>
                 <span class="font-semibold text-purple-600">฿{{ number_format($position->referral_bonus, 2) }}</span>
             </div>
             @endif

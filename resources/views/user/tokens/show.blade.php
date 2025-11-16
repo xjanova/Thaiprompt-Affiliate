@@ -77,7 +77,7 @@
             <!-- Description -->
             @if($token->description)
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white dark:bg-gray-800 border-bottom">
                     <h5 class="mb-0 fw-bold">
                         <i class="fas fa-info-circle me-2"></i>
                         เกี่ยวกับ Token
@@ -98,7 +98,7 @@
 
             <!-- Token Details -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white dark:bg-gray-800 border-bottom">
                     <h5 class="mb-0 fw-bold">
                         <i class="fas fa-list me-2"></i>
                         รายละเอียด
@@ -146,7 +146,7 @@
 
             <!-- Features -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white dark:bg-gray-800 border-bottom">
                     <h5 class="mb-0 fw-bold">
                         <i class="fas fa-cogs me-2"></i>
                         Token Features
@@ -184,7 +184,7 @@
 
             <!-- Recent Transactions -->
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white dark:bg-gray-800 border-bottom">
                     <h5 class="mb-0 fw-bold">
                         <i class="fas fa-exchange-alt me-2"></i>
                         Recent Transactions
@@ -228,7 +228,7 @@
 
             <!-- Quick Actions -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white dark:bg-gray-800 border-bottom">
                     <h6 class="mb-0 fw-bold">Quick Actions</h6>
                 </div>
                 <div class="card-body">
@@ -255,7 +255,7 @@
 
             <!-- Price Chart (Placeholder) -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white dark:bg-gray-800 border-bottom">
                     <h6 class="mb-0 fw-bold">Price Chart</h6>
                 </div>
                 <div class="card-body">
@@ -268,7 +268,7 @@
 
             <!-- Links -->
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-bottom">
+                <div class="card-header bg-white dark:bg-gray-800 border-bottom">
                     <h6 class="mb-0 fw-bold">Links</h6>
                 </div>
                 <div class="card-body">

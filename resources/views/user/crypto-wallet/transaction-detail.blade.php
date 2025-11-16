@@ -19,7 +19,7 @@
 
     @if(isset($transaction))
         <!-- Transaction Status Banner -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
             <div class="text-center">
                 <!-- Status Icon -->
                 <div class="w-24 h-24 mx-auto mb-4
@@ -39,35 +39,35 @@
                 </div>
 
                 <!-- Status Text -->
-                <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">
                     @if($transaction->status === 'completed') ธุรกรรมสำเร็จ
                     @elseif($transaction->status === 'pending') กำลังดำเนินการ
                     @elseif($transaction->status === 'failed') ธุรกรรมล้มเหลว
                     @else ธุรกรรม
                     @endif
                 </h2>
-                <p class="text-gray-600">{{ $transaction->created_at->format('d/m/Y H:i:s') }}</p>
+                <p class="text-gray-600 dark:text-gray-400">{{ $transaction->created_at->format('d/m/Y H:i:s') }}</p>
             </div>
         </div>
 
         <!-- Transaction Details -->
-        <div class="bg-white rounded-2xl shadow-xl p-6">
-            <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6 flex items-center gap-2">
                 <span>📋</span> ข้อมูลธุรกรรม
             </h3>
 
             <div class="space-y-4">
                 <!-- Transaction ID -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                    <span class="text-gray-600">รหัสธุรกรรม:</span>
-                    <code class="px-3 py-1 bg-gray-100 rounded font-mono text-sm">
+                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">รหัสธุรกรรม:</span>
+                    <code class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded font-mono text-sm">
                         {{ $transaction->transaction_hash ?? $transaction->id }}
                     </code>
                 </div>
 
                 <!-- Type -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                    <span class="text-gray-600">ประเภท:</span>
+                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">ประเภท:</span>
                     <span class="font-bold
                         @if($transaction->type === 'deposit') text-green-600
                         @elseif($transaction->type === 'withdraw') text-red-600
@@ -83,23 +83,23 @@
                 </div>
 
                 <!-- Currency -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                    <span class="text-gray-600">สกุลเงิน:</span>
-                    <span class="font-bold text-gray-800">{{ strtoupper($transaction->currency ?? 'N/A') }}</span>
+                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">สกุลเงิน:</span>
+                    <span class="font-bold text-gray-800 dark:text-white">{{ strtoupper($transaction->currency ?? 'N/A') }}</span>
                 </div>
 
                 <!-- Amount -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                    <span class="text-gray-600">จำนวน:</span>
-                    <span class="text-2xl font-bold text-gray-800">
+                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">จำนวน:</span>
+                    <span class="text-2xl font-bold text-gray-800 dark:text-white">
                         {{ number_format($transaction->amount ?? 0, 8) }} {{ strtoupper($transaction->currency ?? '') }}
                     </span>
                 </div>
 
                 <!-- Fee -->
                 @if(isset($transaction->fee))
-                    <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                        <span class="text-gray-600">ค่าธรรมเนียม:</span>
+                    <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-600 dark:text-gray-400">ค่าธรรมเนียม:</span>
                         <span class="font-bold text-orange-600">
                             {{ number_format($transaction->fee, 8) }} {{ strtoupper($transaction->currency ?? '') }}
                         </span>
@@ -108,8 +108,8 @@
 
                 <!-- Net Amount -->
                 @if(isset($transaction->net_amount))
-                    <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                        <span class="text-gray-600">จำนวนสุทธิ:</span>
+                    <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-600 dark:text-gray-400">จำนวนสุทธิ:</span>
                         <span class="text-xl font-bold text-green-600">
                             {{ number_format($transaction->net_amount, 8) }} {{ strtoupper($transaction->currency ?? '') }}
                         </span>
@@ -118,31 +118,31 @@
 
                 <!-- From/To Address -->
                 @if(isset($transaction->from_address))
-                    <div class="flex justify-between items-start py-3 border-b border-gray-200">
-                        <span class="text-gray-600">จาก:</span>
-                        <code class="px-3 py-1 bg-gray-100 rounded font-mono text-xs break-all max-w-md text-right">
+                    <div class="flex justify-between items-start py-3 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-600 dark:text-gray-400">จาก:</span>
+                        <code class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded font-mono text-xs break-all max-w-md text-right">
                             {{ $transaction->from_address }}
                         </code>
                     </div>
                 @endif
 
                 @if(isset($transaction->to_address))
-                    <div class="flex justify-between items-start py-3 border-b border-gray-200">
-                        <span class="text-gray-600">ถึง:</span>
-                        <code class="px-3 py-1 bg-gray-100 rounded font-mono text-xs break-all max-w-md text-right">
+                    <div class="flex justify-between items-start py-3 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-600 dark:text-gray-400">ถึง:</span>
+                        <code class="px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded font-mono text-xs break-all max-w-md text-right">
                             {{ $transaction->to_address }}
                         </code>
                     </div>
                 @endif
 
                 <!-- Status -->
-                <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                    <span class="text-gray-600">สถานะ:</span>
+                <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                    <span class="text-gray-600 dark:text-gray-400">สถานะ:</span>
                     <span class="px-4 py-2 rounded-full font-bold
                         @if($transaction->status === 'completed') bg-green-100 text-green-800
                         @elseif($transaction->status === 'pending') bg-yellow-100 text-yellow-800
                         @elseif($transaction->status === 'failed') bg-red-100 text-red-800
-                        @else bg-gray-100 text-gray-800
+                        @else bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white
                         @endif">
                         @if($transaction->status === 'completed') ✅ สำเร็จ
                         @elseif($transaction->status === 'pending') ⏳ รอดำเนินการ
@@ -154,18 +154,18 @@
 
                 <!-- Confirmations -->
                 @if(isset($transaction->confirmations))
-                    <div class="flex justify-between items-center py-3 border-b border-gray-200">
-                        <span class="text-gray-600">Confirmations:</span>
-                        <span class="font-bold text-gray-800">{{ $transaction->confirmations }} / {{ $transaction->required_confirmations ?? 6 }}</span>
+                    <div class="flex justify-between items-center py-3 border-b border-gray-200 dark:border-gray-700">
+                        <span class="text-gray-600 dark:text-gray-400">Confirmations:</span>
+                        <span class="font-bold text-gray-800 dark:text-white">{{ $transaction->confirmations }} / {{ $transaction->required_confirmations ?? 6 }}</span>
                     </div>
                 @endif
 
                 <!-- Created At -->
                 <div class="flex justify-between items-center py-3">
-                    <span class="text-gray-600">วันที่ทำรายการ:</span>
+                    <span class="text-gray-600 dark:text-gray-400">วันที่ทำรายการ:</span>
                     <div class="text-right">
-                        <div class="font-bold text-gray-800">{{ $transaction->created_at->format('d/m/Y') }}</div>
-                        <div class="text-sm text-gray-500">{{ $transaction->created_at->format('H:i:s') }}</div>
+                        <div class="font-bold text-gray-800 dark:text-white">{{ $transaction->created_at->format('d/m/Y') }}</div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ $transaction->created_at->format('H:i:s') }}</div>
                     </div>
                 </div>
             </div>
@@ -174,17 +174,17 @@
         <!-- Notes -->
         @if(isset($transaction->notes) && $transaction->notes)
             <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border border-blue-200">
-                <h3 class="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-3 flex items-center gap-2">
                     <span>📝</span> หมายเหตุ
                 </h3>
-                <p class="text-gray-700">{{ $transaction->notes }}</p>
+                <p class="text-gray-700 dark:text-gray-300">{{ $transaction->notes }}</p>
             </div>
         @endif
 
         <!-- Blockchain Explorer Link -->
         @if(isset($transaction->transaction_hash))
-            <div class="bg-white rounded-2xl shadow-xl p-6">
-                <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                     <span>🔗</span> Blockchain Explorer
                 </h3>
                 <a href="https://etherscan.io/tx/{{ $transaction->transaction_hash }}"
@@ -192,14 +192,14 @@
                    class="block px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold text-center transition-all shadow-lg hover:shadow-xl">
                     🔍 ดูบน Blockchain Explorer →
                 </a>
-                <p class="text-xs text-gray-500 text-center mt-2">ตรวจสอบรายละเอียดบน Blockchain</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">ตรวจสอบรายละเอียดบน Blockchain</p>
             </div>
         @endif
 
         <!-- Actions -->
         <div class="flex gap-4">
             <a href="{{ route('user.crypto-wallet.transactions') }}"
-               class="flex-1 px-6 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-bold text-center transition-colors">
+               class="flex-1 px-6 py-4 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-300 rounded-xl font-bold text-center transition-colors">
                 ← กลับไปรายการธุรกรรม
             </a>
 
@@ -212,10 +212,10 @@
         </div>
     @else
         <!-- No Transaction Found -->
-        <div class="bg-white rounded-2xl shadow-xl p-12 text-center">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-12 text-center">
             <span class="text-6xl mb-4 block">❌</span>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">ไม่พบข้อมูลธุรกรรม</h2>
-            <p class="text-gray-600 mb-6">ไม่สามารถโหลดข้อมูลธุรกรรมได้</p>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">ไม่พบข้อมูลธุรกรรม</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">ไม่สามารถโหลดข้อมูลธุรกรรมได้</p>
             <a href="{{ route('user.crypto-wallet.transactions') }}"
                class="inline-block px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors">
                 ← กลับไปรายการธุรกรรม

@@ -95,7 +95,7 @@
 
             {{-- QR Code --}}
             <div class="text-center mb-4">
-                <div class="inline-block bg-white p-4 rounded-lg shadow-md">
+                <div class="inline-block bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
                     <div id="qrcode"></div>
                 </div>
                 <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">สแกน QR Code เพื่อเปิดลิงก์เชิญ</p>

@@ -184,19 +184,19 @@
                                 <label class="flex items-center">
                                     <input type="checkbox" name="notifications[commission]" value="1"
                                            {{ ($user->notify_commission ?? true) ? 'checked' : '' }}
-                                           class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                                           class="w-4 h-4 text-purple-600 border-gray-300 dark:border-gray-600 rounded focus:ring-purple-500">
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">คอมมิชชั่นใหม่</span>
                                 </label>
                                 <label class="flex items-center">
                                     <input type="checkbox" name="notifications[referral]" value="1"
                                            {{ ($user->notify_referral ?? true) ? 'checked' : '' }}
-                                           class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                                           class="w-4 h-4 text-purple-600 border-gray-300 dark:border-gray-600 rounded focus:ring-purple-500">
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ลูกทีมใหม่</span>
                                 </label>
                                 <label class="flex items-center">
                                     <input type="checkbox" name="notifications[rank_upgrade]" value="1"
                                            {{ ($user->notify_rank ?? true) ? 'checked' : '' }}
-                                           class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
+                                           class="w-4 h-4 text-purple-600 border-gray-300 dark:border-gray-600 rounded focus:ring-purple-500">
                                     <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เลื่อนระดับ Rank</span>
                                 </label>
                             </div>
@@ -327,7 +327,7 @@
                                         class="relative inline-flex items-center cursor-pointer">
                                     <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-700"
                                          :class="isDark ? 'bg-indigo-600' : 'bg-gray-200'">
-                                        <div class="absolute top-[2px] left-[2px] bg-white border-gray-300 border rounded-full h-5 w-5 transition-all"
+                                        <div class="absolute top-[2px] left-[2px] bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 border rounded-full h-5 w-5 transition-all"
                                              :class="isDark ? 'translate-x-full border-white' : ''"></div>
                                     </div>
                                 </button>

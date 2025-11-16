@@ -47,9 +47,9 @@
 
     @if(!empty($codes) && count($codes) > 0)
         <!-- Recovery Codes Display -->
-        <div class="bg-white rounded-2xl shadow-2xl p-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
             <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">รหัสกู้คืนของคุณ</h2>
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">รหัสกู้คืนของคุณ</h2>
                 <span class="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg font-bold">
                     {{ count($codes) }} รหัส
                 </span>
@@ -58,13 +58,13 @@
             <!-- Codes Grid -->
             <div class="grid md:grid-cols-2 gap-4 mb-6" id="codesGrid">
                 @foreach($codes as $index => $code)
-                    <div class="bg-gray-50 border-2 border-gray-200 rounded-xl p-4 hover:border-blue-300 transition-colors">
+                    <div class="bg-gray-50 dark:bg-gray-900/50 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-4 hover:border-blue-300 transition-colors">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3">
                                 <span class="w-8 h-8 bg-blue-100 text-blue-800 rounded-lg flex items-center justify-center font-bold text-sm">
                                     {{ $index + 1 }}
                                 </span>
-                                <code class="text-lg font-mono font-bold text-gray-800">{{ $code }}</code>
+                                <code class="text-lg font-mono font-bold text-gray-800 dark:text-white">{{ $code }}</code>
                             </div>
                             <button type="button"
                                     onclick="copyCode('{{ $code }}')"
@@ -112,39 +112,39 @@
 
         <!-- Usage Instructions -->
         <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 border border-blue-100">
-            <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
                 <span>💡</span> วิธีใช้รหัสกู้คืน
             </h3>
             <div class="space-y-3">
                 <div class="flex gap-3">
                     <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">1</span>
                     <div class="flex-1">
-                        <div class="font-semibold text-gray-800">เมื่อไหร่ควรใช้?</div>
-                        <div class="text-sm text-gray-600 mt-1">เมื่อคุณไม่สามารถรับรหัส 2FA ผ่านช่องทางหลักได้ (เช่น เปลี่ยนเบอร์โทรศัพท์, ไม่มีอุปกรณ์)</div>
+                        <div class="font-semibold text-gray-800 dark:text-white">เมื่อไหร่ควรใช้?</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">เมื่อคุณไม่สามารถรับรหัส 2FA ผ่านช่องทางหลักได้ (เช่น เปลี่ยนเบอร์โทรศัพท์, ไม่มีอุปกรณ์)</div>
                     </div>
                 </div>
                 <div class="flex gap-3">
                     <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">2</span>
                     <div class="flex-1">
-                        <div class="font-semibold text-gray-800">วิธีใช้งาน</div>
-                        <div class="text-sm text-gray-600 mt-1">ในหน้ายืนยันตัวตน 2FA ให้คลิก "ใช้รหัสกู้คืนแทน" แล้วกรอกรหัสกู้คืนที่เหลืออยู่</div>
+                        <div class="font-semibold text-gray-800 dark:text-white">วิธีใช้งาน</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">ในหน้ายืนยันตัวตน 2FA ให้คลิก "ใช้รหัสกู้คืนแทน" แล้วกรอกรหัสกู้คืนที่เหลืออยู่</div>
                     </div>
                 </div>
                 <div class="flex gap-3">
                     <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">3</span>
                     <div class="flex-1">
-                        <div class="font-semibold text-gray-800">หลังใช้งาน</div>
-                        <div class="text-sm text-gray-600 mt-1">รหัสที่ใช้แล้วจะใช้ซ้ำไม่ได้ ถ้ารหัสใกล้หมดควรสร้างรหัสใหม่</div>
+                        <div class="font-semibold text-gray-800 dark:text-white">หลังใช้งาน</div>
+                        <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">รหัสที่ใช้แล้วจะใช้ซ้ำไม่ได้ ถ้ารหัสใกล้หมดควรสร้างรหัสใหม่</div>
                     </div>
                 </div>
             </div>
         </div>
     @else
         <!-- No Codes Available -->
-        <div class="bg-white rounded-2xl shadow-2xl p-12 text-center">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-12 text-center">
             <span class="text-6xl mb-4 block">🔒</span>
-            <h2 class="text-2xl font-bold text-gray-800 mb-2">ไม่พบรหัสกู้คืน</h2>
-            <p class="text-gray-600 mb-6">คุณยังไม่มีรหัสกู้คืน หรือรหัสเดิมหมดอายุแล้ว</p>
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">ไม่พบรหัสกู้คืน</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-6">คุณยังไม่มีรหัสกู้คืน หรือรหัสเดิมหมดอายุแล้ว</p>
             <form action="{{ route('user.two-factor.regenerate-codes') }}" method="POST">
                 @csrf
                 <button type="submit"
@@ -159,7 +159,7 @@
     <!-- Back Button -->
     <div class="text-center">
         <a href="{{ route('user.two-factor.setup') }}"
-           class="inline-flex items-center gap-2 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-semibold transition-colors">
+           class="inline-flex items-center gap-2 px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-700 dark:text-gray-300 rounded-xl font-semibold transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
             </svg>

@@ -75,7 +75,7 @@
                         </div>
                         <template x-if="billingPeriod === 'yearly'">
                             <div class="price-note">
-                                <span class="line-through text-gray-500">฿{{ $package->price * 12 }}</span>
+                                <span class="line-through text-gray-500 dark:text-gray-400">฿{{ $package->price * 12 }}</span>
                                 <span class="text-green-500 ml-2 font-semibold">ประหยัด ฿{{ $package->price * 12 - ($package->price_yearly ?? $package->price * 10) }}</span>
                             </div>
                         </template>

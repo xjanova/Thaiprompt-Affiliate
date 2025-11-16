@@ -10,16 +10,16 @@
             <div class="mx-auto h-24 w-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl">
                 <span class="text-5xl">🔐</span>
             </div>
-            <h2 class="mt-6 text-3xl font-extrabold text-gray-900">
+            <h2 class="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
                 ยืนยันตัวตน
             </h2>
-            <p class="mt-2 text-sm text-gray-600">
+            <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 กรุณากรอกรหัส 6 หลักที่ส่งให้คุณ
             </p>
         </div>
 
         <!-- Verification Form -->
-        <div class="bg-white rounded-2xl shadow-2xl p-8">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
             <form id="verifyForm" class="space-y-6">
                 @csrf
                 <input type="hidden" name="action" value="{{ $action ?? 'general' }}">
@@ -27,7 +27,7 @@
 
                 <!-- Code Input -->
                 <div>
-                    <label for="code" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="code" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         รหัสยืนยันตัวตน
                     </label>
                     <input type="text"
@@ -37,9 +37,9 @@
                            pattern="[0-9]{6}"
                            required
                            autocomplete="off"
-                           class="w-full px-4 py-4 text-center text-2xl font-bold border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tracking-widest"
+                           class="w-full px-4 py-4 text-center text-2xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 tracking-widest"
                            placeholder="000000">
-                    <p class="mt-2 text-xs text-gray-500 text-center">กรอกรหัส 6 หลักที่ได้รับ</p>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400 text-center">กรอกรหัส 6 หลักที่ได้รับ</p>
                 </div>
 
                 <!-- Remember Device -->
@@ -47,8 +47,8 @@
                     <input type="checkbox"
                            id="remember_device"
                            name="remember_device"
-                           class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                    <label for="remember_device" class="ml-2 block text-sm text-gray-700">
+                           class="h-4 w-4 text-blue-600 border-gray-300 dark:border-gray-600 rounded focus:ring-blue-500">
+                    <label for="remember_device" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
                         จำอุปกรณ์นี้ไว้ (ไม่ต้องยืนยันอีกเป็นเวลา 30 วัน)
                     </label>
                 </div>
@@ -79,10 +79,10 @@
 
             <!-- Resend Code -->
             <div class="mt-6 text-center border-t pt-6">
-                <p class="text-sm text-gray-600 mb-3">ไม่ได้รับรหัส?</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">ไม่ได้รับรหัส?</p>
                 <button type="button"
                         id="resendButton"
-                        class="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg font-semibold transition-colors">
+                        class="px-6 py-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 text-gray-700 dark:text-gray-300 rounded-lg font-semibold transition-colors">
                     <span id="resendButtonText">ส่งรหัสใหม่</span>
                     <span id="resendTimer" class="hidden">(<span id="countdown">60</span>s)</span>
                 </button>
@@ -99,7 +99,7 @@
         </div>
 
         <!-- Recovery Code Form (Hidden by default) -->
-        <div id="recoveryCodeForm" class="hidden bg-white rounded-2xl shadow-2xl p-8">
+        <div id="recoveryCodeForm" class="hidden bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8">
             <form id="recoveryForm" class="space-y-6">
                 @csrf
                 <input type="hidden" name="action" value="{{ $action ?? 'general' }}">
@@ -107,12 +107,12 @@
 
                 <div class="text-center mb-6">
                     <span class="text-4xl">🔑</span>
-                    <h3 class="mt-3 text-xl font-bold text-gray-900">ใช้รหัสกู้คืน</h3>
-                    <p class="mt-2 text-sm text-gray-600">กรอกรหัสกู้คืนที่คุณได้เก็บไว้</p>
+                    <h3 class="mt-3 text-xl font-bold text-gray-900 dark:text-white">ใช้รหัสกู้คืน</h3>
+                    <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">กรอกรหัสกู้คืนที่คุณได้เก็บไว้</p>
                 </div>
 
                 <div>
-                    <label for="recovery_code" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="recovery_code" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         รหัสกู้คืน
                     </label>
                     <input type="text"
@@ -120,7 +120,7 @@
                            name="recovery_code"
                            required
                            autocomplete="off"
-                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="xxxx-xxxx-xxxx">
                 </div>
 
@@ -132,7 +132,7 @@
 
                 <button type="button"
                         id="backToCodeButton"
-                        class="w-full py-2 text-sm text-gray-600 hover:text-gray-800">
+                        class="w-full py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:text-white">
                     ← กลับไปใช้รหัสยืนยันปกติ
                 </button>
             </form>

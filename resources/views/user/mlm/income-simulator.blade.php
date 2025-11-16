@@ -10,33 +10,33 @@
             <h1 class="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
                 💰 จำลองรายได้ MLM
             </h1>
-            <p class="text-xl text-gray-700 mb-2">ดูภาพชัดเจนว่าคุณจะได้รับค่าตอบแทนเท่าไร</p>
-            <p class="text-gray-600">เครื่องมือสำหรับนักการตลาด - นำเสนอได้เลย</p>
+            <p class="text-xl text-gray-700 dark:text-gray-300 mb-2">ดูภาพชัดเจนว่าคุณจะได้รับค่าตอบแทนเท่าไร</p>
+            <p class="text-gray-600 dark:text-gray-400">เครื่องมือสำหรับนักการตลาด - นำเสนอได้เลย</p>
         </div>
 
         <!-- Control Panel -->
-        <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 mb-6">
             <!-- Rank Selection -->
             <div class="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border-2 border-yellow-300">
-                <label class="block text-sm font-bold text-gray-700 mb-3">
-                    ⭐ ระดับยศของคุณ (Rank) - <span class="text-sm font-normal text-gray-500">ไม่บังคับ</span>
+                <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">
+                    ⭐ ระดับยศของคุณ (Rank) - <span class="text-sm font-normal text-gray-500 dark:text-gray-400">ไม่บังคับ</span>
                 </label>
                 <select id="user_rank" onchange="updateRankInfo()"
-                        class="w-full px-4 py-3 text-lg font-semibold border-2 border-yellow-400 rounded-xl focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 bg-white">
+                        class="w-full px-4 py-3 text-lg font-semibold border-2 border-yellow-400 rounded-xl focus:ring-4 focus:ring-yellow-200 focus:border-yellow-500 bg-white dark:bg-gray-800">
                     <option value="">กำลังโหลด...</option>
                 </select>
                 <div id="rank-info" class="mt-3 hidden">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                        <div class="bg-white p-3 rounded-lg shadow">
-                            <div class="text-gray-600 mb-1">ค่าคอมมิชชั่นพื้นฐาน</div>
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow">
+                            <div class="text-gray-600 dark:text-gray-400 mb-1">ค่าคอมมิชชั่นพื้นฐาน</div>
                             <div class="text-2xl font-bold text-blue-600"><span id="rank-commission-rate">0</span>%</div>
                         </div>
-                        <div class="bg-white p-3 rounded-lg shadow">
-                            <div class="text-gray-600 mb-1">ตัวคูณโบนัส</div>
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow">
+                            <div class="text-gray-600 dark:text-gray-400 mb-1">ตัวคูณโบนัส</div>
                             <div class="text-2xl font-bold text-purple-600"><span id="rank-multiplier">1.0</span>x</div>
                         </div>
-                        <div class="bg-white p-3 rounded-lg shadow">
-                            <div class="text-gray-600 mb-1">ระดับ</div>
+                        <div class="bg-white dark:bg-gray-800 p-3 rounded-lg shadow">
+                            <div class="text-gray-600 dark:text-gray-400 mb-1">ระดับ</div>
                             <div class="text-2xl font-bold text-orange-600"><span id="rank-level">1</span> / 5</div>
                         </div>
                     </div>
@@ -53,7 +53,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <!-- Personal Sales -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         💵 ยอดขายของคุณ (บาท/เดือน)
                     </label>
                     <input type="number" id="personal_sales" value="10000" step="1000" min="0"
@@ -62,7 +62,7 @@
 
                 <!-- Team Size -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         👥 จำนวนสมาชิกในทีม
                     </label>
                     <input type="number" id="team_size" value="10" step="1" min="0"
@@ -71,7 +71,7 @@
 
                 <!-- Team Sales -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         🛒 ยอดขายเฉลี่ยต่อคน (บาท)
                     </label>
                     <input type="number" id="team_avg_sales" value="5000" step="500" min="0"
@@ -80,7 +80,7 @@
 
                 <!-- Months -->
                 <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <label class="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                         📅 ระยะเวลา (เดือน)
                     </label>
                     <input type="number" id="months" value="12" step="1" min="1" max="60"
@@ -106,34 +106,34 @@
 
         <!-- System Settings Display -->
         <div id="settings-info" class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl shadow-xl p-6 mb-6 hidden">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">⚙️ การตั้งค่าระบบที่ใช้</h3>
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-4">⚙️ การตั้งค่าระบบที่ใช้</h3>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div class="bg-white p-3 rounded-lg">
-                    <div class="text-gray-600 mb-1">🔢 PV Rate</div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                    <div class="text-gray-600 dark:text-gray-400 mb-1">🔢 PV Rate</div>
                     <div class="font-bold text-blue-600"><span id="setting-pv-rate">-</span> PV/บาท</div>
                 </div>
-                <div class="bg-white p-3 rounded-lg">
-                    <div class="text-gray-600 mb-1">📊 Unilevel Max Depth</div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                    <div class="text-gray-600 dark:text-gray-400 mb-1">📊 Unilevel Max Depth</div>
                     <div class="font-bold text-blue-600"><span id="setting-max-depth">-</span> ชั้น</div>
                 </div>
-                <div class="bg-white p-3 rounded-lg">
-                    <div class="text-gray-600 mb-1">💰 Binary Commission</div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                    <div class="text-gray-600 dark:text-gray-400 mb-1">💰 Binary Commission</div>
                     <div class="font-bold text-blue-600">฿<span id="setting-binary-commission">-</span>/คู่</div>
                 </div>
-                <div class="bg-white p-3 rounded-lg">
-                    <div class="text-gray-600 mb-1">🔄 Binary Pairing</div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                    <div class="text-gray-600 dark:text-gray-400 mb-1">🔄 Binary Pairing</div>
                     <div class="font-bold text-blue-600"><span id="setting-pairing-type">-</span></div>
                 </div>
-                <div class="bg-white p-3 rounded-lg">
-                    <div class="text-gray-600 mb-1">📅 Max Pairs/Day</div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                    <div class="text-gray-600 dark:text-gray-400 mb-1">📅 Max Pairs/Day</div>
                     <div class="font-bold text-blue-600"><span id="setting-max-pairs">-</span></div>
                 </div>
-                <div class="bg-white p-3 rounded-lg">
-                    <div class="text-gray-600 mb-1">🛡️ Max Commission/Day</div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                    <div class="text-gray-600 dark:text-gray-400 mb-1">🛡️ Max Commission/Day</div>
                     <div class="font-bold text-blue-600"><span id="setting-max-commission-day">-</span></div>
                 </div>
-                <div class="bg-white p-3 rounded-lg">
-                    <div class="text-gray-600 mb-1">⚠️ Overpay Protection</div>
+                <div class="bg-white dark:bg-gray-800 p-3 rounded-lg">
+                    <div class="text-gray-600 dark:text-gray-400 mb-1">⚠️ Overpay Protection</div>
                     <div class="font-bold text-blue-600"><span id="setting-overpay">-</span>%</div>
                 </div>
             </div>
@@ -149,8 +149,8 @@
             </div>
 
             <!-- Income Flow Animation -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
-                <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">💸 การไหลของรายได้</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mb-6">
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-6 text-center">💸 การไหลของรายได้</h3>
 
                 <div class="relative" style="height: 400px;">
                     <!-- You (Center) -->
@@ -160,7 +160,7 @@
                                 <span class="text-5xl">👤</span>
                             </div>
                             <div class="font-bold text-lg">คุณ</div>
-                            <div class="text-sm text-gray-600">ผู้ประกอบการ</div>
+                            <div class="text-sm text-gray-600 dark:text-gray-400">ผู้ประกอบการ</div>
                         </div>
                     </div>
 
@@ -208,8 +208,8 @@
             </div>
 
             <!-- Progress Bar -->
-            <div class="bg-white rounded-2xl shadow-2xl p-6 mb-6">
-                <div class="flex justify-between text-sm font-semibold text-gray-700 mb-2">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 mb-6">
+                <div class="flex justify-between text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     <span>ความคืบหน้า</span>
                     <span id="progress-percent">0%</span>
                 </div>
@@ -222,8 +222,8 @@
         <!-- Results Summary -->
         <div id="results-container" class="hidden">
             <!-- Monthly Breakdown Table -->
-            <div class="bg-white rounded-2xl shadow-2xl p-8 mb-6">
-                <h3 class="text-3xl font-bold text-gray-800 mb-6 text-center">📊 สรุปรายได้แต่ละเดือน</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 mb-6">
+                <h3 class="text-3xl font-bold text-gray-800 dark:text-white mb-6 text-center">📊 สรุปรายได้แต่ละเดือน</h3>
 
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
@@ -239,7 +239,7 @@
                                 <th class="px-4 py-4 text-right font-bold">สะสม</th>
                             </tr>
                         </thead>
-                        <tbody id="monthly-breakdown" class="divide-y divide-gray-200">
+                        <tbody id="monthly-breakdown" class="divide-y divide-gray-200 dark:divide-gray-700">
                         </tbody>
                         <tfoot class="bg-gradient-to-r from-green-100 to-blue-100 font-bold text-lg">
                             <tr>
@@ -255,16 +255,16 @@
             <!-- Charts -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <!-- Income Growth Chart -->
-                <div class="bg-white rounded-2xl shadow-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">📈 กราฟการเติบโตของรายได้</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">📈 กราฟการเติบโตของรายได้</h3>
                     <div style="position: relative; height: 300px;">
                         <canvas id="income-chart"></canvas>
                     </div>
                 </div>
 
                 <!-- Income Breakdown Pie -->
-                <div class="bg-white rounded-2xl shadow-2xl p-6">
-                    <h3 class="text-xl font-bold text-gray-800 mb-4">🥧 สัดส่วนรายได้</h3>
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">🥧 สัดส่วนรายได้</h3>
                     <div style="position: relative; height: 300px;">
                         <canvas id="breakdown-chart"></canvas>
                     </div>
@@ -304,7 +304,7 @@
                 <p class="text-xl mb-6 opacity-90">นี่คือโอกาสของคุณที่จะสร้างรายได้แบบ Passive Income</p>
                 <div class="flex gap-4 justify-center">
                     <button onclick="window.location.href='{{ route('user.mlm.dashboard') }}'"
-                            class="bg-white text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 transition-all duration-300 transform hover:scale-105">
+                            class="bg-white dark:bg-gray-800 text-purple-600 px-8 py-4 rounded-xl font-bold text-lg hover:bg-gray-100 dark:bg-gray-700 transition-all duration-300 transform hover:scale-105">
                         เริ่มต้นเลย!
                     </button>
                     <button onclick="startSimulation()"
@@ -720,7 +720,7 @@ function showResults() {
             <td class="px-4 py-3 text-right text-blue-600 font-semibold">฿${Math.floor(month.unilevel).toLocaleString()}</td>
             <td class="px-4 py-3 text-right text-indigo-600 font-semibold">฿${Math.floor(month.binary).toLocaleString()}</td>
             <td class="px-4 py-3 text-right text-purple-600 font-bold text-lg">฿${Math.floor(month.total).toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-gray-600">฿${Math.floor(month.accumulated).toLocaleString()}</td>
+            <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-400">฿${Math.floor(month.accumulated).toLocaleString()}</td>
         </tr>
     `).join('');
 

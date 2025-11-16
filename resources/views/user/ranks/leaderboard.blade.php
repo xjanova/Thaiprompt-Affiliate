@@ -6,9 +6,9 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Leaderboard Header -->
     <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute top-1/2 right-1/4 w-24 h-24 bg-white opacity-5 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
+        <div class="absolute top-1/2 right-1/4 w-24 h-24 bg-white dark:bg-gray-800 opacity-5 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center gap-3 mb-2">
                 <i class="fas fa-trophy text-4xl"></i>
@@ -31,7 +31,7 @@
     <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-xl p-6 text-white">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
-                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <div class="w-16 h-16 bg-white dark:bg-gray-800 bg-opacity-20 rounded-full flex items-center justify-center">
                     <span class="text-2xl font-bold">{{ $userRank }}</span>
                 </div>
                 <div>
@@ -53,14 +53,14 @@
         <!-- 2nd Place -->
         <div class="transform translate-y-8">
             <div class="bg-gradient-to-br from-gray-300 to-gray-500 rounded-2xl shadow-xl p-6 text-white text-center">
-                <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div class="w-20 h-20 bg-white dark:bg-gray-800 bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span class="text-4xl">🥈</span>
                 </div>
                 <div class="mb-3">
                     <div class="text-sm opacity-80 mb-1">#2</div>
                     <div class="font-bold text-lg truncate">{{ $leaderboard[1]['user']->name }}</div>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-3">
                     <div class="text-xs opacity-80">แต้ม</div>
                     <div class="text-xl font-bold">{{ number_format($leaderboard[1]['points'] ?? 0) }}</div>
                 </div>
@@ -81,14 +81,14 @@
                         <i class="fas fa-crown text-2xl"></i>
                     </div>
                 </div>
-                <div class="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4 mt-4">
+                <div class="w-24 h-24 bg-white dark:bg-gray-800 bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4 mt-4">
                     <span class="text-5xl">🥇</span>
                 </div>
                 <div class="mb-4">
                     <div class="text-sm opacity-80 mb-1">#1 CHAMPION</div>
                     <div class="font-bold text-2xl truncate">{{ $leaderboard[0]['user']->name }}</div>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-4">
                     <div class="text-xs opacity-80">แต้ม</div>
                     <div class="text-3xl font-bold">{{ number_format($leaderboard[0]['points'] ?? 0) }}</div>
                 </div>
@@ -104,14 +104,14 @@
         <!-- 3rd Place -->
         <div class="transform translate-y-8">
             <div class="bg-gradient-to-br from-orange-400 to-orange-600 rounded-2xl shadow-xl p-6 text-white text-center">
-                <div class="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div class="w-20 h-20 bg-white dark:bg-gray-800 bg-opacity-20 rounded-full flex items-center justify-center mx-auto mb-4">
                     <span class="text-4xl">🥉</span>
                 </div>
                 <div class="mb-3">
                     <div class="text-sm opacity-80 mb-1">#3</div>
                     <div class="font-bold text-lg truncate">{{ $leaderboard[2]['user']->name }}</div>
                 </div>
-                <div class="bg-white bg-opacity-20 rounded-lg p-3">
+                <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg p-3">
                     <div class="text-xs opacity-80">แต้ม</div>
                     <div class="text-xl font-bold">{{ number_format($leaderboard[2]['points'] ?? 0) }}</div>
                 </div>
@@ -127,31 +127,31 @@
     @endif
 
     <!-- Leaderboard Table -->
-    <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
-        <div class="p-6 border-b border-gray-200">
-            <h2 class="text-xl font-bold text-gray-900">🏆 ผู้นำทั้งหมด</h2>
-            <p class="text-sm text-gray-600 mt-1">แสดง {{ count($leaderboard) }} อันดับแรก</p>
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">🏆 ผู้นำทั้งหมด</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">แสดง {{ count($leaderboard) }} อันดับแรก</p>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">อันดับ</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ผู้ใช้</th>
-                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ระดับ</th>
-                        <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">แต้ม</th>
-                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">สถานะ</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">อันดับ</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">ผู้ใช้</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">ระดับ</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">แต้ม</th>
+                        <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($leaderboard as $index => $item)
                     @php
                         $user = $item['user'];
                         $rank = $item['rank'];
                         $points = $item['points'];
                     @endphp
-                    <tr class="hover:bg-gray-50 transition {{ $user->id === auth()->id() ? 'bg-indigo-50' : '' }}">
+                    <tr class="hover:bg-gray-50 dark:bg-gray-900/50 transition {{ $user->id === auth()->id() ? 'bg-indigo-50' : '' }}">
                         <!-- Rank -->
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
@@ -168,7 +168,7 @@
                                         3
                                     </div>
                                 @else
-                                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 font-bold">
+                                    <div class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-700 dark:text-gray-300 font-bold">
                                         {{ $index + 1 }}
                                     </div>
                                 @endif
@@ -182,13 +182,13 @@
                                     {{ substr($user->name, 0, 1) }}
                                 </div>
                                 <div class="ml-4">
-                                    <div class="text-sm font-semibold text-gray-900">
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
                                         {{ $user->name }}
                                         @if($user->id === auth()->id())
                                             <span class="ml-2 px-2 py-1 bg-indigo-100 text-indigo-800 text-xs font-semibold rounded">คุณ</span>
                                         @endif
                                     </div>
-                                    <div class="text-xs text-gray-500">{{ $user->email }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $user->email }}</div>
                                 </div>
                             </div>
                         </td>
@@ -201,21 +201,21 @@
                                     <i class="{{ $rank->icon ?? 'fas fa-star' }} text-sm"></i>
                                 </div>
                                 <div>
-                                    <div class="text-sm font-semibold text-gray-900">
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
                                         {{ app()->getLocale() === 'th' ? ($rank->name_th ?? $rank->name) : $rank->name }}
                                     </div>
-                                    <div class="text-xs text-gray-500">Level {{ $rank->level }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">Level {{ $rank->level }}</div>
                                 </div>
                             </div>
                             @else
-                            <span class="text-sm text-gray-500">-</span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">-</span>
                             @endif
                         </td>
 
                         <!-- Points -->
                         <td class="px-6 py-4 whitespace-nowrap text-right">
-                            <div class="text-lg font-bold text-gray-900">{{ number_format($points ?? 0) }}</div>
-                            <div class="text-xs text-gray-500">แต้ม</div>
+                            <div class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($points ?? 0) }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">แต้ม</div>
                         </td>
 
                         <!-- Status Badge -->
@@ -233,7 +233,7 @@
                                     Top 50
                                 </span>
                             @else
-                                <span class="px-3 py-1 bg-gray-100 text-gray-800 text-xs font-semibold rounded-full">
+                                <span class="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white text-xs font-semibold rounded-full">
                                     Top 100
                                 </span>
                             @endif
@@ -242,7 +242,7 @@
                     @empty
                     <tr>
                         <td colspan="5" class="px-6 py-12 text-center">
-                            <div class="text-gray-500">
+                            <div class="text-gray-500 dark:text-gray-400">
                                 <i class="fas fa-trophy text-4xl mb-3 opacity-50"></i>
                                 <p class="text-lg font-semibold">ยังไม่มีข้อมูลกระดานผู้นำ</p>
                                 <p class="text-sm mt-2">เริ่มสะสมแต้มเพื่อขึ้นอันดับกระดานผู้นำ</p>

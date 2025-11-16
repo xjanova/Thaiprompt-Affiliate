@@ -6,10 +6,10 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
     <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                <a href="{{ route('user.wallet.index') }}" class="p-2 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
                     ← กลับ
                 </a>
                 <h1 class="text-3xl md:text-4xl font-bold">💰 เติมเงิน Wallet</h1>
@@ -17,7 +17,7 @@
             <p class="text-purple-100">เลือกจำนวนเงินที่ต้องการเติม</p>
 
             <!-- Current Balance -->
-            <div class="mt-6 bg-white bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
+            <div class="mt-6 bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-4 backdrop-blur-sm">
                 <p class="text-purple-100 text-sm mb-1">ยอดเงินปัจจุบัน</p>
                 <p class="text-3xl font-bold">฿{{ number_format($wallet->balance, 2) }}</p>
             </div>

@@ -6,10 +6,10 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Header -->
     <div class="bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center gap-3 mb-4">
-                <a href="{{ route('user.wallet.deposit') }}" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                <a href="{{ route('user.wallet.deposit') }}" class="p-2 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
                     ← กลับ
                 </a>
                 <h1 class="text-3xl md:text-4xl font-bold">💳 ชำระเงินผ่าน PromptPay</h1>
@@ -60,16 +60,16 @@
 
         <div class="flex flex-col items-center">
             <!-- QR Code Display -->
-            <div class="bg-white p-6 rounded-2xl shadow-lg border-4 border-indigo-100">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border-4 border-indigo-100">
                 <img src="{{ $result['qr_code'] }}"
                      alt="PromptPay QR Code"
                      class="w-64 h-64 md:w-80 md:h-80">
             </div>
 
             <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600 mb-2">หรือใช้รหัสอ้างอิงนี้</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">หรือใช้รหัสอ้างอิงนี้</p>
                 <div class="flex items-center justify-center gap-2">
-                    <code class="px-4 py-2 bg-gray-100 rounded-lg text-lg font-mono font-bold text-indigo-600">
+                    <code class="px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-lg font-mono font-bold text-indigo-600">
                         {{ $result['reference'] }}
                     </code>
                     <button onclick="copyReference()"
@@ -81,7 +81,7 @@
 
             <!-- Timer -->
             <div class="mt-6 text-center">
-                <p class="text-sm text-gray-600 mb-2">QR Code หมดอายุใน</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">QR Code หมดอายุใน</p>
                 <div id="countdown" class="text-3xl font-bold text-red-600">15:00</div>
             </div>
         </div>
@@ -156,11 +156,11 @@
         <div class="mt-4 flex gap-3">
             <button onclick="checkPaymentStatus()"
                     id="check-status-btn"
-                    class="flex-1 px-6 py-3 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-indigo-50 transition">
+                    class="flex-1 px-6 py-3 bg-white dark:bg-gray-800 text-indigo-600 font-semibold rounded-lg hover:bg-indigo-50 transition">
                 🔍 ตรวจสอบสถานะ
             </button>
             <a href="{{ route('user.wallet.index') }}"
-               class="flex-1 px-6 py-3 bg-white bg-opacity-20 hover:bg-opacity-30 text-white font-semibold rounded-lg transition text-center">
+               class="flex-1 px-6 py-3 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 text-white font-semibold rounded-lg transition text-center">
                 กลับหน้าหลัก
             </a>
         </div>

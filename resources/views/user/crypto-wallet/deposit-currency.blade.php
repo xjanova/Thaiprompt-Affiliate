@@ -22,7 +22,7 @@
 
         <!-- QR Code -->
         <div class="flex justify-center mb-6">
-            <div class="bg-white p-6 rounded-xl shadow-lg">
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                 @if($depositAddress && $depositAddress->qr_code)
                     <img src="{{ $depositAddress->qr_code }}" alt="QR Code" class="w-64 h-64">
                 @else

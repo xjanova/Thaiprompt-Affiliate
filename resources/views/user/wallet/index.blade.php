@@ -6,8 +6,8 @@
 <div class="space-y-6 pb-20 lg:pb-6">
     <!-- Wallet Header -->
     <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
-        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
-        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
+        <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
+        <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white dark:bg-gray-800 opacity-10 rounded-full"></div>
         <div class="relative z-10">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -17,8 +17,8 @@
                 <div class="hidden md:block text-right">
                     <p class="text-sm text-indigo-100 mb-1">Wallet Address</p>
                     <div class="flex items-center gap-2">
-                        <code class="px-3 py-1 bg-white bg-opacity-20 rounded-lg text-sm font-mono">{{ $wallet->wallet_address }}</code>
-                        <button onclick="copyWalletAddress()" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                        <code class="px-3 py-1 bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg text-sm font-mono">{{ $wallet->wallet_address }}</code>
+                        <button onclick="copyWalletAddress()" class="p-2 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
                             📋
                         </button>
                     </div>
@@ -26,7 +26,7 @@
             </div>
 
             <!-- Balance Display -->
-            <div class="bg-white bg-opacity-20 rounded-xl p-6 backdrop-blur-sm">
+            <div class="bg-white dark:bg-gray-800 bg-opacity-20 rounded-xl p-6 backdrop-blur-sm">
                 <p class="text-indigo-100 text-sm mb-2">ยอดเงินคงเหลือ</p>
                 <p class="text-5xl md:text-6xl font-bold">฿{{ number_format($wallet->balance, 2) }}</p>
                 <p class="text-indigo-100 text-sm mt-2">{{ $wallet->currency }}</p>
@@ -36,8 +36,8 @@
             <div class="md:hidden mt-4">
                 <p class="text-sm text-indigo-100 mb-1">Wallet Address</p>
                 <div class="flex items-center gap-2">
-                    <code class="flex-1 px-3 py-2 bg-white bg-opacity-20 rounded-lg text-xs font-mono">{{ $wallet->wallet_address }}</code>
-                    <button onclick="copyWalletAddress()" class="p-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
+                    <code class="flex-1 px-3 py-2 bg-white dark:bg-gray-800 bg-opacity-20 rounded-lg text-xs font-mono">{{ $wallet->wallet_address }}</code>
+                    <button onclick="copyWalletAddress()" class="p-2 bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-lg transition">
                         📋
                     </button>
                 </div>
@@ -149,18 +149,18 @@
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div class="bg-white bg-opacity-60 rounded-xl p-4">
-                <p class="text-sm text-gray-600 mb-1">Cashback เดือนนี้</p>
+            <div class="bg-white dark:bg-gray-800 bg-opacity-60 rounded-xl p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Cashback เดือนนี้</p>
                 <p class="text-2xl font-bold text-green-600">฿{{ number_format($cashbackStats['this_month'] ?? 0, 2) }}</p>
             </div>
 
-            <div class="bg-white bg-opacity-60 rounded-xl p-4">
-                <p class="text-sm text-gray-600 mb-1">30 วันล่าสุด</p>
+            <div class="bg-white dark:bg-gray-800 bg-opacity-60 rounded-xl p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">30 วันล่าสุด</p>
                 <p class="text-2xl font-bold text-green-600">฿{{ number_format($cashbackStats['last_30_days'] ?? 0, 2) }}</p>
             </div>
 
-            <div class="bg-white bg-opacity-60 rounded-xl p-4">
-                <p class="text-sm text-gray-600 mb-1">Cashback เฉลี่ย</p>
+            <div class="bg-white dark:bg-gray-800 bg-opacity-60 rounded-xl p-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">Cashback เฉลี่ย</p>
                 <p class="text-2xl font-bold text-green-600">
                     ฿{{ $cashbackStats['count'] > 0 ? number_format($cashbackStats['total'] / $cashbackStats['count'], 2) : '0.00' }}
                 </p>
@@ -313,7 +313,7 @@
         <h3 class="text-xl font-bold mb-4">💳 ช่องทางการฝากเงิน</h3>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
             @foreach($availableGateways as $gateway)
-                <div class="bg-white bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-center transition">
+                <div class="bg-white dark:bg-gray-800 bg-opacity-20 hover:bg-opacity-30 rounded-xl p-4 text-center transition">
                     <div class="text-3xl mb-2">{{ $gateway['icon'] ?? '💰' }}</div>
                     <p class="text-sm font-semibold">{{ $gateway['name'] ?? 'Gateway' }}</p>
                 </div>

@@ -176,7 +176,7 @@
         <div class="col-lg-4">
             <!-- Pool Info -->
             <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white border-0 py-3">
+                <div class="card-header bg-white dark:bg-gray-800 border-0 py-3">
                     <h6 class="mb-0 fw-bold">
                         <i class="fas fa-info-circle text-primary me-2"></i>
                         ข้อมูล Pool
@@ -204,7 +204,7 @@
 
             <!-- Why Stake? -->
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white border-0 py-3">
+                <div class="card-header bg-white dark:bg-gray-800 border-0 py-3">
                     <h6 class="mb-0 fw-bold">
                         <i class="fas fa-question-circle text-primary me-2"></i>
                         ทำไมต้อง Stake?
