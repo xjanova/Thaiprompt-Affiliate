@@ -11,13 +11,75 @@ use Illuminate\Support\Facades\Storage;
 class SettingsController extends Controller
 {
     /**
-     * Display settings
+     * Display settings (V3)
      */
     public function index()
     {
         $settings = Setting::all()->groupBy('group');
         $availablePermissions = \App\Models\User::availablePermissions();
-        return view('admin.settings.index', compact('settings', 'availablePermissions'));
+        return view('admin.settings-v3', compact('settings', 'availablePermissions'));
+    }
+
+    /**
+     * แสดงหน้าแก้ไขโปรไฟล์ (V3)
+     */
+    public function profile()
+    {
+        $user = auth()->user();
+        return view('admin.profile-v3', compact('user'));
+    }
+
+    /**
+     * อัพเดทข้อมูลโปรไฟล์ส่วนตัว
+     */
+    public function updateProfile(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . auth()->id()],
+            'phone' => ['nullable', 'string', 'max:20'],
+            'position' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $user = auth()->user();
+        $user->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'อัพเดทข้อมูลส่วนตัวสำเร็จ',
+            'user' => $user
+        ]);
+    }
+
+    /**
+     * เปลี่ยนรหัสผ่าน
+     */
+    public function changePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = auth()->user();
+
+        // ตรวจสอบรหัสผ่านปัจจุบัน
+        if (!\Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'รหัสผ่านปัจจุบันไม่ถูกต้อง'
+            ], 422);
+        }
+
+        // อัพเดทรหัสผ่านใหม่
+        $user->update([
+            'password' => \Hash::make($validated['new_password'])
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'เปลี่ยนรหัสผ่านสำเร็จ'
+        ]);
     }
 
     /**

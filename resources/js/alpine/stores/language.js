@@ -131,6 +131,48 @@ Alpine.store('language', {
             #google_translate_element {
                 display: none !important;
             }
+
+            /* ทำให้ dropdown ทึบกว่าเดิม - มองเห็นชัดเจน */
+            .goog-te-combo {
+                background: rgba(255, 255, 255, 0.95) !important;
+                backdrop-filter: blur(12px) !important;
+                -webkit-backdrop-filter: blur(12px) !important;
+                border: 1px solid rgba(255, 255, 255, 0.3) !important;
+                color: #1f2937 !important;
+                padding: 8px 12px !important;
+                border-radius: 8px !important;
+                font-size: 14px !important;
+                font-weight: 500 !important;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+            }
+
+            /* Dark mode support */
+            @media (prefers-color-scheme: dark) {
+                .goog-te-combo {
+                    background: rgba(31, 41, 55, 0.95) !important;
+                    color: #f9fafb !important;
+                    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                }
+            }
+
+            /* Hover effect */
+            .goog-te-combo:hover {
+                background: rgba(255, 255, 255, 1) !important;
+                border-color: rgba(59, 130, 246, 0.5) !important;
+            }
+
+            @media (prefers-color-scheme: dark) {
+                .goog-te-combo:hover {
+                    background: rgba(31, 41, 55, 1) !important;
+                }
+            }
+
+            /* Focus effect */
+            .goog-te-combo:focus {
+                outline: none !important;
+                border-color: #3b82f6 !important;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+            }
         `;
         document.head.appendChild(style);
     },
