@@ -1,0 +1,156 @@
+/**
+ * Alpine.js Global Stores
+ *
+ * ไฟล์นี้รวม Alpine.js stores ทั้งหมดสำหรับแอปพลิเคชัน
+ * - language: จัดการภาษาและ Google Translate
+ * - theme: จัดการ dark/light mode
+ */
+
+document.addEventListener('alpine:init', () => {
+    /**
+     * Language Store - จัดการระบบหลายภาษา
+     */
+    Alpine.store('language', {
+        current: localStorage.getItem('language') || 'th',
+        isTranslating: false,
+
+        // รายการภาษาที่รองรับ (9 ภาษา)
+        languages: [
+            { code: 'th', name: 'Thai', nativeName: 'ภาษาไทย', flag: '🇹🇭' },
+            { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
+            { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
+            { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
+            { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
+            { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
+            { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
+            { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
+            { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' }
+        ],
+
+        /**
+         * ดึงข้อมูลภาษาปัจจุบัน
+         */
+        getCurrentLanguage() {
+            return this.languages.find(lang => lang.code === this.current) || this.languages[0];
+        },
+
+        /**
+         * เปลี่ยนภาษา
+         */
+        async setLanguage(code) {
+            if (this.current === code) return;
+
+            this.isTranslating = true;
+            this.current = code;
+            localStorage.setItem('language', code);
+
+            // หน่วงเวลาเล็กน้อยเพื่อให้เห็น animation
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // รีโหลดหน้าเพื่อให้ backend แปลภาษา
+            window.location.reload();
+        },
+
+        /**
+         * ล้าง cache การแปล
+         */
+        clearCache() {
+            if (confirm('ล้าง cache การแปลทั้งหมด?')) {
+                localStorage.removeItem('translation_cache');
+                window.location.reload();
+            }
+        }
+    });
+
+    /**
+     * Theme Presets Store - ธีมสำเร็จรูป
+     */
+    Alpine.store('themePresets', {
+        presets: {
+            classic: {
+                name: 'Classic',
+                icon: 'fas fa-desktop',
+                description: 'ปิดเอฟเฟคทั้งหมด',
+                settings: {
+                    glassOpacity: 0,
+                    glassBlur: 0,
+                    borderOpacity: 0,
+                    shadowIntensity: 0,
+                    glowIntensity: 0,
+                    textShadow: false,
+                    animationSpeed: 0,
+                    hoverScale: 100,
+                    cardRoundness: 4,
+                    buttonRoundness: 4,
+                    primaryHue: 260,
+                    accentHue: 340,
+                    backdropSaturate: 100,
+                    perspectiveDepth: 0,
+                }
+            },
+            modern: {
+                name: 'Modern',
+                icon: 'fas fa-layer-group',
+                description: 'เอฟเฟคปานกลาง สมดุล',
+                settings: {
+                    glassOpacity: 10,
+                    glassBlur: 8,
+                    borderOpacity: 20,
+                    shadowIntensity: 30,
+                    glowIntensity: 40,
+                    textShadow: true,
+                    animationSpeed: 300,
+                    hoverScale: 103,
+                    cardRoundness: 12,
+                    buttonRoundness: 8,
+                    primaryHue: 220,
+                    accentHue: 200,
+                    backdropSaturate: 100,
+                    perspectiveDepth: 500,
+                }
+            },
+            glassmorphism: {
+                name: 'Glassmorphism',
+                icon: 'fas fa-gem',
+                description: 'เต็มเอฟเฟค สวยงาม (ค่าเริ่มต้น)',
+                settings: {
+                    glassOpacity: 15,
+                    glassBlur: 12,
+                    borderOpacity: 30,
+                    shadowIntensity: 50,
+                    glowIntensity: 60,
+                    textShadow: true,
+                    animationSpeed: 500,
+                    hoverScale: 105,
+                    cardRoundness: 16,
+                    buttonRoundness: 12,
+                    primaryHue: 260,
+                    accentHue: 340,
+                    backdropSaturate: 100,
+                    perspectiveDepth: 1000,
+                }
+            },
+            neon: {
+                name: 'Neon',
+                icon: 'fas fa-sun',
+                description: 'สีสันสดใส โดดเด่น',
+                settings: {
+                    glassOpacity: 15,
+                    glassBlur: 12,
+                    borderOpacity: 35,
+                    shadowIntensity: 60,
+                    glowIntensity: 100,
+                    textShadow: true,
+                    animationSpeed: 500,
+                    hoverScale: 110,
+                    cardRoundness: 16,
+                    buttonRoundness: 12,
+                    primaryHue: 180,
+                    accentHue: 300,
+                    backdropSaturate: 150,
+                    perspectiveDepth: 1000,
+                }
+            }
+        }
+    });
+});

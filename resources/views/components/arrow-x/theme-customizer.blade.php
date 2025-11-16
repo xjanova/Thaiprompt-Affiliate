@@ -152,6 +152,27 @@
             </button>
         </div>
 
+        {{-- Preset Themes --}}
+        <div class="p-4 border-b border-white/30 bg-white/5">
+            <h3 class="text-xs font-bold text-white/80 mb-3 uppercase tracking-wider">
+                <i class="fas fa-palette mr-2"></i>ธีมสำเร็จรูป
+            </h3>
+            <div class="grid grid-cols-2 gap-2">
+                <template x-for="(preset, key) in $store.themePresets.presets" :key="key">
+                    <button
+                        @click="settings = { ...preset.settings }; saveSettings();"
+                        class="px-3 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 transition-all text-left group"
+                        :title="preset.description">
+                        <div class="flex items-center gap-2">
+                            <i :class="preset.icon + ' text-blue-300 group-hover:text-blue-200 transition'"></i>
+                            <span class="text-xs font-medium text-white" x-text="preset.name"></span>
+                        </div>
+                        <p class="text-[10px] text-white/60 mt-0.5 line-clamp-1" x-text="preset.description"></p>
+                    </button>
+                </template>
+            </div>
+        </div>
+
         {{-- Content --}}
         <div class="flex-1 overflow-y-auto p-6 space-y-6">
             {{-- General Tab --}}
