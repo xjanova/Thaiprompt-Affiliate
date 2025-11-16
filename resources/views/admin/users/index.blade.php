@@ -52,17 +52,17 @@
     </div>
 
     <!-- Filter Section -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 p-6">
+    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
         <form method="GET" action="{{ route('admin.users.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-5">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ค้นหา</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="ชื่อ, อีเมล หรือเลขสมาชิก"
-                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
             </div>
 
             <div>
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">บทบาท</label>
-                <select name="role" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                <select name="role" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
                     <option value="">ทั้งหมด</option>
                     @foreach($roles as $role)
                         <option value="{{ $role->id }}" {{ request('role') == $role->id ? 'selected' : '' }}>
@@ -74,7 +74,7 @@
 
             <div>
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนต่อหน้า</label>
-                <select name="per_page" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                <select name="per_page" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
                     <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
                     <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
                     <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
@@ -97,7 +97,7 @@
     </div>
 
     <!-- Bulk Actions Bar (Hidden by default, shown when items selected) -->
-    <div id="bulk-actions-bar" class="hidden bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-2xl shadow-lg border-2 border-indigo-200 dark:border-indigo-800 p-5">
+    <div id="bulk-actions-bar" class="hidden bg-white/85 dark:bg-white/15 backdrop-blur-xl rounded-2xl shadow-lg border-2 border-indigo-200 dark:border-indigo-500/50 p-5">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <div class="flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-full">
@@ -124,10 +124,10 @@
     </div>
 
     <!-- Users Table -->
-    <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-gray-100 dark:border-slate-700 overflow-hidden">
+    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-slate-700 dark:to-slate-800">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-white/10">
+                <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-white/5 dark:to-white/10">
                     <tr>
                         <th class="px-6 py-4 text-left">
                             <input type="checkbox" id="select-all"
@@ -143,9 +143,9 @@
                         <th class="px-6 py-4 text-center text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider">การกระทำ</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
+                <tbody class="bg-white/50 dark:bg-transparent divide-y divide-gray-200 dark:divide-white/10">
                     @forelse($users as $user)
-                        <tr class="hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-slate-700 dark:hover:to-slate-700/80 transition-all duration-200">
+                        <tr class="hover:bg-white/60 dark:hover:bg-white/5 transition-all duration-200">
                             <td class="px-6 py-4">
                                 <input type="checkbox"
                                        class="user-checkbox rounded-lg border-gray-300 text-indigo-600 focus:ring-indigo-500 w-5 h-5 cursor-pointer"
@@ -300,9 +300,9 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-16 text-center text-gray-500">
+                            <td colspan="8" class="px-6 py-16 text-center text-gray-500 dark:text-gray-400">
                                 <div class="flex flex-col items-center justify-center">
-                                    <div class="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center mb-4">
+                                    <div class="w-20 h-20 bg-white/60 dark:bg-white/10 backdrop-blur-xl border border-black/5 dark:border-white/20 rounded-full flex items-center justify-center mb-4">
                                         <svg class="w-10 h-10 text-indigo-500 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                                         </svg>
@@ -319,7 +319,7 @@
 
         <!-- Pagination -->
         @if($users->hasPages())
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50">
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-white/10 bg-gray-50/50 dark:bg-white/5">
                 <div class="flex items-center justify-between">
                     <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
                         แสดง <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ $users->firstItem() ?? 0 }}</span>

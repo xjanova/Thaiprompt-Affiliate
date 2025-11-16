@@ -10,7 +10,7 @@
 </div>
 
 <div class="max-w-2xl mx-auto">
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-md p-6">
+    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">สร้างผู้ใช้ใหม่</h2>
 
         <!-- Create Form -->
@@ -28,7 +28,7 @@
                        value="{{ old('name') }}"
                        required
                        placeholder="ชื่อ-นามสกุล"
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('name') border-red-500 @enderror">
+                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 @error('name') border-red-500 @enderror">
                 @error('name')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -45,7 +45,7 @@
                        value="{{ old('email') }}"
                        required
                        placeholder="example@email.com"
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('email') border-red-500 @enderror">
+                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 @error('email') border-red-500 @enderror">
                 @error('email')
                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
@@ -61,7 +61,7 @@
                        name="password"
                        required
                        placeholder="อย่างน้อย 8 ตัวอักษร"
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('password') border-red-500 @enderror">
+                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 @error('password') border-red-500 @enderror">
                 <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
                     รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร
                 </p>
@@ -80,7 +80,7 @@
                        name="password_confirmation"
                        required
                        placeholder="กรอกรหัสผ่านอีกครั้ง"
-                       class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
             </div>
 
             <!-- Role -->
@@ -91,7 +91,7 @@
                 <select id="role"
                         name="role"
                         required
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 @error('role') border-red-500 @enderror">
+                        class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 @error('role') border-red-500 @enderror">
                     <option value="">-- เลือก Role --</option>
                     <option value="user" {{ old('role') === 'user' ? 'selected' : '' }}>
                         User - ผู้ใช้ทั่วไป
@@ -117,7 +117,7 @@
             </div>
 
             <!-- Information Box -->
-            <div class="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 dark:border-blue-500 p-4 rounded">
+            <div class="bg-white/60 dark:bg-white/10 backdrop-blur-sm border-l-4 border-blue-400 dark:border-blue-500 p-4 rounded-xl">
                 <div class="flex">
                     <div class="flex-shrink-0">
                         <svg class="h-5 w-5 text-blue-400 dark:text-blue-300" fill="currentColor" viewBox="0 0 20 20">
@@ -133,14 +133,14 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-slate-700">
+            <div class="flex items-center justify-between pt-6 border-t border-gray-200 dark:border-white/10">
                 <a href="{{ route('admin.users.index') }}"
-                   class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-slate-700 rounded-md hover:bg-gray-200 dark:hover:bg-slate-600">
+                   class="px-5 py-2.5 text-gray-700 dark:text-gray-300 bg-white/60 dark:bg-white/10 backdrop-blur-sm border border-gray-200 dark:border-white/20 rounded-xl hover:bg-gray-100 dark:hover:bg-white/20 transition-all duration-200">
                     ยกเลิก
                 </a>
 
                 <button type="submit"
-                        class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
                     สร้างผู้ใช้
                 </button>
             </div>
@@ -148,7 +148,7 @@
     </div>
 
     <!-- Tips Card -->
-    <div class="mt-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+    <div class="mt-6 bg-white/60 dark:bg-white/10 backdrop-blur-sm border-l-4 border-yellow-400 dark:border-yellow-500 rounded-xl p-4 shadow-lg">
         <h3 class="font-semibold text-yellow-900 dark:text-yellow-300 mb-2">💡 เคล็ดลับ</h3>
         <ul class="text-sm text-yellow-800 dark:text-yellow-300 space-y-1">
             <li>• ใช้อีเมลที่ถูกต้องเพื่อให้ผู้ใช้สามารถรับอีเมลยืนยันได้</li>
