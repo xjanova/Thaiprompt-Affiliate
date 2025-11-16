@@ -311,7 +311,7 @@
                     </a>
 
                     {{-- Invite --}}
-                    <a href="{{ route('user.affiliates.invite') }}"
+                    <a href="{{ route('user.mlm.referral') }}"
                        class="group flex flex-col items-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105">
                         <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                             <i class="fas fa-user-plus text-white"></i>
@@ -320,7 +320,7 @@
                     </a>
 
                     {{-- Profile --}}
-                    <a href="{{ route('user.profile.edit') }}"
+                    <a href="{{ route('user.profile') }}"
                        class="group flex flex-col items-center p-4 bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105">
                         <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                             <i class="fas fa-user-edit text-white"></i>
@@ -329,7 +329,7 @@
                     </a>
 
                     {{-- Support --}}
-                    <a href="{{ route('user.support') }}"
+                    <a href="{{ route('user.tickets.index') }}"
                        class="group flex flex-col items-center p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-xl hover:shadow-lg transition-all duration-300 hover:scale-105">
                         <div class="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                             <i class="fas fa-headset text-white"></i>
