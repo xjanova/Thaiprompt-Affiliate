@@ -6,3 +6,253 @@
 @tailwind utilities;
 
 /* Custom styles for the application */
+
+/**
+ * Arrow X Theme - Dynamic Color Utilities
+ *
+ * เหล่านี้คือ utility classes ที่ใช้ CSS Variables จาก Arrow X Theme System
+ * สีจะเปลี่ยนตาม Theme Preset ที่ผู้ใช้เลือก (Classic, Modern, Neon, ฯลฯ)
+ */
+@layer utilities {
+    /* ===== Background Gradients ===== */
+    .bg-gradient-primary {
+        background: var(--arrow-x-primary-gradient, linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7));
+    }
+
+    .bg-gradient-secondary {
+        background: var(--arrow-x-secondary-gradient, linear-gradient(135deg, #3b82f6, #06b6d4, #14b8a6));
+    }
+
+    .hover\:bg-gradient-primary:hover {
+        background: var(--arrow-x-primary-gradient, linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7));
+        filter: brightness(1.1);
+    }
+
+    .hover\:bg-gradient-secondary:hover {
+        background: var(--arrow-x-secondary-gradient, linear-gradient(135deg, #3b82f6, #06b6d4, #14b8a6));
+        filter: brightness(1.1);
+    }
+
+    /* ===== Solid Colors from Gradient Points ===== */
+    .bg-primary {
+        background-color: var(--arrow-x-primary-start, #6366f1);
+    }
+
+    .bg-primary-mid {
+        background-color: var(--arrow-x-primary-middle, #8b5cf6);
+    }
+
+    .bg-primary-end {
+        background-color: var(--arrow-x-primary-end, #a855f7);
+    }
+
+    .bg-secondary {
+        background-color: var(--arrow-x-secondary-start, #3b82f6);
+    }
+
+    .bg-secondary-mid {
+        background-color: var(--arrow-x-secondary-middle, #06b6d4);
+    }
+
+    .bg-secondary-end {
+        background-color: var(--arrow-x-secondary-end, #14b8a6);
+    }
+
+    /* ===== Status Colors ===== */
+    .bg-accent {
+        background-color: var(--arrow-x-accent, #ec4899);
+    }
+
+    .bg-success {
+        background-color: var(--arrow-x-success, #10b981);
+    }
+
+    .bg-warning {
+        background-color: var(--arrow-x-warning, #f59e0b);
+    }
+
+    .bg-error {
+        background-color: var(--arrow-x-error, #ef4444);
+    }
+
+    .bg-info {
+        background-color: var(--arrow-x-info, #3b82f6);
+    }
+
+    /* ===== Text Colors ===== */
+    .text-primary {
+        color: var(--arrow-x-primary-start, #6366f1);
+    }
+
+    .text-primary-mid {
+        color: var(--arrow-x-primary-middle, #8b5cf6);
+    }
+
+    .text-primary-end {
+        color: var(--arrow-x-primary-end, #a855f7);
+    }
+
+    .text-secondary {
+        color: var(--arrow-x-secondary-start, #3b82f6);
+    }
+
+    .text-secondary-mid {
+        color: var(--arrow-x-secondary-middle, #06b6d4);
+    }
+
+    .text-secondary-end {
+        color: var(--arrow-x-secondary-end, #14b8a6);
+    }
+
+    .text-accent {
+        color: var(--arrow-x-accent, #ec4899);
+    }
+
+    .text-success {
+        color: var(--arrow-x-success, #10b981);
+    }
+
+    .text-warning {
+        color: var(--arrow-x-warning, #f59e0b);
+    }
+
+    .text-error {
+        color: var(--arrow-x-error, #ef4444);
+    }
+
+    .text-info {
+        color: var(--arrow-x-info, #3b82f6);
+    }
+
+    /* ===== Hover Text Colors ===== */
+    .hover\:text-primary:hover {
+        color: var(--arrow-x-primary-start, #6366f1);
+    }
+
+    .hover\:text-secondary:hover {
+        color: var(--arrow-x-secondary-start, #3b82f6);
+    }
+
+    .hover\:text-accent:hover {
+        color: var(--arrow-x-accent, #ec4899);
+    }
+
+    /* ===== Border Colors ===== */
+    .border-primary {
+        border-color: var(--arrow-x-primary-start, #6366f1);
+    }
+
+    .border-secondary {
+        border-color: var(--arrow-x-secondary-start, #3b82f6);
+    }
+
+    .border-accent {
+        border-color: var(--arrow-x-accent, #ec4899);
+    }
+
+    .border-success {
+        border-color: var(--arrow-x-success, #10b981);
+    }
+
+    .border-warning {
+        border-color: var(--arrow-x-warning, #f59e0b);
+    }
+
+    .border-error {
+        border-color: var(--arrow-x-error, #ef4444);
+    }
+
+    .border-info {
+        border-color: var(--arrow-x-info, #3b82f6);
+    }
+
+    /* ===== Ring Colors (for focus states) ===== */
+    .ring-primary {
+        --tw-ring-color: var(--arrow-x-primary-start, #6366f1);
+    }
+
+    .ring-secondary {
+        --tw-ring-color: var(--arrow-x-secondary-start, #3b82f6);
+    }
+
+    .ring-accent {
+        --tw-ring-color: var(--arrow-x-accent, #ec4899);
+    }
+
+    .focus\:ring-primary:focus {
+        --tw-ring-color: var(--arrow-x-primary-start, #6366f1);
+    }
+
+    .focus\:ring-secondary:focus {
+        --tw-ring-color: var(--arrow-x-secondary-start, #3b82f6);
+    }
+
+    .focus\:ring-accent:focus {
+        --tw-ring-color: var(--arrow-x-accent, #ec4899);
+    }
+
+    /* ===== Gradient Text ===== */
+    .text-gradient-primary {
+        background: var(--arrow-x-primary-gradient, linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .text-gradient-secondary {
+        background: var(--arrow-x-secondary-gradient, linear-gradient(135deg, #3b82f6, #06b6d4, #14b8a6));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* ===== Icon/Badge Colors (with opacity support) ===== */
+    .bg-primary-light {
+        background-color: color-mix(in srgb, var(--arrow-x-primary-start, #6366f1) 10%, transparent);
+    }
+
+    .bg-secondary-light {
+        background-color: color-mix(in srgb, var(--arrow-x-secondary-start, #3b82f6) 10%, transparent);
+    }
+
+    .bg-success-light {
+        background-color: color-mix(in srgb, var(--arrow-x-success, #10b981) 10%, transparent);
+    }
+
+    .bg-warning-light {
+        background-color: color-mix(in srgb, var(--arrow-x-warning, #f59e0b) 10%, transparent);
+    }
+
+    .bg-error-light {
+        background-color: color-mix(in srgb, var(--arrow-x-error, #ef4444) 10%, transparent);
+    }
+
+    .bg-info-light {
+        background-color: color-mix(in srgb, var(--arrow-x-info, #3b82f6) 10%, transparent);
+    }
+
+    /* Dark mode variants */
+    .dark .bg-primary-light {
+        background-color: color-mix(in srgb, var(--arrow-x-primary-start, #6366f1) 30%, transparent);
+    }
+
+    .dark .bg-secondary-light {
+        background-color: color-mix(in srgb, var(--arrow-x-secondary-start, #3b82f6) 30%, transparent);
+    }
+
+    .dark .bg-success-light {
+        background-color: color-mix(in srgb, var(--arrow-x-success, #10b981) 30%, transparent);
+    }
+
+    .dark .bg-warning-light {
+        background-color: color-mix(in srgb, var(--arrow-x-warning, #f59e0b) 30%, transparent);
+    }
+
+    .dark .bg-error-light {
+        background-color: color-mix(in srgb, var(--arrow-x-error, #ef4444) 30%, transparent);
+    }
+
+    .dark .bg-info-light {
+        background-color: color-mix(in srgb, var(--arrow-x-info, #3b82f6) 30%, transparent);
+    }
+}
