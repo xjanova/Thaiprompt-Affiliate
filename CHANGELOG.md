@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.35.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่ม Dynamic Theme Color System สำหรับ Arrow X (678044e6)
+### 🐛 Bug Fixes
+- fix: เปลี่ยน Dashboard ให้ใช้ Arrow X Theme (layouts.admin-v3) (31607732)
+- fix: เปลี่ยน Users ทั้งหมดให้ใช้ Arrow X Theme (layouts.admin-v3) (19e4e07a)
+### 🔧 Other Changes
+- Merge pull request #1259 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (716477e2)
+
 ## [v3.34.0] - 2025-11-16
 
 ### ✨ Features
