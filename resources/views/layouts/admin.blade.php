@@ -123,7 +123,7 @@
     <!-- Main Content Area -->
     <div class="min-h-screen arrow-x-content">
         <!-- Top Bar -->
-        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+        <header class="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-[100]">
             <div class="@if($contentWidthMode === 'max') w-full @elseif($contentWidthMode === 'custom') mx-auto @else max-w-7xl mx-auto @endif px-4 sm:px-6 lg:px-8 py-4"
                  @if($contentWidthMode === 'custom') style="max-width: {{ $contentWidthCustom }}px;" @endif>
                 <div class="flex items-center justify-between">
@@ -139,7 +139,7 @@
                         <x-notification-bell />
 
                         <!-- Language Switcher -->
-                        <div class="relative z-[60]">
+                        <div class="relative z-[110]">
                             <x-language-switcher-pro />
                         </div>
                     </div>
