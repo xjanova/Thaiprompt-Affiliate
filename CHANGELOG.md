@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.29.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1249 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (a253cc43)
+- fix: แก้ไข z-index ของ Top Bar และ Language Switcher ให้อยู่เหนือทุกเลเยอร์ (6e977c43)
+### 🔧 Other Changes
+
+
 ## [v3.29.0] - 2025-11-16
 
 ### ✨ Features
