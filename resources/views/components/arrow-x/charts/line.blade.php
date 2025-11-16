@@ -67,8 +67,10 @@
     </div>
 
     {{-- Chart Canvas --}}
-    <div class="p-6">
-        <canvas id="{{ $id }}" style="height: {{ $height }}px; max-height: {{ $height }}px;"></canvas>
+    <div class="p-6" style="min-height: {{ $height + 48 }}px;">
+        <div style="position: relative; height: {{ $height }}px; width: 100%;">
+            <canvas id="{{ $id }}"></canvas>
+        </div>
     </div>
 </div>
 

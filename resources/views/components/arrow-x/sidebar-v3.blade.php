@@ -44,12 +44,10 @@
 <aside
     class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 relative z-40
            fixed md:relative inset-y-0 left-0 w-64
-           transform md:transform-none"
+           transform"
     :class="{
         'translate-x-0': sidebarOpen,
-        '-translate-x-full': !sidebarOpen,
-        'md:w-64': sidebarOpen,
-        'md:w-20': !sidebarOpen
+        '-translate-x-full': !sidebarOpen
     }"
     x-cloak
 >
