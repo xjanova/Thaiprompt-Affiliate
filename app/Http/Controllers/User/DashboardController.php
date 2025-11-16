@@ -159,27 +159,30 @@ class DashboardController extends Controller
         $rankProgress = 0;
 
         if ($currentRank) {
-            // หา rank ถัดไป
-            $nextRank = \App\Models\Rank::where('required_points', '>', $currentRank->required_points)
-                ->orderBy('required_points', 'asc')
+            // หา rank ถัดไป (ใช้ level แทน min_points เพราะ accurate กว่า)
+            $nextRank = \App\Models\Rank::where('level', '>', $currentRank->level)
+                ->where('is_active', true)
+                ->orderBy('level', 'asc')
                 ->first();
 
             // คำนวณความคืบหน้า
             if ($nextRank) {
                 $currentPoints = $user->rank_points ?? 0;
-                $currentRankPoints = $currentRank->required_points;
-                $nextRankPoints = $nextRank->required_points;
+                $currentRankPoints = $currentRank->min_points;
+                $nextRankPoints = $nextRank->min_points;
                 $pointsNeeded = $nextRankPoints - $currentRankPoints;
                 $pointsProgress = max(0, $currentPoints - $currentRankPoints);
                 $rankProgress = $pointsNeeded > 0 ? min(100, ($pointsProgress / $pointsNeeded) * 100) : 0;
             }
         } else {
-            // ถ้ายังไม่มี rank ให้หา rank แรก
-            $nextRank = \App\Models\Rank::orderBy('required_points', 'asc')->first();
+            // ถ้ายังไม่มี rank ให้หา rank แรก (level ต่ำสุด)
+            $nextRank = \App\Models\Rank::where('is_active', true)
+                ->orderBy('level', 'asc')
+                ->first();
             if ($nextRank) {
                 $currentPoints = $user->rank_points ?? 0;
-                $rankProgress = $nextRank->required_points > 0
-                    ? min(100, ($currentPoints / $nextRank->required_points) * 100)
+                $rankProgress = $nextRank->min_points > 0
+                    ? min(100, ($currentPoints / $nextRank->min_points) * 100)
                     : 0;
             }
         }
