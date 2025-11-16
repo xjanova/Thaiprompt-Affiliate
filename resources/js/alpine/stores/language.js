@@ -1,36 +1,30 @@
 import Alpine from 'alpinejs';
 
 /**
- * Language Store - Alpine.js Store สำหรับจัดการภาษาและการแปลด้วย Google Translate API
+ * Language Store - Alpine.js Store สำหรับจัดการภาษาด้วย Google Translate Widget (ฟรี 100%)
  *
  * Features:
- * - เปลี่ยนภาษาได้ทันที (th, en, zh, ja, ko, vi, de, fr, es)
- * - แปลข้อความผ่าน Google Translate API
+ * - ใช้ Google Translate Widget ฟรี ไม่ต้องใช้ API key
+ * - แปลทั้งหน้าอัตโนมัติ
+ * - รองรับ Chrome, Edge, Firefox, Safari
  * - บันทึก preference ลง localStorage
- * - แปลเนื้อหาหน้าเว็บแบบเรียลไทม์
- * - Cache การแปลเพื่อลด API calls
+ * - ไม่มีค่าใช้จ่าย ไม่จำกัดการใช้งาน
  *
  * @example
  * // เปลี่ยนภาษา
  * $store.language.setLanguage('en')
- *
- * // แปลข้อความ
- * await $store.language.translate('สวัสดี')
- *
- * // แปลทั้งหน้า
- * $store.language.translatePage()
  */
 Alpine.store('language', {
     // สถานะปัจจุบัน
     current: 'th',
     isTranslating: false,
-    translationCache: {},
+    isBrowserSupported: true,
 
-    // ภาษาที่รองรับ
+    // ภาษาที่รองรับ (ตาม Google Translate)
     languages: [
         { code: 'th', name: 'ไทย', flag: '🇹🇭', nativeName: 'ภาษาไทย' },
         { code: 'en', name: 'English', flag: '🇺🇸', nativeName: 'English' },
-        { code: 'zh', name: 'Chinese', flag: '🇨🇳', nativeName: '中文' },
+        { code: 'zh-CN', name: 'Chinese', flag: '🇨🇳', nativeName: '中文' },
         { code: 'ja', name: 'Japanese', flag: '🇯🇵', nativeName: '日本語' },
         { code: 'ko', name: 'Korean', flag: '🇰🇷', nativeName: '한국어' },
         { code: 'vi', name: 'Vietnamese', flag: '🇻🇳', nativeName: 'Tiếng Việt' },
@@ -48,35 +42,144 @@ Alpine.store('language', {
         if (savedLang && this.languages.find(l => l.code === savedLang)) {
             this.current = savedLang;
         } else {
-            // Default เป็นภาษาไทยเสมอ (ไม่เช็คจากบราวเซอร์)
+            // Default เป็นภาษาไทยเสมอ
             this.current = 'th';
             localStorage.setItem('app_language', 'th');
         }
 
-        console.log('🌐 Language Store initialized:', this.current);
+        console.log('🌐 Language Store initialized (Google Translate Widget - ฟรี 100%):', this.current);
+
+        // ตรวจสอบบราวเซอร์
+        this.checkBrowserSupport();
+
+        // โหลด Google Translate Widget
+        this.loadGoogleTranslateWidget();
 
         // ถ้าไม่ใช่ภาษาไทย ให้แปลหน้าอัตโนมัติ
         if (this.current !== 'th') {
-            setTimeout(() => this.translatePage(), 500);
+            setTimeout(() => this.translatePage(), 1500);
         }
+    },
+
+    /**
+     * ตรวจสอบว่าบราวเซอร์รองรับการแปลหรือไม่
+     */
+    checkBrowserSupport() {
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isChrome = /chrome/.test(userAgent) && !/edge/.test(userAgent);
+        const isEdge = /edg/.test(userAgent);
+        const isFirefox = /firefox/.test(userAgent);
+        const isSafari = /safari/.test(userAgent) && !/chrome/.test(userAgent);
+
+        // Google Translate Widget รองรับทุกบราวเซอร์
+        this.isBrowserSupported = true;
+        this.browserName = isChrome ? 'Chrome' : isEdge ? 'Edge' : isFirefox ? 'Firefox' : isSafari ? 'Safari' : 'Unknown';
+
+        console.log('🌐 Browser:', this.browserName, '- Google Translate Widget รองรับทุกบราวเซอร์');
+    },
+
+    /**
+     * โหลด Google Translate Widget Script (ฟรี!)
+     */
+    loadGoogleTranslateWidget() {
+        // ตรวจสอบว่าโหลดแล้วหรือยัง
+        if (window.google?.translate) {
+            console.log('✅ Google Translate Widget โหลดแล้ว');
+            return;
+        }
+
+        // สร้าง div สำหรับ widget (ซ่อนไว้)
+        if (!document.getElementById('google_translate_element')) {
+            const div = document.createElement('div');
+            div.id = 'google_translate_element';
+            div.style.display = 'none';
+            document.body.appendChild(div);
+        }
+
+        // โหลด Google Translate Widget Script
+        const script = document.createElement('script');
+        script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+        script.async = true;
+        document.head.appendChild(script);
+
+        // Callback function สำหรับ Google Translate
+        window.googleTranslateElementInit = () => {
+            new window.google.translate.TranslateElement({
+                pageLanguage: 'th',
+                includedLanguages: 'th,en,zh-CN,ja,ko,vi,de,fr,es',
+                layout: window.google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+
+            console.log('✅ Google Translate Widget โหลดสำเร็จ (ฟรี 100%)');
+        };
+
+        // ซ่อน Google Translate Toolbar
+        const style = document.createElement('style');
+        style.textContent = `
+            .goog-te-banner-frame,
+            .goog-te-balloon-frame,
+            .goog-tooltip {
+                display: none !important;
+            }
+            body {
+                top: 0 !important;
+            }
+            #google_translate_element {
+                display: none;
+            }
+        `;
+        document.head.appendChild(style);
     },
 
     /**
      * เปลี่ยนภาษา
      */
-    async setLanguage(langCode) {
-        if (this.current === langCode) return;
+    setLanguage(langCode) {
+        console.log('🌐 เปลี่ยนภาษาเป็น:', langCode);
 
         this.current = langCode;
         localStorage.setItem('app_language', langCode);
 
-        console.log('🌐 Language changed to:', langCode);
+        // แปลหน้า
+        this.translatePage();
+    },
 
-        // แปลหน้าทันที
-        await this.translatePage();
+    /**
+     * แปลทั้งหน้าด้วย Google Translate Widget
+     */
+    translatePage() {
+        this.isTranslating = true;
 
-        // Reload หน้าเพื่อ apply ภาษาใหม่ทั้งหมด
-        setTimeout(() => window.location.reload(), 500);
+        // รอให้ Google Translate โหลด
+        const checkGoogleTranslate = setInterval(() => {
+            if (window.google?.translate) {
+                clearInterval(checkGoogleTranslate);
+
+                // หา select element ของ Google Translate
+                const selectElement = document.querySelector('.goog-te-combo');
+                if (selectElement) {
+                    // เปลี่ยนภาษา
+                    selectElement.value = this.current;
+                    selectElement.dispatchEvent(new Event('change'));
+
+                    console.log('✅ แปลภาษาเป็น', this.current, 'สำเร็จ (Google Translate Widget - ฟรี!)');
+
+                    setTimeout(() => {
+                        this.isTranslating = false;
+                    }, 500);
+                } else {
+                    console.warn('⚠️ ไม่พบ Google Translate select element - ลองใหม่...');
+                    this.isTranslating = false;
+                }
+            }
+        }, 100);
+
+        // Timeout หลัง 5 วินาที
+        setTimeout(() => {
+            clearInterval(checkGoogleTranslate);
+            this.isTranslating = false;
+        }, 5000);
     },
 
     /**
@@ -87,119 +190,10 @@ Alpine.store('language', {
     },
 
     /**
-     * แปลข้อความเดี่ยว
-     */
-    async translate(text, targetLang = null) {
-        if (!text || text.trim() === '') return text;
-
-        const target = targetLang || this.current;
-
-        // ถ้าเป็นภาษาไทย ไม่ต้องแปล
-        if (target === 'th') return text;
-
-        // เช็ค cache
-        const cacheKey = `${text}_${target}`;
-        if (this.translationCache[cacheKey]) {
-            return this.translationCache[cacheKey];
-        }
-
-        try {
-            const response = await fetch('/api/v1/translate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify({
-                    text: text,
-                    target: target,
-                    source: 'th'
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.translatedText) {
-                // บันทึก cache
-                this.translationCache[cacheKey] = data.translatedText;
-                return data.translatedText;
-            }
-
-            return text; // fallback
-        } catch (error) {
-            console.error('Translation error:', error);
-            return text; // fallback
-        }
-    },
-
-    /**
-     * แปลทั้งหน้าเว็บ
-     */
-    async translatePage() {
-        if (this.current === 'th' || this.isTranslating) return;
-
-        this.isTranslating = true;
-
-        try {
-            console.log('🌐 Translating page to:', this.current);
-
-            // หา elements ที่ต้องแปล
-            const elements = document.querySelectorAll('[data-translate], h1, h2, h3, p, span:not(.no-translate), button:not(.no-translate), a:not(.no-translate), label, td');
-
-            const textsToTranslate = [];
-            const elementMap = [];
-
-            elements.forEach(el => {
-                // ข้าม elements ที่มี class no-translate
-                if (el.classList.contains('no-translate')) return;
-
-                // ข้าม elements ว่าง
-                const text = el.textContent?.trim();
-                if (!text || text.length === 0) return;
-
-                // ข้าม elements ที่มีแต่ตัวเลขหรือสัญลักษณ์
-                if (/^[\d\s\.,\-\+\*\/\=\(\)\[\]\{\}]+$/.test(text)) return;
-
-                textsToTranslate.push(text);
-                elementMap.push(el);
-            });
-
-            // แปลทีละ batch (10 texts per request)
-            const batchSize = 10;
-            for (let i = 0; i < textsToTranslate.length; i += batchSize) {
-                const batch = textsToTranslate.slice(i, i + batchSize);
-                const translations = await Promise.all(
-                    batch.map(text => this.translate(text))
-                );
-
-                // Apply translations
-                translations.forEach((translated, index) => {
-                    const el = elementMap[i + index];
-                    if (el && translated) {
-                        el.textContent = translated;
-                    }
-                });
-
-                // Delay เล็กน้อยเพื่อไม่ให้โดน rate limit
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-
-            console.log('✅ Page translation completed');
-        } catch (error) {
-            console.error('Page translation error:', error);
-        } finally {
-            this.isTranslating = false;
-        }
-    },
-
-    /**
-     * Clear cache
+     * Clear cache (Reload หน้าเพื่อ reset)
      */
     clearCache() {
-        this.translationCache = {};
-        console.log('🗑️ Translation cache cleared');
+        localStorage.removeItem('app_language');
+        window.location.reload();
     }
 });
-
-export default Alpine.store('language');
