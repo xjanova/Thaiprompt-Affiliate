@@ -8,6 +8,7 @@ use App\Models\ThemeColor;
 use App\Models\ThemeRgbEffect;
 use App\Models\ThemeTypography;
 use App\Models\ThemeComponent;
+use App\Models\ThemePreset;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -429,6 +430,71 @@ class ArrowXThemeController extends Controller
 
             return $themeSetting;
         });
+    }
+
+    /**
+     * Apply theme preset
+     *
+     * ใช้ theme preset ที่เลือกไปกับ theme setting ที่ active อยู่
+     *
+     * @param Request $request
+     * @return RedirectResponse
+     */
+    public function applyPreset(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'preset_id' => 'required|exists:theme_presets,id',
+        ]);
+
+        $preset = ThemePreset::findOrFail($validated['preset_id']);
+        $themeSetting = ThemeSetting::active() ?? $this->createDefaultTheme();
+
+        // อัพเดทหรือสร้าง ThemeColor
+        $color = $themeSetting->color;
+
+        if ($color) {
+            // อัพเดทสีจาก preset (ใช้ทุกฟิลด์)
+            $color->update([
+                'scheme_name' => $preset->display_name,
+                'primary_start' => $preset->colors['primary_start'],
+                'primary_middle' => $preset->colors['primary_middle'],
+                'primary_end' => $preset->colors['primary_end'],
+                'secondary_start' => $preset->colors['secondary_start'] ?? '#3B82F6',
+                'secondary_middle' => $preset->colors['secondary_middle'] ?? '#06B6D4',
+                'secondary_end' => $preset->colors['secondary_end'] ?? '#14B8A6',
+                'accent_color' => $preset->colors['accent_color'] ?? '#F59E0B',
+                'success_color' => $preset->colors['success_color'],
+                'warning_color' => $preset->colors['warning_color'],
+                'error_color' => $preset->colors['error_color'],
+                'info_color' => $preset->colors['info_color'],
+                'gradient_direction' => $preset->colors['gradient_direction'] ?? 'to-right',
+            ]);
+        } else {
+            // สร้าง ThemeColor ใหม่
+            $themeSetting->color()->create([
+                'theme_setting_id' => $themeSetting->id,
+                'scheme_name' => $preset->display_name,
+                'primary_start' => $preset->colors['primary_start'],
+                'primary_middle' => $preset->colors['primary_middle'],
+                'primary_end' => $preset->colors['primary_end'],
+                'secondary_start' => $preset->colors['secondary_start'] ?? '#3B82F6',
+                'secondary_middle' => $preset->colors['secondary_middle'] ?? '#06B6D4',
+                'secondary_end' => $preset->colors['secondary_end'] ?? '#14B8A6',
+                'accent_color' => $preset->colors['accent_color'] ?? '#F59E0B',
+                'success_color' => $preset->colors['success_color'],
+                'warning_color' => $preset->colors['warning_color'],
+                'error_color' => $preset->colors['error_color'],
+                'info_color' => $preset->colors['info_color'],
+                'gradient_direction' => $preset->colors['gradient_direction'] ?? 'to-right',
+            ]);
+        }
+
+        // เพิ่ม usage count
+        $preset->increment('usage_count');
+
+        return redirect()
+            ->back()
+            ->with('success', "ใช้ Theme Preset \"{$preset->display_name}\" สำเร็จ");
     }
 
     /**

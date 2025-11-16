@@ -1866,6 +1866,8 @@ Route::prefix('arrow-x-theme')->name('arrow-x-theme.')->group(function () {
         ->name('color-settings');
     Route::put('/color-settings', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'updateColorSettings'])
         ->name('color-settings.update');
+    Route::post('/apply-preset', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'applyPreset'])
+        ->name('apply-preset');
 
     // RGB Effects
     Route::get('/rgb-effects', [App\Http\Controllers\Admin\ArrowXThemeController::class, 'rgbEffects'])
