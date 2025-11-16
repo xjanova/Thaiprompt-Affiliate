@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" :class="{ 'dark': darkMode }">
+<html lang="th">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,6 +16,9 @@
         <link rel="icon" type="image/x-icon" href="{{ asset($favicon) }}">
     @endif
 
+    {{-- Prevent Flash of Unstyled Content (FOUC) สำหรับ Dark Mode --}}
+    <x-dark-mode-init />
+
     {{-- Fonts --}}
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
@@ -23,12 +26,11 @@
     {{-- Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-    {{-- Tailwind CSS --}}
-    <script src="https://cdn.tailwindcss.com"></script>
+    {{-- Vite Assets (รวม Alpine.js, Tailwind CSS, Theme Stores) --}}
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Alpine.js --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.13.3/dist/cdn.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    {{-- Dark Mode CSS Variables --}}
+    <x-dark-mode-styles />
 
     {{-- Chart.js --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -182,7 +184,7 @@
 
     @stack('styles')
 </head>
-<body class="gradient-mesh-bg min-h-screen" x-data="userLayout()" x-init="init()">
+<body class="gradient-mesh-bg min-h-screen" x-data="{ sidebarOpen: false }" x-init="$store.theme.init()">
     <div class="flex h-screen overflow-hidden">
         {{-- Sidebar --}}
         <aside class="sidebar-glass w-64 flex-shrink-0 hidden lg:flex lg:flex-col fixed lg:static inset-y-0 left-0 z-50 transform transition-transform duration-300"
@@ -318,10 +320,12 @@
 
                         {{-- Right Actions --}}
                         <div class="flex items-center space-x-4 ml-auto">
-                            {{-- Dark Mode Toggle --}}
-                            <button @click="toggleDarkMode()"
-                                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
-                                <i class="fas" :class="darkMode ? 'fa-sun text-yellow-400' : 'fa-moon text-gray-600'"></i>
+                            {{-- Dark Mode Toggle (ใช้ Alpine Store แบบเดียวกับ Admin) --}}
+                            <button @click="$store.theme.toggle()"
+                                    class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition group"
+                                    :title="$store.theme.isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'">
+                                <i x-show="!$store.theme.isDark" class="fas fa-moon text-gray-600 dark:text-gray-300 group-hover:text-purple-500 transition"></i>
+                                <i x-show="$store.theme.isDark" class="fas fa-sun text-yellow-400 group-hover:text-yellow-500 transition"></i>
                             </button>
 
                             {{-- Notifications --}}
@@ -356,38 +360,22 @@
 
     <script>
     /**
-     * User Layout Alpine.js Component
+     * ฟัง theme change events จาก Alpine Store
+     * อัพเดท Chart.js และ components ที่จำเป็น
      */
-    function userLayout() {
-        return {
-            sidebarOpen: false,
-            darkMode: localStorage.getItem('darkMode') === 'true',
+    window.addEventListener('theme-changed', (event) => {
+        console.log('🎨 Theme changed in User Dashboard:', event.detail.isDark ? 'Dark' : 'Light');
 
-            init() {
-                // Apply saved dark mode
-                if (this.darkMode) {
-                    document.documentElement.classList.add('dark');
-                }
-            },
+        // อัพเดท Chart.js ถ้ามี
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.color = event.detail.isDark ? '#fff' : '#000';
+        }
 
-            toggleDarkMode() {
-                this.darkMode = !this.darkMode;
-
-                if (this.darkMode) {
-                    document.documentElement.classList.add('dark');
-                    localStorage.setItem('darkMode', 'true');
-                } else {
-                    document.documentElement.classList.remove('dark');
-                    localStorage.setItem('darkMode', 'false');
-                }
-
-                // Dispatch event for other components
-                window.dispatchEvent(new CustomEvent('dark-mode-changed', {
-                    detail: { isDark: this.darkMode }
-                }));
-            }
-        };
-    }
+        // Dispatch event สำหรับ custom components
+        window.dispatchEvent(new CustomEvent('user-theme-changed', {
+            detail: event.detail
+        }));
+    });
     </script>
 </body>
 </html>
