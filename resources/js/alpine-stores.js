@@ -7,60 +7,8 @@
  */
 
 document.addEventListener('alpine:init', () => {
-    /**
-     * Language Store - จัดการระบบหลายภาษา
-     */
-    Alpine.store('language', {
-        current: localStorage.getItem('language') || 'th',
-        isTranslating: false,
-
-        // รายการภาษาที่รองรับ (9 ภาษา)
-        languages: [
-            { code: 'th', name: 'Thai', nativeName: 'ภาษาไทย', flag: '🇹🇭' },
-            { code: 'en', name: 'English', nativeName: 'English', flag: '🇬🇧' },
-            { code: 'zh', name: 'Chinese', nativeName: '中文', flag: '🇨🇳' },
-            { code: 'ja', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵' },
-            { code: 'ko', name: 'Korean', nativeName: '한국어', flag: '🇰🇷' },
-            { code: 'vi', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳' },
-            { code: 'de', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪' },
-            { code: 'fr', name: 'French', nativeName: 'Français', flag: '🇫🇷' },
-            { code: 'es', name: 'Spanish', nativeName: 'Español', flag: '🇪🇸' }
-        ],
-
-        /**
-         * ดึงข้อมูลภาษาปัจจุบัน
-         */
-        getCurrentLanguage() {
-            return this.languages.find(lang => lang.code === this.current) || this.languages[0];
-        },
-
-        /**
-         * เปลี่ยนภาษา
-         */
-        async setLanguage(code) {
-            if (this.current === code) return;
-
-            this.isTranslating = true;
-            this.current = code;
-            localStorage.setItem('language', code);
-
-            // หน่วงเวลาเล็กน้อยเพื่อให้เห็น animation
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // รีโหลดหน้าเพื่อให้ backend แปลภาษา
-            window.location.reload();
-        },
-
-        /**
-         * ล้าง cache การแปล
-         */
-        clearCache() {
-            if (confirm('ล้าง cache การแปลทั้งหมด?')) {
-                localStorage.removeItem('translation_cache');
-                window.location.reload();
-            }
-        }
-    });
+    // Language Store ถูก import จาก ./alpine/stores/language.js แล้ว
+    // ไม่ต้องสร้างใหม่ที่นี่
 
     /**
      * Theme Presets Store - ธีมสำเร็จรูป
