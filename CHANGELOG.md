@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.25.0] - 2025-11-16
+
+### ✨ Features
+- feat: เพิ่ม Drag & Drop สำหรับ Dashboard Cards ด้วย SortableJS (75a9b034)
+### 🐛 Bug Fixes
+- fix: แก้กราฟไม่แสดงและปุ่มเลือกภาษาหาย (13c6340e)
+### 🔧 Other Changes
+- Merge pull request #1233 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (8d7b2991)
+
 ## [v3.24.0] - 2025-11-16
 
 ### ✨ Features
