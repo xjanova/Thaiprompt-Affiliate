@@ -379,7 +379,7 @@
                                      style="width: {{ $rankProgress }}%"></div>
                             </div>
                             <p class="mt-2 text-xs text-gray-600 dark:text-gray-400">
-                                ต้องการอีก {{ number_format($nextRank->required_points - $user->rank_points) }} คะแนน
+                                ต้องการอีก {{ number_format(max(0, $nextRank->min_points - ($user->rank_points ?? 0))) }} คะแนน
                             </p>
                         </div>
                     @endif
