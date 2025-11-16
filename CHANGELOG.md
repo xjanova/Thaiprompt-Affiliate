@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.31.2] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- fix: เปลี่ยนทุกหน้าให้ใช้ Arrow X Layouts (602355a3)
+### 🔧 Other Changes
+- Merge pull request #1253 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (01e58394)
+- docs: เพิ่มกฎบังคับสำหรับ Arrow X Layouts ใน V3 Guidelines (20c166c6)
+
 ## [v3.31.1] - 2025-11-16
 
 ### ✨ Features
