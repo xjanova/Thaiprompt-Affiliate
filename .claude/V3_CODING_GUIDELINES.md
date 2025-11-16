@@ -591,7 +591,395 @@ function dashboardManager() {
 @endsection
 ```
 
-### 3. 🧩 Component Architecture
+### 3. 🎨 Custom Theme & Dark/Light Mode (MANDATORY)
+
+**กฎบังคับสำหรับ V3** - ทุกหน้าต้องรองรับ Custom Theme และ Dark/Light Mode:
+
+#### **Custom Theme Support**
+
+**ThemeSetting System** - ระบบรองรับการปรับแต่ง theme แบบ realtime:
+
+```php
+// Layout Types (รองรับทุกหน้า)
+'fixed'  - Fixed width layout (1280px max)
+'fluid'  - Full width responsive layout
+'boxed'  - Boxed layout with max container
+
+// Opacity Settings (0-100)
+- global_opacity       - ความโปร่งใสทั่วไป
+- sidebar_opacity      - ความโปร่งใส sidebar
+- navbar_opacity       - ความโปร่งใส navbar
+- card_opacity         - ความโปร่งใส card
+- modal_opacity        - ความโปร่งใส modal
+
+// Glass Effects
+- card_blur_intensity  - ความเบลอของ glass effect (px)
+- card_border_width    - ความหนาของเส้นขอบ (px)
+- card_border_radius   - มุมโค้งของ card (px)
+```
+
+**กฎการเขียน Blade:**
+
+```blade
+{{-- ✅ ถูกต้อง: รองรับ custom theme --}}
+<div class="
+    glass-fusion-card
+    rounded-2xl
+    shadow-2xl
+    {{-- ใช้ Tailwind classes ที่รองรับ theme settings --}}
+    backdrop-blur-xl
+    bg-white/80 dark:bg-gray-800/80
+    border border-white/20 dark:border-gray-700/30
+">
+    <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
+        หัวข้อ
+    </h2>
+
+    <p class="text-gray-600 dark:text-gray-300">
+        เนื้อหา
+    </p>
+</div>
+
+{{-- ❌ ผิด: ใช้สีแบบ hardcode ไม่รองรับ theme --}}
+<div style="background: white; color: black;">
+    <h2>หัวข้อ</h2>
+</div>
+
+{{-- ❌ ผิด: ไม่รองรับ dark mode --}}
+<div class="bg-white text-black">
+    <h2>หัวข้อ</h2>
+</div>
+```
+
+#### **Dark/Light Mode Support (MANDATORY)**
+
+**ทุกหน้าต้องรองรับ Dark/Light Mode 100%:**
+
+**Alpine.js Dark Mode Pattern:**
+
+```blade
+{{-- Layout Level (layouts/user-arrow-x.blade.php, layouts/admin-v3.blade.php) --}}
+<html lang="th"
+      x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }"
+      :class="{ 'dark': darkMode }">
+<head>
+    {{-- ... --}}
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    {{-- Content --}}
+</body>
+</html>
+```
+
+**Dark Mode Toggle Button:**
+
+```blade
+{{-- ✅ ถูกต้อง: ปุ่ม toggle dark mode --}}
+<button @click="toggleDarkMode()"
+        class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+    <i class="fas" :class="darkMode ? 'fa-sun text-yellow-400' : 'fa-moon text-gray-600'"></i>
+</button>
+
+{{-- JavaScript Function --}}
+<script>
+function toggleDarkMode() {
+    this.darkMode = !this.darkMode;
+
+    if (this.darkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('darkMode', 'true');
+    } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('darkMode', 'false');
+    }
+}
+</script>
+```
+
+**Tailwind Dark Mode Classes (ใช้ทุกที่):**
+
+```blade
+{{-- ✅ Background Colors --}}
+<div class="bg-white dark:bg-gray-800">...</div>
+<div class="bg-gray-50 dark:bg-gray-900">...</div>
+<div class="bg-gray-100 dark:bg-gray-800">...</div>
+
+{{-- ✅ Text Colors --}}
+<h1 class="text-gray-900 dark:text-white">หัวข้อ</h1>
+<p class="text-gray-600 dark:text-gray-300">เนื้อหา</p>
+<span class="text-gray-500 dark:text-gray-400">รายละเอียด</span>
+
+{{-- ✅ Border Colors --}}
+<div class="border border-gray-200 dark:border-gray-700">...</div>
+<div class="border-b border-gray-300 dark:border-gray-600">...</div>
+
+{{-- ✅ Hover States --}}
+<button class="
+    hover:bg-gray-100 dark:hover:bg-gray-700
+    hover:text-gray-900 dark:hover:text-white
+">คลิก</button>
+
+{{-- ✅ Glass Fusion with Dark Mode --}}
+<div class="
+    backdrop-blur-xl
+    bg-white/80 dark:bg-gray-800/80
+    border border-white/20 dark:border-gray-700/30
+    shadow-2xl
+">...</div>
+
+{{-- ✅ Gradients with Dark Mode --}}
+<h1 class="
+    text-4xl font-black
+    bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600
+    dark:from-purple-400 dark:via-pink-400 dark:to-orange-400
+    bg-clip-text text-transparent
+">หัวข้อ</h1>
+```
+
+**Color Palette (Arrow X Theme)**:
+
+```javascript
+// Light Mode
+--bg-primary: #FFFFFF      // bg-white
+--bg-secondary: #F9FAFB    // bg-gray-50
+--bg-tertiary: #F3F4F6     // bg-gray-100
+--text-primary: #111827    // text-gray-900
+--text-secondary: #4B5563  // text-gray-600
+--border: #E5E7EB          // border-gray-200
+
+// Dark Mode
+--bg-primary: #1F2937      // dark:bg-gray-800
+--bg-secondary: #111827    // dark:bg-gray-900
+--bg-tertiary: #374151     // dark:bg-gray-700
+--text-primary: #F9FAFB    // dark:text-white
+--text-secondary: #D1D5DB  // dark:text-gray-300
+--border: #374151          // dark:border-gray-700
+
+// Accent Colors (ใช้ได้ทั้ง Light/Dark)
+--purple: #8B5CF6          // purple-600
+--pink: #EC4899            // pink-600
+--orange: #F97316          // orange-600
+--blue: #3B82F6            // blue-600
+--green: #10B981           // green-600
+--red: #EF4444             // red-600
+```
+
+**Testing Checklist (ต้องทดสอบทุกหน้า):**
+
+- [ ] หน้าแสดงผลถูกต้องใน Light Mode
+- [ ] หน้าแสดงผลถูกต้องใน Dark Mode
+- [ ] สีตัวอักษรอ่านง่ายทั้ง 2 โหมด (contrast ratio ≥ 4.5:1)
+- [ ] ปุ่ม toggle dark mode ทำงานได้
+- [ ] Dark mode บันทึกใน localStorage
+- [ ] Refresh หน้ายังคง dark mode เดิม
+- [ ] Glass effects แสดงผลถูกต้องทั้ง 2 โหมด
+- [ ] Hover states ทำงานถูกต้องทั้ง 2 โหมด
+- [ ] Icons มองเห็นชัดทั้ง 2 โหมด
+
+**ตัวอย่างหน้าสมบูรณ์ (รองรับ Custom Theme + Dark Mode):**
+
+```blade
+{{-- resources/views/user/dashboard.blade.php --}}
+@extends('layouts.user-arrow-x')
+
+@section('title', 'แดชบอร์ด')
+
+@section('content')
+<div class="container-fluid px-4 py-6" x-data="dashboardManager()">
+
+    {{-- Header with Gradient (รองรับ dark mode) --}}
+    <div class="mb-8">
+        <h1 class="
+            text-4xl font-black
+            bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600
+            dark:from-purple-400 dark:via-pink-400 dark:to-orange-400
+            bg-clip-text text-transparent
+        ">
+            แดชบอร์ด
+        </h1>
+        <p class="text-gray-600 dark:text-gray-300 mt-2">
+            ยินดีต้อนรับกลับมา
+        </p>
+    </div>
+
+    {{-- Stats Grid (รองรับ glass effect + dark mode) --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="
+            glass-fusion-card
+            rounded-2xl
+            p-6
+            shadow-2xl
+            backdrop-blur-xl
+            bg-white/80 dark:bg-gray-800/80
+            border border-white/20 dark:border-gray-700/30
+            hover:scale-105
+            transition-transform
+        ">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                        ยอดขายวันนี้
+                    </p>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                        ฿12,345
+                    </h3>
+                </div>
+                <div class="
+                    w-12 h-12
+                    rounded-full
+                    bg-gradient-to-br from-purple-500 to-pink-500
+                    flex items-center justify-center
+                ">
+                    <i class="fas fa-dollar-sign text-white"></i>
+                </div>
+            </div>
+        </div>
+
+        {{-- More stat cards... --}}
+    </div>
+
+    {{-- Table with Dark Mode Support --}}
+    <div class="
+        glass-fusion-card
+        rounded-2xl
+        shadow-2xl
+        overflow-hidden
+        backdrop-blur-xl
+        bg-white/80 dark:bg-gray-800/80
+        border border-white/20 dark:border-gray-700/30
+    ">
+        <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+                รายการล่าสุด
+            </h2>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-900/50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                            รายการ
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                            สถานะ
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                        <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                            รายการ 1
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="
+                                px-3 py-1
+                                rounded-full
+                                text-xs font-medium
+                                bg-green-100 dark:bg-green-900/30
+                                text-green-800 dark:text-green-400
+                            ">
+                                สำเร็จ
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+@push('scripts')
+<script>
+function dashboardManager() {
+    return {
+        // Alpine.js state
+        loading: false,
+        data: [],
+
+        init() {
+            this.loadData();
+        },
+
+        loadData() {
+            // Load data logic
+        }
+    };
+}
+</script>
+@endpush
+@endsection
+```
+
+**Common Mistakes (ข้อผิดพลาดที่พบบ่อย):**
+
+```blade
+{{-- ❌ WRONG: ไม่ได้ระบุ dark mode class --}}
+<div class="bg-white text-black">
+    <p>ข้อความ</p>
+</div>
+
+{{-- ✅ CORRECT: ระบุ dark mode class ครบ --}}
+<div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+    <p class="text-gray-600 dark:text-gray-300">ข้อความ</p>
+</div>
+
+{{-- ❌ WRONG: ใช้ inline styles --}}
+<div style="background: #FFFFFF; color: #000000;">
+    <p>ข้อความ</p>
+</div>
+
+{{-- ✅ CORRECT: ใช้ Tailwind utilities --}}
+<div class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+    <p>ข้อความ</p>
+</div>
+
+{{-- ❌ WRONG: ใช้สีที่ไม่มีใน palette --}}
+<div class="bg-[#FF0000] text-[#00FF00]">
+    <p>ข้อความ</p>
+</div>
+
+{{-- ✅ CORRECT: ใช้สีจาก Arrow X palette --}}
+<div class="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+    <p>ข้อความ</p>
+</div>
+```
+
+**Performance Tips:**
+
+1. **ใช้ CSS Variables สำหรับ theme values:**
+   ```css
+   :root {
+       --glass-opacity: 80%;
+       --glass-blur: 12px;
+   }
+
+   .dark {
+       --glass-opacity: 60%;
+       --glass-blur: 16px;
+   }
+   ```
+
+2. **Lazy load dark mode toggle:**
+   ```blade
+   <button x-cloak @click="toggleDarkMode()">
+       {{-- Toggle icon --}}
+   </button>
+   ```
+
+3. **Debounce theme changes:**
+   ```javascript
+   let themeTimeout;
+   function toggleDarkMode() {
+       clearTimeout(themeTimeout);
+       themeTimeout = setTimeout(() => {
+           // Apply theme
+       }, 100);
+   }
+   ```
+
+### 4. 🧩 Component Architecture
 
 **Blade Component Pattern**:
 
