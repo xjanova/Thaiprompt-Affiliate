@@ -241,22 +241,22 @@
                 </a>
 
                 {{-- Commissions --}}
-                <a href="{{ route('user.commissions.index') }}"
-                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.commissions.*') ? 'active' : '' }}">
+                <a href="{{ route('user.commissions') }}"
+                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.commissions') ? 'active' : '' }}">
                     <i class="fas fa-money-bill-wave w-5 text-blue-500"></i>
                     <span class="font-medium text-gray-700 dark:text-gray-300">คอมมิชชั่น</span>
                 </a>
 
-                {{-- Affiliates --}}
-                <a href="{{ route('user.affiliates.team') }}"
-                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.affiliates.*') ? 'active' : '' }}">
+                {{-- MLM Team --}}
+                <a href="{{ route('user.mlm.team') }}"
+                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.mlm.team') ? 'active' : '' }}">
                     <i class="fas fa-users w-5 text-orange-500"></i>
                     <span class="font-medium text-gray-700 dark:text-gray-300">ทีมงาน</span>
                 </a>
 
                 {{-- Rank --}}
-                <a href="{{ route('user.rank.progress') }}"
-                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.rank.*') ? 'active' : '' }}">
+                <a href="{{ route('user.ranks.progress') }}"
+                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.ranks.*') ? 'active' : '' }}">
                     <i class="fas fa-trophy w-5 text-yellow-500"></i>
                     <span class="font-medium text-gray-700 dark:text-gray-300">ระดับ Rank</span>
                 </a>
@@ -265,22 +265,22 @@
                 <div class="my-4 border-t border-gray-200 dark:border-gray-700"></div>
 
                 {{-- Profile --}}
-                <a href="{{ route('user.profile.edit') }}"
-                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.profile.*') ? 'active' : '' }}">
+                <a href="{{ route('user.profile') }}"
+                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.profile') ? 'active' : '' }}">
                     <i class="fas fa-user-edit w-5 text-indigo-500"></i>
                     <span class="font-medium text-gray-700 dark:text-gray-300">โปรไฟล์</span>
                 </a>
 
                 {{-- Settings --}}
                 <a href="{{ route('user.settings') }}"
-                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.settings*') ? 'active' : '' }}">
+                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.settings') ? 'active' : '' }}">
                     <i class="fas fa-cog w-5 text-gray-500"></i>
                     <span class="font-medium text-gray-700 dark:text-gray-300">การตั้งค่า</span>
                 </a>
 
-                {{-- Support --}}
-                <a href="{{ route('user.support') }}"
-                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.support*') ? 'active' : '' }}">
+                {{-- Support Tickets --}}
+                <a href="{{ route('user.tickets.index') }}"
+                   class="menu-item flex items-center space-x-3 px-4 py-3 rounded-lg {{ request()->routeIs('user.tickets.*') ? 'active' : '' }}">
                     <i class="fas fa-headset w-5 text-pink-500"></i>
                     <span class="font-medium text-gray-700 dark:text-gray-300">ติดต่อซัพพอร์ต</span>
                 </a>

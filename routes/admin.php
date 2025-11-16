@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\HeaderSettingsController;
 use App\Http\Controllers\Admin\SecurityController;
 use App\Http\Controllers\Admin\PageController;
@@ -179,6 +180,13 @@ Route::get('settings', [SettingsController::class, 'index'])->name('settings.ind
 Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('settings/branding', [SettingsController::class, 'updateBranding'])->name('settings.branding');
 Route::put('settings/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme');
+
+// Site Settings (โลโก้, Favicon, ชื่อเว็บไซต์, SEO, Social Media)
+Route::prefix('site-settings')->name('site-settings.')->group(function () {
+    Route::get('/', [SiteSettingsController::class, 'index'])->name('index');
+    Route::put('/', [SiteSettingsController::class, 'update'])->name('update');
+    Route::delete('/logo', [SiteSettingsController::class, 'deleteLogo'])->name('logo.delete');
+});
 
 // Header Settings
 Route::prefix('header-settings')->name('header-settings.')->group(function () {
