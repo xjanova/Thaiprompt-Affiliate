@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.39.3] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1267 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (fc16a342)
+- fix: correct rank route name from singular to plural (357c6cf2)
+### 🔧 Other Changes
+
+
 ## [v3.39.2] - 2025-11-16
 
 ### ✨ Features
