@@ -153,6 +153,40 @@ class DashboardController extends Controller
         $totalClicks = $affiliate ? ($affiliate->click_count ?? 0) : 0;
         $conversionRate = $totalClicks > 0 ? ($totalReferrals / $totalClicks) * 100 : 0;
 
+        // ดึงข้อมูล Rank
+        $currentRank = $user->currentRank;
+        $nextRank = null;
+        $rankProgress = 0;
+
+        if ($currentRank) {
+            // หา rank ถัดไป
+            $nextRank = \App\Models\Rank::where('required_points', '>', $currentRank->required_points)
+                ->orderBy('required_points', 'asc')
+                ->first();
+
+            // คำนวณความคืบหน้า
+            if ($nextRank) {
+                $currentPoints = $user->rank_points ?? 0;
+                $currentRankPoints = $currentRank->required_points;
+                $nextRankPoints = $nextRank->required_points;
+                $pointsNeeded = $nextRankPoints - $currentRankPoints;
+                $pointsProgress = max(0, $currentPoints - $currentRankPoints);
+                $rankProgress = $pointsNeeded > 0 ? min(100, ($pointsProgress / $pointsNeeded) * 100) : 0;
+            }
+        } else {
+            // ถ้ายังไม่มี rank ให้หา rank แรก
+            $nextRank = \App\Models\Rank::orderBy('required_points', 'asc')->first();
+            if ($nextRank) {
+                $currentPoints = $user->rank_points ?? 0;
+                $rankProgress = $nextRank->required_points > 0
+                    ? min(100, ($currentPoints / $nextRank->required_points) * 100)
+                    : 0;
+            }
+        }
+
+        // กิจกรรมล่าสุด (แปลงชื่อเป็น recentActivities)
+        $recentActivities = $recentActivity;
+
         // สถิติสำหรับ Arrow X Dashboard
         $stats = [
             'wallet_balance' => $user->wallet_balance ?? 0,
@@ -161,14 +195,17 @@ class DashboardController extends Controller
             'earnings_change' => $earningsGrowth,
             'team_members' => $totalReferrals,
             'team_change' => 0, // TODO: คำนวณอัตราการเติบโตของทีม
+            'total_referrals' => $totalReferrals, // เพิ่มเพื่อความชัดเจน
+            'referrals_change' => 0, // TODO: คำนวณอัตราการเติบโตของ referrals
             'pending_commission' => $pendingEarnings,
             'commission_change' => 0, // TODO: คำนวณอัตราการเปลี่ยนแปลงของ commission
+            'points_change' => 0, // TODO: คำนวณอัตราการเปลี่ยนแปลงของ rank points
         ];
 
         // ข้อมูลสำหรับ Chart.js
         $chartData = [
             'labels' => $monthlyRevenue->pluck('month')->toArray(),
-            'data' => $monthlyRevenue->pluck('total')->toArray(),
+            'values' => $monthlyRevenue->pluck('total')->toArray(), // เปลี่ยนจาก 'data' เป็น 'values'
         ];
 
         return view('user.dashboard', compact(
@@ -188,12 +225,15 @@ class DashboardController extends Controller
             'maxLevel',
             'topReferrers',
             'recentActivity',
+            'recentActivities',
             'lifetimeEarnings',
             'avgCommission',
             'thisMonthCommissions',
             'conversionRate',
             'stats',
-            'chartData'
+            'chartData',
+            'nextRank',
+            'rankProgress'
         ));
     }
 
