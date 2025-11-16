@@ -12,8 +12,9 @@ import Alpine from 'alpinejs';
 // Import Alpine Stores (V3)
 import './alpine/stores/theme';
 import './alpine/stores/sidebar';
+import './alpine/stores/language';  // ← เพิ่มนี้!
 
-// Import Additional Stores (Language, Theme Presets)
+// Import Additional Stores (Theme Presets)
 import './alpine-stores';
 
 // Make Alpine available globally

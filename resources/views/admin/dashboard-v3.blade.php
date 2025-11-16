@@ -228,19 +228,22 @@
 
 {{-- Revenue Chart Initialization --}}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+// รอให้ DOM และ ApexCharts โหลดเสร็จ
+function initRevenueChart() {
     console.log('🚀 กำลังโหลดกราฟรายได้...');
 
     // ตรวจสอบว่า ApexCharts โหลดสำเร็จหรือไม่
     if (typeof ApexCharts === 'undefined') {
-        console.error('❌ ApexCharts library ไม่โหลด');
+        console.error('❌ ApexCharts library ไม่โหลด - ลองใหม่ใน 500ms');
+        setTimeout(initRevenueChart, 500);
         return;
     }
 
     // ตรวจสอบว่ามี element สำหรับกราฟหรือไม่
     const chartElement = document.querySelector('#revenue-chart');
     if (!chartElement) {
-        console.error('❌ ไม่พบ element #revenue-chart');
+        console.error('❌ ไม่พบ element #revenue-chart - ลองใหม่ใน 300ms');
+        setTimeout(initRevenueChart, 300);
         return;
     }
 
@@ -394,7 +397,15 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch (error) {
         console.error('❌ เกิดข้อผิดพลาดในการสร้างกราฟ:', error);
     }
-});
+}
+
+// เรียก function เมื่อ DOM พร้อม
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRevenueChart);
+} else {
+    // DOM พร้อมแล้ว เรียกทันที
+    initRevenueChart();
+}
 </script>
 @endpush
 
