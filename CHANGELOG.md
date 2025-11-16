@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.39.6] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+- Merge pull request #1270 from xjanova/claude/fix-commissions-route-01Fm5v6kTmGGRnvvvyrdm5Le (83c0421a)
+- fix: correct rank column name from required_points to min_points (8dc64e95)
+### 🔧 Other Changes
+
+
 ## [v3.39.5] - 2025-11-16
 
 ### ✨ Features
