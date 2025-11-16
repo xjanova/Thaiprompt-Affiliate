@@ -171,7 +171,7 @@ class DashboardController extends Controller
             'data' => $monthlyRevenue->pluck('total')->toArray(),
         ];
 
-        return view('user.dashboard-arrow-x', compact(
+        return view('user.dashboard', compact(
             'user',
             'affiliate',
             'commissions',
@@ -205,7 +205,7 @@ class DashboardController extends Controller
     public function profile()
     {
         $user = Auth::user();
-        return view('user.profile-arrow-x', compact('user'));
+        return view('user.profile', compact('user'));
     }
 
     /**
