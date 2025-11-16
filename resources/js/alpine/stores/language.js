@@ -13,6 +13,8 @@ Alpine.store('language', {
     current: 'th',
     isTranslating: false,
     isGoogleTranslateReady: false,
+    translateRetryCount: 0,
+    maxTranslateRetries: 10,
 
     // ภาษาที่รองรับ (ใช้ code ที่ Google Translate รองรับ)
     languages: [
@@ -149,24 +151,66 @@ Alpine.store('language', {
      * แปลหน้าเว็บด้วย Google Translate
      */
     translatePage(targetLang) {
-        console.log('🔄 [DEBUG] translatePage() called with:', targetLang);
+        console.log('🔄 [DEBUG] translatePage() called with:', targetLang, '(retry:', this.translateRetryCount + ')');
         console.log('🔄 [DEBUG] isGoogleTranslateReady:', this.isGoogleTranslateReady);
 
         if (!this.isGoogleTranslateReady) {
             console.log('⏳ [DEBUG] รอ Google Translate โหลด... (retry ใน 500ms)');
-            setTimeout(() => this.translatePage(targetLang), 500);
+            if (this.translateRetryCount < this.maxTranslateRetries) {
+                this.translateRetryCount++;
+                setTimeout(() => this.translatePage(targetLang), 500);
+            } else {
+                console.error('❌ [DEBUG] Google Translate ไม่โหลดหลัง', this.maxTranslateRetries, 'ครั้ง');
+                this.translateRetryCount = 0;
+            }
             return;
         }
 
         this.isTranslating = true;
         console.log('🔄 [DEBUG] isTranslating set to true');
 
-        // หา Google Translate select element
-        const selectElement = document.querySelector('.goog-te-combo');
-        console.log('🔍 [DEBUG] selectElement (.goog-te-combo):', selectElement);
+        // ลอง selector หลายๆ แบบ
+        let selectElement = document.querySelector('.goog-te-combo');
+
+        if (!selectElement) {
+            // ลอง selector อื่น
+            selectElement = document.querySelector('select.goog-te-combo');
+        }
+
+        if (!selectElement) {
+            // ลองหา select ใน iframe
+            const gtFrame = document.querySelector('#google_translate_element select');
+            if (gtFrame) selectElement = gtFrame;
+        }
+
+        if (!selectElement) {
+            // ลองหาทุก select ที่อยู่ใน element ที่มี class goog-te
+            const googTeElements = document.querySelectorAll('[class*="goog-te"]');
+            console.log('🔍 [DEBUG] googTeElements:', Array.from(googTeElements).map(el => ({
+                tag: el.tagName,
+                class: el.className,
+                id: el.id,
+                innerHTML: el.innerHTML.substring(0, 100)
+            })));
+
+            for (const el of googTeElements) {
+                const select = el.querySelector('select');
+                if (select) {
+                    selectElement = select;
+                    console.log('✅ [DEBUG] พบ select ใน:', el.className);
+                    break;
+                }
+            }
+        }
+
+        console.log('🔍 [DEBUG] selectElement:', selectElement);
         console.log('🔍 [DEBUG] selectElement value before:', selectElement?.value);
+        console.log('🔍 [DEBUG] selectElement options:', selectElement ? Array.from(selectElement.options).map(opt => opt.value) : 'N/A');
 
         if (selectElement) {
+            // รีเซ็ต retry count
+            this.translateRetryCount = 0;
+
             // เปลี่ยนค่า select และ trigger change event
             selectElement.value = targetLang;
             console.log('🔍 [DEBUG] selectElement value after:', selectElement.value);
@@ -179,15 +223,16 @@ Alpine.store('language', {
                 console.log('🔄 [DEBUG] isTranslating set to false');
             }, 1000);
         } else {
-            console.warn('⚠️ [DEBUG] ไม่พบ .goog-te-combo - ลองใหม่ใน 300ms');
-            console.log('🔍 [DEBUG] ทุก elements ที่เริ่มด้วย goog-te:',
-                Array.from(document.querySelectorAll('[class*="goog-te"]')).map(el => ({
-                    class: el.className,
-                    tag: el.tagName,
-                    id: el.id
-                }))
-            );
-            setTimeout(() => this.translatePage(targetLang), 300);
+            console.warn('⚠️ [DEBUG] ไม่พบ select element - retry:', this.translateRetryCount);
+
+            if (this.translateRetryCount < this.maxTranslateRetries) {
+                this.translateRetryCount++;
+                setTimeout(() => this.translatePage(targetLang), 300);
+            } else {
+                console.error('❌ [DEBUG] ไม่พบ select element หลังจาก', this.maxTranslateRetries, 'ครั้ง - ยกเลิก');
+                this.translateRetryCount = 0;
+                this.isTranslating = false;
+            }
         }
     },
 
