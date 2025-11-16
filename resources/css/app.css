@@ -1,8 +1,5 @@
 /* Thaiprompt Affiliate - Main Application CSS */
 
-/* V3 Theme Customizer - Global Styles (ต้องมาก่อน Tailwind) */
-@import './theme-customizer.css';
-
 /* Tailwind CSS will be processed here if configured */
 @tailwind base;
 @tailwind components;
