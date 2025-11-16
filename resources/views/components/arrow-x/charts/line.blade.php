@@ -69,7 +69,7 @@
 
     {{-- Chart Container สำหรับ ApexCharts --}}
     <div class="p-6" style="min-height: {{ $height + 48 }}px;">
-        <div id="{{ $id }}" style="width: 100%;"></div>
+        <div id="{{ $id }}" style="width: 100%; height: {{ $height }}px;"></div>
     </div>
 </div>
 
