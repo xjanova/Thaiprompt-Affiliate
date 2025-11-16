@@ -97,16 +97,16 @@
         <a href="{{ route('admin.users.index') }}" class="block group" style="perspective: 1000px;">
             <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
                 {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
-                <div class="absolute inset-0 bg-gradient-secondary rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background: var(--arrow-x-secondary-gradient)"></div>
 
                 {{-- Glass Card (V3: Pure Tailwind + Dynamic Colors) --}}
                 <div class="relative bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-gradient-secondary rounded-xl flex items-center justify-center shadow-lg">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style="background: var(--arrow-x-secondary-gradient)">
                             <i class="fas fa-users text-white text-xl"></i>
                         </div>
                         @if($userGrowth != 0)
-                            <span class="px-2 py-1 bg-success text-white rounded-lg text-xs font-bold shadow-lg">
+                            <span class="px-2 py-1 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-success)">
                                 {{ $userGrowth > 0 ? '↑' : '↓' }} {{ number_format(abs($userGrowth), 1) }}%
                             </span>
                         @endif
@@ -121,15 +121,15 @@
         <a href="{{ route('admin.affiliates.index') }}" class="block group" style="perspective: 1000px;">
             <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
                 {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
-                <div class="absolute inset-0 bg-gradient-primary rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background: var(--arrow-x-primary-gradient)"></div>
 
                 {{-- Glass Card (V3: Dynamic Colors) --}}
                 <div class="relative bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center shadow-lg">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style="background: var(--arrow-x-primary-gradient)">
                             <i class="fas fa-network-wired text-white text-xl"></i>
                         </div>
-                        <span class="px-2 py-1 bg-success text-white rounded-lg text-xs font-bold shadow-lg">
+                        <span class="px-2 py-1 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-success)">
                             {{ $stats['active_affiliates'] }} ใช้งาน
                         </span>
                     </div>
@@ -143,16 +143,16 @@
         <a href="{{ route('admin.commissions.index', ['status' => 'paid']) }}" class="block group" style="perspective: 1000px;">
             <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
                 {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
-                <div class="absolute inset-0 bg-success rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background-color: var(--arrow-x-success)"></div>
 
                 {{-- Glass Card (V3: Dynamic Colors) --}}
                 <div class="relative bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-success rounded-xl flex items-center justify-center shadow-lg">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style="background-color: var(--arrow-x-success)">
                             <i class="fas fa-dollar-sign text-white text-xl"></i>
                         </div>
                         @if($revenueGrowth != 0)
-                            <span class="px-2 py-1 bg-success text-white rounded-lg text-xs font-bold shadow-lg">
+                            <span class="px-2 py-1 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-success)">
                                 {{ $revenueGrowth > 0 ? '↑' : '↓' }} {{ number_format(abs($revenueGrowth), 1) }}%
                             </span>
                         @endif
@@ -167,15 +167,15 @@
         <a href="{{ route('admin.commissions.index', ['status' => 'pending']) }}" class="block group" style="perspective: 1000px;">
             <div class="relative transform-gpu transition-all duration-500 group-hover:scale-105">
                 {{-- Blur Glow Effect (Dynamic Theme Colors) --}}
-                <div class="absolute inset-0 bg-warning rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity"></div>
+                <div class="absolute inset-0 rounded-2xl blur-xl opacity-60 group-hover:opacity-80 transition-opacity" style="background-color: var(--arrow-x-warning)"></div>
 
                 {{-- Glass Card (V3: Dynamic Colors) --}}
                 <div class="relative bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="w-12 h-12 bg-warning rounded-xl flex items-center justify-center shadow-lg">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg" style="background-color: var(--arrow-x-warning)">
                             <i class="fas fa-chart-line text-white text-xl"></i>
                         </div>
-                        <span class="px-2 py-1 bg-success text-white rounded-lg text-xs font-bold shadow-lg">
+                        <span class="px-2 py-1 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-success)">
                             {{ $stats['approved_commissions'] }} อนุมัติ
                         </span>
                     </div>
@@ -199,7 +199,7 @@
                     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-5 hover:shadow-2xl hover:scale-105 transition-all duration-300">
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-lg font-bold text-gray-900 dark:text-white">{{ $symbol }}</span>
-                            <span class="text-xs px-3 py-1.5 rounded-lg font-bold shadow-md {{ $rate['change_24h'] >= 0 ? 'bg-success text-white' : 'bg-error text-white' }}">
+                            <span class="text-xs px-3 py-1.5 rounded-lg font-bold shadow-md text-white" style="background-color: var(--arrow-x-{{ $rate['change_24h'] >= 0 ? 'success' : 'error' }})">
                                 {{ $rate['change_24h'] >= 0 ? '↗' : '↘' }} {{ number_format(abs($rate['change_24h']), 2) }}%
                             </span>
                         </div>
@@ -226,7 +226,7 @@
                         <span class="text-2xl mr-2 drop-shadow-lg">💸</span> การถอนเงิน
                     </h3>
                     @if($cryptoWithdrawals['pending'] > 0)
-                        <span class="px-3 py-1.5 bg-error text-white rounded-lg text-xs font-bold shadow-lg animate-pulse">
+                        <span class="px-3 py-1.5 text-white rounded-lg text-xs font-bold shadow-lg animate-pulse" style="background-color: var(--arrow-x-error)">
                             {{ $cryptoWithdrawals['pending'] }}
                         </span>
                     @endif
@@ -238,7 +238,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600 dark:text-white/80 font-medium">ต้องอนุมัติ</span>
-                        <span class="font-bold text-warning">{{ $cryptoWithdrawals['requires_approval'] }}</span>
+                        <span class="font-bold" style="color: var(--arrow-x-warning)">{{ $cryptoWithdrawals['requires_approval'] }}</span>
                     </div>
                     <div class="pt-3 border-t border-gray-300 dark:border-white/30">
                         <div class="text-xs text-gray-600 dark:text-white/80 mb-1">ยอดรอถอน</div>
@@ -258,7 +258,7 @@
                         <span class="text-2xl mr-2 drop-shadow-lg">🆔</span> KYC
                     </h3>
                     @if($kycStats['pending'] > 0)
-                        <span class="px-3 py-1.5 bg-warning text-white rounded-lg text-xs font-bold shadow-lg">
+                        <span class="px-3 py-1.5 text-white rounded-lg text-xs font-bold shadow-lg" style="background-color: var(--arrow-x-warning)">
                             {{ $kycStats['pending'] }}
                         </span>
                     @endif
@@ -266,15 +266,15 @@
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600 dark:text-white/80 font-medium">รอตรวจสอบ</span>
-                        <span class="font-bold text-warning">{{ $kycStats['pending'] }}</span>
+                        <span class="font-bold" style="color: var(--arrow-x-warning)">{{ $kycStats['pending'] }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600 dark:text-white/80 font-medium">อนุมัติแล้ว</span>
-                        <span class="font-bold text-success">{{ $kycStats['verified'] }}</span>
+                        <span class="font-bold" style="color: var(--arrow-x-success)">{{ $kycStats['verified'] }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600 dark:text-white/80 font-medium">ปฏิเสธ</span>
-                        <span class="font-bold text-error">{{ $kycStats['rejected'] }}</span>
+                        <span class="font-bold" style="color: var(--arrow-x-error)">{{ $kycStats['rejected'] }}</span>
                     </div>
                 </div>
             </div>
@@ -317,7 +317,7 @@
                         <span class="text-2xl mr-2 drop-shadow-lg">🎫</span> Tickets
                     </h3>
                     @if($ticketStats['new_today'] > 0)
-                        <span class="px-3 py-1.5 bg-gradient-primary text-white rounded-lg text-xs font-bold shadow-lg animate-pulse">
+                        <span class="px-3 py-1.5 text-white rounded-lg text-xs font-bold shadow-lg animate-pulse" style="background: var(--arrow-x-primary-gradient)">
                             {{ $ticketStats['new_today'] }} ใหม่
                         </span>
                     @endif
@@ -325,16 +325,16 @@
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600 dark:text-white/80 font-medium">เปิดอยู่</span>
-                        <span class="font-bold text-info">{{ $ticketStats['open'] }}</span>
+                        <span class="font-bold" style="color: var(--arrow-x-info)">{{ $ticketStats['open'] }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm text-gray-600 dark:text-white/80 font-medium">ไม่มีผู้รับผิดชอบ</span>
-                        <span class="font-bold text-warning">{{ $ticketStats['unassigned'] }}</span>
+                        <span class="font-bold" style="color: var(--arrow-x-warning)">{{ $ticketStats['unassigned'] }}</span>
                     </div>
                     <div class="pt-3 border-t border-gray-300 dark:border-white/30">
                         <div class="flex justify-between items-center">
                             <span class="text-xs text-gray-600 dark:text-white/80">🔥 Priority สูง</span>
-                            <span class="text-2xl font-bold text-error">{{ $ticketStats['high_priority'] }}</span>
+                            <span class="text-2xl font-bold" style="color: var(--arrow-x-error)">{{ $ticketStats['high_priority'] }}</span>
                         </div>
                     </div>
                 </div>
@@ -346,14 +346,14 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {{-- Revenue Trend --}}
         <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-white/30 bg-primary-light">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-white/30" style="background-color: color-mix(in srgb, var(--arrow-x-primary-start) 15%, transparent)">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 drop-shadow">
-                    <div class="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center shadow-lg">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg" style="background: var(--arrow-x-primary-gradient)">
                         <i class="fas fa-chart-area text-white"></i>
                     </div>
                     รายได้รายเดือน
                 </h3>
-                <span class="text-xs px-2 py-1 bg-success text-white rounded-md font-semibold mt-2 inline-block shadow-lg">
+                <span class="text-xs px-2 py-1 text-white rounded-md font-semibold mt-2 inline-block shadow-lg" style="background-color: var(--arrow-x-success)">
                     ฿{{ number_format($monthlyRevenue->sum('total'), 0) }}
                 </span>
             </div>
@@ -366,9 +366,9 @@
 
         {{-- Commission Status --}}
         <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-white/30 bg-success-light">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-white/30" style="background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent)">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 drop-shadow">
-                    <div class="w-10 h-10 bg-success rounded-lg flex items-center justify-center shadow-lg">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg" style="background-color: var(--arrow-x-success)">
                         <i class="fas fa-clipboard-list text-white"></i>
                     </div>
                     สถานะคอมมิชชั่น
@@ -381,28 +381,28 @@
                 <div class="space-y-2 text-sm">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-warning rounded-full"></div>
+                            <div class="w-3 h-3 rounded-full" style="background-color: var(--arrow-x-warning)"></div>
                             <span class="text-gray-700 dark:text-white/90">รอ</span>
                         </div>
                         <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['pending'] }}</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-success rounded-full"></div>
+                            <div class="w-3 h-3 rounded-full" style="background-color: var(--arrow-x-success)"></div>
                             <span class="text-gray-700 dark:text-white/90">อนุมัติ</span>
                         </div>
                         <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['approved'] }}</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-info rounded-full"></div>
+                            <div class="w-3 h-3 rounded-full" style="background-color: var(--arrow-x-info)"></div>
                             <span class="text-gray-700 dark:text-white/90">จ่าย</span>
                         </div>
                         <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['paid'] }}</span>
                     </div>
                     <div class="flex items-center justify-between">
                         <div class="flex items-center gap-2">
-                            <div class="w-3 h-3 bg-error rounded-full"></div>
+                            <div class="w-3 h-3 rounded-full" style="background-color: var(--arrow-x-error)"></div>
                             <span class="text-gray-700 dark:text-white/90">ปฏิเสธ</span>
                         </div>
                         <span class="font-semibold text-gray-900 dark:text-white">{{ $commissionStatus['rejected'] }}</span>
@@ -426,7 +426,7 @@
                     <div class="flex items-center gap-3 p-3 bg-white/10 dark:bg-white/5 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/20 dark:hover:bg-white/10 transition-all cursor-pointer">
                         <div class="flex-shrink-0">
                             @if($index === 0)
-                                <div class="w-10 h-10 bg-warning rounded-lg flex items-center justify-center shadow-lg">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg" style="background-color: var(--arrow-x-warning)">
                                     🥇
                                 </div>
                             @elseif($index === 1)
@@ -434,11 +434,11 @@
                                     🥈
                                 </div>
                             @elseif($index === 2)
-                                <div class="w-10 h-10 bg-warning rounded-lg flex items-center justify-center shadow-lg">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg" style="background-color: var(--arrow-x-warning)">
                                     🥉
                                 </div>
                             @else
-                                <div class="w-10 h-10 bg-gradient-primary rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                                <div class="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-lg" style="background: var(--arrow-x-primary-gradient)">
                                     {{ $index + 1 }}
                                 </div>
                             @endif
@@ -448,7 +448,7 @@
                             <p class="text-xs text-gray-600 dark:text-white/80 truncate">{{ $affiliate->total_referrals }} refs</p>
                         </div>
                         <div class="text-right">
-                            <p class="text-sm font-bold text-success">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
+                            <p class="text-sm font-bold" style="color: var(--arrow-x-success)">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
                         </div>
                     </div>
                 @empty
@@ -477,14 +477,15 @@
                                 {{ $commission->affiliate->user->name }}
                             </p>
                             <p class="text-xs text-gray-600 dark:text-white/80">
-                                <span class="font-semibold text-success">฿{{ number_format($commission->amount, 2) }}</span>
+                                <span class="font-semibold" style="color: var(--arrow-x-success)">฿{{ number_format($commission->amount, 2) }}</span>
                             </p>
                         </div>
-                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0
-                            {{ $commission->status === 'pending' ? 'bg-warning text-white' : '' }}
-                            {{ $commission->status === 'approved' ? 'bg-success text-white' : '' }}
-                            {{ $commission->status === 'paid' ? 'bg-info text-white' : '' }}
-                            {{ $commission->status === 'rejected' ? 'bg-error text-white' : '' }}">
+                        <span class="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 text-white"
+                            style="background-color: var(--arrow-x-{{
+                                $commission->status === 'pending' ? 'warning' :
+                                ($commission->status === 'approved' ? 'success' :
+                                ($commission->status === 'paid' ? 'info' : 'error'))
+                            }})">
                             {{ ucfirst($commission->status) }}
                         </span>
                     </div>
@@ -528,12 +529,13 @@
                                 </p>
                             </div>
                             <div class="flex flex-col items-end gap-1">
-                                <span class="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0
-                                    {{ $ticket->status === 'open' ? 'bg-info text-white' : '' }}
-                                    {{ $ticket->status === 'in_progress' ? 'bg-warning text-white' : '' }}
-                                    {{ $ticket->status === 'waiting_customer' ? 'bg-accent text-white' : '' }}
-                                    {{ $ticket->status === 'resolved' ? 'bg-success text-white' : '' }}
-                                    {{ $ticket->status === 'closed' ? 'bg-gray-500 text-white' : '' }}">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 text-white"
+                                    style="background-color: {{
+                                        $ticket->status === 'open' ? 'var(--arrow-x-info)' :
+                                        ($ticket->status === 'in_progress' ? 'var(--arrow-x-warning)' :
+                                        ($ticket->status === 'waiting_customer' ? 'var(--arrow-x-accent)' :
+                                        ($ticket->status === 'resolved' ? 'var(--arrow-x-success)' : '#6b7280')))
+                                    }}">
                                     {{ $ticket->status_label }}
                                 </span>
                             </div>
@@ -567,8 +569,8 @@
             <a href="{{ route('admin.tickets.index') }}" class="bg-white/10 dark:bg-white/5 backdrop-blur-sm hover:bg-white/20 dark:hover:bg-white/10 rounded-lg p-4 text-center transition-all border border-white/20 text-gray-900 dark:text-white hover:scale-105 relative">
                 @if($ticketStats['new_today'] > 0)
                     <span class="absolute -top-1 -right-1 flex h-5 w-5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-error opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-5 w-5 bg-error text-white text-xs items-center justify-center font-bold">{{ $ticketStats['new_today'] }}</span>
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style="background-color: var(--arrow-x-error)"></span>
+                        <span class="relative inline-flex rounded-full h-5 w-5 text-white text-xs items-center justify-center font-bold" style="background-color: var(--arrow-x-error)">{{ $ticketStats['new_today'] }}</span>
                     </span>
                 @endif
                 <div class="text-3xl mb-2">🎫</div>

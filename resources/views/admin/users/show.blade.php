@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="mb-6">
-    <a href="{{ route('admin.users.index') }}" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300">
+    <a href="{{ route('admin.users.index') }}" class="hover:opacity-80 transition-opacity" style="color: var(--arrow-x-primary)">
         ← กลับไปรายการผู้ใช้
     </a>
 </div>
@@ -13,7 +13,8 @@
 <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6 mb-6">
     <div class="flex items-center justify-between mb-6">
         <div class="flex items-center">
-            <div class="h-16 w-16 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-2xl font-bold text-indigo-600 dark:text-indigo-300">
+            <div class="h-16 w-16 rounded-full flex items-center justify-center text-2xl font-bold"
+                 style="background-color: color-mix(in srgb, var(--arrow-x-primary) 15%, transparent); color: var(--arrow-x-primary)">
                 {{ strtoupper(substr($user->name, 0, 1)) }}
             </div>
             <div class="ml-4">
@@ -24,12 +25,14 @@
         <div class="flex gap-3">
             @if($user->affiliate)
                 <a href="{{ route('admin.affiliates.show', $user->affiliate) }}"
-                   class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white font-semibold rounded-xl hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
+                   class="px-5 py-2.5 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+                   style="background: var(--arrow-x-primary-gradient)">
                     ดู Affiliate
                 </a>
             @endif
             <a href="{{ route('admin.users.edit', $user) }}"
-               class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-cyan-700 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5">
+               class="px-5 py-2.5 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+               style="background: var(--arrow-x-primary-gradient)">
                 แก้ไข
             </a>
         </div>
@@ -38,23 +41,23 @@
     <!-- Role Badge -->
     <div class="flex gap-2 mb-4">
         @if($user->is_super_admin)
-            <span class="px-3 py-1 text-sm font-semibold bg-purple-100 text-purple-800 rounded-full">
+            <span class="px-3 py-1 text-sm font-semibold rounded-full"
+                  style="background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning)">
                 🔐 Super Admin
             </span>
         @endif
-        <span class="px-3 py-1 text-sm font-semibold rounded-full
-            @if($user->role === 'admin') bg-blue-100 text-blue-800
-            @elseif($user->role === 'super_admin') bg-purple-100 text-purple-800
-            @else bg-gray-100 text-gray-800
-            @endif">
+        <span class="px-3 py-1 text-sm font-semibold rounded-full"
+              style="@if($user->role === 'admin')background-color: color-mix(in srgb, var(--arrow-x-primary) 15%, transparent); color: var(--arrow-x-primary)@elseif($user->role === 'super_admin')background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning)@elsebackground-color: color-mix(in srgb, var(--arrow-x-surface) 15%, transparent); color: var(--arrow-x-text-secondary)@endif">
             {{ ucfirst($user->role ?? 'user') }}
         </span>
         @if($user->email_verified_at)
-            <span class="px-3 py-1 text-sm font-semibold bg-green-100 text-green-800 rounded-full">
+            <span class="px-3 py-1 text-sm font-semibold rounded-full"
+                  style="background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent); color: var(--arrow-x-success)">
                 ✓ Email Verified
             </span>
         @else
-            <span class="px-3 py-1 text-sm font-semibold bg-yellow-100 text-yellow-800 rounded-full">
+            <span class="px-3 py-1 text-sm font-semibold rounded-full"
+                  style="background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning)">
                 ⚠ Email Not Verified
             </span>
         @endif
@@ -80,11 +83,8 @@
             <div>
                 <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Role</dt>
                 <dd class="mt-1">
-                    <span class="px-2 py-1 text-xs font-medium rounded
-                        @if($user->role === 'admin') bg-blue-100 text-blue-800
-                        @elseif($user->role === 'super_admin') bg-purple-100 text-purple-800
-                        @else bg-gray-100 text-gray-800
-                        @endif">
+                    <span class="px-2 py-1 text-xs font-medium rounded"
+                          style="@if($user->role === 'admin')background-color: color-mix(in srgb, var(--arrow-x-primary) 15%, transparent); color: var(--arrow-x-primary)@elseif($user->role === 'super_admin')background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning)@elsebackground-color: color-mix(in srgb, var(--arrow-x-surface) 15%, transparent); color: var(--arrow-x-text-secondary)@endif">
                         {{ ucfirst($user->role ?? 'user') }}
                     </span>
                 </dd>
@@ -97,14 +97,16 @@
                         $userTheme = $user->menu_theme_preference ?? 'millennium';
                     @endphp
                     @if($userTheme === 'classic_x')
-                        <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-lg bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200 shadow-sm">
+                        <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-lg border shadow-sm"
+                              style="background-color: color-mix(in srgb, var(--arrow-x-primary) 15%, transparent); color: var(--arrow-x-primary); border-color: var(--arrow-x-primary)">
                             <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V3zm3 1v10h8V4H6z" clip-rule="evenodd"/>
                             </svg>
                             Classic X Theme
                         </span>
                     @else
-                        <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border border-purple-200 shadow-sm">
+                        <span class="px-3 py-1.5 inline-flex items-center text-xs font-semibold rounded-lg border shadow-sm"
+                              style="background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning); border-color: var(--arrow-x-warning)">
                             <svg class="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
                             </svg>
@@ -159,7 +161,7 @@
 
                 <div>
                     <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Earnings</dt>
-                    <dd class="mt-1 text-lg font-bold text-green-600 dark:text-green-400">
+                    <dd class="mt-1 text-lg font-bold" style="color: var(--arrow-x-success)">
                         {{ number_format($user->affiliate->total_earnings, 2) }}฿
                     </dd>
                 </div>
@@ -167,11 +169,8 @@
                 <div>
                     <dt class="text-sm font-medium text-gray-600 dark:text-gray-400">สถานะ</dt>
                     <dd class="mt-1">
-                        <span class="px-2 py-1 text-xs font-semibold rounded-full
-                            @if($user->affiliate->status === 'active') bg-green-100 text-green-800
-                            @elseif($user->affiliate->status === 'inactive') bg-gray-100 text-gray-800
-                            @else bg-red-100 text-red-800
-                            @endif">
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                              style="@if($user->affiliate->status === 'active')background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent); color: var(--arrow-x-success)@elseif($user->affiliate->status === 'inactive')background-color: color-mix(in srgb, var(--arrow-x-surface) 15%, transparent); color: var(--arrow-x-text-secondary)@elsebackground-color: color-mix(in srgb, var(--arrow-x-error) 15%, transparent); color: var(--arrow-x-error)@endif">
                             {{ ucfirst($user->affiliate->status) }}
                         </span>
                     </dd>
@@ -179,7 +178,8 @@
 
                 <div class="pt-4 border-t border-gray-200 dark:border-white/10">
                     <a href="{{ route('admin.affiliates.show', $user->affiliate) }}"
-                       class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 font-medium">
+                       class="text-sm font-medium hover:opacity-80 transition-opacity"
+                       style="color: var(--arrow-x-primary)">
                         ดูรายละเอียด Affiliate →
                     </a>
                 </div>
@@ -223,15 +223,12 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {{ $commission->commission_rate ?? 0 }}%
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600 dark:text-green-400">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold" style="color: var(--arrow-x-success)">
                             {{ number_format($commission->amount, 2) }}฿
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full
-                                @if($commission->status === 'paid') bg-green-100 text-green-800
-                                @elseif($commission->status === 'pending') bg-yellow-100 text-yellow-800
-                                @else bg-gray-100 text-gray-800
-                                @endif">
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                                  style="@if($commission->status === 'paid')background-color: color-mix(in srgb, var(--arrow-x-success) 15%, transparent); color: var(--arrow-x-success)@elseif($commission->status === 'pending')background-color: color-mix(in srgb, var(--arrow-x-warning) 15%, transparent); color: var(--arrow-x-warning)@elsebackground-color: color-mix(in srgb, var(--arrow-x-surface) 15%, transparent); color: var(--arrow-x-text-secondary)@endif">
                                 {{ ucfirst($commission->status) }}
                             </span>
                         </td>
@@ -253,7 +250,7 @@
 <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
         <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">สถานะบัญชี</h3>
-        <p class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+        <p class="text-2xl font-bold" style="color: var(--arrow-x-primary)">
             {{ $user->email_verified_at ? 'Active' : 'Pending' }}
         </p>
     </div>
@@ -261,18 +258,18 @@
     @if($user->affiliate)
     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
         <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Referrals</h3>
-        <p class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $user->affiliate->total_referrals }}</p>
+        <p class="text-2xl font-bold" style="color: var(--arrow-x-primary)">{{ $user->affiliate->total_referrals }}</p>
     </div>
 
     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
         <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Total Earnings</h3>
-        <p class="text-2xl font-bold text-green-600 dark:text-green-400">{{ number_format($user->affiliate->total_earnings, 2) }}฿</p>
+        <p class="text-2xl font-bold" style="color: var(--arrow-x-success)">{{ number_format($user->affiliate->total_earnings, 2) }}฿</p>
     </div>
     @endif
 
     <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
         <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Commissions</h3>
-        <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{{ $user->commissions->count() ?? 0 }}</p>
+        <p class="text-2xl font-bold" style="color: var(--arrow-x-warning)">{{ $user->commissions->count() ?? 0 }}</p>
     </div>
 </div>
 @endsection
