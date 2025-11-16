@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\AffiliateController;
 use App\Http\Controllers\Admin\CommissionController;
 use App\Http\Controllers\Admin\InvestmentController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SiteSettingsController;
 use App\Http\Controllers\Admin\UserGuideController;
 use App\Http\Controllers\Admin\HeaderSettingsController;
 use App\Http\Controllers\Admin\SecurityController;
@@ -188,6 +189,13 @@ Route::post('profile/change-password', [SettingsController::class, 'changePasswo
 
 // User Guide (V3)
 Route::get('user-guide', [UserGuideController::class, 'index'])->name('user-guide.index');
+
+// Site Settings (โลโก้, Favicon, ชื่อเว็บไซต์, SEO, Social Media)
+Route::prefix('site-settings')->name('site-settings.')->group(function () {
+    Route::get('/', [SiteSettingsController::class, 'index'])->name('index');
+    Route::put('/', [SiteSettingsController::class, 'update'])->name('update');
+    Route::delete('/logo', [SiteSettingsController::class, 'deleteLogo'])->name('logo.delete');
+});
 
 // Header Settings
 Route::prefix('header-settings')->name('header-settings.')->group(function () {

@@ -174,9 +174,16 @@
 
         {{-- Settings --}}
         <a href="{{ route('admin.settings.index') }}"
-           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.settings.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.settings.index') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cog w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่า</span>
+        </a>
+
+        {{-- Site Settings (โลโก้, SEO, Social Media) --}}
+        <a href="{{ route('admin.site-settings.index') }}"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.site-settings.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-palette w-5 text-center drop-shadow"></i>
+            <span x-show="sidebarOpen" x-transition class="font-medium drop-shadow">ตั้งค่าเว็บไซต์</span>
         </a>
 
         {{-- Help --}}
