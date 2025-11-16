@@ -32,6 +32,7 @@
     "jsbarcode": "^3.12.1",
     "jspdf": "^3.0.3",
     "qrcode": "^1.5.4",
+    "sortablejs": "^1.15.6",
     "three": "^0.181.1",
     "viem": "^1.21.4",
     "vis-network": "^10.0.2"
