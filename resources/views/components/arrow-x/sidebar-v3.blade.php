@@ -42,17 +42,30 @@
 
 {{-- Sidebar Container --}}
 <aside
-    x-data="{ hovered: false }"
-    @mouseenter="hovered = true"
-    @mouseleave="hovered = false"
+    x-data="{
+        hovered: false,
+        autoHideMode: localStorage.getItem('sidebarAutoHide') === 'true' || false,
+        toggleAutoHide() {
+            this.autoHideMode = !this.autoHideMode;
+            localStorage.setItem('sidebarAutoHide', this.autoHideMode);
+            // เมื่อเปิด auto-hide ให้ปิด sidebar
+            if (this.autoHideMode && window.innerWidth >= 768) {
+                sidebarOpen = false;
+            } else if (!this.autoHideMode && window.innerWidth >= 768) {
+                sidebarOpen = true;
+            }
+        }
+    }"
+    @mouseenter="if (autoHideMode && !sidebarOpen && window.innerWidth >= 768) hovered = true"
+    @mouseleave="if (autoHideMode && window.innerWidth >= 768) hovered = false"
     class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 z-40
            fixed md:relative inset-y-0 left-0 w-64
            transform md:transform-none"
     :class="{
         'translate-x-0': sidebarOpen,
         '-translate-x-full': !sidebarOpen,
-        'md:w-64': sidebarOpen || hovered,
-        'md:w-20': !sidebarOpen && !hovered
+        'md:w-64': (autoHideMode && (sidebarOpen || hovered)) || (!autoHideMode && sidebarOpen),
+        'md:w-20': autoHideMode && !sidebarOpen && !hovered
     }"
     x-cloak
 >
@@ -73,11 +86,15 @@
             </div>
         </div>
 
-        {{-- Toggle Button (แสดงเฉพาะบน Desktop) --}}
-        <button @click="sidebarOpen = !sidebarOpen"
-                class="hidden md:block p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
-                type="button">
-            <i class="fas fa-bars text-white drop-shadow"></i>
+        {{-- Toggle Button (แสดงเฉพาะบน Desktop) - เปลี่ยนไอคอนตามโหมด --}}
+        <button @click="toggleAutoHide()"
+                class="hidden md:block p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95 group"
+                type="button"
+                :title="autoHideMode ? 'เปิดโหมดปกติ (ล็อค sidebar)' : 'เปิดโหมด Auto-hide'">
+            {{-- Icon แม่กุญแจ (โหมดปกติ - locked) --}}
+            <i x-show="!autoHideMode" class="fas fa-lock text-white drop-shadow group-hover:text-blue-300 transition"></i>
+            {{-- Icon Burger Menu (โหมด Auto-hide) --}}
+            <i x-show="autoHideMode" class="fas fa-bars text-white drop-shadow group-hover:text-purple-300 transition"></i>
         </button>
 
         {{-- Close Button (แสดงเฉพาะบน Mobile) --}}
@@ -93,7 +110,7 @@
          @click.away="if (!sidebarOpen && hovered && window.innerWidth >= 768) { hovered = false }">
         {{-- Dashboard --}}
         <a href="{{ route('admin.dashboard') }}"
-           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-home w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">แดชบอร์ด</span>
@@ -101,7 +118,7 @@
 
         {{-- Users --}}
         <a href="{{ route('admin.users.index') }}"
-           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-users w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
@@ -109,7 +126,7 @@
 
         {{-- Affiliates --}}
         <a href="{{ route('admin.affiliates.index') }}"
-           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-network-wired w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Affiliate</span>
@@ -117,7 +134,7 @@
 
         {{-- Commissions --}}
         <a href="{{ route('admin.commissions.index') }}"
-           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.commissions.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-coins w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
@@ -125,7 +142,7 @@
 
         {{-- Wallet --}}
         <a href="{{ route('admin.wallet.index') }}"
-           @click="if (window.innerWidth >= 768 && !sidebarOpen) { $nextTick(() => sidebarOpen = false) }"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.wallet.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-wallet w-5 text-center drop-shadow"></i>
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
@@ -201,8 +218,8 @@
                 <div class="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-cyan-300 rounded-full animate-pulse delay-300"></div>
             </div>
 
-            {{-- Version + License Info (Premium Style) --}}
-            <div x-show="sidebarOpen" x-transition class="flex-1 min-w-0">
+            {{-- Version + License Info (Premium Style) - รองรับ Auto-hide Mode --}}
+            <div x-show="sidebarOpen || hovered" x-transition class="flex-1 min-w-0">
                 {{-- App Name with Gradient Text --}}
                 <div class="font-black text-base tracking-wider mb-1 bg-gradient-to-r from-white via-cyan-200 to-purple-200 bg-clip-text text-transparent drop-shadow-2xl">
                     TP-AFFILIATE
@@ -232,6 +249,20 @@
                     <i class="fas fa-star text-yellow-300 text-[8px] mr-0.5 animate-pulse"></i>
                     PREMIUM EDITION
                 </div>
+            </div>
+
+            {{-- License Icon Only (แสดงในโหมด Auto-hide) --}}
+            <div x-show="!sidebarOpen && !hovered && autoHideMode"
+                 x-transition
+                 class="flex flex-col items-center gap-1"
+                 title="Licensed - v{{ $version }}">
+                {{-- Shield Icon with Badge --}}
+                <div class="relative">
+                    <i class="fas fa-shield-check text-emerald-300 text-xl drop-shadow-lg animate-pulse"></i>
+                    <div class="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+                </div>
+                {{-- Small Version Text --}}
+                <span class="text-[8px] font-mono text-white/70 drop-shadow">v{{ $version }}</span>
             </div>
         </div>
 
