@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.34.0] - 2025-11-16
+
+### ✨ Features
+- Merge pull request #1258 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (5effaf71)
+- feat: เพิ่มเมนู 'ปรับแต่งทีม Arrow X' ใน Sidebar V3 (ad30f744)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.33.0] - 2025-11-16
 
 ### ✨ Features
