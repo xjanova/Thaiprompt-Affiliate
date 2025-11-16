@@ -235,6 +235,33 @@ select:focus {
 }
 
 /**
+ * Glass Input - input fields with glass effect
+ */
+.glass-input {
+    background: rgba(255, 255, 255, calc(var(--glass-opacity) * 0.9)) !important;
+    backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--backdrop-saturate));
+    -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--backdrop-saturate));
+    border: 2px solid rgba(255, 255, 255, var(--border-opacity));
+    border-radius: var(--button-roundness);
+    transition: all var(--animation-speed) ease;
+}
+
+.glass-input:focus {
+    background: rgba(255, 255, 255, calc(var(--glass-opacity) * 1.3)) !important;
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--backdrop-saturate));
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--backdrop-saturate));
+    border-color: rgba(255, 255, 255, calc(var(--border-opacity) * 2.5));
+}
+
+.dark .glass-input {
+    background: rgba(0, 0, 0, calc(var(--glass-opacity) * 1.2)) !important;
+}
+
+.dark .glass-input:focus {
+    background: rgba(0, 0, 0, calc(var(--glass-opacity) * 1.8)) !important;
+}
+
+/**
  * Stat Cards - 3D effects
  */
 .stat-card {
@@ -302,4 +329,99 @@ select:focus {
 :focus-visible {
     outline: 2px solid hsl(var(--primary-hue), 70%, 60%);
     outline-offset: 2px;
+}
+
+/**
+ * =============================================
+ * CLASSIC THEME OVERRIDE - ปิดเอฟเฟคทั้งหมด
+ * =============================================
+ * เมื่อ body มี class 'theme-classic' ให้ปิดเอฟเฟคกระจก
+ * และทำให้ทุกอย่างเป็นสีทึบ
+ */
+body.theme-classic .glass-fusion {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+body.theme-classic.dark .glass-fusion {
+    background: #1f2937 !important;
+    border: 1px solid #374151 !important;
+}
+
+body.theme-classic .glass-neu {
+    background: #f9fafb !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+body.theme-classic.dark .glass-neu {
+    background: #111827 !important;
+    border: 1px solid #374151 !important;
+}
+
+body.theme-classic .glass-input {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 2px solid #d1d5db !important;
+}
+
+body.theme-classic.dark .glass-input {
+    background: #1f2937 !important;
+    border: 2px solid #4b5563 !important;
+}
+
+body.theme-classic input,
+body.theme-classic textarea,
+body.theme-classic select {
+    background: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+}
+
+body.theme-classic.dark input,
+body.theme-classic.dark textarea,
+body.theme-classic.dark select {
+    background: #1f2937 !important;
+    border: 1px solid #4b5563 !important;
+}
+
+/* ปิด hover scale effects */
+body.theme-classic .glass-fusion:hover,
+body.theme-classic .glass-neu:hover,
+body.theme-classic button:hover,
+body.theme-classic .btn:hover {
+    transform: none !important;
+}
+
+/* ปิด glow effects */
+body.theme-classic [class*="bg-gradient-to"]::before {
+    display: none !important;
+}
+
+/* ปิด shadows เกินไป */
+body.theme-classic .shadow-lg,
+body.theme-classic .shadow-xl,
+body.theme-classic .shadow-2xl {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06) !important;
+}
+
+/* ปิด text shadows */
+body.theme-classic .text-white,
+body.theme-classic .text-gray-100,
+body.theme-classic .text-gray-200 {
+    text-shadow: none !important;
+}
+
+/* ปิด 3D perspective */
+body.theme-classic .transform-gpu,
+body.theme-classic .stat-card {
+    perspective: none !important;
+}
+
+body.theme-classic .stat-card:hover {
+    transform: none !important;
 }

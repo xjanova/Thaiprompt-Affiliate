@@ -55,19 +55,19 @@
     </div>
 
     <!-- Filter Section -->
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl p-6">
+    <div class="glass-fusion rounded-2xl shadow-xl p-6">
         <form method="GET" action="{{ route('admin.users.index') }}" class="grid grid-cols-1 md:grid-cols-4 gap-5">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">ค้นหา</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="ชื่อ, อีเมล หรือเลขสมาชิก"
-                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 transition-all duration-200"
+                       class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 glass-input text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded-xl focus:outline-none focus:ring-2 transition-all duration-200"
                        style="--tw-ring-color: var(--arrow-x-primary-start)"
                        onfocus="this.style.borderColor='var(--arrow-x-primary-start)'" onblur="this.style.borderColor=''">
             </div>
 
             <div>
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">บทบาท</label>
-                <select name="role" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white rounded-xl focus:ring-2 transition-all duration-200">
+                <select name="role" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 glass-input text-gray-900 dark:text-white rounded-xl focus:ring-2 transition-all duration-200">
                     <option value="">ทั้งหมด</option>
                     @foreach($roles as $role)
                         <option value="{{ $role->id }}" {{ request('role') == $role->id ? 'selected' : '' }}>
@@ -79,7 +79,7 @@
 
             <div>
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">จำนวนต่อหน้า</label>
-                <select name="per_page" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 bg-white/90 dark:bg-white/10 backdrop-blur-sm text-gray-900 dark:text-white rounded-xl focus:ring-2 transition-all duration-200">
+                <select name="per_page" class="w-full px-4 py-3 border-2 border-gray-200 dark:border-white/20 glass-input text-gray-900 dark:text-white rounded-xl focus:ring-2 transition-all duration-200">
                     <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10</option>
                     <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25</option>
                     <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50</option>
@@ -103,7 +103,7 @@
     </div>
 
     <!-- Bulk Actions Bar (Hidden by default, shown when items selected) -->
-    <div id="bulk-actions-bar" class="hidden bg-white/85 dark:bg-white/15 backdrop-blur-xl rounded-2xl shadow-lg border-2 p-5"
+    <div id="bulk-actions-bar" class="hidden glass-fusion rounded-2xl shadow-lg border-2 p-5"
          style="border-color: var(--arrow-x-primary-start)">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -133,7 +133,7 @@
     </div>
 
     <!-- Users Table -->
-    <div class="bg-white/85 dark:bg-white/15 backdrop-blur-xl border border-black/5 dark:border-white/30 rounded-2xl shadow-xl overflow-hidden">
+    <div class="glass-fusion rounded-2xl shadow-xl overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 dark:divide-white/10">
                 <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-white/5 dark:to-white/10">
