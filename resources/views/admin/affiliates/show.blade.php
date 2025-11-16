@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียด Affiliate - ' . $affiliate->user->name)
 
@@ -7,14 +7,14 @@
     <!-- Enhanced Header with Breadcrumb and Actions -->
     <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
         <div class="space-y-2">
-            <a href="{{ route('admin.affiliates.index') }}" class="group inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition-all duration-200 font-medium">
+            <a href="{{ route('admin.affiliates.index') }}" class="group inline-flex items-center gap-2 transition-all duration-200 font-medium" style="color: var(--color-primary);">
                 <svg class="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
                 กลับไปรายการ Affiliates
             </a>
             <h1 class="text-4xl font-black text-gray-900 dark:text-white flex items-center gap-3">
-                <div class="p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                <div class="p-3 rounded-2xl shadow-lg" style="background: linear-gradient(to bottom right, var(--color-primary), var(--color-secondary));">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
@@ -24,14 +24,14 @@
         </div>
         <div class="flex flex-wrap gap-3">
             <a href="{{ route('admin.affiliates.tree', $affiliate) }}"
-               class="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-bold">
+               class="group flex items-center gap-2 px-5 py-3 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-bold" style="background: linear-gradient(to right, rgb(22, 163, 74), rgb(5, 150, 105));">
                 <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
                 </svg>
                 ดู Tree
             </a>
             <a href="{{ route('admin.affiliates.edit', $affiliate) }}"
-               class="group flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl hover:from-blue-700 hover:to-cyan-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-bold">
+               class="group flex items-center gap-2 px-5 py-3 text-white rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 font-bold" style="background: linear-gradient(to right, rgb(37, 99, 235), rgb(14, 165, 233));">
                 <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -41,24 +41,24 @@
     </div>
 
     <!-- Enhanced Profile Header Card with Glassmorphism -->
-    <div class="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl shadow-2xl p-8 text-white">
+    <div class="relative overflow-hidden rounded-2xl shadow-2xl p-8 text-white" style="background: linear-gradient(to bottom right, var(--color-primary), var(--color-secondary), rgb(236, 72, 153));">
         <!-- Animated Background Pattern -->
         <div class="absolute inset-0 opacity-10">
             <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-80 h-80 bg-pink-300 rounded-full blur-3xl animate-pulse delay-1000"></div>
-            <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-300 rounded-full blur-3xl animate-pulse delay-500"></div>
+            <div class="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-3xl animate-pulse delay-1000" style="background: rgb(244, 114, 182);"></div>
+            <div class="absolute top-1/2 left-1/2 w-64 h-64 rounded-full blur-3xl animate-pulse delay-500" style="background: rgb(216, 180, 254);"></div>
         </div>
 
         <div class="relative z-10 flex flex-col lg:flex-row items-center lg:items-start gap-6">
             <!-- Enhanced Avatar with Ring Animation -->
             <div class="relative group">
-                <div class="absolute inset-0 bg-gradient-to-r from-pink-500 to-yellow-500 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+                <div class="absolute inset-0 rounded-full blur-xl opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse" style="background: linear-gradient(to right, rgb(236, 72, 153), rgb(234, 179, 8));"></div>
                 <div class="relative w-32 h-32 rounded-full bg-white/20 backdrop-blur-xl flex items-center justify-center text-5xl font-black border-4 border-white/40 shadow-2xl group-hover:scale-110 transition-transform duration-300">
                     {{ strtoupper(substr($affiliate->user->name, 0, 2)) }}
                 </div>
                 <!-- Status Indicator Dot -->
                 @if($affiliate->status === 'active')
-                    <div class="absolute bottom-2 right-2 w-6 h-6 bg-green-400 rounded-full border-4 border-white shadow-lg animate-pulse"></div>
+                    <div class="absolute bottom-2 right-2 w-6 h-6 rounded-full border-4 border-white shadow-lg animate-pulse" style="background: rgb(74, 222, 128);"></div>
                 @endif
             </div>
 
@@ -66,7 +66,7 @@
             <div class="flex-1 text-center lg:text-left space-y-4">
                 <div>
                     <h2 class="text-4xl font-black mb-2 tracking-tight">{{ $affiliate->user->name }}</h2>
-                    <p class="text-xl text-indigo-100 font-medium flex items-center gap-2 justify-center lg:justify-start">
+                    <p class="text-xl font-medium flex items-center gap-2 justify-center lg:justify-start" style="color: rgb(224, 231, 255);">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
@@ -81,10 +81,11 @@
                         Level {{ $affiliate->level }}
                     </span>
                     <span class="px-4 py-2 rounded-xl text-base font-bold border-2 shadow-lg flex items-center gap-2
-                        @if($affiliate->status === 'active') bg-green-400/30 border-green-300 backdrop-blur-xl
-                        @elseif($affiliate->status === 'inactive') bg-gray-400/30 border-gray-300 backdrop-blur-xl
-                        @else bg-red-400/30 border-red-300 backdrop-blur-xl
-                        @endif">
+                        @if($affiliate->status === 'active') backdrop-blur-xl
+                        @elseif($affiliate->status === 'inactive') backdrop-blur-xl
+                        @else backdrop-blur-xl
+                        @endif"
+                        style="@if($affiliate->status === 'active')background: rgba(74, 222, 128, 0.3); border-color: rgb(134, 239, 172);@elseif($affiliate->status === 'inactive')background: rgba(156, 163, 175, 0.3); border-color: rgb(209, 213, 219);@else background: rgba(248, 113, 113, 0.3); border-color: rgb(252, 165, 165);@endif">
                         @if($affiliate->status === 'active')
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -100,7 +101,7 @@
 
             <!-- Enhanced Referral Code Card -->
             <div class="bg-white/15 backdrop-blur-xl rounded-2xl p-6 border-2 border-white/30 shadow-2xl hover:scale-105 transition-transform duration-300">
-                <div class="flex items-center gap-2 text-indigo-100 mb-3">
+                <div class="flex items-center gap-2 mb-3" style="color: rgb(224, 231, 255);">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                     </svg>
@@ -122,69 +123,69 @@
     <!-- Enhanced Animated Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Total Referrals Card -->
-        <div class="group relative overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-2xl shadow-lg border-2 border-blue-200 dark:border-blue-800 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-300"></div>
+        <div class="group relative overflow-hidden rounded-2xl shadow-lg border-2 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300" style="background: linear-gradient(to bottom right, rgb(239, 246, 255), rgb(207, 250, 254)); border-color: rgb(191, 219, 254);">
+            <div class="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl group-hover:opacity-20 transition-all duration-300" style="background: rgba(59, 130, 246, 0.1);"></div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div class="p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, rgb(59, 130, 246), rgb(6, 182, 212));">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                     </div>
-                    <span class="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">Network</span>
+                    <span class="text-xs font-bold uppercase tracking-wider" style="color: rgb(37, 99, 235);">Network</span>
                 </div>
-                <p class="text-4xl font-black text-blue-600 dark:text-blue-400 mb-2">{{ number_format($affiliate->total_referrals) }}</p>
+                <p class="text-4xl font-black mb-2" style="color: rgb(37, 99, 235);">{{ number_format($affiliate->total_referrals) }}</p>
                 <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Total Referrals<br>เครือข่ายทั้งหมด</p>
             </div>
         </div>
 
         <!-- Direct Referrals Card -->
-        <div class="group relative overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-2xl shadow-lg border-2 border-purple-200 dark:border-purple-800 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-300"></div>
+        <div class="group relative overflow-hidden rounded-2xl shadow-lg border-2 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300" style="background: linear-gradient(to bottom right, rgb(250, 245, 255), rgb(252, 231, 243)); border-color: rgb(233, 213, 255);">
+            <div class="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl group-hover:opacity-20 transition-all duration-300" style="background: rgba(168, 85, 247, 0.1);"></div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div class="p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, rgb(168, 85, 247), rgb(236, 72, 153));">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
                     </div>
-                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Direct</span>
+                    <span class="text-xs font-bold uppercase tracking-wider" style="color: rgb(147, 51, 234);">Direct</span>
                 </div>
-                <p class="text-4xl font-black text-purple-600 dark:text-purple-400 mb-2">{{ $affiliate->children->count() }}</p>
+                <p class="text-4xl font-black mb-2" style="color: rgb(147, 51, 234);">{{ $affiliate->children->count() }}</p>
                 <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Direct Referrals<br>ผู้ใช้ที่แนะนำโดยตรง</p>
             </div>
         </div>
 
         <!-- Total Earnings Card -->
-        <div class="group relative overflow-hidden bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl shadow-lg border-2 border-green-200 dark:border-green-800 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-3xl group-hover:bg-green-500/20 transition-all duration-300"></div>
+        <div class="group relative overflow-hidden rounded-2xl shadow-lg border-2 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300" style="background: linear-gradient(to bottom right, rgb(240, 253, 244), rgb(209, 250, 229)); border-color: rgb(187, 247, 208);">
+            <div class="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl group-hover:opacity-20 transition-all duration-300" style="background: rgba(34, 197, 94, 0.1);"></div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="p-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div class="p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, rgb(34, 197, 94), rgb(5, 150, 105));">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <span class="text-xs font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">Earnings</span>
+                    <span class="text-xs font-bold uppercase tracking-wider" style="color: rgb(22, 163, 74);">Earnings</span>
                 </div>
-                <p class="text-4xl font-black text-green-600 dark:text-green-400 mb-2">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
+                <p class="text-4xl font-black mb-2" style="color: rgb(22, 163, 74);">฿{{ number_format($affiliate->total_earnings, 0) }}</p>
                 <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Total Earnings<br>รายได้ทั้งหมด</p>
             </div>
         </div>
 
         <!-- Commissions Count Card -->
-        <div class="group relative overflow-hidden bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 rounded-2xl shadow-lg border-2 border-orange-200 dark:border-orange-800 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-3xl group-hover:bg-orange-500/20 transition-all duration-300"></div>
+        <div class="group relative overflow-hidden rounded-2xl shadow-lg border-2 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300" style="background: linear-gradient(to bottom right, rgb(255, 247, 237), rgb(254, 243, 199)); border-color: rgb(254, 215, 170);">
+            <div class="absolute top-0 right-0 w-32 h-32 rounded-full blur-3xl group-hover:opacity-20 transition-all duration-300" style="background: rgba(249, 115, 22, 0.1);"></div>
             <div class="relative z-10">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <div class="p-3 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300" style="background: linear-gradient(to bottom right, rgb(249, 115, 22), rgb(245, 158, 11));">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                     </div>
-                    <span class="text-xs font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider">Transactions</span>
+                    <span class="text-xs font-bold uppercase tracking-wider" style="color: rgb(234, 88, 12);">Transactions</span>
                 </div>
-                <p class="text-4xl font-black text-orange-600 dark:text-orange-400 mb-2">{{ $affiliate->commissions->count() }}</p>
+                <p class="text-4xl font-black mb-2" style="color: rgb(234, 88, 12);">{{ $affiliate->commissions->count() }}</p>
                 <p class="text-sm font-semibold text-gray-600 dark:text-gray-400">Commissions<br>จำนวนคอมมิชชั่น</p>
             </div>
         </div>
@@ -205,7 +206,7 @@
                 <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">คอมมิชชั่นที่จ่ายแล้ว</h3>
                 <div class="text-2xl">✅</div>
             </div>
-            <p class="text-2xl font-bold text-green-600">฿{{ number_format($totalPaid, 2) }}</p>
+            <p class="text-2xl font-bold" style="color: rgb(22, 163, 74);">฿{{ number_format($totalPaid, 2) }}</p>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $paidCommissions->count() }} รายการ</p>
         </div>
 
@@ -215,7 +216,7 @@
                 <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">คอมมิชชั่นรอจ่าย</h3>
                 <div class="text-2xl">⏳</div>
             </div>
-            <p class="text-2xl font-bold text-yellow-600">฿{{ number_format($totalPending, 2) }}</p>
+            <p class="text-2xl font-bold" style="color: rgb(202, 138, 4);">฿{{ number_format($totalPending, 2) }}</p>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ $pendingCommissions->count() }} รายการ</p>
         </div>
 
@@ -228,7 +229,7 @@
             @php
                 $avgPerReferral = $affiliate->total_referrals > 0 ? $affiliate->total_earnings / $affiliate->total_referrals : 0;
             @endphp
-            <p class="text-2xl font-bold text-indigo-600">฿{{ number_format($avgPerReferral, 2) }}</p>
+            <p class="text-2xl font-bold" style="color: var(--color-primary);">฿{{ number_format($avgPerReferral, 2) }}</p>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">เฉลี่ยต่อ referral</p>
         </div>
     </div>
@@ -247,9 +248,9 @@
                     <dt class="text-sm font-medium text-gray-600 mb-1">แนะนำโดย (Upline)</dt>
                     <dd class="text-sm">
                         <a href="{{ route('admin.affiliates.show', $affiliate->parent) }}"
-                           class="flex items-center gap-2 text-indigo-600 hover:text-indigo-900 font-medium">
+                           class="flex items-center gap-2 font-medium" style="color: var(--color-primary);">
                             <span>{{ $affiliate->parent->user->name }}</span>
-                            <code class="px-2 py-1 bg-indigo-50 rounded text-xs">{{ $affiliate->parent->referral_code }}</code>
+                            <code class="px-2 py-1 rounded text-xs" style="background: rgb(238, 242, 255);">{{ $affiliate->parent->referral_code }}</code>
                             <span class="text-xs">→</span>
                         </a>
                     </dd>
@@ -264,7 +265,7 @@
                 <div class="border-b border-gray-100 pb-3">
                     <dt class="text-sm font-medium text-gray-600 mb-1">ระดับในเครือข่าย</dt>
                     <dd class="text-sm">
-                        <span class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-semibold">Level {{ $affiliate->level }}</span>
+                        <span class="px-3 py-1 rounded-full font-semibold" style="background: rgb(219, 234, 254); color: rgb(30, 64, 175);">Level {{ $affiliate->level }}</span>
                     </dd>
                 </div>
 
@@ -314,7 +315,7 @@
                 <div class="border-b border-gray-100 pb-3">
                     <dt class="text-sm font-medium text-gray-600 mb-1">อีเมล</dt>
                     <dd class="text-sm">
-                        <a href="mailto:{{ $affiliate->user->email }}" class="text-indigo-600 hover:text-indigo-900">
+                        <a href="mailto:{{ $affiliate->user->email }}" style="color: var(--color-primary);">
                             {{ $affiliate->user->email }}
                         </a>
                     </dd>
@@ -341,7 +342,7 @@
                     <dt class="text-sm font-medium text-gray-600 mb-1">ดูแดชบอร์ด</dt>
                     <dd class="text-sm">
                         <a href="{{ route('admin.users.dashboard', $affiliate->user) }}"
-                           class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition font-medium">
+                           class="inline-flex items-center gap-2 px-4 py-2 rounded-lg transition font-medium" style="background: rgb(224, 231, 255); color: rgb(29, 78, 216);">
                             <span>🔍</span>
                             <span>เข้าสู่แดชบอร์ดผู้ใช้</span>
                         </a>
@@ -357,7 +358,7 @@
             <span class="text-2xl">💵</span>
             ประวัติคอมมิชชั่น
             @if($affiliate->commissions->count() > 0)
-                <span class="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-semibold">
+                <span class="px-3 py-1 rounded-full text-sm font-semibold" style="background: rgb(224, 231, 255); color: rgb(55, 48, 163);">
                     {{ $affiliate->commissions->count() }} รายการ
                 </span>
             @endif
@@ -387,20 +388,16 @@
                                     ฿{{ number_format($commission->sale_amount ?? 0, 2) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded font-semibold">
+                                    <span class="px-2 py-1 rounded font-semibold" style="background: rgb(219, 234, 254); color: rgb(30, 64, 175);">
                                         {{ $commission->commission_rate ?? 0 }}%
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold" style="color: rgb(22, 163, 74);">
                                     ฿{{ number_format($commission->amount, 2) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-full
-                                        @if($commission->status === 'paid') bg-green-100 text-green-800
-                                        @elseif($commission->status === 'pending') bg-yellow-100 text-yellow-800
-                                        @elseif($commission->status === 'approved') bg-blue-100 text-blue-800
-                                        @else bg-gray-100 text-gray-800
-                                        @endif">
+                                    <span class="px-3 py-1 text-xs font-semibold rounded-full"
+                                        style="@if($commission->status === 'paid')background: rgb(220, 252, 231); color: rgb(22, 101, 52);@elseif($commission->status === 'pending')background: rgb(254, 249, 195); color: rgb(133, 77, 14);@elseif($commission->status === 'approved')background: rgb(219, 234, 254); color: rgb(30, 64, 175);@else background: rgb(243, 244, 246); color: rgb(31, 41, 55);@endif">
                                         {{ ucfirst($commission->status) }}
                                     </span>
                                 </td>
@@ -419,7 +416,7 @@
                     <tfoot class="bg-gray-50 font-bold">
                         <tr>
                             <td colspan="3" class="px-6 py-4 text-right text-sm text-gray-700">รวมทั้งหมด:</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-bold">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold" style="color: rgb(22, 163, 74);">
                                 ฿{{ number_format($affiliate->commissions->sum('amount'), 2) }}
                             </td>
                             <td colspan="2"></td>
@@ -429,8 +426,8 @@
             </div>
 
             @if($affiliate->commissions->count() > 15)
-                <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 text-center">
-                    <p class="text-sm text-blue-900">
+                <div class="mt-4 p-3 rounded-lg border text-center" style="background: rgb(239, 246, 255); border-color: rgb(191, 219, 254);">
+                    <p class="text-sm" style="color: rgb(30, 58, 138);">
                         แสดง 15 รายการล่าสุด จากทั้งหมด <strong>{{ $affiliate->commissions->count() }}</strong> รายการ
                     </p>
                 </div>
@@ -450,18 +447,18 @@
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span class="text-2xl">👨‍👩‍👧‍👦</span>
             ผู้ใช้ที่แนะนำโดยตรง (Direct Referrals)
-            <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">
+            <span class="px-3 py-1 rounded-full text-sm font-semibold" style="background: rgb(243, 232, 255); color: rgb(107, 33, 168);">
                 {{ $affiliate->children->count() }}
             </span>
         </h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($affiliate->children->sortByDesc('created_at') as $child)
-                <div class="border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg hover:border-indigo-300 transition">
+                <div class="border-2 border-gray-200 rounded-xl p-4 hover:shadow-lg transition" style="border-color: rgb(209, 213, 219);">
                     <!-- Header -->
                     <div class="flex items-start justify-between mb-3">
                         <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-md">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shadow-md" style="background: linear-gradient(to bottom right, var(--color-primary), var(--color-secondary));">
                                 {{ strtoupper(substr($child->user->name, 0, 1)) }}
                             </div>
                             <div>
@@ -469,10 +466,8 @@
                                 <code class="text-xs text-gray-500 font-mono">{{ $child->referral_code }}</code>
                             </div>
                         </div>
-                        <span class="text-xs px-2 py-1 rounded-full font-semibold
-                            @if($child->status === 'active') bg-green-100 text-green-800
-                            @else bg-gray-100 text-gray-800
-                            @endif">
+                        <span class="text-xs px-2 py-1 rounded-full font-semibold"
+                            style="@if($child->status === 'active')background: rgb(220, 252, 231); color: rgb(22, 101, 52);@else background: rgb(243, 244, 246); color: rgb(31, 41, 55);@endif">
                             {{ $child->status }}
                         </span>
                     </div>
@@ -482,28 +477,28 @@
 
                     <!-- Stats -->
                     <div class="grid grid-cols-2 gap-2 mb-3 text-xs">
-                        <div class="bg-blue-50 rounded p-2">
+                        <div class="rounded p-2" style="background: rgb(239, 246, 255);">
                             <div class="text-gray-600">Level</div>
-                            <div class="font-bold text-blue-600">{{ $child->level }}</div>
+                            <div class="font-bold" style="color: rgb(37, 99, 235);">{{ $child->level }}</div>
                         </div>
-                        <div class="bg-green-50 rounded p-2">
+                        <div class="rounded p-2" style="background: rgb(240, 253, 244);">
                             <div class="text-gray-600">Referrals</div>
-                            <div class="font-bold text-green-600">{{ $child->total_referrals }}</div>
+                            <div class="font-bold" style="color: rgb(22, 163, 74);">{{ $child->total_referrals }}</div>
                         </div>
-                        <div class="bg-purple-50 rounded p-2 col-span-2">
+                        <div class="rounded p-2 col-span-2" style="background: rgb(250, 245, 255);">
                             <div class="text-gray-600">Earnings</div>
-                            <div class="font-bold text-purple-600">฿{{ number_format($child->total_earnings, 2) }}</div>
+                            <div class="font-bold" style="color: rgb(147, 51, 234);">฿{{ number_format($child->total_earnings, 2) }}</div>
                         </div>
                     </div>
 
                     <!-- Actions -->
                     <div class="flex gap-2">
                         <a href="{{ route('admin.affiliates.show', $child) }}"
-                           class="flex-1 text-center px-3 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition font-medium">
+                           class="flex-1 text-center px-3 py-2 text-white text-sm rounded-lg transition font-medium" style="background: var(--color-primary);">
                             ดูรายละเอียด
                         </a>
                         <a href="{{ route('admin.affiliates.tree', $child) }}"
-                           class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition">
+                           class="px-3 py-2 text-white text-sm rounded-lg transition" style="background: rgb(22, 163, 74);">
                             🌳
                         </a>
                     </div>
