@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.33.0] - 2025-11-16
+
+### ✨ Features
+- feat: อัพเกรด Users pages ทั้งหมดเป็น V3 Standards (a4984d60)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1257 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (57ce8b6c)
+- refactor: ลบ custom CSS classes ที่ไม่จำเป็นออกจาก Dashboard (V3 cleanup) (2aa4c578)
+
 ## [v3.32.0] - 2025-11-16
 
 ### ✨ Features
