@@ -283,19 +283,19 @@ function settingsManager() {
             { id: 'security', label: 'ความปลอดภัย', icon: 'fas fa-shield-alt' }
         ],
         form: {
-            app_name: '{{ setting('app_name', 'TP-Affiliate') }}',
-            commission_rate: {{ setting('commission_rate', 10) }},
-            multi_level_enabled: {{ setting('multi_level_enabled', true) ? 'true' : 'false' }},
-            commission_depth: {{ setting('commission_depth', 5) }},
-            google_translate_enabled: {{ setting('google_translate_enabled', false) ? 'true' : 'false' }},
-            google_translate_api_key: '{{ setting('google_translate_api_key', '') }}',
-            google_translate_project_id: '{{ setting('google_translate_project_id', '') }}',
-            tinymce_api_key: '{{ setting('tinymce_api_key', '') }}',
-            turnstile_enabled: {{ setting('turnstile_enabled', false) ? 'true' : 'false' }},
-            turnstile_site_key: '{{ setting('turnstile_site_key', '') }}',
-            turnstile_secret_key: '{{ setting('turnstile_secret_key', '') }}',
-            turnstile_login: {{ setting('turnstile_login', false) ? 'true' : 'false' }},
-            turnstile_register: {{ setting('turnstile_register', false) ? 'true' : 'false' }}
+            app_name: '{{ \App\Models\Setting::get('app_name', 'TP-Affiliate') }}',
+            commission_rate: {{ \App\Models\Setting::get('commission_rate', 10) }},
+            multi_level_enabled: {{ \App\Models\Setting::get('multi_level_enabled', true) ? 'true' : 'false' }},
+            commission_depth: {{ \App\Models\Setting::get('commission_depth', 5) }},
+            google_translate_enabled: {{ \App\Models\Setting::get('google_translate_enabled', false) ? 'true' : 'false' }},
+            google_translate_api_key: '{{ \App\Models\Setting::get('google_translate_api_key', '') }}',
+            google_translate_project_id: '{{ \App\Models\Setting::get('google_translate_project_id', '') }}',
+            tinymce_api_key: '{{ \App\Models\Setting::get('tinymce_api_key', '') }}',
+            turnstile_enabled: {{ \App\Models\Setting::get('turnstile_enabled', false) ? 'true' : 'false' }},
+            turnstile_site_key: '{{ \App\Models\Setting::get('turnstile_site_key', '') }}',
+            turnstile_secret_key: '{{ \App\Models\Setting::get('turnstile_secret_key', '') }}',
+            turnstile_login: {{ \App\Models\Setting::get('turnstile_login', false) ? 'true' : 'false' }},
+            turnstile_register: {{ \App\Models\Setting::get('turnstile_register', false) ? 'true' : 'false' }}
         },
 
         resetForm() {

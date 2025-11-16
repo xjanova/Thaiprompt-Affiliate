@@ -251,10 +251,10 @@
 
                 {{-- Menu Items --}}
                 <div class="py-2">
-                    <a href="#"
-                       class="flex items-center gap-3 px-4 py-2 opacity-50 cursor-not-allowed text-white text-sm">
+                    <a href="{{ route('admin.profile.index') }}"
+                       class="flex items-center gap-3 px-4 py-2 hover:bg-white/10 transition-colors text-white text-sm">
                         <i class="fas fa-user-circle w-4 drop-shadow"></i>
-                        <span class="drop-shadow">โปรไฟล์ (Coming Soon)</span>
+                        <span class="drop-shadow">โปรไฟล์</span>
                     </a>
                     <a href="{{ route('admin.settings.index') }}"
                        class="flex items-center gap-3 px-4 py-2 hover:bg-white/10 transition-colors text-white text-sm">
