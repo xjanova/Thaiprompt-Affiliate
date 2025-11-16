@@ -1,4 +1,4 @@
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'จัดการกระเป๋าคริปโต')
 

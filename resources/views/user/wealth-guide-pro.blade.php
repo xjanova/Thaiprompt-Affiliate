@@ -1,4 +1,4 @@
-@extends('layouts.user')
+@extends('layouts.user-arrow-x')
 
 @section('title', 'คู่มือเสริมทางเศรษฐี Pro - ฉบับสมบูรณ์พร้อม 3D Visualization')
 
