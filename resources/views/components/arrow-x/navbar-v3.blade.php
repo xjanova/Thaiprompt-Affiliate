@@ -28,24 +28,63 @@
 <header class="h-16 glass-fusion border-b border-white/30 flex items-center justify-between px-4 md:px-6 relative z-10">
     {{-- Left Section: Page Title --}}
     <div class="flex items-center gap-4">
-        {{-- Mobile Menu Toggle (Burger Menu) - กระพริบทุก 30 วินาที --}}
+        {{-- Mobile Menu Toggle (Burger Menu) - กระพริบทุก 30 วินาที + Tooltip ทุก 15 วัน --}}
         <div x-data="{
             blinking: false,
+            showTooltip: false,
             startBlink() {
                 this.blinking = true;
                 setTimeout(() => { this.blinking = false; }, 1500);
+            },
+            checkTooltip() {
+                const lastShown = localStorage.getItem('burgerTooltipLastShown');
+                const now = new Date().getTime();
+                const fifteenDays = 15 * 24 * 60 * 60 * 1000;
+
+                if (!lastShown || (now - parseInt(lastShown)) > fifteenDays) {
+                    // แสดง tooltip หลังจาก 2 วินาที
+                    setTimeout(() => {
+                        this.showTooltip = true;
+                        // ซ่อนหลัง 10 วินาที
+                        setTimeout(() => {
+                            this.showTooltip = false;
+                            localStorage.setItem('burgerTooltipLastShown', now.toString());
+                        }, 10000);
+                    }, 2000);
+                }
             }
         }"
         x-init="
             setInterval(() => { startBlink(); }, 30000);
+            checkTooltip();
         "
-        class="md:hidden">
-            <button @click="sidebarOpen = !sidebarOpen"
+        class="md:hidden relative">
+            <button @click="sidebarOpen = !sidebarOpen; showTooltip = false"
                     type="button"
                     class="p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
                     :class="blinking ? 'animate-blink-burger' : ''">
                 <i class="fas fa-bars text-white text-lg drop-shadow"></i>
             </button>
+
+            {{-- Tooltip --}}
+            <div x-show="showTooltip"
+                 x-transition
+                 @click="showTooltip = false"
+                 class="absolute top-full left-0 mt-2 w-64 glass-dropdown rounded-xl shadow-2xl border border-white/30 p-4 z-50 cursor-pointer">
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-info-circle text-white"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-white font-medium text-sm mb-1">💡 เคล็ดลับ</p>
+                        <p class="text-white/80 text-xs">กดที่ปุ่ม <i class="fas fa-bars mx-1"></i> นี้เพื่อเปิดเมนู</p>
+                    </div>
+                    <button @click.stop="showTooltip = false; localStorage.setItem('burgerTooltipLastShown', new Date().getTime().toString())"
+                            class="flex-shrink-0 text-white/60 hover:text-white">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+            </div>
         </div>
 
         {{-- Page Title --}}
