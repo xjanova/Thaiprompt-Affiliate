@@ -393,11 +393,37 @@
                 max-height="400"
             >
                 @forelse($recentActivities ?? [] as $activity)
+                    @php
+                        // กำหนด icon และสีตามประเภทและสถานะของ commission
+                        $activityIcon = match($activity->status ?? 'pending') {
+                            'approved' => 'fas fa-check-circle',
+                            'paid' => 'fas fa-money-bill-wave',
+                            'rejected' => 'fas fa-times-circle',
+                            default => 'fas fa-clock',
+                        };
+
+                        $activityIconColor = match($activity->status ?? 'pending') {
+                            'approved' => 'text-green-500',
+                            'paid' => 'text-blue-500',
+                            'rejected' => 'text-red-500',
+                            default => 'text-yellow-500',
+                        };
+
+                        $activityTitle = match($activity->status ?? 'pending') {
+                            'approved' => 'คอมมิชชั่นได้รับการอนุมัติ',
+                            'paid' => 'คอมมิชชั่นจ่ายแล้ว',
+                            'rejected' => 'คอมมิชชั่นถูกปฏิเสธ',
+                            default => 'คอมมิชชั่นรอดำเนินการ',
+                        };
+
+                        $activityDescription = 'จำนวน ฿' . number_format($activity->amount, 2) . ' (' . ($activity->type ?? 'ไม่ระบุ') . ')';
+                    @endphp
+
                     <x-arrow-x.activity.item
-                        :icon="$activity->icon"
-                        :iconColor="$activity->iconColor"
-                        :title="$activity->title"
-                        :description="$activity->description"
+                        :icon="$activityIcon"
+                        :iconColor="$activityIconColor"
+                        :title="$activityTitle"
+                        :description="$activityDescription"
                         :time="$activity->created_at->diffForHumans()"
                     />
                 @empty
