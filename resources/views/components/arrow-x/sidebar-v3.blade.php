@@ -133,41 +133,73 @@
         </a>
     </nav>
 
-    {{-- Footer: Logo + Version + License (3D Style) --}}
-    <div class="p-4 border-t border-white/30">
-        <div class="flex items-center gap-3">
-            {{-- Logo with 3D rotateY animation (หมุนไปทางขวา แบบ 3D ไม่ใช่แบบนาฬิกา) --}}
-            <div class="relative w-12 h-12 flex-shrink-0">
-                <div class="w-full h-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-2xl animate-rotate-y-3d">
-                    <i class="fas fa-rocket text-white text-xl drop-shadow-lg"></i>
+    {{-- Footer: Premium Logo + Version + License (Ultra 3D Style) --}}
+    <div class="p-4 border-t border-white/30 relative overflow-hidden">
+        {{-- Premium Background Glow --}}
+        <div class="absolute inset-0 bg-gradient-to-t from-purple-500/10 via-transparent to-transparent pointer-events-none"></div>
+
+        <div class="relative flex items-center gap-3">
+            {{-- Ultra Premium 3D Logo with Multiple Layers --}}
+            <div class="relative w-14 h-14 flex-shrink-0 group">
+                {{-- Outer Glow Ring (Rotating) --}}
+                <div class="absolute inset-0 rounded-2xl bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500 opacity-50 blur-md animate-spin-slow"></div>
+
+                {{-- Middle Shine Layer --}}
+                <div class="absolute inset-0.5 rounded-2xl bg-gradient-to-br from-white/30 to-transparent opacity-40"></div>
+
+                {{-- Main Logo Container (3D Rotating) --}}
+                <div class="relative w-full h-full bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl animate-rotate-y-3d group-hover:shadow-cyan-500/50 transition-all duration-300">
+                    {{-- Inner Glow --}}
+                    <div class="absolute inset-2 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
+
+                    {{-- Rocket Icon with Pulse --}}
+                    <i class="fas fa-rocket text-white text-2xl drop-shadow-2xl relative z-10 animate-float"></i>
+
+                    {{-- Shine Effect --}}
+                    <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 shine-effect"></div>
                 </div>
+
+                {{-- Corner Sparkles (Absolute positioned) --}}
+                <div class="absolute -top-1 -right-1 w-2 h-2 bg-yellow-300 rounded-full animate-ping opacity-75"></div>
+                <div class="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-cyan-300 rounded-full animate-pulse delay-300"></div>
             </div>
 
-            {{-- Version + License Info --}}
+            {{-- Version + License Info (Premium Style) --}}
             <div x-show="sidebarOpen" x-transition class="flex-1 min-w-0">
-                {{-- App Name --}}
-                <div class="text-white font-bold text-sm drop-shadow-lg tracking-wide">
-                    TP-Affiliate
+                {{-- App Name with Gradient Text --}}
+                <div class="font-black text-base tracking-wider mb-1 bg-gradient-to-r from-white via-cyan-200 to-purple-200 bg-clip-text text-transparent drop-shadow-2xl">
+                    TP-AFFILIATE
                 </div>
 
-                {{-- Version Number --}}
+                {{-- Version Badge (Premium Chip) --}}
                 @php
                     $version = file_exists(base_path('VERSION'))
                         ? trim(file_get_contents(base_path('VERSION')))
                         : '3.0.0';
                 @endphp
-                <div class="text-white/90 text-xs drop-shadow flex items-center gap-1 mt-0.5">
-                    <i class="fas fa-code-branch text-xs"></i>
-                    <span class="font-mono">v{{ $version }}</span>
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gradient-to-r from-blue-500/30 to-purple-500/30 rounded-full border border-blue-400/50 backdrop-blur-sm mb-1.5">
+                    <i class="fas fa-code-branch text-[10px] text-blue-300 drop-shadow"></i>
+                    <span class="text-[10px] font-bold font-mono text-white drop-shadow tracking-wide">v{{ $version }}</span>
+                    <div class="w-1 h-1 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
                 </div>
 
-                {{-- License Status --}}
-                <div class="text-green-400 text-xs flex items-center gap-1 mt-0.5">
-                    <i class="fas fa-shield-check drop-shadow"></i>
-                    <span class="drop-shadow font-medium">Licensed</span>
+                {{-- License Badge (Premium with Animation) --}}
+                <div class="inline-flex items-center gap-1.5 px-2 py-0.5 bg-gradient-to-r from-emerald-500/30 to-green-500/30 rounded-full border border-emerald-400/50 backdrop-blur-sm animate-glow-pulse">
+                    <i class="fas fa-shield-check text-[10px] text-emerald-300 drop-shadow-lg animate-pulse"></i>
+                    <span class="text-[10px] font-bold text-white drop-shadow tracking-wide">LICENSED</span>
+                    <i class="fas fa-check-circle text-[8px] text-green-300"></i>
+                </div>
+
+                {{-- Premium Edition Label (Subtle) --}}
+                <div class="text-[9px] text-white/60 font-medium tracking-widest mt-1 drop-shadow">
+                    <i class="fas fa-star text-yellow-300 text-[8px] mr-0.5 animate-pulse"></i>
+                    PREMIUM EDITION
                 </div>
             </div>
         </div>
+
+        {{-- Bottom Shine Line --}}
+        <div class="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent"></div>
     </div>
 </aside>
 
@@ -229,5 +261,72 @@
 
 .animate-rotate-y-3d:hover {
     animation-play-state: paused;
+}
+
+/**
+ * Premium Animations สำหรับ Footer
+ */
+
+/* Float Animation - ลอยขึ้นลงนิดหน่อย */
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+.animate-float {
+    animation: float 3s ease-in-out infinite;
+}
+
+/* Slow Spin - หมุนช้าๆ สำหรับ glow ring */
+@keyframes spin-slow {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+}
+
+/* Glow Pulse - กระพริบแสงนุ่มๆ สำหรับ license badge */
+@keyframes glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 5px rgba(16, 185, 129, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 15px rgba(16, 185, 129, 0.6), 0 0 25px rgba(16, 185, 129, 0.3);
+    }
+}
+
+.animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Shine Effect - แสงวิ่งผ่าน */
+@keyframes shine {
+    0% {
+        background-position: -100% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.shine-effect {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: shine 3s ease-in-out infinite;
+}
+
+/* Delay utilities */
+.delay-300 {
+    animation-delay: 300ms;
 }
 </style>

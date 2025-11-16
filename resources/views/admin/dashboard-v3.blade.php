@@ -228,35 +228,70 @@
 
 <script>
 /**
- * Revenue Chart - กราฟแสดงรายได้รายเดือน
+ * Revenue Chart - กราฟแสดงรายได้รายเดือนตามข้อมูลจริง
  */
 document.addEventListener('DOMContentLoaded', function() {
     const ctx = document.getElementById('revenue-chart');
-    if (!ctx) return;
+    if (!ctx) {
+        console.error('Canvas element "revenue-chart" not found');
+        return;
+    }
 
-    // เตรียมข้อมูล
-    const monthlyData = @json($monthlyRevenue);
+    // ข้อมูลจริงจากฐานข้อมูล
+    let monthlyData = @json($monthlyRevenue);
+
+    // ถ้าไม่มีข้อมูล ใช้ข้อมูลจริง 12 เดือนที่ผ่านมา (ค่าเริ่มต้นเป็น 0)
+    if (!monthlyData || monthlyData.length === 0) {
+        const now = new Date();
+        monthlyData = [];
+        for (let i = 11; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            monthlyData.push({
+                month: `${year}-${month}`,
+                total: '0.00'  // ถ้าไม่มีข้อมูลจริง จะเป็น 0
+            });
+        }
+    }
+
+    // เตรียม labels และ data
     const labels = monthlyData.map(item => {
         const [year, month] = item.month.split('-');
         const monthNames = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
         return monthNames[parseInt(month) - 1] + ' ' + year;
     });
-    const data = monthlyData.map(item => parseFloat(item.total));
 
-    // สร้าง gradient
-    const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 350);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.5)');
-    gradient.addColorStop(1, 'rgba(139, 92, 246, 0.1)');
+    const data = monthlyData.map(item => parseFloat(item.total || 0));
+
+    console.log('📊 Revenue Chart Data:', {
+        labels: labels,
+        data: data,
+        rawData: monthlyData
+    });
+
+    // สร้าง gradient แบบสวยงาม (ใช้ context 2d)
+    const chartCtx = ctx.getContext('2d');
+    const gradient = chartCtx.createLinearGradient(0, 0, 0, 350);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.6)');    // Blue เข้ม
+    gradient.addColorStop(0.5, 'rgba(139, 92, 246, 0.4)');  // Purple กลาง
+    gradient.addColorStop(1, 'rgba(236, 72, 153, 0.1)');    // Pink อ่อน
+
+    // สร้าง gradient สำหรับเส้น
+    const lineGradient = chartCtx.createLinearGradient(0, 0, ctx.width, 0);
+    lineGradient.addColorStop(0, 'rgb(59, 130, 246)');
+    lineGradient.addColorStop(0.5, 'rgb(139, 92, 246)');
+    lineGradient.addColorStop(1, 'rgb(236, 72, 153)');
 
     // สร้าง chart
-    new Chart(ctx, {
+    const chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
             datasets: [{
                 label: 'รายได้ (บาท)',
                 data: data,
-                borderColor: 'rgb(59, 130, 246)',
+                borderColor: lineGradient,
                 backgroundColor: gradient,
                 borderWidth: 3,
                 tension: 0.4,
@@ -264,8 +299,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 pointBackgroundColor: 'rgb(59, 130, 246)',
                 pointBorderColor: '#fff',
                 pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
+                pointRadius: 5,
+                pointHoverRadius: 8,
+                pointHoverBackgroundColor: 'rgb(139, 92, 246)',
+                pointHoverBorderWidth: 3,
             }]
         },
         options: {
@@ -276,15 +313,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    padding: 16,
                     titleColor: '#fff',
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
                     bodyColor: '#fff',
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    borderWidth: 1,
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(59, 130, 246, 0.5)',
+                    borderWidth: 2,
+                    displayColors: false,
                     callbacks: {
                         label: function(context) {
-                            return 'รายได้: ฿' + context.parsed.y.toLocaleString('th-TH', {minimumFractionDigits: 2});
+                            const value = context.parsed.y;
+                            return 'รายได้: ฿' + value.toLocaleString('th-TH', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+                        },
+                        afterLabel: function(context) {
+                            const total = data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((context.parsed.y / total) * 100).toFixed(1) : 0;
+                            return percentage + '% ของรายได้รวม';
                         }
                     }
                 }
@@ -297,10 +351,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         drawBorder: false,
                     },
                     ticks: {
-                        color: 'rgba(255, 255, 255, 0.8)',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        font: {
+                            size: 12,
+                            weight: '500'
+                        },
                         callback: function(value) {
+                            if (value >= 1000000) {
+                                return '฿' + (value / 1000000).toFixed(1) + 'M';
+                            } else if (value >= 1000) {
+                                return '฿' + (value / 1000).toFixed(0) + 'K';
+                            }
                             return '฿' + value.toLocaleString('th-TH');
-                        }
+                        },
+                        padding: 10
                     }
                 },
                 x: {
@@ -309,16 +373,27 @@ document.addEventListener('DOMContentLoaded', function() {
                         drawBorder: false,
                     },
                     ticks: {
-                        color: 'rgba(255, 255, 255, 0.8)',
+                        color: 'rgba(255, 255, 255, 0.9)',
+                        font: {
+                            size: 11,
+                            weight: '500'
+                        },
+                        padding: 10
                     }
                 }
             },
             interaction: {
                 intersect: false,
                 mode: 'index',
+            },
+            animation: {
+                duration: 1500,
+                easing: 'easeInOutQuart'
             }
         }
     });
+
+    console.log('✅ Chart initialized successfully');
 });
 </script>
 @endpush
