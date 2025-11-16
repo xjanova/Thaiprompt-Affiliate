@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\User\DashboardController;
+use App\Http\Controllers\User\SettingsController;
 use App\Http\Controllers\User\WalletController;
 use App\Http\Controllers\User\CryptoWalletController;
 use App\Http\Controllers\User\CryptoExchangeController;
@@ -35,6 +36,12 @@ Route::post('/profile/update-password', [DashboardController::class, 'updatePass
     ->middleware(['turnstile:password_change', 'two-factor:password_change'])
     ->name('profile.update-password');
 Route::get('/commissions', [DashboardController::class, 'commissions'])->name('commissions');
+
+// User Settings
+Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
+Route::delete('/settings/sessions/{sessionId}', [SettingsController::class, 'deleteSession'])->name('settings.sessions.delete');
+Route::delete('/settings/sessions', [SettingsController::class, 'deleteOtherSessions'])->name('settings.sessions.delete-others');
 
 // MLM Prospects (ผู้มุ่งหวัง)
 Route::prefix('prospects')->name('prospects.')->group(function () {
