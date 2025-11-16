@@ -14,22 +14,24 @@ use Illuminate\Validation\Rules\Password;
 class DashboardController extends Controller
 {
     /**
-     * Display user dashboard
+     * แสดงหน้า Dashboard ของ User
+     *
+     * @return \Illuminate\View\View
      */
     public function index()
     {
         $user = Auth::user();
 
-        // Get user's affiliate if exists
+        // ดึงข้อมูล affiliate ของ user
         $affiliate = $user->affiliate;
 
-        // Get user's commissions
+        // ดึงข้อมูล commissions ล่าสุด
         $commissions = $user->commissions()
             ->latest()
             ->limit(10)
             ->get();
 
-        // Calculate statistics
+        // คำนวณสถิติต่างๆ
         $totalEarnings = $user->commissions()
             ->where('status', 'approved')
             ->sum('amount');
@@ -45,7 +47,7 @@ class DashboardController extends Controller
         $totalReferrals = $affiliate ? $affiliate->children()->count() : 0;
         $activeReferrals = $affiliate ? $affiliate->children()->where('status', 'active')->count() : 0;
 
-        // Monthly revenue for the last 12 months
+        // รายได้รายเดือนย้อนหลัง 12 เดือน
         $monthlyRevenue = collect();
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
@@ -61,7 +63,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        // Calculate growth percentages
+        // คำนวณอัตราการเติบโต
         $currentMonthEarnings = $user->commissions()
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
@@ -78,7 +80,7 @@ class DashboardController extends Controller
             ? (($currentMonthEarnings - $lastMonthEarnings) / $lastMonthEarnings) * 100
             : 0;
 
-        // Commission status breakdown
+        // สถานะ commission แยกตามประเภท
         $commissionStatus = [
             'pending' => $user->commissions()->where('status', 'pending')->count(),
             'approved' => $user->commissions()->where('status', 'approved')->count(),
@@ -86,14 +88,14 @@ class DashboardController extends Controller
             'rejected' => $user->commissions()->where('status', 'rejected')->count(),
         ];
 
-        // Commission by type
+        // Commission แยกตามประเภท
         $commissionTypes = $user->commissions()
             ->selectRaw('type, SUM(amount) as total')
             ->whereIn('status', ['approved', 'paid'])
             ->groupBy('type')
             ->get();
 
-        // Daily commissions for the last 30 days
+        // Commission รายวันย้อนหลัง 30 วัน
         $dailyCommissions = collect();
         for ($i = 29; $i >= 0; $i--) {
             $date = now()->subDays($i);
@@ -107,13 +109,13 @@ class DashboardController extends Controller
             ]);
         }
 
-        // Referral tree depth (max levels)
+        // ความลึกของโครงสร้าง referral (จำนวนระดับสูงสุด)
         $maxLevel = 0;
         if ($affiliate) {
             $maxLevel = $this->getMaxLevel($affiliate);
         }
 
-        // Top referrers under this user
+        // Top referrers ใน downline
         $topReferrers = [];
         if ($affiliate) {
             $topReferrers = $affiliate->children()
@@ -124,34 +126,52 @@ class DashboardController extends Controller
                 ->get();
         }
 
-        // Recent activity (last 10 commissions with details)
+        // กิจกรรมล่าสุด (10 รายการล่าสุด)
         $recentActivity = $user->commissions()
             ->with('affiliate.user')
             ->latest()
             ->limit(10)
             ->get();
 
-        // Total lifetime earnings
+        // รายได้ตลอดอายุการใช้งาน
         $lifetimeEarnings = $user->commissions()
             ->whereIn('status', ['approved', 'paid'])
             ->sum('amount');
 
-        // Average commission amount
+        // ค่าเฉลี่ย commission ต่อรายการ
         $avgCommission = $user->commissions()
             ->whereIn('status', ['approved', 'paid'])
             ->avg('amount') ?? 0;
 
-        // This month's stats
+        // สถิติเดือนนี้
         $thisMonthCommissions = $user->commissions()
             ->whereYear('created_at', now()->year)
             ->whereMonth('created_at', now()->month)
             ->count();
 
-        // Calculate referral conversion rate
+        // อัตราการแปลง referral
         $totalClicks = $affiliate ? ($affiliate->click_count ?? 0) : 0;
         $conversionRate = $totalClicks > 0 ? ($totalReferrals / $totalClicks) * 100 : 0;
 
-        return view('user.dashboard', compact(
+        // สถิติสำหรับ Arrow X Dashboard
+        $stats = [
+            'wallet_balance' => $user->wallet_balance ?? 0,
+            'wallet_change' => $earningsGrowth,
+            'total_earnings' => $lifetimeEarnings,
+            'earnings_change' => $earningsGrowth,
+            'team_members' => $totalReferrals,
+            'team_change' => 0, // TODO: คำนวณอัตราการเติบโตของทีม
+            'pending_commission' => $pendingEarnings,
+            'commission_change' => 0, // TODO: คำนวณอัตราการเปลี่ยนแปลงของ commission
+        ];
+
+        // ข้อมูลสำหรับ Chart.js
+        $chartData = [
+            'labels' => $monthlyRevenue->pluck('month')->toArray(),
+            'data' => $monthlyRevenue->pluck('total')->toArray(),
+        ];
+
+        return view('user.dashboard-arrow-x', compact(
             'user',
             'affiliate',
             'commissions',
@@ -171,21 +191,29 @@ class DashboardController extends Controller
             'lifetimeEarnings',
             'avgCommission',
             'thisMonthCommissions',
-            'conversionRate'
+            'conversionRate',
+            'stats',
+            'chartData'
         ));
     }
 
     /**
-     * Display user profile
+     * แสดงหน้าโปรไฟล์ของ User
+     *
+     * @return \Illuminate\View\View
      */
     public function profile()
     {
         $user = Auth::user();
-        return view('user.profile', compact('user'));
+        return view('user.profile-arrow-x', compact('user'));
     }
 
     /**
-     * Update user profile
+     * อัปเดตโปรไฟล์ของ User
+     *
+     * @param Request $request
+     * @param ImageUploadService $imageUploadService
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function updateProfile(Request $request, ImageUploadService $imageUploadService)
     {
@@ -245,7 +273,9 @@ class DashboardController extends Controller
     }
 
     /**
-     * Display user commissions
+     * แสดงรายการ Commissions ของ User
+     *
+     * @return \Illuminate\View\View
      */
     public function commissions()
     {
@@ -256,7 +286,10 @@ class DashboardController extends Controller
     }
 
     /**
-     * Update user password
+     * อัปเดตรหัสผ่านของ User
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function updatePassword(Request $request)
     {
@@ -287,5 +320,32 @@ class DashboardController extends Controller
         $user->save();
 
         return back()->with('success', 'เปลี่ยนรหัสผ่านสำเร็จ');
+    }
+
+    /**
+     * คำนวณความลึกสูงสุดของโครงสร้าง affiliate (Recursive)
+     *
+     * @param mixed $affiliate Affiliate object
+     * @param int $currentLevel ระดับปัจจุบัน
+     * @return int ความลึกสูงสุด
+     */
+    private function getMaxLevel($affiliate, $currentLevel = 1): int
+    {
+        // ดึง children ของ affiliate นี้
+        $children = $affiliate->children;
+
+        // ถ้าไม่มี children แสดงว่าถึงระดับสุดท้ายแล้ว
+        if ($children->isEmpty()) {
+            return $currentLevel;
+        }
+
+        // คำนวณระดับสูงสุดของแต่ละ child
+        $maxChildLevel = $currentLevel;
+        foreach ($children as $child) {
+            $childLevel = $this->getMaxLevel($child, $currentLevel + 1);
+            $maxChildLevel = max($maxChildLevel, $childLevel);
+        }
+
+        return $maxChildLevel;
     }
 }
