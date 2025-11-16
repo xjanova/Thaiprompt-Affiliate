@@ -53,3 +53,4 @@ google-credentials.json
 .composer.lock.checksum
 .seeders.checksum
 /backups
+*.backup
