@@ -258,6 +258,15 @@ function initRevenueChart() {
     let monthlyData = @json($monthlyRevenue);
     console.log('📊 [DEBUG] monthlyData จาก backend:', monthlyData);
     console.log('📊 [DEBUG] monthlyData type:', typeof monthlyData);
+    console.log('📊 [DEBUG] monthlyData is Array?:', Array.isArray(monthlyData));
+
+    // แปลง object เป็น array ถ้าจำเป็น
+    if (!Array.isArray(monthlyData)) {
+        console.log('🔧 [DEBUG] แปลง object เป็น array...');
+        monthlyData = Object.values(monthlyData);
+        console.log('🔧 [DEBUG] monthlyData หลังแปลง:', monthlyData);
+    }
+
     console.log('📊 [DEBUG] monthlyData length:', monthlyData?.length);
 
     // ถ้าไม่มีข้อมูล ใช้ข้อมูลจริง 12 เดือนที่ผ่านมา
