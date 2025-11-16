@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.27.0] - 2025-11-16
+
+### ✨ Features
+- feat: ระบบแปลภาษาใช้งานได้ + บันทึกการแก้ปัญหา (1b967e68)
+### 🐛 Bug Fixes
+- fix: แปลภาษาอัตโนมัติ 3 ครั้งเพื่อให้ครบ (31ac736e)
+### 🔧 Other Changes
+- Merge pull request #1245 from xjanova/claude/safe-revert-v3-01TtAB5ggsWWBNA2HGTG3GRG (22f90e44)
+
 ## [v3.26.4] - 2025-11-16
 
 ### ✨ Features
