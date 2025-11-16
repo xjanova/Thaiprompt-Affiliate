@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.31.1] - 2025-11-16
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1252 from xjanova/claude/study-documents-019cwizWTHAn9HoBTVgArESL (484c5d99)
+- Merge branch 'claude/Main': ใช้ settings-v3.blade.php แทน settings/index (fedffb7d)
+- refactor: ใช้ Arrow X Theme ทั้งหมด - ลบไฟล์เก่าทิ้ง (be94827c)
+
 ## [v3.31.0] - 2025-11-16
 
 ### ✨ Features
