@@ -186,12 +186,36 @@ Alpine.store('language', {
         if (!selectElement) {
             // ลองหาทุก select ที่อยู่ใน element ที่มี class goog-te
             const googTeElements = document.querySelectorAll('[class*="goog-te"]');
-            console.log('🔍 [DEBUG] googTeElements:', Array.from(googTeElements).map(el => ({
-                tag: el.tagName,
-                class: el.className,
-                id: el.id,
-                innerHTML: el.innerHTML.substring(0, 100)
-            })));
+
+            console.log('🔍 [DEBUG] จำนวน googTeElements:', googTeElements.length);
+
+            // แสดงรายละเอียดทุก element
+            googTeElements.forEach((el, index) => {
+                console.log(`🔍 [DEBUG] Element ${index + 1}:`, {
+                    tag: el.tagName,
+                    class: el.className,
+                    id: el.id,
+                    innerHTML: el.innerHTML,
+                    childElementCount: el.childElementCount,
+                    children: Array.from(el.children).map(child => ({
+                        tag: child.tagName,
+                        class: child.className,
+                        id: child.id
+                    }))
+                });
+            });
+
+            // ลองหาทุก select ในหน้า
+            const allSelects = document.querySelectorAll('select');
+            console.log('🔍 [DEBUG] ทุก select elements ในหน้า:', allSelects.length);
+            allSelects.forEach((select, index) => {
+                console.log(`🔍 [DEBUG] Select ${index + 1}:`, {
+                    id: select.id,
+                    class: select.className,
+                    name: select.name,
+                    options: Array.from(select.options).map(opt => opt.value)
+                });
+            });
 
             for (const el of googTeElements) {
                 const select = el.querySelector('select');
