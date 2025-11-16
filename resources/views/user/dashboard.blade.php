@@ -138,6 +138,105 @@
         </div>
     </div>
 
+    {{-- Theme Preset Selector - เลือกธีมสำเร็จรูป --}}
+    <div class="glass-fusion-card rounded-2xl p-6 shadow-lg" x-data="themeSelector()">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <i class="fas fa-palette text-purple-500"></i>
+                เลือกธีมสำเร็จรูป
+            </h3>
+            <span class="text-xs text-gray-600 dark:text-gray-400">คลิกเพื่อเปลี่ยนธีม</span>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {{-- Classic Theme --}}
+            <button @click="applyPreset('classic')"
+                    class="group relative p-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                    :class="isActive('classic') ? 'bg-gradient-to-br from-gray-500 to-gray-700 text-white ring-2 ring-gray-400' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-600'">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center transition"
+                         :class="isActive('classic') ? 'bg-white/20' : 'bg-gray-100 dark:bg-gray-700 group-hover:bg-gray-200 dark:group-hover:bg-gray-600'">
+                        <i class="fas fa-desktop text-xl" :class="isActive('classic') ? 'text-white' : 'text-gray-600 dark:text-gray-300'"></i>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-semibold text-sm" :class="isActive('classic') ? 'text-white' : 'text-gray-900 dark:text-white'">Classic</div>
+                        <div class="text-xs opacity-70" :class="isActive('classic') ? 'text-white' : 'text-gray-600 dark:text-gray-400'">ปิดเอฟเฟคทั้งหมด</div>
+                    </div>
+                </div>
+                <div x-show="isActive('classic')" class="absolute top-2 right-2">
+                    <i class="fas fa-check-circle text-white"></i>
+                </div>
+            </button>
+
+            {{-- Modern Theme --}}
+            <button @click="applyPreset('modern')"
+                    class="group relative p-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                    :class="isActive('modern') ? 'bg-gradient-to-br from-blue-500 to-cyan-600 text-white ring-2 ring-blue-400' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-600'">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center transition"
+                         :class="isActive('modern') ? 'bg-white/20' : 'bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-800/40'">
+                        <i class="fas fa-layer-group text-xl" :class="isActive('modern') ? 'text-white' : 'text-blue-600 dark:text-blue-400'"></i>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-semibold text-sm" :class="isActive('modern') ? 'text-white' : 'text-gray-900 dark:text-white'">Modern</div>
+                        <div class="text-xs opacity-70" :class="isActive('modern') ? 'text-white' : 'text-gray-600 dark:text-gray-400'">เอฟเฟคปานกลาง</div>
+                    </div>
+                </div>
+                <div x-show="isActive('modern')" class="absolute top-2 right-2">
+                    <i class="fas fa-check-circle text-white"></i>
+                </div>
+            </button>
+
+            {{-- Glassmorphism Theme --}}
+            <button @click="applyPreset('glassmorphism')"
+                    class="group relative p-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                    :class="isActive('glassmorphism') ? 'bg-gradient-to-br from-purple-500 to-pink-600 text-white ring-2 ring-purple-400' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-600'">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center transition"
+                         :class="isActive('glassmorphism') ? 'bg-white/20' : 'bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-800/40'">
+                        <i class="fas fa-gem text-xl" :class="isActive('glassmorphism') ? 'text-white' : 'text-purple-600 dark:text-purple-400'"></i>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-semibold text-sm" :class="isActive('glassmorphism') ? 'text-white' : 'text-gray-900 dark:text-white'">Glassmorphism</div>
+                        <div class="text-xs opacity-70" :class="isActive('glassmorphism') ? 'text-white' : 'text-gray-600 dark:text-gray-400'">เต็มเอฟเฟค (ค่าเริ่มต้น)</div>
+                    </div>
+                </div>
+                <div x-show="isActive('glassmorphism')" class="absolute top-2 right-2">
+                    <i class="fas fa-check-circle text-white"></i>
+                </div>
+            </button>
+
+            {{-- Neon Theme --}}
+            <button @click="applyPreset('neon')"
+                    class="group relative p-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-xl"
+                    :class="isActive('neon') ? 'bg-gradient-to-br from-cyan-500 to-fuchsia-600 text-white ring-2 ring-cyan-400' : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-600'">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center transition"
+                         :class="isActive('neon') ? 'bg-white/20' : 'bg-gradient-to-br from-cyan-100 to-fuchsia-100 dark:from-cyan-900/30 dark:to-fuchsia-900/30 group-hover:from-cyan-200 group-hover:to-fuchsia-200'">
+                        <i class="fas fa-sun text-xl" :class="isActive('neon') ? 'text-white' : 'text-transparent bg-clip-text bg-gradient-to-br from-cyan-600 to-fuchsia-600'"></i>
+                    </div>
+                    <div class="text-center">
+                        <div class="font-semibold text-sm" :class="isActive('neon') ? 'text-white' : 'text-gray-900 dark:text-white'">Neon</div>
+                        <div class="text-xs opacity-70" :class="isActive('neon') ? 'text-white' : 'text-gray-600 dark:text-gray-400'">สีสันสดใส โดดเด่น</div>
+                    </div>
+                </div>
+                <div x-show="isActive('neon')" class="absolute top-2 right-2">
+                    <i class="fas fa-check-circle text-white"></i>
+                </div>
+            </button>
+        </div>
+
+        {{-- Current Theme Info --}}
+        <div class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <div class="flex items-center gap-2 text-sm">
+                <i class="fas fa-info-circle text-blue-500"></i>
+                <span class="text-gray-700 dark:text-gray-300">
+                    ธีมปัจจุบัน: <strong x-text="getCurrentThemeName()" class="text-blue-600 dark:text-blue-400"></strong>
+                </span>
+            </div>
+        </div>
+    </div>
+
     {{-- Stats Cards - Arrow X 3D Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {{-- Wallet Balance Card --}}
@@ -315,6 +414,153 @@
 @push('scripts')
 <script>
 /**
+ * Theme Selector Component
+ *
+ * จัดการการเลือกและเปลี่ยน Theme Presets
+ */
+function themeSelector() {
+    return {
+        currentSettings: {},
+
+        init() {
+            // โหลด settings ปัจจุบันจาก localStorage
+            const saved = localStorage.getItem('themeSettings');
+            if (saved) {
+                this.currentSettings = JSON.parse(saved);
+            } else {
+                // ค่าเริ่มต้น (Glassmorphism)
+                this.currentSettings = this.getPresetSettings('glassmorphism');
+            }
+        },
+
+        /**
+         * ดึง settings ของ preset ที่เลือก
+         */
+        getPresetSettings(presetKey) {
+            const presets = Alpine.store('themePresets')?.presets;
+            return presets?.[presetKey]?.settings || {};
+        },
+
+        /**
+         * ตรวจสอบว่า preset นี้ active หรือไม่
+         */
+        isActive(presetKey) {
+            const presetSettings = this.getPresetSettings(presetKey);
+
+            // เปรียบเทียบค่าสำคัญ
+            return this.currentSettings.glassOpacity === presetSettings.glassOpacity &&
+                   this.currentSettings.glassBlur === presetSettings.glassBlur &&
+                   this.currentSettings.primaryHue === presetSettings.primaryHue;
+        },
+
+        /**
+         * เปลี่ยน theme ตาม preset
+         */
+        applyPreset(presetKey) {
+            const presetSettings = this.getPresetSettings(presetKey);
+
+            if (!presetSettings) {
+                console.error('Preset not found:', presetKey);
+                return;
+            }
+
+            // อัพเดท current settings
+            this.currentSettings = { ...presetSettings };
+
+            // บันทึกลง localStorage
+            localStorage.setItem('themeSettings', JSON.stringify(this.currentSettings));
+
+            // Apply CSS variables
+            this.applySettings(this.currentSettings);
+
+            // แสดง notification
+            this.showNotification(`เปลี่ยนเป็นธีม ${this.getPresetName(presetKey)} แล้ว!`);
+        },
+
+        /**
+         * Apply settings ไปที่ CSS variables
+         */
+        applySettings(settings) {
+            const root = document.documentElement;
+
+            // Apply all CSS custom properties
+            root.style.setProperty('--glass-opacity', settings.glassOpacity / 100);
+            root.style.setProperty('--glass-blur', settings.glassBlur + 'px');
+            root.style.setProperty('--border-opacity', settings.borderOpacity / 100);
+            root.style.setProperty('--shadow-intensity', settings.shadowIntensity / 100);
+            root.style.setProperty('--glow-intensity', settings.glowIntensity / 100);
+            root.style.setProperty('--animation-speed', settings.animationSpeed + 'ms');
+            root.style.setProperty('--hover-scale', settings.hoverScale / 100);
+            root.style.setProperty('--card-roundness', settings.cardRoundness + 'px');
+            root.style.setProperty('--button-roundness', settings.buttonRoundness + 'px');
+            root.style.setProperty('--primary-hue', settings.primaryHue);
+            root.style.setProperty('--accent-hue', settings.accentHue);
+            root.style.setProperty('--contrast', settings.contrast + '%');
+            root.style.setProperty('--backdrop-saturate', settings.backdropSaturate + '%');
+            root.style.setProperty('--perspective-depth', settings.perspectiveDepth + 'px');
+
+            // ถ้าเป็นโหมด Classic (ไม่มี glass effects) ให้เพิ่ม class พิเศษ
+            const isClassicMode = settings.glassOpacity === 0 && settings.glassBlur === 0;
+            if (isClassicMode) {
+                document.body.classList.add('theme-classic');
+            } else {
+                document.body.classList.remove('theme-classic');
+            }
+
+            // Dispatch event สำหรับ components อื่น
+            window.dispatchEvent(new CustomEvent('theme-preset-changed', {
+                detail: { settings }
+            }));
+        },
+
+        /**
+         * ดึงชื่อ theme ปัจจุบัน
+         */
+        getCurrentThemeName() {
+            const presets = Alpine.store('themePresets')?.presets;
+            if (!presets) return 'Glassmorphism';
+
+            for (const [key, preset] of Object.entries(presets)) {
+                if (this.isActive(key)) {
+                    return preset.name;
+                }
+            }
+
+            return 'Custom';
+        },
+
+        /**
+         * ดึงชื่อ preset
+         */
+        getPresetName(presetKey) {
+            const presets = Alpine.store('themePresets')?.presets;
+            return presets?.[presetKey]?.name || presetKey;
+        },
+
+        /**
+         * แสดง notification
+         */
+        showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-50 px-6 py-3 bg-green-500 text-white rounded-lg shadow-lg flex items-center gap-2 animate-slide-in-right';
+            notification.innerHTML = `
+                <i class="fas fa-check-circle"></i>
+                <span>${message}</span>
+            `;
+
+            document.body.appendChild(notification);
+
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('animate-slide-out-right');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+    };
+}
+
+/**
  * User Dashboard Alpine.js Component
  *
  * จัดการ state และ logic สำหรับ Dashboard
@@ -460,6 +706,37 @@ function userDashboard() {
  * Custom styles สำหรับ Dashboard
  */
 
+/* Notification Animations */
+@keyframes slide-in-right {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slide-out-right {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+.animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out forwards;
+}
+
+.animate-slide-out-right {
+    animation: slide-out-right 0.3s ease-in forwards;
+}
+
 /* Blob Animation */
 @keyframes blob {
     0%, 100% {
@@ -499,25 +776,45 @@ function userDashboard() {
     animation: spin-slow 8s linear infinite;
 }
 
-/* Glass Fusion Card */
+/* Glass Fusion Card with CSS Variables Support */
 .glass-fusion-card {
     background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.25) 0%,
-        rgba(255, 255, 255, 0.15) 100%
+        rgba(255, 255, 255, calc(var(--glass-opacity, 0.15) + 0.1)) 0%,
+        rgba(255, 255, 255, var(--glass-opacity, 0.15)) 100%
     );
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--backdrop-saturate, 180%));
+    -webkit-backdrop-filter: blur(var(--glass-blur, 20px)) saturate(var(--backdrop-saturate, 180%));
+    border: 1px solid rgba(255, 255, 255, var(--border-opacity, 0.3));
+    border-radius: var(--card-roundness, 16px);
+    transition: all var(--animation-speed, 300ms) ease;
 }
 
 .dark .glass-fusion-card {
     background: linear-gradient(
         135deg,
-        rgba(31, 41, 55, 0.8) 0%,
-        rgba(17, 24, 39, 0.7) 100%
+        rgba(31, 41, 55, calc(var(--glass-opacity, 0.15) * 5 + 0.05)) 0%,
+        rgba(17, 24, 39, calc(var(--glass-opacity, 0.15) * 4 + 0.1)) 100%
     );
-    border-color: rgba(75, 85, 99, 0.5);
+    border-color: rgba(75, 85, 99, var(--border-opacity, 0.5));
+}
+
+/* Classic Theme - ปิดเอฟเฟค Glass ทั้งหมด */
+body.theme-classic .glass-fusion-card {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+body.theme-classic.dark .glass-fusion-card {
+    background: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+/* Apply hover scale from CSS variables */
+.glass-fusion-card:hover {
+    transform: scale(var(--hover-scale, 1.0));
 }
 </style>
 @endpush
