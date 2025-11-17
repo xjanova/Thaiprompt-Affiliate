@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Knowledge Base Articles')
 
@@ -18,12 +18,12 @@
             </div>
             <div class="flex gap-3">
                 <a href="{{ route('admin.tickets.index') }}"
-                   class="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl font-semibold transition-all duration-200 hover:scale-105">
+                   class="inline-flex items-center px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl font-semibold transition-all duration-200 hover:scale-105">
                     <i class="fas fa-arrow-left mr-2"></i>
                     กลับหน้าหลัก
                 </a>
                 <a href="{{ route('admin.tickets.kb-articles.create') }}"
-                   class="inline-flex items-center px-6 py-3 bg-white text-teal-600 hover:bg-teal-50 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg">
+                   class="inline-flex items-center px-6 py-3 glass-fusion text-teal-600 hover:bg-teal-50 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg">
                     <i class="fas fa-plus mr-2"></i>
                     Create Article
                 </a>
@@ -34,52 +34,52 @@
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <!-- Total Articles Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-teal-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-teal-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Total Articles</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ $articles->total() }}</p>
+                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Total Articles</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $articles->total() }}</p>
                 </div>
-                <div class="bg-teal-100 dark:bg-teal-900/30 p-4 rounded-lg">
+                <div class="bg-teal-100 dark:bg-teal-900/30 p-4 rounded-xl">
                     <i class="fas fa-file-alt text-2xl text-teal-600 dark:text-teal-400"></i>
                 </div>
             </div>
         </div>
 
         <!-- Public Articles Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Public Articles</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ $articles->where('is_public', true)->count() }}</p>
+                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Public Articles</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $articles->where('is_public', true)->count() }}</p>
                 </div>
-                <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg">
+                <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-xl">
                     <i class="fas fa-globe text-2xl text-green-600 dark:text-green-400"></i>
                 </div>
             </div>
         </div>
 
         <!-- Total Views Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Total Views</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ $articles->sum('view_count') }}</p>
+                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Total Views</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $articles->sum('view_count') }}</p>
                 </div>
-                <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg">
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-xl">
                     <i class="fas fa-eye text-2xl text-blue-600 dark:text-blue-400"></i>
                 </div>
             </div>
         </div>
 
         <!-- Helpful Votes Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-yellow-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-yellow-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Helpful Votes</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ $articles->sum('helpful_count') }}</p>
+                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Helpful Votes</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $articles->sum('helpful_count') }}</p>
                 </div>
-                <div class="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-lg">
+                <div class="bg-yellow-100 dark:bg-yellow-900/30 p-4 rounded-xl">
                     <i class="fas fa-thumbs-up text-2xl text-yellow-600 dark:text-yellow-400"></i>
                 </div>
             </div>
@@ -87,40 +87,40 @@
     </div>
 
     <!-- Articles Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="overflow-x-auto">
             <table class="w-full">
                 <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Title
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Category
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Author
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Views
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Helpful
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Visibility
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Last Updated
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Actions
                         </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($articles as $article)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors duration-150">
                         <td class="px-6 py-4">
                             <div>
                                 <div class="text-sm font-semibold text-gray-900 dark:text-white mb-1">
@@ -135,7 +135,7 @@
                                             </span>
                                         @endforeach
                                         @if(count($article->tags) > 3)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100/50 dark:bg-gray-800/50 text-gray-600 dark:text-gray-400 dark:bg-gray-700 dark:text-gray-400">
                                                 +{{ count($article->tags) - 3 }}
                                             </span>
                                         @endif
@@ -178,7 +178,7 @@
                                     </span>
                                 </div>
                             @else
-                                <span class="text-gray-400 dark:text-gray-500 text-sm">—</span>
+                                <span class="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm">—</span>
                             @endif
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
@@ -201,7 +201,7 @@
                                 @endif
                             </form>
                         </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                             <div class="flex items-center">
                                 <i class="fas fa-calendar mr-2 text-gray-400"></i>
                                 {{ $article->updated_at->format('d M Y') }}
@@ -210,7 +210,7 @@
                         <td class="px-6 py-4 whitespace-nowrap text-sm">
                             <div class="flex items-center space-x-2">
                                 <a href="{{ route('admin.tickets.kb-articles.edit', $article->id) }}"
-                                   class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-600">
+                                   class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-100 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-600">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <form action="{{ route('admin.tickets.kb-articles.destroy', $article->id) }}"
@@ -220,7 +220,7 @@
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"
-                                            class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600">
+                                            class="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-red-100 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-600">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
@@ -231,9 +231,9 @@
                     <tr>
                         <td colspan="8" class="px-6 py-12 text-center">
                             <div class="flex flex-col items-center justify-center">
-                                <i class="fas fa-book text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
-                                <p class="text-gray-500 dark:text-gray-400 text-lg font-medium">No articles yet</p>
-                                <p class="text-gray-400 dark:text-gray-500 text-sm mt-2">Create your first knowledge base article</p>
+                                <i class="fas fa-book text-6xl text-gray-300 dark:text-gray-600 dark:text-gray-400 mb-4"></i>
+                                <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-lg font-medium">No articles yet</p>
+                                <p class="text-gray-400 dark:text-gray-500 dark:text-gray-400 text-sm mt-2">Create your first knowledge base article</p>
                             </div>
                         </td>
                     </tr>
@@ -244,7 +244,7 @@
 
         <!-- Pagination -->
         @if($articles->hasPages())
-            <div class="px-6 py-4 bg-gray-50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+            <div class="px-6 py-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700">
                 {{ $articles->links() }}
             </div>
         @endif

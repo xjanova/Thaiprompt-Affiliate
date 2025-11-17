@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Ticket Analytics')
 
@@ -18,7 +18,7 @@
             </div>
             <div>
                 <a href="{{ route('admin.tickets.index') }}"
-                   class="inline-flex items-center px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-xl font-semibold transition-all duration-200 hover:scale-105">
+                   class="inline-flex items-center px-6 py-3 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl font-semibold transition-all duration-200 hover:scale-105">
                     <i class="fas fa-arrow-left mr-2"></i>
                     กลับหน้าหลัก
                 </a>
@@ -27,29 +27,29 @@
     </div>
 
     <!-- Date Range Filter -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <form method="GET" action="{{ route('admin.tickets.analytics') }}" class="flex flex-wrap items-end gap-4">
             <div class="flex-1 min-w-[200px]">
-                <label for="date_from" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label for="date_from" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                     <i class="fas fa-calendar mr-1"></i>
                     From Date
                 </label>
                 <input type="date" name="date_from" id="date_from"
                        value="{{ request('date_from', $dateFrom->format('Y-m-d')) }}"
-                       class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
             </div>
             <div class="flex-1 min-w-[200px]">
-                <label for="date_to" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                <label for="date_to" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
                     <i class="fas fa-calendar mr-1"></i>
                     To Date
                 </label>
                 <input type="date" name="date_to" id="date_to"
                        value="{{ request('date_to', $dateTo->format('Y-m-d')) }}"
-                       class="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                       class="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
             </div>
             <div>
                 <button type="submit"
-                        class="px-6 py-3 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg">
+                        class="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all shadow-lg">
                     <i class="fas fa-filter mr-2"></i>
                     Apply Filter
                 </button>
@@ -60,58 +60,58 @@
     <!-- Statistics Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <!-- Total Tickets Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-blue-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Total Tickets</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ number_format($analytics['total_tickets'] ?? 0) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">In selected period</p>
+                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Total Tickets</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ number_format($analytics['total_tickets'] ?? 0) }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">In selected period</p>
                 </div>
-                <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-lg">
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-4 rounded-xl">
                     <i class="fas fa-ticket-alt text-2xl text-blue-600 dark:text-blue-400"></i>
                 </div>
             </div>
         </div>
 
         <!-- Avg Response Time Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-green-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Avg Response Time</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ number_format($analytics['avg_response_time'] ?? 0) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Minutes</p>
+                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Avg Response Time</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ number_format($analytics['avg_response_time'] ?? 0) }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Minutes</p>
                 </div>
-                <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-lg">
+                <div class="bg-green-100 dark:bg-green-900/30 p-4 rounded-xl">
                     <i class="fas fa-hourglass-start text-2xl text-green-600 dark:text-green-400"></i>
                 </div>
             </div>
         </div>
 
         <!-- Avg Resolution Time Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-cyan-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-cyan-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">Avg Resolution Time</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ number_format($analytics['avg_resolution_time'] ?? 0) }}</p>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Minutes</p>
+                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">Avg Resolution Time</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ number_format($analytics['avg_resolution_time'] ?? 0) }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">Minutes</p>
                 </div>
-                <div class="bg-cyan-100 dark:bg-cyan-900/30 p-4 rounded-lg">
+                <div class="bg-cyan-100 dark:bg-cyan-900/30 p-4 rounded-xl">
                     <i class="fas fa-hourglass-end text-2xl text-cyan-600 dark:text-cyan-400"></i>
                 </div>
             </div>
         </div>
 
         <!-- SLA Compliance Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-amber-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6 border-l-4 border-amber-500 hover:shadow-xl transition-all duration-200 hover:-translate-y-1" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mb-1">SLA Compliance</p>
-                    <p class="text-3xl font-bold text-gray-800 dark:text-white">{{ number_format($analytics['sla_compliance'] ?? 100) }}%</p>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-2">
+                    <p class="text-gray-500 dark:text-gray-400 dark:text-gray-400 text-sm font-medium mb-1">SLA Compliance</p>
+                    <p class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white">{{ number_format($analytics['sla_compliance'] ?? 100) }}%</p>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-full h-2 mt-2">
                         <div class="bg-gradient-to-r from-amber-400 to-orange-500 h-2 rounded-full" style="width: {{ $analytics['sla_compliance'] ?? 100 }}%"></div>
                     </div>
                 </div>
-                <div class="bg-amber-100 dark:bg-amber-900/30 p-4 rounded-lg">
+                <div class="bg-amber-100 dark:bg-amber-900/30 p-4 rounded-xl">
                     <i class="fas fa-chart-line text-2xl text-amber-600 dark:text-amber-400"></i>
                 </div>
             </div>
@@ -121,7 +121,7 @@
     <!-- Charts Row -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <!-- Tickets by Status -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
             <div class="bg-gradient-to-r from-blue-500 to-cyan-500 px-6 py-4">
                 <h3 class="text-xl font-bold text-white flex items-center">
                     <i class="fas fa-tasks mr-2"></i>
@@ -144,17 +144,17 @@
                                 $total = $analytics['total_tickets'] > 0 ? $analytics['total_tickets'] : 1;
                                 $percentage = round(($count / $total) * 100, 1);
                             @endphp
-                            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition-all">
+                            <div class="flex items-center justify-between p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl hover:shadow-md transition-all">
                                 <div class="flex items-center flex-1">
                                     <div class="w-3 h-3 {{ $color }} rounded-full mr-3"></div>
                                     <span class="font-semibold text-gray-900 dark:text-white capitalize">{{ str_replace('_', ' ', $status) }}</span>
                                 </div>
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
-                                        <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ $count }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $percentage }}%</div>
+                                        <div class="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $count }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $percentage }}%</div>
                                     </div>
-                                    <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                    <div class="w-24 bg-gray-200 dark:bg-gray-700 dark:bg-gray-600 rounded-full h-2">
                                         <div class="{{ $color }} h-2 rounded-full" style="width: {{ $percentage }}%"></div>
                                     </div>
                                 </div>
@@ -162,7 +162,7 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
+                    <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500 dark:text-gray-400">
                         <i class="fas fa-chart-bar text-6xl mb-4"></i>
                         <p class="text-lg">No data available</p>
                     </div>
@@ -171,7 +171,7 @@
         </div>
 
         <!-- Tickets by Priority -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
             <div class="bg-gradient-to-r from-orange-500 to-red-500 px-6 py-4">
                 <h3 class="text-xl font-bold text-white flex items-center">
                     <i class="fas fa-flag mr-2"></i>
@@ -193,17 +193,17 @@
                                 $total = $analytics['total_tickets'] > 0 ? $analytics['total_tickets'] : 1;
                                 $percentage = round(($count / $total) * 100, 1);
                             @endphp
-                            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition-all">
+                            <div class="flex items-center justify-between p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl hover:shadow-md transition-all">
                                 <div class="flex items-center flex-1">
                                     <div class="w-3 h-3 {{ $color }} rounded-full mr-3"></div>
                                     <span class="font-semibold text-gray-900 dark:text-white capitalize">{{ $priority }}</span>
                                 </div>
                                 <div class="flex items-center gap-4">
                                     <div class="text-right">
-                                        <div class="text-2xl font-bold text-gray-800 dark:text-white">{{ $count }}</div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $percentage }}%</div>
+                                        <div class="text-2xl font-bold text-gray-900 dark:text-white dark:text-white">{{ $count }}</div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $percentage }}%</div>
                                     </div>
-                                    <div class="w-24 bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                    <div class="w-24 bg-gray-200 dark:bg-gray-700 dark:bg-gray-600 rounded-full h-2">
                                         <div class="{{ $color }} h-2 rounded-full" style="width: {{ $percentage }}%"></div>
                                     </div>
                                 </div>
@@ -211,7 +211,7 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500">
+                    <div class="flex flex-col items-center justify-center py-12 text-gray-400 dark:text-gray-500 dark:text-gray-400">
                         <i class="fas fa-chart-pie text-6xl mb-4"></i>
                         <p class="text-lg">No data available</p>
                     </div>
@@ -221,7 +221,7 @@
     </div>
 
     <!-- Top Performing Agents -->
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+    <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-purple-500 to-pink-500 px-6 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
                 <i class="fas fa-trophy mr-2"></i>
@@ -232,23 +232,23 @@
             <table class="w-full">
                 <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Rank
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Agent
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Resolved Tickets
                         </th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-200 uppercase tracking-wider">
                             Performance
                         </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @forelse($analytics['top_agents'] ?? [] as $index => $agent)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150">
+                        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700/50 transition-colors duration-150">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     @if($index == 0)
@@ -281,7 +281,7 @@
                                         <div class="text-sm font-semibold text-gray-900 dark:text-white">
                                             {{ $agent->assignedTo->name ?? 'N/A' }}
                                         </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                             {{ $agent->assignedTo->email ?? '' }}
                                         </div>
                                     </div>
@@ -299,17 +299,17 @@
                                     $performance = round(($agent->resolved_count / $maxResolved) * 100);
                                 @endphp
                                 <div class="flex items-center">
-                                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-3" style="min-width: 100px;">
+                                    <div class="w-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-full h-2 mr-3" style="min-width: 100px;">
                                         <div class="bg-gradient-to-r from-purple-500 to-pink-600 h-2 rounded-full" style="width: {{ $performance }}%"></div>
                                     </div>
-                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ $performance }}%</span>
+                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 dark:text-gray-300">{{ $performance }}%</span>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="4" class="px-6 py-12 text-center">
-                                <div class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500">
+                                <div class="flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 dark:text-gray-400">
                                     <i class="fas fa-users text-6xl mb-4"></i>
                                     <p class="text-lg font-medium">No agent data available</p>
                                     <p class="text-sm mt-2">Agent performance will appear here once tickets are resolved</p>
