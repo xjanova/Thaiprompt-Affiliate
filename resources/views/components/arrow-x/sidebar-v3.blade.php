@@ -377,6 +377,14 @@
             </div>
         </div>
 
+        {{-- KYC Verification 🆕 --}}
+        <a href="{{ route('admin.kyc.index') }}"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.kyc.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-id-card w-5 text-center drop-shadow"></i>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">KYC Verification</span>
+        </a>
+
         {{-- ⚠️ TODO: AI & Bots Automation Menu - ยังไม่มี routes และ controllers
              Routes ที่ต้องสร้าง:
              - admin.trading-bot.dashboard (TradingBotController)
