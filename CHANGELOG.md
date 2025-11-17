@@ -2,6 +2,15 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.60.0] - 2025-11-17
+
+### ✨ Features
+- feat: improve deploy.sh to handle column updates in existing tables (7b45f82b)
+### 🐛 Bug Fixes
+- fix: add SQL script and guide for theme_settings missing columns (c83faed4)
+### 🔧 Other Changes
+- Merge pull request #1300 from xjanova/claude/update-deploy-columns-01BtpmUSJF4DRAhPPdHPt7pm (6a82b50b)
+
 ## [v3.59.0] - 2025-11-17
 
 ### ✨ Features
