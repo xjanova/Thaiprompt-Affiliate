@@ -10,8 +10,9 @@
 php artisan migrate --force
 ```
 
-**คำอธิบาย**: เพิ่ม 12 columns ใหม่ใน `theme_settings` table:
+**คำอธิบาย**: เพิ่ม 13 columns ใหม่ใน `theme_settings` table:
 - `footer_logo_path` - เส้นทางโลโก้มุมล่างซ้าย
+- `footer_logo_animation` - แอนิเมชั่นโลโก้ (none/float/spin/bounce/pulse/swing) ⭐ **ใหม่!**
 - `bg_effects_enabled` - เปิด/ปิด background effects
 - `bg_circle1_color1`, `bg_circle1_color2` - สีวงกลมที่ 1 (Cyan-Blue)
 - `bg_circle2_color1`, `bg_circle2_color2` - สีวงกลมที่ 2 (Pink-Purple)
@@ -60,6 +61,13 @@ npm run build
 ### 📸 โลโก้ (3 แบบ)
 - **Header Logo** (200×200px) - โลโก้หลักด้านบน
 - **Footer Logo** (150×150px) - โลโก้มุมล่างซ้าย sidebar ⭐ **ใหม่!**
+  - **เอฟเฟคแอนิเมชั่น** - เลือกได้ 6 แบบ: ⭐ **ใหม่!**
+    - ไม่มี (none)
+    - ลอย (float) - ลอยขึ้นลง
+    - หมุน (spin) - หมุนช้าๆ
+    - เด้ง (bounce) - เด้งขึ้นลง
+    - ชีพ (pulse) - ขยาย-หด
+    - โยก (swing) - โยกซ้าย-ขวา
 - **Favicon** (64×64px) - ไอคอนแท็บเบราว์เซอร์
 
 ### 🎨 เอฟเฟคพื้นหลัง ⭐ **ใหม่!**
@@ -76,9 +84,10 @@ npm run build
 
 1. **ทดสอบอัพโหลด Footer Logo**:
    - ไปที่ การตั้งค่าธีม → ส่วน "โลโก้"
-   - อัพโหลดไฟล์ภาพใน "Footer Logo"
+   - อัพโหลดไฟล์ภาพใน "Footer Logo (150×150px)"
+   - เลือกเอฟเฟคแอนิเมชั่น (ไม่มี/ลอย/หมุน/เด้ง/ชีพ/โยก)
    - บันทึก
-   - ดูที่มุมล่างซ้าย sidebar (จะเห็นโลโก้ใหม่)
+   - ดูที่มุมล่างซ้าย sidebar (จะเห็นโลโก้ใหม่พร้อมแอนิเมชั่น)
 
 2. **ทดสอบ Background Effects**:
    - ไปที่ การตั้งค่าธีม → ส่วน "เอฟเฟคพื้นหลัง"
@@ -134,6 +143,7 @@ php artisan optimize:clear
 
 **After**: ✨ สามารถ:
 - อัพโหลด footer logo (มุมล่างซ้าย sidebar)
+- **เลือกเอฟเฟคแอนิเมชั่นโลโก้** (ไม่มี/ลอย/หมุน/เด้ง/ชีพ/โยก) ⭐ **ใหม่!**
 - ปรับแต่ง background effects แบบเรียลไทม์
 - เลือกสี 6 สี สำหรับ 3 วงกลม gradient
 - ปรับความเร็ว, opacity, blur, size ของแอนิเมชั่น

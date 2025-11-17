@@ -95,6 +95,40 @@
                                 150x150px
                             </p>
                         </div>
+
+                        {{-- Footer Logo Animation --}}
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                                <i class="fas fa-magic mr-1"></i>เอฟเฟคแอนิเมชั่น
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                @php
+                                    $animations = [
+                                        'none' => ['icon' => 'fa-stop-circle', 'label' => 'ไม่มี', 'class' => 'from-gray-500 to-gray-600'],
+                                        'float' => ['icon' => 'fa-arrow-up', 'label' => 'ลอย', 'class' => 'from-blue-500 to-cyan-500'],
+                                        'spin' => ['icon' => 'fa-sync', 'label' => 'หมุน', 'class' => 'from-purple-500 to-pink-500'],
+                                        'bounce' => ['icon' => 'fa-basketball-ball', 'label' => 'เด้ง', 'class' => 'from-orange-500 to-red-500'],
+                                        'pulse' => ['icon' => 'fa-heart', 'label' => 'ชีพ', 'class' => 'from-red-500 to-pink-500'],
+                                        'swing' => ['icon' => 'fa-pendulum', 'label' => 'โยก', 'class' => 'from-green-500 to-teal-500'],
+                                    ];
+                                    $currentAnimation = $themeSetting->footer_logo_animation ?? 'float';
+                                @endphp
+
+                                @foreach($animations as $value => $anim)
+                                <label class="relative cursor-pointer group">
+                                    <input type="radio" name="footer_logo_animation" value="{{ $value }}"
+                                           {{ $currentAnimation === $value ? 'checked' : '' }}
+                                           class="peer sr-only">
+                                    <div class="flex items-center gap-2 px-3 py-2.5 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 rounded-lg transition-all
+                                                peer-checked:bg-gradient-to-r peer-checked:{{ $anim['class'] }} peer-checked:text-white peer-checked:border-transparent
+                                                hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-md">
+                                        <i class="fas {{ $anim['icon'] }} text-sm"></i>
+                                        <span class="text-xs font-semibold">{{ $anim['label'] }}</span>
+                                    </div>
+                                </label>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Theme Favicon --}}

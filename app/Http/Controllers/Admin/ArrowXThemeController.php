@@ -104,6 +104,7 @@ class ArrowXThemeController extends Controller
             // Logo & Favicon (แยกจาก SiteSetting logo)
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048', // 2MB
             'footer_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048', // 2MB
+            'footer_logo_animation' => 'nullable|in:none,float,spin,bounce,pulse,swing',
             'favicon' => 'nullable|image|mimes:jpeg,png,gif,webp,ico|max:1024', // 1MB
         ]);
 

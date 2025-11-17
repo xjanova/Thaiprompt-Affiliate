@@ -23,6 +23,11 @@ return new class extends Migration
             if (!Schema::hasColumn('theme_settings', 'footer_logo_path')) {
                 $table->string('footer_logo_path')->nullable()->after('logo_path');
             }
+            if (!Schema::hasColumn('theme_settings', 'footer_logo_animation')) {
+                $table->enum('footer_logo_animation', ['none', 'float', 'spin', 'bounce', 'pulse', 'swing'])
+                      ->default('float')
+                      ->comment('Footer Logo Animation Style');
+            }
 
             // Background Effects - Enable/Disable
             if (!Schema::hasColumn('theme_settings', 'bg_effects_enabled')) {
@@ -83,6 +88,7 @@ return new class extends Migration
         Schema::table('theme_settings', function (Blueprint $table) {
             $columns = [
                 'footer_logo_path',
+                'footer_logo_animation',
                 'bg_effects_enabled',
                 'bg_circle1_color1',
                 'bg_circle1_color2',
