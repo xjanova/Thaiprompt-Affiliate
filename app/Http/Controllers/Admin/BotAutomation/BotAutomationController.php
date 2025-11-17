@@ -14,6 +14,71 @@ class BotAutomationController extends Controller
     ) {}
 
     /**
+     * แสดง Dashboard หลักของ Bot Automation
+     *
+     * @return \Illuminate\View\View
+     */
+    public function dashboard()
+    {
+        // สถิติรวมของระบบ
+        $stats = [
+            'total_automations' => BotAutomation::count(),
+            'active_automations' => BotAutomation::where('is_active', true)->count(),
+            'total_executions' => \App\Models\BotAutomation\BotExecutionLog::count(),
+            'success_rate' => $this->calculateSuccessRate(),
+        ];
+
+        // Automations ล่าสุด
+        $recentAutomations = BotAutomation::with(['user', 'aiBotProfile'])
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        // Execution logs ล่าสุด
+        $recentExecutions = \App\Models\BotAutomation\BotExecutionLog::with('automation')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        // สถิติตามประเภท automation
+        $automationsByType = BotAutomation::selectRaw('automation_type, COUNT(*) as count')
+            ->groupBy('automation_type')
+            ->get()
+            ->pluck('count', 'automation_type')
+            ->toArray();
+
+        // Platform connections
+        $platformConnections = \App\Models\BotAutomation\BotPlatformConnection::where('is_active', true)
+            ->count();
+
+        return view('admin.bot-automation.dashboard', compact(
+            'stats',
+            'recentAutomations',
+            'recentExecutions',
+            'automationsByType',
+            'platformConnections'
+        ));
+    }
+
+    /**
+     * คำนวณอัตราความสำเร็จของ automations
+     *
+     * @return float
+     */
+    protected function calculateSuccessRate(): float
+    {
+        $totalExecutions = \App\Models\BotAutomation\BotExecutionLog::count();
+
+        if ($totalExecutions === 0) {
+            return 0;
+        }
+
+        $successfulExecutions = \App\Models\BotAutomation\BotExecutionLog::where('status', 'success')->count();
+
+        return round(($successfulExecutions / $totalExecutions) * 100, 2);
+    }
+
+    /**
      * Display a listing of automations
      */
     public function index(Request $request)
