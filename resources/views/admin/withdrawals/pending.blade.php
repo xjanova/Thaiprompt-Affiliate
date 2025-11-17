@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'คำขอถอนเงินรอดำเนินการ')
 
@@ -20,10 +20,10 @@
 
     <!-- Batch Actions -->
     @if($withdrawals->count() > 0)
-    <div class="bg-white rounded-xl shadow-lg p-6" x-data="{ selectedIds: [] }">
+    <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10 x-data="{ selectedIds: [] }">
         <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-bold text-gray-800">การจัดการแบบกลุ่ม</h3>
-            <span class="text-sm text-gray-600" x-text="selectedIds.length > 0 ? `เลือก ${selectedIds.length} รายการ` : 'ยังไม่ได้เลือกรายการใด'"></span>
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">การจัดการแบบกลุ่ม</h3>
+            <span class="text-sm text-gray-600 dark:text-gray-400" x-text="selectedIds.length > 0 ? `เลือก ${selectedIds.length} รายการ` : 'ยังไม่ได้เลือกรายการใด'"></span>
         </div>
 
         <form action="{{ route('admin.withdrawals.batch-approve') }}" method="POST" x-show="selectedIds.length > 0" x-cloak>
@@ -31,7 +31,7 @@
             <template x-for="id in selectedIds" :key="id">
                 <input type="hidden" name="withdrawal_ids[]" :value="id">
             </template>
-            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-xl transition">
                 ✅ อนุมัติที่เลือก (<span x-text="selectedIds.length"></span> รายการ)
             </button>
         </form>
@@ -39,44 +39,44 @@
         <!-- Pending List -->
         <div class="mt-6 space-y-4">
             @foreach($withdrawals as $withdrawal)
-            <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition" x-data="{ selected: false }">
+            <div class="border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-md transition" x-data="{ selected: false }">
                 <div class="flex items-start space-x-4">
                     <!-- Checkbox -->
                     <input type="checkbox"
                            x-bind:checked="selectedIds.includes({{ $withdrawal->id }})"
                            x-on:change="if($event.target.checked) { selectedIds.push({{ $withdrawal->id }}) } else { selectedIds = selectedIds.filter(id => id !== {{ $withdrawal->id }}) }"
-                           class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                           class="mt-1 h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded">
 
                     <!-- Request Info -->
                     <div class="flex-1">
                         <div class="flex items-start justify-between">
                             <div>
                                 <h4 class="text-lg font-bold text-gray-900">{{ $withdrawal->request_id }}</h4>
-                                <p class="text-sm text-gray-600 mt-1">
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                     <span class="font-medium">ผู้ขอ:</span> {{ $withdrawal->user->name }} ({{ $withdrawal->user->email }})
                                 </p>
                             </div>
                             <div class="text-right">
                                 <div class="text-2xl font-bold text-indigo-600">{{ number_format($withdrawal->amount, 2) }}</div>
-                                <div class="text-xs text-gray-500">THB</div>
+                                <div class="text-xs text-gray-500 dark:text-gray-400">THB</div>
                             </div>
                         </div>
 
                         <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                             <div>
-                                <span class="text-gray-500">ค่าธรรมเนียม:</span>
+                                <span class="text-gray-500 dark:text-gray-400">ค่าธรรมเนียม:</span>
                                 <div class="font-medium text-red-600">{{ number_format($withdrawal->fee, 2) }}</div>
                             </div>
                             <div>
-                                <span class="text-gray-500">ภาษี:</span>
+                                <span class="text-gray-500 dark:text-gray-400">ภาษี:</span>
                                 <div class="font-medium text-red-600">{{ number_format($withdrawal->tax, 2) }}</div>
                             </div>
                             <div>
-                                <span class="text-gray-500">จำนวนสุทธิ:</span>
+                                <span class="text-gray-500 dark:text-gray-400">จำนวนสุทธิ:</span>
                                 <div class="font-medium text-green-600">{{ number_format($withdrawal->net_amount, 2) }}</div>
                             </div>
                             <div>
-                                <span class="text-gray-500">ช่องทาง:</span>
+                                <span class="text-gray-500 dark:text-gray-400">ช่องทาง:</span>
                                 <div class="font-medium">
                                     @if($withdrawal->paymentMethod)
                                         {{ $withdrawal->paymentMethod->type_label }}
@@ -88,17 +88,17 @@
                         </div>
 
                         @if($withdrawal->paymentMethod)
-                        <div class="mt-4 bg-gray-50 rounded-lg p-4">
-                            <h5 class="text-sm font-bold text-gray-700 mb-2">ข้อมูลบัญชีปลายทาง</h5>
+                        <div class="mt-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl p-4">
+                            <h5 class="text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">ข้อมูลบัญชีปลายทาง</h5>
                             <div class="text-sm space-y-1">
                                 @if($withdrawal->paymentMethod->bank_name)
-                                    <p><span class="text-gray-600">ธนาคาร:</span> {{ $withdrawal->paymentMethod->bank_name }}</p>
+                                    <p><span class="text-gray-600 dark:text-gray-400">ธนาคาร:</span> {{ $withdrawal->paymentMethod->bank_name }}</p>
                                 @endif
                                 @if($withdrawal->paymentMethod->account_number)
-                                    <p><span class="text-gray-600">เลขที่บัญชี:</span> {{ $withdrawal->paymentMethod->masked_account_number }}</p>
+                                    <p><span class="text-gray-600 dark:text-gray-400">เลขที่บัญชี:</span> {{ $withdrawal->paymentMethod->masked_account_number }}</p>
                                 @endif
                                 @if($withdrawal->paymentMethod->account_name)
-                                    <p><span class="text-gray-600">ชื่อบัญชี:</span> {{ $withdrawal->paymentMethod->account_name }}</p>
+                                    <p><span class="text-gray-600 dark:text-gray-400">ชื่อบัญชี:</span> {{ $withdrawal->paymentMethod->account_name }}</p>
                                 @endif
                             </div>
                         </div>
@@ -110,24 +110,24 @@
                         </div>
                         @endif
 
-                        <div class="mt-4 text-xs text-gray-500">
+                        <div class="mt-4 text-xs text-gray-500 dark:text-gray-400">
                             <span>วันที่ขอ: {{ $withdrawal->created_at->format('d/m/Y H:i') }}</span>
                         </div>
                     </div>
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="mt-4 pt-4 border-t border-gray-200 flex space-x-3">
-                    <a href="{{ route('admin.withdrawals.show', $withdrawal->id) }}" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg text-center transition">
+                <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex space-x-3">
+                    <a href="{{ route('admin.withdrawals.show', $withdrawal->id) }}" class="flex-1 bg-gray-100/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-2 px-4 rounded-xl text-center transition">
                         📋 ดูรายละเอียด
                     </a>
                     <form action="{{ route('admin.withdrawals.approve', $withdrawal->id) }}" method="POST" class="flex-1">
                         @csrf
-                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl transition">
                             ✅ อนุมัติ
                         </button>
                     </form>
-                    <button x-on:click="$dispatch('show-reject-modal', { id: {{ $withdrawal->id }}, requestId: '{{ $withdrawal->request_id }}' })" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                    <button x-on:click="$dispatch('show-reject-modal', { id: {{ $withdrawal->id }}, requestId: '{{ $withdrawal->request_id }}' })" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition">
                         ❌ ปฏิเสธ
                     </button>
                 </div>
@@ -136,10 +136,10 @@
         </div>
     </div>
     @else
-    <div class="bg-white rounded-xl shadow-lg p-12 text-center">
+    <div class="glass-fusion rounded-xl shadow-lg p-12 text-center" border border-white/20 dark:border-white/10>
         <div class="text-6xl mb-4">🎉</div>
-        <h3 class="text-2xl font-bold text-gray-800 mb-2">ยินดีด้วย!</h3>
-        <p class="text-gray-600">ไม่มีคำขอถอนเงินรอดำเนินการ</p>
+        <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">ยินดีด้วย!</h3>
+        <p class="text-gray-600 dark:text-gray-400">ไม่มีคำขอถอนเงินรอดำเนินการ</p>
         <a href="{{ route('admin.withdrawals.index') }}" class="inline-block mt-6 text-indigo-600 hover:text-indigo-800 font-semibold">
             ← กลับไปหน้ารายการทั้งหมด
         </a>
@@ -148,7 +148,7 @@
 
     <!-- Pagination -->
     @if($withdrawals->hasPages())
-    <div class="bg-white rounded-xl shadow-lg p-6">
+    <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         {{ $withdrawals->links() }}
     </div>
     @endif
@@ -174,7 +174,7 @@
              @click="showModal = false"></div>
 
         <!-- Modal Content -->
-        <div class="relative bg-white rounded-xl shadow-2xl max-w-md w-full p-6 z-10"
+        <div class="relative glass-fusion rounded-xl shadow-2xl max-w-md w-full p-6 z-10" hover:scale-105 transition-transform border border-white/20 dark:border-white/10
              x-show="showModal"
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="opacity-0 transform scale-95"
@@ -184,20 +184,20 @@
              x-transition:leave-end="opacity-0 transform scale-95"
              @click.stop>
             <h3 class="text-xl font-bold text-gray-900 mb-4">ปฏิเสธคำขอถอนเงิน</h3>
-            <p class="text-sm text-gray-600 mb-4">รหัสคำขอ: <span class="font-bold" x-text="requestId"></span></p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">รหัสคำขอ: <span class="font-bold" x-text="requestId"></span></p>
 
             <form x-bind:action="`{{ route('admin.withdrawals.index') }}/${withdrawalId}/reject`" method="POST">
                 @csrf
                 <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">เหตุผลในการปฏิเสธ <span class="text-red-500">*</span></label>
-                    <textarea name="rejection_reason" rows="4" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500" placeholder="กรุณาระบุเหตุผล..."></textarea>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เหตุผลในการปฏิเสธ <span class="text-red-500">*</span></label>
+                    <textarea name="rejection_reason" rows="4" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-red-500" placeholder="กรุณาระบุเหตุผล..."></textarea>
                 </div>
 
                 <div class="flex space-x-3">
-                    <button type="button" @click="showModal = false" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
+                    <button type="button" @click="showModal = false" class="flex-1 bg-gray-100/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold py-2 px-4 rounded-xl transition">
                         ยกเลิก
                     </button>
-                    <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                    <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-xl transition">
                         ยืนยันการปฏิเสธ
                     </button>
                 </div>

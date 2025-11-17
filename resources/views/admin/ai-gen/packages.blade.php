@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'AI Gen Packages Management')
 
@@ -380,7 +380,7 @@ function renderPackages() {
                     </div>
                 </div>
 
-                <div class="card-footer bg-white border-top">
+                <div class="card-footer glass-fusion border-top" border border-white/20 dark:border-white/10>
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted">
                             <i class="fas fa-users"></i> ${pkg.subscribers_count || 0} subscribers

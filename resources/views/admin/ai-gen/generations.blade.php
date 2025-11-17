@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'AI Gen Gallery')
 
@@ -37,7 +37,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 Total Generations
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-total">-</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-total">-</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-magic fa-2x text-primary"></i>
@@ -55,7 +55,7 @@
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 Images
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-images">-</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-images">-</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-image fa-2x text-info"></i>
@@ -73,7 +73,7 @@
                             <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
                                 Videos
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-videos">-</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-videos">-</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-video fa-2x text-danger"></i>
@@ -91,7 +91,7 @@
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                 Today
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-today">-</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-today">-</div>
                         </div>
                         <div class="col-auto">
                             <i class="fas fa-calendar-day fa-2x text-warning"></i>

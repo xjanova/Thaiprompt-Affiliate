@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'AI Gen System Dashboard')
 
@@ -30,7 +30,7 @@
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
                                 Active Providers
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-providers">
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-providers">
                                 <i class="fas fa-spinner fa-spin"></i>
                             </div>
                         </div>
@@ -51,7 +51,7 @@
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
                                 Active Subscriptions
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-subscriptions">
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-subscriptions">
                                 <i class="fas fa-spinner fa-spin"></i>
                             </div>
                         </div>
@@ -72,7 +72,7 @@
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
                                 Total Generations
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-generations">
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-generations">
                                 <i class="fas fa-spinner fa-spin"></i>
                             </div>
                         </div>
@@ -93,7 +93,7 @@
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
                                 Success Rate
                             </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-success-rate">
+                            <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-success-rate">
                                 <i class="fas fa-spinner fa-spin"></i>
                             </div>
                         </div>

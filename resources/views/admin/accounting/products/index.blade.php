@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'สินค้าและบริการ')
 
@@ -9,7 +9,7 @@
         <!-- Language Switcher -->
         <div class="absolute top-4 right-4 z-10">
             <div class="relative inline-block" x-data="{ open: false }">
-                <button @click="open = !open" class="px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-300 flex items-center gap-2 shadow-lg">
+                <button @click="open = !open" class="px-4 py-2 glass-fusion backdrop-blur-sm text-white rounded-xl hover:glass-fusion transition-all duration-300 flex items-center gap-2 shadow-lg">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M7 2a1 1 0 011 1v1h3a1 1 0 110 2H9.578a18.87 18.87 0 01-1.724 4.78c.29.354.596.696.914 1.026a1 1 0 11-1.44 1.389c-.188-.196-.373-.396-.554-.6a19.098 19.098 0 01-3.107 3.567 1 1 0 01-1.334-1.49 17.087 17.087 0 003.13-3.733 18.992 18.992 0 01-1.487-2.494 1 1 0 111.79-.89c.234.47.489.928.764 1.372.417-.934.752-1.913.997-2.927H3a1 1 0 110-2h3V3a1 1 0 011-1zm6 6a1 1 0 01.894.553l2.991 5.982a.869.869 0 01.02.037l.99 1.98a1 1 0 11-1.79.895L15.383 16h-4.764l-.724 1.447a1 1 0 11-1.788-.894l.99-1.98.019-.038 2.99-5.982A1 1 0 0113 8zm-1.382 6h2.764L13 11.236 11.618 14z" clip-rule="evenodd"/>
                     </svg>
@@ -19,22 +19,22 @@
                     </svg>
                 </button>
 
-                <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden z-20" style="display: none;">
+                <div x-show="open" @click.away="open = false" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="absolute right-0 mt-2 w-56 glass-fusion dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden z-20" border border-white/20 dark:border-white/10 style="display: none;">
                     <button @click="language = 'th'; open = false" class="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-3">
                         <span class="text-2xl">🇹🇭</span>
-                        <span class="text-gray-700 dark:text-gray-300">ภาษาไทย</span>
+                        <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">ภาษาไทย</span>
                     </button>
                     <button @click="language = 'en'; open = false" class="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-3">
                         <span class="text-2xl">🇬🇧</span>
-                        <span class="text-gray-700 dark:text-gray-300">English</span>
+                        <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">English</span>
                     </button>
                     <button @click="language = 'zh'; open = false" class="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-3">
                         <span class="text-2xl">🇨🇳</span>
-                        <span class="text-gray-700 dark:text-gray-300">中文</span>
+                        <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">中文</span>
                     </button>
                     <button @click="language = 'ja'; open = false" class="w-full px-4 py-3 text-left hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-3">
                         <span class="text-2xl">🇯🇵</span>
-                        <span class="text-gray-700 dark:text-gray-300">日本語</span>
+                        <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">日本語</span>
                     </button>
                 </div>
             </div>
@@ -44,7 +44,7 @@
         <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-6">
             <div class="flex-1">
                 <div class="flex items-center gap-4 mb-3">
-                    <div class="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                    <div class="p-3 glass-fusion backdrop-blur-sm rounded-2xl" border border-white/20 dark:border-white/10>
                         <svg class="w-10 h-10 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"/>
                         </svg>
@@ -58,7 +58,7 @@
 
             @if(auth()->user()->hasPermission('accounting.create_products') || auth()->user()->isSuperAdmin())
             <a href="{{ route('admin.accounting.products.create') }}"
-               class="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all duration-300 shadow-lg transform hover:scale-105">
+               class="inline-flex items-center gap-2 px-6 py-3 glass-fusion backdrop-blur-sm text-white rounded-xl hover:glass-fusion transition-all duration-300 shadow-lg transform hover:scale-105">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"/>
                 </svg>
@@ -72,10 +72,10 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
         <!-- Total Card -->
         <div class="relative overflow-hidden bg-gradient-to-br from-blue-500 to-indigo-600 dark:from-blue-900 dark:to-indigo-950 rounded-2xl shadow-xl p-6 text-white">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 glass-fusion rounded-full blur-2xl" border border-white/20 dark:border-white/10></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <div class="p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
                         </svg>
@@ -88,10 +88,10 @@
 
         <!-- Goods Card -->
         <div class="relative overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 dark:from-cyan-700 dark:to-blue-900 rounded-2xl shadow-xl p-6 text-white">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 glass-fusion rounded-full blur-2xl" border border-white/20 dark:border-white/10></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <div class="p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"/>
                         </svg>
@@ -104,10 +104,10 @@
 
         <!-- Services Card -->
         <div class="relative overflow-hidden bg-gradient-to-br from-purple-500 to-pink-600 dark:from-purple-700 dark:to-pink-900 rounded-2xl shadow-xl p-6 text-white">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 glass-fusion rounded-full blur-2xl" border border-white/20 dark:border-white/10></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <div class="p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd"/>
                             <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z"/>
@@ -120,11 +120,11 @@
         </div>
 
         <!-- Active Card -->
-        <div class="relative overflow-hidden bg-gradient-to-br from-green-500 to-emerald-600 dark:from-green-700 dark:to-emerald-900 rounded-2xl shadow-xl p-6 text-white">
-            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+        <div class="relative overflow-hidden style="background: var(--arrow-x-success-gradient)" dark:from-green-700 dark:to-emerald-900 rounded-2xl shadow-xl p-6 text-white">
+            <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 glass-fusion rounded-full blur-2xl" border border-white/20 dark:border-white/10></div>
             <div class="relative">
                 <div class="flex items-center justify-between mb-3">
-                    <div class="p-3 bg-white/20 backdrop-blur-sm rounded-xl">
+                    <div class="p-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                         <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
@@ -137,10 +137,10 @@
     </div>
 
     <!-- Filters Card -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-700 dark:to-teal-800 px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                <div class="p-2 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                     <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
                     </svg>
@@ -160,7 +160,7 @@
                     </div>
                     <input type="text" name="search" value="{{ request('search') }}"
                            placeholder="ค้นหาชื่อสินค้า, รหัส..."
-                           class="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                           class="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                 </div>
 
                 <!-- Type Select -->
@@ -171,7 +171,7 @@
                         </svg>
                     </div>
                     <select name="type"
-                            class="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                         <option value="">ประเภททั้งหมด</option>
                         <option value="goods" {{ request('type') === 'goods' ? 'selected' : '' }}>สินค้า</option>
                         <option value="service" {{ request('type') === 'service' ? 'selected' : '' }}>บริการ</option>
@@ -186,7 +186,7 @@
                         </svg>
                     </div>
                     <select name="status"
-                            class="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                            class="w-full pl-10 pr-4 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
                         <option value="">สถานะทั้งหมด</option>
                         <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>ใช้งาน</option>
                         <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>ไม่ใช้งาน</option>
@@ -206,10 +206,10 @@
     </div>
 
     <!-- Products Table -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-emerald-500 to-teal-600 dark:from-emerald-700 dark:to-teal-800 px-6 py-4">
             <div class="flex items-center gap-3">
-                <div class="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                <div class="p-2 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                     <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
                         <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
@@ -223,13 +223,13 @@
             <table class="w-full">
                 <thead class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-750">
                     <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider" data-translate>รหัส</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider" data-translate>ชื่อสินค้า/บริการ</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider" data-translate>ประเภท</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider" data-translate>ราคาขาย</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider" data-translate>ราคาต้นทุน</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider" data-translate>สถานะ</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider" data-translate>การดำเนินการ</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider" data-translate>รหัส</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider" data-translate>ชื่อสินค้า/บริการ</th>
+                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider" data-translate>ประเภท</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider" data-translate>ราคาขาย</th>
+                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider" data-translate>ราคาต้นทุน</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider" data-translate>สถานะ</th>
+                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-700 dark:text-gray-300 dark:text-gray-300 uppercase tracking-wider" data-translate>การดำเนินการ</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -273,7 +273,7 @@
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-center">
                             <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
-                                {{ $product->is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300' }}">
+                                {{ $product->is_active ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-900 dark:text-white dark:text-gray-300' }}">
                                 {{ $product->is_active ? 'ใช้งาน' : 'ไม่ใช้งาน' }}
                             </span>
                         </td>
@@ -319,7 +319,7 @@
                     @empty
                     <tr>
                         <td colspan="7" class="px-6 py-12 text-center">
-                            <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                            <div class="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 dark:text-gray-400">
                                 <svg class="w-16 h-16 mb-4 opacity-50" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 2a4 4 0 00-4 4v1H5a1 1 0 00-.994.89l-1 9A1 1 0 004 18h12a1 1 0 00.994-1.11l-1-9A1 1 0 0015 7h-1V6a4 4 0 00-4-4zm2 5V6a2 2 0 10-4 0v1h4zm-6 3a1 1 0 112 0 1 1 0 01-2 0zm7-1a1 1 0 100 2 1 1 0 000-2z" clip-rule="evenodd"/>
                                 </svg>
@@ -334,7 +334,7 @@
 
         <!-- Pagination -->
         @if(isset($products) && $products->hasPages())
-        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
+        <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-750">
             {{ $products->links() }}
         </div>
         @endif

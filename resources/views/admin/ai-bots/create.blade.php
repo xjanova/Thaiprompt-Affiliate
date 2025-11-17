@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', 'สร้าง AI Bot ใหม่')
 
 @push('styles')
@@ -179,7 +179,7 @@
                 </h2>
                 <p class="opacity-90">กำหนดค่าและปรับแต่ง AI Bot ของคุณ</p>
             </div>
-            <a href="{{ route('admin.ai-bots.index') }}" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition-all">
+            <a href="{{ route('admin.ai-bots.index') }}" class="glass-fusion bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-xl transition-all">
                 <i class="fas fa-arrow-left mr-2"></i>กลับ
             </a>
         </div>
