@@ -148,6 +148,14 @@
             <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
         </a>
 
+        {{-- TPIX Blockchain --}}
+        <a href="{{ route('admin.tpix.dashboard') }}"
+           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.*') ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
+            <i class="fas fa-cube w-5 text-center drop-shadow"></i>
+            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Blockchain</span>
+        </a>
+
         {{-- Products --}}
         <a href="{{ route('admin.ecommerce.products.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.products.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
