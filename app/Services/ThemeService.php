@@ -57,6 +57,25 @@ class ThemeService
         $css .= "    --border-opacity: 0.2;\n";
         $css .= "    --backdrop-saturate: 1.8;\n\n";
 
+        // Background Effects Variables
+        $css .= "    /* Background Effects */\n";
+        $css .= "    --bg-effects-enabled: " . ($themeSetting->bg_effects_enabled ? '1' : '0') . ";\n";
+        $css .= "    --bg-circle1-color1: " . ($themeSetting->bg_circle1_color1 ?? '#22d3ee') . ";\n";
+        $css .= "    --bg-circle1-color2: " . ($themeSetting->bg_circle1_color2 ?? '#2563eb') . ";\n";
+        $css .= "    --bg-circle2-color1: " . ($themeSetting->bg_circle2_color1 ?? '#f472b6') . ";\n";
+        $css .= "    --bg-circle2-color2: " . ($themeSetting->bg_circle2_color2 ?? '#9333ea') . ";\n";
+        $css .= "    --bg-circle3-color1: " . ($themeSetting->bg_circle3_color1 ?? '#fbbf24') . ";\n";
+        $css .= "    --bg-circle3-color2: " . ($themeSetting->bg_circle3_color2 ?? '#f97316') . ";\n";
+
+        // Animation duration based on speed
+        $speed = $themeSetting->bg_animation_speed ?? 'normal';
+        $duration = $speed === 'slow' ? '10s' : ($speed === 'fast' ? '3s' : '6s');
+        $css .= "    --bg-animation-duration: {$duration};\n";
+
+        $css .= "    --bg-circle-opacity: " . (($themeSetting->bg_circle_opacity ?? 15) / 100) . ";\n";
+        $css .= "    --bg-circle-blur: " . ($themeSetting->bg_circle_blur ?? 96) . "px;\n";
+        $css .= "    --bg-circle-size: " . ($themeSetting->bg_circle_size ?? 384) . "px;\n\n";
+
         // Colors (if available)
         if ($themeSetting->color) {
             $css .= $this->generateColorVariables($themeSetting->color);
