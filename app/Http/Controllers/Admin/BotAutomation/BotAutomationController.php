@@ -24,7 +24,7 @@ class BotAutomationController extends Controller
         $stats = [
             'total_automations' => BotAutomation::count(),
             'active_automations' => BotAutomation::where('is_active', true)->count(),
-            'total_executions' => \App\Models\BotAutomation\BotExecutionLog::count(),
+            'total_executions' => \App\Models\BotAutomation\BotAutomationExecution::count(),
             'success_rate' => $this->calculateSuccessRate(),
         ];
 
@@ -35,7 +35,7 @@ class BotAutomationController extends Controller
             ->get();
 
         // Execution logs ล่าสุด
-        $recentExecutions = \App\Models\BotAutomation\BotExecutionLog::with('automation')
+        $recentExecutions = \App\Models\BotAutomation\BotAutomationExecution::with('automation')
             ->latest()
             ->limit(10)
             ->get();
@@ -67,13 +67,13 @@ class BotAutomationController extends Controller
      */
     protected function calculateSuccessRate(): float
     {
-        $totalExecutions = \App\Models\BotAutomation\BotExecutionLog::count();
+        $totalExecutions = \App\Models\BotAutomation\BotAutomationExecution::count();
 
         if ($totalExecutions === 0) {
             return 0;
         }
 
-        $successfulExecutions = \App\Models\BotAutomation\BotExecutionLog::where('status', 'success')->count();
+        $successfulExecutions = \App\Models\BotAutomation\BotAutomationExecution::where('status', 'completed')->count();
 
         return round(($successfulExecutions / $totalExecutions) * 100, 2);
     }
