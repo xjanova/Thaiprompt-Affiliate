@@ -489,16 +489,16 @@ git push -u origin claude/feature-name-<session-id>
 
 ### Database Development Workflow
 
-**Creating Migrations:**
+**⚠️ CRITICAL: มี 3 รูปแบบหลักของ Migrations**
+
+#### 1️⃣ สร้างตารางใหม่ (CREATE TABLE)
 
 ```bash
 # Generate migration
 php artisan make:migration create_table_name_table
-
-# Edit migration file
 ```
 
-**Migration Template (ALWAYS use this pattern):**
+**Template สำหรับสร้างตารางใหม่:**
 
 ```php
 <?php
@@ -516,7 +516,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // ✅ CRITICAL: ตรวจสอบตารางก่อนสร้างเสมอ
+        // ✅ SAFE: เช็คตารางก่อนสร้าง (ใช้ได้เฉพาะ CREATE TABLE)
         if (Schema::hasTable('table_name')) {
             return;
         }
@@ -524,9 +524,9 @@ return new class extends Migration
         Schema::create('table_name', function (Blueprint $table) {
             $table->id();
 
-            // Foreign keys with constraints
+            // Foreign keys - ⚠️ ระบุชื่อตารางชัดเจนเสมอ!
             $table->foreignId('user_id')
-                ->constrained()
+                ->constrained('users')  // ⭐ ระบุชื่อตาราง!
                 ->onDelete('cascade');
 
             // Regular columns
@@ -554,6 +554,151 @@ return new class extends Migration
     }
 };
 ```
+
+#### 2️⃣ เพิ่มคอลัมน์ใหม่ในตารางที่มีอยู่ (ALTER TABLE - ADD COLUMNS)
+
+**⚠️ ห้ามใช้ `Schema::hasTable()` + `return`! จะทำให้คอลัมน์ใหม่ไม่ถูกสร้าง!**
+
+```bash
+# Generate migration for adding columns
+php artisan make:migration add_columns_to_table_name_table
+```
+
+**Template สำหรับเพิ่มคอลัมน์:**
+
+```php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * เพิ่มคอลัมน์ใหม่ในตาราง table_name
+     *
+     * ⚠️ IMPORTANT: ห้ามใช้ Schema::hasTable() + return
+     * เพราะจะทำให้คอลัมน์ใหม่ไม่ถูกสร้าง!
+     *
+     * @return void
+     */
+    public function up(): void
+    {
+        // ❌ WRONG: ห้ามทำแบบนี้เมื่อเพิ่มคอลัมน์!
+        // if (Schema::hasTable('table_name')) {
+        //     return;  // ❌ คอลัมน์ใหม่จะไม่ถูกสร้าง!
+        // }
+
+        // ✅ CORRECT: ใช้ Schema::table() และเช็คแต่ละคอลัมน์
+        Schema::table('table_name', function (Blueprint $table) {
+            // เช็คว่าคอลัมน์มีอยู่แล้วหรือยัง
+            if (!Schema::hasColumn('table_name', 'new_column')) {
+                $table->string('new_column')->nullable()->after('existing_column');
+            }
+
+            if (!Schema::hasColumn('table_name', 'another_column')) {
+                $table->boolean('another_column')->default(false);
+            }
+        });
+    }
+
+    /**
+     * ลบคอลัมน์ที่เพิ่มเข้าไป
+     *
+     * @return void
+     */
+    public function down(): void
+    {
+        Schema::table('table_name', function (Blueprint $table) {
+            // เช็คก่อนลบ
+            if (Schema::hasColumn('table_name', 'new_column')) {
+                $table->dropColumn('new_column');
+            }
+
+            if (Schema::hasColumn('table_name', 'another_column')) {
+                $table->dropColumn('another_column');
+            }
+        });
+    }
+};
+```
+
+#### 3️⃣ ใช้ SafeMigration Trait (⭐ RECOMMENDED)
+
+**แนะนำให้ใช้วิธีนี้เสมอ! ปลอดภัยที่สุด**
+
+```bash
+# Generate migration
+php artisan make:migration update_table_name_table
+```
+
+**Template ใช้ SafeMigration Trait:**
+
+```php
+<?php
+
+use Database\Migrations\Concerns\SafeMigration;
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    use SafeMigration;  // ⭐ ใช้ trait นี้
+
+    /**
+     * เพิ่มคอลัมน์ใหม่อย่างปลอดภัย
+     *
+     * SafeMigration จะเช็คให้อัตโนมัติว่า:
+     * - คอลัมน์มีอยู่แล้วหรือยัง
+     * - Index มีอยู่แล้วหรือยัง
+     * - Foreign key มีอยู่แล้วหรือยัง
+     *
+     * @return void
+     */
+    public function up(): void
+    {
+        Schema::table('table_name', function (Blueprint $table) {
+            // ✅ Safe methods จะเช็คให้เองอัตโนมัติ
+            $this->safeAddColumn($table, 'table_name', 'new_column', function($table) {
+                $table->string('new_column')->nullable();
+            });
+
+            $this->safeAddColumn($table, 'table_name', 'another_column', function($table) {
+                $table->boolean('another_column')->default(false);
+            });
+        });
+
+        // เพิ่ม indexes
+        $this->safeAddIndex('table_name', 'new_column');
+    }
+
+    /**
+     * ลบคอลัมน์อย่างปลอดภัย
+     *
+     * @return void
+     */
+    public function down(): void
+    {
+        $this->safeDropIndex('table_name', 'table_name_new_column_index');
+        $this->safeDropColumn('table_name', ['new_column', 'another_column']);
+    }
+};
+```
+
+**📚 อ่านเพิ่มเติม:** [database/migrations/README_MIGRATIONS.md](database/migrations/README_MIGRATIONS.md)
+
+---
+
+**กฎทองสำหรับ Migrations:**
+
+1. ✅ **CREATE TABLE** → ใช้ `Schema::hasTable()` + `return` ได้
+2. ❌ **ALTER TABLE (เพิ่มคอลัมน์)** → ห้ามใช้ `Schema::hasTable()` + `return`
+3. ⭐ **แนะนำ** → ใช้ `SafeMigration` trait เสมอ (ปลอดภัยที่สุด)
+4. ⚠️ **Foreign Keys** → ระบุชื่อตารางชัดเจนใน `->constrained('table_name')`
+
+---
 
 **Creating Seeders:**
 

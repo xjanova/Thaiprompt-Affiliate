@@ -1023,10 +1023,28 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
     fi
     echo ""
 
-    # Try Smart Migration first (handles existing tables)
+    # Try Smart Migration first (handles existing tables AND column updates)
     print_info "→ Running Smart Migration System..."
+    echo ""
+    print_info "📋 Smart Migration Capabilities:"
+    echo "  ✅ Detects existing tables and skips recreation"
+    echo "  ✅ Detects new columns and adds them automatically"
+    echo "  ✅ Handles 'table already exists' errors gracefully"
+    echo "  ✅ Supports: string, text, integer, decimal, boolean, json, timestamp, date"
+    echo ""
+    print_warning "⚠️  IMPORTANT: Smart Migration will:"
+    echo "  • Create new tables if they don't exist"
+    echo "  • Add missing columns to existing tables"
+    echo "  • Skip tables/columns that already exist"
+    echo ""
+
     if php artisan migrate:smart --force 2>&1 | tee -a "$LOG_FILE"; then
         print_success "✓ Smart Migration completed successfully!"
+        echo ""
+        print_info "→ What was done:"
+        echo "  • New tables created (if any)"
+        echo "  • New columns added to existing tables (if any)"
+        echo "  • Existing schema preserved safely"
         echo ""
     else
         print_warning "⚠ Smart Migration failed, falling back to standard migration..."
@@ -1047,6 +1065,13 @@ if [ "$PENDING_COUNT" != "0" ] && [ "$PENDING_COUNT" != "" ]; then
             echo "  3. Either:"
             echo "     a) Drop the existing table and re-run migration"
             echo "     b) Manually insert migration record if table is correct"
+            echo "     c) Check if migration uses Schema::hasTable() + return (incorrect for column updates)"
+            echo ""
+            print_warning "⚠️  Common Issues:"
+            echo "  • Migration uses Schema::hasTable() + return when adding columns"
+            echo "  • Solution: Use Schema::hasColumn() instead"
+            echo "  • Or use SafeMigration trait (recommended)"
+            echo "  • See: database/migrations/README_MIGRATIONS.md"
             error_exit "Database migration failed - ตรวจสอบ logs และ backup"
         fi
         print_success "✓ Migrations completed successfully!"
