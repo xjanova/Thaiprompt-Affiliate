@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.60.2] - 2025-11-17
+
+### ✨ Features
+
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1302 from xjanova/claude/fix-footer-animation-column-015QpzXeqJPMdy6e9AKqVyxd (b3f0eb78)
+- docs: add quick fix guide for footer_logo_animation column issue (1a797148)
+
 ## [v3.60.1] - 2025-11-17
 
 ### ✨ Features
