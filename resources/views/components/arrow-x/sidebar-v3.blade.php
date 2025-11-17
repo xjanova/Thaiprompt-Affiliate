@@ -36,9 +36,9 @@
     $themeBrandName = $themeSetting->brand_name ?? $title;
 @endphp
 
-{{-- Mobile Overlay (แสดงเมื่อ sidebarOpen = true บนมือถือ) --}}
-<div x-show="sidebarOpen"
-     @click="sidebarOpen = false"
+{{-- Mobile Overlay (แสดงเมื่อ window.sidebarOpen = true บนมือถือ) --}}
+<div x-show="window.sidebarOpen"
+     @click="window.sidebarOpen = false"
      x-transition:enter="transition-opacity ease-linear duration-300"
      x-transition:enter-start="opacity-0"
      x-transition:enter-end="opacity-100"
@@ -57,32 +57,32 @@
         toggleAutoHide() {
             this.autoHideMode = !this.autoHideMode;
             localStorage.setItem('sidebarAutoHide', this.autoHideMode);
-            // เมื่อเปิด auto-hide ให้ปิด sidebar
+            // เมื่อเปิด/ปิด auto-hide ให้ควบคุม sidebar state ผ่าน window.sidebarOpen
             if (this.autoHideMode && window.innerWidth >= 768) {
-                sidebarOpen = false;
+                window.sidebarOpen = false;
             } else if (!this.autoHideMode && window.innerWidth >= 768) {
-                sidebarOpen = true;
+                window.sidebarOpen = true;
             }
         }
     }"
-    @mouseenter="if (autoHideMode && !sidebarOpen && window.innerWidth >= 768) hovered = true"
+    @mouseenter="if (autoHideMode && !window.sidebarOpen && window.innerWidth >= 768) hovered = true"
     @mouseleave="if (autoHideMode && window.innerWidth >= 768) hovered = false"
     class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 z-40
            fixed md:relative inset-y-0 left-0
            transform md:transform-none"
     :class="{
-        'translate-x-0': sidebarOpen,
-        '-translate-x-full': !sidebarOpen,
-        'md:w-20': autoHideMode && !sidebarOpen && !hovered
+        'translate-x-0': window.sidebarOpen,
+        '-translate-x-full': !window.sidebarOpen,
+        'md:w-20': autoHideMode && !window.sidebarOpen && !hovered
     }"
-    :style="((autoHideMode && (sidebarOpen || hovered)) || (!autoHideMode && sidebarOpen))
+    :style="((autoHideMode && (window.sidebarOpen || hovered)) || (!autoHideMode && window.sidebarOpen))
         ? 'width: var(--arrow-x-sidebar-width, 260px)'
         : 'width: 256px'" {{-- Mobile: fixed 256px, Desktop: จาก theme setting --}}
     x-cloak
 >
     {{-- Logo Section --}}
     <div class="h-16 flex items-center justify-between px-4 border-b border-white/30">
-        <div class="flex items-center gap-3 transition-all" x-show="sidebarOpen || hovered" x-transition>
+        <div class="flex items-center gap-3 transition-all" x-show="window.sidebarOpen || hovered" x-transition>
             @if($themeLogo)
                 <img src="{{ $themeLogo }}" alt="{{ $themeBrandName }}" class="w-10 h-10 rounded-xl object-cover shadow-lg">
             @else
@@ -109,7 +109,7 @@
         </button>
 
         {{-- Close Button (แสดงเฉพาะบน Mobile) --}}
-        <button @click="sidebarOpen = false"
+        <button @click="window.sidebarOpen = false"
                 class="md:hidden p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
                 type="button">
             <i class="fas fa-times text-white drop-shadow"></i>
@@ -119,13 +119,13 @@
     {{-- Navigation Menu --}}
     <nav class="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
          x-data="{ mlmOpen: {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'true' : 'false' }} }"
-         @click.away="if (!sidebarOpen && hovered && window.innerWidth >= 768) { hovered = false }">
+         @click.away="if (!window.sidebarOpen && hovered && window.innerWidth >= 768) { hovered = false }">
         {{-- Dashboard --}}
         <a href="{{ route('admin.dashboard') }}"
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-home w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">แดชบอร์ด</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">แดชบอร์ด</span>
         </a>
 
         {{-- Users --}}
@@ -133,7 +133,7 @@
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-users w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
         </a>
 
         {{-- Affiliates --}}
@@ -141,7 +141,7 @@
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-network-wired w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Affiliate</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Affiliate</span>
         </a>
 
         {{-- MLM System (Collapsible Menu) --}}
@@ -151,7 +151,7 @@
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-sitemap w-5 text-center drop-shadow"></i>
-                <span x-show="sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">MLM System</span>
+                <span x-show="window.sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">MLM System</span>
                 <i x-show="(sidebarOpen || hovered) && mlmOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
                 <i x-show="(sidebarOpen || hovered) && !mlmOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
             </button>
@@ -163,7 +163,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.reports.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
                 </a>
 
                 {{-- สมาชิก MLM --}}
@@ -171,7 +171,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.members.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-users-cog w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">สมาชิก</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">สมาชิก</span>
                 </a>
 
                 {{-- แผน MLM --}}
@@ -179,7 +179,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.plans.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">แผน MLM</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">แผน MLM</span>
                 </a>
 
                 {{-- คอมมิชชั่น MLM --}}
@@ -187,7 +187,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.commissions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-money-bill-wave w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
                 </a>
 
                 {{-- Product PV --}}
@@ -195,7 +195,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.product-pv.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tags w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Product PV</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Product PV</span>
                 </a>
 
                 {{-- รายงาน --}}
@@ -203,7 +203,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.reports.*') && !request()->routeIs('admin.mlm.reports.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
                 </a>
 
                 {{-- Genealogy --}}
@@ -211,7 +211,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.genealogy.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-project-diagram w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Genealogy</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Genealogy</span>
                 </a>
 
                 {{-- Prospects --}}
@@ -219,7 +219,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm-prospects.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-plus w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Prospects</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Prospects</span>
                 </a>
 
                 {{-- เครื่องคิดเลข --}}
@@ -227,7 +227,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.calculator') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-calculator w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">เครื่องคิดเลข</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">เครื่องคิดเลข</span>
                 </a>
 
                 {{-- ตัวอย่าง Placement --}}
@@ -235,7 +235,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.placement-examples') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-lightbulb w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตัวอย่าง Placement</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตัวอย่าง Placement</span>
                 </a>
 
                 {{-- ตั้งค่า MLM --}}
@@ -243,7 +243,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cogs w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
                 </a>
             </div>
         </div>
@@ -253,7 +253,7 @@
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.commissions.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-coins w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
         </a>
 
         {{-- Wallet --}}
@@ -261,7 +261,7 @@
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.wallet.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-wallet w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
         </a>
 
         {{-- TPIX Blockchain --}}
@@ -269,7 +269,7 @@
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.*') ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cube w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Blockchain</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Blockchain</span>
         </a>
 
         {{-- Token Management --}}
@@ -277,7 +277,7 @@
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tokens.*') ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-coins w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Token Management</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Token Management</span>
         </a>
 
         {{-- LINE System (Collapsible Menu) 🆕 --}}
@@ -288,7 +288,7 @@
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.line-*') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fab fa-line w-5 text-center drop-shadow"></i>
-                <span x-show="sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">LINE System</span>
+                <span x-show="window.sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">LINE System</span>
                 <i x-show="(sidebarOpen || hovered) && lineOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
                 <i x-show="(sidebarOpen || hovered) && !lineOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
             </button>
@@ -300,7 +300,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-oa.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bullhorn w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">LINE OA</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">LINE OA</span>
                 </a>
 
                 {{-- LINE Bot AI --}}
@@ -308,7 +308,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-robot w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Bot AI</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Bot AI</span>
                 </a>
 
                 {{-- Rich Menu --}}
@@ -316,7 +316,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.rich-menu.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-th-large w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Rich Menu</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Rich Menu</span>
                 </a>
 
                 {{-- Flex Messages --}}
@@ -324,7 +324,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.flex.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Flex Messages</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Flex Messages</span>
                 </a>
 
                 {{-- LINE Membership Signup 🆕 --}}
@@ -332,7 +332,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-plus w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">สมัครสมาชิก</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">สมัครสมาชิก</span>
                 </a>
 
                 {{-- Conversations --}}
@@ -340,7 +340,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.conversations*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comments w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">การสนทนา</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">การสนทนา</span>
                 </a>
 
                 {{-- Broadcast Messages --}}
@@ -348,7 +348,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.broadcast.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bullseye w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Broadcast</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Broadcast</span>
                 </a>
 
                 {{-- LINE Avatars --}}
@@ -356,7 +356,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.avatars.*') || request()->routeIs('admin.line-bot.avatar.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-circle w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Avatars</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Avatars</span>
                 </a>
 
                 {{-- Chat Widget --}}
@@ -364,7 +364,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.chat-widget.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comment-dots w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Chat Widget</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Chat Widget</span>
                 </a>
 
                 {{-- Analytics --}}
@@ -372,7 +372,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.analytics') || request()->routeIs('admin.line-analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
                 </a>
             </div>
         </div>
@@ -382,7 +382,7 @@
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.kyc.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-id-card w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">KYC Verification</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">KYC Verification</span>
         </a>
 
         {{-- Support Tickets (Collapsible Menu) 🆕 --}}
@@ -393,7 +393,7 @@
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tickets.*') ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-headset w-5 text-center drop-shadow"></i>
-                <span x-show="sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Support Tickets</span>
+                <span x-show="window.sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Support Tickets</span>
                 <i x-show="(sidebarOpen || hovered) && ticketsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
                 <i x-show="(sidebarOpen || hovered) && !ticketsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
             </button>
@@ -405,7 +405,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.index') || request()->routeIs('admin.tickets.show') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-ticket w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Tickets ทั้งหมด</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Tickets ทั้งหมด</span>
                 </a>
 
                 {{-- Analytics --}}
@@ -413,7 +413,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.analytics') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
                 </a>
 
                 {{-- Ratings --}}
@@ -421,7 +421,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.ratings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-star w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ความพึงพอใจ</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ความพึงพอใจ</span>
                 </a>
 
                 {{-- Categories --}}
@@ -429,7 +429,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-folder w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
                 </a>
 
                 {{-- Canned Responses --}}
@@ -437,7 +437,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.canned-responses.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comment-dots w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ข้อความสำเร็จรูป</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ข้อความสำเร็จรูป</span>
                 </a>
 
                 {{-- SLA Policies --}}
@@ -445,7 +445,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.sla-policies.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clock w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">SLA Policies</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">SLA Policies</span>
                 </a>
 
                 {{-- Assignment Rules --}}
@@ -453,7 +453,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.assignment-rules.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-check w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">กฎการมอบหมาย</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">กฎการมอบหมาย</span>
                 </a>
 
                 {{-- KB Articles --}}
@@ -461,7 +461,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.kb-articles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-book w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Knowledge Base</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Knowledge Base</span>
                 </a>
 
                 {{-- Settings --}}
@@ -469,7 +469,7 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.settings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
                 </a>
             </div>
         </div>
@@ -490,7 +490,7 @@
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.trading-bot.*') || request()->routeIs('admin.bot-automation.*') || request()->routeIs('admin.ai-bots.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-brain w-5 text-center drop-shadow"></i>
-                <span x-show="sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI & Bots</span>
+                <span x-show="window.sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI & Bots</span>
                 <i x-show="(sidebarOpen || hovered) && aiBotsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
                 <i x-show="(sidebarOpen || hovered) && !aiBotsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
             </button>
@@ -500,42 +500,42 @@
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.trading-bot.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Trading Bot</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Trading Bot</span>
                 </a>
 
                 <a href="{{ route('admin.bot-automation.dashboard') }}"
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.bot-automation.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-robot w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Bot Automation</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Bot Automation</span>
                 </a>
 
                 <a href="{{ route('admin.ai-bots.marketplace') }}"
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-bots.marketplace*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-store w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Marketplace</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Marketplace</span>
                 </a>
 
                 <a href="{{ route('admin.ai-bots.index') }}"
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-bots.index') || request()->routeIs('admin.ai-bots.manage') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-robot w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Bot Profiles</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Bot Profiles</span>
                 </a>
 
                 <a href="{{ route('admin.ai-installations.index') }}"
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-installations.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-download w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Installations</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Installations</span>
                 </a>
 
                 <a href="{{ route('admin.ai-rentals.index') }}"
                    @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rentals.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-calendar-check w-4 text-center drop-shadow"></i>
-                    <span x-show="sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Rentals</span>
+                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Rentals</span>
                 </a>
             </div>
         </div> --}}
@@ -544,28 +544,28 @@
         <a href="{{ route('admin.ai-bots.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-bots.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-user-robot w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Bot Profiles</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Bot Profiles</span>
         </a>
 
         {{-- Products --}}
         <a href="{{ route('admin.ecommerce.products.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.products.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-box w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">สินค้า</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">สินค้า</span>
         </a>
 
         {{-- Orders --}}
         <a href="{{ route('admin.ecommerce.orders.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.orders.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-shopping-cart w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คำสั่งซื้อ</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คำสั่งซื้อ</span>
         </a>
 
         {{-- Reports --}}
         <a href="{{ route('admin.ecommerce.reports') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.reports') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-chart-bar w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">รายงาน</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">รายงาน</span>
         </a>
 
         {{-- Divider --}}
@@ -575,14 +575,14 @@
         <a href="{{ route('admin.settings.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.settings.index') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cog w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่า</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่า</span>
         </a>
 
         {{-- Site Settings (โลโก้, SEO, Social Media) --}}
         <a href="{{ route('admin.site-settings.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.site-settings.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-palette w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่าเว็บไซต์</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่าเว็บไซต์</span>
         </a>
 
         {{-- Arrow X Theme Customizer ⭐ NEW --}}
@@ -590,14 +590,14 @@
            @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.arrow-x-theme.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-paint-brush w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ปรับแต่งทีม Arrow X</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ปรับแต่งทีม Arrow X</span>
         </a>
 
         {{-- Help --}}
         <a href="#"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform glass-neu text-white/90 hover:bg-white/20 hover:scale-105">
             <i class="fas fa-question-circle w-5 text-center drop-shadow"></i>
-            <span x-show="sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ช่วยเหลือ</span>
+            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ช่วยเหลือ</span>
         </a>
     </nav>
 
@@ -651,7 +651,7 @@
             </div>
 
             {{-- Version + License Info (Premium Style) - รองรับ Auto-hide Mode --}}
-            <div x-show="sidebarOpen || hovered" x-transition class="flex-1 min-w-0">
+            <div x-show="window.sidebarOpen || hovered" x-transition class="flex-1 min-w-0">
                 {{-- App Name with Gradient Text --}}
                 <div class="font-black text-base tracking-wider mb-1 bg-gradient-to-r from-white via-cyan-200 to-purple-200 bg-clip-text text-transparent drop-shadow-2xl">
                     TP-AFFILIATE
@@ -684,7 +684,7 @@
             </div>
 
             {{-- License Icon Only (แสดงในโหมด Auto-hide) --}}
-            <div x-show="!sidebarOpen && !hovered && autoHideMode"
+            <div x-show="!window.sidebarOpen && !hovered && autoHideMode"
                  x-transition
                  class="flex flex-col items-center gap-1.5 py-1"
                  title="Licensed - v{{ $version }}">
