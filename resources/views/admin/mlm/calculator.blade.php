@@ -3,137 +3,251 @@
 @section('title', 'Smart Commission Calculator')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
-    <!-- Header -->
-    <div class="mb-6 flex justify-between items-start">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white dark:text-white mb-2 flex items-center gap-2">
-                <i class="fas fa-calculator text-purple-600 dark:text-purple-400"></i>
-                Smart Commission Calculator
-            </h1>
-            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400">คำนวณคอมมิชชั่นแบบละเอียด พร้อมข้อจำกัดทั้งหมด</p>
+<div class="space-y-6">
+    {{-- Premium Hero Header with Gradient & Animations --}}
+    <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-800 dark:via-indigo-800 dark:to-purple-800 rounded-2xl shadow-2xl p-8">
+        {{-- Animated Background Orbs --}}
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse delay-500"></div>
+            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
-        <a href="{{ route('admin.mlm.settings.index') }}"
-           class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl shadow-lg transition-all duration-200">
-            <i class="fas fa-cog"></i>
-            <span>ตั้งค่า MLM</span>
-        </a>
+
+        {{-- Header Content --}}
+        <div class="relative z-10">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="glass-fusion p-4 rounded-2xl">
+                        <i class="fas fa-calculator text-4xl text-white drop-shadow-lg"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-4xl font-bold text-white drop-shadow-lg">Smart Commission Calculator</h1>
+                        <p class="text-indigo-100 text-lg mt-1">คำนวณคอมมิชชั่นแบบละเอียด พร้อมข้อจำกัดทั้งหมด</p>
+                    </div>
+                </div>
+
+                {{-- Quick Action --}}
+                <a href="{{ route('admin.mlm.settings.index') }}"
+                   class="glass-fusion hover:bg-white/20 text-white px-6 py-3 rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg">
+                    <i class="fas fa-cog"></i>
+                    ตั้งค่า MLM
+                </a>
+            </div>
+        </div>
     </div>
 
+    {{-- Info Alert --}}
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-l-4 border-blue-500 dark:border-blue-400 rounded-xl p-6 shadow-lg">
+        <div class="flex items-start gap-3">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-info-circle text-white text-xl"></i>
+                </div>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">เครื่องมือคำนวณคอมมิชชั่นอัจฉริยะ</h3>
+                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                    เครื่องมือนี้จะช่วยคำนวณคอมมิชชั่นทั้งหมดตามข้อมูลที่กรอก รวมถึงตรวจสอบ Overpay Protection เพื่อป้องกันการจ่ายคอมมิชชั่นเกินกว่าที่กำหนด (50%)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Calculator Grid --}}
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Calculator Input -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white dark:text-white mb-6 flex items-center gap-2">
-                <i class="fas fa-sliders-h text-purple-600 dark:text-purple-400"></i>
-                ข้อมูลการคำนวณ
-            </h2>
+        {{-- Calculator Input Card --}}
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-sliders-h text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">ข้อมูลการคำนวณ</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">กรอกข้อมูลเพื่อคำนวณคอมมิชชั่น</p>
+                </div>
+            </div>
 
             <form id="calculator-form" class="space-y-6">
-                <!-- Sales Amount -->
+                {{-- Sales Amount --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-dollar-sign mr-1"></i>
                         ยอดขาย (บาท) <span class="text-red-500">*</span>
                     </label>
                     <input type="number" id="sales_amount" step="0.01" min="0" required
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                           class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
                            placeholder="10000">
                 </div>
 
-                <!-- PV Rate -->
+                {{-- PV Rate --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-exchange-alt mr-1"></i>
                         อัตราแลกเปลี่ยน PV (บาท/PV)
                     </label>
                     <input type="number" id="pv_rate" step="0.01" min="0" value="1"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
-                    <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400 mt-1">ค่าเริ่มต้นจากการตั้งค่าระบบ</p>
+                           class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                           placeholder="1.00">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        ค่าเริ่มต้นจากการตั้งค่าระบบ
+                    </p>
                 </div>
 
-                <!-- Member Depth -->
+                {{-- Member Depth --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-layer-group mr-1"></i>
                         จำนวนชั้นสายงาน (Unilevel)
                     </label>
                     <input type="number" id="member_depth" step="1" min="1" max="20" value="10"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                           class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                           placeholder="10">
                 </div>
 
-                <!-- Binary Pairs -->
+                {{-- Binary Pairs --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300 mb-2">
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-code-branch mr-1"></i>
                         จำนวนคู่ Binary (วันนี้)
                     </label>
                     <input type="number" id="binary_pairs" step="1" min="0" value="0"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                           class="w-full px-4 py-3 bg-white dark:bg-gray-700 border-2 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                           placeholder="0">
                 </div>
 
-                <!-- Checkboxes -->
-                <div class="space-y-3">
-                    <label class="flex items-center space-x-3 cursor-pointer">
+                {{-- Checkboxes --}}
+                <div class="space-y-3 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                    <label class="flex items-start gap-3 cursor-pointer group">
                         <input type="checkbox" id="use_constraints" checked
-                               class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ใช้ข้อจำกัดทั้งหมด (max per day, max per level)</span>
+                               class="w-5 h-5 mt-0.5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                        <div class="flex-1">
+                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                ใช้ข้อจำกัดทั้งหมด
+                            </span>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                max per day, max per level
+                            </p>
+                        </div>
                     </label>
 
-                    <label class="flex items-center space-x-3 cursor-pointer">
+                    <label class="flex items-start gap-3 cursor-pointer group">
                         <input type="checkbox" id="check_overpay" checked
-                               class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
-                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">เช็ค Overpay Protection</span>
+                               class="w-5 h-5 mt-0.5 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                        <div class="flex-1">
+                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                เช็ค Overpay Protection
+                            </span>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                ตรวจสอบการจ่ายคอมมิชชั่นเกิน 50%
+                            </p>
+                        </div>
                     </label>
                 </div>
 
-                <!-- Calculate Button -->
+                {{-- Calculate Button --}}
                 <button type="submit"
-                        class="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-xl font-medium shadow-lg transition-all duration-200 flex items-center justify-center gap-2">
-                    <i class="fas fa-calculator"></i>
-                    คำนวณ
+                        class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 dark:from-blue-500 dark:to-indigo-500 dark:hover:from-blue-600 dark:hover:to-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                    <i class="fas fa-calculator text-xl"></i>
+                    <span>คำนวณคอมมิชชั่น</span>
                 </button>
             </form>
         </div>
 
-        <!-- Results -->
-        <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-white dark:text-white mb-6 flex items-center gap-2">
-                <i class="fas fa-chart-bar text-purple-600 dark:text-purple-400"></i>
-                ผลการคำนวณ
-            </h2>
+        {{-- Results Card --}}
+        <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="fas fa-chart-bar text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white">ผลการคำนวณ</h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">แสดงผลลัพธ์การคำนวณ</p>
+                </div>
+            </div>
 
             <div id="results-container" class="space-y-4">
-                <div class="text-center text-gray-500 dark:text-gray-400 dark:text-gray-400 py-12">
-                    <i class="fas fa-calculator text-6xl text-gray-400 dark:text-gray-600 dark:text-gray-400 mb-4"></i>
-                    <p>กรอกข้อมูลและกดคำนวณเพื่อดูผล</p>
+                <div class="text-center text-gray-500 dark:text-gray-400 py-12">
+                    <div class="w-24 h-24 mx-auto bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-2xl flex items-center justify-center mb-4">
+                        <i class="fas fa-calculator text-5xl text-blue-400 dark:text-blue-500"></i>
+                    </div>
+                    <p class="text-sm font-medium">กรอกข้อมูลและกดคำนวณเพื่อดูผล</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Detailed Breakdown -->
-    <div id="detailed-breakdown" class="hidden mt-6 glass-fusion dark:bg-gray-800 rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-white dark:text-white mb-6 flex items-center gap-2">
-            <i class="fas fa-chart-line text-purple-600 dark:text-purple-400"></i>
-            รายละเอียดการคำนวณ
-        </h2>
+    {{-- Detailed Breakdown Section --}}
+    <div id="detailed-breakdown" class="hidden glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700">
+        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 px-8 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-chart-line text-purple-600 dark:text-purple-400"></i>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">รายละเอียดการคำนวณ</h3>
+            </div>
+        </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
-                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700">
+                <thead class="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                        <th class="px-4 py-3 text-left font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ระดับ/ประเภท</th>
-                        <th class="px-4 py-3 text-right font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">%</th>
-                        <th class="px-4 py-3 text-right font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ยอดก่อน Constraint</th>
-                        <th class="px-4 py-3 text-right font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">Constraint ที่ใช้</th>
-                        <th class="px-4 py-3 text-right font-medium text-gray-700 dark:text-gray-300 dark:text-gray-300">ยอดสุทธิ</th>
+                        <th class="px-6 py-4 text-left font-semibold text-gray-700 dark:text-gray-300">ระดับ/ประเภท</th>
+                        <th class="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">%</th>
+                        <th class="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">ยอดก่อน Constraint</th>
+                        <th class="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">Constraint ที่ใช้</th>
+                        <th class="px-6 py-4 text-right font-semibold text-gray-700 dark:text-gray-300">ยอดสุทธิ</th>
                     </tr>
                 </thead>
                 <tbody id="breakdown-tbody" class="divide-y divide-gray-200 dark:divide-gray-700">
                 </tbody>
-                <tfoot class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 font-bold">
+                <tfoot class="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 font-bold border-t-2 border-gray-300 dark:border-gray-600">
                     <tr>
-                        <td colspan="4" class="px-4 py-3 text-right text-gray-900 dark:text-white">รวมทั้งหมด:</td>
-                        <td id="total-amount" class="px-4 py-3 text-right text-lg text-purple-600 dark:text-purple-400"></td>
+                        <td colspan="4" class="px-6 py-4 text-right text-gray-900 dark:text-white text-lg">รวมทั้งหมด:</td>
+                        <td id="total-amount" class="px-6 py-4 text-right text-xl text-purple-600 dark:text-purple-400"></td>
                     </tr>
                 </tfoot>
             </table>
+        </div>
+    </div>
+
+    {{-- Feature Info Cards --}}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {{-- Real-time Calculation --}}
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-blue-500 dark:border-blue-400 transform hover:scale-105 transition-all">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-bolt text-white text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">คำนวณแบบ Real-time</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                คำนวณคอมมิชชั่นทันทีตามข้อมูลที่กรอก แสดงผลลัพธ์อย่างละเอียด
+            </p>
+        </div>
+
+        {{-- Overpay Protection --}}
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-purple-500 dark:border-purple-400 transform hover:scale-105 transition-all">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-shield-alt text-white text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Overpay Protection</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                ตรวจสอบและเตือนเมื่อเปอร์เซ็นต์คอมมิชชั่นเกิน 50% เพื่อป้องกันการขาดทุน
+            </p>
+        </div>
+
+        {{-- Constraint System --}}
+        <div class="glass-fusion dark:bg-gray-800 rounded-xl p-6 shadow-lg border-l-4 border-indigo-500 dark:border-indigo-400 transform hover:scale-105 transition-all">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                    <i class="fas fa-cogs text-white text-xl"></i>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">Constraint System</h3>
+            </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                รองรับข้อจำกัดต่างๆ เช่น max per day, max per level สำหรับควบคุมการจ่ายคอมมิชชั่น
+            </p>
         </div>
     </div>
 </div>
@@ -152,8 +266,8 @@ document.getElementById('calculator-form').addEventListener('submit', async func
     // Show loading
     document.getElementById('results-container').innerHTML = `
         <div class="text-center py-12">
-            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
-            <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-4">กำลังคำนวณ...</p>
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 dark:border-gray-700 dark:border-t-blue-400"></div>
+            <p class="text-gray-600 dark:text-gray-400 mt-4 font-medium">กำลังคำนวณ...</p>
         </div>
     `;
 
@@ -182,9 +296,14 @@ document.getElementById('calculator-form').addEventListener('submit', async func
     } catch (error) {
         console.error('Calculation error:', error);
         document.getElementById('results-container').innerHTML = `
-            <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 text-red-700 dark:text-red-400">
-                <i class="fas fa-exclamation-triangle mr-2"></i>
-                เกิดข้อผิดพลาดในการคำนวณ: ${error.message}
+            <div class="bg-red-50 dark:bg-red-900/30 border-2 border-red-200 dark:border-red-800 rounded-xl p-6 text-red-700 dark:text-red-400">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-exclamation-triangle text-2xl"></i>
+                    <div>
+                        <h4 class="font-bold mb-1">เกิดข้อผิดพลาด</h4>
+                        <p class="text-sm">${error.message}</p>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -197,20 +316,20 @@ function displayResults(data) {
     const isOverpay = totalPercentage > 50;
     const isWarning = totalPercentage > 40 && totalPercentage <= 50;
 
-    let alertClass = 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300';
+    let alertClass = 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-700 text-green-800 dark:text-green-300';
     let alertIcon = 'fa-check-circle';
     let alertIconColor = 'text-green-600 dark:text-green-400';
     let alertTitle = 'ปลอดภัย';
     let alertMessage = 'เปอร์เซ็นต์คอมมิชชั่นอยู่ในเกณฑ์ที่เหมาะสม';
 
     if (isOverpay) {
-        alertClass = 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300';
+        alertClass = 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-700 text-red-800 dark:text-red-300';
         alertIcon = 'fa-exclamation-triangle';
         alertIconColor = 'text-red-600 dark:text-red-400';
         alertTitle = 'อันตราย - Overpay!';
         alertMessage = 'เปอร์เซ็นต์คอมมิชชั่นเกิน 50% อาจทำให้ขาดทุน';
     } else if (isWarning) {
-        alertClass = 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300';
+        alertClass = 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300';
         alertIcon = 'fa-exclamation-circle';
         alertIconColor = 'text-yellow-600 dark:text-yellow-400';
         alertTitle = 'คำเตือน';
@@ -219,56 +338,74 @@ function displayResults(data) {
 
     container.innerHTML = `
         <!-- Summary Alert -->
-        <div class="${alertClass} border rounded-xl p-4 mb-4">
-            <div class="flex items-start">
-                <i class="fas ${alertIcon} ${alertIconColor} text-2xl mr-3"></i>
+        <div class="${alertClass} border-2 rounded-xl p-5 mb-6">
+            <div class="flex items-start gap-3">
+                <i class="fas ${alertIcon} ${alertIconColor} text-3xl"></i>
                 <div class="flex-1">
-                    <h3 class="font-semibold text-lg">${alertTitle}</h3>
-                    <p class="text-sm mt-1">${alertMessage}</p>
+                    <h3 class="font-bold text-xl mb-1">${alertTitle}</h3>
+                    <p class="text-sm">${alertMessage}</p>
                 </div>
             </div>
         </div>
 
         <!-- Main Stats -->
-        <div class="grid grid-cols-2 gap-4 mb-4">
-            <div class="bg-purple-50 dark:bg-purple-900/30 rounded-xl p-4">
-                <div class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">PV รวม</div>
-                <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">${(data.total_pv || 0).toLocaleString()}</div>
+        <div class="grid grid-cols-2 gap-4 mb-6">
+            <div class="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 rounded-xl p-5 border border-purple-200 dark:border-purple-700">
+                <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                    <i class="fas fa-coins text-purple-600 dark:text-purple-400"></i>
+                    PV รวม
+                </div>
+                <div class="text-3xl font-bold text-purple-600 dark:text-purple-400">${(data.total_pv || 0).toLocaleString()}</div>
             </div>
-            <div class="bg-pink-50 dark:bg-pink-900/30 rounded-xl p-4">
-                <div class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400 mb-1">คอมมิชชั่นรวม</div>
-                <div class="text-2xl font-bold text-pink-600 dark:text-pink-400">฿${(data.total_commission || 0).toLocaleString()}</div>
+            <div class="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 rounded-xl p-5 border border-pink-200 dark:border-pink-700">
+                <div class="text-sm text-gray-600 dark:text-gray-400 mb-2 flex items-center gap-2">
+                    <i class="fas fa-money-bill-wave text-pink-600 dark:text-pink-400"></i>
+                    คอมมิชชั่นรวม
+                </div>
+                <div class="text-3xl font-bold text-pink-600 dark:text-pink-400">฿${(data.total_commission || 0).toLocaleString()}</div>
             </div>
         </div>
 
-        <!-- Percentage -->
-        <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-4">
-            <div class="flex justify-between items-center mb-2">
-                <span class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">เปอร์เซ็นต์คอมมิชชั่นรวม</span>
-                <span class="text-3xl font-bold ${isOverpay ? 'text-red-600 dark:text-red-400' : isWarning ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}">
+        <!-- Percentage Progress -->
+        <div class="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    <i class="fas fa-percentage mr-1"></i>
+                    เปอร์เซ็นต์คอมมิชชั่นรวม
+                </span>
+                <span class="text-4xl font-bold ${isOverpay ? 'text-red-600 dark:text-red-400' : isWarning ? 'text-yellow-600 dark:text-yellow-400' : 'text-green-600 dark:text-green-400'}">
                     ${totalPercentage.toFixed(2)}%
                 </span>
             </div>
-            <div class="w-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-full h-3">
-                <div class="h-3 rounded-full transition-all duration-500 ${isOverpay ? 'bg-red-600' : isWarning ? 'bg-yellow-600' : 'bg-green-600'}"
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+                <div class="h-4 rounded-full transition-all duration-500 ${isOverpay ? 'bg-gradient-to-r from-red-500 to-red-600' : isWarning ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' : 'bg-gradient-to-r from-green-500 to-green-600'}"
                      style="width: ${Math.min(totalPercentage, 100)}%"></div>
             </div>
         </div>
 
-        <!-- Breakdown -->
-        <div class="mt-4 space-y-2">
-            <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
-                <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">Unilevel Commission:</span>
-                <span class="font-semibold text-gray-900 dark:text-white">฿${(data.unilevel_commission || 0).toLocaleString()}</span>
+        <!-- Commission Breakdown -->
+        <div class="mt-6 space-y-3">
+            <div class="flex justify-between items-center py-3 px-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i class="fas fa-layer-group text-blue-600 dark:text-blue-400"></i>
+                    Unilevel Commission:
+                </span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">฿${(data.unilevel_commission || 0).toLocaleString()}</span>
             </div>
-            <div class="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700 dark:border-gray-700">
-                <span class="text-gray-700 dark:text-gray-300 dark:text-gray-300">Binary Commission:</span>
-                <span class="font-semibold text-gray-900 dark:text-white">฿${(data.binary_commission || 0).toLocaleString()}</span>
+            <div class="flex justify-between items-center py-3 px-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <i class="fas fa-code-branch text-purple-600 dark:text-purple-400"></i>
+                    Binary Commission:
+                </span>
+                <span class="text-lg font-bold text-gray-900 dark:text-white">฿${(data.binary_commission || 0).toLocaleString()}</span>
             </div>
             ${data.constraints_applied ? `
-            <div class="flex justify-between py-2 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
-                <span>Constraints Applied:</span>
-                <span><i class="fas fa-check text-green-600 dark:text-green-400 mr-1"></i> ${data.constraints_applied}</span>
+            <div class="flex justify-between items-center py-3 px-4 bg-green-50 dark:bg-green-900/30 rounded-xl border border-green-200 dark:border-green-700">
+                <span class="text-sm font-medium text-green-700 dark:text-green-300 flex items-center gap-2">
+                    <i class="fas fa-check-circle"></i>
+                    Constraints Applied:
+                </span>
+                <span class="text-sm font-semibold text-green-700 dark:text-green-300">${data.constraints_applied}</span>
             </div>
             ` : ''}
         </div>
@@ -287,13 +424,13 @@ function displayDetailedBreakdown(data) {
 
     detailedSection.classList.remove('hidden');
 
-    tbody.innerHTML = breakdown.map(item => `
-        <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700">
-            <td class="px-4 py-3 text-gray-900 dark:text-white">${item.label}</td>
-            <td class="px-4 py-3 text-right text-gray-900 dark:text-white">${item.percentage}%</td>
-            <td class="px-4 py-3 text-right text-gray-900 dark:text-white">฿${item.amount_before_constraint.toLocaleString()}</td>
-            <td class="px-4 py-3 text-right text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">${item.constraint_used || '-'}</td>
-            <td class="px-4 py-3 text-right font-semibold text-gray-900 dark:text-white">฿${item.final_amount.toLocaleString()}</td>
+    tbody.innerHTML = breakdown.map((item, index) => `
+        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+            <td class="px-6 py-4 text-gray-900 dark:text-white font-medium">${item.label}</td>
+            <td class="px-6 py-4 text-right text-gray-900 dark:text-white">${item.percentage}%</td>
+            <td class="px-6 py-4 text-right text-gray-700 dark:text-gray-300">฿${item.amount_before_constraint.toLocaleString()}</td>
+            <td class="px-6 py-4 text-right text-sm text-gray-600 dark:text-gray-400">${item.constraint_used || '-'}</td>
+            <td class="px-6 py-4 text-right font-bold text-purple-600 dark:text-purple-400">฿${item.final_amount.toLocaleString()}</td>
         </tr>
     `).join('');
 
