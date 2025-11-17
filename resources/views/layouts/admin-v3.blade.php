@@ -34,20 +34,11 @@
     @stack('styles')
 </head>
 <body class="h-full font-sans overflow-hidden flex"
-      x-data="{
-          sidebarOpen: window.innerWidth >= 768,
-          profileOpen: false
-      }"
+      x-data="{ profileOpen: false }"
       x-init="
-          // เริ่มต้น theme store
+          // เริ่มต้น theme store และ sidebar store
           $store.theme.init();
-
-          // ปิด sidebar อัตโนมัติบนมือถือเมื่อเปลี่ยนขนาดหน้าจอ
-          window.addEventListener('resize', () => {
-              if (window.innerWidth < 768) {
-                  sidebarOpen = false;
-              }
-          });
+          $store.sidebar.init();
       ">
 
     {{-- Background Gradient พื้นหลังแบบ Dashboard4 - ใช้ Arrow X Theme Variables --}}
