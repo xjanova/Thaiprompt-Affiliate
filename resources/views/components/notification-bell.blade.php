@@ -201,7 +201,7 @@
             console.log('📡 Subscribing to WebSocket notifications...');
 
             // Subscribe to private channel
-            this.echoChannel = window.Echo.private(`notifications.${'{{' }} window.currentUser.id }}`);
+            this.echoChannel = window.Echo.private(`notifications.${window.currentUser.id}`);
 
             // Listen for notification events
             this.echoChannel.listen('NotificationSent', (event) => {
@@ -223,7 +223,7 @@
     unsubscribeFromWebSocket() {
         if (this.echoChannel && window.Echo) {
             try {
-                window.Echo.leave(`notifications.${'{{' }} window.currentUser?.id }}`);
+                window.Echo.leave(`notifications.${window.currentUser?.id}`);
                 this.echoChannel = null;
                 this.useWebSocket = false;
                 console.log('📭 Unsubscribed from WebSocket');
