@@ -36,9 +36,9 @@
     $themeBrandName = $themeSetting->brand_name ?? $title;
 @endphp
 
-{{-- Mobile Overlay (แสดงเมื่อ window.sidebarOpen = true บนมือถือ) --}}
-<div x-show="window.sidebarOpen"
-     @click="window.sidebarOpen = false"
+{{-- Mobile Overlay (แสดงเมื่อเปิด sidebar บนมือถือ) --}}
+<div x-show="$store.sidebar.isOpen && !$store.sidebar.isDesktop"
+     @click="$store.sidebar.close()"
      x-transition:enter="transition-opacity ease-linear duration-300"
      x-transition:enter-start="opacity-0"
      x-transition:enter-end="opacity-100"
@@ -51,38 +51,21 @@
 
 {{-- Sidebar Container --}}
 <aside
-    x-data="{
-        hovered: false,
-        autoHideMode: localStorage.getItem('sidebarAutoHide') === 'true' || false,
-        toggleAutoHide() {
-            this.autoHideMode = !this.autoHideMode;
-            localStorage.setItem('sidebarAutoHide', this.autoHideMode);
-            // เมื่อเปิด/ปิด auto-hide ให้ควบคุม sidebar state ผ่าน window.sidebarOpen
-            if (this.autoHideMode && window.innerWidth >= 768) {
-                window.sidebarOpen = false;
-            } else if (!this.autoHideMode && window.innerWidth >= 768) {
-                window.sidebarOpen = true;
-            }
-        }
-    }"
-    @mouseenter="if (autoHideMode && !window.sidebarOpen && window.innerWidth >= 768) hovered = true"
-    @mouseleave="if (autoHideMode && window.innerWidth >= 768) hovered = false"
+    @mouseenter="$store.sidebar.setHovered(true)"
+    @mouseleave="$store.sidebar.setHovered(false)"
     class="glass-fusion transition-all duration-300 flex flex-col border-r border-white/30 z-40
            fixed md:relative inset-y-0 left-0
            transform md:transform-none"
     :class="{
-        'translate-x-0': window.sidebarOpen,
-        '-translate-x-full': !window.sidebarOpen,
-        'md:w-20': autoHideMode && !window.sidebarOpen && !hovered
+        'translate-x-0': $store.sidebar.shouldShow,
+        '-translate-x-full': !$store.sidebar.shouldShow
     }"
-    :style="((autoHideMode && (window.sidebarOpen || hovered)) || (!autoHideMode && window.sidebarOpen))
-        ? 'width: var(--arrow-x-sidebar-width, 260px)'
-        : 'width: 256px'" {{-- Mobile: fixed 256px, Desktop: จาก theme setting --}}
+    :style="'width: ' + $store.sidebar.sidebarWidth + 'px'"
     x-cloak
 >
     {{-- Logo Section --}}
     <div class="h-16 flex items-center justify-between px-4 border-b border-white/30">
-        <div class="flex items-center gap-3 transition-all" x-show="window.sidebarOpen || hovered" x-transition>
+        <div class="flex items-center gap-3 transition-all" x-show="$store.sidebar.shouldExpand" x-transition>
             @if($themeLogo)
                 <img src="{{ $themeLogo }}" alt="{{ $themeBrandName }}" class="w-10 h-10 rounded-xl object-cover shadow-lg">
             @else
@@ -98,18 +81,18 @@
         </div>
 
         {{-- Toggle Button (แสดงเฉพาะบน Desktop) - เปลี่ยนไอคอนตามโหมด --}}
-        <button @click="toggleAutoHide()"
+        <button @click="$store.sidebar.toggleAutoHide()"
                 class="hidden md:block p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95 group"
                 type="button"
-                :title="autoHideMode ? 'เปิดโหมดปกติ (ล็อค sidebar)' : 'เปิดโหมด Auto-hide'">
+                :title="$store.sidebar.autoHideMode ? 'เปิดโหมดปกติ (ล็อค sidebar)' : 'เปิดโหมด Auto-hide'">
             {{-- Icon แม่กุญแจ (โหมดปกติ - locked) --}}
-            <i x-show="!autoHideMode" class="fas fa-lock text-white drop-shadow group-hover:text-blue-300 transition"></i>
+            <i x-show="!$store.sidebar.autoHideMode" class="fas fa-lock text-white drop-shadow group-hover:text-blue-300 transition"></i>
             {{-- Icon Burger Menu (โหมด Auto-hide) --}}
-            <i x-show="autoHideMode" class="fas fa-bars text-white drop-shadow group-hover:text-purple-300 transition"></i>
+            <i x-show="$store.sidebar.autoHideMode" class="fas fa-bars text-white drop-shadow group-hover:text-purple-300 transition"></i>
         </button>
 
         {{-- Close Button (แสดงเฉพาะบน Mobile) --}}
-        <button @click="window.sidebarOpen = false"
+        <button @click="$store.sidebar.close()"
                 class="md:hidden p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
                 type="button">
             <i class="fas fa-times text-white drop-shadow"></i>
@@ -118,30 +101,29 @@
 
     {{-- Navigation Menu --}}
     <nav class="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent"
-         x-data="{ mlmOpen: {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'true' : 'false' }} }"
-         @click.away="if (!window.sidebarOpen && hovered && window.innerWidth >= 768) { hovered = false }">
+         x-data="{ mlmOpen: {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'true' : 'false' }} }">
         {{-- Dashboard --}}
         <a href="{{ route('admin.dashboard') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.dashboard') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-home w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">แดชบอร์ด</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">แดชบอร์ด</span>
         </a>
 
         {{-- Users --}}
         <a href="{{ route('admin.users.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.users.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-users w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ผู้ใช้งาน</span>
         </a>
 
         {{-- Affiliates --}}
         <a href="{{ route('admin.affiliates.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.affiliates.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-network-wired w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Affiliate</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">Affiliate</span>
         </a>
 
         {{-- MLM System (Collapsible Menu) --}}
@@ -151,133 +133,133 @@
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.mlm.*') || request()->routeIs('admin.mlm-prospects.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-sitemap w-5 text-center drop-shadow"></i>
-                <span x-show="window.sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">MLM System</span>
-                <i x-show="(sidebarOpen || hovered) && mlmOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
-                <i x-show="(sidebarOpen || hovered) && !mlmOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">MLM System</span>
+                <i x-show="$store.sidebar.shouldExpand && mlmOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !mlmOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
             </button>
 
             {{-- MLM Submenu --}}
             <div x-show="mlmOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 {{-- Dashboard MLM --}}
                 <a href="{{ route('admin.mlm.reports.dashboard') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.reports.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-pie w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Dashboard</span>
                 </a>
 
                 {{-- สมาชิก MLM --}}
                 <a href="{{ route('admin.mlm.members.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.members.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-users-cog w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">สมาชิก</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">สมาชิก</span>
                 </a>
 
                 {{-- แผน MLM --}}
                 <a href="{{ route('admin.mlm.plans.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.plans.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">แผน MLM</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">แผน MLM</span>
                 </a>
 
                 {{-- คอมมิชชั่น MLM --}}
                 <a href="{{ route('admin.mlm.commissions.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.commissions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-money-bill-wave w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
                 </a>
 
                 {{-- Product PV --}}
                 <a href="{{ route('admin.mlm.product-pv.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.product-pv.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-tags w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Product PV</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Product PV</span>
                 </a>
 
                 {{-- รายงาน --}}
                 <a href="{{ route('admin.mlm.reports.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.reports.*') && !request()->routeIs('admin.mlm.reports.dashboard') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">รายงาน</span>
                 </a>
 
                 {{-- Genealogy --}}
                 <a href="{{ route('admin.mlm.genealogy.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.genealogy.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-project-diagram w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Genealogy</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Genealogy</span>
                 </a>
 
                 {{-- Prospects --}}
                 <a href="{{ route('admin.mlm-prospects.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm-prospects.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-plus w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Prospects</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Prospects</span>
                 </a>
 
                 {{-- เครื่องคิดเลข --}}
                 <a href="{{ route('admin.mlm.calculator') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.calculator') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-calculator w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">เครื่องคิดเลข</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">เครื่องคิดเลข</span>
                 </a>
 
                 {{-- ตัวอย่าง Placement --}}
                 <a href="{{ route('admin.mlm.placement-examples') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.placement-examples') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-lightbulb w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตัวอย่าง Placement</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตัวอย่าง Placement</span>
                 </a>
 
                 {{-- ตั้งค่า MLM --}}
                 <a href="{{ route('admin.mlm.settings.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.mlm.settings.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cogs w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
                 </a>
             </div>
         </div>
 
         {{-- Commissions --}}
         <a href="{{ route('admin.commissions.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.commissions.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-coins w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">คอมมิชชั่น</span>
         </a>
 
         {{-- Wallet --}}
         <a href="{{ route('admin.wallet.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.wallet.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-wallet w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">กระเป๋าเงิน</span>
         </a>
 
         {{-- TPIX Blockchain --}}
         <a href="{{ route('admin.tpix.dashboard') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tpix.*') ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cube w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Blockchain</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">TPIX Blockchain</span>
         </a>
 
         {{-- Token Management --}}
         <a href="{{ route('admin.tokens.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tokens.*') ? 'bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-coins w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">Token Management</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">Token Management</span>
         </a>
 
         {{-- LINE System (Collapsible Menu) 🆕 --}}
@@ -288,101 +270,101 @@
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.line-*') ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fab fa-line w-5 text-center drop-shadow"></i>
-                <span x-show="window.sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">LINE System</span>
-                <i x-show="(sidebarOpen || hovered) && lineOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
-                <i x-show="(sidebarOpen || hovered) && !lineOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">LINE System</span>
+                <i x-show="$store.sidebar.shouldExpand && lineOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !lineOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
             </button>
 
             {{-- LINE Submenu --}}
             <div x-show="lineOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 {{-- LINE OA Management --}}
                 <a href="{{ route('admin.line-oa.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-oa.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bullhorn w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">LINE OA</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">LINE OA</span>
                 </a>
 
                 {{-- LINE Bot AI --}}
                 <a href="{{ route('admin.line-bot.ai.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-robot w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Bot AI</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Bot AI</span>
                 </a>
 
                 {{-- Rich Menu --}}
                 <a href="{{ route('admin.line-bot.rich-menu.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.rich-menu.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-th-large w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Rich Menu</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Rich Menu</span>
                 </a>
 
                 {{-- Flex Messages --}}
                 <a href="{{ route('admin.line-bot.flex.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.flex.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-layer-group w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Flex Messages</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Flex Messages</span>
                 </a>
 
                 {{-- LINE Membership Signup 🆕 --}}
                 <a href="{{ route('admin.line-membership-signup.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-membership-signup.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-plus w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">สมัครสมาชิก</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">สมัครสมาชิก</span>
                 </a>
 
                 {{-- Conversations --}}
                 <a href="{{ route('admin.line-bot.ai.conversations') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.conversations*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comments w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">การสนทนา</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การสนทนา</span>
                 </a>
 
                 {{-- Broadcast Messages --}}
                 <a href="{{ route('admin.line-bot.broadcast.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.broadcast.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bullseye w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Broadcast</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Broadcast</span>
                 </a>
 
                 {{-- LINE Avatars --}}
                 <a href="{{ route('admin.line-bot.avatars.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.avatars.*') || request()->routeIs('admin.line-bot.avatar.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-circle w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Avatars</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Avatars</span>
                 </a>
 
                 {{-- Chat Widget --}}
                 <a href="{{ route('admin.line-bot.chat-widget.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.chat-widget.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comment-dots w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Chat Widget</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Chat Widget</span>
                 </a>
 
                 {{-- Analytics --}}
                 <a href="{{ route('admin.line-bot.ai.analytics') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.line-bot.ai.analytics') || request()->routeIs('admin.line-analytics.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
                 </a>
             </div>
         </div>
 
         {{-- KYC Verification 🆕 --}}
         <a href="{{ route('admin.kyc.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.kyc.*') ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-id-card w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">KYC Verification</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">KYC Verification</span>
         </a>
 
         {{-- Support Tickets (Collapsible Menu) 🆕 --}}
@@ -393,83 +375,83 @@
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.tickets.*') ? 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-headset w-5 text-center drop-shadow"></i>
-                <span x-show="window.sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Support Tickets</span>
-                <i x-show="(sidebarOpen || hovered) && ticketsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
-                <i x-show="(sidebarOpen || hovered) && !ticketsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">Support Tickets</span>
+                <i x-show="$store.sidebar.shouldExpand && ticketsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
+                <i x-show="$store.sidebar.shouldExpand && !ticketsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
             </button>
 
             {{-- Tickets Submenu --}}
             <div x-show="ticketsOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 {{-- All Tickets --}}
                 <a href="{{ route('admin.tickets.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.index') || request()->routeIs('admin.tickets.show') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-ticket w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Tickets ทั้งหมด</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Tickets ทั้งหมด</span>
                 </a>
 
                 {{-- Analytics --}}
                 <a href="{{ route('admin.tickets.analytics') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.analytics') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Analytics</span>
                 </a>
 
                 {{-- Ratings --}}
                 <a href="{{ route('admin.tickets.ratings') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.ratings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-star w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ความพึงพอใจ</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ความพึงพอใจ</span>
                 </a>
 
                 {{-- Categories --}}
                 <a href="{{ route('admin.tickets.categories.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.categories.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-folder w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">หมวดหมู่</span>
                 </a>
 
                 {{-- Canned Responses --}}
                 <a href="{{ route('admin.tickets.canned-responses.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.canned-responses.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-comment-dots w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ข้อความสำเร็จรูป</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ข้อความสำเร็จรูป</span>
                 </a>
 
                 {{-- SLA Policies --}}
                 <a href="{{ route('admin.tickets.sla-policies.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.sla-policies.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-clock w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">SLA Policies</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">SLA Policies</span>
                 </a>
 
                 {{-- Assignment Rules --}}
                 <a href="{{ route('admin.tickets.assignment-rules.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.assignment-rules.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-check w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">กฎการมอบหมาย</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">กฎการมอบหมาย</span>
                 </a>
 
                 {{-- KB Articles --}}
                 <a href="{{ route('admin.tickets.kb-articles.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.kb-articles.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-book w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Knowledge Base</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Knowledge Base</span>
                 </a>
 
                 {{-- Settings --}}
                 <a href="{{ route('admin.tickets.settings') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.tickets.settings') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-cog w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่า</span>
                 </a>
             </div>
         </div>
@@ -490,52 +472,52 @@
                     type="button"
                     class="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.trading-bot.*') || request()->routeIs('admin.bot-automation.*') || request()->routeIs('admin.ai-bots.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
                 <i class="fas fa-brain w-5 text-center drop-shadow"></i>
-                <span x-show="window.sidebarOpen || hovered" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI & Bots</span>
+                <span x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 text-left font-medium drop-shadow whitespace-nowrap">AI & Bots</span>
                 <i x-show="(sidebarOpen || hovered) && aiBotsOpen" x-transition class="fas fa-chevron-down text-xs drop-shadow"></i>
                 <i x-show="(sidebarOpen || hovered) && !aiBotsOpen" x-transition class="fas fa-chevron-right text-xs drop-shadow"></i>
             </button>
 
             <div x-show="aiBotsOpen" x-collapse x-cloak class="ml-8 space-y-1">
                 <a href="{{ route('admin.trading-bot.dashboard') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.trading-bot.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Trading Bot</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Trading Bot</span>
                 </a>
 
                 <a href="{{ route('admin.bot-automation.dashboard') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.bot-automation.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-robot w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">Bot Automation</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Bot Automation</span>
                 </a>
 
                 <a href="{{ route('admin.ai-bots.marketplace') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-bots.marketplace*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-store w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Marketplace</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Marketplace</span>
                 </a>
 
                 <a href="{{ route('admin.ai-bots.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-bots.index') || request()->routeIs('admin.ai-bots.manage') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-user-robot w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Bot Profiles</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Bot Profiles</span>
                 </a>
 
                 <a href="{{ route('admin.ai-installations.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-installations.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-download w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Installations</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Installations</span>
                 </a>
 
                 <a href="{{ route('admin.ai-rentals.index') }}"
-                   @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+                   @click="$store.sidebar.closeOnMenuClick()"
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.ai-rentals.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-calendar-check w-4 text-center drop-shadow"></i>
-                    <span x-show="window.sidebarOpen || hovered" x-transition class="drop-shadow whitespace-nowrap">AI Rentals</span>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">AI Rentals</span>
                 </a>
             </div>
         </div> --}}
@@ -544,60 +526,60 @@
         <a href="{{ route('admin.ai-bots.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ai-bots.*') ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-user-robot w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Bot Profiles</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">AI Bot Profiles</span>
         </a>
 
         {{-- Products --}}
         <a href="{{ route('admin.ecommerce.products.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.products.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-box w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">สินค้า</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">สินค้า</span>
         </a>
 
         {{-- Orders --}}
         <a href="{{ route('admin.ecommerce.orders.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.orders.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-shopping-cart w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">คำสั่งซื้อ</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">คำสั่งซื้อ</span>
         </a>
 
         {{-- Reports --}}
         <a href="{{ route('admin.ecommerce.reports') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.ecommerce.reports') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-chart-bar w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">รายงาน</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">รายงาน</span>
         </a>
 
         {{-- Divider --}}
-        <div x-show="sidebarOpen" x-transition class="border-t border-white/30 my-4"></div>
+        <div x-show="$store.sidebar.shouldExpand" x-transition class="border-t border-white/30 my-4"></div>
 
         {{-- Settings --}}
         <a href="{{ route('admin.settings.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.settings.index') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-cog w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่า</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่า</span>
         </a>
 
         {{-- Site Settings (โลโก้, SEO, Social Media) --}}
         <a href="{{ route('admin.site-settings.index') }}"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.site-settings.*') ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-palette w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่าเว็บไซต์</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ตั้งค่าเว็บไซต์</span>
         </a>
 
         {{-- Arrow X Theme Customizer ⭐ NEW --}}
         <a href="{{ route('admin.arrow-x-theme.index') }}"
-           @click="if (window.innerWidth >= 768 && autoHideMode && hovered) { hovered = false }"
+           @click="$store.sidebar.closeOnMenuClick()"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform {{ request()->routeIs('admin.arrow-x-theme.*') ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg scale-105' : 'glass-neu text-white/90 hover:bg-white/20 hover:scale-105' }}">
             <i class="fas fa-paint-brush w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ปรับแต่งทีม Arrow X</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ปรับแต่งทีม Arrow X</span>
         </a>
 
         {{-- Help --}}
         <a href="#"
            class="flex items-center gap-3 px-3 py-3 rounded-xl transition-all transform glass-neu text-white/90 hover:bg-white/20 hover:scale-105">
             <i class="fas fa-question-circle w-5 text-center drop-shadow"></i>
-            <span x-show="window.sidebarOpen || hovered" x-transition class="font-medium drop-shadow whitespace-nowrap">ช่วยเหลือ</span>
+            <span x-show="$store.sidebar.shouldExpand" x-transition class="font-medium drop-shadow whitespace-nowrap">ช่วยเหลือ</span>
         </a>
     </nav>
 
@@ -651,7 +633,7 @@
             </div>
 
             {{-- Version + License Info (Premium Style) - รองรับ Auto-hide Mode --}}
-            <div x-show="window.sidebarOpen || hovered" x-transition class="flex-1 min-w-0">
+            <div x-show="$store.sidebar.shouldExpand" x-transition class="flex-1 min-w-0">
                 {{-- App Name with Gradient Text --}}
                 <div class="font-black text-base tracking-wider mb-1 bg-gradient-to-r from-white via-cyan-200 to-purple-200 bg-clip-text text-transparent drop-shadow-2xl">
                     TP-AFFILIATE
@@ -684,7 +666,7 @@
             </div>
 
             {{-- License Icon Only (แสดงในโหมด Auto-hide) --}}
-            <div x-show="!window.sidebarOpen && !hovered && autoHideMode"
+            <div x-show="!$store.sidebar.shouldExpand && $store.sidebar.autoHideMode"
                  x-transition
                  class="flex flex-col items-center gap-1.5 py-1"
                  title="Licensed - v{{ $version }}">

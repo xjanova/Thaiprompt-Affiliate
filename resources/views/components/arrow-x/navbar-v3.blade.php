@@ -60,7 +60,7 @@
             checkTooltip();
         "
         class="md:hidden relative">
-            <button @click="sidebarOpen = !sidebarOpen; showTooltip = false"
+            <button @click="$store.sidebar.toggle(); showTooltip = false"
                     type="button"
                     class="p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
                     :class="blinking ? 'animate-blink-burger' : ''">

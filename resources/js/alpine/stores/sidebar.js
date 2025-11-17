@@ -1,54 +1,136 @@
 import Alpine from 'alpinejs';
 
 /**
- * Sidebar Store - จัดการ sidebar state
+ * Sidebar Store V3 - จัดการ sidebar state แบบรวมศูนย์
+ *
+ * รองรับ 2 โหมด:
+ * - Mobile (< 768px): Drawer overlay (เปิด/ปิดเท่านั้น)
+ * - Desktop (>= 768px): Auto-hide mode (hover เพื่อขยาย)
  *
  * @example
- * // Toggle sidebar
+ * // Toggle auto-hide mode (desktop)
+ * $store.sidebar.toggleAutoHide()
+ *
+ * // Toggle sidebar (mobile drawer)
  * $store.sidebar.toggle()
  *
- * // Check if open
+ * // Check states
  * if ($store.sidebar.isOpen) { ... }
+ * if ($store.sidebar.autoHideMode) { ... }
+ * if ($store.sidebar.hovered) { ... }
  *
- * @tip ใช้ store นี้แทนการใช้ local state ใน sidebar component
+ * @tip State เดียวสำหรับทั้ง mobile และ desktop
  */
 Alpine.store('sidebar', {
-    // State
-    isOpen: true,           // เปิด/ปิด sidebar (mobile)
-    isCollapsed: false,     // ย่อ/ขยาย sidebar (desktop)
+    // ========================================
+    // State Variables
+    // ========================================
+
+    /** @type {boolean} เปิด/ปิด sidebar (mobile drawer / desktop toggle) */
+    isOpen: true,
+
+    /** @type {boolean} โหมด Auto-hide (desktop เท่านั้น) */
+    autoHideMode: false,
+
+    /** @type {boolean} กำลัง hover อยู่หรือไม่ (desktop auto-hide mode) */
+    hovered: false,
+
+    // ========================================
+    // Computed Properties
+    // ========================================
+
+    /**
+     * ตรวจสอบว่าอยู่บน desktop หรือไม่
+     */
+    get isDesktop() {
+        return window.innerWidth >= 768;
+    },
+
+    /**
+     * ตรวจสอบว่า sidebar ควรแสดงหรือไม่
+     */
+    get shouldShow() {
+        // Mobile: แสดงตาม isOpen
+        if (!this.isDesktop) {
+            return this.isOpen;
+        }
+
+        // Desktop: แสดงเสมอ (แค่เปลี่ยน width)
+        return true;
+    },
+
+    /**
+     * ตรวจสอบว่า sidebar ควรขยายหรือไม่
+     */
+    get shouldExpand() {
+        // Mobile: ไม่มี auto-hide
+        if (!this.isDesktop) {
+            return this.isOpen;
+        }
+
+        // Desktop auto-hide mode: ขยายเมื่อ hover หรือ isOpen
+        if (this.autoHideMode) {
+            return this.hovered || this.isOpen;
+        }
+
+        // Desktop ปกติ: ขยายตาม isOpen
+        return this.isOpen;
+    },
+
+    /**
+     * Width ของ sidebar (px)
+     */
+    get sidebarWidth() {
+        // Mobile: Fixed 256px
+        if (!this.isDesktop) {
+            return 256;
+        }
+
+        // Desktop auto-hide mode แบบย่อ: 80px
+        if (this.autoHideMode && !this.shouldExpand) {
+            return 80;
+        }
+
+        // Desktop ขยาย: ใช้จาก theme variable หรือ default 260px
+        const themeWidth = getComputedStyle(document.documentElement)
+            .getPropertyValue('--arrow-x-sidebar-width').trim();
+        return themeWidth ? parseInt(themeWidth) : 260;
+    },
+
+    // ========================================
+    // Lifecycle Methods
+    // ========================================
 
     /**
      * เริ่มต้น sidebar store
      */
     init() {
-        // โหลดค่าจาก localStorage (เฉพาะ desktop)
-        if (window.innerWidth >= 1024) {
-            const savedCollapsed = localStorage.getItem('sidebarCollapsed');
-            this.isCollapsed = savedCollapsed === 'true';
-        }
+        // โหลดค่า autoHideMode จาก localStorage
+        const savedAutoHide = localStorage.getItem('sidebarAutoHide');
+        this.autoHideMode = savedAutoHide === 'true';
 
-        // ปรับตาม screen size
+        // ตั้งค่า initial state ตาม screen size
         this.updateBasedOnScreenSize();
 
-        // Listen to resize
+        // Listen to resize events
         window.addEventListener('resize', () => {
             this.updateBasedOnScreenSize();
         });
+
+        // Expose to window for backward compatibility
+        window.sidebarOpen = this.isOpen;
     },
 
+    // ========================================
+    // Public Methods
+    // ========================================
+
     /**
-     * Toggle sidebar (mobile)
+     * Toggle sidebar (mobile drawer)
      */
     toggle() {
         this.isOpen = !this.isOpen;
-    },
-
-    /**
-     * Toggle collapsed (desktop)
-     */
-    toggleCollapse() {
-        this.isCollapsed = !this.isCollapsed;
-        this.saveCollapsed();
+        this.syncToWindow();
     },
 
     /**
@@ -56,6 +138,7 @@ Alpine.store('sidebar', {
      */
     open() {
         this.isOpen = true;
+        this.syncToWindow();
     },
 
     /**
@@ -63,43 +146,80 @@ Alpine.store('sidebar', {
      */
     close() {
         this.isOpen = false;
+        this.syncToWindow();
     },
 
     /**
-     * ขยาย sidebar (desktop)
+     * Toggle auto-hide mode (desktop)
      */
-    expand() {
-        this.isCollapsed = false;
-        this.saveCollapsed();
-    },
+    toggleAutoHide() {
+        this.autoHideMode = !this.autoHideMode;
 
-    /**
-     * ย่อ sidebar (desktop)
-     */
-    collapse() {
-        this.isCollapsed = true;
-        this.saveCollapsed();
-    },
+        // บันทึกลง localStorage
+        localStorage.setItem('sidebarAutoHide', this.autoHideMode.toString());
 
-    /**
-     * ปรับ sidebar ตาม screen size
-     */
-    updateBasedOnScreenSize() {
-        if (window.innerWidth < 1024) {
-            // Mobile/Tablet: ปิด sidebar
-            this.isOpen = false;
-            this.isCollapsed = false;
-        } else {
-            // Desktop: เปิด sidebar (ใช้ค่าจาก localStorage)
-            this.isOpen = true;
+        // ปรับ isOpen ตาม mode (desktop เท่านั้น)
+        if (this.isDesktop) {
+            if (this.autoHideMode) {
+                // เปิด auto-hide: ย่อ sidebar
+                this.isOpen = false;
+                this.hovered = false;
+            } else {
+                // ปิด auto-hide: ขยาย sidebar
+                this.isOpen = true;
+            }
+            this.syncToWindow();
         }
     },
 
     /**
-     * บันทึก collapsed state
+     * Set hover state (desktop auto-hide mode)
      */
-    saveCollapsed() {
-        localStorage.setItem('sidebarCollapsed', this.isCollapsed.toString());
+    setHovered(value) {
+        // ใช้ได้เฉพาะ desktop + auto-hide mode
+        if (this.isDesktop && this.autoHideMode) {
+            this.hovered = value;
+        }
+    },
+
+    /**
+     * ปิด sidebar เมื่อคลิก menu item (desktop auto-hide mode)
+     */
+    closeOnMenuClick() {
+        // ใช้ได้เฉพาะ desktop + auto-hide mode + hovered
+        if (this.isDesktop && this.autoHideMode && this.hovered) {
+            this.hovered = false;
+        }
+    },
+
+    // ========================================
+    // Private Methods
+    // ========================================
+
+    /**
+     * ปรับ sidebar state ตาม screen size
+     */
+    updateBasedOnScreenSize() {
+        if (this.isDesktop) {
+            // Desktop: เปิด sidebar (เว้นแต่อยู่ใน auto-hide mode)
+            if (!this.autoHideMode) {
+                this.isOpen = true;
+            }
+            this.hovered = false;
+        } else {
+            // Mobile: ปิด sidebar
+            this.isOpen = false;
+            this.autoHideMode = false; // ไม่ใช้ auto-hide บน mobile
+            this.hovered = false;
+        }
+        this.syncToWindow();
+    },
+
+    /**
+     * Sync state ไปยัง window.sidebarOpen (backward compatibility)
+     */
+    syncToWindow() {
+        window.sidebarOpen = this.isOpen;
     }
 });
 
