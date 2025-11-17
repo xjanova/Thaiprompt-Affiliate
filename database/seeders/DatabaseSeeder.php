@@ -50,6 +50,7 @@ class DatabaseSeeder extends Seeder
             LineSignupTemplateSeeder::class,    // LINE Signup Templates (AI-Powered Membership Signup)
             LineSignupFlowSeeder::class,        // 🆕 LINE Signup Flow Steps (Complete signup conversation flow)
             LineBotAiSeeder::class,             // 🆕 LINE Bot AI Profiles (Demo bots: Affiliate, Support, Sales)
+            LineBotKeywordSeeder::class,        // 🆕 LINE Hybrid Bot Keywords (Keyword-based responses + AI fallback)
 
             // 5. AI & Integrations
             AiProvidersSeeder::class,           // AI Providers และ Models (OpenAI, Claude, DeepSeek, Gemini)

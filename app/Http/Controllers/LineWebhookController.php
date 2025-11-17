@@ -9,6 +9,7 @@ use App\Services\LineService;
 use App\Services\MlmProspectService;
 use App\Services\LineSignupService;
 use App\Services\LineKycService;
+use App\Services\LineHybridBotService;
 use App\Services\AI\ConversationManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -120,76 +121,28 @@ class LineWebhookController extends Controller
             return;
         }
 
-        // Handle commands
-        $lineService = app(LineService::class);
+        // Step 1: Check if user is in signup process
         $prospectService = app(MlmProspectService::class);
-        $signupService = app(LineSignupService::class);
-
-        // Check if user is in signup process
         $prospect = $prospectService->getProspectByLineUserId($lineUserId);
 
         if ($prospect && in_array($prospect->status, ['pending', 'in_progress'])) {
-            // Handle signup conversation
+            // ยังอยู่ในกระบวนการสมัครสมาชิก → ตอบไปยัง signup flow
+            $signupService = app(LineSignupService::class);
             $signupService->handleConversationMessage($prospect, $messageText);
             return;
         }
 
-        // Check for special commands first
-        $command = strtolower(trim($messageText));
+        // Step 2: Use Hybrid Bot (Keyword matching + AI fallback)
+        $hybridBot = app(LineHybridBotService::class);
+        $aiBot = AiBotProfile::where('is_active', true)
+            ->first(); // ใช้ bot แรกที่ active
 
-        // ✅ KYC Command - เริ่มกระบวนการยืนยันตัวตน
-        if ($command === 'kyc' || $command === 'ยืนยันตัวตน' || $command === 'verify') {
-            if (!$user) {
-                $lineService->sendPushMessage(
-                    $lineUserId,
-                    '❌ คุณยังไม่ได้ลงทะเบียนในระบบ\n\nกรุณาสมัครสมาชิกที่เว็บไซต์ของเราก่อน'
-                );
-                return;
-            }
+        $result = $hybridBot->processMessage($lineUserId, $messageText, $user, $aiBot);
 
-            $kycService = app(LineKycService::class);
-            $kycService->startKycProcess($lineUserId, $user);
-            return;
-        }
-
-        if ($command === 'info' || $command === 'ข้อมูล') {
-            if ($user) {
-                $lineService->sendUserInfoCard($user);
-            } else {
-                $lineService->sendPushMessage(
-                    $lineUserId,
-                    'คุณยังไม่ได้ลงทะเบียนในระบบ กรุณาสมัครสมาชิกที่เว็บไซต์ของเรา'
-                );
-            }
-            return;
-        }
-
-        if ($command === 'รีเซ็ต' || $command === 'reset') {
-            if ($prospect) {
-                $signupService->resetConversation($prospect);
-            } else {
-                $lineService->sendPushMessage(
-                    $lineUserId,
-                    'ไม่พบข้อมูลการสมัครสมาชิก'
-                );
-            }
-            return;
-        }
-
-        // Check if AI Bot is linked to this LINE OA
-        $bot = AiBotProfile::where('line_oa_channel_id', $settings->channel_id)
-            ->where('is_active', true)
-            ->first();
-
-        if ($bot) {
-            $this->handleAiBotChat($lineUserId, $messageText, $user, $bot);
-        } else {
-            // Default response when AI Bot is not linked
-            $lineService->sendPushMessage(
-                $lineUserId,
-                "ขอบคุณสำหรับข้อความของคุณ 😊\n\nพิมพ์ 'info' หรือ 'ข้อมูล' เพื่อดูข้อมูลบัญชีของคุณ"
-            );
-        }
+        Log::info('Hybrid Bot processed message', [
+            'line_user_id' => $lineUserId,
+            'result' => $result,
+        ]);
     }
 
     /**
