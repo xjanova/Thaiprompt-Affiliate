@@ -65,9 +65,10 @@ class ArrowXThemeController extends Controller
      * บันทึกการตั้งค่าหลัก
      *
      * @param Request $request
+     * @param \App\Services\ImageUploadService $imageUploadService
      * @return RedirectResponse
      */
-    public function updateGeneralSettings(Request $request): RedirectResponse
+    public function updateGeneralSettings(Request $request, \App\Services\ImageUploadService $imageUploadService): RedirectResponse
     {
         $validated = $request->validate([
             'theme_name' => 'required|string|max:100',
@@ -88,10 +89,57 @@ class ArrowXThemeController extends Controller
             'card_shadow_intensity' => 'required|in:none,sm,md,lg,xl,2xl',
             'default_language' => 'required|string|max:5',
             'rtl_enabled' => 'boolean',
+            // Logo & Favicon (แยกจาก SiteSetting logo)
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp,svg|max:2048', // 2MB
+            'favicon' => 'nullable|image|mimes:jpeg,png,gif,webp,ico|max:1024', // 1MB
         ]);
 
         $themeSetting = ThemeSetting::active() ?? $this->createDefaultTheme();
+
+        // Handle Theme Logo Upload (สำหรับแสดงใน Sidebar)
+        if ($request->hasFile('logo')) {
+            // ลบโลโก้ธีมเก่า (ถ้ามี)
+            if ($themeSetting->logo_path) {
+                $imageUploadService->deleteImage($themeSetting->logo_path);
+            }
+
+            // อัพโหลดโลโก้ธีมใหม่ (max 200x200, quality 90)
+            $validated['logo_path'] = $imageUploadService->uploadImage(
+                $request->file('logo'),
+                'theme-logos',
+                200,
+                200,
+                90
+            );
+        }
+
+        // Handle Theme Favicon Upload
+        if ($request->hasFile('favicon')) {
+            // ลบ favicon ธีมเก่า (ถ้ามี)
+            if ($themeSetting->favicon_path) {
+                $imageUploadService->deleteImage($themeSetting->favicon_path);
+            }
+
+            // อัพโหลด favicon ธีมใหม่ (max 64x64, quality 90)
+            $validated['favicon_path'] = $imageUploadService->uploadImage(
+                $request->file('favicon'),
+                'theme-favicons',
+                64,
+                64,
+                90
+            );
+        }
+
         $themeSetting->update($validated);
+
+        // ล้าง theme cache เพื่อให้การเปลี่ยนแปลงมีผลทันที
+        try {
+            $compilerService = app(\App\Services\ThemeCompilerService::class);
+            $compilerService->clearCache();
+        } catch (\Exception $e) {
+            // Log error but don't fail the update
+            \Log::warning('Failed to clear theme cache: ' . $e->getMessage());
+        }
 
         return redirect()
             ->back()

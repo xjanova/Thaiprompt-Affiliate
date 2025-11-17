@@ -49,6 +49,14 @@ class ThemeService
         $css .= "    --arrow-x-card-border-radius: {$themeSetting->card_border_radius}px;\n";
         $css .= "    --arrow-x-card-shadow: var(--shadow-{$themeSetting->card_shadow_intensity});\n\n";
 
+        // Glass Effect Variables (ใช้กับ .glass-fusion, .glass-neu, .glass-dropdown)
+        $css .= "    /* Glass Effect */\n";
+        $css .= "    --glass-opacity: " . ($themeSetting->card_opacity / 100) . ";\n";
+        $css .= "    --glass-blur: {$themeSetting->card_blur_intensity}px;\n";
+        $css .= "    --card-roundness: {$themeSetting->card_border_radius}px;\n";
+        $css .= "    --border-opacity: 0.2;\n";
+        $css .= "    --backdrop-saturate: 1.8;\n\n";
+
         // Colors (if available)
         if ($themeSetting->color) {
             $css .= $this->generateColorVariables($themeSetting->color);

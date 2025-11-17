@@ -7,6 +7,16 @@
 
     <title>@yield('title', 'Dashboard') - Admin - {{ config('app.name') }}</title>
 
+    {{-- Favicon (ใช้จาก Theme Setting) --}}
+    @php
+        $themeSetting = \App\Models\ThemeSetting::active();
+        $faviconPath = $themeSetting && $themeSetting->favicon_path
+            ? asset('storage/' . $themeSetting->favicon_path)
+            : asset('favicon.ico');
+    @endphp
+    <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
+
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
