@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียด Wallet: ' . $wallet->name)
 
@@ -8,7 +8,7 @@
     <!-- Header with Back Button -->
     <div class="flex items-center justify-between">
         <div class="flex items-center space-x-4">
-            <a href="{{ route('admin.crypto.hd-wallets.index') }}" class="w-10 h-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg flex items-center justify-center text-gray-700 dark:text-gray-300 hover:shadow-md transition-all">
+            <a href="{{ route('admin.crypto.hd-wallets.index') }}" class="w-10 h-10 glass-fusion dark:bg-gray-800 border border-gray-200 dark:border-gray-700 dark:border-gray-600 rounded-xl flex items-center justify-center text-gray-700 dark:text-gray-300 dark:text-gray-300 hover:shadow-md transition-all">
                 <i class="fas fa-arrow-left"></i>
             </a>
             <div>
@@ -20,21 +20,21 @@
                     @endif
                     {{ $wallet->name }}
                 </h1>
-                <p class="text-gray-600 dark:text-gray-400 mt-1">รายละเอียดและข้อมูลสถิติของกระเป๋า</p>
+                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">รายละเอียดและข้อมูลสถิติของกระเป๋า</p>
             </div>
         </div>
         <div class="flex items-center space-x-2">
             <!-- Status Badge -->
             @if($wallet->status === 'active')
-                <span class="px-4 py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-lg font-semibold">
+                <span class="px-4 py-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-xl font-semibold">
                     <i class="fas fa-check-circle mr-1"></i> ใช้งานอยู่
                 </span>
             @elseif($wallet->status === 'locked')
-                <span class="px-4 py-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-lg font-semibold">
+                <span class="px-4 py-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-xl font-semibold">
                     <i class="fas fa-lock mr-1"></i> ล็อกอยู่
                 </span>
             @else
-                <span class="px-4 py-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-lg font-semibold">
+                <span class="px-4 py-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-xl font-semibold">
                     <i class="fas fa-ban mr-1"></i> ระงับ
                 </span>
             @endif
@@ -45,8 +45,8 @@
     @if($wallet->is_master_wallet)
     <div class="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -mr-32 -mt-32"></div>
-            <div class="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full -ml-24 -mb-24"></div>
+            <div class="absolute top-0 right-0 w-64 h-64 glass-fusion rounded-full -mr-32 -mt-32" border border-white/20 dark:border-white/10></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 glass-fusion rounded-full -ml-24 -mb-24" border border-white/20 dark:border-white/10></div>
         </div>
         <div class="relative flex items-center justify-between">
             <div>
@@ -74,8 +74,8 @@
     @else
     <div class="bg-gradient-to-r from-emerald-500 via-green-600 to-emerald-700 rounded-2xl shadow-2xl p-8 text-white relative overflow-hidden">
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-64 h-64 bg-white rounded-full -mr-32 -mt-32"></div>
-            <div class="absolute bottom-0 left-0 w-48 h-48 bg-white rounded-full -ml-24 -mb-24"></div>
+            <div class="absolute top-0 right-0 w-64 h-64 glass-fusion rounded-full -mr-32 -mt-32" border border-white/20 dark:border-white/10></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 glass-fusion rounded-full -ml-24 -mb-24" border border-white/20 dark:border-white/10></div>
         </div>
         <div class="relative flex items-center justify-between">
             <div>
@@ -87,7 +87,7 @@
                 @if($wallet->masterWallet)
                 <div class="mt-4">
                     <p class="text-emerald-100 text-sm mb-1">Parent Master Wallet:</p>
-                    <a href="{{ route('admin.crypto.hd-wallets.show', $wallet->masterWallet->id) }}" class="inline-flex items-center px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-lg transition-all">
+                    <a href="{{ route('admin.crypto.hd-wallets.show', $wallet->masterWallet->id) }}" class="inline-flex items-center px-4 py-2 glass-fusion hover:glass-fusion backdrop-blur-sm rounded-xl transition-all">
                         <i class="fas fa-external-link-alt mr-2"></i>
                         {{ $wallet->masterWallet->name }}
                     </a>
@@ -102,27 +102,27 @@
     @endif
 
     <!-- Owner Information -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
             <i class="fas fa-user-circle text-emerald-600 mr-2"></i>
             ข้อมูลเจ้าของกระเป๋า
         </h3>
         <div class="grid md:grid-cols-2 gap-6">
-            <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div class="flex items-center space-x-4 p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl">
                 <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-green-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                     {{ strtoupper(substr($wallet->user->name, 0, 1)) }}
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">ชื่อผู้ใช้</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">ชื่อผู้ใช้</p>
                     <p class="text-lg font-bold text-gray-900 dark:text-white">{{ $wallet->user->name }}</p>
                 </div>
             </div>
-            <div class="flex items-center space-x-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-xl">
+            <div class="flex items-center space-x-4 p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl">
                 <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
                     <i class="fas fa-envelope text-2xl text-blue-600"></i>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">อีเมล</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">อีเมล</p>
                     <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ $wallet->user->email }}</p>
                 </div>
             </div>
@@ -156,9 +156,9 @@
                 $label = $labels[$key] ?? ucfirst(str_replace('_', ' ', $key));
             @endphp
 
-            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-{{ $stat['color'] }}-500">
+            <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-lg p-6 border-l-4 border-{{ $stat['color'] }}-500" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-{{ $stat['color'] }}-100 dark:bg-{{ $stat['color'] }}-900/20 rounded-lg flex items-center justify-center">
+                    <div class="w-12 h-12 bg-{{ $stat['color'] }}-100 dark:bg-{{ $stat['color'] }}-900/20 rounded-xl flex items-center justify-center">
                         <i class="fab fa-{{ $stat['icon'] }} text-2xl text-{{ $stat['color'] }}-600"></i>
                     </div>
                 </div>
@@ -169,14 +169,14 @@
                         {{ $value }}
                     @endif
                 </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $label }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{{ $label }}</p>
             </div>
         @endforeach
     </div>
 
     <!-- Child Wallets (if master) -->
     @if($wallet->is_master_wallet && $wallet->childWallets->count() > 0)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
                 <i class="fas fa-sitemap mr-2"></i>
@@ -186,13 +186,13 @@
         <div class="p-6">
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 @foreach($wallet->childWallets as $childWallet)
-                <a href="{{ route('admin.crypto.hd-wallets.show', $childWallet->id) }}" class="block p-4 bg-gray-50 dark:bg-gray-700 rounded-xl hover:shadow-lg hover:scale-105 transition-all">
+                <a href="{{ route('admin.crypto.hd-wallets.show', $childWallet->id) }}" class="block p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl hover:shadow-lg hover:scale-105 transition-all">
                     <div class="flex items-center justify-between mb-3">
                         <p class="font-semibold text-gray-900 dark:text-white">{{ $childWallet->name }}</p>
                         <i class="fas fa-arrow-right text-emerald-600"></i>
                     </div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600 dark:text-gray-400">Index: {{ $childWallet->derivation_index }}</span>
+                        <span class="text-gray-600 dark:text-gray-400 dark:text-gray-400">Index: {{ $childWallet->derivation_index }}</span>
                         <span class="px-2 py-1 bg-{{ $childWallet->status === 'active' ? 'green' : 'yellow' }}-100 text-{{ $childWallet->status === 'active' ? 'green' : 'yellow' }}-800 rounded text-xs">
                             {{ $childWallet->status }}
                         </span>
@@ -206,7 +206,7 @@
 
     <!-- Crypto Addresses -->
     @if($wallet->cryptoAddresses->count() > 0)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
                 <i class="fas fa-link mr-2"></i>
@@ -216,7 +216,7 @@
         <div class="p-6">
             <div class="space-y-4">
                 @foreach($wallet->cryptoAddresses as $address)
-                <div class="p-5 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
+                <div class="p-5 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 dark:border-gray-600">
                     <div class="flex items-center justify-between mb-3">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold">
@@ -224,14 +224,14 @@
                             </div>
                             <div>
                                 <p class="font-bold text-gray-900 dark:text-white">{{ $address->currency->name ?? 'Bitcoin' }}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $address->currency->symbol ?? 'BTC' }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $address->currency->symbol ?? 'BTC' }}</p>
                             </div>
                         </div>
-                        <button onclick="copyAddress('{{ $address->address }}')" class="px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-lg transition-all">
+                        <button onclick="copyAddress('{{ $address->address }}')" class="px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-xl transition-all">
                             <i class="fas fa-copy mr-2"></i>คัดลอก
                         </button>
                     </div>
-                    <div class="bg-white dark:bg-gray-900 rounded-lg p-3 font-mono text-sm break-all">
+                    <div class="glass-fusion dark:bg-gray-900 rounded-xl p-3 font-mono text-sm break-all" border border-white/20 dark:border-white/10>
                         {{ $address->address }}
                     </div>
                 </div>
@@ -243,7 +243,7 @@
 
     <!-- Recent Transactions -->
     @if($wallet->cryptoTransactions->count() > 0)
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden" border border-white/20 dark:border-white/10>
         <div class="bg-gradient-to-r from-purple-500 to-pink-600 px-6 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
                 <i class="fas fa-history mr-2"></i>
@@ -252,17 +252,17 @@
         </div>
         <div class="overflow-x-auto">
             <table class="w-full">
-                <thead class="bg-gray-50 dark:bg-gray-900">
+                <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">ประเภท</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">จำนวน</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">สถานะ</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">วันที่</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase">ประเภท</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase">จำนวน</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase">สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase">วันที่</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($wallet->cryptoTransactions->take(10) as $transaction)
-                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:hover:bg-gray-700 transition-colors">
                         <td class="px-6 py-4">
                             @if($transaction->type === 'receive')
                                 <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm font-semibold">
@@ -282,7 +282,7 @@
                                 {{ $transaction->status }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
                             {{ $transaction->created_at->format('d/m/Y H:i') }}
                         </td>
                     </tr>
@@ -294,7 +294,7 @@
     @endif
 
     <!-- Actions -->
-    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
         <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
             <i class="fas fa-tools text-emerald-600 mr-2"></i>
             การจัดการ
@@ -324,7 +324,7 @@
             </button>
             @endif
 
-            <a href="{{ route('admin.crypto.hd-wallets.index') }}" class="flex items-center justify-center px-6 py-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl font-semibold transition-all">
+            <a href="{{ route('admin.crypto.hd-wallets.index') }}" class="flex items-center justify-center px-6 py-4 bg-gray-100/50 dark:bg-gray-800/50 hover:bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white dark:text-gray-200 rounded-xl font-semibold transition-all">
                 <i class="fas fa-arrow-left mr-2"></i>
                 กลับหน้ารายการ
             </a>

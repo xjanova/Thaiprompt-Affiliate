@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดกระเป๋าเงิน')
 
@@ -8,22 +8,22 @@
     <div class="flex items-center justify-between">
         <div>
             <h2 class="text-3xl font-bold text-gray-900">รายละเอียดกระเป๋าเงิน</h2>
-            <p class="text-gray-600 mt-1">{{ $wallet->wallet_address }}</p>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ $wallet->wallet_address }}</p>
         </div>
-        <a href="{{ route('admin.wallet.all') }}" class="text-indigo-600 hover:text-indigo-800 font-semibold">
+        <a href="{{ route('admin.wallet.all') }}" class="font-semibold hover:opacity-80" style="color: var(--arrow-x-primary-start)">
             ← กลับ
         </a>
     </div>
 
     <!-- Wallet Overview -->
-    <div class="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white">
+    <div class="rounded-2xl shadow-2xl p-8 text-white" style="background: var(--arrow-x-primary-gradient)">
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h3 class="text-2xl font-bold mb-2">{{ $wallet->user->name }}</h3>
-                <p class="text-indigo-100 text-sm">{{ $wallet->user->email }}</p>
+                <p class="opacity-80 text-sm">{{ $wallet->user->email }}</p>
             </div>
             <div class="text-right">
-                <div class="inline-flex items-center px-4 py-2 bg-white/20 backdrop-blur-sm rounded-full">
+                <div class="inline-flex items-center px-4 py-2 glass-fusion backdrop-blur-sm rounded-full">
                     <span class="text-sm font-medium">สถานะ:</span>
                     <span class="ml-2 text-sm font-bold">
                         @if($wallet->isActive())
@@ -40,7 +40,7 @@
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <!-- Balance -->
-            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+            <div class="glass-fusion backdrop-blur-sm rounded-xl p-6" border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-indigo-100">ยอดคงเหลือ</span>
                     <span class="text-2xl">💰</span>
@@ -50,7 +50,7 @@
             </div>
 
             <!-- Total Income -->
-            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+            <div class="glass-fusion backdrop-blur-sm rounded-xl p-6" border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-indigo-100">รายรับทั้งหมด</span>
                     <span class="text-2xl">📈</span>
@@ -60,7 +60,7 @@
             </div>
 
             <!-- Total Expense -->
-            <div class="bg-white/10 backdrop-blur-sm rounded-xl p-6">
+            <div class="glass-fusion backdrop-blur-sm rounded-xl p-6" border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-2">
                     <span class="text-indigo-100">รายจ่ายทั้งหมด</span>
                     <span class="text-2xl">📉</span>
@@ -75,24 +75,24 @@
         <!-- Main Content -->
         <div class="lg:col-span-2 space-y-6">
             <!-- Recent Transactions -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <div class="flex items-center justify-between mb-6">
-                    <h3 class="text-xl font-bold text-gray-800">ธุรกรรมล่าสุด</h3>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">ธุรกรรมล่าสุด</h3>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead>
                             <tr>
-                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ประเภท</th>
-                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน</th>
-                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รายละเอียด</th>
-                                <th class="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
+                                <th class="px-6 py-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ประเภท</th>
+                                <th class="px-6 py-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">จำนวน</th>
+                                <th class="px-6 py-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">รายละเอียด</th>
+                                <th class="px-6 py-3 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">วันที่</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody class="glass-fusion divide-y divide-gray-200">
                             @forelse($recentTransactions as $transaction)
-                            <tr class="hover:bg-gray-50 transition">
+                            <tr class="hover:bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 transition">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <span class="text-2xl mr-2">{{ $transaction->type_icon }}</span>
@@ -107,13 +107,13 @@
                                 <td class="px-6 py-4">
                                     <span class="text-sm text-gray-900">{{ $transaction->description }}</span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                                     {{ $transaction->created_at->format('d/m/Y H:i') }}
                                 </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="4" class="px-6 py-4 text-center text-gray-500">ไม่มีธุรกรรม</td>
+                                <td colspan="4" class="px-6 py-4 text-center text-gray-500 dark:text-gray-400">ไม่มีธุรกรรม</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -122,34 +122,34 @@
             </div>
 
             <!-- Wallet Info -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 mb-4">ข้อมูลกระเป๋าเงิน</h3>
                 <div class="space-y-3">
                     <div class="flex justify-between py-2 border-b">
-                        <span class="text-gray-600">Wallet Address</span>
+                        <span class="text-gray-600 dark:text-gray-400">Wallet Address</span>
                         <span class="font-mono font-semibold text-gray-900">{{ $wallet->wallet_address }}</span>
                     </div>
                     <div class="flex justify-between py-2 border-b">
-                        <span class="text-gray-600">สกุลเงิน</span>
+                        <span class="text-gray-600 dark:text-gray-400">สกุลเงิน</span>
                         <span class="font-semibold text-gray-900">{{ $wallet->currency }}</span>
                     </div>
                     <div class="flex justify-between py-2 border-b">
-                        <span class="text-gray-600">สร้างเมื่อ</span>
+                        <span class="text-gray-600 dark:text-gray-400">สร้างเมื่อ</span>
                         <span class="font-semibold text-gray-900">{{ $wallet->created_at->format('d/m/Y H:i') }}</span>
                     </div>
                     <div class="flex justify-between py-2 border-b">
-                        <span class="text-gray-600">อัปเดตล่าสุด</span>
+                        <span class="text-gray-600 dark:text-gray-400">อัปเดตล่าสุด</span>
                         <span class="font-semibold text-gray-900">{{ $wallet->updated_at->format('d/m/Y H:i') }}</span>
                     </div>
                     @if($wallet->pin_set_at)
                     <div class="flex justify-between py-2 border-b">
-                        <span class="text-gray-600">ตั้ง PIN เมื่อ</span>
+                        <span class="text-gray-600 dark:text-gray-400">ตั้ง PIN เมื่อ</span>
                         <span class="font-semibold text-gray-900">{{ $wallet->pin_set_at->format('d/m/Y H:i') }}</span>
                     </div>
                     @endif
                     @if($wallet->two_factor_enabled)
                     <div class="flex justify-between py-2">
-                        <span class="text-gray-600">Two-Factor Authentication</span>
+                        <span class="text-gray-600 dark:text-gray-400">Two-Factor Authentication</span>
                         <span class="font-semibold text-green-600">✅ เปิดใช้งาน</span>
                     </div>
                     @endif
@@ -160,34 +160,34 @@
         <!-- Sidebar Actions -->
         <div class="space-y-6">
             <!-- Admin Actions -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 mb-4">การจัดการ (Admin)</h3>
                 <div class="space-y-3">
                     <!-- Adjust Balance -->
                     <div x-data="{ open: false }">
-                        <button @click="open = !open" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+                        <button @click="open = !open" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 px-4 rounded-xl transition">
                             💵 ปรับยอดเงิน
                         </button>
 
-                        <div x-show="open" x-transition class="mt-4 bg-gray-50 rounded-lg p-4" style="display: none;">
+                        <div x-show="open" x-transition class="mt-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 rounded-xl p-4" style="display: none;">
                             <form action="{{ route('admin.wallet.adjust-balance', $wallet->id) }}" method="POST" class="space-y-4">
                                 @csrf
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">ประเภท</label>
-                                    <select name="type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ประเภท</label>
+                                    <select name="type" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500">
                                         <option value="add">เพิ่มเงิน (+)</option>
                                         <option value="subtract">หักเงิน (-)</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">จำนวนเงิน</label>
-                                    <input type="number" name="amount" step="0.01" min="0.01" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน</label>
+                                    <input type="number" name="amount" step="0.01" min="0.01" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-2">เหตุผล <span class="text-red-500">*</span></label>
-                                    <textarea name="reason" rows="3" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="ระบุเหตุผล..."></textarea>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เหตุผล <span class="text-red-500">*</span></label>
+                                    <textarea name="reason" rows="3" required class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500" placeholder="ระบุเหตุผล..."></textarea>
                                 </div>
-                                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition">
+                                <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-xl transition">
                                     ยืนยันการปรับยอด
                                 </button>
                             </form>
@@ -198,14 +198,14 @@
                     @if($wallet->isActive())
                     <form action="{{ route('admin.wallet.lock', $wallet->id) }}" method="POST">
                         @csrf
-                        <button type="submit" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการล็อกกระเป๋าเงินนี้?')" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+                        <button type="submit" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการล็อกกระเป๋าเงินนี้?')" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-4 rounded-xl transition">
                             🔒 ล็อกกระเป๋าเงิน
                         </button>
                     </form>
                     @elseif($wallet->isLocked())
                     <form action="{{ route('admin.wallet.unlock', $wallet->id) }}" method="POST">
                         @csrf
-                        <button type="submit" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปลดล็อกกระเป๋าเงินนี้?')" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition">
+                        <button type="submit" onclick="return confirm('คุณแน่ใจหรือไม่ว่าต้องการปลดล็อกกระเป๋าเงินนี้?')" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-xl transition">
                             🔓 ปลดล็อกกระเป๋าเงิน
                         </button>
                     </form>
@@ -214,7 +214,7 @@
             </div>
 
             <!-- User Info -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 mb-4">ข้อมูลเจ้าของกระเป๋า</h3>
                 <div class="space-y-3">
                     <div class="flex items-center space-x-3">
@@ -223,7 +223,7 @@
                         </div>
                         <div>
                             <p class="font-semibold text-gray-900">{{ $wallet->user->name }}</p>
-                            <p class="text-sm text-gray-600">{{ $wallet->user->email }}</p>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ $wallet->user->email }}</p>
                         </div>
                     </div>
                     <div class="border-t pt-3">
@@ -235,27 +235,27 @@
             </div>
 
             <!-- Statistics -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
+            <div class="glass-fusion rounded-xl shadow-lg p-6" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <h3 class="text-lg font-bold text-gray-900 mb-4">สถิติ</h3>
                 <div class="space-y-3">
                     <div class="flex justify-between items-center py-2">
-                        <span class="text-gray-600 text-sm">ธุรกรรมทั้งหมด</span>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">ธุรกรรมทั้งหมด</span>
                         <span class="font-bold text-gray-900">{{ number_format($statistics['transactions_count'] ?? 0) }}</span>
                     </div>
                     <div class="flex justify-between items-center py-2 border-t">
-                        <span class="text-gray-600 text-sm">รายรับ 30 วัน</span>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">รายรับ 30 วัน</span>
                         <span class="font-bold text-green-600">{{ number_format($statistics['last_30_days_income'] ?? 0, 2) }}</span>
                     </div>
                     <div class="flex justify-between items-center py-2 border-t">
-                        <span class="text-gray-600 text-sm">รายจ่าย 30 วัน</span>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">รายจ่าย 30 วัน</span>
                         <span class="font-bold text-red-600">{{ number_format($statistics['last_30_days_expense'] ?? 0, 2) }}</span>
                     </div>
                     <div class="flex justify-between items-center py-2 border-t">
-                        <span class="text-gray-600 text-sm">รายรับทั้งหมด</span>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">รายรับทั้งหมด</span>
                         <span class="font-bold text-green-600">{{ number_format($statistics['total_income'] ?? 0, 2) }}</span>
                     </div>
                     <div class="flex justify-between items-center py-2 border-t">
-                        <span class="text-gray-600 text-sm">รายจ่ายทั้งหมด</span>
+                        <span class="text-gray-600 dark:text-gray-400 text-sm">รายจ่ายทั้งหมด</span>
                         <span class="font-bold text-red-600">{{ number_format($statistics['total_expense'] ?? 0, 2) }}</span>
                     </div>
                 </div>
