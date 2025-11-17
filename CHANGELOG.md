@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.46.0] - 2025-11-17
+
+### ✨ Features
+- feat: migrate User Management pages to V3 theme (0253bfbc)
+- feat: migrate tarot system, retention & windows UI to V3 theme (batch 12) (3f5e0e53)
+- feat: migrate page builder, trends & tarot pages to V3 theme (batch 11) (5f194eb6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1278 from xjanova/claude/dashboard-color-theme-01WrWZDEhywL1zQkJKkpjgDo (1a259eb0)
+
 ## [v3.45.0] - 2025-11-17
 
 ### ✨ Features
