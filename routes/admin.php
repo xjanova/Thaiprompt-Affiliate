@@ -681,23 +681,53 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
             Route::get('/api/export-report', [\App\Http\Controllers\Admin\SentimentAnalysisController::class, 'exportReport'])->name('export-report');
         });
 
+        // NLP Enhancement System (Entity Extraction, Intent Recognition, Clustering - Phase 2.4)
+        Route::prefix('nlp-analysis')->name('nlp-analysis.')->group(function () {
+            // Dashboard
+            Route::get('/', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'index'])->name('index');
+
+            // Entities Management
+            Route::get('/entities', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'entities'])->name('entities');
+            Route::delete('/entities/{entity}', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'deleteEntity'])->name('delete-entity');
+
+            // Intents Management
+            Route::get('/intents', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'intents'])->name('intents');
+            Route::delete('/intents/{intent}', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'deleteIntent'])->name('delete-intent');
+
+            // Clusters Management
+            Route::get('/clusters', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'clusters'])->name('clusters');
+            Route::get('/clusters/{cluster}', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'showCluster'])->name('show-cluster');
+            Route::post('/clusters', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'createCluster'])->name('create-cluster');
+            Route::put('/clusters/{cluster}', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'updateCluster'])->name('update-cluster');
+            Route::delete('/clusters/{cluster}', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'deleteCluster'])->name('delete-cluster');
+
+            // API Endpoints for Data & Analytics
+            Route::get('/api/entity-statistics', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'entityStatistics'])->name('entity-statistics');
+            Route::get('/api/intent-statistics', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'intentStatistics'])->name('intent-statistics');
+            Route::get('/api/cluster-usage', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'clusterUsageData'])->name('cluster-usage');
+            Route::get('/api/cluster-recommendations', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'clusterRecommendations'])->name('cluster-recommendations');
+            Route::get('/api/related-keywords', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'relatedKeywords'])->name('related-keywords');
+            Route::get('/api/entity-cooccurrence', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'entityCoOccurrence'])->name('entity-cooccurrence');
+            Route::get('/api/export-report', [\App\Http\Controllers\Admin\NLPAnalysisController::class, 'exportReport'])->name('export-report');
+        });
+
         // Advanced NLP System (Context, Conversation History, Semantic Matching - Phase 2.5)
         Route::prefix('advanced-nlp')->name('advanced-nlp.')->group(function () {
-            Route::get('/conversations', function() { return 'Advanced NLP Conversations'; })->name('conversations');
-            Route::get('/api/conversation-analytics/{userId}', function() { return 'Conversation Analytics'; })->name('conversation-analytics');
-            Route::get('/api/similar-messages', function() { return 'Similar Messages'; })->name('similar-messages');
+            Route::get('/conversations', [\App\Http\Controllers\Admin\AdvancedNLPController::class, 'conversations'])->name('conversations');
+            Route::get('/api/conversation-analytics/{userId}', [\App\Http\Controllers\Admin\AdvancedNLPController::class, 'conversationAnalytics'])->name('conversation-analytics');
+            Route::get('/api/similar-messages', [\App\Http\Controllers\Admin\AdvancedNLPController::class, 'similarMessages'])->name('similar-messages');
         });
 
         // Advanced Analytics System (Prediction, Anomaly Detection, Forecasting - Phase 3)
         Route::prefix('advanced-analytics')->name('advanced-analytics.')->group(function () {
-            Route::get('/', function() { return 'Advanced Analytics Dashboard'; })->name('dashboard');
-            Route::get('/predictions', function() { return 'Predictions'; })->name('predictions');
-            Route::get('/anomalies', function() { return 'Anomalies'; })->name('anomalies');
-            Route::get('/forecasts', function() { return 'Forecasts'; })->name('forecasts');
-            Route::get('/insights', function() { return 'Insights'; })->name('insights');
-            Route::get('/api/forecast-data', function() { return 'Forecast Data'; })->name('forecast-data');
-            Route::get('/api/anomaly-data', function() { return 'Anomaly Data'; })->name('anomaly-data');
-            Route::get('/api/prediction-data', function() { return 'Prediction Data'; })->name('prediction-data');
+            Route::get('/', [\App\Http\Controllers\Admin\AdvancedAnalyticsController::class, 'dashboard'])->name('dashboard');
+            Route::get('/predictions', [\App\Http\Controllers\Admin\AdvancedAnalyticsController::class, 'predictions'])->name('predictions');
+            Route::get('/anomalies', [\App\Http\Controllers\Admin\AdvancedAnalyticsController::class, 'anomalies'])->name('anomalies');
+            Route::get('/forecasts', [\App\Http\Controllers\Admin\AdvancedAnalyticsController::class, 'forecasts'])->name('forecasts');
+            Route::get('/insights', [\App\Http\Controllers\Admin\AdvancedAnalyticsController::class, 'insights'])->name('insights');
+            Route::get('/api/forecast-data', [\App\Http\Controllers\Admin\AdvancedAnalyticsController::class, 'forecastData'])->name('forecast-data');
+            Route::get('/api/anomaly-data', [\App\Http\Controllers\Admin\AdvancedAnalyticsController::class, 'anomalyData'])->name('anomaly-data');
+            Route::get('/api/prediction-data', [\App\Http\Controllers\Admin\AdvancedAnalyticsController::class, 'predictionData'])->name('prediction-data');
         });
     });
 });
