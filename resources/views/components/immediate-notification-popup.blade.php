@@ -1,30 +1,34 @@
-<!-- Immediate Notification Popup (Floating/Toast Style) -->
+<!-- Immediate Notification Popup (Floating/Toast Style) พร้อม Keyboard Navigation + Accessibility -->
 <div x-data="immediateNotificationPopup()" x-init="init()" class="fixed inset-0 pointer-events-none z-[9999]">
     <!-- Container for notifications - positioned at top right -->
     <div class="fixed top-4 right-4 flex flex-col gap-3 pointer-events-auto max-w-sm w-full">
         <template x-for="(notification, index) in notifications" :key="notification.id">
             <div
                 x-show="notification.visible"
+                @keydown.escape="dismissNotification(index)"
                 x-transition:enter="transform transition ease-out duration-300"
                 x-transition:enter-start="translate-x-full opacity-0"
                 x-transition:enter-end="translate-x-0 opacity-100"
                 x-transition:leave="transform transition ease-in duration-200"
                 x-transition:leave-start="translate-x-0 opacity-100"
                 x-transition:leave-end="translate-x-full opacity-0"
+                :role="notification.priority === 'urgent' || notification.priority === 'high' ? 'alert' : 'status'"
+                :aria-live="notification.priority === 'urgent' ? 'assertive' : 'polite'"
+                aria-atomic="true"
                 :class="{
                     'border-red-500': notification.priority === 'urgent',
                     'border-orange-500': notification.priority === 'high',
                     'border-blue-500': notification.priority === 'normal',
                     'border-gray-500': notification.priority === 'low'
                 }"
-                class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border-l-4 overflow-hidden"
+                class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border-l-4 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500"
                 style="display: none;"
             >
                 <!-- Content -->
                 <div class="p-4">
                     <div class="flex items-start gap-3">
                         <!-- Icon -->
-                        <div class="flex-shrink-0 text-3xl" x-text="notification.icon"></div>
+                        <div class="flex-shrink-0 text-3xl" aria-hidden="true" x-text="notification.icon"></div>
 
                         <!-- Text Content -->
                         <div class="flex-1 min-w-0">
@@ -32,9 +36,11 @@
                                 <h4 class="text-sm font-bold text-gray-900 dark:text-white" x-text="notification.title"></h4>
                                 <button
                                     @click="dismissNotification(index)"
-                                    class="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    aria-label="ปิดการแจ้งเตือน"
+                                    title="ปิด (Esc)"
+                                    class="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded p-0.5 transition-all"
                                 >
-                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
                                 </button>
@@ -48,7 +54,8 @@
                                 <template x-if="notification.action_url">
                                     <a
                                         :href="notification.action_url"
-                                        class="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                                        :aria-label="`${notification.action_text || 'ดูเพิ่มเติม'} - เปิดในแท็บใหม่`"
+                                        class="text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:underline focus:outline-none focus:underline focus:ring-2 focus:ring-blue-500 rounded px-1 transition-all"
                                         x-text="notification.action_text || 'ดูเพิ่มเติม'"
                                     ></a>
                                 </template>
@@ -57,8 +64,8 @@
                     </div>
                 </div>
 
-                <!-- Progress Bar -->
-                <div class="h-1 bg-gray-200 dark:bg-gray-700">
+                <!-- Progress Bar พร้อม Accessibility -->
+                <div class="h-1 bg-gray-200 dark:bg-gray-700" role="progressbar" :aria-valuenow="notification.progress" aria-valuemin="0" aria-valuemax="100" aria-label="เวลาที่เหลือก่อนปิดอัตโนมัติ">
                     <div
                         class="h-full transition-all duration-100 ease-linear"
                         :class="{
