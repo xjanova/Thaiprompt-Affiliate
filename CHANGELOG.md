@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.68.0] - 2025-11-17
+
+### ✨ Features
+- Merge pull request #1313 from xjanova/claude/add-admin-dashboard-link-01QPsG1jeKhcoYKDFatNuTRK (19fd37e0)
+- feat: เพิ่มลิงก์แดชบอร์ดผู้ใช้ในเมนู Admin (453d1ddc)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.67.0] - 2025-11-17
 
 ### ✨ Features
