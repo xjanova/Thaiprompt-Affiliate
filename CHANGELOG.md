@@ -2,6 +2,17 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.73.0] - 2025-11-17
+
+### ✨ Features
+- feat: Implement Phase 1.2 - Keyword Performance Dashboard (4d654107)
+- feat: Integrate activity logging system for hybrid bot keywords (05f28db0)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+- Merge pull request #1319 from xjanova/claude/fix-line-login-integration-01Hc1yUwQA8YAxneyRbcozZY (d46aeae0)
+- docs: Add comprehensive activity logging implementation documentation (fba363dd)
+
 ## [v3.72.0] - 2025-11-17
 
 ### ✨ Features
