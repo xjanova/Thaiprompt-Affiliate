@@ -2,6 +2,16 @@
 
 ประวัติการเปลี่ยนแปลงของโปรเจค Thai Prompt Affiliate Marketing Platform
 
+## [v3.69.0] - 2025-11-17
+
+### ✨ Features
+- Merge pull request #1314 from xjanova/claude/integrate-notification-bell-01EeY8Gv8vYrK9CH4moGNEzr (98f7c126)
+- feat: เพิ่ม Keyboard Navigation และ Accessibility ในระบบแจ้งเตือน (0f764fa6)
+### 🐛 Bug Fixes
+
+### 🔧 Other Changes
+
+
 ## [v3.68.0] - 2025-11-17
 
 ### ✨ Features
