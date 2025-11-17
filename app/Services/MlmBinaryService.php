@@ -210,6 +210,7 @@ class MlmBinaryService
         return match ($placementType) {
             'balanced' => $this->findBalancedPlacement($sponsor),
             'weak_leg' => $this->findWeakLegPlacement($sponsor),
+            'fill_by_level' => $this->findFillByLevelPlacement($sponsor),
             default => $this->findLeftToRightPlacement($sponsor),
         };
     }
@@ -279,6 +280,50 @@ class MlmBinaryService
         }
 
         return $this->findLeftToRightPlacement($member->binaryRightChild);
+    }
+
+    /**
+     * Find fill-by-level placement (BFS - เติมให้เต็มชั้น)
+     *
+     * เติมสมาชิกใหม่ในแต่ละชั้นให้เต็มก่อน แล้วค่อยไปชั้นถัดไป
+     * ใช้ Breadth-First Search (BFS) algorithm
+     */
+    protected function findFillByLevelPlacement(MlmMember $member)
+    {
+        // ใช้ Queue สำหรับ BFS
+        $queue = collect([$member]);
+        $visited = collect();
+
+        while ($queue->isNotEmpty()) {
+            $current = $queue->shift();
+
+            // ข้าม node ที่เคย visit แล้ว (ป้องกัน infinite loop)
+            if ($visited->contains($current->id)) {
+                continue;
+            }
+            $visited->push($current->id);
+
+            // ตรวจสอบว่า left ว่างไหม
+            if (!$current->binaryLeftChild) {
+                return ['parent_id' => $current->id, 'position' => 'left'];
+            }
+
+            // ตรวจสอบว่า right ว่างไหม
+            if (!$current->binaryRightChild) {
+                return ['parent_id' => $current->id, 'position' => 'right'];
+            }
+
+            // เพิ่ม children เข้า queue (ไปชั้นถัดไป)
+            if ($current->binaryLeftChild) {
+                $queue->push($current->binaryLeftChild);
+            }
+            if ($current->binaryRightChild) {
+                $queue->push($current->binaryRightChild);
+            }
+        }
+
+        // Fallback (ไม่ควรเกิด แต่เผื่อ edge case)
+        return ['parent_id' => $member->id, 'position' => 'left'];
     }
 
     /**

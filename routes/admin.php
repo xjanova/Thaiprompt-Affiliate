@@ -923,7 +923,8 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
         Route::get('/', [MlmGlobalSettingController::class, 'index'])->name('index');
         Route::put('/', [MlmGlobalSettingController::class, 'update'])->name('update');
         Route::post('/preview-calculation', [MlmGlobalSettingController::class, 'previewCalculation'])->name('preview-calculation');
-        Route::get('/get-settings', [MlmGlobalSettingController::class, 'getSettings'])->name('get-settings');
+        Route::get('/get', [MlmGlobalSettingController::class, 'getSettings'])->name('get');
+        Route::post('/update-placement', [MlmGlobalSettingController::class, 'updatePlacement'])->name('update-placement');
     });
 
     // MLM Genealogy Viewer

@@ -216,4 +216,39 @@ class MlmGlobalSettingController extends Controller
             'breakdown' => $breakdown,
         ]);
     }
+
+    /**
+     * Update placement strategy and MLM system toggles
+     *
+     * สำหรับ Theme Customizer - MLM Tab
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updatePlacement(Request $request)
+    {
+        $validated = $request->validate([
+            'auto_placement_type' => 'required|in:left_to_right,balanced,weak_leg,fill_by_level',
+            'auto_placement' => 'required|boolean',
+            'binary_enabled' => 'required|boolean',
+            'unilevel_enabled' => 'required|boolean',
+        ]);
+
+        // อัพเดทการตั้งค่าแต่ละค่า
+        MlmGlobalSetting::set('auto_placement_type', $validated['auto_placement_type']);
+        MlmGlobalSetting::set('auto_placement', $validated['auto_placement']);
+        MlmGlobalSetting::set('binary_enabled', $validated['binary_enabled']);
+        MlmGlobalSetting::set('unilevel_enabled', $validated['unilevel_enabled']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'MLM placement settings updated successfully',
+            'settings' => [
+                'auto_placement_type' => $validated['auto_placement_type'],
+                'auto_placement' => $validated['auto_placement'],
+                'binary_enabled' => $validated['binary_enabled'],
+                'unilevel_enabled' => $validated['unilevel_enabled'],
+            ],
+        ]);
+    }
 }
