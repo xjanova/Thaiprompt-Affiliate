@@ -110,23 +110,25 @@ class RankingService
 
     /**
      * Calculate and update rank points for a user
+     *
+     * ใช้ข้อมูลรวมจากทั้ง Affiliate และ MLM systems
      */
     public function calculateRankPoints(User $user): int
     {
         $settings = RankSetting::get();
-        $affiliate = $user->affiliate;
-
-        if (!$affiliate) {
-            return 0;
-        }
+        $earningService = new \App\Services\UnifiedEarningService();
 
         $points = 0;
 
-        // Points from referrals
-        $points += $affiliate->total_referrals * $settings->points_per_referral;
+        // ใช้ unified earnings และ referrals จากทั้ง 2 ระบบ
+        $totalReferrals = $earningService->getTotalReferrals($user);
+        $totalEarnings = $earningService->getTotalEarnings($user);
 
-        // Points from sales
-        $points += floor($affiliate->total_earnings * $settings->points_per_sale);
+        // Points from referrals (Affiliate + MLM)
+        $points += $totalReferrals * $settings->points_per_referral;
+
+        // Points from sales (Affiliate + MLM)
+        $points += floor($totalEarnings * $settings->points_per_sale);
 
         // Points from active months
         $monthsActive = $user->created_at->diffInMonths(now());
