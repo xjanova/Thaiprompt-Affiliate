@@ -48,8 +48,8 @@ class LineBotAiSeeder extends Seeder
         }
 
         // ดึง AI Provider แรก (แนะนำ: OpenAI)
-        $provider = AiProvider::where('name', 'OpenAI')
-            ->orWhere('code', 'openai')
+        $provider = AiProvider::where('name', 'openai')
+            ->orWhere('display_name', 'like', '%OpenAI%')
             ->first();
 
         // ถ้าไม่มี OpenAI ให้ดึง provider แรกที่มี
@@ -64,8 +64,8 @@ class LineBotAiSeeder extends Seeder
 
         // ดึง GPT-4 model หรือ model แรกที่มี
         $model = AiModel::where('provider_id', $provider->id)
-            ->where('code', 'gpt-4')
-            ->orWhere('name', 'like', '%GPT-4%')
+            ->where('model_identifier', 'gpt-4')
+            ->orWhere('display_name', 'like', '%GPT-4%')
             ->first();
 
         if (!$model) {
