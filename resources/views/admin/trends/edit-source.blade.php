@@ -1,11 +1,11 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Edit Trend Source')
 
 @section('content')
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Edit Trend Source</h1>
+        <h1 class="h3 mb-0 text-gray-900 dark:text-white">Edit Trend Source</h1>
         <a href="{{ route('admin.trends.index') }}" class="btn btn-secondary">
             <i class="fas fa-arrow-left mr-2"></i>Back
         </a>
