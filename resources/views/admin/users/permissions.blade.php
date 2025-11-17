@@ -5,17 +5,17 @@
 @section('content')
 <div class="space-y-6">
     <!-- User Info Card -->
-    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
+    <div class="rounded-xl shadow-lg p-6 text-white" style="background: var(--arrow-x-primary-gradient)">
         <div class="flex items-center">
-            <div class="h-16 w-16 glass-fusion rounded-full flex items-center justify-center text-indigo-600 text-2xl font-bold" border border-white/20 dark:border-white/10>
+            <div class="h-16 w-16 glass-fusion rounded-full flex items-center justify-center text-2xl font-bold" style="color: var(--arrow-x-primary-start)">
                 {{ strtoupper(substr($user->name, 0, 2)) }}
             </div>
             <div class="ml-4">
                 <h2 class="text-2xl font-bold">{{ $user->name }}</h2>
-                <p class="text-indigo-100">{{ $user->email }}</p>
+                <p class="opacity-90">{{ $user->email }}</p>
                 <div class="mt-1">
-                    <span class="px-2 py-1 text-xs font-semibold rounded-full
-                        {{ $user->is_super_admin ? 'bg-yellow-500 text-yellow-900' : 'bg-indigo-300 text-indigo-900' }}">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full"
+                          style="background: {{ $user->is_super_admin ? 'var(--arrow-x-warning)' : 'rgba(255,255,255,0.3)' }}; color: {{ $user->is_super_admin ? '#000' : '#fff' }}">
                         {{ $user->is_super_admin ? 'Super Admin' : ucfirst($user->role) }}
                     </span>
                 </div>
@@ -35,14 +35,14 @@
 
         @if($user->is_super_admin)
             <!-- Super Admin Notice -->
-            <div class="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+            <div class="mb-6 glass-fusion border-l-4 p-4 rounded" style="border-color: var(--arrow-x-warning)">
                 <div class="flex">
                     <div class="flex-shrink-0">
                         <span class="text-2xl">⚠️</span>
                     </div>
                     <div class="ml-3">
-                        <h3 class="text-sm font-medium text-yellow-800">Super Admin Account</h3>
-                        <div class="mt-2 text-sm text-yellow-700">
+                        <h3 class="text-sm font-medium text-gray-900 dark:text-white">Super Admin Account</h3>
+                        <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
                             <p>บัญชีนี้เป็น Super Admin มีสิทธิ์เข้าถึงทุกฟีเจอร์โดยอัตโนมัติและไม่สามารถแก้ไขได้</p>
                             <p class="mt-1">สิทธิ์ด้านล่างแสดงเพื่อให้เห็นเท่านั้น</p>
                         </div>

@@ -35,7 +35,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">รอดำเนินการ</p>
-                    <p class="text-3xl font-bold text-yellow-600 mt-2">{{ $stats['pending_commissions'] }}</p>
+                    <p class="text-3xl font-bold mt-2" style="color: var(--arrow-x-warning)">{{ $stats['pending_commissions'] }}</p>
                 </div>
                 <div class="text-4xl">⏳</div>
             </div>
@@ -46,7 +46,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">อนุมัติแล้ว</p>
-                    <p class="text-3xl font-bold text-green-600 mt-2">{{ $stats['approved_commissions'] }}</p>
+                    <p class="text-3xl font-bold mt-2" style="color: var(--arrow-x-success)">{{ $stats['approved_commissions'] }}</p>
                 </div>
                 <div class="text-4xl">✅</div>
             </div>
@@ -57,7 +57,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <p class="text-sm font-medium text-gray-600 dark:text-gray-400">รายได้ทั้งหมด</p>
-                    <p class="text-3xl font-bold text-blue-600 mt-2">฿{{ number_format($stats['total_earnings'], 2) }}</p>
+                    <p class="text-3xl font-bold mt-2" style="color: var(--arrow-x-primary-start)">฿{{ number_format($stats['total_earnings'], 2) }}</p>
                 </div>
                 <div class="text-4xl">💰</div>
             </div>
