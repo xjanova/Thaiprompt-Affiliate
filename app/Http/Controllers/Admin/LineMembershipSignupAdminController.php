@@ -82,7 +82,7 @@ class LineMembershipSignupAdminController extends Controller
             ->limit(10)
             ->get();
 
-        return view('admin.line-signup.index', compact(
+        return view('admin.line-membership-signup.index', compact(
             'stats',
             'dailySignups',
             'stepFunnel',
@@ -93,7 +93,7 @@ class LineMembershipSignupAdminController extends Controller
     }
 
     /**
-     * Show signup sessions list
+     * แสดงรายการ signup sessions ทั้งหมด
      */
     public function sessions(Request $request)
     {
@@ -119,11 +119,11 @@ class LineMembershipSignupAdminController extends Controller
 
         $sessions = $query->paginate(20);
 
-        return view('admin.line-signup.sessions', compact('sessions'));
+        return view('admin.line-membership-signup.sessions', compact('sessions'));
     }
 
     /**
-     * Show session details
+     * แสดงรายละเอียด session
      */
     public function showSession(LineSignupSession $session)
     {
@@ -139,17 +139,17 @@ class LineMembershipSignupAdminController extends Controller
             'rewards',
         ]);
 
-        return view('admin.line-signup.session-details', compact('session'));
+        return view('admin.line-membership-signup.session-details', compact('session'));
     }
 
     /**
-     * Manage Flex Message templates
+     * จัดการ Flex Message templates
      */
     public function templates(Request $request)
     {
         $templates = LineSignupTemplate::latest()->get();
 
-        return view('admin.line-signup.templates', compact('templates'));
+        return view('admin.line-membership-signup.templates', compact('templates'));
     }
 
     /**
@@ -205,7 +205,7 @@ class LineMembershipSignupAdminController extends Controller
     }
 
     /**
-     * Manage invitations
+     * จัดการลิงก์เชิญ (invitations)
      */
     public function invitations(Request $request)
     {
@@ -218,11 +218,11 @@ class LineMembershipSignupAdminController extends Controller
 
         $invitations = $query->paginate(20);
 
-        return view('admin.line-signup.invitations', compact('invitations'));
+        return view('admin.line-membership-signup.invitations', compact('invitations'));
     }
 
     /**
-     * Manage rewards
+     * จัดการรางวัล (rewards)
      */
     public function rewards(Request $request)
     {
@@ -235,7 +235,7 @@ class LineMembershipSignupAdminController extends Controller
 
         $rewards = $query->paginate(20);
 
-        return view('admin.line-signup.rewards', compact('rewards'));
+        return view('admin.line-membership-signup.rewards', compact('rewards'));
     }
 
     /**
