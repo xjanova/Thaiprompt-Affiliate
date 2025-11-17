@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $knowledgeBase->name)
 
@@ -8,7 +8,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h4 class="mb-1">{{ $knowledgeBase->type_icon }} {{ $knowledgeBase->name }}</h4>
-            <p class="text-gray-600 mb-0">
+            <p class="text-gray-600 dark:text-gray-400 mb-0">
                 Bot: <strong>{{ $bot->name }}</strong> |
                 Status: <span class="badge bg-{{ $knowledgeBase->status_color }}">{{ $knowledgeBase->status_label }}</span>
             </p>
@@ -35,7 +35,7 @@
         <div class="col-lg-8">
             <!-- Details Card -->
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
+                <div class="card-header glass-fusion" border border-white/20 dark:border-white/10>
                     <h5 class="mb-0">รายละเอียด</h5>
                 </div>
                 <div class="card-body">
@@ -105,7 +105,7 @@
             <!-- Test Search Card -->
             @if($knowledgeBase->status === 'completed')
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
+                <div class="card-header glass-fusion" border border-white/20 dark:border-white/10>
                     <h5 class="mb-0">🔍 ทดสอบการค้นหา</h5>
                 </div>
                 <div class="card-body">
@@ -130,7 +130,7 @@
 
             <!-- Chunks List -->
             <div class="card shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <div class="card-header glass-fusion d-flex justify-content-between align-items-center" border border-white/20 dark:border-white/10>
                     <h5 class="mb-0">Chunks ({{ $knowledgeBase->total_chunks }})</h5>
                     <span class="badge bg-info">{{ $chunks->total() }} total</span>
                 </div>
@@ -155,7 +155,7 @@
                                         @endif
                                     </div>
                                 </div>
-                                <div class="text-gray-700">
+                                <div class="text-gray-700 dark:text-gray-300">
                                     {{ Str::limit($chunk->content, 300) }}
                                 </div>
                                 @if(strlen($chunk->content) > 300)

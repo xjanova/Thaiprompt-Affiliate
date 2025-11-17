@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Email Providers')
 
@@ -8,15 +8,15 @@
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🔌 Email Providers</h1>
-            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">จัดการบริการส่งอีเมล และตั้งค่า Failover</p>
+            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">จัดการบริการส่งอีเมล และตั้งค่า Failover</p>
         </div>
-        <a href="{{ route('admin.email.providers.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+        <a href="{{ route('admin.email.providers.create') }}" class="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors">
             + เพิ่ม Provider
         </a>
     </div>
 
     <!-- Info Box -->
-    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
         <div class="flex">
             <div class="flex-shrink-0">
                 <span class="text-2xl">💡</span>
@@ -35,7 +35,7 @@
     <!-- Providers Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         @forelse($providers as $provider)
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-2 {{ $provider->is_default ? 'border-blue-500' : 'border-gray-200 dark:border-gray-700' }}">
+            <div class="glass-fusion dark:bg-gray-800 rounded-xl shadow-md p-6 border-2 {{ $provider->is_default ? 'border-blue-500' : 'border-gray-200 dark:border-gray-700 dark:border-gray-700' }}" hover:scale-105 transition-transform border border-white/20 dark:border-white/10>
                 <!-- Header -->
                 <div class="flex items-start justify-between mb-4">
                     <div>
@@ -47,7 +47,7 @@
                                 </span>
                             @endif
                         </h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-400">
                             {{ $provider->type === 'api' ? 'API' : 'SMTP' }} • Priority: {{ $provider->priority }}
                         </p>
                     </div>
@@ -57,7 +57,7 @@
                                 ✅ ใช้งาน
                             </span>
                         @else
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100/50 dark:bg-gray-800/50 text-gray-900 dark:text-white dark:bg-gray-700 dark:text-gray-300">
                                 ⭕ ปิด
                             </span>
                         @endif
@@ -69,12 +69,12 @@
                     @if($provider->daily_limit)
                         <div>
                             <div class="flex items-center justify-between text-sm mb-1">
-                                <span class="text-gray-600 dark:text-gray-400">วันนี้</span>
+                                <span class="text-gray-600 dark:text-gray-400 dark:text-gray-400">วันนี้</span>
                                 <span class="text-gray-900 dark:text-white font-medium">
                                     {{ $provider->sent_today }} / {{ $provider->daily_limit }}
                                 </span>
                             </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-full h-2">
                                 @php
                                     $percentage = $provider->daily_limit > 0 ? ($provider->sent_today / $provider->daily_limit) * 100 : 0;
                                 @endphp
@@ -86,12 +86,12 @@
                     @if($provider->hourly_limit)
                         <div>
                             <div class="flex items-center justify-between text-sm mb-1">
-                                <span class="text-gray-600 dark:text-gray-400">ชั่วโมงนี้</span>
+                                <span class="text-gray-600 dark:text-gray-400 dark:text-gray-400">ชั่วโมงนี้</span>
                                 <span class="text-gray-900 dark:text-white font-medium">
                                     {{ $provider->sent_this_hour }} / {{ $provider->hourly_limit }}
                                 </span>
                             </div>
-                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 dark:bg-gray-700 rounded-full h-2">
                                 @php
                                     $percentage = $provider->hourly_limit > 0 ? ($provider->sent_this_hour / $provider->hourly_limit) * 100 : 0;
                                 @endphp
@@ -103,7 +103,7 @@
 
                 <!-- Health Status -->
                 @if($provider->health_check && isset($provider->health_check['healthy']))
-                    <div class="mb-4 p-3 rounded-lg {{ $provider->health_check['healthy'] ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20' }}">
+                    <div class="mb-4 p-3 rounded-xl {{ $provider->health_check['healthy'] ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20' }}">
                         <div class="flex items-center">
                             <span class="text-lg mr-2">{{ $provider->health_check['healthy'] ? '✅' : '❌' }}</span>
                             <span class="text-sm {{ $provider->health_check['healthy'] ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200' }}">
@@ -111,14 +111,14 @@
                             </span>
                         </div>
                         @if(isset($provider->health_check['message']))
-                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ $provider->health_check['message'] }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">{{ $provider->health_check['message'] }}</p>
                         @endif
                     </div>
                 @endif
 
                 <!-- Actions -->
                 <div class="flex items-center space-x-2">
-                    <button onclick="testProvider({{ $provider->id }})" class="flex-1 px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 text-sm">
+                    <button onclick="testProvider({{ $provider->id }})" class="flex-1 px-3 py-2 bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 dark:text-gray-300 rounded hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-sm">
                         🧪 ทดสอบ
                     </button>
                     <a href="{{ route('admin.email.providers.edit', $provider) }}" class="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm text-center">
@@ -137,8 +137,8 @@
         @empty
             <div class="col-span-3 text-center py-12">
                 <span class="text-6xl">📭</span>
-                <p class="mt-4 text-gray-500 dark:text-gray-400">ยังไม่มี Email Provider</p>
-                <a href="{{ route('admin.email.providers.create') }}" class="mt-4 inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                <p class="mt-4 text-gray-500 dark:text-gray-400 dark:text-gray-400">ยังไม่มี Email Provider</p>
+                <a href="{{ route('admin.email.providers.create') }}" class="mt-4 inline-block px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700">
                     เพิ่ม Provider แรก
                 </a>
             </div>
